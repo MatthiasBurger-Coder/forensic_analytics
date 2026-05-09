@@ -1,0 +1,1144 @@
+# AGENTS.md — Forensic Analytics
+
+## Purpose
+
+This document defines the mandatory engineering rules for automated agents working on the **Forensic Analytics** repository.
+
+The repository contains the Forensic Analytics platform: a forensic analysis system for ingesting static and runtime evidence, building analyzable execution and dependency models, supporting exception-centered replay, and preparing structured findings for human and LLM-assisted diagnosis.
+
+Agents must follow this document before modifying code, tests, build logic, examples, documentation, analysis workflows, runtime evidence importers, graph persistence, replay logic, or LLM integration code.
+
+## Project Baseline
+
+The project baseline is:
+
+- Java 17 unless the repository build explicitly defines a stricter compatible baseline
+- Gradle via the project wrapper
+- JUnit 5
+- ArchUnit where architecture rules are available
+- JaCoCo where coverage verification is configured
+- SonarQube / SonarCloud related checks where configured
+- Hexagonal architecture
+- Evidence-first forensic analysis
+- Deterministic analysis output
+- IF-Less development preference
+- Declarative programming preference
+- Regression-first workflow
+
+All source code, comments, JavaDoc, test names, and repository documentation must be written in English.
+
+Use `./gradlew` on Unix-like shells and `.\gradlew.bat` on Windows PowerShell.
+
+If a baseline, command, or quality rule in this document differs from `AGENTS.md`, `QUALITY.md`, `settings.gradle(.kts)`, `build.gradle(.kts)`, or CI workflow files in the repository, the repository files must be inspected and the conflict must be reported before continuing.
+
+## Core Principle
+
+Prefer the smallest correct change.
+
+Do not perform broad rewrites, speculative refactorings, unrelated cleanups, or architecture migrations unless the task explicitly requires them.
+
+Every change must be traceable to:
+
+1. the requested task,
+2. an observed defect,
+3. a verified architectural rule,
+4. a quality-gate failure,
+5. or a documented project decision.
+
+## Forensic Engineering Principle
+
+Forensic Analytics code must preserve trust in evidence.
+
+Analysis results, replay outputs, graph relationships, findings, diagnostics, reports, and LLM prompts must be reproducible from explicit inputs. Agents must not hide uncertainty, invent evidence, infer missing runtime facts, or silently normalize away behavior-relevant data.
+
+When the system cannot prove a fact from source code, runtime traces, stored events, repository metadata, or explicit user input, it must represent that fact as unknown, incomplete, unresolved, or not available.
+
+## Mandatory Agent Safety Rules
+
+These rules are mandatory for every change performed by an automated agent.
+
+### STOP and Report Rule
+
+If a required method, class, interface, task, package, file, configuration key, data model, graph label, storage table, API endpoint, analysis contract, replay contract, or documented behavior cannot be found exactly as expected, the agent must stop and report the mismatch.
+
+The agent must not infer, guess, invent, or silently substitute missing names.
+
+Examples:
+
+- If an analysis use case references a graph edge type that is not defined, do not invent a replacement edge type.
+- If an importer references a runtime event field that does not exist, do not map it to a similarly named field without verification.
+- If a replay step expects a method-call event but only a static dependency relation exists, do not treat the dependency relation as proof of execution.
+- If a Gradle task referenced by documentation does not exist, do not replace it with another task without verification.
+- If README, tests, source code, and stored schema definitions disagree, do not silently choose one interpretation.
+
+Required behavior:
+
+1. Inspect the relevant source files, tests, build files, schemas, and documentation.
+2. Verify the exact symbol, method, class, task, field, contract, or data shape.
+3. If verification fails, stop the implementation.
+4. Report:
+    - what was expected,
+    - what was found instead,
+    - which files were inspected,
+    - why continuing would be unsafe.
+
+Do not continue with a speculative implementation.
+
+### No Guessing Rule
+
+Agents must not guess implementation details.
+
+This applies especially to:
+
+- method names
+- static helper methods
+- Gradle task names
+- plugin IDs
+- package names
+- test class names
+- generated file locations
+- runtime event field names
+- trace correlation fields
+- graph node labels
+- graph edge labels
+- database table names
+- JSON schema properties
+- LLM prompt template names
+- report section names
+- SonarQube or JaCoCo task names
+
+If a value cannot be verified from source, build files, tests, documentation, schemas, fixtures, or sample data, the agent must stop and report.
+
+### No Fabricated Evidence Rule
+
+Forensic Analytics must never fabricate analysis evidence.
+
+Agents must not:
+
+- create fake runtime traces to make a replay look complete,
+- invent stack frames,
+- invent method parameters,
+- invent return values,
+- infer branch execution from source structure alone,
+- treat static dependencies as executed runtime flow,
+- treat LLM output as a verified fact,
+- silently fill missing graph relationships,
+- hide unresolved symbols,
+- convert uncertain findings into confirmed findings.
+
+Synthetic test fixtures are allowed only inside tests and must be clearly named as fixtures.
+
+### No Hidden Compatibility Code
+
+Do not introduce compatibility wrappers, aliases, overloads, deprecated bridge methods, fallback paths, or silent schema adapters unless explicitly requested.
+
+Compatibility code may only be added when:
+
+1. the task explicitly asks for backward compatibility,
+2. the affected API or schema contract has been verified,
+3. the compatibility behavior is tested,
+4. and the documentation states why it exists.
+
+### No Side-Effect Renames
+
+Renames must be limited to the explicitly requested symbol unless all affected symbols are verified from source.
+
+Do not rename a method, class, field, package, event field, graph label, Gradle task, API endpoint, or static call in one layer based only on naming symmetry in another layer.
+
+Safe behavior:
+
+1. Verify the actual target symbol.
+2. Rename only the confirmed symbol.
+3. Update all verified callers, tests, examples, and documentation.
+4. If any caller cannot be verified, stop and report.
+
+### No Unrequested Architecture Migration
+
+Do not move packages, rename modules, introduce new layers, replace storage technology, replace graph tooling, introduce a web framework, or restructure the project unless the task explicitly requires it.
+
+Architecture cleanup must be handled as a dedicated task.
+
+## Verify Before Touch Workflow
+
+Every implementation task must start with a read-only verification phase.
+
+### Phase 1: Read-Only Verification
+
+Before modifying files, the agent must inspect:
+
+1. the files explicitly mentioned in the task,
+2. directly referenced interfaces,
+3. directly referenced implementation classes,
+4. directly referenced tests,
+5. relevant schemas, fixtures, or generated sample outputs,
+6. relevant Gradle tasks or quality documentation when build behavior is affected,
+7. README or usage documentation when public behavior is affected,
+8. `QUALITY.md` when quality-gate behavior is affected,
+9. CI workflow files when commit or pipeline behavior is affected.
+
+During this phase, the agent must not modify files.
+
+The goal is to confirm that the requested change matches the actual repository state.
+
+### Phase 2: Implementation
+
+Only after successful verification may the agent modify files.
+
+The implementation must follow the smallest correct change principle.
+
+A valid implementation must:
+
+- change only files required by the task,
+- preserve existing behavior unless the task explicitly changes it,
+- avoid speculative improvements,
+- avoid unrelated formatting-only changes,
+- keep code comments in English,
+- keep repository documentation in English,
+- preserve forensic evidence semantics,
+- keep uncertainty explicit.
+
+### Phase 3: Local Verification
+
+After implementation, the agent must run the narrowest meaningful verification first.
+
+Preferred order:
+
+1. targeted unit test,
+2. affected package or module test,
+3. importer/parser/replay/graph-specific tests where relevant,
+4. ArchUnit rule when architecture is affected,
+5. full quality gate as defined by `QUALITY.md`.
+
+The current quality gate source is `QUALITY.md`.
+
+Do not invent or reference a `quality_gate.py` file unless the repository actually contains and documents it.
+
+If the quality gate cannot be executed, the agent must report the reason and provide the commands that were attempted.
+
+## Quality Gate
+
+`QUALITY.md` is the authoritative quality contract for the repository.
+
+The default minimum quality command is expected to be:
+
+```bash
+./gradlew test
+```
+
+The full local quality gate must be read from `QUALITY.md` and verified against the Gradle build.
+
+If the repository uses the same quality gate as the tracing toolkit baseline, the full local gate is:
+
+```bash
+./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --console=plain --stacktrace
+```
+
+When plugin metadata, Gradle task inputs, task outputs, or plugin implementation classes are changed, also run:
+
+```bash
+./gradlew validatePlugins
+```
+
+When general build health is relevant, this diagnostic run may be useful:
+
+```bash
+./gradlew clean check --console=plain --stacktrace
+```
+
+Do not claim that a command passed unless it was actually executed.
+
+If a command fails, report:
+
+- command executed,
+- failure summary,
+- relevant failing test or task,
+- whether the failure was caused by the current change,
+- remaining blocker.
+
+## Architecture Rules
+
+The project follows hexagonal architecture.
+
+Domain and application code must stay independent from technical frameworks, storage implementations, runtime infrastructure, LLM providers, and external tool adapters.
+
+### Architecture Intent
+
+The project is structured around:
+
+- domain model,
+- application services,
+- ports,
+- inbound adapters,
+- outbound adapters,
+- static analysis importers,
+- runtime evidence importers,
+- graph persistence,
+- replay orchestration,
+- LLM-assisted diagnosis,
+- reporting and export,
+- quality tests.
+
+The intended dependency direction is:
+
+```text
+adapters / infrastructure / plugins / UI / CLI
+        -> application
+        -> domain
+```
+
+The reverse direction is forbidden.
+
+### Package Responsibility Map
+
+The following package responsibilities apply to the Forensic Analytics repository. If the repository uses a different concrete package layout, inspect the current source tree first and map the responsibilities accordingly.
+
+#### Domain
+
+```text
+de.burger.forensics.analytics.domain
+```
+
+or the repository's verified domain package.
+
+Contains:
+
+- forensic domain models,
+- value objects,
+- evidence identifiers,
+- trace identifiers,
+- correlation identifiers,
+- analysis findings,
+- replay models,
+- graph-neutral relationship models,
+- domain strategies,
+- domain ports,
+- domain-level rules.
+
+Allowed dependencies:
+
+- Java standard library,
+- domain-internal packages.
+
+Forbidden dependencies:
+
+- Gradle API,
+- Maven API,
+- JavaParser,
+- Joern or CPG implementation APIs,
+- Graph database client APIs,
+- SQL implementation APIs,
+- SLF4J concrete logging providers,
+- AspectJ,
+- Byteman,
+- filesystem adapters,
+- runtime tracing implementation,
+- LLM SDKs,
+- HTTP clients,
+- plugin classes,
+- infrastructure classes.
+
+#### Application
+
+```text
+de.burger.forensics.analytics.application
+```
+
+or the repository's verified application package.
+
+Contains:
+
+- use cases,
+- orchestration services,
+- application-level request and result objects,
+- transaction-neutral workflows,
+- analysis pipeline coordination,
+- replay coordination,
+- diagnosis preparation,
+- reporting orchestration.
+
+Allowed dependencies:
+
+- domain,
+- Java standard library.
+
+Forbidden dependencies:
+
+- Gradle API,
+- Maven API,
+- JavaParser,
+- concrete graph database clients,
+- concrete SQL implementation details,
+- concrete LLM SDKs,
+- concrete runtime helper implementation,
+- filesystem-specific implementation details,
+- plugin classes,
+- UI framework classes.
+
+Application services may depend on ports, not concrete adapters.
+
+#### Inbound Adapters
+
+Typical inbound adapter packages may include:
+
+```text
+de.burger.forensics.analytics.adapter.in.cli
+de.burger.forensics.analytics.adapter.in.rest
+de.burger.forensics.analytics.adapter.in.gradle
+de.burger.forensics.analytics.adapter.in.maven
+de.burger.forensics.analytics.adapter.in.ui
+```
+
+Contains:
+
+- CLI entry points,
+- REST controllers if present,
+- Gradle task adapters,
+- Maven Mojo adapters,
+- UI action handlers,
+- external command mapping,
+- request translation into application use cases.
+
+Inbound adapters must:
+
+- delegate business logic to application services,
+- map external input into explicit request objects,
+- keep framework-specific annotations out of domain and application,
+- avoid performing analysis logic directly.
+
+#### Outbound Adapters
+
+Typical outbound adapter packages may include:
+
+```text
+de.burger.forensics.analytics.adapter.out.scan.javaparser
+de.burger.forensics.analytics.adapter.out.scan.cpg
+de.burger.forensics.analytics.adapter.out.graph
+de.burger.forensics.analytics.adapter.out.persistence
+de.burger.forensics.analytics.adapter.out.llm
+de.burger.forensics.analytics.adapter.out.report
+de.burger.forensics.analytics.adapter.out.render
+de.burger.forensics.analytics.adapter.out.write.file
+```
+
+Contains:
+
+- JavaParser scanning integration,
+- Code Property Graph / Joern integration if present,
+- graph database adapters,
+- SQL or file persistence adapters,
+- LLM client adapters,
+- report exporters,
+- visualization renderers,
+- file-writing adapters,
+- external service integration.
+
+Outbound adapters may depend inward on application and domain ports.
+
+Outbound adapters must not become orchestration use cases.
+
+#### Infrastructure
+
+```text
+de.burger.forensics.analytics.infrastructure
+```
+
+or the repository's verified infrastructure package.
+
+Contains:
+
+- persistence configuration,
+- technical logging,
+- runtime connector implementation,
+- filesystem utilities,
+- external tool execution,
+- environment configuration,
+- technical serialization infrastructure,
+- security and secret handling infrastructure.
+
+Infrastructure must not contain domain decisions.
+
+#### Runtime Evidence Integration
+
+Runtime tracing helpers and runtime evidence import code must remain lightweight and explicit.
+
+Runtime-related packages may contain:
+
+- trace event ingestion,
+- correlation/span handling,
+- exception event ingestion,
+- runtime payload parsing,
+- runtime-to-domain mapping,
+- replay input preparation.
+
+Runtime evidence code must not:
+
+- depend on Gradle API,
+- depend on JavaParser,
+- depend on plugin implementation classes,
+- introduce domain decisions,
+- perform blocking I/O unless explicitly required,
+- throw exceptions from tracing paths without documented behavior,
+- fabricate missing runtime values.
+
+## Forensic Analytics Rules
+
+### Evidence Model Rules
+
+Evidence models must distinguish between:
+
+- static source-code facts,
+- build-time facts,
+- dependency graph facts,
+- runtime trace facts,
+- exception facts,
+- replay-derived facts,
+- LLM-generated hypotheses,
+- human-confirmed findings.
+
+Do not collapse these categories into a single undifferentiated string or map if type-safe structures are practical.
+
+Every behavior-relevant model should preserve:
+
+- source of evidence,
+- timestamp or ordering information where available,
+- correlation ID where available,
+- process or execution context where available,
+- origin system or input file where available,
+- confidence or completeness when facts are partial.
+
+### Static Analysis Rules
+
+Static analysis code should:
+
+- detect source relationships,
+- extract method, class, branch, dependency, and data-flow candidates,
+- preserve source locations,
+- keep unresolved symbols explicit,
+- avoid deciding runtime execution truth,
+- avoid deciding how findings are finally reported.
+
+Static analysis code must not:
+
+- treat source reachability as proof of runtime execution,
+- silently drop unresolved references,
+- mix graph persistence details into parser logic,
+- mix report rendering into scanner logic.
+
+### Runtime Trace Rules
+
+Runtime trace ingestion should:
+
+- preserve correlation IDs,
+- preserve span/process IDs,
+- preserve event order,
+- preserve exception class, message, stack trace, and source location if available,
+- preserve method parameters and return values only when actually observed,
+- keep missing values explicit.
+
+Runtime trace ingestion must not:
+
+- infer parameter values from source code,
+- infer branch decisions without observed runtime data,
+- convert logging text into structured facts without a verified parser,
+- mutate original trace payloads destructively.
+
+### Graph Rules
+
+Graph construction must be deterministic and testable.
+
+Graph code should:
+
+- use explicit node and edge types,
+- preserve relationship provenance,
+- distinguish static edges from runtime edges,
+- avoid nondeterministic ordering,
+- keep graph labels and properties centralized where practical,
+- include tests for schema-relevant changes.
+
+Graph code must not:
+
+- invent relationships to make visualizations complete,
+- collapse different evidence types into ambiguous edges,
+- depend on UI rendering decisions,
+- leak concrete graph database APIs into domain or application code.
+
+### Replay Rules
+
+Exception-centered replay must be evidence-based.
+
+Replay code should:
+
+- start from an explicit exception or correlation context,
+- reconstruct only observed or derivable steps,
+- identify missing evidence clearly,
+- preserve ordering and causality constraints,
+- separate static context from runtime execution,
+- produce stable replay output for the same inputs.
+
+Replay code must not:
+
+- present speculative paths as executed paths,
+- hide missing trace events,
+- fabricate method parameters or return values,
+- merge unrelated correlation IDs,
+- silently continue after inconsistent evidence unless the inconsistency is represented in the result.
+
+### LLM Integration Rules
+
+LLM integration is an analysis assistant, not an evidence source.
+
+LLM-related code must:
+
+- pass structured evidence into prompts,
+- label LLM output as hypothesis, explanation, recommendation, or generated text,
+- keep raw evidence separate from LLM interpretation,
+- avoid sending secrets, credentials, tokens, personal data, or unnecessary source content,
+- support deterministic prompt construction where practical,
+- be testable without requiring a live LLM provider.
+
+LLM-related code must not:
+
+- treat generated output as confirmed fact,
+- overwrite evidence with generated summaries,
+- hide prompt inputs from tests or audits,
+- depend on a concrete LLM provider in domain or application code,
+- require network access for unit tests.
+
+### Reporting Rules
+
+Reports must distinguish clearly between:
+
+- confirmed evidence,
+- derived analysis,
+- unresolved gaps,
+- hypotheses,
+- suggested fixes,
+- verification status.
+
+Reports must not present uncertain findings as verified defects.
+
+## Build Tool Adapter Rules
+
+If the repository contains Gradle or Maven adapters, they must remain build-tool adapters only.
+
+### Gradle Adapter Rules
+
+Gradle task classes must:
+
+- declare inputs and outputs explicitly,
+- use Gradle `Property<T>`, `RegularFileProperty`, and `DirectoryProperty` where appropriate,
+- avoid resolving files eagerly during configuration,
+- avoid doing execution work during configuration,
+- keep task actions small,
+- delegate business logic to application services.
+
+Gradle task classes must not:
+
+- perform broad source parsing logic directly,
+- contain domain rules,
+- contain replay logic,
+- contain LLM diagnosis logic,
+- introduce hidden filesystem assumptions,
+- use static mutable state for task behavior.
+
+### Maven Adapter Rules
+
+Maven Mojo classes must:
+
+- map Maven parameters to application request objects,
+- delegate execution to application services,
+- avoid duplicating Gradle task behavior,
+- keep Maven API usage inside Maven adapter packages.
+
+Maven Mojo classes must not depend on Gradle task classes.
+
+### Build-Tool Boundary Rules
+
+Common build-tool code must not depend on Gradle or Maven APIs.
+
+Gradle-specific packages may depend on Gradle APIs and must not depend on Maven APIs.
+
+Maven-specific packages may depend on Maven APIs and must not depend on Gradle APIs.
+
+## IF-Less Development Rules
+
+The project prefers IF-Less development.
+
+This does not mean that every `if` is forbidden.
+
+It means that repeated, branching-heavy, behavior-selecting logic should be replaced by explicit structures.
+
+Prefer:
+
+- strategy pattern,
+- polymorphism,
+- enum-to-strategy maps,
+- lookup tables,
+- immutable configuration objects,
+- declarative rule registration,
+- command objects,
+- value-object behavior,
+- pipeline stages with explicit contracts.
+
+Avoid:
+
+- long `if / else if / else` chains,
+- duplicated branch conditions,
+- type-code branching,
+- mode flags controlling large behavior blocks,
+- switch statements that duplicate strategy dispatch,
+- boolean parameters that change method meaning.
+
+Acceptable uses of `if`:
+
+- guard clauses,
+- null validation,
+- boundary checks,
+- error handling,
+- simple fail-fast preconditions,
+- direct translation of a domain rule when clearer than abstraction.
+
+When replacing conditionals, do not over-engineer.
+
+The smallest understandable design wins.
+
+## Declarative Programming Preference
+
+Prefer declarative configuration and explicit wiring over implicit control flow.
+
+Good examples:
+
+- analysis pipeline definitions,
+- strategy registries,
+- explicit event mappings,
+- graph schema constants,
+- immutable request objects,
+- explicit replay stage wiring,
+- prompt template registries,
+- ArchUnit rules that document boundaries
+- test fixtures that describe scenarios.
+
+Avoid:
+
+- hidden conventions,
+- implicit stringly-typed behavior,
+- magic method names,
+- reflection-based wiring unless explicitly justified,
+- undocumented fallback behavior,
+- side effects hidden in constructors.
+
+Declarative code must remain readable.
+
+Do not replace simple code with abstract DSL-like structures unless it improves maintainability.
+
+## Testing Rules
+
+The project uses JUnit 5 and may use ArchUnit, JaCoCo, TestKit, integration tests, and fixture-based replay tests.
+
+### Regression-First Workflow
+
+When fixing a bug:
+
+1. Write or update a failing test that reproduces the bug.
+2. Verify that the test fails for the expected reason when practical.
+3. Implement the smallest fix.
+4. Run the targeted test.
+5. Run the quality gate.
+
+If writing a regression test is not practical, explain why in the final report.
+
+### Test Placement Guide
+
+Place tests according to the affected production code.
+
+Examples:
+
+```text
+src/main/java/**/domain/**
+-> src/test/java/**/domain/**
+
+src/main/java/**/application/**
+-> src/test/java/**/application/**
+
+src/main/java/**/adapter/**
+-> src/test/java/**/adapter/**
+
+src/main/java/**/infrastructure/**
+-> src/test/java/**/infrastructure/**
+
+src/main/java/**/runtime/**
+-> src/test/java/**/runtime/**
+```
+
+Architecture rules belong under a quality-related test package such as:
+
+```text
+src/test/java/**/quality
+```
+
+SOLID-related quality tests belong under a package such as:
+
+```text
+src/test/java/**/quality/solid
+```
+
+### Unit Tests
+
+Unit tests must:
+
+- test behavior, not implementation details,
+- use descriptive names,
+- avoid brittle assertions,
+- avoid dependence on test execution order,
+- use temporary directories for filesystem output,
+- avoid writing to repository files,
+- avoid requiring external services,
+- keep fixtures small and explicit.
+
+### Integration Tests
+
+Integration tests are appropriate when verifying:
+
+- source ingestion,
+- runtime trace ingestion,
+- graph persistence,
+- replay reconstruction,
+- report generation,
+- build-tool adapters,
+- importer/exporter round trips,
+- schema migrations.
+
+Integration tests must not require external services unless explicitly documented and isolated.
+
+### LLM Tests
+
+LLM-related tests must not require live provider access by default.
+
+Prefer:
+
+- fake LLM clients,
+- captured prompt assertions,
+- structured response fixtures,
+- contract tests for prompt input construction,
+- tests that verify evidence is not overwritten by generated hypotheses.
+
+### ArchUnit Tests
+
+Architecture-sensitive changes should be protected with ArchUnit tests.
+
+Use ArchUnit to enforce:
+
+- domain independence,
+- application independence from infrastructure,
+- forbidden dependencies,
+- package boundaries,
+- adapter dependency direction,
+- build-tool adapter isolation,
+- LLM provider isolation,
+- graph provider isolation.
+
+Do not weaken ArchUnit rules to make a change pass.
+
+If a rule is wrong, explain why and update the rule with a dedicated justification.
+
+### Coverage
+
+JaCoCo is part of the repository quality setup where configured.
+
+Do not lower coverage thresholds to make a task pass.
+
+Do not exclude production code from coverage unless the task explicitly requires it and the exclusion is justified.
+
+## Documentation Rules
+
+Documentation must stay aligned with source code.
+
+When changing public API, analysis workflows, graph schema, replay behavior, generated outputs, runtime event fields, report format, plugin configuration, or examples, inspect and update relevant documentation.
+
+Relevant documentation may include:
+
+- `README.md`,
+- `QUALITY.md`,
+- `AGENTS.md`,
+- ADRs,
+- workflow documents,
+- example files,
+- schema documentation,
+- report format documentation,
+- CI documentation,
+- commit prompt documents.
+
+Do not update documentation based on assumptions.
+
+Verify documented method names, task names, plugin IDs, paths, commands, event fields, graph labels, schema fields, and output locations from source.
+
+## Documentation Ownership
+
+`AGENTS.md` is the primary source of truth for agent behavior, architecture boundaries, coding rules, test-placement rules, and safety rules.
+
+Other documents, including commit prompts and task prompts, may summarize these rules, but they must not redefine them independently.
+
+If a conflict exists between `AGENTS.md` and another prompt document, `AGENTS.md` wins unless the task explicitly states otherwise.
+
+Commit prompts should reference `AGENTS.md` instead of duplicating architecture definitions.
+
+This avoids rule drift between automation instructions and repository-level engineering rules.
+
+## Diagram and Visualization Rules
+
+Diagram generation is an output adapter concern.
+
+Visualization code must:
+
+- consume explicit graph or analysis models,
+- preserve evidence distinctions,
+- generate deterministic output,
+- keep renderer-specific logic outside domain and application,
+- be optional unless the project explicitly requires it.
+
+If PUML generation has been removed or is being removed, do not reintroduce PlantUML dependencies, PUML files, PUML tasks, or PUML documentation unless explicitly requested.
+
+If a diagram renderer is changed, verify:
+
+- output file location,
+- deterministic ordering,
+- graph size handling,
+- tests or snapshots where available,
+- documentation alignment.
+
+## Security and Data Protection Rules
+
+Forensic Analytics may process sensitive source code, runtime traces, stack traces, logs, and business data.
+
+Agents must:
+
+- avoid logging secrets,
+- avoid committing credentials,
+- avoid sending secrets to LLM providers,
+- avoid storing unnecessary personal data,
+- keep raw evidence access explicit,
+- respect `.gitignore` and local artifact boundaries,
+- avoid committing generated trace data unless explicitly requested.
+
+Do not add dependencies that introduce network calls, telemetry, or external service access without explicit justification.
+
+## Dependency Rules
+
+Dependencies must be treated carefully.
+
+Do not add dependencies unless explicitly required.
+
+Before adding a dependency, verify:
+
+- why it is needed,
+- whether the JDK or existing dependencies already provide the required capability,
+- whether it affects plugin consumers,
+- whether it affects runtime footprint,
+- whether it introduces logging providers,
+- whether it introduces external service communication,
+- whether it conflicts with the existing dependency strategy.
+
+The project should avoid bundling concrete logging providers unless explicitly required.
+
+Do not introduce logging bindings such as:
+
+- `logback-classic`,
+- `slf4j-log4j12`,
+- `slf4j-reload4j`,
+
+unless the task explicitly requires it and the impact is documented.
+
+## Version Rules
+
+Use the configured project baseline.
+
+Do not upgrade Java, Gradle, plugins, dependencies, JaCoCo, SonarQube plugin, graph database clients, LLM SDKs, or publishing plugins unless the task explicitly asks for it.
+
+Do not change dependency versions as part of unrelated fixes.
+
+## Source Code Style
+
+Java source code must:
+
+- use English comments,
+- use English JavaDoc,
+- use clear method names,
+- prefer immutable data where practical,
+- avoid unnecessary setters,
+- avoid static mutable state,
+- avoid hidden side effects,
+- keep classes focused,
+- keep public APIs stable unless explicitly changed.
+
+Avoid:
+
+- unrelated formatting,
+- large methods,
+- mixed abstraction levels,
+- broad catch blocks without purpose,
+- swallowing exceptions,
+- null-heavy APIs where value objects would be clearer,
+- stringly-typed dispatch when typed models are available.
+
+## Error Handling Rules
+
+Errors must be explicit and useful.
+
+Prefer:
+
+- fail-fast validation,
+- descriptive exception messages,
+- preserving original causes,
+- narrow exception handling,
+- explicit fallback behavior only when documented,
+- explicit unresolved states for incomplete evidence.
+
+Avoid:
+
+- silent fallback,
+- catching `Exception` without clear purpose,
+- returning null to signal failures,
+- hiding parser, ingestion, graph, replay, rendering, or LLM failures,
+- ignoring file write failures,
+- converting inconsistent evidence into a successful replay without a warning.
+
+## Public API and Schema Rules
+
+Public API and schema changes require extra care.
+
+Before changing public API or schema, inspect:
+
+- interface declarations,
+- implementations,
+- examples,
+- README snippets,
+- tests,
+- JSON schemas,
+- database migrations,
+- graph labels and properties,
+- runtime helper usage,
+- report consumers,
+- build-tool usage.
+
+If a public API method, event field, graph label, table column, or JSON property is renamed, update all verified callers, fixtures, tests, examples, and documentation.
+
+Do not assume matching names across layers.
+
+## File Writing Rules
+
+File-writing adapters and tasks must:
+
+- create parent directories where needed,
+- write deterministic output,
+- avoid partially written files where practical,
+- use declared Gradle outputs when invoked from Gradle tasks,
+- avoid writing outside configured output locations,
+- avoid writing raw sensitive evidence into repository paths unless explicitly requested.
+
+Do not write to source directories unless explicitly requested.
+
+## Logging Rules
+
+Logging must be useful but not noisy.
+
+Logging code must:
+
+- avoid introducing concrete logging providers,
+- avoid leaking secrets,
+- avoid excessive logs in normal test output,
+- preserve useful diagnostics for failures,
+- keep build logging behind build-tool logging adapters where appropriate,
+- keep runtime evidence output separate from application logs.
+
+Runtime trace output must remain separate from build logging concerns.
+
+## Commit Rules
+
+A commit must be clearly documented:
+
+1. what was changed,
+2. why it was changed,
+3. how it was changed,
+4. which files or components were affected,
+5. whether bugs were fixed,
+6. whether new features were introduced,
+7. whether refactoring, cleanup, structural, or architectural changes were made,
+8. whether tests were added or adjusted,
+9. whether any breaking or behavior-relevant changes exist,
+10. which verification commands were executed.
+
+Do not create vague commit messages.
+
+Do not commit generated build output, local trace data, local database files, IDE metadata, `.gradle`, `build`, temporary files, or unrelated local files unless explicitly required.
+
+## Required Git Inspection Before Commit
+
+Before creating a commit, inspect:
+
+```bash
+git status
+git diff
+git diff --cached
+```
+
+If staged and unstaged changes both exist, inspect them separately.
+
+Do not commit files that are unrelated to the task.
+
+If unexpected changes exist, stop and report.
+
+## Final Report Requirements
+
+At the end of every task, report:
+
+1. files changed,
+2. main changes made,
+3. tests or verification commands executed,
+4. commands that failed, if any
+5. quality gate result,
+6. known limitations,
+7. remaining blockers, if any.
+
+Do not claim success for unexecuted verification.
+
+If no files were changed, say so explicitly.
+
+## Definition of Done
+
+A task is done only when:
+
+- the requested change was implemented,
+- the change follows this `AGENTS.md`,
+- no speculative changes were introduced,
+- forensic evidence semantics were preserved,
+- the uncertainty remains explicit,
+- relevant tests were added or updated when needed,
+- the narrowest meaningful verification was executed,
+- the quality gate from `QUALITY.md` was executed or a clear reason was reported,
+- documentation was updated when public behavior changed,
+- examples were kept consistent with public API,
+- the final report is accurate.
+
+## Forbidden Actions
+
+Agents must not:
+
+- guess missing names,
+- invent Gradle tasks,
+- reference undocumented quality mechanisms,
+- fabricate forensic evidence,
+- treat LLM output as verified evidence,
+- silently rename side-effect symbols,
+- add compatibility wrappers without request,
+- weaken tests to make a build pass,
+- lower coverage thresholds without request,
+- remove architecture rules without justification,
+- introduce framework dependencies into domain code,
+- introduce Gradle or Maven dependencies into application or domain code,
+- leak graph database APIs into domain or application code,
+- leak LLM provider APIs into domain or application code,
+- perform broad package migrations without request,
+- change Java or Gradle baseline without request,
+- reintroduce removed PUML generation without request,
+- commit unrelated files,
+- claim verification passed without executing it.
