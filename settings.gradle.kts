@@ -22,6 +22,7 @@ include(
     "forensic-analytics-domain",
     "forensic-analytics-application",
     "forensic-analytics-engine",
+    "forensic-analytics-adapter-joern-docker",
     "forensic-analytics-persistence",
     "forensic-analytics-ingestion-grpc",
     "forensic-analytics-bootstrap",
