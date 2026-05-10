@@ -1,32 +1,36 @@
 package de.burger.forensics.analytics.engine;
 
+import de.burger.forensics.analytics.domain.analysis.AnalysisRunId;
+import de.burger.forensics.analytics.domain.repository.RepositoryMetadata;
+import de.burger.forensics.analytics.domain.source.SourceFact;
+
 import java.util.List;
 import java.util.Objects;
 
 public record RepositoryAnalysisResult(
-    String analysisId,
-    String repositoryLocation,
+    AnalysisRunId analysisRunId,
+    RepositoryMetadata repositoryMetadata,
     String analysisProfile,
     RepositoryAnalysisStatus status,
     List<SourceFact> sourceFacts
 ) {
     public RepositoryAnalysisResult {
-        Objects.requireNonNull(analysisId, "analysisId must not be null");
-        Objects.requireNonNull(repositoryLocation, "repositoryLocation must not be null");
+        Objects.requireNonNull(analysisRunId, "analysisRunId must not be null");
+        Objects.requireNonNull(repositoryMetadata, "repositoryMetadata must not be null");
         Objects.requireNonNull(analysisProfile, "analysisProfile must not be null");
         Objects.requireNonNull(status, "status must not be null");
         sourceFacts = List.copyOf(Objects.requireNonNull(sourceFacts, "sourceFacts must not be null"));
     }
 
     public static RepositoryAnalysisResult completed(
-        String analysisId,
-        String repositoryLocation,
+        AnalysisRunId analysisRunId,
+        RepositoryMetadata repositoryMetadata,
         String analysisProfile,
         List<SourceFact> sourceFacts
     ) {
         return new RepositoryAnalysisResult(
-            analysisId,
-            repositoryLocation,
+            analysisRunId,
+            repositoryMetadata,
             analysisProfile,
             RepositoryAnalysisStatus.COMPLETED,
             sourceFacts
