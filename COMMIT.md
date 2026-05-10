@@ -72,7 +72,7 @@ Rules:
 
 ### Java and Gradle
 
-- Use **Java 17** as the project baseline unless the repository-level documents explicitly state otherwise.
+- Use **Java 25** as the project baseline unless the repository-level documents explicitly state otherwise.
 - Use the project Gradle wrapper if available.
 - Verify the wrapper version with `./gradlew --version`.
 - Do not upgrade Gradle, Java, plugins, or dependencies unless the current task explicitly requires it.
@@ -251,7 +251,7 @@ Important components may include:
 
 Expected test concerns may include:
 
-- JUnit 5 tests
+- JUnit 6 tests
 - ArchUnit tests
 - SOLID heuristic tests
 - Gradle TestKit tests
@@ -415,7 +415,7 @@ java -version
 
 Rules:
 
-- Java must be Java 17 unless the repository-level rules explicitly define a different baseline.
+- Java must be Java 25 unless the repository-level rules explicitly define a different baseline.
 - Use the Gradle wrapper.
 - Do not replace the wrapper.
 - Do not upgrade dependencies as part of commit preparation.
@@ -671,7 +671,7 @@ Expected baseline logic for this project:
 AGENTS.md                         = agent rules / highest local instruction precedence
 QUALITY.md                        = binding quality contract
 .github/workflows                 = CI alignment source
-Java 17                           = baseline unless repository documents otherwise
+Java 25                           = baseline unless repository documents otherwise
 Gradle wrapper                    = required build entry point
 ./gradlew test                    = expected documented minimum quality command
 ./gradlew clean check jacocoTestReport --console=plain --stacktrace

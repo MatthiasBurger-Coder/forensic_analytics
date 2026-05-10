@@ -1,6 +1,8 @@
 package de.burger.forensics.analytics.application.ingestion;
 
 public final class IngestionSessionException extends RuntimeException {
+    private static final long serialVersionUID = 1L;
+
     private IngestionSessionException(String message) {
         super(message);
     }

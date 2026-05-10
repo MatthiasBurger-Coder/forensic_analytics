@@ -1,10 +1,12 @@
 # Workflow: Migrate the Full System to Java 25 and JUnit 6
 
-**Status:** Draft
+**Status:** Executed
 **Target branch:** `feature/java25-junit6-migration`
 **Scope:** Full repository migration from Java 17 / JUnit 5 to Java 25 / JUnit 6
 **Repository:** `forensics_tracing`
 **Execution model:** Slice-based Codex workflow with strict verification after every slice
+
+Historical note: Java 17 and JUnit 5 references in this workflow describe the baseline being migrated away from, not the active repository baseline after this workflow has been executed.
 
 ---
 

@@ -17,29 +17,46 @@ allprojects {
 val coverageExcludes = listOf(
     "de/burger/forensics/analytics/ingestion/v1/**",
 )
+val javaBaseline = 25
 val junitBom = libs.junit.bom
-val archUnitJunit5 = libs.archunit.junit5
+val junitJupiter = libs.junit.jupiter
+val junitPlatformLauncher = libs.junit.platform.launcher
+val archUnitJunitSupport = libs.archunit.junit5
 val jacocoVersion = libs.versions.jacoco
 
 subprojects {
     apply(plugin = "java")
     apply(plugin = "jacoco")
 
+    val java25Launcher = extensions.getByType<JavaToolchainService>().launcherFor {
+        languageVersion.set(JavaLanguageVersion.of(javaBaseline))
+    }
+
     extensions.configure<JavaPluginExtension> {
         toolchain {
-            languageVersion.set(JavaLanguageVersion.of(17))
+            languageVersion.set(JavaLanguageVersion.of(javaBaseline))
         }
+        sourceCompatibility = JavaVersion.toVersion(javaBaseline)
+        targetCompatibility = JavaVersion.toVersion(javaBaseline)
+        withSourcesJar()
     }
 
     dependencies {
         add("testImplementation", platform(junitBom))
-        add("testImplementation", "org.junit.jupiter:junit-jupiter")
-        add("testRuntimeOnly", "org.junit.platform:junit-platform-launcher")
-        add("testImplementation", archUnitJunit5)
+        add("testImplementation", junitJupiter)
+        add("testRuntimeOnly", junitPlatformLauncher)
+        add("testImplementation", archUnitJunitSupport)
+    }
+
+    tasks.withType<JavaCompile>().configureEach {
+        options.encoding = "UTF-8"
+        options.release.set(javaBaseline)
+        options.compilerArgs.addAll(listOf("-Xlint:all"))
     }
 
     tasks.withType<Test>().configureEach {
         useJUnitPlatform()
+        javaLauncher.set(java25Launcher)
     }
 
     extensions.configure<JacocoPluginExtension> {

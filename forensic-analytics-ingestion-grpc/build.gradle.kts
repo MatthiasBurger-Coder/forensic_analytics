@@ -1,15 +1,15 @@
 plugins {
-    java
+    `java-library`
     alias(libs.plugins.protobuf)
 }
 
 dependencies {
-    implementation(project(":forensic-analytics-application"))
+    api(project(":forensic-analytics-application"))
 
     implementation(libs.grpc.netty.shaded)
-    implementation(libs.grpc.protobuf)
-    implementation(libs.grpc.stub)
-    implementation(libs.protobuf.java)
+    api(libs.grpc.protobuf)
+    api(libs.grpc.stub)
+    api(libs.protobuf.java)
     compileOnly(libs.javax.annotation.api)
 
     testImplementation(libs.grpc.inprocess)
