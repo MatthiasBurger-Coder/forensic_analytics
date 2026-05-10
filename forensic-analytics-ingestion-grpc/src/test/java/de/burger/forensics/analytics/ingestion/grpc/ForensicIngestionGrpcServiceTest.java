@@ -14,6 +14,8 @@ import de.burger.forensics.analytics.application.ingestion.result.StartAnalysisS
 import de.burger.forensics.analytics.application.ingestion.result.UploadAnalysisDataResult;
 import de.burger.forensics.analytics.ingestion.v1.AbortAnalysisSessionRequest;
 import de.burger.forensics.analytics.ingestion.v1.AnalysisDataEnvelope;
+import de.burger.forensics.analytics.ingestion.v1.AnalysisPayloadDescriptor;
+import de.burger.forensics.analytics.ingestion.v1.AnalysisPayloadKind;
 import de.burger.forensics.analytics.ingestion.v1.BuildIdentity;
 import de.burger.forensics.analytics.ingestion.v1.CompleteAnalysisSessionRequest;
 import de.burger.forensics.analytics.ingestion.v1.ForensicIngestionServiceGrpc;
@@ -110,14 +112,18 @@ class ForensicIngestionGrpcServiceTest {
         assertEquals("session-1", response.getSessionId());
         assertEquals(2, response.getReceivedItems());
         assertEquals(2, useCase.uploadCount);
+        assertEquals(
+            de.burger.forensics.analytics.domain.ingestion.AnalysisPayloadKind.SOURCE_FACTS,
+            useCase.lastUpload.payloadDescriptor().kind()
+        );
     }
 
     @Test
-    void uploadAnalysisDataRejectsEmptyPayloadType() throws Exception {
+    void uploadAnalysisDataRejectsMissingPayloadDescriptor() throws Exception {
         var responseObserver = new RecordingStreamObserver<UploadAnalysisDataResponse>();
         StreamObserver<AnalysisDataEnvelope> requestObserver = asyncStub.uploadAnalysisData(responseObserver);
 
-        requestObserver.onNext(envelope("session-1", ""));
+        requestObserver.onNext(envelope("session-1", "payload-a").toBuilder().clearPayloadDescriptor().build());
 
         assertTrue(responseObserver.awaitCompletion(5, TimeUnit.SECONDS));
         assertEquals(Status.Code.INVALID_ARGUMENT, Status.fromThrowable(responseObserver.getError()).getCode());
@@ -129,7 +135,7 @@ class ForensicIngestionGrpcServiceTest {
         StreamObserver<AnalysisDataEnvelope> requestObserver =
             new ForensicIngestionGrpcService(useCase).uploadAnalysisData(responseObserver);
 
-        requestObserver.onNext(envelope("session-1", ""));
+        requestObserver.onNext(envelope("session-1", "payload-a").toBuilder().clearPayloadDescriptor().build());
         requestObserver.onNext(envelope("session-1", "payload-a"));
         requestObserver.onCompleted();
         requestObserver.onError(new IllegalStateException("client stream already closed"));
@@ -218,7 +224,7 @@ class ForensicIngestionGrpcServiceTest {
             .build();
     }
 
-    private AnalysisDataEnvelope envelope(String sessionId, String payloadType) {
+    private AnalysisDataEnvelope envelope(String sessionId, String payloadId) {
         return AnalysisDataEnvelope.newBuilder()
             .setSessionId(sessionId)
             .setBuildIdentity(validBuildIdentity())
@@ -227,8 +233,17 @@ class ForensicIngestionGrpcServiceTest {
                 .setModulePath(":module-a"))
             .setPluginIdentity(validPluginIdentity())
             .setSchemaVersion("schema-v1")
-            .setPayloadType(payloadType)
+            .setPayloadDescriptor(payloadDescriptor(payloadId))
             .setPayload(ByteString.copyFromUtf8("{}"))
+            .build();
+    }
+
+    private AnalysisPayloadDescriptor payloadDescriptor(String payloadId) {
+        return AnalysisPayloadDescriptor.newBuilder()
+            .setPayloadId(payloadId)
+            .setKind(AnalysisPayloadKind.ANALYSIS_PAYLOAD_KIND_SOURCE_FACTS)
+            .setContentType("application/json")
+            .putAttributes("schema", "source-facts-v1")
             .build();
     }
 
@@ -252,6 +267,7 @@ class ForensicIngestionGrpcServiceTest {
 
     private static final class FakeIngestionUseCase implements ForensicIngestionUseCase {
         private int uploadCount;
+        private UploadAnalysisDataCommand lastUpload;
 
         @Override
         public StartAnalysisSessionResult start(StartAnalysisSessionCommand command) {
@@ -261,6 +277,7 @@ class ForensicIngestionGrpcServiceTest {
         @Override
         public UploadAnalysisDataResult upload(UploadAnalysisDataCommand command) {
             uploadCount++;
+            lastUpload = command;
             return new UploadAnalysisDataResult(command.sessionId(), IngestionStatus.ACCEPTED, uploadCount, "accepted");
         }
 

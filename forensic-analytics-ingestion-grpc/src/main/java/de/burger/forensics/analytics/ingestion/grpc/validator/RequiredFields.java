@@ -17,4 +17,10 @@ final class RequiredFields {
             throw new ValidationException(fieldName + " must not be empty");
         }
     }
+
+    static void present(boolean value, String fieldName) {
+        if (!value) {
+            throw new ValidationException(fieldName + " must be present");
+        }
+    }
 }

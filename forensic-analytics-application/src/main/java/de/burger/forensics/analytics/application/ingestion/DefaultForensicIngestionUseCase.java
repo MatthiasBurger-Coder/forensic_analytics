@@ -45,7 +45,7 @@ public final class DefaultForensicIngestionUseCase implements ForensicIngestionU
             command.sessionId(),
             command.moduleIdentity().moduleName(),
             command.schemaVersion(),
-            command.payloadType(),
+            command.payloadDescriptor(),
             command.payload()
         );
 

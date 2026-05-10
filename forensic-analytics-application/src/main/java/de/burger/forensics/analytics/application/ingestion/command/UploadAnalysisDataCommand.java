@@ -1,5 +1,7 @@
 package de.burger.forensics.analytics.application.ingestion.command;
 
+import de.burger.forensics.analytics.domain.ingestion.AnalysisPayloadDescriptor;
+
 import java.util.Arrays;
 import java.util.Objects;
 
@@ -9,7 +11,7 @@ public record UploadAnalysisDataCommand(
     ModuleIdentityCommand moduleIdentity,
     PluginIdentityCommand pluginIdentity,
     String schemaVersion,
-    String payloadType,
+    AnalysisPayloadDescriptor payloadDescriptor,
     byte[] payload
 ) {
     public UploadAnalysisDataCommand {
@@ -18,7 +20,7 @@ public record UploadAnalysisDataCommand(
         Objects.requireNonNull(moduleIdentity, "moduleIdentity must not be null");
         Objects.requireNonNull(pluginIdentity, "pluginIdentity must not be null");
         Objects.requireNonNull(schemaVersion, "schemaVersion must not be null");
-        Objects.requireNonNull(payloadType, "payloadType must not be null");
+        Objects.requireNonNull(payloadDescriptor, "payloadDescriptor must not be null");
         Objects.requireNonNull(payload, "payload must not be null");
         payload = Arrays.copyOf(payload, payload.length);
     }

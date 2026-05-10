@@ -6,6 +6,7 @@ plugins {
 dependencies {
     api(project(":forensic-analytics-application"))
 
+    implementation(project(":forensic-analytics-domain"))
     implementation(libs.grpc.netty.shaded)
     api(libs.grpc.protobuf)
     api(libs.grpc.stub)
