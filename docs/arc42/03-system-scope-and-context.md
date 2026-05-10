@@ -13,6 +13,7 @@ Forensics UI / API
         v
 Forensics Platform
         |
+        +--> Plugin gRPC Ingestion
         +--> Gradle Plugin
         +--> Maven Plugin
         +--> Joern Adapter
@@ -27,6 +28,7 @@ Forensics Platform
 
 | External System | Direction | Purpose |
 |---|---:|---|
+| Plugin gRPC Client | inbound | Sends session-based plugin analysis uploads to the gRPC ingestion adapter |
 | Gradle Plugin | inbound | Provides build context, source roots, AST facts and rule bindings |
 | Maven Plugin | inbound | Provides Maven build context and facts |
 | Joern | inbound/outbound | Provides semantic code analysis, data-flow and control-flow information |
@@ -59,3 +61,16 @@ Incident Context Package
         v
 LLM Root-Cause Analysis
 ```
+
+## 3.4 gRPC Ingestion Context
+
+```text
+Plugin
+  -> gRPC Client
+    -> forensic-analytics-ingestion-grpc
+      -> ForensicIngestionUseCase
+        -> IngestionSessionRepository Port
+          -> Persistence Adapter
+```
+
+The gRPC ingestion module is an inbound adapter. It does not own persistence, Joern integration, replay logic, LLM logic or the final plugin payload schema.

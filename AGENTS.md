@@ -12,11 +12,11 @@ Agents must follow this document before modifying code, tests, build logic, exam
 
 The project baseline is:
 
-- Java 17 unless the repository build explicitly defines a stricter compatible baseline
+- Java 25 unless the repository build explicitly defines a stricter compatible baseline
 - Gradle via the project wrapper
-- JUnit 5
+- JUnit 6
 - ArchUnit where architecture rules are available
-- JaCoCo where coverage verification is configured
+- Java 25-compatible JaCoCo where coverage verification is configured
 - SonarQube / SonarCloud related checks where configured
 - Hexagonal architecture
 - Evidence-first forensic analysis
@@ -230,13 +230,13 @@ The full local quality gate must be read from `QUALITY.md` and verified against 
 If the repository uses the same quality gate as the tracing toolkit baseline, the full local gate is:
 
 ```bash
-./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --console=plain --stacktrace
+./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace
 ```
 
 When plugin metadata, Gradle task inputs, task outputs, or plugin implementation classes are changed, also run:
 
 ```bash
-./gradlew validatePlugins
+./gradlew validatePlugins --dependency-verification strict --no-daemon --console=plain --stacktrace
 ```
 
 When general build health is relevant, this diagnostic run may be useful:
@@ -733,7 +733,7 @@ Do not replace simple code with abstract DSL-like structures unless it improves 
 
 ## Testing Rules
 
-The project uses JUnit 5 and may use ArchUnit, JaCoCo, TestKit, integration tests, and fixture-based replay tests.
+The project uses JUnit 6 and may use ArchUnit, Java 25-compatible JaCoCo, TestKit, integration tests, and fixture-based replay tests.
 
 ### Regression-First Workflow
 

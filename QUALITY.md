@@ -16,11 +16,11 @@ Use `.\gradlew.bat` on Windows PowerShell and `./gradlew` on Unix-like shells.
 
 The project baseline is:
 
-- Java 17
+- Java 25
 - Gradle 9.4.0
-- JUnit 5
+- JUnit 6
 - ArchUnit
-- JaCoCo
+- Java 25-compatible JaCoCo
 - SonarQube / SonarCloud related quality checks
 - Gradle Dependency Verification in strict mode
 - Hexagonal architecture
@@ -68,7 +68,7 @@ Run the documented minimum verification command before broader validation:
 ./gradlew test --dependency-verification strict --console=plain --stacktrace
 ```
 
-This runs the full test suite, including JUnit 5 tests, ArchUnit checks, and SOLID-oriented quality tests when they are present in the repository.
+This runs the full test suite with the Java 25 toolchain and JUnit 6 test runtime, including ArchUnit checks and SOLID-oriented quality tests when they are present in the repository.
 
 Gradle Dependency Verification must remain enabled in strict mode.
 

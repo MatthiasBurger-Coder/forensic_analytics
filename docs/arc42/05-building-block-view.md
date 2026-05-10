@@ -6,6 +6,7 @@
 Forensics Platform
 ├── Application Core
 ├── Canonical Analysis Model
+├── gRPC Ingestion Adapter
 ├── Analysis Import
 ├── Rule Planning
 ├── Runtime Event Processing
@@ -32,6 +33,7 @@ Forensics Platform
 | Building Block | Responsibility |
 |---|---|
 | Canonical Analysis Model | Owns stable IDs and normalized facts |
+| gRPC Ingestion Adapter | Receives session-based plugin analysis uploads and maps transport DTOs to application commands |
 | Static Fact Import | Imports AST, build and dependency facts |
 | Joern Semantic Import | Imports and maps Joern semantic facts |
 | Rule Planner | Plans instrumentation rules based on facts and policies |
@@ -51,8 +53,20 @@ Forensics Platform
 | Domain | IDs, analysis model, incident model, replay model, rule plan |
 | Application | Import use cases, replay use cases, diagnosis use cases |
 | Ports | Fact import port, event store port, graph port, LLM port, rule generation port |
-| Adapters | Gradle, Maven, Joern, Byteman, relational DB, graph DB, vector DB, LLM provider |
+| Adapters | gRPC ingestion, Gradle, Maven, Joern, Byteman, relational DB, graph DB, vector DB, LLM provider |
 
 ## 5.4 Important Boundary
 
 Gradle and Maven plugins must not become the central platform. They provide raw facts, build context, source roots, classpath information and integration points only.
+
+## 5.5 gRPC Ingestion Boundary
+
+`forensic-analytics-ingestion-grpc` is an inbound adapter. It may depend on generated Protobuf/gRPC classes and the application layer. It must not depend on persistence adapters, Joern, replay, LLM providers or plugin internals.
+
+The adapter maps:
+
+```text
+Proto DTO
+  -> Application Command
+    -> Application Use Case
+```

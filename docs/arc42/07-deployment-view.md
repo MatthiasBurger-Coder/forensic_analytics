@@ -22,6 +22,7 @@ Developer Machine / CI Environment
 Forensics Platform Environment
 ├── Forensics API
 ├── Forensics UI
+├── gRPC Ingestion Server
 ├── Relational Store
 ├── Graph DB
 ├── Vector DB
@@ -37,3 +38,19 @@ Forensics Platform Environment
 - Runtime event ingestion may initially use JSONL files.
 - HTTP collector support can be introduced later.
 - Multi-tenant production deployment is out of MVP scope.
+
+## 7.4 gRPC Ingestion Configuration
+
+The bootstrap module can start the gRPC ingestion server. The default port is `9090`.
+
+```properties
+forensics.analytics.ingestion.grpc.enabled=true
+forensics.analytics.ingestion.grpc.port=9090
+```
+
+Environment variable equivalents:
+
+```text
+FORENSICS_ANALYTICS_INGESTION_GRPC_ENABLED=true
+FORENSICS_ANALYTICS_INGESTION_GRPC_PORT=9090
+```

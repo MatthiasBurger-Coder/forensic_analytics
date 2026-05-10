@@ -1,881 +1,894 @@
-# Workflow: Eigenes gRPC-Ingestion-Modul für `forensic_analytics` anlegen
+# Workflow: Migrate the Full System to Java 25 and JUnit 6
 
-**Status:** Draft
-**Projekt:** forensic_analytics
-**Kontext:** Multi-Projekt-Monorepo
-**Ziel:** Eigenes Modul bereitstellen, das Analyse-/Scan-Daten vom Plugin per gRPC entgegennimmt
-**Architektur:** Hexagonale Architektur, gRPC als Inbound Adapter
-**Wichtig:** Die finale Datenstruktur des Plugin-Payloads wird separat festgelegt und ist nicht Teil dieses Workflows.
+**Status:** Executed
+**Target branch:** `feature/java25-junit6-migration`
+**Scope:** Full repository migration from Java 17 / JUnit 5 to Java 25 / JUnit 6
+**Repository:** `forensics_tracing`
+**Execution model:** Slice-based Codex workflow with strict verification after every slice
 
----
-
-## 1. Zielbild
-
-Der erste technische Schritt für die Kommunikation zwischen Plugin und `forensic_analytics` ist ein eigenes gRPC-Ingestion-Modul.
-
-Dieses Modul stellt einen gRPC-Service bereit, über den das Plugin später seine Analyse-/Scan-Daten an die zentrale Plattform sendet.
-
-```text
-Plugin
-  -> gRPC Client
-    -> forensic-analytics-ingestion-grpc
-      -> Application Use Case
-        -> Persistence Port
-          -> Persistence Adapter
-```
-
-Das neue Modul ist ein reiner **Inbound Adapter**. Es empfängt Daten, validiert den Transportkontext, mappt Protobuf-DTOs auf Application Commands und ruft den Application-Layer auf.
+Historical note: Java 17 and JUnit 5 references in this workflow describe the baseline being migrated away from, not the active repository baseline after this workflow has been executed.
 
 ---
 
-## 2. Nicht-Ziele dieses Workflows
+## 1. Goal
 
-Dieser Workflow soll ausdrücklich **nicht** folgende Themen implementieren:
-
-```text
-- finale Plugin-Datenstruktur festlegen
-- Joern integrieren
-- Code Property Graph erzeugen
-- Replay-Logik implementieren
-- LLM-Kontext erzeugen
-- Daten fachlich auswerten
-- direkte Datenbanklogik im gRPC-Modul implementieren
-- Plugin-Client vollständig implementieren
-- bestehende BTM-Generierung verändern
-```
-
-Das Ziel ist nur die technische Grundlage:
+Migrate the complete Forensics Tracing system to:
 
 ```text
-forensic_analytics kann gRPC-Daten vom Plugin empfangen.
+Java baseline: 25
+JUnit baseline: 6.x stable
+Gradle execution: Java 25-compatible
+Test execution: Java 25 toolchain
+Coverage: Java 25-compatible JaCoCo
+Runtime weaving: Java 25-compatible AspectJ Weaver
+Mocking: Java 25-compatible Mockito / Byte Buddy
+Repository documentation: Java 25 / JUnit 6 aligned
+CI: Java 25 aligned
+Dependency verification: updated and strict
 ```
+
+This is a breaking baseline change. After this migration, the project must no longer claim Java 17 or JUnit 5 as its active project baseline.
 
 ---
 
-## 3. Gewünschte Modulstruktur
+## 2. Non-goals
 
-Falls das Monorepo bereits eine andere Namenskonvention verwendet, muss diese beibehalten werden. Nicht blind neue Konventionen einführen.
+Do **not** perform unrelated refactoring.
 
-Zielstruktur, falls noch keine verbindliche Struktur existiert:
+Do **not** rewrite production code only because Java 25 is available.
 
-```text
-forensic-analytics/
-├── forensic-analytics-domain/
-├── forensic-analytics-application/
-├── forensic-analytics-persistence/
-├── forensic-analytics-ingestion-grpc/
-├── forensic-analytics-bootstrap/
-├── settings.gradle.kts
-└── build.gradle.kts
-```
+Do **not** introduce preview features.
 
-Neues Modul:
+Do **not** add `--enable-preview` unless a later task explicitly requires preview Java language features.
 
-```text
-forensic-analytics-ingestion-grpc
-```
+Do **not** lower coverage thresholds.
 
-Verantwortung:
+Do **not** remove quality gates to make the migration pass.
 
-```text
-- gRPC Service Definition bereitstellen
-- Protobuf-Klassen generieren
-- gRPC Endpoint implementieren
-- Requests entgegennehmen
-- Transportdaten validieren
-- Protobuf DTOs auf Application Commands mappen
-- Application Use Cases aufrufen
-- gRPC Responses zurückgeben
-```
+Do **not** replace ArchUnit rules with weaker tests.
+
+Do **not** introduce hidden compatibility wrappers.
+
+Do **not** silently ignore dependency verification changes.
 
 ---
 
-## 4. Architekturregeln
+## 3. Important Migration Notes
 
-### 4.1 Modul als Inbound Adapter
+### 3.1 JUnit 6 source imports
 
-Das Modul `forensic-analytics-ingestion-grpc` ist ein Adapter nach innen.
-
-Erlaubt:
-
-```text
-forensic-analytics-ingestion-grpc
-  -> forensic-analytics-application
-  -> generated protobuf/grpc classes
-  -> gRPC runtime
-```
-
-Nicht erlaubt:
-
-```text
-forensic-analytics-ingestion-grpc
-  -> direkte Datenbankzugriffe
-  -> Joern
-  -> LLM-Komponenten
-  -> Runtime Replay
-  -> Plugin-Interna
-```
-
-### 4.2 Kein Domain Leakage
-
-Protobuf-Klassen dürfen nicht als Domain-Objekte verwendet werden.
-
-Es muss gemappt werden:
-
-```text
-Proto DTO
-  -> Application Command
-    -> Domain Model
-```
-
-### 4.3 Finale Payload-Struktur bleibt offen
-
-Da die vom Plugin gelieferte Datenstruktur separat festgelegt wird, darf dieser Workflow nur einen stabilen technischen Rahmen schaffen.
-
-Erlaubt ist ein generisches Ingestion Envelope mit minimalem Payload-Platzhalter.
-
-Beispiel:
-
-```text
-AnalysisDataEnvelope
-├── sessionId
-├── buildIdentity
-├── moduleIdentity
-├── pluginIdentity
-├── schemaVersion
-├── payloadType
-└── payloadBytes | jsonPayload | reserved placeholder
-```
-
-Die konkrete Struktur wie `ClassPayload`, `MethodPayload`, `DependencyPayload`, `GeneratedRulePayload` usw. wird später ergänzt.
-
----
-
-## 5. Vorgeschlagener gRPC-Vertrag für den ersten Slice
-
-Die konkrete Protobuf-Datei soll minimal bleiben, aber bereits session-orientiert sein.
-
-Zielservice:
-
-```proto
-syntax = "proto3";
-
-package de.burger.forensics.analytics.ingestion.v1;
-
-option java_multiple_files = true;
-option java_package = "de.burger.forensics.analytics.ingestion.v1";
-option java_outer_classname = "ForensicIngestionProto";
-
-service ForensicIngestionService {
-  rpc StartAnalysisSession(StartAnalysisSessionRequest)
-      returns (StartAnalysisSessionResponse);
-
-  rpc UploadAnalysisData(stream AnalysisDataEnvelope)
-      returns (UploadAnalysisDataResponse);
-
-  rpc CompleteAnalysisSession(CompleteAnalysisSessionRequest)
-      returns (CompleteAnalysisSessionResponse);
-
-  rpc AbortAnalysisSession(AbortAnalysisSessionRequest)
-      returns (AbortAnalysisSessionResponse);
-}
-
-message StartAnalysisSessionRequest {
-  BuildIdentity build_identity = 1;
-  PluginIdentity plugin_identity = 2;
-  string schema_version = 3;
-}
-
-message StartAnalysisSessionResponse {
-  string session_id = 1;
-  IngestionStatus status = 2;
-  string message = 3;
-}
-
-message AnalysisDataEnvelope {
-  string session_id = 1;
-  BuildIdentity build_identity = 2;
-  ModuleIdentity module_identity = 3;
-  PluginIdentity plugin_identity = 4;
-  string schema_version = 5;
-  string payload_type = 6;
-  bytes payload = 7;
-}
-
-message UploadAnalysisDataResponse {
-  string session_id = 1;
-  IngestionStatus status = 2;
-  int64 received_items = 3;
-  string message = 4;
-}
-
-message CompleteAnalysisSessionRequest {
-  string session_id = 1;
-}
-
-message CompleteAnalysisSessionResponse {
-  string session_id = 1;
-  IngestionStatus status = 2;
-  string message = 3;
-}
-
-message AbortAnalysisSessionRequest {
-  string session_id = 1;
-  string reason = 2;
-}
-
-message AbortAnalysisSessionResponse {
-  string session_id = 1;
-  IngestionStatus status = 2;
-  string message = 3;
-}
-
-message BuildIdentity {
-  string project_id = 1;
-  string repository_url = 2;
-  string branch_name = 3;
-  string commit_hash = 4;
-  string build_id = 5;
-  string scan_timestamp = 6;
-}
-
-message ModuleIdentity {
-  string module_name = 1;
-  string module_path = 2;
-}
-
-message PluginIdentity {
-  string plugin_name = 1;
-  string plugin_version = 2;
-}
-
-enum IngestionStatus {
-  INGESTION_STATUS_UNSPECIFIED = 0;
-  INGESTION_STATUS_ACCEPTED = 1;
-  INGESTION_STATUS_COMPLETED = 2;
-  INGESTION_STATUS_ABORTED = 3;
-  INGESTION_STATUS_REJECTED = 4;
-}
-```
-
-Wichtig: Dieses Proto ist nur der erste technische Rahmen. Der spätere fachliche Payload wird separat erweitert.
-
----
-
-## 6. Slice-Plan
-
-## Slice 1: Repository-Struktur prüfen
-
-### Ziel
-
-Vor Änderungen muss die bestehende Projektstruktur analysiert werden.
-
-### Aufgaben
-
-```text
-1. Prüfe vorhandene Module.
-2. Prüfe Build-System und Namenskonventionen.
-3. Prüfe vorhandene Package-Struktur.
-4. Prüfe, ob bereits application/domain/bootstrap Module existieren.
-5. Prüfe, ob bereits gRPC, Protobuf oder Spring/Netty verwendet wird.
-```
-
-### Erwartetes Ergebnis
-
-Eine kurze Analyse im Codex-Output:
-
-```text
-- Build-System erkannt: Gradle/Maven
-- vorhandene Module erkannt
-- Zielposition für neues Modul bestimmt
-- notwendige Build-Anpassungen identifiziert
-```
-
-### Stop-Regel
-
-Wenn die vorhandene Struktur nicht eindeutig ist, nicht raten. Stoppen und berichten:
-
-```text
-STOP: Existing module structure is ambiguous. Manual decision required.
-```
-
----
-
-## Slice 2: Neues Modul `forensic-analytics-ingestion-grpc` anlegen
-
-### Ziel
-
-Ein eigenes Modul für gRPC-Ingestion existiert im Monorepo.
-
-### Aufgaben bei Gradle
-
-```text
-1. Modulverzeichnis anlegen:
-   forensic-analytics-ingestion-grpc/
-
-2. Build-Datei anlegen:
-   forensic-analytics-ingestion-grpc/build.gradle.kts
-
-3. Modul in settings.gradle.kts registrieren.
-
-4. Java-Source-Sets anlegen:
-   src/main/java
-   src/main/proto
-   src/test/java
-
-5. Modulabhängigkeiten setzen:
-   - application module
-   - protobuf plugin
-   - grpc runtime
-   - test dependencies
-```
-
-### Beispielhafte Gradle-Richtung
-
-Nur verwenden, wenn es zur bestehenden Projektstruktur passt:
-
-```kotlin
-plugins {
-    java
-    id("com.google.protobuf")
-}
-
-dependencies {
-    implementation(project(":forensic-analytics-application"))
-
-    implementation("io.grpc:grpc-stub")
-    implementation("io.grpc:grpc-protobuf")
-    implementation("io.grpc:grpc-netty-shaded")
-    implementation("com.google.protobuf:protobuf-java")
-
-    testImplementation("org.junit.jupiter:junit-jupiter")
-    testImplementation("io.grpc:grpc-testing")
-}
-```
-
-Wenn das Projekt Version Catalogs verwendet, müssen die Dependencies über `libs.versions.toml` eingebunden werden.
-
-### Erwartetes Ergebnis
-
-```text
-- Modul ist registriert
-- Modul kompiliert grundsätzlich
-- Source-Sets existieren
-```
-
-### Verifikation
-
-```bash
-./gradlew projects
-./gradlew :forensic-analytics-ingestion-grpc:compileJava
-```
-
----
-
-## Slice 3: Protobuf-Datei anlegen
-
-### Ziel
-
-Der gRPC-Vertrag für den ersten technischen Ingestion-Rahmen existiert.
-
-### Aufgaben
-
-```text
-1. Datei anlegen:
-   forensic-analytics-ingestion-grpc/src/main/proto/forensic_ingestion.proto
-
-2. Minimalen Service definieren:
-   - StartAnalysisSession
-   - UploadAnalysisData
-   - CompleteAnalysisSession
-   - AbortAnalysisSession
-
-3. Minimale Identity Messages definieren:
-   - BuildIdentity
-   - ModuleIdentity
-   - PluginIdentity
-
-4. Envelope definieren:
-   - sessionId
-   - buildIdentity
-   - moduleIdentity
-   - pluginIdentity
-   - schemaVersion
-   - payloadType
-   - payload bytes
-
-5. Keine finale fachliche Payload-Struktur modellieren.
-```
-
-### Erwartetes Ergebnis
-
-```text
-- Protobuf-Datei existiert
-- gRPC Java-Klassen werden generiert
-- compileJava läuft erfolgreich
-```
-
-### Verifikation
-
-```bash
-./gradlew :forensic-analytics-ingestion-grpc:generateProto
-./gradlew :forensic-analytics-ingestion-grpc:compileJava
-```
-
----
-
-## Slice 4: Application-Port vorbereiten oder anbinden
-
-### Ziel
-
-Das gRPC-Modul ruft keine Datenbank direkt auf, sondern einen Application Use Case.
-
-### Aufgaben
-
-Prüfe zuerst, ob bereits ein passender Use Case oder Port existiert.
-
-Falls nicht vorhanden, im Application-Modul minimal vorbereiten:
-
-```text
-ReceiveAnalysisSessionUseCase
-ReceiveAnalysisDataUseCase
-CompleteAnalysisSessionUseCase
-AbortAnalysisSessionUseCase
-```
-
-Alternativ als ein zusammenhängender Port:
+Most test source imports remain under:
 
 ```java
-public interface ForensicIngestionUseCase {
-    StartAnalysisSessionResult start(StartAnalysisSessionCommand command);
-    UploadAnalysisDataResult upload(UploadAnalysisDataCommand command);
-    CompleteAnalysisSessionResult complete(CompleteAnalysisSessionCommand command);
-    AbortAnalysisSessionResult abort(AbortAnalysisSessionCommand command);
+org.junit.jupiter.api.*
+org.junit.jupiter.params.*
+org.junit.jupiter.params.provider.*
+```
+
+JUnit 6 does **not** imply that all test imports are renamed away from Jupiter.
+
+The migration is mainly about:
+
+```text
+- JUnit BOM version
+- JUnit Platform version alignment
+- deprecated or removed JUnit Platform APIs
+- removed platform artifacts
+- test runtime behavior
+- documentation and quality gate naming
+```
+
+### 3.2 JUnit Platform versioning
+
+JUnit 6 uses a single version number for Platform, Jupiter, and Vintage artifacts.
+
+The repository must not keep a stale separate `junit-platform = "1.x"` version if Platform artifacts are managed by the JUnit BOM.
+
+### 3.3 ArchUnit artifact naming
+
+ArchUnit may still use artifact names containing `junit5`, for example:
+
+```text
+com.tngtech.archunit:archunit-junit5
+```
+
+Do not rename this dependency to a non-existing `archunit-junit6` artifact unless such an artifact is verified in Maven Central and required by the project.
+
+The correct criterion is: ArchUnit tests must run successfully on JUnit 6 and Java 25.
+
+### 3.4 JavaParser capability
+
+The project scans Java source code. The Java baseline migration must therefore verify that the JavaParser version can parse Java 25 source syntax.
+
+If the current JavaParser version is not explicitly Java 25-capable, update it to a verified Java 25-capable release and add a parser regression test.
+
+### 3.5 Runtime instrumentation capability
+
+This project uses runtime tracing, AspectJ weaving, Mockito, Byte Buddy, and Byteman-related code.
+
+Java 25 migration is not complete until the following areas are verified under a Java 25 test JVM:
+
+```text
+- AspectJ load-time weaving
+- MethodLoggingAspect tests
+- RtTrace tests
+- Mockito-based tests
+- Gradle TestKit tests
+- JaCoCo report generation
+- JaCoCo verification
+- Byteman-related compileOnly and test dependencies
+```
+
+---
+
+## 4. Expected Files to Inspect and Update
+
+At minimum, inspect these files:
+
+```text
+gradle/libs.versions.toml
+build.gradle.kts
+settings.gradle.kts
+gradle/wrapper/gradle-wrapper.properties
+gradle/verification-metadata.xml
+AGENTS.md
+QUALITY.md
+README.md
+Commit.md
+.github/workflows/*.yml
+.github/workflows/*.yaml
+src/main/java/**/*.java
+src/test/java/**/*.java
+```
+
+Also inspect inactive workflow files if present, for example:
+
+```text
+.github/workflows/*_not_in_use
+```
+
+Inactive files may still contain stale Java/JUnit documentation and should be either updated or explicitly marked as obsolete.
+
+---
+
+## 5. Slice 0 — Preflight and Current-State Verification
+
+### Goal
+
+Verify the repository state before changing anything.
+
+### Commands
+
+```bash
+git status --short
+git branch --show-current
+git diff --stat
+git diff
+git diff --cached
+java --version
+./gradlew --version
+./gradlew -q javaToolchains --console=plain || true
+```
+
+### Inspect current baseline references
+
+```bash
+rg -n "Java 17|JDK 17|JUnit 5|junit5|java17|VERSION_17|release\.set\(17\)|JavaLanguageVersion\.of\(17\)|junit-platform|5\.13\.4|1\.11\.3|0\.8\.13|1\.9\.24" \
+  AGENTS.md QUALITY.md README.md Commit.md build.gradle.kts settings.gradle.kts gradle .github src || true
+```
+
+### Inspect build/test wiring
+
+```bash
+rg -n "useJUnitPlatform|junit|jupiter|platform|archunit|mockito|byte-buddy|aspectj|jacoco|lombok|javaparser|byteman|javaLauncher|toolchain|sourceCompatibility|targetCompatibility|options\.release" \
+  build.gradle.kts gradle src .github AGENTS.md QUALITY.md README.md Commit.md || true
+```
+
+### Acceptance criteria
+
+```text
+[ ] Current Java 17 references are listed.
+[ ] Current JUnit 5 references are listed.
+[ ] Current CI Java version is known.
+[ ] Current dependency verification state is known.
+[ ] No source changes were made in this slice.
+```
+
+### Stop conditions
+
+Stop and report if:
+
+```text
+- The repository has unrelated uncommitted changes.
+- The current branch is not suitable for migration work.
+- The Gradle wrapper cannot run at all before the migration.
+- AGENTS.md, QUALITY.md, README.md, and build.gradle.kts disagree in a way that makes the intended baseline ambiguous.
+```
+
+---
+
+## 6. Slice 1 — Create Migration Branch
+
+### Goal
+
+Isolate the migration in its own branch.
+
+### Commands
+
+```bash
+git switch -c feature/java25-junit6-migration
+```
+
+If the branch already exists:
+
+```bash
+git switch feature/java25-junit6-migration
+```
+
+### Acceptance criteria
+
+```text
+[ ] Work happens on feature/java25-junit6-migration.
+[ ] No unrelated file changes are present.
+```
+
+---
+
+## 7. Slice 2 — Update Version Catalog
+
+### Goal
+
+Move the dependency catalog to Java 25-compatible test and instrumentation dependencies.
+
+### File
+
+```text
+gradle/libs.versions.toml
+```
+
+### Required changes
+
+Update the catalog so that it uses stable Java 25-compatible versions.
+
+Recommended target baseline:
+
+```toml
+[versions]
+junit = "6.0.3"
+assertj = "3.27.7"
+javaparser = "3.28.0"
+aspectj = "1.9.25.1"
+bytebuddy = "1.18.2"
+mockito = "5.23.0"
+byteman = "4.0.26"
+jacoco = "0.8.14"
+lombok = "1.18.46"
+```
+
+Rules:
+
+```text
+- Do not use JUnit milestone or RC versions unless explicitly required.
+- Remove the separate `junit-platform = "1.x"` version if the Platform launcher is managed by the JUnit BOM.
+- Keep `junit-platform-launcher` versionless when imported through the JUnit BOM.
+- Keep `junit-jupiter`, `junit-jupiter-api`, and `junit-jupiter-engine` versionless when imported through the JUnit BOM.
+- Keep Mockito modules versionless when imported through the Mockito BOM.
+- Do not invent an ArchUnit JUnit 6 artifact unless verified.
+```
+
+Expected JUnit dependency shape:
+
+```toml
+junit-bom               = { module = "org.junit:junit-bom", version.ref = "junit" }
+junit-jupiter           = { module = "org.junit.jupiter:junit-jupiter" }
+junit-jupiter-api       = { module = "org.junit.jupiter:junit-jupiter-api" }
+junit-jupiter-engine    = { module = "org.junit.jupiter:junit-jupiter-engine" }
+junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
+```
+
+### Verification commands
+
+```bash
+./gradlew help --dependency-verification lenient --console=plain --stacktrace
+./gradlew dependencies --configuration testRuntimeClasspath --dependency-verification lenient --console=plain
+```
+
+### Acceptance criteria
+
+```text
+[ ] JUnit BOM uses JUnit 6.x stable.
+[ ] No stale JUnit Platform 1.x version remains.
+[ ] JaCoCo is Java 25-capable.
+[ ] AspectJ Weaver is Java 25-capable.
+[ ] Lombok is Java 25-capable.
+[ ] Mockito and Byte Buddy versions are compatible with Java 25.
+[ ] JavaParser is verified for Java 25 parsing capability.
+```
+
+---
+
+## 8. Slice 3 — Update Gradle Java Toolchain to Java 25
+
+### Goal
+
+Make the project compile and test with Java 25.
+
+### File
+
+```text
+build.gradle.kts
+```
+
+### Required changes
+
+Replace hard-coded Java 17 values with a single Java baseline variable.
+
+Recommended shape:
+
+```kotlin
+val javaBaseline = 25
+val java25 = javaToolchains.launcherFor {
+    languageVersion.set(JavaLanguageVersion.of(javaBaseline))
+}
+
+plugins.withType<JavaPlugin>().configureEach {
+    extensions.configure<JavaPluginExtension> {
+        toolchain.languageVersion.set(JavaLanguageVersion.of(javaBaseline))
+        sourceCompatibility = JavaVersion.toVersion(javaBaseline)
+        targetCompatibility = JavaVersion.toVersion(javaBaseline)
+        withSourcesJar()
+    }
+
+    tasks.withType<JavaCompile>().configureEach {
+        options.encoding = "UTF-8"
+        options.release.set(javaBaseline)
+        options.compilerArgs.addAll(listOf("-Xlint:all"))
+    }
 }
 ```
 
-### Regeln
+Update all test launcher wiring:
 
-```text
-- Commands liegen im Application-Modul.
-- Keine Protobuf-Klassen im Application-Modul verwenden.
-- Keine gRPC-Abhängigkeiten im Application-Modul einführen.
-- Keine Persistenzlogik im gRPC-Modul.
+```kotlin
+tasks.withType<Test>().configureEach {
+    useJUnitPlatform()
+    javaLauncher.set(java25)
+}
 ```
 
-### Erwartetes Ergebnis
+Rename local variables from `java17` to `java25` or generic `javaLauncher`.
+
+### Rules
 
 ```text
-- Application-Port existiert oder wurde korrekt angebunden
-- gRPC-Modul kann gegen Application-Port kompilieren
+- Do not add --enable-preview.
+- Do not remove -Xlint:all.
+- Do not weaken test logging.
+- Do not remove AspectJ javaagent wiring.
+- Do not disable Gradle TestKit tests.
 ```
 
-### Verifikation
+### Verification commands
 
 ```bash
-./gradlew :forensic-analytics-application:compileJava
-./gradlew :forensic-analytics-ingestion-grpc:compileJava
+./gradlew clean compileJava compileTestJava --dependency-verification lenient --console=plain --stacktrace
+```
+
+### Acceptance criteria
+
+```text
+[ ] Main sources compile with --release 25.
+[ ] Test sources compile with Java 25.
+[ ] All references to `java17`, `VERSION_17`, and `JavaLanguageVersion.of(17)` are removed or documented as historical text only.
 ```
 
 ---
 
-## Slice 5: Proto-zu-Command Mapper implementieren
+## 9. Slice 4 — Migrate JUnit 5 Configuration to JUnit 6
 
-### Ziel
+### Goal
 
-Das gRPC-Modul mappt Transportdaten sauber auf Application Commands.
+Ensure all JUnit runtime wiring is JUnit 6-compatible.
 
-### Vorgeschlagene Klassen
+### Files
 
 ```text
-forensic-analytics-ingestion-grpc/src/main/java/.../mapper/
-├── BuildIdentityMapper.java
-├── ModuleIdentityMapper.java
-├── PluginIdentityMapper.java
-├── AnalysisDataEnvelopeMapper.java
-└── IngestionStatusMapper.java
+build.gradle.kts
+gradle/libs.versions.toml
+src/test/java/**/*.java
 ```
 
-### Regeln
+### Search for removed or risky JUnit APIs
 
-```text
-- Mapper sind deterministisch und zustandslos.
-- Keine Business-Logik in Mappern.
-- Null/Leerwertprüfung entweder im Validator oder beim Command-Aufbau.
-- Protobuf bleibt im Adapter.
+```bash
+rg -n "junit-platform-runner|junit-platform-jfr|org\.junit\.platform\.runner|@RunWith|Launcher\.execute\(|LauncherDiscoveryRequest|TestPlan|Vintage|junit-vintage|junit\.platform\.suite\.commons" src build.gradle.kts gradle || true
 ```
 
-### Erwartetes Ergebnis
+### Expected source behavior
+
+Most tests should remain unchanged if they only use:
 
 ```text
-Proto DTO -> Application Command funktioniert isoliert testbar.
+@Test
+@BeforeEach
+@AfterEach
+@BeforeAll
+@ParameterizedTest
+@MethodSource
+Arguments
+Assertions
 ```
 
-### Tests
+Do not perform mechanical import rewrites unless compilation proves they are necessary.
 
-```text
-- BuildIdentity wird korrekt gemappt
-- ModuleIdentity wird korrekt gemappt
-- PluginIdentity wird korrekt gemappt
-- payload bytes werden unverändert übernommen
-- schemaVersion wird unverändert übernommen
-- payloadType wird unverändert übernommen
+### Verification commands
+
+```bash
+./gradlew test --dependency-verification lenient --console=plain --stacktrace
 ```
 
----
-
-## Slice 6: Request-Validierung implementieren
-
-### Ziel
-
-Ungültige Requests werden früh und nachvollziehbar abgelehnt.
-
-### Vorgeschlagene Klassen
+### Acceptance criteria
 
 ```text
-validator/
-├── StartAnalysisSessionRequestValidator.java
-├── AnalysisDataEnvelopeValidator.java
-├── CompleteAnalysisSessionRequestValidator.java
-└── AbortAnalysisSessionRequestValidator.java
-```
-
-### Minimale Validierungsregeln
-
-StartAnalysisSession:
-
-```text
-- projectId darf nicht leer sein
-- repositoryUrl darf nicht leer sein
-- commitHash darf nicht leer sein
-- buildId darf nicht leer sein
-- pluginName darf nicht leer sein
-- pluginVersion darf nicht leer sein
-- schemaVersion darf nicht leer sein
-```
-
-UploadAnalysisData:
-
-```text
-- sessionId darf nicht leer sein
-- payloadType darf nicht leer sein
-- schemaVersion darf nicht leer sein
-- payload darf nicht leer sein
-```
-
-CompleteAnalysisSession:
-
-```text
-- sessionId darf nicht leer sein
-```
-
-AbortAnalysisSession:
-
-```text
-- sessionId darf nicht leer sein
-- reason sollte nicht leer sein
-```
-
-### Fehlerverhalten
-
-Ungültige Requests sollen mit passendem gRPC Status beantwortet werden:
-
-```text
-INVALID_ARGUMENT bei fehlenden Pflichtfeldern
-FAILED_PRECONDITION bei ungültigem Session-Zustand
-INTERNAL bei unerwarteten Fehlern
-UNAVAILABLE bei temporärer Nichtverfügbarkeit abhängiger Komponenten
+[ ] Tests run on JUnit 6.
+[ ] No JUnit Platform 1.x dependency remains.
+[ ] No removed JUnit Platform artifact is referenced.
+[ ] Existing test behavior is preserved.
+[ ] ArchUnit tests still execute.
 ```
 
 ---
 
-## Slice 7: gRPC Service implementieren
+## 10. Slice 5 — Verify JavaParser Java 25 Parsing
 
-### Ziel
+### Goal
 
-Der gRPC-Service ist technisch lauffähig und ruft den Application Use Case auf.
+Prove that the scanner can parse Java 25 source syntax.
 
-### Vorgeschlagene Klasse
+### Add or update test
 
-```text
-ForensicIngestionGrpcService.java
-```
+Add a focused regression test under the JavaParser scanner/support test package.
 
-### Verantwortlichkeiten
+Suggested test name:
 
 ```text
-- StartAnalysisSessionRequest empfangen
-- Request validieren
-- Request in Command mappen
-- Application Use Case aufrufen
-- Result in gRPC Response mappen
-- Fehler in gRPC Status übersetzen
+JavaParserJava25CompatibilityTest
 ```
 
-### Streaming Upload
-
-Für `UploadAnalysisData(stream AnalysisDataEnvelope)` soll zunächst ein einfacher serverseitiger Collector implementiert werden.
-
-Ablauf:
+Test scenarios:
 
 ```text
-1. onNext(envelope)
-2. envelope validieren
-3. envelope in Command mappen
-4. Application Use Case upload(command) aufrufen
-5. receivedItems erhöhen
-6. onCompleted() -> UploadAnalysisDataResponse senden
+- A normal Java 25 source file parses successfully.
+- A switch expression / modern syntax sample does not break scanning.
+- The scanner still emits expected ScanEvent data for ordinary methods.
 ```
 
-### Hinweis
+Do not add preview syntax unless preview support is explicitly enabled in the build, which is not part of this workflow.
 
-Noch keine Optimierung für sehr große Datenmengen implementieren. Erst lauffähig machen, danach bei Bedarf Backpressure, Chunking, Batching oder persistente Streams ergänzen.
+### Verification commands
 
----
+```bash
+./gradlew test --tests '*JavaParserJava25CompatibilityTest' --dependency-verification lenient --console=plain --stacktrace
+./gradlew test --tests '*JavaParser*' --dependency-verification lenient --console=plain --stacktrace
+```
 
-## Slice 8: Bootstrap/Wiring vorbereiten
-
-### Ziel
-
-Das neue gRPC-Modul kann vom ausführbaren Server-/Bootstrap-Modul gestartet werden.
-
-### Aufgaben
+### Acceptance criteria
 
 ```text
-1. Prüfe vorhandenes Bootstrap-Modul.
-2. Binde forensic-analytics-ingestion-grpc als Dependency ein.
-3. Stelle sicher, dass der gRPC Server beim Start registriert wird.
-4. Port konfigurierbar machen.
-5. Default-Port vorschlagen: 9090.
-```
-
-### Konfiguration
-
-Beispielhafte Properties, falls das Projekt Properties/YAML verwendet:
-
-```properties
-forensics.analytics.ingestion.grpc.enabled=true
-forensics.analytics.ingestion.grpc.port=9090
-```
-
-Falls keine Konfigurationsstruktur existiert, keine große Config-Architektur erfinden. Minimal halten und dokumentieren.
-
----
-
-## Slice 9: Tests für das Modul
-
-### Ziel
-
-Das Modul ist unabhängig testbar.
-
-### Testebenen
-
-```text
-1. Mapper Tests
-2. Validator Tests
-3. Service Tests mit Fake Use Case
-4. gRPC Integrationstest mit InProcessServer
-```
-
-### Mindesttests
-
-```text
-- StartAnalysisSession akzeptiert gültigen Request
-- StartAnalysisSession lehnt fehlende buildId ab
-- UploadAnalysisData akzeptiert gültigen Stream
-- UploadAnalysisData zählt empfangene Items korrekt
-- UploadAnalysisData lehnt leeren payloadType ab
-- CompleteAnalysisSession akzeptiert gültige sessionId
-- AbortAnalysisSession akzeptiert gültige sessionId und reason
-```
-
-### Fake Use Case
-
-Tests dürfen einen Fake oder Stub des Application Use Case verwenden.
-
-Wichtig:
-
-```text
-- keine echte Datenbank
-- kein Joern
-- kein Plugin
-- kein Netzwerk-Port im Unit-Test
+[ ] JavaParser-related tests pass under Java 25.
+[ ] Java 25 non-preview syntax does not break scanner behavior.
+[ ] No preview feature dependency is introduced.
 ```
 
 ---
 
-## Slice 10: Dokumentation ergänzen
+## 11. Slice 6 — Verify Runtime Instrumentation on Java 25
 
-### Ziel
+### Goal
 
-Das neue Modul ist für Entwickler nachvollziehbar dokumentiert.
+Prove that runtime tracing, AspectJ weaving, and Mockito continue to work under Java 25.
 
-### Dateien prüfen/ergänzen
+### Targeted tests
+
+Run focused tests first:
+
+```bash
+./gradlew test --tests '*MethodLoggingAspectTest' --dependency-verification lenient --console=plain --stacktrace
+./gradlew test --tests '*LoggingSafetyTest' --dependency-verification lenient --console=plain --stacktrace
+./gradlew test --tests '*RtTrace*' --dependency-verification lenient --console=plain --stacktrace
+./gradlew test --tests '*PluginAdapterArchitectureTest' --dependency-verification lenient --console=plain --stacktrace
+./gradlew test --tests '*HexagonRulesTest' --dependency-verification lenient --console=plain --stacktrace
+```
+
+### Rules
 
 ```text
+- Keep AspectJ output visible enough to diagnose weaving failures.
+- Do not disable tests to hide Java 25 instrumentation problems.
+- Add JVM --add-opens only if a concrete failing test proves it is necessary.
+- Any added --add-opens must be documented with the exact failing test and exception.
+```
+
+### Acceptance criteria
+
+```text
+[ ] AspectJ load-time weaving works under Java 25.
+[ ] Mockito-based tests work under Java 25.
+[ ] Runtime trace tests work under Java 25.
+[ ] Architecture tests work under Java 25.
+```
+
+---
+
+## 12. Slice 7 — Update CI to Java 25
+
+### Goal
+
+Make GitHub Actions run with Java 25.
+
+### Files
+
+```text
+.github/workflows/*.yml
+.github/workflows/*.yaml
+.github/workflows/*_not_in_use
+```
+
+### Required active workflow update
+
+Update active workflow setup steps from Java 17 to Java 25.
+
+Example:
+
+```yaml
+- name: Set up JDK 25
+  uses: actions/setup-java@v4
+  with:
+    java-version: '25'
+    distribution: 'temurin'
+    cache: 'gradle'
+```
+
+### Verification commands
+
+```bash
+rg -n "JDK 17|Java 17|java-version: '17'|java-version: \"17\"|setup-java" .github || true
+```
+
+### Acceptance criteria
+
+```text
+[ ] Active CI uses Java 25.
+[ ] Workflow step names no longer say JDK 17.
+[ ] Inactive workflow files are either updated or clearly marked obsolete.
+[ ] CI still runs the full quality gate.
+```
+
+---
+
+## 13. Slice 8 — Update Documentation and Agent Rules
+
+### Goal
+
+Align all repository documentation with the new baseline.
+
+### Files
+
+```text
+AGENTS.md
+QUALITY.md
 README.md
-ARCHITECTURE.md
-MODULES.md
+Commit.md
+workflow.md files, if any
 ```
 
-Nur vorhandene Dokumentationsstruktur nutzen. Keine unnötigen neuen Dokumente erzeugen, wenn bereits passende Dateien existieren.
+### Required documentation updates
 
-### Inhalt
+Replace current project baseline references:
 
 ```text
-- Zweck des Moduls
-- Architekturrolle als Inbound Adapter
-- gRPC Port / Konfiguration
-- Service-Methoden
-- Hinweis, dass finale Plugin-Datenstruktur separat folgt
-- Hinweis, dass Joern/Replay/LLM nicht Teil dieses Moduls sind
+Java 17 -> Java 25
+JUnit 5 -> JUnit 6
 ```
 
----
+Update quality gate language to mention:
 
-## Slice 11: Qualitätsprüfung
+```text
+- Java 25 toolchain
+- JUnit 6 test runtime
+- Java 25-compatible JaCoCo
+- Java 25-compatible AspectJ Weaver
+- dependency verification refresh after dependency changes
+```
 
-### Ziel
-
-Der gesamte Build bleibt stabil.
-
-### Standardprüfung
-
-Falls Gradle verwendet wird:
+### Required commands to document in QUALITY.md
 
 ```bash
-./gradlew clean check
+./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace
+./gradlew validatePlugins --dependency-verification strict --no-daemon --console=plain --stacktrace
 ```
 
-Zusätzlich, falls vorhanden:
+If connector parity tests exist, keep them:
 
 ```bash
-./gradlew validatePlugins
-./gradlew jacocoTestReport
-./gradlew jacocoTestCoverageVerification
+./gradlew test --tests '*BtmGenerationAdapterValidationTest' --dependency-verification strict --console=plain --stacktrace
+./gradlew test --tests '*BuildToolConnectorParityTest' --dependency-verification strict --console=plain --stacktrace
+./gradlew test --tests '*MavenJoernConfigurationParityTest' --dependency-verification strict --console=plain --stacktrace
+./gradlew test --tests '*MavenFullAnalysisParityTest' --dependency-verification strict --console=plain --stacktrace
+./gradlew test --tests '*MavenReactorAggregationTest' --dependency-verification strict --console=plain --stacktrace
+./gradlew test --tests '*HexagonRulesTest' --dependency-verification strict --console=plain --stacktrace
 ```
 
-Falls das Projekt eigene Quality Tasks besitzt, diese verwenden.
+### Search command
 
-### Erwartetes Ergebnis
-
-```text
-- Build erfolgreich
-- Tests erfolgreich
-- keine Architekturverletzungen
-- keine direkten DB-Zugriffe im gRPC-Modul
-- keine Protobuf-Abhängigkeit im Domain-Modul
-- keine Protobuf-Abhängigkeit im Application-Modul, außer bewusst dokumentiert und begründet
+```bash
+rg -n "Java 17|JDK 17|JUnit 5|junit5|java17|VERSION_17|release\.set\(17\)|JavaLanguageVersion\.of\(17\)|junit-platform =|1\.11\.3|5\.13\.4" \
+  AGENTS.md QUALITY.md README.md Commit.md build.gradle.kts settings.gradle.kts gradle .github src || true
 ```
 
----
-
-## 7. Akzeptanzkriterien
-
-Der Workflow ist abgeschlossen, wenn folgende Punkte erfüllt sind:
+### Acceptance criteria
 
 ```text
-[ ] Neues Modul forensic-analytics-ingestion-grpc existiert.
-[ ] Modul ist im Monorepo registriert.
-[ ] Protobuf/gRPC Generierung funktioniert.
-[ ] ForensicIngestionService ist definiert.
-[ ] StartAnalysisSession ist implementiert.
-[ ] UploadAnalysisData Streaming ist implementiert.
-[ ] CompleteAnalysisSession ist implementiert.
-[ ] AbortAnalysisSession ist implementiert.
-[ ] gRPC-Service ruft ausschließlich Application Use Cases auf.
-[ ] Keine direkte Persistenz im gRPC-Modul.
-[ ] Keine Joern-, Replay- oder LLM-Logik im gRPC-Modul.
-[ ] Mapper sind vorhanden und getestet.
-[ ] Validatoren sind vorhanden und getestet.
-[ ] Integrationstest mit gRPC InProcessServer existiert.
-[ ] Build läuft erfolgreich.
-[ ] Dokumentation beschreibt Zweck und Grenzen des Moduls.
+[ ] AGENTS.md declares Java 25 and JUnit 6.
+[ ] QUALITY.md declares Java 25 and JUnit 6 verification.
+[ ] README.md no longer instructs users to run with Java 17.
+[ ] Commit.md no longer states JUnit 5 as the active quality baseline.
+[ ] Historical references are clearly marked as historical if kept.
 ```
 
 ---
 
-## 8. Definition of Done
+## 14. Slice 9 — Refresh Dependency Verification Metadata
+
+### Goal
+
+Update `gradle/verification-metadata.xml` only for expected dependency changes.
+
+### File
 
 ```text
-- Das Modul ist technisch lauffähig.
-- Ein Test-Client kann eine Analyse-Session starten.
-- Ein Test-Client kann mehrere Payload-Envelopes streamen.
-- Der Server zählt empfangene Payloads korrekt.
-- Eine Session kann abgeschlossen werden.
-- Eine Session kann abgebrochen werden.
-- Fehlerhafte Requests werden kontrolliert abgelehnt.
-- Das Modul verletzt die hexagonale Architektur nicht.
+gradle/verification-metadata.xml
+```
+
+### First run with lenient verification
+
+```bash
+./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage \
+  --dependency-verification lenient \
+  --console=plain \
+  --stacktrace
+```
+
+### Refresh metadata
+
+Use Gradle metadata generation for the changed dependency set:
+
+```bash
+./gradlew help \
+  --write-verification-metadata sha256 \
+  --dependency-verification lenient \
+  --console=plain
+```
+
+If test-runtime dependencies are not fully captured by `help`, run:
+
+```bash
+./gradlew clean test \
+  --write-verification-metadata sha256 \
+  --dependency-verification lenient \
+  --console=plain \
+  --stacktrace
+```
+
+### Inspect metadata diff carefully
+
+```bash
+git diff -- gradle/verification-metadata.xml
+```
+
+### Rules
+
+```text
+- Keep only expected new or changed artifacts.
+- Do not add broad trust rules unless there is a verified Gradle/IDE metadata reason.
+- Do not remove existing verification metadata without understanding why it disappeared.
+- Do not switch off dependency verification.
+```
+
+### Strict verification
+
+```bash
+./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage \
+  --dependency-verification strict \
+  --console=plain \
+  --stacktrace
+```
+
+### Acceptance criteria
+
+```text
+[ ] Strict dependency verification passes.
+[ ] Metadata diff only contains expected dependency changes.
+[ ] No broad unreviewed trust rule was introduced.
 ```
 
 ---
 
-## 9. Späterer Folgeworkflow
+## 15. Slice 10 — Full Local Quality Gate
 
-Nach diesem Workflow folgt ein separater Workflow für die finale Datenstruktur.
+### Goal
 
-Voraussichtliche nächste Themen:
+Verify that the full system works under Java 25 and JUnit 6.
+
+### Commands
+
+```bash
+./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage \
+  --dependency-verification strict \
+  --console=plain \
+  --stacktrace
+
+./gradlew validatePlugins \
+  --dependency-verification strict \
+  --no-daemon \
+  --console=plain \
+  --stacktrace
+```
+
+If Maven connector parity is part of the current repository state, also run:
+
+```bash
+./gradlew test --tests '*BtmGenerationAdapterValidationTest' --dependency-verification strict --console=plain --stacktrace
+./gradlew test --tests '*BuildToolConnectorParityTest' --dependency-verification strict --console=plain --stacktrace
+./gradlew test --tests '*MavenJoernConfigurationParityTest' --dependency-verification strict --console=plain --stacktrace
+./gradlew test --tests '*MavenFullAnalysisParityTest' --dependency-verification strict --console=plain --stacktrace
+./gradlew test --tests '*MavenReactorAggregationTest' --dependency-verification strict --console=plain --stacktrace
+./gradlew test --tests '*HexagonRulesTest' --dependency-verification strict --console=plain --stacktrace
+```
+
+Optional SonarCloud run if token is available:
+
+```bash
+./gradlew sonar --dependency-verification strict --console=plain --stacktrace
+```
+
+### Acceptance criteria
 
 ```text
-- Plugin Payload Schema definieren
-- ScanEvent-Datenstruktur übertragen
-- SourceFile/Class/Method/Dependency Payloads modellieren
-- BTM Rule Payload modellieren
-- unresolved type references übertragen
-- Scan-Warnings übertragen
-- lokale Plugin-H2-Datenbank exportieren
-- Plugin-seitigen gRPC Client implementieren
-- Server-seitige Persistenz anbinden
+[ ] Full Gradle quality gate passes.
+[ ] Plugin validation passes.
+[ ] Connector parity tests pass, if present.
+[ ] SonarCloud is executed if token is available, otherwise skipped and reported.
 ```
 
 ---
 
-## 10. Codex-Ausführungsanweisung
+## 16. Slice 11 — Final Consistency Scan
 
-Arbeite diesen Workflow sliceweise ab.
+### Goal
 
-Vorgehen pro Slice:
+Make sure no stale baseline references remain.
 
-```text
-1. Bestehenden Code analysieren.
-2. Nur den aktuellen Slice ändern.
-3. Tests für den Slice ergänzen.
-4. Lokale Verifikation ausführen.
-5. Diff prüfen.
-6. Ergebnis kurz dokumentieren.
-7. Erst danach den nächsten Slice beginnen.
+### Commands
+
+```bash
+rg -n "Java 17|JDK 17|JUnit 5|junit5|java17|VERSION_17|release\.set\(17\)|JavaLanguageVersion\.of\(17\)|junit-platform =|1\.11\.3|5\.13\.4|0\.8\.13|1\.9\.24" \
+  AGENTS.md QUALITY.md README.md Commit.md build.gradle.kts settings.gradle.kts gradle .github src || true
+
+git status --short
+git diff --stat
+git diff -- AGENTS.md QUALITY.md README.md Commit.md build.gradle.kts settings.gradle.kts gradle .github src
 ```
 
-Wichtig:
+### Acceptance criteria
 
 ```text
-- Nicht raten, wenn Modulnamen oder Architekturgrenzen unklar sind.
-- Keine finale Plugin-Datenstruktur erfinden.
-- Keine Joern-/Replay-/LLM-Logik ergänzen.
-- Keine Datenbanklogik in das gRPC-Modul schreiben.
-- Keine Protobuf-Klassen in Domain-Modelle leaken lassen.
-- Bestehende Projektkonventionen haben Vorrang vor Beispielen in diesem Workflow.
+[ ] No stale active Java 17 references remain.
+[ ] No stale active JUnit 5 references remain.
+[ ] No stale JUnit Platform 1.x catalog version remains.
+[ ] No stale Java 17 CI setup remains.
+[ ] Remaining historical references are explicitly marked as historical.
 ```
 
 ---
 
-## 11. Erwarteter Commit-Scope
+## 17. Commit Requirements
 
-Der Commit zu diesem Workflow sollte ungefähr diesen Scope haben:
+### Commit message template
 
 ```text
-Add gRPC ingestion module for forensic analytics plugin uploads
+build: migrate project baseline to Java 25 and JUnit 6
+
+What changed:
+- Updated Gradle Java toolchain, source compatibility, target compatibility, and --release to Java 25.
+- Updated JUnit dependencies to JUnit 6 via the JUnit BOM.
+- Removed stale separate JUnit Platform 1.x versioning.
+- Updated Java 25-sensitive tooling dependencies such as JaCoCo, AspectJ, Lombok, Mockito, Byte Buddy, and JavaParser where required.
+- Updated CI to use JDK 25.
+- Updated AGENTS.md, QUALITY.md, README.md, and commit documentation to reflect the new baseline.
+- Refreshed dependency verification metadata for expected dependency changes.
+
+Why:
+- The repository baseline was Java 17 / JUnit 5.
+- The requested project baseline is Java 25 / JUnit 6.
+- Java 25 requires compatible bytecode, coverage, weaving, mocking, parsing, and CI tooling.
+
+How verified:
+- ./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace
+- ./gradlew validatePlugins --dependency-verification strict --no-daemon --console=plain --stacktrace
+- Targeted JUnit, ArchUnit, JavaParser, runtime tracing, AspectJ, and Mockito tests.
+- Connector parity tests where present.
+
+Breaking changes:
+- The project now requires Java 25 for build and test execution.
+- Consumers expecting a Java 17 baseline must remain on an older release or use a dedicated compatibility branch.
 ```
 
-Mögliche Commit Message:
+### Commit commands
+
+```bash
+git status --short
+git add gradle/libs.versions.toml build.gradle.kts settings.gradle.kts gradle/verification-metadata.xml AGENTS.md QUALITY.md README.md Commit.md .github src
+git status --short
+git diff --cached --stat
+git commit -m "build: migrate project baseline to Java 25 and JUnit 6"
+```
+
+Push:
+
+```bash
+git push -u origin feature/java25-junit6-migration
+```
+
+---
+
+## 18. Final Definition of Done
 
 ```text
-feat: add grpc ingestion module for plugin analysis uploads
+[ ] Repository builds with Java 25.
+[ ] Repository tests run with JUnit 6.
+[ ] JUnit Platform 1.x is removed from active version management.
+[ ] Java 25 toolchain is used for compile and test tasks.
+[ ] CI uses Java 25.
+[ ] JaCoCo supports Java 25 bytecode.
+[ ] AspectJ Weaver supports Java 25 runtime weaving.
+[ ] Mockito / Byte Buddy tests pass on Java 25.
+[ ] JavaParser can parse Java 25-compatible source samples.
+[ ] AGENTS.md declares Java 25 / JUnit 6.
+[ ] QUALITY.md declares Java 25 / JUnit 6 quality gates.
+[ ] README.md setup instructions are Java 25-aligned.
+[ ] Dependency verification passes in strict mode.
+[ ] Full local quality gate passes.
+[ ] Commit message documents what, why, how, verification, and breaking impact.
+```
 
-Add a dedicated forensic analytics ingestion module that exposes a
-session-based gRPC service for receiving plugin scan data. The module acts as
-an inbound adapter and maps protobuf transport objects to application commands.
+---
 
-The implementation intentionally keeps the plugin payload generic because the
-final scan data schema will be defined in a follow-up step.
+## 19. Mandatory Stop-and-Report Cases
+
+Stop immediately and report if any of the following happens:
+
+```text
+- Java 25 toolchain cannot be resolved locally or via Foojay.
+- Gradle cannot run with the configured Java 25 environment.
+- JUnit 6 causes removed API failures that require architectural decisions.
+- ArchUnit does not execute under JUnit 6.
+- AspectJ weaving fails under Java 25.
+- Mockito fails due to Java 25 bytecode or instrumentation behavior.
+- JaCoCo cannot instrument or report Java 25 class files.
+- JavaParser cannot parse required non-preview Java 25 source syntax.
+- Dependency verification requires unexpected trust rules.
+- CI workflow changes conflict with repository policy.
+- Quality gates fail and cannot be fixed within this migration slice.
+```
+
+The report must include:
+
+```text
+- exact command
+- exact error
+- affected file
+- suspected root cause
+- proposed next step
+- whether this blocks the migration
 ```
