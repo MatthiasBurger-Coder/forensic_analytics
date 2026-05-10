@@ -21,6 +21,7 @@ rootProject.name = "forensic-analytics"
 include(
     "forensic-analytics-domain",
     "forensic-analytics-application",
+    "forensic-analytics-engine",
     "forensic-analytics-persistence",
     "forensic-analytics-ingestion-grpc",
     "forensic-analytics-bootstrap",
