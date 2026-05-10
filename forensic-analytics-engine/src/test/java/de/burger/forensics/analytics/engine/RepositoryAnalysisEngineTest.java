@@ -1,5 +1,10 @@
 package de.burger.forensics.analytics.engine;
 
+import de.burger.forensics.analytics.domain.analysis.AnalysisRunId;
+import de.burger.forensics.analytics.domain.repository.RepositoryMetadata;
+import de.burger.forensics.analytics.domain.repository.RepositorySource;
+import de.burger.forensics.analytics.domain.source.SourceFact;
+import de.burger.forensics.analytics.domain.source.SourceLocation;
 import de.burger.forensics.analytics.engine.port.AnalysisResultStore;
 import de.burger.forensics.analytics.engine.port.RepositorySourceProvider;
 import de.burger.forensics.analytics.engine.port.SourceFactScanner;
@@ -23,16 +28,21 @@ class RepositoryAnalysisEngineTest {
 
     @Test
     void runCoordinatesRepositoryAnalysisThroughPorts() {
-        var request = new RepositoryAnalysisRequest("analysis-1", "file:///workspace/project", "baseline");
+        var request = new RepositoryAnalysisRequest(
+            new AnalysisRunId("analysis-1"),
+            repositoryMetadata(),
+            "baseline"
+        );
 
         var result = engine.run(request);
 
-        assertEquals("file:///workspace/project", sourceProvider.resolvedLocation);
-        assertEquals("file:///workspace/project", sourceFactScanner.scannedSource.repositoryLocation());
+        assertEquals(repositoryMetadata(), sourceProvider.resolvedMetadata);
+        assertEquals(repositoryMetadata(), sourceFactScanner.scannedSource.metadata());
         assertEquals(RepositoryAnalysisStatus.COMPLETED, result.status());
-        assertEquals("analysis-1", result.analysisId());
+        assertEquals(new AnalysisRunId("analysis-1"), result.analysisRunId());
+        assertEquals(repositoryMetadata(), result.repositoryMetadata());
         assertEquals("baseline", result.analysisProfile());
-        assertEquals(List.of(new SourceFact("type", "src/main/java/App.java", "class App")), result.sourceFacts());
+        assertEquals(List.of(sourceFact()), result.sourceFacts());
         assertEquals(result, resultStore.storedResult);
     }
 
@@ -61,32 +71,32 @@ class RepositoryAnalysisEngineTest {
     void requestFieldsAreRequired() {
         assertThrows(
             NullPointerException.class,
-            () -> new RepositoryAnalysisRequest(null, "file:///workspace/project", "baseline")
+            () -> new RepositoryAnalysisRequest(null, repositoryMetadata(), "baseline")
         );
         assertThrows(
             NullPointerException.class,
-            () -> new RepositoryAnalysisRequest("analysis-1", null, "baseline")
+            () -> new RepositoryAnalysisRequest(new AnalysisRunId("analysis-1"), null, "baseline")
         );
         assertThrows(
             NullPointerException.class,
-            () -> new RepositoryAnalysisRequest("analysis-1", "file:///workspace/project", null)
+            () -> new RepositoryAnalysisRequest(new AnalysisRunId("analysis-1"), repositoryMetadata(), null)
         );
     }
 
     @Test
     void sourceFactsAreCopiedIntoResult() {
         var facts = new ArrayList<SourceFact>();
-        facts.add(new SourceFact("type", "src/main/java/App.java", "class App"));
+        facts.add(sourceFact());
 
         var result = RepositoryAnalysisResult.completed(
-            "analysis-1",
-            "file:///workspace/project",
+            new AnalysisRunId("analysis-1"),
+            repositoryMetadata(),
             "baseline",
             facts
         );
-        facts.add(new SourceFact("method", "src/main/java/App.java", "main"));
+        facts.add(new SourceFact("method", sourceLocation(), "main()", "main"));
 
-        assertEquals(List.of(new SourceFact("type", "src/main/java/App.java", "class App")), result.sourceFacts());
+        assertEquals(List.of(sourceFact()), result.sourceFacts());
     }
 
     @Test
@@ -94,52 +104,57 @@ class RepositoryAnalysisEngineTest {
         var sourceRoots = new ArrayList<String>();
         sourceRoots.add("src/main/java");
 
-        var source = new RepositorySource("file:///workspace/project", sourceRoots);
+        var source = new RepositorySource(repositoryMetadata(), sourceRoots);
         sourceRoots.add("generated");
 
         assertEquals(List.of("src/main/java"), source.sourceRoots());
     }
 
     @Test
-    void sourceFactFieldsAreRequired() {
-        assertThrows(NullPointerException.class, () -> new SourceFact(null, "src/main/java/App.java", "class App"));
-        assertThrows(NullPointerException.class, () -> new SourceFact("type", null, "class App"));
-        assertThrows(NullPointerException.class, () -> new SourceFact("type", "src/main/java/App.java", null));
+    void resultFieldsAreRequired() {
+        var facts = List.of(sourceFact());
+
+        assertThrows(
+            NullPointerException.class,
+            () -> new RepositoryAnalysisResult(null, repositoryMetadata(), "baseline", RepositoryAnalysisStatus.COMPLETED, facts)
+        );
+        assertThrows(
+            NullPointerException.class,
+            () -> new RepositoryAnalysisResult(new AnalysisRunId("analysis-1"), null, "baseline", RepositoryAnalysisStatus.COMPLETED, facts)
+        );
+        assertThrows(
+            NullPointerException.class,
+            () -> new RepositoryAnalysisResult(new AnalysisRunId("analysis-1"), repositoryMetadata(), null, RepositoryAnalysisStatus.COMPLETED, facts)
+        );
+        assertThrows(
+            NullPointerException.class,
+            () -> new RepositoryAnalysisResult(new AnalysisRunId("analysis-1"), repositoryMetadata(), "baseline", null, facts)
+        );
+        assertThrows(
+            NullPointerException.class,
+            () -> new RepositoryAnalysisResult(new AnalysisRunId("analysis-1"), repositoryMetadata(), "baseline", RepositoryAnalysisStatus.COMPLETED, null)
+        );
     }
 
-    @Test
-    void resultFieldsAreRequired() {
-        var facts = List.of(new SourceFact("type", "src/main/java/App.java", "class App"));
+    private static RepositoryMetadata repositoryMetadata() {
+        return new RepositoryMetadata("project-a", "file:///workspace/project", "main", "abcdef");
+    }
 
-        assertThrows(
-            NullPointerException.class,
-            () -> new RepositoryAnalysisResult(null, "file:///workspace/project", "baseline", RepositoryAnalysisStatus.COMPLETED, facts)
-        );
-        assertThrows(
-            NullPointerException.class,
-            () -> new RepositoryAnalysisResult("analysis-1", null, "baseline", RepositoryAnalysisStatus.COMPLETED, facts)
-        );
-        assertThrows(
-            NullPointerException.class,
-            () -> new RepositoryAnalysisResult("analysis-1", "file:///workspace/project", null, RepositoryAnalysisStatus.COMPLETED, facts)
-        );
-        assertThrows(
-            NullPointerException.class,
-            () -> new RepositoryAnalysisResult("analysis-1", "file:///workspace/project", "baseline", null, facts)
-        );
-        assertThrows(
-            NullPointerException.class,
-            () -> new RepositoryAnalysisResult("analysis-1", "file:///workspace/project", "baseline", RepositoryAnalysisStatus.COMPLETED, null)
-        );
+    private static SourceFact sourceFact() {
+        return new SourceFact("type", sourceLocation(), "App", "class App");
+    }
+
+    private static SourceLocation sourceLocation() {
+        return new SourceLocation("src/main/java/App.java", "com.example.App", "main", 1);
     }
 
     private static final class RecordingSourceProvider implements RepositorySourceProvider {
-        private String resolvedLocation;
+        private RepositoryMetadata resolvedMetadata;
 
         @Override
-        public RepositorySource resolve(String repositoryLocation) {
-            resolvedLocation = repositoryLocation;
-            return new RepositorySource(repositoryLocation, List.of("src/main/java"));
+        public RepositorySource resolve(RepositoryMetadata repositoryMetadata) {
+            resolvedMetadata = repositoryMetadata;
+            return new RepositorySource(repositoryMetadata, List.of("src/main/java"));
         }
     }
 
@@ -149,7 +164,7 @@ class RepositoryAnalysisEngineTest {
         @Override
         public List<SourceFact> scan(RepositorySource source) {
             scannedSource = source;
-            return List.of(new SourceFact("type", "src/main/java/App.java", "class App"));
+            return List.of(sourceFact());
         }
     }
 
