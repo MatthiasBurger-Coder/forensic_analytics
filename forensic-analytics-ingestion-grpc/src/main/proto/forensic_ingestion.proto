@@ -38,8 +38,9 @@ message AnalysisDataEnvelope {
   ModuleIdentity module_identity = 3;
   PluginIdentity plugin_identity = 4;
   string schema_version = 5;
-  string payload_type = 6;
+  string payload_type = 6 [deprecated = true];
   bytes payload = 7;
+  AnalysisPayloadDescriptor payload_descriptor = 8;
 }
 
 message UploadAnalysisDataResponse {
@@ -87,6 +88,22 @@ message ModuleIdentity {
 message PluginIdentity {
   string plugin_name = 1;
   string plugin_version = 2;
+}
+
+message AnalysisPayloadDescriptor {
+  string payload_id = 1;
+  AnalysisPayloadKind kind = 2;
+  string content_type = 3;
+  map<string, string> attributes = 4;
+}
+
+enum AnalysisPayloadKind {
+  ANALYSIS_PAYLOAD_KIND_UNSPECIFIED = 0;
+  ANALYSIS_PAYLOAD_KIND_SOURCE_FACTS = 1;
+  ANALYSIS_PAYLOAD_KIND_SEMANTIC_ARTIFACTS = 2;
+  ANALYSIS_PAYLOAD_KIND_RULE_ARTIFACTS = 3;
+  ANALYSIS_PAYLOAD_KIND_RUNTIME_TRACE = 4;
+  ANALYSIS_PAYLOAD_KIND_DIAGNOSTIC_REPORT = 5;
 }
 
 enum IngestionStatus {

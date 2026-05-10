@@ -9,6 +9,8 @@ import de.burger.forensics.analytics.application.ingestion.command.StartAnalysis
 import de.burger.forensics.analytics.application.ingestion.command.UploadAnalysisDataCommand;
 import de.burger.forensics.analytics.application.ingestion.port.IngestionSessionRepository;
 import de.burger.forensics.analytics.application.ingestion.result.IngestionStatus;
+import de.burger.forensics.analytics.domain.ingestion.AnalysisPayloadDescriptor;
+import de.burger.forensics.analytics.domain.ingestion.AnalysisPayloadKind;
 import de.burger.forensics.analytics.domain.ingestion.IngestionPayload;
 import de.burger.forensics.analytics.domain.ingestion.IngestionSession;
 import org.junit.jupiter.api.Test;
@@ -42,6 +44,8 @@ class DefaultForensicIngestionUseCaseTest {
 
         assertEquals(1, first.receivedItems());
         assertEquals(2, second.receivedItems());
+        assertEquals(AnalysisPayloadKind.SOURCE_FACTS, repository.lastPayload.payloadDescriptor().kind());
+        assertEquals("payload-1", repository.lastPayload.payloadDescriptor().payloadId());
     }
 
     @Test
@@ -73,8 +77,17 @@ class DefaultForensicIngestionUseCaseTest {
             new ModuleIdentityCommand("module-a", ":module-a"),
             pluginIdentity(),
             "schema-v1",
-            "generic",
+            payloadDescriptor(),
             new byte[] {1, 2, 3}
+        );
+    }
+
+    private AnalysisPayloadDescriptor payloadDescriptor() {
+        return new AnalysisPayloadDescriptor(
+            "payload-1",
+            AnalysisPayloadKind.SOURCE_FACTS,
+            "application/json",
+            Map.of("schema", "source-facts-v1")
         );
     }
 
@@ -96,6 +109,7 @@ class DefaultForensicIngestionUseCaseTest {
     private static final class RecordingRepository implements IngestionSessionRepository {
         private final Map<String, IngestionSession> sessions = new HashMap<>();
         private final Map<String, Long> payloadCounts = new HashMap<>();
+        private IngestionPayload lastPayload;
 
         @Override
         public void save(IngestionSession session) {
@@ -115,6 +129,7 @@ class DefaultForensicIngestionUseCaseTest {
 
         @Override
         public long appendPayload(IngestionPayload payload) {
+            lastPayload = payload;
             var nextCount = payloadCounts.getOrDefault(payload.sessionId(), 0L) + 1;
             payloadCounts.put(payload.sessionId(), nextCount);
             return nextCount;

@@ -1,9 +1,13 @@
 package de.burger.forensics.analytics.persistence;
 
+import de.burger.forensics.analytics.domain.ingestion.AnalysisPayloadDescriptor;
+import de.burger.forensics.analytics.domain.ingestion.AnalysisPayloadKind;
 import de.burger.forensics.analytics.domain.ingestion.IngestionPayload;
 import de.burger.forensics.analytics.domain.ingestion.IngestionSession;
 import de.burger.forensics.analytics.domain.ingestion.IngestionSessionState;
 import org.junit.jupiter.api.Test;
+
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -28,6 +32,15 @@ class InMemoryIngestionSessionRepositoryTest {
     }
 
     private IngestionPayload payload() {
-        return new IngestionPayload("session-1", "module-a", "schema-v1", "generic", new byte[] {1});
+        return new IngestionPayload("session-1", "module-a", "schema-v1", payloadDescriptor(), new byte[] {1});
+    }
+
+    private AnalysisPayloadDescriptor payloadDescriptor() {
+        return new AnalysisPayloadDescriptor(
+            "payload-1",
+            AnalysisPayloadKind.SOURCE_FACTS,
+            "application/json",
+            Map.of("schema", "source-facts-v1")
+        );
     }
 }
