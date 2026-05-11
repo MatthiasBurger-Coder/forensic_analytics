@@ -32,7 +32,8 @@ class EngineIngestionRequestImporterTest {
     void importsEngineRequestThroughExistingIngestionUseCase() throws Exception {
         var rules = Files.writeString(tempDir.resolve("rules.btm"), "RULE test\n", StandardCharsets.UTF_8);
         var manifest = Files.writeString(tempDir.resolve("manifest.json"), "{\"analysis\":true}", StandardCharsets.UTF_8);
-        var requestFile = Files.writeString(tempDir.resolve("engine-request.json"), requestJson(rules, manifest), StandardCharsets.UTF_8);
+        var checksums = Files.writeString(tempDir.resolve("checksums.sha256"), "abc123  rules.btm\n", StandardCharsets.UTF_8);
+        var requestFile = Files.writeString(tempDir.resolve("engine-request.json"), requestJson(rules, manifest, checksums), StandardCharsets.UTF_8);
         var useCase = new RecordingIngestionUseCase();
         var importer = new EngineIngestionRequestImporter(useCase);
 
@@ -40,26 +41,31 @@ class EngineIngestionRequestImporterTest {
 
         assertEquals("session-1", result.sessionId());
         assertEquals(IngestionStatus.COMPLETED, result.completionStatus());
-        assertEquals(2, result.uploadedPayloads());
+        assertEquals(3, result.uploadedPayloads());
         assertEquals("project-a", useCase.startCommand.buildIdentity().projectId());
         assertEquals("forensics-tracing", useCase.startCommand.pluginIdentity().pluginName());
         assertEquals("session-1", useCase.completedSessionId);
-        assertEquals(List.of("byteman-rules", "analysis-manifest"), useCase.uploadCommands.stream()
+        assertEquals(List.of("byteman-rules", "analysis-manifest", "analysis-checksums"), useCase.uploadCommands.stream()
             .map(command -> command.payloadDescriptor().payloadId())
             .toList());
         assertEquals(AnalysisPayloadKind.RULE_ARTIFACTS, useCase.uploadCommands.getFirst().payloadDescriptor().kind());
         assertEquals(AnalysisPayloadKind.DIAGNOSTIC_REPORT, useCase.uploadCommands.get(1).payloadDescriptor().kind());
+        assertEquals(AnalysisPayloadKind.DIAGNOSTIC_REPORT, useCase.uploadCommands.get(2).payloadDescriptor().kind());
         assertEquals("btm-rules", useCase.uploadCommands.getFirst().payloadDescriptor().attributes().get("artifact"));
+        assertEquals("analysis-manifest", useCase.uploadCommands.get(1).payloadDescriptor().attributes().get("artifact"));
+        assertEquals("analysis-checksums", useCase.uploadCommands.get(2).payloadDescriptor().attributes().get("artifact"));
         assertArrayEquals("RULE test\n".getBytes(StandardCharsets.UTF_8), useCase.uploadCommands.getFirst().payload());
         assertArrayEquals("{\"analysis\":true}".getBytes(StandardCharsets.UTF_8), useCase.uploadCommands.get(1).payload());
+        assertArrayEquals("abc123  rules.btm\n".getBytes(StandardCharsets.UTF_8), useCase.uploadCommands.get(2).payload());
     }
 
     @Test
     void rejectsMissingPayloadFilesBeforeCompletingSession() throws Exception {
         var manifest = Files.writeString(tempDir.resolve("manifest.json"), "{}", StandardCharsets.UTF_8);
+        var checksums = Files.writeString(tempDir.resolve("checksums.sha256"), "", StandardCharsets.UTF_8);
         var requestFile = Files.writeString(
             tempDir.resolve("engine-request.json"),
-            requestJson(tempDir.resolve("missing.btm"), manifest),
+            requestJson(tempDir.resolve("missing.btm"), manifest, checksums),
             StandardCharsets.UTF_8
         );
         var useCase = new RecordingIngestionUseCase();
@@ -80,7 +86,7 @@ class EngineIngestionRequestImporterTest {
         assertThrows(NullPointerException.class, () -> new EngineIngestionRequestImporter(useCase, null));
     }
 
-    private static String requestJson(Path rules, Path manifest) {
+    private static String requestJson(Path rules, Path manifest, Path checksums) {
         return """
             {
               "schemaVersion": "1",
@@ -118,10 +124,19 @@ class EngineIngestionRequestImporterTest {
                   "attributes": {
                     "artifact": "analysis-manifest"
                   }
+                },
+                {
+                  "payloadId": "analysis-checksums",
+                  "kind": "DIAGNOSTIC_REPORT",
+                  "contentType": "text/plain",
+                  "file": "%s",
+                  "attributes": {
+                    "artifact": "analysis-checksums"
+                  }
                 }
               ]
             }
-            """.formatted(jsonPath(rules), jsonPath(manifest));
+            """.formatted(jsonPath(rules), jsonPath(manifest), jsonPath(checksums));
     }
 
     private static String jsonPath(Path path) {

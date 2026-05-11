@@ -194,11 +194,56 @@ class ForensicAnalyticsCliTest {
         assertTrue(errorOutput.toString(StandardCharsets.UTF_8).contains("Command failed: Failed to read engine ingestion request"));
     }
 
+    @Test
+    void reportsMissingEnginePayloadFile() throws Exception {
+        var requestFile = Files.writeString(
+            tempDir.resolve("engine-request.json"),
+            engineRequestJson(tempDir.resolve("missing-rules.btm")),
+            StandardCharsets.UTF_8
+        );
+        var standardOutput = new ByteArrayOutputStream();
+        var errorOutput = new ByteArrayOutputStream();
+
+        var exitCode = new ForensicAnalyticsCli(new RecordingUseCase(), stream(standardOutput), stream(errorOutput)).run(new String[] {
+            "ingest-request",
+            "--request", requestFile.toString(),
+            "--output", tempDir.resolve("request-out").toString()
+        });
+
+        assertEquals(1, exitCode);
+        assertTrue(errorOutput.toString(StandardCharsets.UTF_8).contains("Command failed: Engine payload file does not exist"));
+    }
+
+    @Test
+    void reportsUnknownEnginePayloadKind() throws Exception {
+        var payloadFile = Files.writeString(tempDir.resolve("rules.btm"), "RULE test\n", StandardCharsets.UTF_8);
+        var requestFile = Files.writeString(
+            tempDir.resolve("engine-request.json"),
+            engineRequestJson(payloadFile, "UNKNOWN_KIND"),
+            StandardCharsets.UTF_8
+        );
+        var standardOutput = new ByteArrayOutputStream();
+        var errorOutput = new ByteArrayOutputStream();
+
+        var exitCode = new ForensicAnalyticsCli(new RecordingUseCase(), stream(standardOutput), stream(errorOutput)).run(new String[] {
+            "ingest-request",
+            "--request", requestFile.toString(),
+            "--output", tempDir.resolve("request-out").toString()
+        });
+
+        assertEquals(1, exitCode);
+        assertTrue(errorOutput.toString(StandardCharsets.UTF_8).contains("Command failed: Unsupported engine payload kind: UNKNOWN_KIND"));
+    }
+
     private static PrintStream stream(ByteArrayOutputStream output) {
         return new PrintStream(output, true, StandardCharsets.UTF_8);
     }
 
     private static String engineRequestJson(Path payloadFile) {
+        return engineRequestJson(payloadFile, "RULE_ARTIFACTS");
+    }
+
+    private static String engineRequestJson(Path payloadFile, String kind) {
         return """
             {
               "schemaVersion": "1",
@@ -221,7 +266,7 @@ class ForensicAnalyticsCliTest {
               "payloads": [
                 {
                   "payloadId": "byteman-rules",
-                  "kind": "RULE_ARTIFACTS",
+                  "kind": "%s",
                   "contentType": "text/x-byteman",
                   "file": "%s",
                   "attributes": {
@@ -230,7 +275,7 @@ class ForensicAnalyticsCliTest {
                 }
               ]
             }
-            """.formatted(jsonPath(payloadFile));
+            """.formatted(kind, jsonPath(payloadFile));
     }
 
     private static String jsonPath(Path path) {

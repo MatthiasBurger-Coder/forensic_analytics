@@ -107,19 +107,24 @@ class RepositoryAnalysisTestbedTest {
     @Test
     void cliImportsEngineRequestScenario() throws Exception {
         var requestDirectory = Files.createDirectories(tempDir.resolve("engine-request-fixture"));
-        var sourceFacts = Files.writeString(
-            requestDirectory.resolve("source-facts.json"),
-            "{\"facts\":[\"class com.example.App\"]}",
-            StandardCharsets.UTF_8
-        );
         var rules = Files.writeString(
             requestDirectory.resolve("rules.btm"),
             "RULE testbed\nENDRULE\n",
             StandardCharsets.UTF_8
         );
+        var manifest = Files.writeString(
+            requestDirectory.resolve("manifest.json"),
+            "{\"analysis\":true}",
+            StandardCharsets.UTF_8
+        );
+        var checksums = Files.writeString(
+            requestDirectory.resolve("checksums.sha256"),
+            "abc123  rules.btm\n",
+            StandardCharsets.UTF_8
+        );
         var requestFile = Files.writeString(
             requestDirectory.resolve("engine-request.json"),
-            engineRequestJson(sourceFacts, rules),
+            engineRequestJson(rules, manifest, checksums),
             StandardCharsets.UTF_8
         );
         var outputDirectory = tempDir.resolve("engine-request-output");
@@ -144,7 +149,7 @@ class RepositoryAnalysisTestbedTest {
         var summary = Files.readString(outputDirectory.resolve("engine-request-import-summary.txt"), StandardCharsets.UTF_8);
         assertTrue(summary.contains("requestFile=" + requestFile.toAbsolutePath().normalize()));
         assertTrue(summary.contains("status=COMPLETED"));
-        assertTrue(summary.contains("uploadedPayloads=2"));
+        assertTrue(summary.contains("uploadedPayloads=3"));
     }
 
     @Test
@@ -270,7 +275,7 @@ class RepositoryAnalysisTestbedTest {
         return new PrintStream(output, true, StandardCharsets.UTF_8);
     }
 
-    private static String engineRequestJson(Path sourceFacts, Path rules) {
+    private static String engineRequestJson(Path rules, Path manifest, Path checksums) {
         return """
             {
               "schemaVersion": "1",
@@ -292,15 +297,6 @@ class RepositoryAnalysisTestbedTest {
               },
               "payloads": [
                 {
-                  "payloadId": "source-facts",
-                  "kind": "SOURCE_FACTS",
-                  "contentType": "application/json",
-                  "file": "%s",
-                  "attributes": {
-                    "artifact": "source-facts"
-                  }
-                },
-                {
                   "payloadId": "byteman-rules",
                   "kind": "RULE_ARTIFACTS",
                   "contentType": "text/x-byteman",
@@ -308,10 +304,28 @@ class RepositoryAnalysisTestbedTest {
                   "attributes": {
                     "artifact": "btm-rules"
                   }
+                },
+                {
+                  "payloadId": "analysis-manifest",
+                  "kind": "DIAGNOSTIC_REPORT",
+                  "contentType": "application/json",
+                  "file": "%s",
+                  "attributes": {
+                    "artifact": "analysis-manifest"
+                  }
+                },
+                {
+                  "payloadId": "analysis-checksums",
+                  "kind": "DIAGNOSTIC_REPORT",
+                  "contentType": "text/plain",
+                  "file": "%s",
+                  "attributes": {
+                    "artifact": "analysis-checksums"
+                  }
                 }
               ]
             }
-            """.formatted(jsonPath(sourceFacts), jsonPath(rules));
+            """.formatted(jsonPath(rules), jsonPath(manifest), jsonPath(checksums));
     }
 
     private static String jsonPath(Path path) {
