@@ -217,6 +217,14 @@ Spaeter anlegen, nicht sofort:
 - Keine gRPC-Client-Pflicht fuer den lokalen Handoff.
 - Keine Build-Tool-Adapter in die Engine verschieben.
 
+### Slice 11: Engine Request CLI Intake
+
+- `forensic-analytics-cli` erhaelt einen lokalen `ingest-request` Befehl.
+- Der Befehl liest ein vorhandenes `engine-request.json` und importiert dessen Payloads ueber den Slice-10-Importer.
+- CLI-Ausgabe schreibt eine strukturierte Import-Zusammenfassung in ein konfiguriertes Output-Verzeichnis.
+- Default-Wiring nutzt die bestehende In-Memory-Ingestion-Persistenz.
+- Kein gRPC-Client, keine Remote-Transporte und keine Build-Tool-Adapter in der Engine.
+
 ## 8. Verification Strategy
 
 Fuer `forensic_analytics`:
