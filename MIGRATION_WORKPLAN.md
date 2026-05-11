@@ -225,6 +225,14 @@ Spaeter anlegen, nicht sofort:
 - Default-Wiring nutzt die bestehende In-Memory-Ingestion-Persistenz.
 - Kein gRPC-Client, keine Remote-Transporte und keine Build-Tool-Adapter in der Engine.
 
+### Slice 12: Engine Request Handoff Testbed
+
+- `forensic-analytics-testbed` verifiziert den lokalen `engine-request.json` Handoff ueber den CLI-Befehl `ingest-request`.
+- Das Szenario nutzt reale temporaere Payload-Dateien und die Slice-10/11 Importstrecke.
+- Die Testbed-Pruefung bleibt ohne Docker, ohne gRPC-Client und ohne externe Services.
+- Die Import-Summary wird als sichtbares CLI-Artefakt geprueft.
+- Keine Aenderung an `forensics_tracing` und keine Build-Tool-Adapter in der Engine.
+
 ## 8. Verification Strategy
 
 Fuer `forensic_analytics`:
