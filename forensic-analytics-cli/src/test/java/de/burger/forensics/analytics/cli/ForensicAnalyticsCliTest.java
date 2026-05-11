@@ -153,6 +153,33 @@ class ForensicAnalyticsCliTest {
     }
 
     @Test
+    void standaloneMainWiringImportsEngineRequestWithoutAnalysisServiceProvider() throws Exception {
+        var payloadFile = Files.writeString(tempDir.resolve("standalone-rules.btm"), "RULE standalone\n", StandardCharsets.UTF_8);
+        var requestFile = Files.writeString(
+            tempDir.resolve("standalone-engine-request.json"),
+            engineRequestJson(payloadFile),
+            StandardCharsets.UTF_8
+        );
+        var outputDirectory = tempDir.resolve("standalone-request-out");
+        var standardOutput = new ByteArrayOutputStream();
+        var errorOutput = new ByteArrayOutputStream();
+
+        var exitCode = ForensicAnalyticsCli.runWithServiceLoader(new String[] {
+            "ingest-request",
+            "--request", requestFile.toString(),
+            "--output", outputDirectory.toString()
+        }, stream(standardOutput), stream(errorOutput));
+
+        assertEquals(0, exitCode);
+        assertEquals("", errorOutput.toString(StandardCharsets.UTF_8));
+        assertTrue(standardOutput.toString(StandardCharsets.UTF_8).contains("uploadedPayloads=1"));
+        var summary = Files.readString(outputDirectory.resolve("engine-request-import-summary.txt"), StandardCharsets.UTF_8);
+        assertTrue(summary.contains("requestFile=" + requestFile.toAbsolutePath().normalize()));
+        assertTrue(summary.contains("status=COMPLETED"));
+        assertTrue(summary.contains("uploadedPayloads=1"));
+    }
+
+    @Test
     void reportsMissingEngineRequestFile() {
         var standardOutput = new ByteArrayOutputStream();
         var errorOutput = new ByteArrayOutputStream();

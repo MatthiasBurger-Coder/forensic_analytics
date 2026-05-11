@@ -233,6 +233,14 @@ Spaeter anlegen, nicht sofort:
 - Die Import-Summary wird als sichtbares CLI-Artefakt geprueft.
 - Keine Aenderung an `forensics_tracing` und keine Build-Tool-Adapter in der Engine.
 
+### Slice 13: Standalone Engine Request CLI Wiring
+
+- Der `ForensicAnalyticsCli.main`/ServiceLoader-Pfad wird fuer `ingest-request` abgesichert.
+- `ingest-request` darf ohne konfigurierten `RunRepositoryAnalysisUseCase` Service Provider laufen.
+- Der `analyze` Pfad behaelt die ServiceLoader-Pflicht fuer den Analyse-Use-Case.
+- Die Pruefung nutzt ein echtes temporaeres `engine-request.json` mit Payload-Datei.
+- Keine neuen Produktionsmodule, keine externen Services, kein gRPC-Client.
+
 ## 8. Verification Strategy
 
 Fuer `forensic_analytics`:
