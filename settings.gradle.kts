@@ -28,5 +28,6 @@ include(
     "forensic-analytics-testbed",
     "forensic-analytics-persistence",
     "forensic-analytics-ingestion-grpc",
+    "forensic-analytics-ingestion-request",
     "forensic-analytics-bootstrap",
 )
