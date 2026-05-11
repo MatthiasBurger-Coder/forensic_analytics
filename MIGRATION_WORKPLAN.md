@@ -209,6 +209,14 @@ Spaeter anlegen, nicht sofort:
 - Zweites Szenario mit Joern Container.
 - WildFly nur als Smoke-/Ressourcen-Szenario, nicht normaler Unit-Gate.
 
+### Slice 10: Engine Request Intake
+
+- `forensic_analytics` liest das von `forensics_tracing` erzeugte `engine-request.json`.
+- Request-Inhalte werden in bestehende Ingestion-Application-Commands uebersetzt.
+- Payload-Dateien werden lokal gelesen und ueber den bestehenden `ForensicIngestionUseCase` importiert.
+- Keine gRPC-Client-Pflicht fuer den lokalen Handoff.
+- Keine Build-Tool-Adapter in die Engine verschieben.
+
 ## 8. Verification Strategy
 
 Fuer `forensic_analytics`:
