@@ -1,724 +1,568 @@
-# Workflow: Migrate the Full System to Java 25 and JUnit 6
+# Workplan: `forensic_analytics` — Cross-Repo-Handoff finalisieren und Migration verifizieren
 
-**Status:** Executed
-**Target branch:** `feature/java25-junit6-migration`
-**Scope:** Full repository migration from Java 17 / JUnit 5 to Java 25 / JUnit 6
-**Repository:** `forensics_tracing`
-**Execution model:** Slice-based Codex workflow with strict verification after every slice
+## 1. Ziel
 
-Historical note: Java 17 and JUnit 5 references in this workflow describe the baseline being migrated away from, not the active repository baseline after this workflow has been executed.
+Dieses Workplan-Dokument beschreibt die notwendigen Schritte im Repository `forensic_analytics`, damit die Migration aus `forensics_tracing` als Zielplattform vollständig verifiziert ist.
 
----
-
-## 1. Goal
-
-Migrate the complete Forensics Tracing system to:
+Zielzustand:
 
 ```text
-Java baseline: 25
-JUnit baseline: 6.x stable
-Gradle execution: Java 25-compatible
-Test execution: Java 25 toolchain
-Coverage: Java 25-compatible JaCoCo
-Runtime weaving: Java 25-compatible AspectJ Weaver
-Mocking: Java 25-compatible Mockito / Byte Buddy
-Repository documentation: Java 25 / JUnit 6 aligned
-CI: Java 25 aligned
-Dependency verification: updated and strict
-```
-
-This is a breaking baseline change. After this migration, the project must no longer claim Java 17 or JUnit 5 as its active project baseline.
-
----
-
-## 2. Non-goals
-
-Do **not** perform unrelated refactoring.
-
-Do **not** rewrite production code only because Java 25 is available.
-
-Do **not** introduce preview features.
-
-Do **not** add `--enable-preview` unless a later task explicitly requires preview Java language features.
-
-Do **not** lower coverage thresholds.
-
-Do **not** remove quality gates to make the migration pass.
-
-Do **not** replace ArchUnit rules with weaker tests.
-
-Do **not** introduce hidden compatibility wrappers.
-
-Do **not** silently ignore dependency verification changes.
-
----
-
-## 3. Important Migration Notes
-
-### 3.1 JUnit 6 source imports
-
-Most test source imports remain under:
-
-```java
-org.junit.jupiter.api.*
-org.junit.jupiter.params.*
-org.junit.jupiter.params.provider.*
-```
-
-JUnit 6 does **not** imply that all test imports are renamed away from Jupiter.
-
-The migration is mainly about:
-
-```text
-- JUnit BOM version
-- JUnit Platform version alignment
-- deprecated or removed JUnit Platform APIs
-- removed platform artifacts
-- test runtime behavior
-- documentation and quality gate naming
-```
-
-### 3.2 JUnit Platform versioning
-
-JUnit 6 uses a single version number for Platform, Jupiter, and Vintage artifacts.
-
-The repository must not keep a stale separate `junit-platform = "1.x"` version if Platform artifacts are managed by the JUnit BOM.
-
-### 3.3 ArchUnit artifact naming
-
-ArchUnit may still use artifact names containing `junit5`, for example:
-
-```text
-com.tngtech.archunit:archunit-junit5
-```
-
-Do not rename this dependency to a non-existing `archunit-junit6` artifact unless such an artifact is verified in Maven Central and required by the project.
-
-The correct criterion is: ArchUnit tests must run successfully on JUnit 6 and Java 25.
-
-### 3.4 JavaParser capability
-
-The project scans Java source code. The Java baseline migration must therefore verify that the JavaParser version can parse Java 25 source syntax.
-
-If the current JavaParser version is not explicitly Java 25-capable, update it to a verified Java 25-capable release and add a parser regression test.
-
-### 3.5 Runtime instrumentation capability
-
-This project uses runtime tracing, AspectJ weaving, Mockito, Byte Buddy, and Byteman-related code.
-
-Java 25 migration is not complete until the following areas are verified under a Java 25 test JVM:
-
-```text
-- AspectJ load-time weaving
-- MethodLoggingAspect tests
-- RtTrace tests
-- Mockito-based tests
-- Gradle TestKit tests
-- JaCoCo report generation
-- JaCoCo verification
-- Byteman-related compileOnly and test dependencies
+Repository: forensic_analytics
+Rolle: Forensic Analytics Plattform / Engine
+Baseline: Java 25, JUnit 6, Gradle 9.4.0
+Ingestion: kann engine-request.json aus forensics_tracing importieren
+CLI: ingest-request ist stabil verifiziert
+Testbed: enthält einen realistischen Handoff-Test
+Status: Migration ist dokumentiert und nachvollziehbar abgeschlossen
 ```
 
 ---
 
-## 4. Expected Files to Inspect and Update
+## 2. Ausgangslage
 
-At minimum, inspect these files:
+Der Vergleich hat gezeigt:
 
-```text
-gradle/libs.versions.toml
-build.gradle.kts
-settings.gradle.kts
-gradle/wrapper/gradle-wrapper.properties
-gradle/verification-metadata.xml
-AGENTS.md
-QUALITY.md
-README.md
-Commit.md
-.github/workflows/*.yml
-.github/workflows/*.yaml
-src/main/java/**/*.java
-src/test/java/**/*.java
-```
-
-Also inspect inactive workflow files if present, for example:
-
-```text
-.github/workflows/*_not_in_use
-```
-
-Inactive files may still contain stale Java/JUnit documentation and should be either updated or explicitly marked as obsolete.
+* `forensic_analytics/main` besitzt bereits die Zielstruktur als Multi-Projekt-Monorepo.
+* Java 25, JUnit 6 und Gradle 9.4.0 sind in `forensic_analytics` aktiv.
+* gRPC-Ingestion, lokale Request-Ingestion, CLI, Testbed, Engine, Repository-Adapter und Joern-Docker-Adapter sind vorhanden.
+* Die Analytics-Seite kann ein `engine-request.json` lesen und importieren.
+* Der echte Abschluss hängt davon ab, dass ein aus `forensics_tracing/main` erzeugter Request importiert wird.
 
 ---
 
-## 5. Slice 0 — Preflight and Current-State Verification
+## 3. Non-Goals
 
-### Goal
+Nicht Teil dieses Workplans:
 
-Verify the repository state before changing anything.
+* Keine Build-Tool-Adapter aus `forensics_tracing` nach `forensic_analytics` verschieben.
+* Kein direkter Compile-Dependency auf `forensics_tracing`.
+* Kein gRPC-Client-Zwang für den lokalen Handoff.
+* Keine Pflicht für Docker oder Joern im Standard-Quality-Gate.
+* Keine Graph-, Replay- oder LLM-Funktionalität erfinden.
+* Keine künstlichen Runtime-Traces erzeugen.
+* Keine Senkung von Coverage- oder Architekturregeln.
+
+---
+
+## 4. Zielarchitektur für dieses Repository
+
+```text
+forensic_analytics
+  -> domain
+  -> application
+  -> engine
+  -> ingestion-request
+  -> ingestion-grpc
+  -> cli
+  -> persistence
+  -> repository-source adapter
+  -> joern-docker adapter
+  -> testbed
+  -> bootstrap/server
+```
+
+Dependency-Richtung:
+
+```text
+cli -> ingestion-request/application/domain
+bootstrap -> ingestion-grpc -> application -> domain
+engine -> application -> domain
+adapters -> application/domain
+persistence -> application/domain
+```
+
+Verboten:
+
+```text
+domain -> gRPC
+domain -> CLI
+domain -> persistence
+domain -> Joern/Docker
+domain -> forensics_tracing
+application -> concrete adapters
+analytics -> Gradle/Maven plugin lifecycle
+```
+
+---
+
+## 5. Slice 0 — Preflight
+
+### Ziel
+
+Arbeitszustand prüfen und sicherstellen, dass `forensic_analytics/main` aktuell ist.
 
 ### Commands
 
 ```bash
 git status --short
 git branch --show-current
-git diff --stat
-git diff
-git diff --cached
+git fetch --all --prune
+git switch main
+git pull --ff-only
 java --version
 ./gradlew --version
-./gradlew -q javaToolchains --console=plain || true
 ```
 
-### Inspect current baseline references
+Windows PowerShell:
 
-```bash
-rg -n "Java 17|JDK 17|JUnit 5|junit5|java17|VERSION_17|release\.set\(17\)|JavaLanguageVersion\.of\(17\)|junit-platform|5\.13\.4|1\.11\.3|0\.8\.13|1\.9\.24" \
-  AGENTS.md QUALITY.md README.md Commit.md build.gradle.kts settings.gradle.kts gradle .github src || true
+```powershell
+git status --short
+git branch --show-current
+git fetch --all --prune
+git switch main
+git pull --ff-only
+java --version
+.\gradlew.bat --version
 ```
 
-### Inspect build/test wiring
-
-```bash
-rg -n "useJUnitPlatform|junit|jupiter|platform|archunit|mockito|byte-buddy|aspectj|jacoco|lombok|javaparser|byteman|javaLauncher|toolchain|sourceCompatibility|targetCompatibility|options\.release" \
-  build.gradle.kts gradle src .github AGENTS.md QUALITY.md README.md Commit.md || true
-```
-
-### Acceptance criteria
+### Akzeptanzkriterien
 
 ```text
-[ ] Current Java 17 references are listed.
-[ ] Current JUnit 5 references are listed.
-[ ] Current CI Java version is known.
-[ ] Current dependency verification state is known.
-[ ] No source changes were made in this slice.
-```
-
-### Stop conditions
-
-Stop and report if:
-
-```text
-- The repository has unrelated uncommitted changes.
-- The current branch is not suitable for migration work.
-- The Gradle wrapper cannot run at all before the migration.
-- AGENTS.md, QUALITY.md, README.md, and build.gradle.kts disagree in a way that makes the intended baseline ambiguous.
+[ ] Working Tree ist sauber oder lokale Änderungen sind dokumentiert.
+[ ] main ist aktuell.
+[ ] Java 25 ist aktiv.
+[ ] Gradle Wrapper nutzt 9.4.0.
+[ ] Tests können grundsätzlich gestartet werden.
 ```
 
 ---
 
-## 6. Slice 1 — Create Migration Branch
+## 6. Slice 1 — Ingestion-Vertrag gegen Plugin-Handoff prüfen
 
-### Goal
+### Ziel
 
-Isolate the migration in its own branch.
+Sicherstellen, dass `forensic_analytics` exakt die Struktur importieren kann, die `forensics_tracing` erzeugt.
+
+### Zu prüfende Analytics-Dateien
+
+```text
+forensic-analytics-ingestion-request/src/main/java/**/EngineIngestionRequestReader.java
+forensic-analytics-ingestion-request/src/main/java/**/EngineIngestionRequestImporter.java
+forensic-analytics-domain/src/main/java/**/AnalysisPayloadKind.java
+forensic-analytics-domain/src/main/java/**/AnalysisPayloadDescriptor.java
+forensic-analytics-application/src/main/java/**/ForensicIngestionUseCase.java
+forensic-analytics-cli/src/main/java/**/ForensicAnalyticsCli.java
+forensic-analytics-testbed/src/test/java/**/*.java
+```
+
+### Erwarteter JSON-Vertrag
+
+```json
+{
+  "schemaVersion": "...",
+  "buildIdentity": {
+    "projectId": "...",
+    "repositoryUrl": "...",
+    "branchName": "...",
+    "commitHash": "...",
+    "buildId": "...",
+    "scanTimestamp": "..."
+  },
+  "moduleIdentity": {
+    "moduleName": "...",
+    "modulePath": "..."
+  },
+  "pluginIdentity": {
+    "pluginName": "forensics-tracing",
+    "pluginVersion": "..."
+  },
+  "payloads": [
+    {
+      "payloadId": "byteman-rules",
+      "kind": "RULE_ARTIFACTS",
+      "contentType": "text/x-byteman",
+      "file": "...",
+      "attributes": {
+        "artifact": "btm-rules"
+      }
+    }
+  ]
+}
+```
+
+### Payload-Kinds müssen exakt unterstützt werden
+
+```text
+SOURCE_FACTS
+SEMANTIC_ARTIFACTS
+RULE_ARTIFACTS
+RUNTIME_TRACE
+DIAGNOSTIC_REPORT
+```
 
 ### Commands
 
 ```bash
-git switch -c feature/java25-junit6-migration
+rg -n "AnalysisPayloadKind|RULE_ARTIFACTS|DIAGNOSTIC_REPORT|EngineIngestionRequestReader|EngineIngestionRequestImporter|ingest-request" \
+  forensic-analytics-domain forensic-analytics-application forensic-analytics-ingestion-request forensic-analytics-cli forensic-analytics-testbed
 ```
 
-If the branch already exists:
-
-```bash
-git switch feature/java25-junit6-migration
-```
-
-### Acceptance criteria
+### Akzeptanzkriterien
 
 ```text
-[ ] Work happens on feature/java25-junit6-migration.
-[ ] No unrelated file changes are present.
+[ ] Alle Plugin-Payload-Kinds sind in Analytics vorhanden.
+[ ] Reader erwartet dieselben Feldnamen wie der Plugin-Writer erzeugt.
+[ ] Relative und absolute Payload-Pfade werden unterstützt.
+[ ] Fehlende Payload-Dateien führen zu klarer Fehlermeldung.
+[ ] Kein protobuf/gRPC DTO leakt in Domain oder Application.
 ```
 
 ---
 
-## 7. Slice 2 — Update Version Catalog
+## 7. Slice 2 — Reales Plugin-Request-Fixture aufnehmen
 
-### Goal
+### Ziel
 
-Move the dependency catalog to Java 25-compatible test and instrumentation dependencies.
+Ein Fixture oder Testfall mit einer realistischen `engine-request.json`-Struktur aus `forensics_tracing` absichern.
 
-### File
+### Vorgehen
 
-```text
-gradle/libs.versions.toml
-```
-
-### Required changes
-
-Update the catalog so that it uses stable Java 25-compatible versions.
-
-Recommended target baseline:
-
-```toml
-[versions]
-junit = "6.0.3"
-assertj = "3.27.7"
-javaparser = "3.28.0"
-aspectj = "1.9.25.1"
-bytebuddy = "1.18.2"
-mockito = "5.23.0"
-byteman = "4.0.26"
-jacoco = "0.8.14"
-lombok = "1.18.46"
-```
-
-Rules:
+Variante A — bevorzugt:
 
 ```text
-- Do not use JUnit milestone or RC versions unless explicitly required.
-- Remove the separate `junit-platform = "1.x"` version if the Platform launcher is managed by the JUnit BOM.
-- Keep `junit-platform-launcher` versionless when imported through the JUnit BOM.
-- Keep `junit-jupiter`, `junit-jupiter-api`, and `junit-jupiter-engine` versionless when imported through the JUnit BOM.
-- Keep Mockito modules versionless when imported through the Mockito BOM.
-- Do not invent an ArchUnit JUnit 6 artifact unless verified.
+- Ein im Test temporär erzeugtes engine-request.json verwenden.
+- Struktur muss exakt dem Plugin-Writer entsprechen.
+- Payload-Dateien werden real temporär geschrieben.
+- Keine direkte Dependency auf forensics_tracing.
 ```
 
-Expected JUnit dependency shape:
+Variante B — optional:
 
-```toml
-junit-bom               = { module = "org.junit:junit-bom", version.ref = "junit" }
-junit-jupiter           = { module = "org.junit.jupiter:junit-jupiter" }
-junit-jupiter-api       = { module = "org.junit.jupiter:junit-jupiter-api" }
-junit-jupiter-engine    = { module = "org.junit.jupiter:junit-jupiter-engine" }
-junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
+```text
+- Ein dokumentiertes Fixture unter forensic-analytics-testbed/src/test/resources anlegen.
+- Payload-Dateien als kleine Testartefakte daneben ablegen.
+- Nur verwenden, wenn die Fixture-Dateien stabil und bewusst versioniert werden sollen.
 ```
 
-### Verification commands
+### Tests
+
+Ergänzen oder prüfen:
+
+```text
+EngineIngestionRequestReaderTest
+EngineIngestionRequestImporterTest
+ForensicAnalyticsCliTest
+RepositoryAnalysisTestbedTest
+```
+
+### Testfälle
+
+```text
+[ ] Importiert RULE_ARTIFACTS Payload.
+[ ] Importiert DIAGNOSTIC_REPORT Payloads für Manifest/Checksums.
+[ ] Importiert mehrere Payloads in stabiler Reihenfolge.
+[ ] Schlägt fehl, wenn payloads leer ist.
+[ ] Schlägt fehl, wenn Payload-Datei fehlt.
+[ ] Schlägt fehl, wenn kind unbekannt ist.
+[ ] Akzeptiert pluginName=forensics-tracing.
+[ ] Schreibt Summary mit requestFile, status und uploadedPayloads.
+```
+
+### Commands
 
 ```bash
-./gradlew help --dependency-verification lenient --console=plain --stacktrace
-./gradlew dependencies --configuration testRuntimeClasspath --dependency-verification lenient --console=plain
-```
-
-### Acceptance criteria
-
-```text
-[ ] JUnit BOM uses JUnit 6.x stable.
-[ ] No stale JUnit Platform 1.x version remains.
-[ ] JaCoCo is Java 25-capable.
-[ ] AspectJ Weaver is Java 25-capable.
-[ ] Lombok is Java 25-capable.
-[ ] Mockito and Byte Buddy versions are compatible with Java 25.
-[ ] JavaParser is verified for Java 25 parsing capability.
-```
-
----
-
-## 8. Slice 3 — Update Gradle Java Toolchain to Java 25
-
-### Goal
-
-Make the project compile and test with Java 25.
-
-### File
-
-```text
-build.gradle.kts
-```
-
-### Required changes
-
-Replace hard-coded Java 17 values with a single Java baseline variable.
-
-Recommended shape:
-
-```kotlin
-val javaBaseline = 25
-val java25 = javaToolchains.launcherFor {
-    languageVersion.set(JavaLanguageVersion.of(javaBaseline))
-}
-
-plugins.withType<JavaPlugin>().configureEach {
-    extensions.configure<JavaPluginExtension> {
-        toolchain.languageVersion.set(JavaLanguageVersion.of(javaBaseline))
-        sourceCompatibility = JavaVersion.toVersion(javaBaseline)
-        targetCompatibility = JavaVersion.toVersion(javaBaseline)
-        withSourcesJar()
-    }
-
-    tasks.withType<JavaCompile>().configureEach {
-        options.encoding = "UTF-8"
-        options.release.set(javaBaseline)
-        options.compilerArgs.addAll(listOf("-Xlint:all"))
-    }
-}
-```
-
-Update all test launcher wiring:
-
-```kotlin
-tasks.withType<Test>().configureEach {
-    useJUnitPlatform()
-    javaLauncher.set(java25)
-}
-```
-
-Rename local variables from `java17` to `java25` or generic `javaLauncher`.
-
-### Rules
-
-```text
-- Do not add --enable-preview.
-- Do not remove -Xlint:all.
-- Do not weaken test logging.
-- Do not remove AspectJ javaagent wiring.
-- Do not disable Gradle TestKit tests.
-```
-
-### Verification commands
-
-```bash
-./gradlew clean compileJava compileTestJava --dependency-verification lenient --console=plain --stacktrace
-```
-
-### Acceptance criteria
-
-```text
-[ ] Main sources compile with --release 25.
-[ ] Test sources compile with Java 25.
-[ ] All references to `java17`, `VERSION_17`, and `JavaLanguageVersion.of(17)` are removed or documented as historical text only.
-```
-
----
-
-## 9. Slice 4 — Migrate JUnit 5 Configuration to JUnit 6
-
-### Goal
-
-Ensure all JUnit runtime wiring is JUnit 6-compatible.
-
-### Files
-
-```text
-build.gradle.kts
-gradle/libs.versions.toml
-src/test/java/**/*.java
-```
-
-### Search for removed or risky JUnit APIs
-
-```bash
-rg -n "junit-platform-runner|junit-platform-jfr|org\.junit\.platform\.runner|@RunWith|Launcher\.execute\(|LauncherDiscoveryRequest|TestPlan|Vintage|junit-vintage|junit\.platform\.suite\.commons" src build.gradle.kts gradle || true
-```
-
-### Expected source behavior
-
-Most tests should remain unchanged if they only use:
-
-```text
-@Test
-@BeforeEach
-@AfterEach
-@BeforeAll
-@ParameterizedTest
-@MethodSource
-Arguments
-Assertions
-```
-
-Do not perform mechanical import rewrites unless compilation proves they are necessary.
-
-### Verification commands
-
-```bash
-./gradlew test --dependency-verification lenient --console=plain --stacktrace
-```
-
-### Acceptance criteria
-
-```text
-[ ] Tests run on JUnit 6.
-[ ] No JUnit Platform 1.x dependency remains.
-[ ] No removed JUnit Platform artifact is referenced.
-[ ] Existing test behavior is preserved.
-[ ] ArchUnit tests still execute.
-```
-
----
-
-## 10. Slice 5 — Verify JavaParser Java 25 Parsing
-
-### Goal
-
-Prove that the scanner can parse Java 25 source syntax.
-
-### Add or update test
-
-Add a focused regression test under the JavaParser scanner/support test package.
-
-Suggested test name:
-
-```text
-JavaParserJava25CompatibilityTest
-```
-
-Test scenarios:
-
-```text
-- A normal Java 25 source file parses successfully.
-- A switch expression / modern syntax sample does not break scanning.
-- The scanner still emits expected ScanEvent data for ordinary methods.
-```
-
-Do not add preview syntax unless preview support is explicitly enabled in the build, which is not part of this workflow.
-
-### Verification commands
-
-```bash
-./gradlew test --tests '*JavaParserJava25CompatibilityTest' --dependency-verification lenient --console=plain --stacktrace
-./gradlew test --tests '*JavaParser*' --dependency-verification lenient --console=plain --stacktrace
-```
-
-### Acceptance criteria
-
-```text
-[ ] JavaParser-related tests pass under Java 25.
-[ ] Java 25 non-preview syntax does not break scanner behavior.
-[ ] No preview feature dependency is introduced.
-```
-
----
-
-## 11. Slice 6 — Verify Runtime Instrumentation on Java 25
-
-### Goal
-
-Prove that runtime tracing, AspectJ weaving, and Mockito continue to work under Java 25.
-
-### Targeted tests
-
-Run focused tests first:
-
-```bash
-./gradlew test --tests '*MethodLoggingAspectTest' --dependency-verification lenient --console=plain --stacktrace
-./gradlew test --tests '*LoggingSafetyTest' --dependency-verification lenient --console=plain --stacktrace
-./gradlew test --tests '*RtTrace*' --dependency-verification lenient --console=plain --stacktrace
-./gradlew test --tests '*PluginAdapterArchitectureTest' --dependency-verification lenient --console=plain --stacktrace
-./gradlew test --tests '*HexagonRulesTest' --dependency-verification lenient --console=plain --stacktrace
-```
-
-### Rules
-
-```text
-- Keep AspectJ output visible enough to diagnose weaving failures.
-- Do not disable tests to hide Java 25 instrumentation problems.
-- Add JVM --add-opens only if a concrete failing test proves it is necessary.
-- Any added --add-opens must be documented with the exact failing test and exception.
-```
-
-### Acceptance criteria
-
-```text
-[ ] AspectJ load-time weaving works under Java 25.
-[ ] Mockito-based tests work under Java 25.
-[ ] Runtime trace tests work under Java 25.
-[ ] Architecture tests work under Java 25.
-```
-
----
-
-## 12. Slice 7 — Update CI to Java 25
-
-### Goal
-
-Make GitHub Actions run with Java 25.
-
-### Files
-
-```text
-.github/workflows/*.yml
-.github/workflows/*.yaml
-.github/workflows/*_not_in_use
-```
-
-### Required active workflow update
-
-Update active workflow setup steps from Java 17 to Java 25.
-
-Example:
-
-```yaml
-- name: Set up JDK 25
-  uses: actions/setup-java@v4
-  with:
-    java-version: '25'
-    distribution: 'temurin'
-    cache: 'gradle'
-```
-
-### Verification commands
-
-```bash
-rg -n "JDK 17|Java 17|java-version: '17'|java-version: \"17\"|setup-java" .github || true
-```
-
-### Acceptance criteria
-
-```text
-[ ] Active CI uses Java 25.
-[ ] Workflow step names no longer say JDK 17.
-[ ] Inactive workflow files are either updated or clearly marked obsolete.
-[ ] CI still runs the full quality gate.
-```
-
----
-
-## 13. Slice 8 — Update Documentation and Agent Rules
-
-### Goal
-
-Align all repository documentation with the new baseline.
-
-### Files
-
-```text
-AGENTS.md
-QUALITY.md
-README.md
-Commit.md
-workflow.md files, if any
-```
-
-### Required documentation updates
-
-Replace current project baseline references:
-
-```text
-Java 17 -> Java 25
-JUnit 5 -> JUnit 6
-```
-
-Update quality gate language to mention:
-
-```text
-- Java 25 toolchain
-- JUnit 6 test runtime
-- Java 25-compatible JaCoCo
-- Java 25-compatible AspectJ Weaver
-- dependency verification refresh after dependency changes
-```
-
-### Required commands to document in QUALITY.md
-
-```bash
-./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace
-./gradlew validatePlugins --dependency-verification strict --no-daemon --console=plain --stacktrace
-```
-
-If connector parity tests exist, keep them:
-
-```bash
-./gradlew test --tests '*BtmGenerationAdapterValidationTest' --dependency-verification strict --console=plain --stacktrace
-./gradlew test --tests '*BuildToolConnectorParityTest' --dependency-verification strict --console=plain --stacktrace
-./gradlew test --tests '*MavenJoernConfigurationParityTest' --dependency-verification strict --console=plain --stacktrace
-./gradlew test --tests '*MavenFullAnalysisParityTest' --dependency-verification strict --console=plain --stacktrace
-./gradlew test --tests '*MavenReactorAggregationTest' --dependency-verification strict --console=plain --stacktrace
-./gradlew test --tests '*HexagonRulesTest' --dependency-verification strict --console=plain --stacktrace
-```
-
-### Search command
-
-```bash
-rg -n "Java 17|JDK 17|JUnit 5|junit5|java17|VERSION_17|release\.set\(17\)|JavaLanguageVersion\.of\(17\)|junit-platform =|1\.11\.3|5\.13\.4" \
-  AGENTS.md QUALITY.md README.md Commit.md build.gradle.kts settings.gradle.kts gradle .github src || true
-```
-
-### Acceptance criteria
-
-```text
-[ ] AGENTS.md declares Java 25 and JUnit 6.
-[ ] QUALITY.md declares Java 25 and JUnit 6 verification.
-[ ] README.md no longer instructs users to run with Java 17.
-[ ] Commit.md no longer states JUnit 5 as the active quality baseline.
-[ ] Historical references are clearly marked as historical if kept.
-```
-
----
-
-## 14. Slice 9 — Refresh Dependency Verification Metadata
-
-### Goal
-
-Update `gradle/verification-metadata.xml` only for expected dependency changes.
-
-### File
-
-```text
-gradle/verification-metadata.xml
-```
-
-### First run with lenient verification
-
-```bash
-./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage \
-  --dependency-verification lenient \
-  --console=plain \
-  --stacktrace
-```
-
-### Refresh metadata
-
-Use Gradle metadata generation for the changed dependency set:
-
-```bash
-./gradlew help \
-  --write-verification-metadata sha256 \
-  --dependency-verification lenient \
-  --console=plain
-```
-
-If test-runtime dependencies are not fully captured by `help`, run:
-
-```bash
-./gradlew clean test \
-  --write-verification-metadata sha256 \
-  --dependency-verification lenient \
-  --console=plain \
-  --stacktrace
-```
-
-### Inspect metadata diff carefully
-
-```bash
-git diff -- gradle/verification-metadata.xml
-```
-
-### Rules
-
-```text
-- Keep only expected new or changed artifacts.
-- Do not add broad trust rules unless there is a verified Gradle/IDE metadata reason.
-- Do not remove existing verification metadata without understanding why it disappeared.
-- Do not switch off dependency verification.
-```
-
-### Strict verification
-
-```bash
-./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage \
+./gradlew :forensic-analytics-ingestion-request:test \
+  :forensic-analytics-cli:test \
+  :forensic-analytics-testbed:test \
   --dependency-verification strict \
   --console=plain \
   --stacktrace
 ```
 
-### Acceptance criteria
+Windows:
+
+```powershell
+.\gradlew.bat :forensic-analytics-ingestion-request:test `
+  :forensic-analytics-cli:test `
+  :forensic-analytics-testbed:test `
+  --dependency-verification strict `
+  --console=plain `
+  --stacktrace
+```
+
+### Akzeptanzkriterien
 
 ```text
-[ ] Strict dependency verification passes.
-[ ] Metadata diff only contains expected dependency changes.
-[ ] No broad unreviewed trust rule was introduced.
+[ ] Analytics-Test nutzt eine Handoff-Struktur, die dem Plugin-Writer entspricht.
+[ ] Import funktioniert ohne forensics_tracing Compile-Dependency.
+[ ] Test deckt mindestens RULE_ARTIFACTS und DIAGNOSTIC_REPORT ab.
+[ ] Summary wird geprüft.
 ```
 
 ---
 
-## 15. Slice 10 — Full Local Quality Gate
+## 8. Slice 3 — Cross-Repo-Smoke mit echtem `forensics_tracing` Output
 
-### Goal
+### Ziel
 
-Verify that the full system works under Java 25 and JUnit 6.
+Den tatsächlichen lokalen Handoff zwischen beiden Repositories ausführen.
+
+Dieser Slice ist ein manueller oder dokumentierter Integrations-Smoke und muss nicht zwingend im Standard-Unit-Gate laufen.
+
+### Voraussetzung
+
+In `forensics_tracing/main` muss der Engine-Handoff gemergt sein.
+
+### Schritt 1 — Request in `forensics_tracing` erzeugen
+
+Im Repository `forensics_tracing`:
+
+```bash
+./gradlew generateBtmRules \
+  -Pforensics.engineRequestEnabled=true \
+  -Pforensics.engineRequestFile=build/forensics/engine-request.json \
+  --dependency-verification strict \
+  --console=plain \
+  --stacktrace
+```
+
+Windows:
+
+```powershell
+.\gradlew.bat generateBtmRules `
+  -Pforensics.engineRequestEnabled=true `
+  -Pforensics.engineRequestFile=build\forensics\engine-request.json `
+  --dependency-verification strict `
+  --console=plain `
+  --stacktrace
+```
+
+### Schritt 2 — Request in `forensic_analytics` importieren
+
+Im Repository `forensic_analytics`:
+
+```bash
+./gradlew :forensic-analytics-cli:run \
+  --args="ingest-request --request <path-to-forensics_tracing>/build/forensics/engine-request.json --output build/forensics/handoff-smoke" \
+  --dependency-verification strict \
+  --console=plain \
+  --stacktrace
+```
+
+Windows:
+
+```powershell
+.\gradlew.bat :forensic-analytics-cli:run `
+  --args="ingest-request --request D:\Projects\forensics_tracing\build\forensics\engine-request.json --output build\forensics\handoff-smoke" `
+  --dependency-verification strict `
+  --console=plain `
+  --stacktrace
+```
+
+### Erwartete Datei
+
+```text
+build/forensics/handoff-smoke/engine-request-import-summary.txt
+```
+
+### Erwarteter Inhalt
+
+```text
+status=COMPLETED
+uploadedPayloads=1
+```
+
+Bei aktiviertem Analysis Store können es mehrere Payloads sein:
+
+```text
+uploadedPayloads>=1
+```
+
+### Akzeptanzkriterien
+
+```text
+[ ] Echtes engine-request.json aus forensics_tracing wird importiert.
+[ ] Alle referenzierten Payload-Dateien sind lesbar.
+[ ] CLI beendet mit Exit Code 0.
+[ ] Summary enthält status=COMPLETED.
+[ ] uploadedPayloads ist mindestens 1.
+```
+
+---
+
+## 9. Slice 4 — Testbed-Härtung für Cross-Repo-Handoff
+
+### Ziel
+
+Den Handoff als dauerhaft nachvollziehbares Testbed-Szenario dokumentieren oder absichern.
+
+### Option A — Dokumentierter Testbed-Smoke
+
+Ergänzen:
+
+```text
+docs/migration/CROSS_REPO_HANDOFF_SMOKE.md
+```
+
+Inhalt:
+
+```text
+- Voraussetzung: forensics_tracing main mit Engine Request
+- Command zum Erzeugen des Request
+- Command zum Import in forensic_analytics
+- Erwartete Summary
+- Bekannte Grenzen
+- Nicht Teil des Standard-Gates, weil zwei Repositories beteiligt sind
+```
+
+### Option B — Testbed-Script
+
+Optional ein Script im Testbed anlegen:
+
+```text
+forensic-analytics-testbed/src/test/resources oder scripts/
+```
+
+Aber nur, wenn es keine festen lokalen Pfade erzwingt.
+
+Mögliche Parameter:
+
+```text
+FORENSICS_TRACING_REPO
+FORENSIC_ANALYTICS_REPO
+ENGINE_REQUEST_FILE
+HANDOFF_OUTPUT_DIR
+```
+
+### Nicht tun
+
+```text
+- Keine absolute D:\Projects-Pfade hart codieren.
+- Keine forensics_tracing Compile-Dependency hinzufügen.
+- Kein Docker oder Joern für diesen Smoke erzwingen.
+```
+
+### Akzeptanzkriterien
+
+```text
+[ ] Handoff-Smoke ist reproduzierbar dokumentiert.
+[ ] Keine lokalen Pfade sind fest verdrahtet.
+[ ] Testbed bleibt ohne externe Services im Standard-Gate lauffähig.
+```
+
+---
+
+## 10. Slice 5 — CLI-Ausgabe und Fehlerdiagnostik final prüfen
+
+### Ziel
+
+Sicherstellen, dass der CLI-Import nutzbar und fehlertolerant ist.
+
+### Zu prüfende Fälle
+
+```text
+[ ] --help zeigt ingest-request.
+[ ] fehlendes --request erzeugt klare Fehlermeldung.
+[ ] fehlende Request-Datei erzeugt klare Fehlermeldung.
+[ ] fehlende Payload-Datei erzeugt klare Fehlermeldung.
+[ ] unbekanntes payload kind erzeugt klare Fehlermeldung.
+[ ] erfolgreicher Import schreibt Summary.
+[ ] Standalone ServiceLoader-Pfad benötigt keinen RunRepositoryAnalysisUseCase für ingest-request.
+```
+
+### Commands
+
+```bash
+./gradlew :forensic-analytics-cli:test --dependency-verification strict --console=plain --stacktrace
+./gradlew :forensic-analytics-cli:run --args="--help" --dependency-verification strict --console=plain --stacktrace
+```
+
+Windows:
+
+```powershell
+.\gradlew.bat :forensic-analytics-cli:test --dependency-verification strict --console=plain --stacktrace
+.\gradlew.bat :forensic-analytics-cli:run --args="--help" --dependency-verification strict --console=plain --stacktrace
+```
+
+### Akzeptanzkriterien
+
+```text
+[ ] CLI-Verhalten ist getestet.
+[ ] Fehler sind für Nutzer verständlich.
+[ ] ingest-request bleibt unabhängig vom analyze-ServiceLoader.
+```
+
+---
+
+## 11. Slice 6 — Migration Status finalisieren
+
+### Ziel
+
+Die Migration dokumentiert abschließen oder bewusst offene Punkte klar markieren.
+
+### Neue oder zu aktualisierende Datei
+
+```text
+docs/migration/MIGRATION_STATUS.md
+```
+
+### Inhalt
+
+```markdown
+# Migration Status: forensics_tracing -> forensic_analytics
+
+## Completed
+
+- Java 25 / JUnit 6 baseline in forensic_analytics
+- Engine module
+- Domain models
+- Application use case
+- Repository source adapter
+- Joern Docker adapter boundary
+- CLI analyze command
+- gRPC ingestion payload descriptors
+- Engine request ingestion
+- CLI ingest-request command
+- Testbed handoff scenario
+- Standalone ingest-request wiring
+
+## Completed in forensics_tracing
+
+- Engine request generation on main: yes/no
+- Gradle mapping: yes/no
+- Maven mapping: yes/no
+- Legacy mode retained: yes/no
+- Java 25 / JUnit 6 baseline: yes/no
+
+## Verified Cross-Repo
+
+- Request generated by forensics_tracing: yes/no
+- Request imported by forensic_analytics: yes/no
+- uploadedPayloads: n
+- Summary path: ...
+
+## Open
+
+- Direct gRPC client in plugin
+- Persistent Analytics storage beyond in-memory
+- Graph model
+- Replay model
+- Report model
+- LLM context
+- Real Joern image digest decision
+- WildFly performance smoke
+
+## Final Assessment
+
+Migration is complete/incomplete because ...
+```
+
+### Akzeptanzkriterien
+
+```text
+[ ] Statusdokument enthält beide Repositories.
+[ ] Cross-Repo-Smoke ist mit Ergebnis dokumentiert.
+[ ] Offene Punkte sind nicht als erledigt dargestellt.
+[ ] Keine unbestätigten Annahmen werden als Fakt formuliert.
+```
+
+---
+
+## 12. Slice 7 — Full Quality Gate
+
+### Ziel
+
+Finale lokale Qualitätssicherung für `forensic_analytics`.
 
 ### Commands
 
@@ -727,168 +571,146 @@ Verify that the full system works under Java 25 and JUnit 6.
   --dependency-verification strict \
   --console=plain \
   --stacktrace
+```
 
-./gradlew validatePlugins \
-  --dependency-verification strict \
-  --no-daemon \
-  --console=plain \
+Windows:
+
+```powershell
+.\gradlew.bat clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage `
+  --dependency-verification strict `
+  --console=plain `
   --stacktrace
 ```
 
-If Maven connector parity is part of the current repository state, also run:
-
-```bash
-./gradlew test --tests '*BtmGenerationAdapterValidationTest' --dependency-verification strict --console=plain --stacktrace
-./gradlew test --tests '*BuildToolConnectorParityTest' --dependency-verification strict --console=plain --stacktrace
-./gradlew test --tests '*MavenJoernConfigurationParityTest' --dependency-verification strict --console=plain --stacktrace
-./gradlew test --tests '*MavenFullAnalysisParityTest' --dependency-verification strict --console=plain --stacktrace
-./gradlew test --tests '*MavenReactorAggregationTest' --dependency-verification strict --console=plain --stacktrace
-./gradlew test --tests '*HexagonRulesTest' --dependency-verification strict --console=plain --stacktrace
-```
-
-Optional SonarCloud run if token is available:
+Optional, falls Sonar-Token vorhanden:
 
 ```bash
 ./gradlew sonar --dependency-verification strict --console=plain --stacktrace
 ```
 
-### Acceptance criteria
+### Akzeptanzkriterien
 
 ```text
-[ ] Full Gradle quality gate passes.
-[ ] Plugin validation passes.
-[ ] Connector parity tests pass, if present.
-[ ] SonarCloud is executed if token is available, otherwise skipped and reported.
+[ ] Full Quality Gate läuft erfolgreich.
+[ ] Dependency Verification läuft strict.
+[ ] Package Coverage läuft erfolgreich.
+[ ] Sonar wird ausgeführt oder sauber mit Skip-Grund dokumentiert.
 ```
 
 ---
 
-## 16. Slice 11 — Final Consistency Scan
+## 13. Slice 8 — PR/Commit Abschluss
 
-### Goal
+### Ziel
 
-Make sure no stale baseline references remain.
+Alle Analytics-Änderungen sauber committen und dokumentieren.
 
-### Commands
+### Git-Prüfung
 
 ```bash
-rg -n "Java 17|JDK 17|JUnit 5|junit5|java17|VERSION_17|release\.set\(17\)|JavaLanguageVersion\.of\(17\)|junit-platform =|1\.11\.3|5\.13\.4|0\.8\.13|1\.9\.24" \
-  AGENTS.md QUALITY.md README.md Commit.md build.gradle.kts settings.gradle.kts gradle .github src || true
-
 git status --short
 git diff --stat
-git diff -- AGENTS.md QUALITY.md README.md Commit.md build.gradle.kts settings.gradle.kts gradle .github src
+git diff
+git diff --cached --stat
+git diff --cached
 ```
 
-### Acceptance criteria
+### Empfohlene Commit-Nachrichten
+
+Wenn nur Tests/Dokumentation ergänzt werden:
 
 ```text
-[ ] No stale active Java 17 references remain.
-[ ] No stale active JUnit 5 references remain.
-[ ] No stale JUnit Platform 1.x catalog version remains.
-[ ] No stale Java 17 CI setup remains.
-[ ] Remaining historical references are explicitly marked as historical.
+test(migration): verify tracing engine request handoff
 ```
 
----
-
-## 17. Commit Requirements
-
-### Commit message template
+Wenn auch CLI/Importer angepasst werden müssen:
 
 ```text
-build: migrate project baseline to Java 25 and JUnit 6
+fix(ingestion): align engine request intake with tracing handoff
+```
 
-What changed:
-- Updated Gradle Java toolchain, source compatibility, target compatibility, and --release to Java 25.
-- Updated JUnit dependencies to JUnit 6 via the JUnit BOM.
-- Removed stale separate JUnit Platform 1.x versioning.
-- Updated Java 25-sensitive tooling dependencies such as JaCoCo, AspectJ, Lombok, Mockito, Byte Buddy, and JavaParser where required.
-- Updated CI to use JDK 25.
-- Updated AGENTS.md, QUALITY.md, README.md, and commit documentation to reflect the new baseline.
-- Refreshed dependency verification metadata for expected dependency changes.
+Wenn Statusdokument ergänzt wird:
+
+```text
+docs(migration): record cross-repo handoff status
+```
+
+### Commit Body muss enthalten
+
+```text
+What:
+- ...
 
 Why:
-- The repository baseline was Java 17 / JUnit 5.
-- The requested project baseline is Java 25 / JUnit 6.
-- Java 25 requires compatible bytecode, coverage, weaving, mocking, parsing, and CI tooling.
+- ...
 
-How verified:
-- ./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace
-- ./gradlew validatePlugins --dependency-verification strict --no-daemon --console=plain --stacktrace
-- Targeted JUnit, ArchUnit, JavaParser, runtime tracing, AspectJ, and Mockito tests.
-- Connector parity tests where present.
+How:
+- ...
 
-Breaking changes:
-- The project now requires Java 25 for build and test execution.
-- Consumers expecting a Java 17 baseline must remain on an older release or use a dedicated compatibility branch.
-```
+Verification:
+- ...
 
-### Commit commands
-
-```bash
-git status --short
-git add gradle/libs.versions.toml build.gradle.kts settings.gradle.kts gradle/verification-metadata.xml AGENTS.md QUALITY.md README.md Commit.md .github src
-git status --short
-git diff --cached --stat
-git commit -m "build: migrate project baseline to Java 25 and JUnit 6"
-```
-
-Push:
-
-```bash
-git push -u origin feature/java25-junit6-migration
+Limitations:
+- ...
 ```
 
 ---
 
-## 18. Final Definition of Done
+## 14. Vollständige Definition of Done
 
 ```text
-[ ] Repository builds with Java 25.
-[ ] Repository tests run with JUnit 6.
-[ ] JUnit Platform 1.x is removed from active version management.
-[ ] Java 25 toolchain is used for compile and test tasks.
-[ ] CI uses Java 25.
-[ ] JaCoCo supports Java 25 bytecode.
-[ ] AspectJ Weaver supports Java 25 runtime weaving.
-[ ] Mockito / Byte Buddy tests pass on Java 25.
-[ ] JavaParser can parse Java 25-compatible source samples.
-[ ] AGENTS.md declares Java 25 / JUnit 6.
-[ ] QUALITY.md declares Java 25 / JUnit 6 quality gates.
-[ ] README.md setup instructions are Java 25-aligned.
-[ ] Dependency verification passes in strict mode.
-[ ] Full local quality gate passes.
-[ ] Commit message documents what, why, how, verification, and breaking impact.
+[ ] forensic_analytics/main kann plugin-erzeugtes engine-request.json importieren.
+[ ] CLI ingest-request läuft mit echtem Cross-Repo-Artefakt.
+[ ] Testbed oder Dokumentation sichert den Smoke reproduzierbar ab.
+[ ] Keine direkte Dependency auf forensics_tracing wurde eingeführt.
+[ ] Domain/Application bleiben frei von gRPC-/CLI-/Persistence-/Docker-Leaks.
+[ ] Full Quality Gate läuft strict.
+[ ] MIGRATION_STATUS.md dokumentiert erledigte und offene Punkte.
+[ ] Offene Graph-/Replay-/LLM-/Persistenz-Themen sind klar als spätere Arbeit markiert.
 ```
 
 ---
 
-## 19. Mandatory Stop-and-Report Cases
+## 15. Stop-and-Report-Fälle
 
-Stop immediately and report if any of the following happens:
+Sofort stoppen und berichten, wenn:
 
 ```text
-- Java 25 toolchain cannot be resolved locally or via Foojay.
-- Gradle cannot run with the configured Java 25 environment.
-- JUnit 6 causes removed API failures that require architectural decisions.
-- ArchUnit does not execute under JUnit 6.
-- AspectJ weaving fails under Java 25.
-- Mockito fails due to Java 25 bytecode or instrumentation behavior.
-- JaCoCo cannot instrument or report Java 25 class files.
-- JavaParser cannot parse required non-preview Java 25 source syntax.
-- Dependency verification requires unexpected trust rules.
-- CI workflow changes conflict with repository policy.
-- Quality gates fail and cannot be fixed within this migration slice.
+- forensics_tracing/main noch kein engine-request.json erzeugen kann.
+- Plugin-Request-Felder nicht zum Analytics-Reader passen.
+- Payload-Kinds auseinanderlaufen.
+- Payload-Dateien im Request nicht lesbar sind.
+- CLI ingest-request den analyze-ServiceLoader erzwingt.
+- Domain oder Application eine technische Adapter-Abhängigkeit bekommt.
+- Full Quality Gate fehlschlägt.
+- Dependency Verification neue unerwartete Trust-Regeln verlangt.
 ```
 
-The report must include:
+Der Bericht muss enthalten:
 
 ```text
-- exact command
-- exact error
-- affected file
-- suspected root cause
-- proposed next step
-- whether this blocks the migration
+- ausgeführter Command
+- konkrete Fehlermeldung
+- betroffene Datei
+- vermutete Ursache
+- ob der Fehler die Migration blockiert
+- empfohlener nächster Schritt
+```
+
+---
+
+## 16. Finaler Report
+
+Am Ende muss der Agent berichten:
+
+```text
+- Geänderte Dateien
+- Importvertrag geprüft: ja/nein
+- Echtes Plugin-Request importiert: ja/nein
+- CLI Summary Pfad
+- uploadedPayloads
+- Full Quality Gate Ergebnis
+- Sonar Ergebnis oder Skip-Grund
+- Offene Punkte
+- Bewertung: Migration vollständig / teilweise / blockiert
 ```
