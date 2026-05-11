@@ -25,6 +25,7 @@ include(
     "forensic-analytics-adapter-repository-source",
     "forensic-analytics-adapter-joern-docker",
     "forensic-analytics-cli",
+    "forensic-analytics-testbed",
     "forensic-analytics-persistence",
     "forensic-analytics-ingestion-grpc",
     "forensic-analytics-bootstrap",
