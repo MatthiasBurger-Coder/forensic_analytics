@@ -25,6 +25,18 @@ class CliArgumentParserTest {
     }
 
     @Test
+    void parsesEngineRequestImportCommand() {
+        var command = assertInstanceOf(EngineRequestImportCommand.class, parser.parse(new String[] {
+            "ingest-request",
+            "--request", "engine-request.json",
+            "--output", "build/out"
+        }));
+
+        assertEquals("engine-request.json", command.requestFile().getFileName().toString());
+        assertEquals("out", command.outputDirectory().getFileName().toString());
+    }
+
+    @Test
     void parsesHelpCommand() {
         assertInstanceOf(HelpCommand.class, parser.parse(new String[] {"--help"}));
         assertInstanceOf(HelpCommand.class, parser.parse(new String[] {"help"}));
@@ -47,5 +59,10 @@ class CliArgumentParserTest {
             "--output", "build/out",
             "--joern-mode", "remote"
         }));
+        assertThrows(CliUsageException.class, () -> parser.parse(new String[] {"ingest-request", "--request", "engine-request.json"}));
+        assertThrows(CliUsageException.class, () -> parser.parse(new String[] {"ingest-request", "--request"}));
+        assertThrows(CliUsageException.class, () -> parser.parse(new String[] {"ingest-request", "--request", "--output", "build/out"}));
+        assertThrows(CliUsageException.class, () -> parser.parse(new String[] {"ingest-request", "--request", "one.json", "--request", "two.json"}));
+        assertThrows(CliUsageException.class, () -> parser.parse(new String[] {"ingest-request", "--unknown", "value"}));
     }
 }

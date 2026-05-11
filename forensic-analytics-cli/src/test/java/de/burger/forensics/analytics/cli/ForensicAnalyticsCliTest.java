@@ -58,6 +58,35 @@ class ForensicAnalyticsCliTest {
     }
 
     @Test
+    void importsEngineRequestAndWritesSummary() throws Exception {
+        var payloadFile = Files.writeString(tempDir.resolve("rules.btm"), "RULE test\n", StandardCharsets.UTF_8);
+        var requestFile = Files.writeString(
+            tempDir.resolve("engine-request.json"),
+            engineRequestJson(payloadFile),
+            StandardCharsets.UTF_8
+        );
+        var standardOutput = new ByteArrayOutputStream();
+        var errorOutput = new ByteArrayOutputStream();
+        var outputDirectory = tempDir.resolve("request-out");
+        var useCase = new RecordingUseCase();
+
+        var exitCode = new ForensicAnalyticsCli(useCase, stream(standardOutput), stream(errorOutput)).run(new String[] {
+            "ingest-request",
+            "--request", requestFile.toString(),
+            "--output", outputDirectory.toString()
+        });
+
+        assertEquals(0, exitCode);
+        assertFalse(useCase.called());
+        var summary = Files.readString(outputDirectory.resolve("engine-request-import-summary.txt"), StandardCharsets.UTF_8);
+        assertTrue(summary.contains("requestFile=" + requestFile.toAbsolutePath().normalize()));
+        assertTrue(summary.contains("status=COMPLETED"));
+        assertTrue(summary.contains("uploadedPayloads=1"));
+        assertTrue(standardOutput.toString(StandardCharsets.UTF_8).contains("summaryPath="));
+        assertEquals("", errorOutput.toString(StandardCharsets.UTF_8));
+    }
+
+    @Test
     void printsHelpWithoutUseCase() {
         var standardOutput = new ByteArrayOutputStream();
         var errorOutput = new ByteArrayOutputStream();
@@ -67,6 +96,7 @@ class ForensicAnalyticsCliTest {
 
         assertEquals(0, exitCode);
         assertTrue(standardOutput.toString(StandardCharsets.UTF_8).contains("forensic-analytics analyze"));
+        assertTrue(standardOutput.toString(StandardCharsets.UTF_8).contains("forensic-analytics ingest-request"));
         assertFalse(useCase.called());
     }
 
@@ -102,7 +132,7 @@ class ForensicAnalyticsCliTest {
         });
 
         assertEquals(1, exitCode);
-        assertTrue(errorOutput.toString(StandardCharsets.UTF_8).contains("Analysis failed: failed"));
+        assertTrue(errorOutput.toString(StandardCharsets.UTF_8).contains("Command failed: failed"));
     }
 
     @Test
@@ -122,8 +152,62 @@ class ForensicAnalyticsCliTest {
         assertTrue(errorOutput.toString(StandardCharsets.UTF_8).contains("No RunRepositoryAnalysisUseCase service provider"));
     }
 
+    @Test
+    void reportsMissingEngineRequestFile() {
+        var standardOutput = new ByteArrayOutputStream();
+        var errorOutput = new ByteArrayOutputStream();
+
+        var exitCode = new ForensicAnalyticsCli(new RecordingUseCase(), stream(standardOutput), stream(errorOutput)).run(new String[] {
+            "ingest-request",
+            "--request", tempDir.resolve("missing-engine-request.json").toString(),
+            "--output", tempDir.resolve("request-out").toString()
+        });
+
+        assertEquals(1, exitCode);
+        assertTrue(errorOutput.toString(StandardCharsets.UTF_8).contains("Command failed: Failed to read engine ingestion request"));
+    }
+
     private static PrintStream stream(ByteArrayOutputStream output) {
         return new PrintStream(output, true, StandardCharsets.UTF_8);
+    }
+
+    private static String engineRequestJson(Path payloadFile) {
+        return """
+            {
+              "schemaVersion": "1",
+              "buildIdentity": {
+                "projectId": "project-a",
+                "repositoryUrl": "UNKNOWN",
+                "branchName": "UNKNOWN",
+                "commitHash": "UNKNOWN",
+                "buildId": "UNKNOWN",
+                "scanTimestamp": "1970-01-01T00:00:00Z"
+              },
+              "moduleIdentity": {
+                "moduleName": "module-a",
+                "modulePath": ":module-a"
+              },
+              "pluginIdentity": {
+                "pluginName": "forensics-tracing",
+                "pluginVersion": "1.2.3"
+              },
+              "payloads": [
+                {
+                  "payloadId": "byteman-rules",
+                  "kind": "RULE_ARTIFACTS",
+                  "contentType": "text/x-byteman",
+                  "file": "%s",
+                  "attributes": {
+                    "artifact": "btm-rules"
+                  }
+                }
+              ]
+            }
+            """.formatted(jsonPath(payloadFile));
+    }
+
+    private static String jsonPath(Path path) {
+        return path.toAbsolutePath().normalize().toString().replace('\\', '/');
     }
 
     private static final class RecordingUseCase implements RunRepositoryAnalysisUseCase {
