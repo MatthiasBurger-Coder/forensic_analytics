@@ -355,10 +355,38 @@ Do not:
 
 ## Optional SonarCloud Gate
 
-If `SONAR_TOKEN` or `sonar.token` is available and the repository documents local Sonar execution, run:
+If a local `.env` file exists, load it into the current PowerShell process before checking for Sonar credentials:
+
+```powershell
+if (Test-Path .env) {
+  Get-Content .env | ForEach-Object {
+    if ($_ -match '^\s*([^#][^=]+)=(.*)$') {
+      [Environment]::SetEnvironmentVariable($matches[1].Trim(), $matches[2].Trim(), "Process")
+    }
+  }
+}
+```
+
+Do not print the token value. Use a presence check only:
+
+```powershell
+$sonarToken = [Environment]::GetEnvironmentVariable("SONAR_TOKEN")
+$sonarPropertyToken = [Environment]::GetEnvironmentVariable("sonar.token")
+if ($sonarToken -or $sonarPropertyToken) { "SONAR_TOKEN_PRESENT" } else { "SONAR_TOKEN_MISSING" }
+```
+
+If `SONAR_TOKEN` or `sonar.token` is available after loading local environment data, and the repository documents local Sonar execution, run:
 
 ```powershell
 .\gradlew.bat sonar --dependency-verification strict --console=plain --stacktrace
+```
+
+The Gradle build maps these optional local environment variables to Sonar properties when they are present:
+
+```text
+SONAR_ORGANIZATION -> sonar.organization
+SONAR_PROJECT_KEY  -> sonar.projectKey
+SONAR_HOST_URL     -> sonar.host.url
 ```
 
 If credentials are missing:
