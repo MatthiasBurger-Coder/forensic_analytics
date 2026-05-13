@@ -17,6 +17,12 @@ bin/
 # Gradle local configuration
 gradle-app.setting
 
+# Local environment secrets
+.env
+.env.*
+!.env.example
+!.env.*.example
+
 # Logs and temporary files
 *.log
 logs/

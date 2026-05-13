@@ -7,6 +7,43 @@ import javax.xml.parsers.DocumentBuilderFactory
 plugins {
     base
     alias(libs.plugins.protobuf) apply false
+    alias(libs.plugins.sonarqube)
+}
+
+val localSonarProperties = mapOf(
+    "sonar.organization" to listOf("SONAR_ORGANIZATION", "sonar.organization"),
+    "sonar.projectKey" to listOf("SONAR_PROJECT_KEY", "sonar.projectKey"),
+    "sonar.host.url" to listOf("SONAR_HOST_URL", "sonar.host.url"),
+)
+
+fun sonarSetting(propertyName: String, environmentNames: List<String>): String? =
+    environmentNames.fold(providers.gradleProperty(propertyName)) { configuredValue, environmentName ->
+        configuredValue.orElse(providers.environmentVariable(environmentName))
+    }.orNull?.takeIf { it.isNotBlank() }
+
+fun usesGitMetadataOnDifferentRoot(): Boolean {
+    val gitPointer = rootProject.layout.projectDirectory.file(".git").asFile
+    if (!gitPointer.isFile) {
+        return false
+    }
+    val gitDirPrefix = "gitdir:"
+    val gitDirLine = gitPointer.useLines { lines -> lines.firstOrNull()?.trim() } ?: return false
+    if (!gitDirLine.startsWith(gitDirPrefix)) {
+        return false
+    }
+    val gitDir = file(gitDirLine.removePrefix(gitDirPrefix).trim())
+    return rootProject.projectDir.toPath().root != gitDir.toPath().root
+}
+
+sonar {
+    properties {
+        localSonarProperties.forEach { (propertyName, environmentNames) ->
+            sonarSetting(propertyName, environmentNames)?.let { property(propertyName, it) }
+        }
+        if (usesGitMetadataOnDifferentRoot()) {
+            property("sonar.scm.disabled", "true")
+        }
+    }
 }
 
 allprojects {
