@@ -41,6 +41,20 @@ runtime-events/
 trace-output/
 forensics-output/
 
+# Joern local runtime data
+/data/joern/input/**
+/data/joern/workspace/**
+/data/joern/output/**
+/data/joern/logs/**
+!/data/joern/input/
+!/data/joern/input/.gitkeep
+!/data/joern/workspace/
+!/data/joern/workspace/.gitkeep
+!/data/joern/output/
+!/data/joern/output/.gitkeep
+!/data/joern/logs/
+!/data/joern/logs/.gitkeep
+
 # Generated reports and coverage output
 coverage/
 .scannerwork/
