@@ -1,6 +1,6 @@
 ---
 name: clean
-description: Use when the user enters exactly `clean` or asks Codex to clean up after a GitHub pull request was merged in the Forensic Analytics repository. Verifies the PR merge, fetches and prunes origin, switches the worktree to main, fast-forwards main, deletes only local branches proven merged and unnecessary, and reports blockers without force deletion.
+description: Use when the user enters exactly `clean`, when `push auto` needs post-merge cleanup, or when Codex is asked to clean up after a GitHub pull request was merged in the Forensic Analytics repository. Verifies the PR merge, fetches and prunes origin, switches the worktree to main, fast-forwards main, deletes only local branches proven merged and unnecessary, and reports blockers without force deletion.
 ---
 
 # Clean Skill
@@ -20,7 +20,7 @@ AGENTS.md
 QUALITY.md
 ```
 
-When the cleanup follows a commit or PR workflow, also read the active task context and the relevant commit-preparation output if present.
+When the cleanup follows a commit, PR, or `push auto` workflow, also read the active task context and the relevant commit-preparation output if present.
 
 ## Trigger
 
@@ -31,6 +31,8 @@ clean
 ```
 
 Also use it when the user explicitly asks to clean up after a merged PR.
+
+Also use it when `.agents/skills/commit-preparation/SKILL.md` invokes cleanup after a successful `push auto` merge.
 
 Do not treat Gradle's `clean` task as this workflow unless the request is about Git or PR cleanup.
 
@@ -48,7 +50,7 @@ You must:
 - keep branches with unclear ownership, unmerged commits, active worktrees, or missing merge evidence,
 - report every deleted, kept, and blocked branch.
 
-Remote branch deletion is not part of this skill unless the user explicitly requests remote deletion in addition to `clean`.
+Remote branch deletion is not part of this skill unless the user explicitly requests remote deletion in addition to `clean`. The `push auto` workflow may delete the merged pull request's remote head branch before invoking this skill.
 
 ## Required Commands
 

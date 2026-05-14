@@ -8,9 +8,11 @@ Use the commit-preparation skill.
 Use the commit-message-preparation skill for the proposed commit message.
 Use the commit_reviewer worker/subagent for read-only review.
 Use the commit_operator worker/subagent for commit, push, and GitHub pull-request execution.
+Use the clean skill after a successful `push auto` merge.
 Do not commit if the commit reviewer returns NOT READY or BLOCKED.
 Do not commit if required quality gates fail.
-Do not push or create a pull request unless the user enters `push` or explicitly requests that action.
+Do not push or create a pull request unless the user enters `push`, enters `push auto`, or explicitly requests that action.
+Do not merge a pull request, delete a remote branch, or run post-merge cleanup unless the user enters exactly `push auto`.
 
 ## Inputs
 
@@ -20,6 +22,7 @@ Do not push or create a pull request unless the user enters `push` or explicitly
 - `QUALITY.md`.
 - `.agents/skills/commit-preparation/SKILL.md`.
 - `.agents/skills/commit-message-preparation/SKILL.md`.
+- `.agents/skills/clean/SKILL.md` when `push auto` is requested.
 - `.agents/skills/commit-preparation/workflow.commit-preparation.md`.
 - `.codex/agents/commit_reviewer.toml`.
 - `.codex/agents/commit_operator.toml`.
@@ -46,6 +49,7 @@ Read, in order:
 5. .agents/skills/commit-preparation/workflow.commit-preparation.md
 6. .codex/agents/commit_reviewer.toml
 7. .codex/agents/commit_operator.toml
+8. .agents/skills/clean/SKILL.md when `push auto` is requested
 ```
 
 Also read the active `workflow.md` or task-specific workflow if present.
@@ -88,6 +92,9 @@ Use `commit_operator` only for mutating GitHub workflow steps:
 - creating the commit,
 - pushing the current branch,
 - creating or completing a GitHub pull request against `main`.
+- merging the pull request only when the user enters exactly `push auto`,
+- deleting the merged pull request's remote head branch only after merge verification,
+- invoking the clean workflow only after the pull request is verified as merged.
 
 The operator must follow this workflow and the commit-preparation skill. It must not proceed unless the reviewer output is `READY` or it has reproduced the same output contract from repository evidence.
 
@@ -222,6 +229,28 @@ The pull request body must include:
 
 Do not force-push. Do not merge. Do not enable auto-merge. Do not retarget the pull request away from `main`.
 
+## Phase 12: Push Auto Merge, Branch Deletion, And Cleanup
+
+When the user enters exactly `push auto`, treat it as permission to complete publication and post-merge cleanup:
+
+1. Run the full Phase 11 push workflow.
+2. Verify that the pull request head branch is the current branch and the base branch is `main`.
+3. Verify GitHub reports the pull request as mergeable.
+4. Verify required checks are successful, or that no required checks are configured.
+5. Merge the pull request through GitHub.
+6. Re-fetch the pull request and verify `merged: true` before deleting any branch.
+7. Delete only the merged pull request's remote head branch.
+8. Run `.agents/skills/clean/SKILL.md`.
+9. Report the merge commit, remote branch deletion result, clean result, and final `main` status.
+
+For `push auto`, the pull request body must include the same content as Phase 11 plus an explicit note that the workflow intends to merge the PR, delete the merged PR head branch, and run clean after merge verification.
+
+Do not merge when checks failed, checks are pending, mergeability is unknown, GitHub access is unavailable, the PR does not target `main`, or the PR head branch differs from the current branch.
+
+Do not delete a branch until the PR is verified as merged.
+
+Do not delete `main`, force-delete branches, push directly to `main`, enable GitHub auto-merge, or retarget the PR.
+
 ## Stop Conditions
 
 Stop and report when:
@@ -229,6 +258,7 @@ Stop and report when:
 - `AGENTS.md`, `QUALITY.md`, or the commit-preparation skill cannot be read,
 - `.agents/skills/commit-message-preparation/SKILL.md` cannot be read when drafting the commit message,
 - `.agents/skills/commit-preparation/workflow.commit-preparation.md` cannot be read when using the reusable workflow,
+- `.agents/skills/clean/SKILL.md` cannot be read when `push auto` is requested,
 - `.codex/agents/commit_operator.toml` cannot be read when commit, push, or pull-request execution is requested,
 - branch or worktree state is unclear,
 - staged and unstaged changes conflict,
@@ -241,6 +271,7 @@ Stop and report when:
 - the commit reviewer returns `NOT READY` or `BLOCKED`,
 - the commit message would require guessing,
 - the user requested `push` but GitHub pull request creation is unavailable or would require guessing.
+- the user requested `push auto` but mergeability, required-check status, merge result, remote branch deletion target, or clean execution cannot be verified.
 
 ## Output
 
@@ -282,13 +313,15 @@ Required execution order:
 5. Read .agents/skills/commit-preparation/workflow.commit-preparation.md
 6. Read .codex/agents/commit_reviewer.toml
 7. Read .codex/agents/commit_operator.toml when mutating execution is requested
-8. Inspect git status and diffs
-9. Ask commit_reviewer to review commit readiness
-10. Route only clear, in-scope blockers to the appropriate repair role
-11. Rerun commit_reviewer after repairs
-12. Run required verification from QUALITY.md
-13. Inspect final staged diff
-14. Prepare commit message with commit-message-preparation
-15. Use commit_operator to commit only if all required gates pass and user/task permits committing
-16. On `push`, use commit_operator to push the branch and create or complete a GitHub pull request against main
+8. Read .agents/skills/clean/SKILL.md when `push auto` is requested
+9. Inspect git status and diffs
+10. Ask commit_reviewer to review commit readiness
+11. Route only clear, in-scope blockers to the appropriate repair role
+12. Rerun commit_reviewer after repairs
+13. Run required verification from QUALITY.md
+14. Inspect final staged diff
+15. Prepare commit message with commit-message-preparation
+16. Use commit_operator to commit only if all required gates pass and user/task permits committing
+17. On `push`, use commit_operator to push the branch and create or complete a GitHub pull request against main
+18. On `push auto`, use commit_operator to push, create or reuse the PR, verify mergeability and checks, merge the PR, verify merged state, delete the remote head branch, and run clean
 ```
