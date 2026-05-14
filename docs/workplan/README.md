@@ -1,21 +1,68 @@
-# Workplan Index
+# Workspace and gRPC Workplan
 
-This directory contains workflows for distributed analysis-orchestrator work. Slices 00 through 08 now describe the completed technology-neutral contract baseline and continue to distinguish that baseline from planned concrete runtime behavior.
+## Goal
 
-## Files
+This workplan defines the next Forensic Analytics platform phase:
 
-- [workflow.md](workflow.md) - master orchestration workflow and slice order
-- [TEMPLATE.md](TEMPLATE.md) - required structure for future workplan slices
-- [00-documentation-baseline-alignment.md](00-documentation-baseline-alignment.md) - documentation entry points and workflow ownership
-- [01-orchestrator-domain-vocabulary.md](01-orchestrator-domain-vocabulary.md) - completed orchestration vocabulary
-- [02-source-snapshots-and-workspaces.md](02-source-snapshots-and-workspaces.md) - completed immutable source snapshots and workspace handling
-- [03-analysis-job-queue-and-retry.md](03-analysis-job-queue-and-retry.md) - completed queue-neutral job lifecycle and retry model
-- [04-typed-worker-contracts.md](04-typed-worker-contracts.md) - completed provider-neutral worker contracts
-- [05-analysis-store-and-artifact-store.md](05-analysis-store-and-artifact-store.md) - completed canonical storage and artifact port baseline
-- [06-graph-report-and-llm-projections.md](06-graph-report-and-llm-projections.md) - completed provider-neutral projection contracts
-- [07-server-api-and-distributed-runtime.md](07-server-api-and-distributed-runtime.md) - completed server-facing request/status view contracts without runtime wiring
-- [08-quality-ci-and-rollout.md](08-quality-ci-and-rollout.md) - completed verification and rollout status documentation
+```text
+Plugin
+  -> gRPC request
+    -> forensic_analytics ingestion
+      -> create workspace
+        -> clone or checkout repository
+          -> register analysis session
+            -> later parser and analyzer execution
+```
 
-## Execution Rule
+The immediate goal is to make Analytics able to receive a repository-analysis request, prepare an isolated server-side workspace, check out the requested repository revision, register an analysis session and return a deterministic session and checkout result.
 
-Future subagents must treat each slice as a bounded task. They must verify the current source, tests, ADRs, and `QUALITY.md` before editing, and they must stop when a required symbol, module, Gradle task, schema, status, or storage concept cannot be found exactly as expected.
+## Why Workspace and gRPC Come Before Parsers
+
+Parser, Joern, AST, BTM, replay and graph work all depend on a stable source input. The platform must first prove that it can receive repository context from the plugin, create a workspace, clone or checkout the exact requested revision, register the analysis session and clean up safely.
+
+Without this foundation, parser results would depend on uncontrolled local paths, mutable branch state or plugin-side analysis behavior. The workspace/gRPC phase creates the server-side input boundary that later analyzers can trust.
+
+## Affected Modules
+
+Planned slices affect or may add contracts around these verified modules:
+
+- `forensic-analytics-domain`
+- `forensic-analytics-application`
+- `forensic-analytics-ingestion-grpc`
+- `forensic-analytics-ingestion-request`
+- `forensic-analytics-persistence`
+- `forensic-analytics-bootstrap`
+- future Git and filesystem workspace outbound adapters
+- plugin-side client integration in the producer repository
+
+No parser, Joern, BTM, replay, graph or UI implementation is part of this workplan.
+
+## How To Execute
+
+1. Fix shared Protobuf and application contracts first.
+2. Model workspace and repository checkout domain concepts before adapters.
+3. Implement Git and filesystem workspace adapters behind ports.
+4. Connect the plugin gRPC client to the new request/response contract.
+5. Verify with a mini repository before any large repository hardening.
+6. Use WildFly only as a Git/workspace hardening scenario.
+7. Run targeted tests first, then the applicable quality gate from `QUALITY.md`.
+
+## Participating Subagents
+
+The planned subagents are:
+
+- Senior System Architect
+- Senior Java Backend Developer
+- Senior DevOps Engineer
+- Senior Tester
+- Senior gRPC/Proto Specialist
+- Senior Git/Workspace Specialist
+- Senior Plugin Integration Developer
+- Senior Documentation Engineer
+- Senior Agent Swarm Orchestrator
+- Senior Security/Sandbox Engineer
+- Senior Performance Engineer
+- Senior Analysis Storage Architect
+- Senior Joern/CPG Specialist
+
+The orchestrator coordinates dependencies and file ownership. Multiple workers may run in parallel only when shared contracts are fixed and write scopes do not overlap.

@@ -11,6 +11,14 @@ Use these rules to select roles for a slice. Prefer the smallest set that covers
 - Test strategy, regression coverage, ArchUnit, coverage gates or quality failures route to `roles/senior-tester.md`.
 - Gradle, Docker, Kubernetes, CI, observability or deployment work routes to `roles/senior-devops.md`.
 - Multi-role coordination, conflict resolution or slice planning routes to `roles/senior-swarm-orchestrator.md`.
+- Protobuf contracts, streaming RPC design, request validation or gRPC compatibility route to `roles/senior-grpc-proto-specialist.md`.
+- Repository checkout, workspace lifecycle, source-root preparation or large Git repositories route to `roles/senior-git-workspace-specialist.md`.
+- Plugin producer handoff, plugin-side request construction or plugin-to-server communication routes to `roles/senior-plugin-integration-developer.md`.
+- Documentation, skill-audit material, workplans or ADR alignment notes route to `roles/senior-documentation-engineer.md`.
+- Untrusted repository handling, sandboxing, safe Git operations or secret leakage risks route to `roles/senior-security-sandbox-engineer.md`.
+- Performance budgets, large repository metrics, timeouts, quotas or scalability testing route to `roles/senior-performance-engineer.md`.
+- Analysis-session storage, raw ingestion storage, artifact storage or projection boundaries route to `roles/senior-analysis-storage-architect.md`.
+- Joern, Code Property Graph, semantic artifact handling or CPG large-project planning route to `roles/senior-joern-cpg-specialist.md`.
 
 ## Escalation
 
