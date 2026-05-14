@@ -8,6 +8,8 @@ The following gaps and stale workflow surfaces were resolved because the current
 
 | Conflict or gap | Affected files | Change made | Why confidence was at least 95 percent |
 |---|---|---|---|
+| Archived Epic baseline said Gradle 9.1 and Java/JDK 17. | `docs/epics/forensics-platform-runtime-replay-llm-analysis-v0.1.md` | Updated the guardrails to Java 25, Gradle 9.4.0 and JUnit 6. | The user explicitly confirmed the correct baseline, and it matches `AGENTS.md`, `QUALITY.md`, `build.gradle.kts`, `gradle/wrapper/gradle-wrapper.properties` and `gradle/libs.versions.toml`. |
+| Active arc42 constraints said Java/JDK 17 and Gradle 9.1. | `docs/arc42/02-architecture-constraints.md` | Updated the constraints table to Java 25, Gradle 9.4.0 and JUnit 6. | The user explicitly confirmed the correct baseline, and it matches the repository build and quality contract. |
 | Missing distributed-platform skill for worker/job lifecycle, retry, leasing, backpressure and failure recovery. | `.agents/skills/distributed-systems-architect/SKILL.md` | Added a dedicated skill. | The new platform phase explicitly requires worker/workspace-capable architecture and long-running analysis jobs. |
 | Missing workspace lifecycle skill for server-side repository checkout before parser execution. | `.agents/skills/workspace-lifecycle-specialist/SKILL.md` | Added a dedicated skill. | The requested flow puts workspace creation and Git checkout before parsers. Existing skills did not own this lifecycle directly. |
 | Missing large Git repository skill for WildFly-scale checkout hardening. | `.agents/skills/git-large-repository-specialist/SKILL.md` | Added a dedicated skill. | WildFly hardening is explicitly requested and limited to clone, checkout, source-root detection and cleanup. |

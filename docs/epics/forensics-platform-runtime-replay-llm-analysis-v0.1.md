@@ -5,7 +5,7 @@
 **Datum:** 2026-05-03
 **Rolle:** Senior Requirement Engineer
 **Projektkontext:** Forensics Tracing / Forensics Platform
-**Technische Leitplanken:** Gradle 9.1, Java/JDK 17, hexagonale Architektur, Plugins als Adapter, zentrale Forensics-Applikation als Analyseplattform
+**Technical Guardrails:** Gradle 9.4.0, Java 25, JUnit 6, hexagonal architecture, plugins as adapters, central Forensics application as analysis platform
 
 ## Source Note
 
@@ -48,8 +48,9 @@ Observe -> Replay -> Understand -> Fix -> Test -> Verify -> Deploy
 
 ## Technical Guardrails
 
-- The platform baseline is Java/JDK 17.
-- Gradle plugin integration must be compatible with Gradle 9.1.
+- The platform baseline is Java 25.
+- Gradle plugin integration must be compatible with Gradle 9.4.0.
+- Automated tests use JUnit 6.
 - Maven must be supported as a separate plugin adapter.
 - The architecture follows a hexagonal style.
 - Gradle and Maven plugins are fact producers and adapters, not the central platform.
