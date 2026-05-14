@@ -18,6 +18,18 @@ final class RequiredFields {
         }
     }
 
+    static void nonNegative(long value, String fieldName) {
+        if (value < 0) {
+            throw new ValidationException(fieldName + " must not be negative");
+        }
+    }
+
+    static void notBlankWhenPresent(String value, String fieldName) {
+        if (value != null && !value.isEmpty() && value.isBlank()) {
+            throw new ValidationException(fieldName + " must not be blank");
+        }
+    }
+
     static void present(boolean value, String fieldName) {
         if (!value) {
             throw new ValidationException(fieldName + " must be present");

@@ -1,28 +1,47 @@
 package de.burger.forensics.analytics.ingestion.grpc;
 
 import com.google.protobuf.ByteString;
+import de.burger.forensics.analytics.application.ingestion.DefaultForensicIngestionUseCase;
 import de.burger.forensics.analytics.application.ingestion.ForensicIngestionUseCase;
 import de.burger.forensics.analytics.application.ingestion.IngestionSessionException;
+import de.burger.forensics.analytics.application.ingestion.RepositoryAnalysisIngestionException;
+import de.burger.forensics.analytics.application.ingestion.RepositoryAnalysisIngestionUseCase;
 import de.burger.forensics.analytics.application.ingestion.command.AbortAnalysisSessionCommand;
+import de.burger.forensics.analytics.application.ingestion.command.AnalyzeRepositoryCommand;
 import de.burger.forensics.analytics.application.ingestion.command.CompleteAnalysisSessionCommand;
 import de.burger.forensics.analytics.application.ingestion.command.StartAnalysisSessionCommand;
 import de.burger.forensics.analytics.application.ingestion.command.UploadAnalysisDataCommand;
+import de.burger.forensics.analytics.application.ingestion.port.IngestionSessionRepository;
 import de.burger.forensics.analytics.application.ingestion.result.AbortAnalysisSessionResult;
+import de.burger.forensics.analytics.application.ingestion.result.AnalyzeRepositoryResult;
 import de.burger.forensics.analytics.application.ingestion.result.CompleteAnalysisSessionResult;
 import de.burger.forensics.analytics.application.ingestion.result.IngestionStatus;
 import de.burger.forensics.analytics.application.ingestion.result.StartAnalysisSessionResult;
 import de.burger.forensics.analytics.application.ingestion.result.UploadAnalysisDataResult;
+import de.burger.forensics.analytics.domain.analysis.AnalysisRunId;
+import de.burger.forensics.analytics.domain.ingestion.IngestionPayload;
+import de.burger.forensics.analytics.domain.ingestion.IngestionSession;
+import de.burger.forensics.analytics.domain.ingestion.IngestionSessionState;
+import de.burger.forensics.analytics.domain.repository.CheckoutResult;
+import de.burger.forensics.analytics.domain.repository.SourceRoot;
+import de.burger.forensics.analytics.domain.workspace.WorkspaceId;
 import de.burger.forensics.analytics.ingestion.v1.AbortAnalysisSessionRequest;
 import de.burger.forensics.analytics.ingestion.v1.AnalysisDataEnvelope;
 import de.burger.forensics.analytics.ingestion.v1.AnalysisPayloadDescriptor;
 import de.burger.forensics.analytics.ingestion.v1.AnalysisPayloadKind;
+import de.burger.forensics.analytics.ingestion.v1.AnalyzeRepositoryRequest;
+import de.burger.forensics.analytics.ingestion.v1.BranchReference;
 import de.burger.forensics.analytics.ingestion.v1.BuildIdentity;
+import de.burger.forensics.analytics.ingestion.v1.BuildContext;
+import de.burger.forensics.analytics.ingestion.v1.CommitReference;
 import de.burger.forensics.analytics.ingestion.v1.CompleteAnalysisSessionRequest;
 import de.burger.forensics.analytics.ingestion.v1.ForensicIngestionServiceGrpc;
 import de.burger.forensics.analytics.ingestion.v1.ModuleIdentity;
 import de.burger.forensics.analytics.ingestion.v1.PluginIdentity;
+import de.burger.forensics.analytics.ingestion.v1.RepositoryReference;
 import de.burger.forensics.analytics.ingestion.v1.StartAnalysisSessionRequest;
 import de.burger.forensics.analytics.ingestion.v1.UploadAnalysisDataResponse;
+import de.burger.forensics.analytics.ingestion.v1.WorkspacePolicy;
 import io.grpc.ManagedChannel;
 import io.grpc.Server;
 import io.grpc.Status;
@@ -36,17 +55,22 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ForensicIngestionGrpcServiceTest {
     private final FakeIngestionUseCase useCase = new FakeIngestionUseCase();
+    private final FakeRepositoryAnalysisUseCase repositoryAnalysisUseCase = new FakeRepositoryAnalysisUseCase();
     private Server server;
     private ManagedChannel channel;
     private ForensicIngestionServiceGrpc.ForensicIngestionServiceBlockingStub blockingStub;
@@ -57,7 +81,7 @@ class ForensicIngestionGrpcServiceTest {
         var serverName = InProcessServerBuilder.generateName();
         server = InProcessServerBuilder.forName(serverName)
             .directExecutor()
-            .addService(new ForensicIngestionGrpcService(useCase))
+            .addService(new ForensicIngestionGrpcService(useCase, repositoryAnalysisUseCase))
             .build()
             .start();
         channel = InProcessChannelBuilder.forName(serverName)
@@ -82,6 +106,87 @@ class ForensicIngestionGrpcServiceTest {
             de.burger.forensics.analytics.ingestion.v1.IngestionStatus.INGESTION_STATUS_ACCEPTED,
             response.getStatus()
         );
+    }
+
+    @Test
+    void analyzeRepositoryReturnsSessionWorkspaceAndCheckoutResult() {
+        var response = blockingStub.analyzeRepository(analyzeRepositoryRequest());
+
+        assertEquals("analysis-1", response.getAnalysisSessionId().getValue());
+        assertEquals("workspace-1", response.getWorkspaceId().getValue());
+        assertEquals("https://example.invalid/repo.git", response.getCheckoutResult().getResolvedRemoteUrl());
+        assertEquals("main", response.getCheckoutResult().getRequestedBranch());
+        assertEquals("abcdef123456", response.getCheckoutResult().getResolvedCommit());
+        assertEquals(List.of("/workspace/project/src/main/java"), response.getCheckoutResult().getDetectedSourceRootsList());
+        assertEquals("request-1", repositoryAnalysisUseCase.lastCommand.requestId());
+        assertEquals("gradle", repositoryAnalysisUseCase.lastCommand.buildContext().buildTool());
+    }
+
+    @Test
+    void analyzeRepositoryRejectsMissingCheckoutTarget() {
+        var invalidRequest = analyzeRepositoryRequest().toBuilder()
+            .clearBranch()
+            .clearCommit()
+            .build();
+
+        var error = assertThrows(
+            StatusRuntimeException.class,
+            () -> blockingStub.analyzeRepository(invalidRequest)
+        );
+
+        assertEquals(Status.Code.INVALID_ARGUMENT, error.getStatus().getCode());
+    }
+
+    @Test
+    void analyzeRepositoryMapsApplicationFailureToFailedPrecondition() throws Exception {
+        restartServerWith(useCase, new FailingRepositoryAnalysisUseCase());
+
+        var error = assertThrows(
+            StatusRuntimeException.class,
+            () -> blockingStub.analyzeRepository(analyzeRepositoryRequest())
+        );
+
+        assertEquals(Status.Code.FAILED_PRECONDITION, error.getStatus().getCode());
+    }
+
+    @Test
+    void grpcIngestionFlowCreatesAndCompletesApplicationSession() throws Exception {
+        var repository = new RecordingIngestionSessionRepository();
+        restartServerWith(new DefaultForensicIngestionUseCase(repository));
+
+        var startResponse = blockingStub.startAnalysisSession(startRequest());
+        var sessionId = startResponse.getSessionId();
+        assertFalse(sessionId.isBlank());
+        assertEquals(
+            de.burger.forensics.analytics.ingestion.v1.IngestionStatus.INGESTION_STATUS_ACCEPTED,
+            startResponse.getStatus()
+        );
+
+        var responseObserver = new RecordingStreamObserver<UploadAnalysisDataResponse>();
+        StreamObserver<AnalysisDataEnvelope> requestObserver = asyncStub.uploadAnalysisData(responseObserver);
+        requestObserver.onNext(envelope(sessionId, "payload-a"));
+        requestObserver.onCompleted();
+
+        assertTrue(responseObserver.awaitCompletion(5, TimeUnit.SECONDS));
+        assertNull(responseObserver.getError());
+        assertEquals(1, responseObserver.getValues().getFirst().getReceivedItems());
+
+        var completeResponse = blockingStub.completeAnalysisSession(CompleteAnalysisSessionRequest.newBuilder()
+            .setSessionId(sessionId)
+            .build());
+
+        var storedSession = repository.findById(sessionId).orElseThrow();
+        assertEquals(sessionId, completeResponse.getSessionId());
+        assertEquals(
+            de.burger.forensics.analytics.ingestion.v1.IngestionStatus.INGESTION_STATUS_COMPLETED,
+            completeResponse.getStatus()
+        );
+        assertEquals("project-a", storedSession.projectId());
+        assertEquals("schema-v1", storedSession.schemaVersion());
+        assertEquals(IngestionSessionState.COMPLETED, storedSession.state());
+        assertEquals(1L, storedSession.receivedItems());
+        assertEquals("module-a", repository.lastPayload.moduleName());
+        assertEquals("payload-a", repository.lastPayload.payloadDescriptor().payloadId());
     }
 
     @Test
@@ -133,7 +238,7 @@ class ForensicIngestionGrpcServiceTest {
     void uploadObserverIgnoresFurtherEventsAfterValidationFailure() throws Exception {
         var responseObserver = new RecordingStreamObserver<UploadAnalysisDataResponse>();
         StreamObserver<AnalysisDataEnvelope> requestObserver =
-            new ForensicIngestionGrpcService(useCase).uploadAnalysisData(responseObserver);
+            new ForensicIngestionGrpcService(useCase, repositoryAnalysisUseCase).uploadAnalysisData(responseObserver);
 
         requestObserver.onNext(envelope("session-1", "payload-a").toBuilder().clearPayloadDescriptor().build());
         requestObserver.onNext(envelope("session-1", "payload-a"));
@@ -202,11 +307,18 @@ class ForensicIngestionGrpcServiceTest {
     }
 
     private void restartServerWith(ForensicIngestionUseCase nextUseCase) throws IOException {
+        restartServerWith(nextUseCase, repositoryAnalysisUseCase);
+    }
+
+    private void restartServerWith(
+        ForensicIngestionUseCase nextUseCase,
+        RepositoryAnalysisIngestionUseCase nextRepositoryAnalysisUseCase
+    ) throws IOException {
         stopServer();
         var serverName = InProcessServerBuilder.generateName();
         server = InProcessServerBuilder.forName(serverName)
             .directExecutor()
-            .addService(new ForensicIngestionGrpcService(nextUseCase))
+            .addService(new ForensicIngestionGrpcService(nextUseCase, nextRepositoryAnalysisUseCase))
             .build()
             .start();
         channel = InProcessChannelBuilder.forName(serverName)
@@ -220,6 +332,35 @@ class ForensicIngestionGrpcServiceTest {
         return StartAnalysisSessionRequest.newBuilder()
             .setBuildIdentity(validBuildIdentity())
             .setPluginIdentity(validPluginIdentity())
+            .setSchemaVersion("schema-v1")
+            .build();
+    }
+
+    private AnalyzeRepositoryRequest analyzeRepositoryRequest() {
+        return AnalyzeRepositoryRequest.newBuilder()
+            .setRepository(RepositoryReference.newBuilder()
+                .setRemoteUrl("https://example.invalid/repo.git")
+                .setProvider("github")
+                .putAttributes("visibility", "public"))
+            .setBranch(BranchReference.newBuilder()
+                .setName("main")
+                .setRequired(true))
+            .setCommit(CommitReference.newBuilder()
+                .setHash("abcdef")
+                .setRequired(false))
+            .setWorkspacePolicy(WorkspacePolicy.newBuilder()
+                .setEphemeral(true)
+                .setAllowShallowClone(false)
+                .setAllowPartialClone(false)
+                .setAllowSparseCheckout(false)
+                .setTimeoutSeconds(60)
+                .setMaxWorkspaceBytes(0))
+            .setBuildContext(BuildContext.newBuilder()
+                .setBuildTool("gradle")
+                .setBuildId("build-1")
+                .setRootProjectName("project")
+                .addDeclaredModules(":app"))
+            .setRequestId("request-1")
             .setSchemaVersion("schema-v1")
             .build();
     }
@@ -317,6 +458,66 @@ class ForensicIngestionGrpcServiceTest {
         @Override
         public AbortAnalysisSessionResult abort(AbortAnalysisSessionCommand command) {
             throw failure;
+        }
+    }
+
+    private static final class FakeRepositoryAnalysisUseCase implements RepositoryAnalysisIngestionUseCase {
+        private AnalyzeRepositoryCommand lastCommand;
+
+        @Override
+        public AnalyzeRepositoryResult analyze(AnalyzeRepositoryCommand command) {
+            lastCommand = command;
+            return new AnalyzeRepositoryResult(
+                new AnalysisRunId("analysis-1"),
+                new WorkspaceId("workspace-1"),
+                new CheckoutResult(
+                    "https://example.invalid/repo.git",
+                    Optional.of("main"),
+                    Optional.of("abcdef"),
+                    "abcdef123456",
+                    List.of(new SourceRoot("/workspace/project/src/main/java")),
+                    "CHECKED_OUT",
+                    List.of("checkout mode: full clone")
+                ),
+                "Repository analysis session registered"
+            );
+        }
+    }
+
+    private static final class FailingRepositoryAnalysisUseCase implements RepositoryAnalysisIngestionUseCase {
+        @Override
+        public AnalyzeRepositoryResult analyze(AnalyzeRepositoryCommand command) {
+            throw new RepositoryAnalysisIngestionException("workspace preparation failed");
+        }
+    }
+
+    private static final class RecordingIngestionSessionRepository implements IngestionSessionRepository {
+        private final Map<String, IngestionSession> sessions = new HashMap<>();
+        private final Map<String, Long> payloadCounts = new HashMap<>();
+        private IngestionPayload lastPayload;
+
+        @Override
+        public void save(IngestionSession session) {
+            sessions.put(session.sessionId(), session);
+            payloadCounts.put(session.sessionId(), 0L);
+        }
+
+        @Override
+        public Optional<IngestionSession> findById(String sessionId) {
+            return Optional.ofNullable(sessions.get(sessionId));
+        }
+
+        @Override
+        public void update(IngestionSession session) {
+            sessions.put(session.sessionId(), session);
+        }
+
+        @Override
+        public long appendPayload(IngestionPayload payload) {
+            lastPayload = payload;
+            var nextCount = payloadCounts.getOrDefault(payload.sessionId(), 0L) + 1L;
+            payloadCounts.put(payload.sessionId(), nextCount);
+            return nextCount;
         }
     }
 

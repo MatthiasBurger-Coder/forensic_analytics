@@ -2,22 +2,29 @@ package de.burger.forensics.analytics.ingestion.grpc;
 
 import de.burger.forensics.analytics.application.ingestion.ForensicIngestionUseCase;
 import de.burger.forensics.analytics.application.ingestion.IngestionSessionException;
+import de.burger.forensics.analytics.application.ingestion.RepositoryAnalysisIngestionException;
+import de.burger.forensics.analytics.application.ingestion.RepositoryAnalysisIngestionUseCase;
+import de.burger.forensics.analytics.application.ingestion.RepositoryCheckoutException;
 import de.burger.forensics.analytics.application.ingestion.command.AbortAnalysisSessionCommand;
 import de.burger.forensics.analytics.application.ingestion.command.CompleteAnalysisSessionCommand;
 import de.burger.forensics.analytics.application.ingestion.command.StartAnalysisSessionCommand;
 import de.burger.forensics.analytics.ingestion.grpc.mapper.AnalysisDataEnvelopeMapper;
+import de.burger.forensics.analytics.ingestion.grpc.mapper.AnalyzeRepositoryMapper;
 import de.burger.forensics.analytics.ingestion.grpc.mapper.BuildIdentityMapper;
 import de.burger.forensics.analytics.ingestion.grpc.mapper.IngestionStatusMapper;
 import de.burger.forensics.analytics.ingestion.grpc.mapper.ModuleIdentityMapper;
 import de.burger.forensics.analytics.ingestion.grpc.mapper.PluginIdentityMapper;
 import de.burger.forensics.analytics.ingestion.grpc.validator.AbortAnalysisSessionRequestValidator;
 import de.burger.forensics.analytics.ingestion.grpc.validator.AnalysisDataEnvelopeValidator;
+import de.burger.forensics.analytics.ingestion.grpc.validator.AnalyzeRepositoryRequestValidator;
 import de.burger.forensics.analytics.ingestion.grpc.validator.CompleteAnalysisSessionRequestValidator;
 import de.burger.forensics.analytics.ingestion.grpc.validator.StartAnalysisSessionRequestValidator;
 import de.burger.forensics.analytics.ingestion.grpc.validator.ValidationException;
 import de.burger.forensics.analytics.ingestion.v1.AbortAnalysisSessionRequest;
 import de.burger.forensics.analytics.ingestion.v1.AbortAnalysisSessionResponse;
 import de.burger.forensics.analytics.ingestion.v1.AnalysisDataEnvelope;
+import de.burger.forensics.analytics.ingestion.v1.AnalyzeRepositoryRequest;
+import de.burger.forensics.analytics.ingestion.v1.AnalyzeRepositoryResponse;
 import de.burger.forensics.analytics.ingestion.v1.CompleteAnalysisSessionRequest;
 import de.burger.forensics.analytics.ingestion.v1.CompleteAnalysisSessionResponse;
 import de.burger.forensics.analytics.ingestion.v1.ForensicIngestionServiceGrpc;
@@ -33,6 +40,8 @@ public final class ForensicIngestionGrpcService
     extends ForensicIngestionServiceGrpc.ForensicIngestionServiceImplBase {
 
     private final ForensicIngestionUseCase useCase;
+    private final RepositoryAnalysisIngestionUseCase repositoryAnalysisUseCase;
+    private final AnalyzeRepositoryRequestValidator analyzeRepositoryValidator;
     private final StartAnalysisSessionRequestValidator startValidator;
     private final AnalysisDataEnvelopeValidator envelopeValidator;
     private final CompleteAnalysisSessionRequestValidator completeValidator;
@@ -40,11 +49,17 @@ public final class ForensicIngestionGrpcService
     private final BuildIdentityMapper buildIdentityMapper;
     private final PluginIdentityMapper pluginIdentityMapper;
     private final AnalysisDataEnvelopeMapper envelopeMapper;
+    private final AnalyzeRepositoryMapper analyzeRepositoryMapper;
     private final IngestionStatusMapper statusMapper;
 
-    public ForensicIngestionGrpcService(ForensicIngestionUseCase useCase) {
+    public ForensicIngestionGrpcService(
+        ForensicIngestionUseCase useCase,
+        RepositoryAnalysisIngestionUseCase repositoryAnalysisUseCase
+    ) {
         this(
             useCase,
+            repositoryAnalysisUseCase,
+            new AnalyzeRepositoryRequestValidator(),
             new StartAnalysisSessionRequestValidator(),
             new AnalysisDataEnvelopeValidator(),
             new CompleteAnalysisSessionRequestValidator(),
@@ -56,12 +71,15 @@ public final class ForensicIngestionGrpcService
                 new ModuleIdentityMapper(),
                 new PluginIdentityMapper()
             ),
+            new AnalyzeRepositoryMapper(),
             new IngestionStatusMapper()
         );
     }
 
     ForensicIngestionGrpcService(
         ForensicIngestionUseCase useCase,
+        RepositoryAnalysisIngestionUseCase repositoryAnalysisUseCase,
+        AnalyzeRepositoryRequestValidator analyzeRepositoryValidator,
         StartAnalysisSessionRequestValidator startValidator,
         AnalysisDataEnvelopeValidator envelopeValidator,
         CompleteAnalysisSessionRequestValidator completeValidator,
@@ -69,9 +87,18 @@ public final class ForensicIngestionGrpcService
         BuildIdentityMapper buildIdentityMapper,
         PluginIdentityMapper pluginIdentityMapper,
         AnalysisDataEnvelopeMapper envelopeMapper,
+        AnalyzeRepositoryMapper analyzeRepositoryMapper,
         IngestionStatusMapper statusMapper
     ) {
         this.useCase = Objects.requireNonNull(useCase, "useCase must not be null");
+        this.repositoryAnalysisUseCase = Objects.requireNonNull(
+            repositoryAnalysisUseCase,
+            "repositoryAnalysisUseCase must not be null"
+        );
+        this.analyzeRepositoryValidator = Objects.requireNonNull(
+            analyzeRepositoryValidator,
+            "analyzeRepositoryValidator must not be null"
+        );
         this.startValidator = Objects.requireNonNull(startValidator, "startValidator must not be null");
         this.envelopeValidator = Objects.requireNonNull(envelopeValidator, "envelopeValidator must not be null");
         this.completeValidator = Objects.requireNonNull(completeValidator, "completeValidator must not be null");
@@ -79,7 +106,26 @@ public final class ForensicIngestionGrpcService
         this.buildIdentityMapper = Objects.requireNonNull(buildIdentityMapper, "buildIdentityMapper must not be null");
         this.pluginIdentityMapper = Objects.requireNonNull(pluginIdentityMapper, "pluginIdentityMapper must not be null");
         this.envelopeMapper = Objects.requireNonNull(envelopeMapper, "envelopeMapper must not be null");
+        this.analyzeRepositoryMapper = Objects.requireNonNull(
+            analyzeRepositoryMapper,
+            "analyzeRepositoryMapper must not be null"
+        );
         this.statusMapper = Objects.requireNonNull(statusMapper, "statusMapper must not be null");
+    }
+
+    @Override
+    public void analyzeRepository(
+        AnalyzeRepositoryRequest request,
+        StreamObserver<AnalyzeRepositoryResponse> responseObserver
+    ) {
+        try {
+            analyzeRepositoryValidator.validate(request);
+            var result = repositoryAnalysisUseCase.analyze(analyzeRepositoryMapper.toCommand(request));
+            responseObserver.onNext(analyzeRepositoryMapper.toProto(result));
+            responseObserver.onCompleted();
+        } catch (RuntimeException error) {
+            responseObserver.onError(toStatus(error).asRuntimeException());
+        }
     }
 
     @Override
@@ -193,7 +239,9 @@ public final class ForensicIngestionGrpcService
         if (error instanceof ValidationException) {
             return Status.INVALID_ARGUMENT.withDescription(error.getMessage()).withCause(error);
         }
-        if (error instanceof IngestionSessionException) {
+        if (error instanceof IngestionSessionException
+            || error instanceof RepositoryAnalysisIngestionException
+            || error instanceof RepositoryCheckoutException) {
             return Status.FAILED_PRECONDITION.withDescription(error.getMessage()).withCause(error);
         }
         return Status.INTERNAL.withDescription("Unexpected ingestion failure").withCause(error);
