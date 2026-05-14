@@ -1,6 +1,6 @@
 # 02 - Source Snapshots and Workspaces
 
-Status: planned slice.
+Status: completed slice.
 
 ## Objective
 
@@ -19,6 +19,15 @@ Plan immutable source snapshots and workspace-managed paths so distributed worke
 - Planned workers receive source snapshot references, not uncontrolled local paths.
 - Snapshot metadata preserves repository identity, source roots, capture time when available, input origin, completeness state, and unresolved source limitations.
 - Storage areas remain explicit; raw source evidence and processed artifacts stay separate.
+
+## Completed Outcome
+
+- `SourceSnapshotMetadata` preserves project identity, repository location, optional branch, optional commit hash, and optional capture time without inventing unavailable revision facts.
+- `SourceSnapshot` preserves deterministic identity, source artifact provenance, source roots, completeness state, and explicit limitations.
+- `SourceSnapshotCompleteness` distinguishes complete, incomplete, and unknown snapshot completeness without introducing worker or queue lifecycle states.
+- `IsolatedProjectStoragePathResolver.sourceSnapshotArtifact` resolves snapshot artifacts under the existing `evidence_original` project storage area and keeps processed outputs in separate storage areas.
+- No object store, database, queue product, graph projection, report projection, LLM projection, or distributed worker runtime was selected or introduced.
+- The current synchronous repository analysis flow remains unchanged.
 
 ## Subagent Roles
 

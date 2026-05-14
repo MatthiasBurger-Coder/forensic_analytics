@@ -1,5 +1,10 @@
 package de.burger.forensics.analytics.persistence.storage;
 
+import de.burger.forensics.analytics.domain.artifact.ArtifactReference;
+import de.burger.forensics.analytics.domain.repository.RepositoryMetadata;
+import de.burger.forensics.analytics.domain.repository.SourceSnapshot;
+import de.burger.forensics.analytics.domain.repository.SourceSnapshotCompleteness;
+import de.burger.forensics.analytics.domain.repository.SourceSnapshotMetadata;
 import de.burger.forensics.analytics.domain.workspace.ProjectId;
 import de.burger.forensics.analytics.domain.workspace.ProjectStorageArea;
 import de.burger.forensics.analytics.domain.workspace.WorkspaceId;
@@ -8,6 +13,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Path;
+import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -52,6 +59,25 @@ class IsolatedProjectStoragePathResolverTest {
                 .resolve("project-a")
                 .resolve("reports")
                 .resolve("report.json"),
+            resolved
+        );
+    }
+
+    @Test
+    void resolvesSourceSnapshotArtifactsInsideOriginalEvidenceArea() {
+        var resolver = new IsolatedProjectStoragePathResolver(tempDir);
+        var project = project("workspace-a", "project-a");
+
+        var resolved = resolver.sourceSnapshotArtifact(project, sourceSnapshot("source-snapshot.tar"));
+
+        assertEquals(
+            tempDir.toAbsolutePath().normalize()
+                .resolve("workspaces")
+                .resolve("workspace-a")
+                .resolve("projects")
+                .resolve("project-a")
+                .resolve("evidence_original")
+                .resolve("source-snapshot.tar"),
             resolved
         );
     }
@@ -116,6 +142,10 @@ class IsolatedProjectStoragePathResolverTest {
         );
         assertThrows(
             IllegalArgumentException.class,
+            () -> resolver.sourceSnapshotArtifact(project("workspace-a", "project-a"), sourceSnapshot("nested/source.tar"))
+        );
+        assertThrows(
+            IllegalArgumentException.class,
             () -> resolver.sharedArea(new WorkspaceId("../workspace-a"))
         );
         assertThrows(
@@ -132,6 +162,8 @@ class IsolatedProjectStoragePathResolverTest {
         assertThrows(NullPointerException.class, () -> new IsolatedProjectStoragePathResolver(null));
         assertThrows(NullPointerException.class, () -> resolver.projectArea(null, ProjectStorageArea.REPORTS));
         assertThrows(NullPointerException.class, () -> resolver.projectArea(project, null));
+        assertThrows(NullPointerException.class, () -> resolver.sourceSnapshotArtifact(null, sourceSnapshot("source.tar")));
+        assertThrows(NullPointerException.class, () -> resolver.sourceSnapshotArtifact(project, null));
         assertThrows(NullPointerException.class, () -> resolver.sharedArea(null));
         assertThrows(IllegalArgumentException.class, () -> resolver.projectFile(project, ProjectStorageArea.REPORTS, null));
         assertThrows(IllegalArgumentException.class, () -> resolver.projectFile(project, ProjectStorageArea.REPORTS, " "));
@@ -141,5 +173,18 @@ class IsolatedProjectStoragePathResolverTest {
 
     private static WorkspaceProject project(String workspaceId, String projectId) {
         return WorkspaceProject.active(new ProjectId(projectId), new WorkspaceId(workspaceId), "Project");
+    }
+
+    private static SourceSnapshot sourceSnapshot(String artifactPath) {
+        return SourceSnapshot.captured(
+            SourceSnapshotMetadata.fromRepositoryMetadata(
+                new RepositoryMetadata("project-a", "file:///workspace/project", "main", "abcdef"),
+                Optional.empty()
+            ),
+            new ArtifactReference(artifactPath, "source-snapshot", "sha256:source", 42L),
+            List.of("src/main/java"),
+            SourceSnapshotCompleteness.COMPLETE,
+            List.of()
+        );
     }
 }

@@ -1,6 +1,6 @@
 # Distributed Analysis Orchestrator Workplan
 
-Status: planned workflow documentation. This file does not describe implemented runtime behavior.
+Status: active workflow documentation. Slices 00, 01, and 02 are completed. Later slices remain planned and do not describe implemented runtime behavior.
 
 ## Purpose
 
@@ -43,17 +43,23 @@ forensic-analytics-server
 
 ## Slice Execution Order
 
-| Order | Slice | Purpose |
-| --- | --- | --- |
-| 00 | [Documentation Baseline Alignment](00-documentation-baseline-alignment.md) | Keep documentation entry points and workflow ownership aligned. |
-| 01 | [Orchestrator Domain Vocabulary](01-orchestrator-domain-vocabulary.md) | Define planned orchestration terms before code changes. |
-| 02 | [Source Snapshots and Workspaces](02-source-snapshots-and-workspaces.md) | Plan immutable source snapshots and workspace-managed artifacts. |
-| 03 | [Analysis Job Queue and Retry](03-analysis-job-queue-and-retry.md) | Plan queue-neutral job lifecycle, retry, and dead-letter behavior. |
-| 04 | [Typed Worker Contracts](04-typed-worker-contracts.md) | Plan worker input/output contracts for distributed execution. |
-| 05 | [Analysis Store and Artifact Store](05-analysis-store-and-artifact-store.md) | Plan canonical storage and artifact reference boundaries. |
-| 06 | [Graph, Report, and LLM Projections](06-graph-report-and-llm-projections.md) | Plan projections derived from canonical stored evidence. |
-| 07 | [Server API and Distributed Runtime](07-server-api-and-distributed-runtime.md) | Plan server-facing orchestration API and runtime wiring. |
-| 08 | [Quality, CI, and Rollout](08-quality-ci-and-rollout.md) | Plan verification, rollout order, and CI protection. |
+| Order | Slice | Status | Purpose |
+| --- | --- | --- | --- |
+| 00 | [Documentation Baseline Alignment](00-documentation-baseline-alignment.md) | Completed | Keep documentation entry points and workflow ownership aligned. |
+| 01 | [Orchestrator Domain Vocabulary](01-orchestrator-domain-vocabulary.md) | Completed | Define planned orchestration terms before queue and worker changes. |
+| 02 | [Source Snapshots and Workspaces](02-source-snapshots-and-workspaces.md) | Completed | Define immutable source snapshot vocabulary and workspace-managed raw source artifact paths. |
+| 03 | [Analysis Job Queue and Retry](03-analysis-job-queue-and-retry.md) | Planned | Plan queue-neutral job lifecycle, retry, and dead-letter behavior. |
+| 04 | [Typed Worker Contracts](04-typed-worker-contracts.md) | Planned | Plan worker input/output contracts for distributed execution. |
+| 05 | [Analysis Store and Artifact Store](05-analysis-store-and-artifact-store.md) | Planned | Plan canonical storage and artifact reference boundaries. |
+| 06 | [Graph, Report, and LLM Projections](06-graph-report-and-llm-projections.md) | Planned | Plan projections derived from canonical stored evidence. |
+| 07 | [Server API and Distributed Runtime](07-server-api-and-distributed-runtime.md) | Planned | Plan server-facing orchestration API and runtime wiring. |
+| 08 | [Quality, CI, and Rollout](08-quality-ci-and-rollout.md) | Planned | Plan verification, rollout order, and CI protection. |
+
+## Completed Slice Evidence
+
+- 00 completed: `docs/README.md` points to `docs/workplan`, and `docs/workplan/README.md` indexes the master workflow and all slice files.
+- 01 completed: orchestration vocabulary is documented with verified implemented terms and planned gaps; no queue lifecycle, retry, dead-letter, or worker status was introduced in this slice.
+- 02 completed: source snapshot domain vocabulary now models deterministic snapshot identity, optional revision metadata, artifact provenance, completeness, and limitations; workspace path resolution maps source snapshot artifacts into `evidence_original`.
 
 ## Subagent Coordination Rules
 

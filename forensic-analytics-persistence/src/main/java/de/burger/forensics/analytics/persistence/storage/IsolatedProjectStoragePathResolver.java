@@ -1,5 +1,6 @@
 package de.burger.forensics.analytics.persistence.storage;
 
+import de.burger.forensics.analytics.domain.repository.SourceSnapshot;
 import de.burger.forensics.analytics.domain.workspace.ProjectStorageArea;
 import de.burger.forensics.analytics.domain.workspace.WorkspaceId;
 import de.burger.forensics.analytics.domain.workspace.WorkspaceProject;
@@ -31,6 +32,11 @@ public final class IsolatedProjectStoragePathResolver {
     public Path projectFile(WorkspaceProject project, ProjectStorageArea area, String storedFileName) {
         var fileName = safeSegment(storedFileName, "stored file name");
         return confined(projectArea(project, area).resolve(fileName));
+    }
+
+    public Path sourceSnapshotArtifact(WorkspaceProject project, SourceSnapshot snapshot) {
+        Objects.requireNonNull(snapshot, "snapshot must not be null");
+        return projectFile(project, ProjectStorageArea.EVIDENCE_ORIGINAL, snapshot.sourceArtifact().path());
     }
 
     public Path sharedArea(WorkspaceId workspaceId) {

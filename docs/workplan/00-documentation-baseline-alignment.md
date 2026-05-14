@@ -1,6 +1,6 @@
 # 00 - Documentation Baseline Alignment
 
-Status: planned slice.
+Status: completed slice.
 
 ## Objective
 
@@ -18,6 +18,12 @@ Align documentation entry points so future subagents can find the distributed an
 - `docs/README.md` points to `docs/workplan`.
 - `docs/workplan/README.md` indexes all distributed analysis-orchestrator slices.
 - Future workflow documents distinguish verified current baseline from planned behavior.
+
+## Completed Outcome
+
+- `docs/README.md` points to `docs/workplan`.
+- `docs/workplan/README.md` indexes the master workflow and all distributed analysis-orchestrator slice files.
+- `docs/workplan/workflow.md` records completed and planned slice status without claiming that later distributed runtime behavior is implemented.
 
 ## Subagent Roles
 
