@@ -3,6 +3,7 @@ plugins {
 }
 
 dependencies {
+    implementation(project(":forensic-analytics-adapter-repository-source"))
     implementation(project(":forensic-analytics-application"))
     implementation(project(":forensic-analytics-ingestion-grpc"))
     implementation(project(":forensic-analytics-persistence"))

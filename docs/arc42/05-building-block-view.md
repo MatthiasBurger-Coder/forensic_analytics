@@ -17,10 +17,10 @@ Forensics Platform
 ├── LLM Diagnosis
 ├── Repair Orchestration
 └── Adapters
-    ├── Gradle Plugin Adapter
-    ├── Maven Plugin Adapter
+    ├── Gradle Plugin Request Adapter
+    ├── Maven Plugin Request Adapter
     ├── Joern Adapter
-    ├── Byteman Rule Adapter
+    ├── Server-side Byteman/BTM Adapter
     ├── Runtime Collector Adapter
     ├── Relational Store Adapter
     ├── Graph DB Adapter
@@ -33,11 +33,11 @@ Forensics Platform
 | Building Block | Responsibility |
 |---|---|
 | Canonical Analysis Model | Owns stable IDs and normalized facts |
-| gRPC Ingestion Adapter | Receives session-based plugin analysis uploads and maps transport DTOs to application commands |
-| Static Fact Import | Imports AST, build and dependency facts |
-| Joern Semantic Import | Imports and maps Joern semantic facts |
+| gRPC Ingestion Adapter | Receives plugin-triggered server analysis requests and maps transport DTOs to application commands |
+| Static Fact Import | Imports server-side AST, build and dependency facts |
+| Joern Semantic Import | Runs and maps server-side Joern semantic facts |
 | Rule Planner | Plans instrumentation rules based on facts and policies |
-| Byteman Generator | Generates Byteman rules with stable rule IDs |
+| Byteman Generator | Generates server-side BTM files with stable rule IDs |
 | Runtime Event Processor | Validates, redacts and stores runtime events |
 | Incident Service | Creates and groups exception-based incidents |
 | Replay Engine | Reconstructs timelines and call trees |
@@ -53,11 +53,11 @@ Forensics Platform
 | Domain | IDs, analysis model, incident model, replay model, rule plan |
 | Application | Import use cases, replay use cases, diagnosis use cases |
 | Ports | Fact import port, event store port, graph port, LLM port, rule generation port |
-| Adapters | gRPC ingestion, Gradle, Maven, Joern, Byteman, relational DB, graph DB, vector DB, LLM provider |
+| Adapters | gRPC ingestion, Gradle/Maven request and runtime-binding adapters, server-side Joern, server-side Byteman/BTM, relational DB, graph DB, vector DB, LLM provider |
 
 ## 5.4 Important Boundary
 
-Gradle and Maven plugins must not become the central platform. They provide raw facts, build context, source roots, classpath information and integration points only.
+Gradle and Maven plugins must not become the central platform. They trigger server-side analysis with repository, branch, commit, build and execution context. When debugging requires instrumentation, they may receive server-generated BTM files and bind them through the runtime agent. Parser execution, Joern execution, BTM generation, normalization, persistence, replay and graph projection stay in Analytics.
 
 ## 5.5 gRPC Ingestion Boundary
 

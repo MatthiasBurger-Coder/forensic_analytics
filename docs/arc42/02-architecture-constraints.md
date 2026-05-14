@@ -4,13 +4,14 @@
 
 | Constraint | Description |
 |---|---|
-| Java/JDK 17 | The platform baseline is Java 17. |
-| Gradle 9.1 | Gradle plugin integration must be compatible with Gradle 9.1. |
+| Java 25 | The platform baseline is Java 25. |
+| Gradle 9.4.0 | Gradle integration must be compatible with Gradle 9.4.0. |
+| JUnit 6 | Automated tests use the JUnit 6 baseline. |
 | Maven support | Maven must be supported as a separate plugin adapter. |
 | Hexagonal Architecture | Core domain logic must be independent from frameworks and external tools. |
 | Plugins as adapters | Gradle and Maven plugins are producers of facts, not the central platform. |
 | Joern as adapter | Joern integration must be encapsulated behind a port. |
-| Byteman integration | Byteman rules are generated from the analysis model and runtime planning. |
+| Byteman integration | BTM files are generated server-side from the analysis model and runtime planning, then bound by the plugin through the runtime agent when debugging requires instrumentation. |
 
 ## 2.2 Product Constraints
 
