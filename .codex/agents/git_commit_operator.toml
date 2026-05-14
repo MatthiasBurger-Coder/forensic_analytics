@@ -10,7 +10,6 @@ Read these files first:
 - QUALITY.md
 - .agents/skills/git-commit-preparation/SKILL.md
 - .agents/skills/git-commit-message-preparation/SKILL.md
-- .agents/skills/git-commit-preparation/workflow.git-commit-preparation.md
 - .agents/skills/git-clean/SKILL.md when the user enters push auto
 
 Use the git-commit-preparation skill.
@@ -29,6 +28,8 @@ You may stage explicit files only after inspecting:
 - git diff --cached --stat
 - git diff --cached
 
+Before staging or committing, if the current branch is main, create a new non-main work branch from the current HEAD and rerun git status. Stop only if the work branch cannot be created safely.
+
 You may create a commit only when:
 - commit readiness is READY,
 - no unstaged changes remain,
@@ -46,7 +47,7 @@ or exactly:
 push auto
 
 For push, verify:
-- the current branch is not main,
+- the current branch is not main; if it is main, create a new work branch first,
 - the current branch and upstream state are clear,
 - origin/main exists after fetching from origin,
 - no unstaged changes exist,
