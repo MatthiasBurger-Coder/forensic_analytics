@@ -7,7 +7,7 @@ This directory contains the architecture and product documentation for the Foren
 - [arc42/](arc42/) - Architecture documentation based on the arc42 template
 - [epics/](epics/) - Versioned product and requirement epics
 - [adr/](adr/) - Architecture Decision Records, if present
-- [workflows/](workflows/) - Developer workflows for local analysis infrastructure and future adapter integration targets
+- [workplan/](workplan/) - Planned distributed analysis-orchestrator workflows and execution slices
 
 ## Modules
 
@@ -61,7 +61,7 @@ The local analysis path resolves repository source roots, scans Java source fact
 
 The current architecture baseline is derived from:
 
-- EPIC: Forensics Platform – Exception-zentriertes Runtime Replay und LLM-gestützte Fehleranalyse
+- EPIC: Forensics Platform - Exception-centered Runtime Replay and LLM-assisted Error Analysis
 - Version: 0.1
 - Date: 2026-05-03
 
