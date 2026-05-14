@@ -11,7 +11,7 @@
 | Hexagonal Architecture | Core domain logic must be independent from frameworks and external tools. |
 | Plugins as adapters | Gradle and Maven plugins are producers of facts, not the central platform. |
 | Joern as adapter | Joern integration must be encapsulated behind a port. |
-| Byteman integration | Byteman rules are generated from the analysis model and runtime planning. |
+| Byteman integration | BTM files are generated server-side from the analysis model and runtime planning, then bound by the plugin through the runtime agent when debugging requires instrumentation. |
 
 ## 2.2 Product Constraints
 

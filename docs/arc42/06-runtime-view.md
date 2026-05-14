@@ -1,14 +1,16 @@
 # 6. Runtime View
 
-## 6.1 Static Analysis Flow
+## 6.1 Server-Side Analysis Request Flow
 
 ```text
 Build Tool
   -> Gradle/Maven Plugin
-  -> Static Fact Export
-  -> Forensics Import API
+  -> gRPC Analysis Request
+  -> Forensics Server
+  -> Workspace Checkout
+  -> Server-side Static Analysis
+  -> Server-side Joern Analysis
   -> Canonical Analysis Model
-  -> Graph Projection
 ```
 
 ## 6.2 Rule Generation Flow
@@ -17,9 +19,10 @@ Build Tool
 Canonical Analysis Model
   -> Rule Planner
   -> Instrumentation Plan
-  -> Byteman Rule Generator
-  -> Versioned Rule Set
-  -> Runtime Session
+  -> Server-side Byteman/BTM Generator
+  -> Versioned BTM Files
+  -> Plugin Runtime Binding
+  -> Runtime Session With Agent
 ```
 
 ## 6.3 Runtime Event Flow
@@ -27,7 +30,7 @@ Canonical Analysis Model
 ```text
 Runtime Application
   -> Byteman Agent
-  -> Generated Rule
+  -> Server-generated BTM File
   -> Runtime Event
   -> JSONL / Collector
   -> Runtime Event Importer

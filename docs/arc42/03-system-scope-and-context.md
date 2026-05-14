@@ -2,7 +2,7 @@
 
 ## 3.1 Business Context
 
-The Forensics Platform receives static facts, semantic facts and runtime events from different producers. It normalizes them into a canonical analysis model and provides replay, graph context and LLM-supported diagnosis.
+The Forensics Platform receives repository-analysis requests, server-side analysis artifacts and runtime events. It performs server-side static and semantic analysis, normalizes evidence into a canonical analysis model and provides replay, graph context and LLM-supported diagnosis.
 
 ```text
 Developer / Lead Developer
@@ -13,11 +13,12 @@ Forensics UI / API
         v
 Forensics Platform
         |
-        +--> Plugin gRPC Ingestion
+        +--> Plugin gRPC Request
         +--> Gradle Plugin
         +--> Maven Plugin
         +--> Joern Adapter
-        +--> Byteman Runtime Collector
+        +--> Server-side BTM Generation
+        +--> Runtime Collector
         +--> Graph DB Projection
         +--> Vector DB Projection
         +--> Event Store
@@ -28,12 +29,12 @@ Forensics Platform
 
 | External System | Direction | Purpose |
 |---|---:|---|
-| Plugin gRPC Client | inbound | Sends session-based plugin analysis uploads to the gRPC ingestion adapter |
-| Gradle Plugin | inbound | Provides build context, source roots, AST facts and rule bindings |
-| Maven Plugin | inbound | Provides Maven build context and facts |
-| Joern | inbound/outbound | Provides semantic code analysis, data-flow and control-flow information |
-| Runtime Application | inbound | Emits Byteman-generated runtime events |
-| Byteman Agent | outbound/inbound | Executes generated instrumentation rules |
+| Plugin gRPC Client | inbound | Sends repository-analysis requests with repository, branch, commit, build and execution context |
+| Gradle Plugin | inbound/outbound | Triggers server-side analysis and binds server-generated BTM files to the target runtime through the agent when debugging requires instrumentation |
+| Maven Plugin | inbound/outbound | Triggers server-side analysis and binds server-generated BTM files to the target runtime through the agent when debugging requires instrumentation |
+| Joern | outbound | Runs as a server-side Analytics adapter for semantic code analysis, data-flow and control-flow information |
+| Runtime Application | inbound | Emits runtime events produced by server-generated BTM instrumentation |
+| Byteman Agent | outbound/inbound | Executes server-generated BTM files bound by the plugin for debugging/runtime collection |
 | Relational Store | outbound | Stores canonical model and transactional state |
 | Graph DB | outbound | Stores graph projection for navigation and incident context |
 | Vector DB | outbound | Stores semantic projections for similarity and LLM context retrieval |
@@ -43,7 +44,7 @@ Forensics Platform
 ## 3.3 Main Data Flow
 
 ```text
-Static Facts + Joern Facts + Runtime Events
+Repository Request + Server-side Static Facts + Server-side Joern Facts + Runtime Events
         |
         v
 Canonical Analysis Model
@@ -68,9 +69,9 @@ LLM Root-Cause Analysis
 Plugin
   -> gRPC Client
     -> forensic-analytics-ingestion-grpc
-      -> ForensicIngestionUseCase
-        -> IngestionSessionRepository Port
+      -> Analysis Ingestion Use Case
+        -> Workspace / Analysis Session Ports
           -> Persistence Adapter
 ```
 
-The gRPC ingestion module is an inbound adapter. It does not own persistence, Joern integration, replay logic, LLM logic or the final plugin payload schema.
+The gRPC ingestion module is an inbound adapter. It does not own persistence, Joern integration, replay logic, LLM logic, BTM generation or plugin internals.

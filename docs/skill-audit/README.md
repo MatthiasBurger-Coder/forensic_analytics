@@ -18,7 +18,8 @@ The audit keeps the producer/consumer boundary explicit:
 
 - `forensics_tracing` remains the producer, build adapter and plugin.
 - `forensic_analytics` remains the consumer and central analysis platform.
-- Parser, AST, Joern and BTM work are later Forensic Analytics capabilities, not plugin responsibilities.
+- Parser, AST, Joern and BTM generation are Forensic Analytics server capabilities, not plugin responsibilities.
+- The plugin may receive server-generated BTM files and bind them through the runtime agent when debugging requires instrumentation.
 - Workspace creation and Git checkout are planned before parser implementation.
 
 ## Inspected Areas

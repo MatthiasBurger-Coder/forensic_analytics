@@ -18,7 +18,7 @@ The platform shall answer not only where an error happened, but how it emerged, 
 
 - Static Fact Ingestion
 - Joern Semantic Ingestion
-- Rule Planning and Byteman Generation
+- Server-Side Rule Planning and BTM Generation
 - Runtime Event Collection
 - Exception Detection and Incident Creation
 - Replay Engine
@@ -36,7 +36,7 @@ The platform shall answer not only where an error happened, but how it emerged, 
 | Platform Operator | Run and operate the Forensics Platform safely |
 | Security Responsible | Ensure runtime data is protected and redacted |
 | Reviewer | Review evidence-based fix proposals |
-| Build/Tooling Engineer | Integrate Gradle, Maven, Byteman and Joern adapters |
+| Build/Tooling Engineer | Integrate Gradle/Maven request adapters and bind server-generated BTM files to runtime agents when debugging requires instrumentation |
 
 ## 1.5 Quality Goals
 

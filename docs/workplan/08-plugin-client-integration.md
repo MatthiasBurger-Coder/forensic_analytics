@@ -11,6 +11,8 @@ The plugin should only:
 - determine build context,
 - send the gRPC request,
 - evaluate the response,
+- receive server-generated BTM files in a later instrumentation slice,
+- bind server-generated BTM files to the target implementation through the runtime agent when debugging requires instrumentation,
 - report errors clearly.
 
 The plugin remains the producer and build adapter. It does not own analysis.
