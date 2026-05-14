@@ -1,16 +1,16 @@
 # 05 - Analysis Store and Artifact Store
 
-Status: planned slice.
+Status: completed contract-baseline slice.
 
 ## Objective
 
-Plan durable canonical analysis storage and artifact storage boundaries without selecting database or object-store technology.
+Define canonical analysis storage and artifact storage boundaries without selecting database or object-store technology.
 
 ## Verified Current Baseline
 
 - `DefaultRunRepositoryAnalysisUseCase` stores the completed synchronous result through `RepositoryAnalysisResultStore`.
 - Existing workspace/project storage concepts include `evidence_original`, `evidence_processed`, `analysis_results`, `reports`, and `logs`.
-- No durable analysis-store or artifact-store port was found.
+- `AnalysisStorePort` and `ArtifactStorePort` now define technology-neutral application storage boundaries.
 - Graph and vector databases are documented as projections, not the source of truth.
 
 ## Future Target
@@ -19,6 +19,14 @@ Plan durable canonical analysis storage and artifact storage boundaries without 
 - Planned `artifact-store` owns immutable artifact bytes or file references for source snapshots, processed evidence, Joern artifacts, generated rules, reports, logs, and projection inputs.
 - Stores expose application ports. Concrete SQL, file, object-store, graph, or vector products remain undecided until ADR and dependency review.
 - Graph, report, LLM, and vector outputs reference canonical analysis-store records and artifact-store entries.
+
+## Completed Contract Baseline
+
+- `AnalysisStorePort` stores and reads job records by run and job identity.
+- `ArtifactStorePort` stores and reads artifact records with run, job, worker kind, attempt, storage area, purpose, sensitivity, and typed artifact category.
+- `InMemoryAnalysisStore` and `InMemoryArtifactStore` provide minimal persistence adapters for deterministic contract and idempotency tests.
+- Artifact writes are idempotent for identical canonical records; conflicting metadata for the same analysis run and artifact path fails explicitly through `ArtifactStoreConflictException`.
+- No database, object store, graph store, vector store, file-writing adapter, or runtime wiring was selected or introduced.
 
 ## Subagent Roles
 
@@ -75,5 +83,5 @@ Run targeted persistence and storage path tests first when available.
 
 - Store boundaries are ports first and technology-neutral.
 - Canonical records and artifacts preserve provenance.
-- Idempotent write behavior is tested.
-- Existing storage path confinement remains verified.
+- Idempotent write behavior and explicit conflict failure are tested.
+- Existing storage path confinement remains verified by existing storage-path tests.

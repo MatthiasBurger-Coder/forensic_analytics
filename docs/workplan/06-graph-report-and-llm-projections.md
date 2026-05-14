@@ -1,10 +1,10 @@
 # 06 - Graph, Report, and LLM Projections
 
-Status: planned slice.
+Status: completed contract-baseline slice.
 
 ## Objective
 
-Plan graph, report, and LLM projection workers that derive outputs from canonical evidence without becoming sources of truth.
+Define graph, report, LLM, and vector projection contracts that derive outputs from canonical evidence without becoming sources of truth.
 
 ## Verified Current Baseline
 
@@ -12,6 +12,7 @@ Plan graph, report, and LLM projection workers that derive outputs from canonica
 - Joern semantic analysis currently belongs to the Joern Docker adapter path, not a graph database projection module.
 - ADRs state that graph and vector databases are projections derived from the canonical model.
 - LLM output must be treated as generated analysis or hypotheses, not verified evidence.
+- Provider-neutral projection contracts now exist in the domain layer.
 
 ## Future Target
 
@@ -19,6 +20,15 @@ Plan graph, report, and LLM projection workers that derive outputs from canonica
 - Planned `report-worker` builds deterministic reports from canonical evidence, diagnostics, projections, and explicit unresolved gaps.
 - Planned LLM projection or prompt preparation consumes structured evidence and labels generated output as hypothesis, explanation, recommendation, or generated text.
 - No projection worker mutates primary evidence or finalizes facts that were not present in canonical inputs.
+
+## Completed Contract Baseline
+
+- `AnalysisProjectionKind` defines graph, report, LLM, and vector projection kinds.
+- `AnalysisProjection` requires canonical input references for every projection record.
+- Available projections require a concrete artifact reference.
+- Unavailable and failed projections require explicit diagnostics.
+- `AnalysisProjectionOutputLabel` prevents LLM output from being labeled as a canonical projection; LLM output must be `GENERATED` or `HYPOTHESIS`.
+- No graph database, report renderer, vector database, LLM provider, prompt runtime, or projection worker adapter was selected or introduced.
 
 ## Subagent Roles
 
@@ -73,6 +83,6 @@ Run targeted projection, Joern, report, or prompt tests first when available.
 
 ## Done Criteria
 
-- Projection behavior is deterministic and evidence-referenced.
-- Reports distinguish confirmed evidence, derived analysis, unresolved gaps, hypotheses, suggested fixes, and verification status.
+- Projection contracts are deterministic and evidence-referenced.
+- Unavailable and failed projections preserve diagnostics without implying evidence completeness.
 - LLM-related tests do not require live provider access.

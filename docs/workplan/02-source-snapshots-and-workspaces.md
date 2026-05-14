@@ -8,7 +8,7 @@ Plan immutable source snapshots and workspace-managed paths so distributed worke
 
 ## Verified Current Baseline
 
-- No immutable source snapshot model was found.
+- Source snapshot domain vocabulary now exists in `de.burger.forensics.analytics.domain.repository`.
 - `ProjectStorageArea` defines `evidence_original`, `evidence_processed`, `analysis_results`, `reports`, and `logs`.
 - `IsolatedProjectStoragePathResolver` confines resolved paths under workspace/project roots.
 - The current repository analysis flow resolves repository source directly during synchronous execution.

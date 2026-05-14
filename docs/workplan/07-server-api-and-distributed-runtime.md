@@ -1,10 +1,10 @@
 # 07 - Server API and Distributed Runtime
 
-Status: planned slice.
+Status: completed contract-baseline slice.
 
 ## Objective
 
-Plan a server-facing distributed runtime that accepts analysis requests, delegates orchestration, and keeps adapters out of core evidence ownership.
+Define server-facing request and status view contracts while keeping distributed runtime implementation out of scope.
 
 ## Verified Current Baseline
 
@@ -12,6 +12,7 @@ Plan a server-facing distributed runtime that accepts analysis requests, delegat
 - `forensic-analytics-bootstrap` currently wires executable bootstrap behavior.
 - `forensic-analytics-ingestion-grpc` is an inbound adapter for plugin analysis uploads.
 - gRPC ingestion must not own persistence, Joern execution, replay, LLM, or final payload schema.
+- Application-layer request and status view contracts now exist without a server transport.
 
 ## Future Target
 
@@ -20,10 +21,17 @@ Plan a server-facing distributed runtime that accepts analysis requests, delegat
 - Planned distributed runtime dispatches typed worker contracts through a technology-neutral queue/runtime boundary.
 - Server APIs expose job state, diagnostics, artifact references, and projection availability without exposing storage internals.
 
+## Completed Contract Baseline
+
+- `ServerAnalysisRequest` represents a server-facing request in application terms without choosing a transport framework.
+- `AnalysisStatusView`, `AnalysisJobStatusView`, and `ProjectionAvailabilityView` expose job states, diagnostics, artifact references, and projection availability.
+- Status views expose artifact references and diagnostics only; they do not embed raw source, runtime payloads, secrets, or provider-specific storage internals.
+- No `forensic-analytics-server` module, HTTP framework, gRPC ownership change, queue runtime, bootstrap wiring, or distributed dispatcher was introduced.
+
 ## Subagent Roles
 
 - Architecture reviewer: validate inbound adapter boundaries.
-- Implementation worker: add server/runtime wiring only after ports and contracts exist.
+- Implementation worker: add server/runtime wiring only after a future task explicitly approves runtime implementation.
 - Quality reviewer: test API delegation, authorization placeholders where scoped, and deterministic responses.
 - Security reviewer: review sensitive evidence access and runtime data exposure.
 - Documentation reviewer: update API docs only after implemented endpoints exist.
@@ -33,7 +41,7 @@ Plan a server-facing distributed runtime that accepts analysis requests, delegat
 1. Inspect bootstrap, gRPC ingestion, application use cases, and current CLI boundaries.
 2. Define server request/response contracts in terms of application commands and result views.
 3. Ensure server APIs delegate to orchestrator ports instead of directly using persistence, Joern, graph, report, or LLM adapters.
-4. Add distributed runtime wiring only after queue and worker contracts are implemented.
+4. Add distributed runtime wiring only after a future task explicitly approves transport and runtime implementation.
 5. Keep the final plugin payload schema outside the gRPC ingestion adapter unless a future task explicitly defines it.
 
 ## Affected Files or Modules to Inspect
@@ -72,7 +80,7 @@ Run targeted server, bootstrap, or ingestion adapter tests first when available.
 
 ## Done Criteria
 
-- Server/runtime behavior delegates through application boundaries.
-- Inbound adapters remain thin request translators.
-- API state views preserve evidence completeness and failure provenance.
-- Concrete runtime technology decisions are documented before dependencies are added.
+- Server-facing view contracts use application boundaries.
+- Existing inbound adapters remain unchanged.
+- API state views preserve job state, diagnostics, artifact references, and projection availability.
+- Concrete runtime technology decisions remain future work and require ADR/dependency review before dependencies are added.
