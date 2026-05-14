@@ -1,24 +1,93 @@
-# 03 - Subagents
+# Subagents
 
-| Subagent | Responsibility | Assigned slices | Coordination | Delivered artifacts | Review responsibility |
-|---|---|---|---|---|---|
-| Senior System Architect | Preserve hexagonal boundaries, module direction, ports/adapters and target architecture. | 1, 3, 12 | Coordinates with Java Backend, gRPC/Proto and Git/Workspace specialists. | Architecture notes, boundary decisions, stop reports for unverifiable symbols. | Reviews architecture-sensitive slices. |
-| Senior Java Backend Developer | Implement domain models, application services, ports and adapter integration in Java 25. | 2, 3, 4, 5, 7, 8, 9 | Works with Tester, Storage Architect and Git/Workspace Specialist. | Minimal backend changes, unit tests, integration wiring. | Reviews application/domain implementation quality. |
-| Senior DevOps Engineer | Verify Gradle, wrapper, CI-equivalent commands, runtime environment and optional infrastructure. | 10, 11, 12 | Works with Performance and Security for WildFly hardening. | Environment notes, Gradle command verification, CI risks. | Reviews quality-command feasibility. |
-| Senior Tester | Define regression, contract, in-process gRPC and integration tests. | 1, 2, 3, 7, 8, 9, 12 | Works with all implementation roles before broad quality gates. | Test plan, targeted tests, quality-gate evidence. | Reviews acceptance criteria and residual risk. |
-| Senior gRPC/Proto Specialist | Own Protobuf evolution, gRPC mapping, validation, streaming extensions and compatibility. | 1, 2, 6 | Coordinates with Plugin Integration and Java Backend. | Proto contract, mapping checklist, compatibility notes. | Reviews gRPC and Protobuf slices. |
-| Senior Git/Workspace Specialist | Own workspace lifecycle, safe Git operations, checkout result, source-root metadata and cleanup. | 3, 4, 5, 7, 9, 10, 11 | Coordinates with Security, Performance and Storage. | Git port plan, workspace policy, checkout hardening notes. | Reviews Git/workspace slices. |
-| Senior Plugin Integration Developer | Own plugin-side request construction, client behavior, response handling and producer boundary. | 6, 7 | Coordinates with gRPC/Proto and Documentation. | Plugin handoff checklist, client integration plan. | Reviews plugin producer boundary. |
-| Senior Documentation Engineer | Keep workplan, skill audit, handoff docs and ADR follow-up notes consistent. | 1, 6, 10, 12 | Coordinates with Orchestrator and reviewers. | Updated docs and manual-review records. | Reviews documentation consistency. |
-| Senior Agent Swarm Orchestrator | Coordinate dependencies, file ownership, parallel groups, reviews and commit readiness. | all | Coordinates all roles and routes blockers. | Slice board, owner map, conflict log, handoff summary. | Reviews workflow completeness. |
-| Senior Security/Sandbox Engineer | Own untrusted repository handling, sandbox boundaries, safe Git, path validation and secret safety. | 4, 5, 7, 10, 11 | Coordinates with Git/Workspace, DevOps and Performance. | Sandbox checklist, safe cleanup rules, security findings. | Reviews security-sensitive slices. |
-| Senior Performance Engineer | Own checkout metrics, resource quotas, timeout behavior, large repository baseline and scalability risks. | 4, 9, 10, 11 | Coordinates with Git/Workspace and DevOps. | Metrics plan, WildFly hardening report, quota notes. | Reviews performance-sensitive slices. |
-| Senior Analysis Storage Architect | Own session persistence, raw request storage, artifact references, indexing and projection boundaries. | 5, 8, 12 | Coordinates with Java Backend and Persistence Reviewer. | Storage model notes, analysis-session persistence criteria. | Reviews storage and provenance slices. |
-| Senior Joern/CPG Specialist | Keep Joern/CPG planning analytics-side and out of the current workspace/gRPC implementation. | 9, 10, 12 | Coordinates with Source Analysis Reviewer and Documentation. | Joern/CPG deferral notes and future prerequisites. | Reviews that Joern is not accidentally executed. |
+The implementation should use subagents as planned roles. Actual delegation depends on the active Codex workflow and repository state, but the responsibilities below are binding for the future implementation plan.
 
-## Coordination Rules
+## Senior System Architect
 
-- The orchestrator fixes shared contract ownership before parallel implementation.
-- Write-capable workers must have disjoint file scopes.
-- Reviewers may run in parallel with implementation when they do not block the immediate next local step.
-- Any conflict between plugin and analytics responsibilities is documented before implementation continues.
+Responsibility: preserve hexagonal architecture, dependency direction and evidence boundaries.
+
+Slices: 1, 2, 3, 5, 8, 12.
+
+Coordination: works with the gRPC/Proto Specialist on DTO boundaries, the Java Backend Developer on application services and the Documentation Engineer on architecture text.
+
+Artifacts: architecture review notes, boundary decisions, risk list for any service or port naming mismatch.
+
+## Senior Java Backend Developer
+
+Responsibility: implement domain and application services with Java 25, JUnit 6 and repository style.
+
+Slices: 2, 3, 5, 8, 9, 12.
+
+Coordination: works with the Git/Workspace Specialist for port contracts, the Tester for regression coverage and the System Architect for dependency direction.
+
+Artifacts: domain models, application services, fake-port tests, integration wiring notes.
+
+## Senior DevOps Engineer
+
+Responsibility: verify Gradle, local bootstrap, opt-in hardening execution and resource controls.
+
+Slices: 10, 11, 12.
+
+Coordination: works with the Tester on hardening execution, the Git/Workspace Specialist on disk and timeout behavior and the Documentation Engineer on run instructions.
+
+Artifacts: hardening run configuration, timeout and disk-space notes, quality-gate evidence.
+
+## Senior Tester
+
+Responsibility: design and execute regression-first test coverage.
+
+Slices: 1, 2, 4, 5, 6, 7, 8, 9, 10, 11, 12.
+
+Coordination: works with every implementation role and reviews testability before implementation begins.
+
+Artifacts: mini test repository scenario, fake gRPC tests, adapter tests, source-root fixtures, hardening test checklist.
+
+## Senior gRPC/Proto Specialist
+
+Responsibility: protect gRPC compatibility, Protobuf field numbering, DTO mapping and transport validation.
+
+Slices: 1, 2, 6, 7.
+
+Coordination: works with the Plugin Integration Developer on client compatibility, the System Architect on boundary rules and the Tester on mapper/validator tests.
+
+Artifacts: proto contract review, mapper coverage, compatibility notes.
+
+## Senior Git/Workspace Specialist
+
+Responsibility: design Git operations, workspace layout, cleanup, timeout behavior and large-repository handling.
+
+Slices: 3, 4, 5, 7, 9, 10, 11.
+
+Coordination: works with the Java Backend Developer on ports, the DevOps Engineer on resource controls and the Tester on local repository fixtures.
+
+Artifacts: Git port contract, adapter behavior matrix, workspace lifecycle checklist, WildFly hardening metrics.
+
+## Senior Plugin Integration Developer
+
+Responsibility: keep the plugin as a producer/client and prevent analysis logic from moving into the plugin.
+
+Slices: 6, 7, 12.
+
+Coordination: works with the gRPC/Proto Specialist on generated client compatibility, the Tester on fake-server tests and the Documentation Engineer on plugin-side behavior notes.
+
+Artifacts: plugin request builder, client error handling, plugin boundary review.
+
+## Senior Documentation Engineer
+
+Responsibility: keep workplan, README, architecture and operational documentation aligned with the implementation.
+
+Slices: 1, 10, 11, 12 and documentation review for every slice.
+
+Coordination: works with the System Architect for architecture wording, the DevOps Engineer for commands and the Agent Swarm Orchestrator for status tracking.
+
+Artifacts: updated docs, slice status, quality evidence summary, commit notes.
+
+## Senior Agent Swarm Orchestrator
+
+Responsibility: coordinate dependencies, parallel work groups, review handoffs and final readiness.
+
+Slices: all slices, with strongest ownership of 4, 7, 10, 11 and 12 coordination.
+
+Coordination: receives findings from every role and ensures no worker changes files outside its assigned responsibility.
+
+Artifacts: dependency map, parallel execution status, review checklist, final readiness report.

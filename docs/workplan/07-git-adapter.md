@@ -1,66 +1,101 @@
-# 07 - Git Adapter
+# Git Port And Adapter
 
-## Purpose
+The Git integration is an outbound adapter concern. Application services use a port; the concrete adapter performs Git operations in the server-side workspace.
 
-The Git adapter is an outbound adapter. It performs repository operations inside a prepared workspace and returns deterministic checkout metadata to the application.
+## Required Port Operations
 
-## Required Operations
+```text
+cloneRepository
+fetch
+checkoutBranch
+checkoutCommit
+resolveCurrentCommit
+detectRemoteUrl
+cleanupRepository
+```
 
-- `cloneRepository`
-- `fetch`
-- `checkoutBranch`
-- `checkoutCommit`
-- `resolveCurrentCommit`
-- `detectRemoteUrl`
-- `cleanupRepository`
+Each operation returns explicit success, failure or diagnostic information. Exceptions may be used for fail-fast adapter internals, but application results must preserve meaningful checkout diagnostics.
 
-Names are target operation names for planning. Existing symbols must be verified before implementation.
+## Operation Responsibilities
+
+### cloneRepository
+
+Creates the local repository working copy inside a prepared workspace path. It must respect timeout and workspace policy.
+
+### fetch
+
+Updates remote references when a branch or commit cannot be resolved from the initial clone.
+
+### checkoutBranch
+
+Checks out the requested branch when present. If the branch is marked required and cannot be resolved, the operation fails explicitly.
+
+### checkoutCommit
+
+Checks out the requested commit when present. If the commit is marked required and cannot be resolved, the operation fails explicitly.
+
+### resolveCurrentCommit
+
+Returns the effective commit after checkout. This value is part of the evidence trail for later parser execution.
+
+### detectRemoteUrl
+
+Returns the effective remote URL from the local Git metadata so the response can report what was actually checked out.
+
+### cleanupRepository
+
+Deletes or resets the working copy according to workspace cleanup policy and reports cleanup failures explicitly.
 
 ## Timeout Behavior
 
-Each operation must accept a timeout or execution policy. Timeout failures are reported as explicit checkout diagnostics and must not be converted into successful partial checkout.
+Every external Git operation must have a configured timeout. Timeout diagnostics must include the operation name and the policy limit. A timeout must not be reported as a successful checkout.
 
 ## Error Handling
 
-Errors should distinguish:
+The adapter must distinguish:
 
-- invalid repository URL,
-- unsupported protocol,
-- authentication failure,
-- branch not found,
-- commit not found,
-- checkout conflict,
-- repository corruption,
-- timeout,
-- disk pressure,
-- cleanup failure.
+- invalid repository URL
+- clone failure
+- fetch failure
+- branch not found
+- commit not found
+- checkout conflict
+- timeout
+- workspace path or permission failure
+- cleanup failure
 
-Original command failures should be preserved without leaking secrets.
+The result must not hide the original error category behind a generic analysis failure.
 
-## Large Repositories
+## Large Repository Handling
 
-Large repository behavior is policy-driven:
+Large repositories may require:
 
-- shallow clone is optional,
-- partial clone is optional,
-- sparse checkout is optional,
-- repository mirrors are optional,
-- detached head workflows are allowed when commit pinning is explicit.
+- optional shallow clone
+- optional partial clone
+- optional sparse checkout in a later dedicated step
+- disk-size guardrails
+- file-count measurement
+- clear timeout defaults
 
-Optimizations must not make resolved commit identity unverifiable.
+These optimizations are allowed only when requested by `WorkspacePolicy` and supported by the verified adapter. The adapter must report when a requested optimization is unavailable.
 
-## WildFly Hardening
+## WildFly Hardening Target
 
-WildFly is the large-repository hardening case:
+WildFly is the large-repository hardening target:
 
 ```text
 https://github.com/wildfly/wildfly.git
 ```
 
-The first WildFly scenario verifies only:
+The WildFly scenario validates clone, checkout, resolved commit detection, source-root detection and cleanup under realistic load. It does not execute parsers.
 
-```text
-clone -> checkout -> resolve commit -> detect source roots -> cleanup
-```
+## Non-Scope
 
-No parser execution, Joern execution or BTM generation is allowed in this test.
+The Git adapter must not:
+
+- run JavaParser
+- run Joern
+- generate BTM files
+- infer runtime execution
+- write analysis findings
+- persist sessions directly

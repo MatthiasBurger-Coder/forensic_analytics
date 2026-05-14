@@ -1,54 +1,70 @@
-# 12 - Commit and Push Plan
+# Commit And Push Plan
 
-## Planned Git Flow
+The final implementation must use a non-`main` work branch. The branch should use the repository default prefix:
+
+```text
+codex/
+```
+
+## Preconditions
+
+Before staging:
+
+- run commands from WSL on Windows hosts
+- verify the worktree is not detached
+- verify the current branch is not `main`
+- verify no broad line-ending-only changes exist
+- inspect every changed file
+- classify changes outside `docs/workplan` before continuing
+
+If files outside `docs/workplan` changed, document why they changed and whether they belong to the task. Unrelated files must not be staged.
+
+## Final Git Flow
+
+Run:
 
 ```bash
 git status
 git diff
-git add .agents .codex docs/skill-audit docs/workplan
+git add docs/workplan
 git status
-git commit -m "docs: consolidate skills and add workspace grpc workplan"
+git diff --cached
+git commit -m "docs: add workspace grpc integration workplan"
 git push
 ```
 
-## Branch Rule
+If the branch has no upstream, push with:
 
-Do not push directly to `main`. If work starts on `main`, create a non-main work branch first.
+```bash
+git push -u origin HEAD
+```
 
-Current work should use a `codex/` branch unless the user requests another branch prefix.
+## Review Before Commit
 
-## Staging Scope
+Before `git commit`, verify:
 
-Expected staged paths:
-
-- `.agents`
-- `.codex`
-- `docs/skill-audit`
-- `docs/workplan`
-
-If files outside these areas change, inspect them, explain why they are in scope and document the reason in the commit body.
+- staged files are only under `docs/workplan`
+- deleted old workplan files are replaced by the new workplan
+- no generated build output is staged
+- no credentials or local paths with secrets are staged
+- documentation remains in English
+- the workplan states that parsers are later work
+- WildFly is documented as a hardening test only
 
 ## Commit Message
 
 Use:
 
 ```text
-docs: consolidate skills and add workspace grpc workplan
+docs: add workspace grpc integration workplan
 ```
 
-The final commit body must include:
+The commit covers documentation only. It must not include implementation code, generated build output or quality reports.
 
-- why the skill audit and workplan were needed,
-- what changed,
-- verification commands and results,
-- documentation-only impact,
-- limitations or skipped checks.
+## Push Rules
 
-## Push Failure Handling
-
-If no remote is configured or push fails:
-
-1. Record the exact failure.
-2. Keep the local commit if it was created successfully.
-3. Update this file with the blocker if possible.
-4. Report the branch and commit hash.
+- Do not push directly to `main`.
+- Do not force-push.
+- Push the current work branch.
+- If remote push fails, report the branch name, command and failure summary.
+- Pull request creation is a separate publication step unless the active workflow explicitly requests it.

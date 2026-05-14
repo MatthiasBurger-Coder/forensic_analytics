@@ -1,68 +1,49 @@
-# Workspace and gRPC Workplan
+# Workspace and gRPC Integration Workplan
 
-## Goal
-
-This workplan defines the next Forensic Analytics platform phase:
+This workplan defines the next platform step for Forensic Analytics:
 
 ```text
 Plugin
   -> gRPC request
     -> forensic_analytics ingestion
-      -> create workspace
-        -> clone or checkout repository
-          -> register analysis session
-            -> later parser and analyzer execution
+      -> workspace preparation
+        -> repository clone or checkout
+          -> analysis job registration
+            -> later parser or analyzer execution
 ```
 
-The immediate goal is to make Analytics able to receive a repository-analysis request, prepare an isolated server-side workspace, check out the requested repository revision, register an analysis session and return a deterministic session and checkout result.
+The plan deliberately prepares workspace, checkout, ingestion and session boundaries before parser work. A parser can only produce trustworthy forensic evidence when the platform can already prove which repository, branch, commit, workspace path, source roots and analysis session were used. This workplan therefore treats repository acquisition and session registration as the next evidence-preserving foundation.
 
-## Why Workspace and gRPC Come Before Parsers
+Parser implementation, Joern execution, BTM generation, replay, LLM diagnosis and report generation are outside this workplan. The plugin remains a producer and gRPC client. `forensic_analytics` remains the consumer and analysis platform.
 
-Parser, Joern, AST, BTM, replay and graph work all depend on a stable source input. The platform must first prove that it can receive repository context from the plugin, create a workspace, clone or checkout the exact requested revision, register the analysis session and clean up safely.
+## Verified Repository Baseline
 
-Without this foundation, parser results would depend on uncontrolled local paths, mutable branch state or plugin-side analysis behavior. The workspace/gRPC phase creates the server-side input boundary that later analyzers can trust.
-
-## Affected Modules
-
-Planned slices affect or may add contracts around these verified modules:
+The repository currently contains these relevant modules:
 
 - `forensic-analytics-domain`
 - `forensic-analytics-application`
+- `forensic-analytics-engine`
+- `forensic-analytics-adapter-repository-source`
+- `forensic-analytics-adapter-javaparser`
+- `forensic-analytics-adapter-joern-docker`
+- `forensic-analytics-cli`
+- `forensic-analytics-testbed`
+- `forensic-analytics-persistence`
 - `forensic-analytics-ingestion-grpc`
 - `forensic-analytics-ingestion-request`
-- `forensic-analytics-persistence`
 - `forensic-analytics-bootstrap`
-- future Git and filesystem workspace outbound adapters
-- plugin-side client integration in the producer repository
 
-No parser, Joern, BTM, replay, graph or UI implementation is part of this workplan.
+The future implementation slices in this directory must verify existing contracts before changing them. The current gRPC module already contains `forensic_ingestion.proto` with an `AnalyzeRepository` RPC and the planned request and response model names. The implementation work must preserve compatibility intentionally and must not silently replace verified names.
 
-## How To Execute
+## How To Use This Workplan
 
-1. Fix shared Protobuf and application contracts first.
-2. Model workspace and repository checkout domain concepts before adapters.
-3. Implement Git and filesystem workspace adapters behind ports.
-4. Connect the plugin gRPC client to the new request/response contract.
-5. Verify with a mini repository before any large repository hardening.
-6. Use WildFly only as a Git/workspace hardening scenario.
-7. Run targeted tests first, then the applicable quality gate from `QUALITY.md`.
+Work through the files in order:
 
-## Participating Subagents
+1. Start with [00-overview.md](00-overview.md) and [01-architecture-target.md](01-architecture-target.md).
+2. Execute the implementation slices from [02-slices.md](02-slices.md) in dependency order.
+3. Use [03-subagents.md](03-subagents.md) and [04-parallelization-plan.md](04-parallelization-plan.md) to coordinate parallel work and reviews.
+4. Keep the contract, workspace, Git, plugin and test plans aligned through [05-grpc-contract.md](05-grpc-contract.md) to [10-wildfly-hardening-test.md](10-wildfly-hardening-test.md).
+5. Run the quality gates described in [11-quality-gates.md](11-quality-gates.md).
+6. Finish with the Git workflow in [12-commit-and-push-plan.md](12-commit-and-push-plan.md).
 
-The planned subagents are:
-
-- Senior System Architect
-- Senior Java Backend Developer
-- Senior DevOps Engineer
-- Senior Tester
-- Senior gRPC/Proto Specialist
-- Senior Git/Workspace Specialist
-- Senior Plugin Integration Developer
-- Senior Documentation Engineer
-- Senior Agent Swarm Orchestrator
-- Senior Security/Sandbox Engineer
-- Senior Performance Engineer
-- Senior Analysis Storage Architect
-- Senior Joern/CPG Specialist
-
-The orchestrator coordinates dependencies and file ownership. Multiple workers may run in parallel only when shared contracts are fixed and write scopes do not overlap.
+Every slice must keep the domain free of framework dependencies, keep application services behind ports, and preserve uncertainty explicitly. WildFly is a later hardening target, not the first functional test.

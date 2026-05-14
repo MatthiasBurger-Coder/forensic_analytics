@@ -1,58 +1,115 @@
-# 01 - Architecture Target
+# Architecture Target
 
-## Hexagonal Target
+The target architecture keeps Forensic Analytics hexagonal:
 
 ```text
-Inbound Adapter: gRPC Server
-        -> Application Service: AnalysisIngestionService
-        -> Application Service: WorkspacePreparationService
-        -> Application Service: RepositoryCheckoutService
-        -> Domain: AnalysisSession, Workspace, RepositoryReference
-        -> Outbound Ports
-             -> Git Client Adapter
-             -> Filesystem Workspace Adapter
-             -> Persistence / Analysis Session Store Adapter
+Inbound adapters
+  -> application services
+    -> domain model and ports
+      <- outbound adapters
 ```
 
-Domain and application stay framework-free. gRPC DTOs, Git commands, filesystem paths and persistence implementation details stay outside the core.
+The plugin remains outside the analysis platform. It is a producer and gRPC client only. The Analytics server owns workspace preparation, repository checkout, session persistence and all later analysis execution.
 
-## Required Inbound Adapter
+## Inbound Adapter
 
 ### gRPC Server
 
-The gRPC server receives `AnalyzeRepositoryRequest`, validates transport-level fields and maps the request into application commands. It returns `AnalyzeRepositoryResponse` with an `AnalysisSessionId`, `WorkspaceId` and `CheckoutResult`.
+Module: `forensic-analytics-ingestion-grpc`
 
-The adapter must not execute parser, Joern, BTM, graph, replay or UI logic.
+Responsibilities:
 
-## Required Outbound Adapters
+- expose the repository-ingestion RPC
+- validate transport-level request completeness
+- map Protobuf DTOs to application commands
+- map application results to Protobuf responses
+- never perform Git, filesystem, parser, persistence or analysis behavior directly
 
-### Git Client
+The existing `forensic_ingestion.proto` must be verified before implementation changes. If a field or service name differs from this workplan, the implementation slice must stop and report the mismatch before changing code.
 
-The Git adapter implements repository clone, fetch, branch checkout, commit checkout, commit resolution, remote URL detection and repository cleanup behind a port.
+## Application Services
 
-### Filesystem Workspace
+Target service concepts:
 
-The filesystem workspace adapter creates isolated workspace directories, applies cleanup policy, enforces workspace-root boundaries and reports disk or lock failures explicitly.
+- `AnalysisIngestionService`
+- `WorkspacePreparationService`
+- `RepositoryCheckoutService`
 
-### Persistence / Analysis Session Store
-
-The persistence adapter stores analysis sessions, workspace references, checkout result metadata and job registration state. It must preserve provenance and not collapse raw request data into ambiguous strings.
-
-## Required Application Services
+These names describe the intended responsibilities. During implementation, existing use cases and services must be inspected first. If an equivalent service already exists under another verified name, the slice must decide whether to extend the existing service or introduce the planned name with a documented reason.
 
 ### AnalysisIngestionService
 
-Owns the request-level workflow: validate application inputs, create the analysis session, request workspace preparation, request checkout and register the first job state.
+Responsibilities:
+
+- accept an `AnalyzeRepository` command from the gRPC adapter
+- create or register an `AnalysisSession`
+- coordinate workspace preparation
+- register the analysis job context
+- return session, workspace and checkout result
 
 ### WorkspacePreparationService
 
-Owns workspace lifecycle orchestration through ports. It selects workspace policy, creates or leases a workspace and returns a prepared workspace reference.
+Responsibilities:
+
+- allocate a `WorkspaceId`
+- create a workspace path through a filesystem port
+- apply `WorkspacePolicy`
+- create a `WorkspaceLease`
+- clean up failed or completed workspaces according to policy
 
 ### RepositoryCheckoutService
 
-Owns checkout orchestration through the Git port. It resolves the requested branch and commit state and returns a deterministic checkout result.
+Responsibilities:
 
-## Required Domain Concepts
+- call the Git port for clone, fetch and checkout
+- resolve the effective commit
+- detect source roots through an application port or repository-source adapter
+- build a deterministic `CheckoutResult`
+- report missing branch, missing commit or checkout failures explicitly
+
+## Outbound Adapters
+
+### Git Client
+
+Target module: `forensic-analytics-adapter-repository-source`
+
+Responsibilities:
+
+- clone repositories
+- fetch updates
+- checkout branches and commits
+- resolve the current commit
+- detect the effective remote URL
+- clean up repository working copies
+
+The adapter may call the local Git executable or a verified library only after the dependency and operational impact are reviewed. Parser execution must not be introduced here.
+
+### Filesystem Workspace
+
+Target module: `forensic-analytics-adapter-repository-source` or a dedicated filesystem adapter if the existing boundary proves insufficient.
+
+Responsibilities:
+
+- create workspace directories
+- enforce workspace path boundaries
+- report disk and permission failures
+- support deterministic cleanup
+- avoid writing outside the configured workspace root
+
+### Persistence / Analysis Session Store
+
+Target module: `forensic-analytics-persistence`
+
+Responsibilities:
+
+- persist `AnalysisSession`
+- persist job/workspace association
+- persist checkout result metadata
+- keep generated analysis output separate from verified repository evidence
+
+## Domain Concepts
+
+Required concepts for this platform step:
 
 - `AnalysisSession`
 - `Workspace`
@@ -62,14 +119,14 @@ Owns checkout orchestration through the Git port. It resolves the requested bran
 - `SourceRoot`
 - `CheckoutResult`
 
-These are target concepts for upcoming slices. Existing repository classes with similar names must be verified before implementation. Do not infer current symbols from this plan.
+Additional workspace concepts are detailed in [06-workspace-domain.md](06-workspace-domain.md).
 
-## Dependency Direction
+## Boundary Rules
 
-```text
-gRPC / Git / filesystem / persistence adapters
-        -> application services and ports
-        -> domain model
-```
-
-The reverse direction is forbidden.
+- Domain code depends only on domain-internal code and the Java standard library.
+- Application code depends on domain and ports, not concrete adapters.
+- gRPC DTOs stay in the gRPC adapter.
+- Git and filesystem APIs stay in outbound adapters.
+- Persistence APIs stay in persistence adapters.
+- The plugin must not contain parser, Joern, BTM, replay or LLM logic.
+- Static source roots are repository facts, not proof of runtime execution.
