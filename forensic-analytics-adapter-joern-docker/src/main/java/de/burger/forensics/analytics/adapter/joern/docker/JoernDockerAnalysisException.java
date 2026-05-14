@@ -6,4 +6,8 @@ public final class JoernDockerAnalysisException extends RuntimeException {
     public JoernDockerAnalysisException(String message) {
         super(message);
     }
+
+    public JoernDockerAnalysisException(String message, Throwable cause) {
+        super(message, cause);
+    }
 }

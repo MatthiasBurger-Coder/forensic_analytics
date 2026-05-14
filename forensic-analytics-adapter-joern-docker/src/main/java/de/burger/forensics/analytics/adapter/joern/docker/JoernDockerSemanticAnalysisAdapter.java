@@ -3,12 +3,17 @@ package de.burger.forensics.analytics.adapter.joern.docker;
 import de.burger.forensics.analytics.application.analysis.command.SemanticAnalysisRequest;
 import de.burger.forensics.analytics.application.analysis.port.SemanticAnalysisPort;
 import de.burger.forensics.analytics.application.analysis.result.SemanticAnalysisResult;
+import de.burger.forensics.analytics.domain.artifact.ArtifactReference;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.Comparator;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Objects;
 
@@ -39,10 +44,13 @@ public final class JoernDockerSemanticAnalysisAdapter implements SemanticAnalysi
         var version = runVersion(operations);
         runAnalysis(operations.stream().skip(1).toList());
         writeEmptySlicesIfMissing(paths.slices());
+        var artifacts = artifactCollector.collect(paths);
 
         return new SemanticAnalysisResult(
             "joern-docker " + version + " " + settings.image().reference(),
-            artifactCollector.collect(paths)
+            semanticFingerprint(artifacts),
+            artifacts,
+            new JoernOutputParser().parse(paths)
         );
     }
 
@@ -92,6 +100,25 @@ public final class JoernDockerSemanticAnalysisAdapter implements SemanticAnalysi
             Files.writeString(slices, "{\"anchors\":[]}", StandardCharsets.UTF_8);
         } catch (IOException e) {
             throw new UncheckedIOException("Failed to create empty Joern slices artifact " + slices + ".", e);
+        }
+    }
+
+    private static String semanticFingerprint(List<ArtifactReference> artifacts) {
+        var fingerprintInput = artifacts.stream()
+            .sorted(Comparator.comparing(ArtifactReference::type)
+                .thenComparing(ArtifactReference::path))
+            .map(artifact -> artifact.type() + "=" + artifact.sha256())
+            .reduce((left, right) -> left + "\n" + right)
+            .orElse("");
+        return "sha256:" + sha256(fingerprintInput);
+    }
+
+    private static String sha256(String value) {
+        try {
+            var digest = MessageDigest.getInstance("SHA-256");
+            return HexFormat.of().formatHex(digest.digest(value.getBytes(StandardCharsets.UTF_8)));
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-256 is not available.", e);
         }
     }
 }

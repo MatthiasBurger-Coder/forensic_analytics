@@ -23,6 +23,7 @@ include(
     "forensic-analytics-application",
     "forensic-analytics-engine",
     "forensic-analytics-adapter-repository-source",
+    "forensic-analytics-adapter-javaparser",
     "forensic-analytics-adapter-joern-docker",
     "forensic-analytics-cli",
     "forensic-analytics-testbed",

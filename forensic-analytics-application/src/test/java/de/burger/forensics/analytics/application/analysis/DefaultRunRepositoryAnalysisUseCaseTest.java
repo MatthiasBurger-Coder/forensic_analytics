@@ -16,6 +16,7 @@ import de.burger.forensics.analytics.domain.analysis.AnalysisRunId;
 import de.burger.forensics.analytics.domain.artifact.ArtifactReference;
 import de.burger.forensics.analytics.domain.repository.RepositoryMetadata;
 import de.burger.forensics.analytics.domain.repository.RepositorySource;
+import de.burger.forensics.analytics.domain.semantic.SemanticGraph;
 import de.burger.forensics.analytics.domain.source.SourceFact;
 import de.burger.forensics.analytics.domain.source.SourceLocation;
 import org.junit.jupiter.api.Test;
@@ -149,7 +150,7 @@ class DefaultRunRepositoryAnalysisUseCaseTest {
         var artifacts = new ArrayList<ArtifactReference>();
         artifacts.add(new ArtifactReference("semantic.json", "semantic-report", "abc123", 12L));
 
-        var semantic = new SemanticAnalysisResult("fake-semantic", artifacts);
+        var semantic = new SemanticAnalysisResult("fake-semantic", "sha256:semantic", artifacts, SemanticGraph.empty());
         var rules = new RuleGenerationResult(artifacts);
         artifacts.add(new ArtifactReference("rules.btm", "byteman-rules", "def456", 34L));
 
@@ -202,8 +203,30 @@ class DefaultRunRepositoryAnalysisUseCaseTest {
 
     @Test
     void portResultFieldsAreRequired() {
-        assertThrows(NullPointerException.class, () -> new SemanticAnalysisResult(null, List.of()));
-        assertThrows(NullPointerException.class, () -> new SemanticAnalysisResult("fake-semantic", null));
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> new SemanticAnalysisResult(null, "sha256:semantic", List.of(), SemanticGraph.empty())
+        );
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> new SemanticAnalysisResult("", "sha256:semantic", List.of(), SemanticGraph.empty())
+        );
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> new SemanticAnalysisResult("fake-semantic", null, List.of(), SemanticGraph.empty())
+        );
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> new SemanticAnalysisResult("fake-semantic", "", List.of(), SemanticGraph.empty())
+        );
+        assertThrows(
+            NullPointerException.class,
+            () -> new SemanticAnalysisResult("fake-semantic", "sha256:semantic", null, SemanticGraph.empty())
+        );
+        assertThrows(
+            NullPointerException.class,
+            () -> new SemanticAnalysisResult("fake-semantic", "sha256:semantic", List.of(), null)
+        );
         assertThrows(NullPointerException.class, () -> new RuleGenerationResult(null));
         assertThrows(NullPointerException.class, () -> new SemanticAnalysisRequest(null, repositorySource(), List.of()));
         assertThrows(NullPointerException.class, () -> new SemanticAnalysisRequest(analysisRunId(), null, List.of()));
@@ -241,7 +264,9 @@ class DefaultRunRepositoryAnalysisUseCaseTest {
     private static SemanticAnalysisResult semanticResult() {
         return new SemanticAnalysisResult(
             "fake-semantic",
-            List.of(new ArtifactReference("semantic.json", "semantic-report", "abc123", 12L))
+            "sha256:semantic",
+            List.of(new ArtifactReference("semantic.json", "semantic-report", "abc123", 12L)),
+            SemanticGraph.empty()
         );
     }
 

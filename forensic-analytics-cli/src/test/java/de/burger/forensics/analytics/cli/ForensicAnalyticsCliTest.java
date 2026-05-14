@@ -6,6 +6,7 @@ import de.burger.forensics.analytics.application.analysis.result.RuleGenerationR
 import de.burger.forensics.analytics.application.analysis.result.RunRepositoryAnalysisResult;
 import de.burger.forensics.analytics.application.analysis.result.SemanticAnalysisResult;
 import de.burger.forensics.analytics.domain.artifact.ArtifactReference;
+import de.burger.forensics.analytics.domain.semantic.SemanticGraph;
 import de.burger.forensics.analytics.domain.source.SourceFact;
 import de.burger.forensics.analytics.domain.source.SourceLocation;
 import org.junit.jupiter.api.Test;
@@ -52,7 +53,9 @@ class ForensicAnalyticsCliTest {
         assertTrue(summary.contains("status=COMPLETED"));
         assertTrue(summary.contains("joernMode=off"));
         assertTrue(summary.contains("sourceFacts=1"));
+        assertTrue(summary.contains("semanticFingerprint=sha256:semantic"));
         assertTrue(summary.contains("semanticArtifacts=1"));
+        assertTrue(summary.contains("semanticNodes=0"));
         assertTrue(standardOutput.toString(StandardCharsets.UTF_8).contains("summaryPath="));
         assertEquals("", errorOutput.toString(StandardCharsets.UTF_8));
     }
@@ -298,7 +301,12 @@ class ForensicAnalyticsCliTest {
                     "com.example.App",
                     "class App"
                 )),
-                new SemanticAnalysisResult("fake-semantic", List.of(new ArtifactReference("cpg.bin", "joern-cpg", "abc", 1))),
+                new SemanticAnalysisResult(
+                    "fake-semantic",
+                    "sha256:semantic",
+                    List.of(new ArtifactReference("cpg.bin", "joern-cpg", "abc", 1)),
+                    SemanticGraph.empty()
+                ),
                 new RuleGenerationResult(List.of(new ArtifactReference("rules.btm", "byteman-rules", "def", 2)))
             );
         }

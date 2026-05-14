@@ -7,6 +7,7 @@ import de.burger.forensics.analytics.application.analysis.result.RunRepositoryAn
 import de.burger.forensics.analytics.application.analysis.result.SemanticAnalysisResult;
 import de.burger.forensics.analytics.domain.analysis.AnalysisRunId;
 import de.burger.forensics.analytics.domain.repository.RepositoryMetadata;
+import de.burger.forensics.analytics.domain.semantic.SemanticGraph;
 import de.burger.forensics.analytics.domain.source.SourceFact;
 import org.junit.jupiter.api.Test;
 
@@ -60,7 +61,7 @@ class RepositoryAnalysisEngineTest {
                 command.repositoryMetadata(),
                 command.analysisProfile(),
                 List.<SourceFact>of(),
-                new SemanticAnalysisResult("fake-semantic", List.of()),
+                new SemanticAnalysisResult("fake-semantic", "sha256:semantic", List.of(), SemanticGraph.empty()),
                 new RuleGenerationResult(List.of())
             );
         }
