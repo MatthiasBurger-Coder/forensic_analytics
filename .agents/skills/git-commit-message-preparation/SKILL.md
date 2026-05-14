@@ -9,7 +9,7 @@ description: Use when drafting, reviewing, or validating a Forensic Analytics Gi
 
 Create a traceable commit message from repository evidence only.
 
-This skill does not decide commit readiness by itself. Use it after, or together with, the git-commit-preparation workflow and commit reviewer output.
+This skill does not decide commit readiness by itself. Use it after, or together with, the git-commit-preparation skill and commit reviewer output.
 
 ## Authority
 
@@ -28,12 +28,6 @@ AGENTS.md
 QUALITY.md
 .agents/skills/git-commit-preparation/SKILL.md
 active workflow.md or task-specific workflow if present
-```
-
-When the git-commit-preparation workflow is active, also read:
-
-```text
-.agents/skills/git-commit-preparation/workflow.git-commit-preparation.md
 ```
 
 ## Required Evidence

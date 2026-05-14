@@ -9,6 +9,8 @@ description: Use when preparing, reviewing, validating, repairing, committing, p
 
 Prepare, review, repair, commit, push, and open a pull request for Forensic Analytics changes without weakening repository rules, mixing unrelated changes, or claiming unexecuted verification.
 
+This `SKILL.md` is the single source for the git-commit-preparation workflow. The previous standalone workflow content is consolidated here.
+
 This skill does not replace repository rules. This skill applies repository rules.
 
 `AGENTS.md` remains the source of truth for agent behavior, architecture rules, safety rules, and documentation ownership.
@@ -23,7 +25,7 @@ Use this skill with these Codex roles:
 - `git_commit_reviewer`: read-only reviewer that classifies changes, checks scope, verifies evidence, and returns `READY`, `NOT READY`, or `BLOCKED`.
 - `git_commit_operator`: mutating operator that may stage explicit files, commit, push, and create or complete a GitHub pull request only when the contract allows it. On exact `push auto`, it may also merge the verified pull request, delete the merged pull request's remote head branch, and invoke the git-clean workflow.
 
-The reviewer must not modify files. The operator must not bypass the reviewer result, required verification, or the `push` command requirement.
+The reviewer must not modify files. The operator must not bypass the reviewer result, required verification, branch rules, or the `push` command requirement.
 
 ## Required References
 
@@ -32,10 +34,22 @@ Read these files before deciding commit readiness:
 ```text
 AGENTS.md
 QUALITY.md
+.agents/skills/git-commit-preparation/SKILL.md
 .agents/skills/git-commit-message-preparation/SKILL.md
-.agents/skills/git-commit-preparation/workflow.git-commit-preparation.md
-.agents/skills/git-clean/SKILL.md when the user enters `push auto`
+.codex/agents/git_commit_reviewer.toml
 active workflow.md or task-specific workflow if present
+```
+
+When commit, push, or pull-request execution is requested, also read:
+
+```text
+.codex/agents/git_commit_operator.toml
+```
+
+When the user enters exactly `push auto`, also read:
+
+```text
+.agents/skills/git-clean/SKILL.md
 ```
 
 If any required reference cannot be read, stop and report the missing file.
@@ -59,21 +73,62 @@ Use this skill when:
 - validating commit readiness,
 - writing a commit message,
 - checking whether changed files belong to a task,
-- documenting verification evidence before commit.
+- documenting verification evidence before commit,
+- acting on exact `push`,
+- acting on exact `push auto`.
 
 When only drafting or validating the commit message, use `.agents/skills/git-commit-message-preparation/SKILL.md`.
 
-## Commit Readiness Workflow
+## Branch Handling Rule
+
+Always verify the current branch before staging, committing, pushing, creating a pull request, merging a pull request, deleting a remote branch, or running cleanup.
+
+If the current branch is `main`, create a new work branch before continuing with commit preparation or publication. This prevents `push` and `push auto` from stopping only because the work started on `main`.
+
+The work branch rule is mandatory:
+
+1. Inspect the current branch with `git status --short --branch` or `git branch --show-current`.
+2. When the branch is exactly `main`, create a non-`main` work branch from the current `HEAD` before staging or committing.
+3. Use a descriptive work branch name derived from the current task, for example `work/<task-slug>`.
+4. If the branch name already exists, choose the next clear unique suffix after checking local and remote branch names.
+5. Preserve existing unstaged or staged task changes when switching to the new branch.
+6. Rerun `git status --short --branch` after branch creation and continue only from the new branch.
+
+Stop and report only when the work branch cannot be created, the branch state is detached or unclear, the branch name would collide with unrelated work, or switching branches would risk losing local changes.
+
+Never push directly to `main`.
+
+## Workflow
 
 ### Phase 0: Preconditions
 
 Verify the intended worktree, branch, task scope, repository rules, and local change ownership.
 
+Apply the branch handling rule before any staging, commit, push, pull-request, merge, remote-branch deletion, or cleanup action.
+
 Stop when the branch, worktree, task, or ownership of local changes is unclear.
+
+Do not commit while detached.
+
+Do not modify unrelated files.
+
+Do not stage or commit generated output, local runtime data, credentials, tokens, or IDE metadata.
 
 ### Phase 1: Read Repository Rules
 
-Read `AGENTS.md`, `QUALITY.md`, this skill, the git-commit-message-preparation skill, and any active task workflow.
+Read, in order:
+
+```text
+1. AGENTS.md
+2. QUALITY.md
+3. .agents/skills/git-commit-preparation/SKILL.md
+4. .agents/skills/git-commit-message-preparation/SKILL.md
+5. .codex/agents/git_commit_reviewer.toml
+6. .codex/agents/git_commit_operator.toml when mutating execution is requested
+7. .agents/skills/git-clean/SKILL.md when `push auto` is requested
+```
+
+Also read the active `workflow.md` or task-specific workflow if present.
 
 Do not rely on remembered commands, package names, Gradle tasks, quality rules, or architecture boundaries.
 
@@ -101,17 +156,35 @@ Unexpected, unrelated, sensitive, generated, or unclassified files block commit 
 
 Verify why each file changed, which task requirement caused the change, and whether behavior, API, schema, evidence, graph, replay, LLM, report, test, dependency, documentation, or workflow semantics are affected.
 
-### Phase 5: Verification
+### Phase 5: Run Commit Reviewer
 
-Use `QUALITY.md` for exact commands.
+Ask the `git_commit_reviewer` worker/subagent to perform a read-only commit-readiness review when subagents are explicitly authorized or the active workflow requires that role.
 
-Run the narrowest meaningful verification first when applicable, then the required quality gate when practical.
+The reviewer must:
 
-Do not claim a command passed unless it actually passed.
+- read `AGENTS.md`, `QUALITY.md`, `.agents/skills/git-commit-preparation/SKILL.md`, and `.agents/skills/git-commit-message-preparation/SKILL.md`,
+- inspect status and diffs,
+- classify every changed file,
+- check task scope,
+- check verification evidence,
+- check branch eligibility for `push` or `push auto` when requested,
+- return the output contract defined in this skill.
 
-### Phase 6: Blocker Routing and Repair
+The reviewer must not modify files, stage files, create commits, push branches, create pull requests, merge pull requests, or delete branches.
 
-When commit readiness is `NOT READY` or `BLOCKED`, route only clear, in-scope fixes to the appropriate worker or reviewer:
+If subagents are not explicitly authorized, reproduce the same read-only review locally before mutating Git state.
+
+### Phase 6: Review Findings And Route Blockers
+
+Review the commit-readiness output.
+
+If readiness is `BLOCKED`, stop and report the blocker.
+
+If readiness is `NOT READY`, fix only clear, in-scope blockers or stop and report why the fixes cannot be made safely.
+
+Do not continue while unrelated files, sensitive data, generated artifacts, or unclassified files remain.
+
+When a blocker is clear and in scope, route it to the appropriate role:
 
 - implementation defects: `implementation_worker`
 - tests, coverage, dependency verification, or build failures: `quality_reviewer` or `quality_archunit_reviewer`
@@ -129,78 +202,141 @@ After repair, rerun the commit-readiness review.
 
 Do not repair speculative, out-of-scope, or unclear blockers. Report those instead.
 
-### Phase 7: Staging
+### Phase 7: Run Required Verification
+
+Use `QUALITY.md` for exact commands.
+
+Run the narrowest meaningful verification first when applicable, then the required quality gate when practical.
+
+The current minimum quality command is:
+
+```bash
+./gradlew test --dependency-verification strict --console=plain --stacktrace
+```
+
+The current full local quality gate is:
+
+```bash
+./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace
+```
+
+For documentation-only and agent-instruction-only changes, run the minimum quality command when practical. If it is skipped, report the reason and do not claim it passed.
+
+Do not claim a command passed unless it actually passed.
+
+### Phase 8: Stage Explicit Files
 
 Stage only exact task-related files after the final diff has been reviewed.
 
-Do not stage unrelated files, generated build output, `.gradle/`, `build/`, IDE metadata, temporary logs, local databases, local trace dumps, credentials, tokens, or generated reports unless explicitly required.
+Do not stage:
 
-### Phase 8: Commit Message
+- unrelated files,
+- generated build output,
+- `.gradle/`,
+- `build/`,
+- IDE workspace metadata,
+- temporary logs,
+- local databases,
+- local trace dumps,
+- credentials, tokens,
+- private local configuration,
+- generated reports unless explicitly required.
+
+### Phase 9: Final Diff Review
+
+After staging, inspect:
+
+```bash
+git diff --cached --stat
+git diff --cached
+```
+
+Review the staged diff before committing.
+
+### Phase 10: Prepare Commit Message
 
 Use `.agents/skills/git-commit-message-preparation/SKILL.md`.
 
 The final message must come from the staged diff, task scope, reviewer findings, and executed verification evidence.
 
-### Phase 9: Commit, Push, Pull Request, And Auto Merge
+Do not invent verification, affected components, risks, limitations, type, scope, or impact.
 
-Create a commit only when readiness is `READY`, required verification passed or has an acceptable documented skip reason, all staged files are in scope, and the user or active workflow permits committing.
+### Phase 11: Commit Decision
 
-Push and create or complete a pull request only when the user enters exactly `push`, enters exactly `push auto`, or explicitly requests that action.
+Create a commit only when:
 
-The pull request must target `main`.
+- commit readiness is `READY`,
+- required verification passed or has an acceptable documented skip reason,
+- no unstaged changes remain,
+- all staged files are in scope,
+- the staged diff was reviewed,
+- the commit message is traceable,
+- the user or active workflow permits committing.
 
-Merge the pull request, delete its remote head branch, and run the git-clean workflow only when the user enters exactly `push auto`.
+Do not push or create a pull request during this phase unless the user also entered exactly `push`, entered exactly `push auto`, or explicitly requested publication.
 
-## Mandatory Behavior
-
-You must:
-
-- inspect repository rules before commit review,
-- inspect staged and unstaged changes separately,
-- classify every changed file,
-- verify scope against the current task,
-- identify generated, sensitive, local, or unrelated files,
-- use `QUALITY.md` for verification commands,
-- report skipped verification with a clear reason,
-- use the git-commit-message-preparation skill for the proposed message,
-- create commit messages only from the real diff and executed verification.
-
-Never approve a commit when required verification failed, unrelated files are present, sensitive data appears in the diff, or the proposed commit message would require guessing.
-
-## Push Command Behavior
+### Phase 12: Push Command And GitHub Pull Request
 
 When the user enters exactly `push`, treat it as explicit permission to:
 
-- rerun commit readiness,
-- obtain or reproduce a `git_commit_reviewer` readiness result,
-- create the commit from the reviewed staged diff,
-- push the current non-`main` branch to `origin`,
-- create or complete a GitHub pull request from the current branch against `main`.
+1. rerun commit readiness,
+2. apply the branch handling rule,
+3. obtain or reproduce a `git_commit_reviewer` readiness result,
+4. create the commit from the reviewed staged diff,
+5. push the current non-`main` branch to `origin`,
+6. create or complete a GitHub pull request from the current branch against `main`.
+
+Before pushing, verify:
+
+- the current branch is not `main`; if it is `main`, create a work branch first,
+- the current branch and upstream state are clear,
+- no unstaged changes exist,
+- commit readiness is `READY`,
+- required verification passed,
+- `origin/main` exists after fetching from `origin`,
+- GitHub access is available,
+- no duplicate open pull request will be created for the same branch and base,
+- `git_commit_operator` is the role performing the mutating Git and GitHub actions when a mutating subagent workflow is used.
+
+The pull request must target `main`.
+
+The pull request title must come from the final commit message title.
+
+The pull request body must include:
+
+- summary,
+- changed files or areas,
+- verification commands and results,
+- impact,
+- risks and limitations,
+- explicit note that no push to `main` or merge was performed.
 
 Do not treat `push` as permission to force-push, push to `main`, merge a pull request, enable auto-merge, skip verification, or create a pull request against another base branch.
 
-Before acting on `push`, verify that commit readiness is `READY`, required verification passed, no unstaged changes exist, and GitHub access is available. If an open pull request already exists for the current branch against `main`, reuse it instead of creating a duplicate.
+If an open pull request already exists for the current branch against `main`, reuse it instead of creating a duplicate.
 
-The pull request body must include summary, changed files or areas, verification commands and results, impact, risks, limitations, and confirmation that no merge was performed.
-
-## Push Auto Command Behavior
+### Phase 13: Push Auto Merge, Branch Deletion, And Cleanup
 
 When the user enters exactly `push auto`, treat it as explicit permission to run the normal `push` workflow and then automatically finish the GitHub pull request lifecycle.
 
 Execute this order:
 
 1. Rerun commit readiness and verification.
-2. Create the commit from the reviewed staged diff.
-3. Push the current non-`main` branch to `origin`.
-4. Create or reuse a GitHub pull request from the current branch against `main`.
-5. Verify that the pull request head branch matches the current branch and the base branch is `main`.
-6. Verify that GitHub reports the pull request as mergeable and that required checks are successful, or that no required checks are configured.
-7. Merge the pull request through GitHub.
-8. Re-fetch the pull request and verify `merged: true` before any branch deletion.
-9. Delete only the merged pull request's remote head branch.
-10. Run `.agents/skills/git-clean/SKILL.md` to switch to `main`, fast-forward it, and delete the local merged branch.
+2. Apply the branch handling rule.
+3. Create the commit from the reviewed staged diff.
+4. Push the current non-`main` branch to `origin`.
+5. Create or reuse a GitHub pull request from the current branch against `main`.
+6. Verify that the pull request head branch matches the current branch and the base branch is `main`.
+7. Verify that GitHub reports the pull request as mergeable and that required checks are successful, or that no required checks are configured.
+8. Merge the pull request through GitHub.
+9. Re-fetch the pull request and verify `merged: true` before any branch deletion.
+10. Delete only the merged pull request's remote head branch.
+11. Run `.agents/skills/git-clean/SKILL.md` to switch to `main`, fast-forward it, and delete the local merged branch.
+12. Report the merge commit, remote branch deletion result, clean result, and final `main` status.
 
-Do not treat `push auto` as permission to force-push, push directly to `main`, retarget the pull request, bypass failed or pending checks, merge an unrelated pull request, delete `main`, or delete a branch before the pull request is verified as merged.
+For `push auto`, the pull request body must include the same content as the `push` workflow plus an explicit note that the workflow intends to merge the PR, delete the merged PR head branch, and run clean after merge verification.
+
+Do not treat `push auto` as permission to force-push, push directly to `main`, retarget the pull request, bypass failed or pending checks, merge an unrelated pull request, delete `main`, delete a branch before the pull request is verified as merged, or enable GitHub auto-merge.
 
 If GitHub mergeability, required-check status, merge result, remote branch deletion, or clean execution cannot be verified, stop and report the exact blocker.
 
@@ -216,15 +352,40 @@ git diff --cached --stat
 git diff --cached
 ```
 
+For `push` and `push auto`, also verify the current branch and `origin/main`.
+
 For `push auto`, also verify the relevant GitHub pull request state and run the command required by the git-clean skill after the merge.
 
 Use the minimum and full quality commands documented in `QUALITY.md` when verification is required and practical.
+
+## Required Execution Order
+
+```text
+1. Read AGENTS.md
+2. Read QUALITY.md
+3. Read .agents/skills/git-commit-preparation/SKILL.md
+4. Read .agents/skills/git-commit-message-preparation/SKILL.md
+5. Read .codex/agents/git_commit_reviewer.toml
+6. Read .codex/agents/git_commit_operator.toml when mutating execution is requested
+7. Read .agents/skills/git-clean/SKILL.md when `push auto` is requested
+8. Inspect branch, git status, and diffs
+9. If the branch is main, create a work branch before staging, committing, pushing, or running push auto
+10. Ask git_commit_reviewer to review commit readiness, or reproduce the same read-only review locally when subagents are not explicitly authorized
+11. Route only clear, in-scope blockers to the appropriate repair role
+12. Rerun commit-readiness review after repairs
+13. Run required verification from QUALITY.md
+14. Inspect final staged diff
+15. Prepare commit message with git-commit-message-preparation
+16. Use git_commit_operator to commit only if all required gates pass and user/task permits committing
+17. On `push`, use git_commit_operator to push the branch and create or complete a GitHub pull request against main
+18. On `push auto`, use git_commit_operator to push, create or reuse the PR, verify mergeability and checks, merge the PR, verify merged state, delete the remote head branch, and run clean
+```
 
 ## Commit Message Contract
 
 Use `.agents/skills/git-commit-message-preparation/SKILL.md` to draft or validate the proposed commit message.
 
-Do not invent verification, affected components, risks, limitations, type, or scope.
+Do not invent verification, affected components, risks, limitations, type, scope, or impact.
 
 ## Output Format
 
@@ -263,18 +424,23 @@ Stop if:
 - `AGENTS.md` cannot be read,
 - `QUALITY.md` cannot be read,
 - `.agents/skills/git-commit-message-preparation/SKILL.md` cannot be read when drafting the commit message,
-- `.agents/skills/git-commit-preparation/workflow.git-commit-preparation.md` cannot be read when using the reusable workflow,
 - `.agents/skills/git-clean/SKILL.md` cannot be read when the user enters `push auto`,
+- `.codex/agents/git_commit_operator.toml` cannot be read when commit, push, or pull-request execution is requested,
 - branch or worktree is unclear,
+- the worktree is detached,
+- the current branch is `main` and a work branch cannot be created safely,
 - staged and unstaged changes conflict,
 - unexpected files exist,
 - files cannot be classified,
-- quality gates failed,
-- quality gates were skipped without justification,
-- sensitive data appears in the diff,
+- unrelated files are present,
 - generated artifacts appear unexpectedly,
-- the commit message would require guessing.
-- `push auto` is requested but pull request mergeability, required checks, merge result, branch deletion target, or clean execution cannot be verified.
+- sensitive data appears in the diff,
+- required quality gates fail,
+- quality gates were skipped without justification,
+- the commit reviewer returns `NOT READY` or `BLOCKED`,
+- the commit message would require guessing,
+- the user requested `push` but GitHub pull request creation is unavailable or would require guessing,
+- the user requested `push auto` but mergeability, required-check status, merge result, remote branch deletion target, or clean execution cannot be verified.
 
 ## Forbidden Actions
 
@@ -284,8 +450,13 @@ Do not:
 - stage files without explicit git-commit-preparation authority,
 - create commits unless the user or active workflow permits committing,
 - push or create pull requests unless the user enters `push`, enters `push auto`, or explicitly requests that action,
+- push directly to `main`,
 - merge pull requests unless the user enters exactly `push auto`,
 - delete remote branches unless the user enters exactly `push auto` and the pull request was verified as merged,
+- delete local branches directly instead of using the git-clean workflow after push auto,
+- force-push,
+- enable GitHub auto-merge,
+- retarget the pull request away from `main`,
 - commit unrelated files,
 - commit generated build output,
 - commit `.gradle/`,
@@ -295,9 +466,11 @@ Do not:
 - commit local databases,
 - commit local trace dumps,
 - commit credentials or tokens,
+- bypass failed verification,
+- bypass failed, pending, or unknown required checks,
 - claim tests passed without execution evidence,
 - approve a commit when required quality gates fail.
 
 ## Final Rule
 
-Commit readiness is evidence-based. If scope, verification, file ownership, or commit-message content cannot be proven from repository state and executed commands, return `BLOCKED` or `NOT READY` instead of guessing.
+Commit readiness is evidence-based. If scope, verification, file ownership, branch safety, or commit-message content cannot be proven from repository state and executed commands, return `BLOCKED` or `NOT READY` instead of guessing.
