@@ -1,0 +1,30 @@
+services:
+  joern:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        JOERN_BASE_IMAGE: ${JOERN_BASE_IMAGE:-ghcr.io/joernio/joern@sha256:7918dc450f185433fe6cfaf43e86f5daf5643fba2139406a41a1e6e1d6134295}
+    image: forensic-analytics/joern:local
+    container_name: forensic-analytics-joern
+    working_dir: /analysis
+    environment:
+      ANALYSIS_INPUT_DIR: /analysis/input
+      JOERN_WORKSPACE_DIR: /analysis/workspace
+      ANALYSIS_OUTPUT_DIR: /analysis/output
+      ANALYSIS_LOG_DIR: /analysis/logs
+      JOERN_HEAP: ${JOERN_HEAP:-8G}
+    volumes:
+      - ../../data/joern/input:/analysis/input:ro
+      - ../../data/joern/workspace:/analysis/workspace
+      - ../../data/joern/output:/analysis/output
+      - ../../data/joern/logs:/analysis/logs
+      - ../../examples/joern/queries:/analysis/queries:ro
+    deploy:
+      resources:
+        limits:
+          memory: ${JOERN_CONTAINER_MEMORY:-12g}
+    security_opt:
+      - no-new-privileges:true
+    stdin_open: true
+    tty: true
