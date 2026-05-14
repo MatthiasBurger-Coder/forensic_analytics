@@ -27,7 +27,14 @@ The project baseline is:
 
 All source code, comments, JavaDoc, test names, and repository documentation must be written in English.
 
-Use `./gradlew` on Unix-like shells and `.\gradlew.bat` on Windows PowerShell.
+## Command Execution Environment
+
+Agents must execute repository commands in the environment that matches the host operating system:
+
+- On Windows hosts, use WSL from the repository's WSL-mounted worktree path and run Linux-style commands, including `./gradlew`.
+- On Linux hosts, use native shell access and run Linux-style commands directly, including `./gradlew`.
+- Before staging or committing from a Windows-hosted WSL worktree, verify that Git status is not polluted by line-ending-only changes. If broad unexpected line-ending changes appear, correct the local Git EOL configuration or stop and report before proceeding.
+- If WSL is unavailable on a Windows host, or if the repository cannot be accessed from WSL, stop and report the blocker before substituting Windows-native command execution.
 
 If a baseline, command, or quality rule in this document differs from `AGENTS.md`, `QUALITY.md`, `settings.gradle(.kts)`, `build.gradle(.kts)`, or CI workflow files in the repository, the repository files must be inspected and the conflict must be reported before continuing.
 

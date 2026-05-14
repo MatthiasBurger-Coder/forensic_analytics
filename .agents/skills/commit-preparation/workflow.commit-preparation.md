@@ -32,6 +32,9 @@ Do not merge a pull request, delete a remote branch, or run post-merge cleanup u
 
 - Work only in the current worktree.
 - Verify the current branch.
+- On Windows hosts, execute repository commands through WSL from the repository's WSL-mounted worktree path.
+- On Linux hosts, execute repository commands through native shell access.
+- Stop and report if WSL is unavailable on Windows or cannot access the worktree.
 - Do not commit while detached.
 - Do not modify unrelated files.
 - Do not stage or commit generated output, local runtime data, credentials, or IDE metadata.
@@ -143,8 +146,6 @@ The current full local quality gate is:
 ```bash
 ./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace
 ```
-
-On Windows PowerShell, use `.\gradlew.bat` with the same arguments.
 
 For documentation-only and agent-instruction-only changes, run the minimum quality command when practical. If it is skipped, report the reason and do not claim it passed.
 

@@ -6,9 +6,12 @@ The platform analyses software systems by combining static analysis, runtime tra
 
 `QUALITY.md` is the project-specific quality contract for this repository.
 
-Use `.\gradlew.bat` on Windows PowerShell and `./gradlew` on Unix-like shells.
+Repository commands must run in the host-appropriate shell environment:
 
-> Windows note: the command is written as `./gradlew` in this document for readability. On Windows PowerShell, use `.\gradlew.bat` with the same task arguments.
+- On Windows hosts, use WSL from the repository's WSL-mounted worktree path and run the Linux-style commands shown in this document.
+- On Linux hosts, use native shell access and run the Linux-style commands shown in this document.
+- Git inspection and quality-gate runs must use a repository-compatible EOL setup. Do not treat line-ending-only WSL noise as task changes.
+- If WSL is unavailable on a Windows host, or if the repository cannot be accessed from WSL, stop and report the blocker before substituting Windows-native command execution.
 
 ---
 
