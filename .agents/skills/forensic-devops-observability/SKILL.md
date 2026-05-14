@@ -1,0 +1,23 @@
+---
+name: forensic-devops-observability
+description: Use for Forensic Analytics logging, metrics, diagnostics, redaction, and trace/correlation observability work.
+---
+
+# Observability
+
+## Purpose
+
+Guide logging, metrics and diagnostics without compromising sensitive forensic data.
+
+## Practices
+
+- Do not log secrets, credentials, personal data or unnecessary source content.
+- Preserve trace and correlation identifiers when they are explicitly available.
+- Keep diagnostic output separate from verified evidence.
+- Avoid adding concrete logging providers unless explicitly required.
+- Make sampling, retention and redaction behavior explicit.
+
+## Verification
+
+- Add tests for redaction or diagnostic formatting when behavior changes.
+- Review logs and reports for sensitive-data exposure.

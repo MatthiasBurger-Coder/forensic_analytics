@@ -1,0 +1,24 @@
+---
+name: forensic-backend-grpc
+description: Use for Forensic Analytics gRPC ingestion adapter work, service mapping, transport validation, and correlation preservation.
+---
+
+# gRPC
+
+## Purpose
+
+Guide inbound gRPC adapter work while keeping transport concerns outside the domain and application core.
+
+## Practices
+
+- Keep Protobuf DTO mapping inside the gRPC adapter.
+- Validate transport-level fields before creating application requests.
+- Preserve correlation, session and evidence identifiers exactly.
+- Do not treat transport metadata as forensic evidence unless the contract says so.
+- Keep service methods thin and delegate use cases to application ports.
+
+## Verification
+
+- Inspect existing service and mapper classes before changing contracts.
+- Add adapter tests for DTO mapping and validation behavior.
+- Run affected module tests and the relevant quality gate from `QUALITY.md`.

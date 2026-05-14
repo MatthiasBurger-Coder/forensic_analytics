@@ -6,7 +6,7 @@
 **Architektur:** Hexagonale Architektur
 **Zielplattform:** Java 25, Gradle 9.4, JUnit 6, gRPC, Protobuf
 **Betriebsmodell:** Multi-Agent / Skill-basiertes Subagent-System
-**Ablage:** `.agents/skills/**`
+**Ablage:** `.agents/skills/*/SKILL.md` und `.codex/agents/*.toml`
 **Wichtige Regel:** Vorhandene Agents nur gezielt und minimal erweitern. Keine destruktiven Änderungen.
 
 ---
@@ -48,41 +48,40 @@ Das Ziel ist:
 │   └── senior-swarm-orchestrator.md
 │
 └── skills/
-    ├── architecture/
-    │   ├── hexagonal-architecture.md
-    │   ├── archunit-hexagonal.md
-    │   └── modular-monorepo.md
-    │
-    ├── backend/
-    │   ├── java-25.md
-    │   ├── junit6.md
-    │   ├── grpc.md
-    │   ├── protobuf.md
-    │   └── spring-core.md
-    │
-    ├── frontend/
-    │   ├── react.md
-    │   ├── frontend-hexagonal.md
-    │   └── ux-guidelines.md
-    │
-    ├── devops/
-    │   ├── docker.md
-    │   ├── kubernetes.md
-    │   ├── gradle.md
-    │   ├── ci-cd.md
-    │   └── observability.md
-    │
-    ├── quality/
-    │   ├── testing-strategy.md
-    │   ├── mutation-testing.md
-    │   ├── architecture-validation.md
-    │   └── quality-gates.md
-    │
-    └── orchestration/
-        ├── swarm-coordination.md
-        ├── slice-execution.md
-        ├── conflict-resolution.md
-        └── branch-strategy.md
+    ├── forensic-architecture-hexagonal/SKILL.md
+    ├── forensic-architecture-archunit-hexagonal/SKILL.md
+    ├── forensic-architecture-modular-monorepo/SKILL.md
+    ├── forensic-backend-java-25/SKILL.md
+    ├── forensic-backend-junit6/SKILL.md
+    ├── forensic-backend-grpc/SKILL.md
+    ├── forensic-backend-protobuf/SKILL.md
+    ├── forensic-backend-spring-core/SKILL.md
+    ├── forensic-frontend-react/SKILL.md
+    ├── forensic-frontend-hexagonal/SKILL.md
+    ├── forensic-frontend-ux-guidelines/SKILL.md
+    ├── forensic-devops-docker/SKILL.md
+    ├── forensic-devops-kubernetes/SKILL.md
+    ├── forensic-devops-gradle/SKILL.md
+    ├── forensic-devops-ci-cd/SKILL.md
+    ├── forensic-devops-observability/SKILL.md
+    ├── forensic-quality-testing-strategy/SKILL.md
+    ├── forensic-quality-mutation-testing/SKILL.md
+    ├── forensic-quality-architecture-validation/SKILL.md
+    ├── forensic-quality-gates/SKILL.md
+    ├── forensic-orchestration-swarm-coordination/SKILL.md
+    ├── forensic-orchestration-slice-execution/SKILL.md
+    ├── forensic-orchestration-conflict-resolution/SKILL.md
+    └── forensic-orchestration-branch-strategy/SKILL.md
+
+.codex/
+└── agents/
+    ├── senior_java_backend.toml
+    ├── senior_react_frontend.toml
+    ├── senior_ux_designer.toml
+    ├── senior_system_architect.toml
+    ├── senior_tester.toml
+    ├── senior_devops.toml
+    └── senior_swarm_orchestrator.toml
 ```
 
 ---
@@ -167,13 +166,13 @@ Jeder Slice:
 
 ```text
 skills:
-- skills/backend/java-25.md
-- skills/backend/junit6.md
-- skills/backend/grpc.md
-- skills/backend/protobuf.md
-- skills/architecture/hexagonal-architecture.md
-- skills/architecture/archunit-hexagonal.md
-- skills/quality/testing-strategy.md
+- skills/forensic-backend-java-25/SKILL.md
+- skills/forensic-backend-junit6/SKILL.md
+- skills/forensic-backend-grpc/SKILL.md
+- skills/forensic-backend-protobuf/SKILL.md
+- skills/forensic-architecture-hexagonal/SKILL.md
+- skills/forensic-architecture-archunit-hexagonal/SKILL.md
+- skills/forensic-quality-testing-strategy/SKILL.md
 ```
 
 ## Regeln
@@ -209,11 +208,11 @@ skills:
 
 ```text
 skills:
-- skills/frontend/react.md
-- skills/frontend/frontend-hexagonal.md
-- skills/frontend/ux-guidelines.md
-- skills/architecture/hexagonal-architecture.md
-- skills/quality/testing-strategy.md
+- skills/forensic-frontend-react/SKILL.md
+- skills/forensic-frontend-hexagonal/SKILL.md
+- skills/forensic-frontend-ux-guidelines/SKILL.md
+- skills/forensic-architecture-hexagonal/SKILL.md
+- skills/forensic-quality-testing-strategy/SKILL.md
 ```
 
 ## Regeln
@@ -248,8 +247,8 @@ skills:
 
 ```text
 skills:
-- skills/frontend/ux-guidelines.md
-- skills/frontend/react.md
+- skills/forensic-frontend-ux-guidelines/SKILL.md
+- skills/forensic-frontend-react/SKILL.md
 ```
 
 ## Regeln
@@ -285,11 +284,11 @@ skills:
 
 ```text
 skills:
-- skills/architecture/hexagonal-architecture.md
-- skills/architecture/archunit-hexagonal.md
-- skills/architecture/modular-monorepo.md
-- skills/backend/grpc.md
-- skills/backend/protobuf.md
+- skills/forensic-architecture-hexagonal/SKILL.md
+- skills/forensic-architecture-archunit-hexagonal/SKILL.md
+- skills/forensic-architecture-modular-monorepo/SKILL.md
+- skills/forensic-backend-grpc/SKILL.md
+- skills/forensic-backend-protobuf/SKILL.md
 ```
 
 ## Regeln
@@ -324,11 +323,11 @@ skills:
 
 ```text
 skills:
-- skills/backend/junit6.md
-- skills/quality/testing-strategy.md
-- skills/quality/mutation-testing.md
-- skills/quality/architecture-validation.md
-- skills/quality/quality-gates.md
+- skills/forensic-backend-junit6/SKILL.md
+- skills/forensic-quality-testing-strategy/SKILL.md
+- skills/forensic-quality-mutation-testing/SKILL.md
+- skills/forensic-quality-architecture-validation/SKILL.md
+- skills/forensic-quality-gates/SKILL.md
 ```
 
 ## Regeln
@@ -365,11 +364,11 @@ skills:
 
 ```text
 skills:
-- skills/devops/docker.md
-- skills/devops/kubernetes.md
-- skills/devops/gradle.md
-- skills/devops/ci-cd.md
-- skills/devops/observability.md
+- skills/forensic-devops-docker/SKILL.md
+- skills/forensic-devops-kubernetes/SKILL.md
+- skills/forensic-devops-gradle/SKILL.md
+- skills/forensic-devops-ci-cd/SKILL.md
+- skills/forensic-devops-observability/SKILL.md
 ```
 
 ## Regeln
@@ -404,10 +403,10 @@ skills:
 
 ```text
 skills:
-- skills/orchestration/swarm-coordination.md
-- skills/orchestration/slice-execution.md
-- skills/orchestration/conflict-resolution.md
-- skills/orchestration/branch-strategy.md
+- skills/forensic-orchestration-swarm-coordination/SKILL.md
+- skills/forensic-orchestration-slice-execution/SKILL.md
+- skills/forensic-orchestration-conflict-resolution/SKILL.md
+- skills/forensic-orchestration-branch-strategy/SKILL.md
 ```
 
 ## Regeln
@@ -428,7 +427,7 @@ skills:
 ## Datei
 
 ```text
-.agents/skills/architecture/hexagonal-architecture.md
+.agents/skills/forensic-architecture-hexagonal/SKILL.md
 ```
 
 ## Inhalte
@@ -456,7 +455,7 @@ skills:
 ## Datei
 
 ```text
-.agents/skills/architecture/archunit-hexagonal.md
+.agents/skills/forensic-architecture-archunit-hexagonal/SKILL.md
 ```
 
 ## Inhalte
@@ -482,7 +481,7 @@ skills:
 ## Datei
 
 ```text
-.agents/skills/backend/junit6.md
+.agents/skills/forensic-backend-junit6/SKILL.md
 ```
 
 ## Inhalte
@@ -510,7 +509,7 @@ skills:
 ## Datei
 
 ```text
-.agents/skills/backend/protobuf.md
+.agents/skills/forensic-backend-protobuf/SKILL.md
 ```
 
 ## Inhalte
@@ -564,17 +563,15 @@ Senior Swarm Orchestrator
 
 ---
 
-# 6.3 Qualitätssicherung
+# 6.3 Quality Assurance
 
-## Verpflichtend
+## Required
 
 ```bash
-./gradlew clean test
-./gradlew check
-./gradlew jacocoTestReport
-./gradlew jacocoTestCoverageVerification
-./gradlew sonarqube
+./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace
 ```
+
+`QUALITY.md` is the authoritative quality contract for this repository. Optional external checks such as SonarCloud must follow the credentials and skip/report rules documented there.
 
 ---
 
