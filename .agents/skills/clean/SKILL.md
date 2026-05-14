@@ -22,6 +22,15 @@ QUALITY.md
 
 When the cleanup follows a commit, PR, or `push auto` workflow, also read the active task context and the relevant commit-preparation output if present.
 
+## Command Execution Environment
+
+Follow the command execution environment defined by `AGENTS.md` and `QUALITY.md`:
+
+- On Windows hosts, run repository commands through WSL from the repository's WSL-mounted worktree path.
+- On Linux hosts, run repository commands through native shell access.
+- If WSL Git reports broad unexpected line-ending-only changes, correct the local Git EOL configuration or stop and report before deleting branches.
+- Stop and report if WSL is unavailable on Windows or if the worktree cannot be reached from WSL.
+
 ## Trigger
 
 Use this skill when the user enters exactly:
@@ -76,7 +85,7 @@ git merge-base --is-ancestor <branch> origin/main
 git branch -d <branch>
 ```
 
-Use PowerShell-safe branch names and avoid string-built destructive commands.
+Use shell-safe branch names and avoid string-built destructive commands.
 
 ## Workflow
 

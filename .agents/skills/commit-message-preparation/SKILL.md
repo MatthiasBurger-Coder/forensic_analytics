@@ -50,6 +50,14 @@ Use only:
 
 Do not infer hidden reasons for changes.
 
+## Command Execution Environment
+
+Follow the command execution environment defined by `AGENTS.md` and `QUALITY.md` when inspecting Git state or verification evidence:
+
+- On Windows hosts, run repository commands through WSL from the repository's WSL-mounted worktree path.
+- On Linux hosts, run repository commands through native shell access.
+- Stop and report if WSL is unavailable on Windows or if the worktree cannot be reached from WSL.
+
 ## Required Commands
 
 Inspect:

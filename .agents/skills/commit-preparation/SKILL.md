@@ -40,6 +40,16 @@ active workflow.md or task-specific workflow if present
 
 If any required reference cannot be read, stop and report the missing file.
 
+## Command Execution Environment
+
+Follow the command execution environment defined by `AGENTS.md` and `QUALITY.md`:
+
+- On Windows hosts, run repository commands through WSL from the repository's WSL-mounted worktree path.
+- On Linux hosts, run repository commands through native shell access.
+- Use the Linux-style commands documented in this skill and in `QUALITY.md`, including `./gradlew`.
+- If WSL Git reports broad unexpected line-ending-only changes, correct the local Git EOL configuration or stop and report before staging, committing, pushing, or reviewing commit readiness.
+- If WSL is unavailable on a Windows host, or if the worktree cannot be reached from WSL, stop and report instead of silently using Windows-native commands.
+
 ## When to Use This Skill
 
 Use this skill when:
@@ -208,7 +218,7 @@ git diff --cached
 
 For `push auto`, also verify the relevant GitHub pull request state and run the command required by the clean skill after the merge.
 
-Use the minimum and full quality commands documented in `QUALITY.md` when verification is required and practical. On Windows PowerShell, use `.\gradlew.bat` with the same arguments.
+Use the minimum and full quality commands documented in `QUALITY.md` when verification is required and practical.
 
 ## Commit Message Contract
 

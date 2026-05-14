@@ -17,6 +17,11 @@ Use the commit-preparation skill.
 Use the commit-message-preparation skill for the final commit message.
 Use or reproduce the commit_reviewer read-only output contract before mutating Git state.
 
+Command execution environment:
+- On Windows hosts, execute repository commands through WSL from the repository's WSL-mounted worktree path.
+- On Linux hosts, execute repository commands through native shell access.
+- Stop and report if WSL is unavailable on Windows or if the worktree cannot be reached from WSL.
+
 You may stage explicit files only after inspecting:
 - git status --short --branch
 - git diff --stat
