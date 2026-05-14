@@ -25,6 +25,7 @@ import de.burger.forensics.analytics.domain.analysis.AnalysisRunId;
 import de.burger.forensics.analytics.domain.artifact.ArtifactReference;
 import de.burger.forensics.analytics.domain.repository.RepositoryMetadata;
 import de.burger.forensics.analytics.domain.repository.RepositorySource;
+import de.burger.forensics.analytics.domain.semantic.SemanticGraph;
 import de.burger.forensics.analytics.domain.source.SourceFact;
 import de.burger.forensics.analytics.domain.source.SourceLocation;
 import de.burger.forensics.analytics.engine.RepositoryAnalysisEngine;
@@ -68,7 +69,7 @@ class RepositoryAnalysisTestbedTest {
         var outputDirectory = tempDir.resolve("analysis-output");
         var resultStore = new RecordingResultStore();
         var useCase = localUseCase(
-            new SemanticAnalysisResult("semantic-disabled", List.of()),
+            new SemanticAnalysisResult("semantic-disabled", "sha256:semantic-disabled", List.of(), SemanticGraph.empty()),
             outputDirectory.resolve("artifacts"),
             resultStore
         );
@@ -95,7 +96,9 @@ class RepositoryAnalysisTestbedTest {
         assertTrue(summary.contains("status=COMPLETED"));
         assertTrue(summary.contains("sourceFacts=1"));
         assertTrue(summary.contains("semanticProvider=semantic-disabled"));
+        assertTrue(summary.contains("semanticFingerprint=sha256:semantic-disabled"));
         assertTrue(summary.contains("semanticArtifacts=0"));
+        assertTrue(summary.contains("semanticNodes=0"));
         assertTrue(summary.contains("ruleArtifacts=1"));
 
         assertEquals(RepositoryAnalysisStatus.COMPLETED, resultStore.result.status());
@@ -131,7 +134,7 @@ class RepositoryAnalysisTestbedTest {
         var standardOutput = new ByteArrayOutputStream();
         var errorOutput = new ByteArrayOutputStream();
         var engine = new RepositoryAnalysisEngine(localUseCase(
-            new SemanticAnalysisResult("semantic-unused", List.of()),
+            new SemanticAnalysisResult("semantic-unused", "sha256:semantic-unused", List.of(), SemanticGraph.empty()),
             outputDirectory.resolve("artifacts"),
             new RecordingResultStore()
         ));
@@ -181,6 +184,9 @@ class RepositoryAnalysisTestbedTest {
             List.of("joern-cpg", "joern-callgraph", "joern-controlflow", "joern-dataflow", "joern-slices"),
             result.semanticAnalysis().artifacts().stream().map(ArtifactReference::type).toList()
         );
+        assertEquals(1, result.semanticAnalysis().semanticGraph().nodes().size());
+        assertEquals(1, result.semanticAnalysis().semanticGraph().callRelations().size());
+        assertEquals(1, result.semanticAnalysis().semanticGraph().dataFlowPaths().size());
         assertEquals(1, result.ruleGeneration().artifacts().size());
         assertEquals(result, resultStore.result);
     }
@@ -424,21 +430,100 @@ class RepositoryAnalysisTestbedTest {
                     return new JoernDockerCommandResult(0, "", "");
                 }
                 if (command.arguments().contains("callgraph.sc")) {
-                    Files.writeString(outputDirectory.resolve("callgraph.json"), "{\"edges\":[]}", StandardCharsets.UTF_8);
+                    Files.writeString(outputDirectory.resolve("callgraph.json"), callgraph(), StandardCharsets.UTF_8);
                     return new JoernDockerCommandResult(0, "", "");
                 }
                 if (command.arguments().contains("controlflow.sc")) {
-                    Files.writeString(outputDirectory.resolve("controlflow.json"), "{\"blocks\":[]}", StandardCharsets.UTF_8);
+                    Files.writeString(outputDirectory.resolve("controlflow.json"), controlflow(), StandardCharsets.UTF_8);
                     return new JoernDockerCommandResult(0, "", "");
                 }
                 if (command.arguments().contains("joern-slice")) {
-                    Files.writeString(outputDirectory.resolve("dataflow.json"), "{\"flows\":[]}", StandardCharsets.UTF_8);
+                    Files.writeString(outputDirectory.resolve("dataflow.json"), dataflow(), StandardCharsets.UTF_8);
                     return new JoernDockerCommandResult(0, "", "");
                 }
                 return new JoernDockerCommandResult(1, "", "unexpected testbed command");
             } catch (IOException e) {
                 throw new UncheckedIOException("Failed to write testbed Joern artifact.", e);
             }
+        }
+
+        private static String callgraph() {
+            return """
+                {
+                  "nodes": [
+                    {
+                      "id": "node-1",
+                      "type": "CALL",
+                      "file": "App.java",
+                      "fqcn": "com.example.App",
+                      "method": "greet",
+                      "signature": "java.lang.String greet(java.lang.String)",
+                      "line": 3,
+                      "code": "return greeting"
+                    }
+                  ],
+                  "edges": [
+                    {
+                      "id": "edge-1",
+                      "source": "node-1",
+                      "target": "node-2",
+                      "type": "AST"
+                    }
+                  ],
+                  "methods": [
+                    {
+                      "id": "method-1",
+                      "file": "App.java",
+                      "fqcn": "com.example.App",
+                      "name": "greet",
+                      "signature": "java.lang.String greet(java.lang.String)",
+                      "line": 2
+                    }
+                  ],
+                  "calls": [
+                    {
+                      "caller": "method-1",
+                      "callee": "method-2",
+                      "node": "node-1"
+                    }
+                  ]
+                }
+                """;
+        }
+
+        private static String controlflow() {
+            return """
+                {
+                  "relations": [
+                    {
+                      "source": "node-1",
+                      "target": "node-2",
+                      "type": "NEXT"
+                    }
+                  ]
+                }
+                """;
+        }
+
+        private static String dataflow() {
+            return """
+                {
+                  "paths": [
+                    {
+                      "id": "path-1",
+                      "source": "node-1",
+                      "target": "node-2",
+                      "steps": [
+                        {
+                          "node": "node-1",
+                          "order": 0,
+                          "kind": "SOURCE"
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """;
         }
     }
 

@@ -37,7 +37,15 @@ final class AnalysisResultOutput {
             "status=" + result.status(),
             "sourceFacts=" + result.sourceFacts().size(),
             "semanticProvider=" + result.semanticAnalysis().providerName(),
+            "semanticFingerprint=" + result.semanticAnalysis().semanticFingerprint(),
             "semanticArtifacts=" + result.semanticAnalysis().artifacts().size(),
+            "semanticNodes=" + result.semanticAnalysis().semanticGraph().nodes().size(),
+            "semanticEdges=" + result.semanticAnalysis().semanticGraph().edges().size(),
+            "semanticMethods=" + result.semanticAnalysis().semanticGraph().methods().size(),
+            "semanticCalls=" + result.semanticAnalysis().semanticGraph().callRelations().size(),
+            "semanticControlFlowRelations=" + result.semanticAnalysis().semanticGraph().controlFlowRelations().size(),
+            "semanticDataFlowPaths=" + result.semanticAnalysis().semanticGraph().dataFlowPaths().size(),
+            "semanticAnchors=" + result.semanticAnalysis().semanticGraph().anchors().size(),
             "ruleArtifacts=" + result.ruleGeneration().artifacts().size(),
             ""
         );

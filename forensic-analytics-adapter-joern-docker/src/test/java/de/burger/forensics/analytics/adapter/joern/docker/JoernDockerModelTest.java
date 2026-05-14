@@ -37,6 +37,7 @@ class JoernDockerModelTest {
         assertThrows(NullPointerException.class, () -> new JoernDockerSettings("docker", image, null, Duration.ofSeconds(30), true));
         assertThrows(NullPointerException.class, () -> new JoernDockerSettings("docker", image, output, null, true));
         assertThrows(IllegalArgumentException.class, () -> new JoernDockerSettings("docker", image, output, Duration.ZERO, true));
+        assertThrows(IllegalArgumentException.class, () -> new JoernDockerSettings("docker", image, output, Duration.ofSeconds(-1), true));
     }
 
     @Test

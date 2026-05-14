@@ -37,6 +37,14 @@ class JoernDockerSemanticAnalysisAdapterTest {
             List.of("joern-cpg", "joern-callgraph", "joern-controlflow", "joern-dataflow", "joern-slices"),
             result.artifacts().stream().map(artifact -> artifact.type()).toList()
         );
+        assertTrue(result.semanticFingerprint().startsWith("sha256:"));
+        assertEquals(1, result.semanticGraph().nodes().size());
+        assertEquals(1, result.semanticGraph().edges().size());
+        assertEquals(1, result.semanticGraph().methods().size());
+        assertEquals(1, result.semanticGraph().callRelations().size());
+        assertEquals(1, result.semanticGraph().controlFlowRelations().size());
+        assertEquals(1, result.semanticGraph().dataFlowPaths().size());
+        assertEquals(1, result.semanticGraph().anchors().size());
     }
 
     @Test
@@ -47,6 +55,38 @@ class JoernDockerSemanticAnalysisAdapterTest {
         var result = adapter(true, runner).analyze(request());
 
         assertTrue(result.providerName().contains("UNKNOWN"));
+        assertTrue(result.semanticFingerprint().startsWith("sha256:"));
+    }
+
+    @Test
+    void versionCanBeReadFromStderrWhenStdoutIsBlank() throws Exception {
+        var runner = new RecordingRunner(tempDir.resolve("joern"));
+        runner.versionOnStderr = true;
+
+        var result = adapter(true, runner).analyze(request());
+
+        assertTrue(result.providerName().contains("joern-stderr 2.0.0"));
+    }
+
+    @Test
+    void blankVersionUsesUnknownProviderVersion() throws Exception {
+        var runner = new RecordingRunner(tempDir.resolve("joern"));
+        runner.blankVersion = true;
+
+        var result = adapter(true, runner).analyze(request());
+
+        assertTrue(result.providerName().contains("UNKNOWN"));
+    }
+
+    @Test
+    void createsEmptySlicesArtifactWhenJoernSliceDoesNotProduceOne() throws Exception {
+        var runner = new RecordingRunner(tempDir.resolve("joern"));
+        runner.skipSlices = true;
+
+        var result = adapter(true, runner).analyze(request());
+
+        assertEquals(0, result.semanticGraph().anchors().size());
+        assertTrue(Files.readString(tempDir.resolve("joern").resolve("slices.json"), StandardCharsets.UTF_8).contains("\"anchors\":[]"));
     }
 
     @Test
@@ -65,6 +105,7 @@ class JoernDockerSemanticAnalysisAdapterTest {
         var result = adapter(false, runner).analyze(request());
 
         assertTrue(result.providerName().contains("joern 1.2.3"));
+        assertEquals(1, result.semanticGraph().nodes().size());
     }
 
     @Test
@@ -122,6 +163,9 @@ class JoernDockerSemanticAnalysisAdapterTest {
         private final Path outputDirectory;
         private boolean failVersion;
         private boolean failParse;
+        private boolean versionOnStderr;
+        private boolean blankVersion;
+        private boolean skipSlices;
 
         private RecordingRunner(Path outputDirectory) {
             this.outputDirectory = outputDirectory;
@@ -133,9 +177,16 @@ class JoernDockerSemanticAnalysisAdapterTest {
             try {
                 Files.createDirectories(outputDirectory);
                 if (command.arguments().contains("--version")) {
-                    return failVersion
-                        ? new JoernDockerCommandResult(1, "", "version failed")
-                        : new JoernDockerCommandResult(0, "joern 1.2.3", "");
+                    if (failVersion) {
+                        return new JoernDockerCommandResult(1, "", "version failed");
+                    }
+                    if (versionOnStderr) {
+                        return new JoernDockerCommandResult(0, "", "joern-stderr 2.0.0");
+                    }
+                    if (blankVersion) {
+                        return new JoernDockerCommandResult(0, "", "");
+                    }
+                    return new JoernDockerCommandResult(0, "joern 1.2.3", "");
                 }
                 if (command.arguments().contains("joern-parse")) {
                     Files.writeString(outputDirectory.resolve("cpg.bin"), "cpg", StandardCharsets.UTF_8);
@@ -144,21 +195,124 @@ class JoernDockerSemanticAnalysisAdapterTest {
                         : new JoernDockerCommandResult(0, "", "");
                 }
                 if (command.arguments().contains("callgraph.sc")) {
-                    Files.writeString(outputDirectory.resolve("callgraph.json"), "callgraph", StandardCharsets.UTF_8);
+                    Files.writeString(outputDirectory.resolve("callgraph.json"), callgraph(), StandardCharsets.UTF_8);
                     return new JoernDockerCommandResult(0, "", "");
                 }
                 if (command.arguments().contains("controlflow.sc")) {
-                    Files.writeString(outputDirectory.resolve("controlflow.json"), "controlflow", StandardCharsets.UTF_8);
+                    Files.writeString(outputDirectory.resolve("controlflow.json"), controlflow(), StandardCharsets.UTF_8);
                     return new JoernDockerCommandResult(0, "", "");
                 }
                 if (command.arguments().contains("joern-slice")) {
-                    Files.writeString(outputDirectory.resolve("dataflow.json"), "dataflow", StandardCharsets.UTF_8);
+                    Files.writeString(outputDirectory.resolve("dataflow.json"), dataflow(), StandardCharsets.UTF_8);
+                    if (!skipSlices) {
+                        Files.writeString(outputDirectory.resolve("slices.json"), slices(), StandardCharsets.UTF_8);
+                    }
                     return new JoernDockerCommandResult(0, "", "");
                 }
                 return new JoernDockerCommandResult(1, "", "unexpected command");
             } catch (java.io.IOException e) {
                 throw new IllegalStateException(e);
             }
+        }
+
+        private static String callgraph() {
+            return """
+                {
+                  "nodes": [
+                    {
+                      "id": "node-1",
+                      "type": "CALL",
+                      "file": "Demo.java",
+                      "fqcn": "demo.Demo",
+                      "method": "run",
+                      "signature": "void run()",
+                      "line": 12,
+                      "code": "call()"
+                    }
+                  ],
+                  "edges": [
+                    {
+                      "id": "edge-1",
+                      "source": "node-1",
+                      "target": "node-2",
+                      "type": "CALL"
+                    }
+                  ],
+                  "methods": [
+                    {
+                      "id": "method-1",
+                      "file": "Demo.java",
+                      "fqcn": "demo.Demo",
+                      "name": "run",
+                      "signature": "void run()",
+                      "line": 12
+                    }
+                  ],
+                  "calls": [
+                    {
+                      "caller": "method-1",
+                      "callee": "method-2",
+                      "node": "node-1"
+                    }
+                  ]
+                }
+                """;
+        }
+
+        private static String controlflow() {
+            return """
+                {
+                  "relations": [
+                    {
+                      "source": "node-1",
+                      "target": "node-2",
+                      "type": "NEXT"
+                    }
+                  ]
+                }
+                """;
+        }
+
+        private static String dataflow() {
+            return """
+                {
+                  "paths": [
+                    {
+                      "id": "path-1",
+                      "source": "node-1",
+                      "target": "node-2",
+                      "steps": [
+                        {
+                          "node": "node-1",
+                          "order": 0,
+                          "kind": "SOURCE"
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """;
+        }
+
+        private static String slices() {
+            return """
+                {
+                  "anchors": [
+                    {
+                      "scanEventKey": "demo.Demo#run:12:METHOD_ENTER",
+                      "node": "node-1",
+                      "file": "Demo.java",
+                      "fqcn": "demo.Demo",
+                      "method": "run",
+                      "signature": "void run()",
+                      "line": 12,
+                      "code": "call()",
+                      "confidence": 0.95,
+                      "strategy": "FQCN_METHOD_LINE_CODE"
+                    }
+                  ]
+                }
+                """;
         }
     }
 }
