@@ -11,7 +11,7 @@ Define the domain and application vocabulary for distributed analysis orchestrat
 - `DefaultRunRepositoryAnalysisUseCase` runs repository analysis synchronously.
 - The current synchronous order is repository source resolve -> source scan -> semantic analysis -> rule generation -> result store.
 - `RepositoryAnalysisStatus` currently only has `COMPLETED`.
-- No implemented analysis job lifecycle, worker status model, retry model, or dead-letter model was found.
+- Later contract-baseline slices now implement analysis job lifecycle, worker kind, retry, and dead-letter vocabulary in `de.burger.forensics.analytics.domain.analysis`.
 
 ## Future Target
 
@@ -23,8 +23,8 @@ Define the domain and application vocabulary for distributed analysis orchestrat
 
 - Implemented inward terms verified before this slice: `AnalysisRunId`, `RepositoryMetadata`, `RepositorySource`, `ArtifactReference`, and `RepositoryAnalysisStatus.COMPLETED`.
 - Source snapshot terms completed by slice 02: `SourceSnapshotId`, `SourceSnapshotMetadata`, `SourceSnapshot`, and `SourceSnapshotCompleteness`.
-- Planned gaps remain explicit: analysis job, worker task, retry attempt, dead-letter state, queue lifecycle, graph projection, report projection, LLM projection, analysis store, artifact store, and server runtime terms are not implemented by this slice.
-- `RepositoryAnalysisStatus` remains limited to `COMPLETED`; queued, running, retryable, failed, dead-lettered, partial, and skipped states are intentionally left for slice 03 or later lifecycle work.
+- Later slices now implement contract baselines for analysis jobs, worker tasks, retry attempts, dead-letter state, projections, analysis-store ports, artifact-store ports, and server-facing status views. Concrete queue, worker runtime, graph/report adapters, LLM provider, and server runtime terms remain planned.
+- `RepositoryAnalysisStatus` remains limited to synchronous repository-analysis completion; distributed job states are modeled separately by later contract slices through `AnalysisJobState`.
 
 ## Subagent Roles
 

@@ -1,24 +1,33 @@
 # 08 - Quality, CI, and Rollout
 
-Status: planned slice.
+Status: completed contract-baseline slice.
 
 ## Objective
 
-Plan quality gates, CI protection, rollout order, and migration controls for distributed analysis-orchestrator implementation.
+Record quality coverage, CI status, rollout order, and migration controls for the completed contract baseline.
 
 ## Verified Current Baseline
 
 - `QUALITY.md` defines the minimum command as `./gradlew test --dependency-verification strict --console=plain --stacktrace`.
 - `QUALITY.md` defines the full local quality gate as `./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace`.
 - The repository uses Java 25, Gradle 9.4.0, JUnit 6, ArchUnit, JaCoCo, strict dependency verification, and evidence-first quality rules.
-- Distributed queue, worker, store, graph, report, and server runtime behavior is planned, not implemented.
+- No `.github/workflows` directory is present, so CI enforcement is not implemented in this repository state.
+- Queue, worker, store, projection, and server-facing contracts are implemented as a technology-neutral baseline; concrete distributed runtime behavior remains planned, not implemented.
 
 ## Future Target
 
 - Each implementation slice has targeted regression tests before behavior changes.
-- CI runs the minimum quality command and protects architecture boundaries, evidence semantics, and dependency verification.
-- Full local gate is run before integration or release when feasible.
+- Future CI should run the minimum quality command and protect architecture boundaries, evidence semantics, and dependency verification after CI workflows are introduced.
+- Full local gate should run before integration or release when feasible.
 - Rollout keeps the synchronous path available until distributed orchestration is verified end to end.
+
+## Completed Contract Baseline
+
+- Domain tests cover job lifecycle, retry/dead-letter provenance, projection availability, and LLM output labeling.
+- Application tests cover typed worker contracts, server-facing status views, and provider-neutral architecture boundaries.
+- Persistence tests cover in-memory job storage, deterministic ordering, idempotent artifact storage, and explicit artifact metadata conflicts.
+- The existing synchronous repository analysis flow remains covered by `DefaultRunRepositoryAnalysisUseCaseTest` and was not changed.
+- No quality threshold, dependency verification rule, CI workflow, runtime bootstrap, provider dependency, or module definition was changed.
 
 ## Subagent Roles
 
@@ -76,7 +85,7 @@ git diff --check
 
 ## Done Criteria
 
-- Each implemented slice has targeted verification evidence.
-- CI and local commands are aligned with `QUALITY.md`.
+- Each implemented contract slice has targeted verification evidence.
+- Local commands are aligned with `QUALITY.md`; CI workflows are not present in this repository state.
 - No quality threshold, dependency verification rule, or architecture rule was weakened.
-- Rollout state clearly says which distributed parts are implemented and which remain planned.
+- Rollout state clearly says which contract parts are implemented and which runtime parts remain planned.

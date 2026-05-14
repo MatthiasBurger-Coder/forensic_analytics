@@ -1,14 +1,15 @@
 # 03 - Analysis Job Queue and Retry
 
-Status: planned slice.
+Status: completed contract-baseline slice.
 
 ## Objective
 
-Plan a queue-neutral analysis job lifecycle with retry and dead-letter semantics without selecting queue technology.
+Define a queue-neutral analysis job lifecycle with retry and dead-letter semantics without selecting queue technology.
 
 ## Verified Current Baseline
 
-- No implemented queue, retry, dead-letter, or worker module was found.
+- No concrete queue product, queue runtime, or worker module is implemented.
+- A technology-neutral job contract now exists in `de.burger.forensics.analytics.domain.analysis`.
 - `RepositoryAnalysisStatus` currently only has `COMPLETED`.
 - `DefaultRunRepositoryAnalysisUseCase` executes all analysis steps in one synchronous call.
 
@@ -18,6 +19,13 @@ Plan a queue-neutral analysis job lifecycle with retry and dead-letter semantics
 - Planned job lifecycle records accepted, dispatchable, running, retryable, failed, dead-lettered, and completed states only after exact names and transitions are approved.
 - Retry attempts are deterministic and idempotent for the same job input and artifact references.
 - Dead-letter records preserve failure cause, worker kind, attempt count, input references, and evidence completeness state.
+
+## Completed Contract Baseline
+
+- `AnalysisJobState` defines the approved states: `ACCEPTED`, `DISPATCHABLE`, `RUNNING`, `RETRYABLE`, `FAILED`, `DEAD_LETTERED`, and `COMPLETED`.
+- `AnalysisJobId`, `AnalysisJob`, `AnalysisJobFailure`, and `DeadLetterProvenance` model lifecycle identity, transition validation, retry failure provenance, attempt counts, input references, and completeness.
+- Tests cover accepted-to-completed transitions, retry dispatch, dead-letter provenance, invalid transitions, and missing required references.
+- No queue product, asynchronous dispatcher, worker process, server runtime, or changes to the synchronous repository analysis use case were introduced.
 
 ## Subagent Roles
 
@@ -65,11 +73,11 @@ Stop and report if:
 ./gradlew test --dependency-verification strict --console=plain --stacktrace
 ```
 
-Run targeted application lifecycle tests first when available.
+Run targeted domain lifecycle tests first when available.
 
 ## Done Criteria
 
-- Queue contract is technology-neutral.
+- Queue-neutral contract is implemented without a queue product.
 - Retry and dead-letter behavior is tested.
-- Job states distinguish queued, running, partial, failed, dead-lettered, and completed outcomes as approved.
-- Existing synchronous behavior remains covered during migration.
+- Job states distinguish accepted, dispatchable, running, retryable, failed, dead-lettered, and completed outcomes as approved.
+- Existing synchronous behavior remains covered and unchanged during this contract-baseline slice.

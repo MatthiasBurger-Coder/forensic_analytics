@@ -1,6 +1,6 @@
 # Distributed Analysis Orchestrator Workplan
 
-Status: active workflow documentation. Slices 00, 01, and 02 are completed. Later slices remain planned and do not describe implemented runtime behavior.
+Status: active workflow documentation. Slices 00 through 08 are completed as a technology-neutral contract baseline. Concrete distributed runtime behavior remains planned and is not implemented.
 
 ## Purpose
 
@@ -27,7 +27,9 @@ forensic-analytics-server
 - Current modules from `settings.gradle.kts`: `forensic-analytics-domain`, `forensic-analytics-application`, `forensic-analytics-engine`, `forensic-analytics-adapter-repository-source`, `forensic-analytics-adapter-javaparser`, `forensic-analytics-adapter-joern-docker`, `forensic-analytics-cli`, `forensic-analytics-testbed`, `forensic-analytics-persistence`, `forensic-analytics-ingestion-grpc`, `forensic-analytics-ingestion-request`, and `forensic-analytics-bootstrap`.
 - `DefaultRunRepositoryAnalysisUseCase` currently runs synchronously: repository source resolve -> source scan -> semantic analysis -> rule generation -> result store.
 - `RepositoryAnalysisStatus` currently only has `COMPLETED`.
-- No implemented queue, retry, dead-letter, worker modules, graph adapter module, report module, durable analysis-store, artifact-store port, or immutable source snapshot model was found.
+- Queue-neutral job lifecycle, retry/dead-letter provenance, typed worker contracts, analysis/artifact store ports, projection contracts, and server-facing status views now exist as inward contract baselines.
+- No concrete queue product, worker runtime module, server module, graph adapter module, report module, database, object store, vector store, LLM provider, or runtime dispatcher is implemented.
+- No `.github/workflows` directory is present, so CI workflow enforcement is not implemented in this repository state.
 - Existing workspace/project storage areas are `evidence_original`, `evidence_processed`, `analysis_results`, `reports`, and `logs`.
 - `IsolatedProjectStoragePathResolver` confines project and shared paths under workspace/project roots.
 - `forensic-analytics-ingestion-grpc` is an inbound adapter. It must not own persistence, Joern execution, replay, LLM behavior, or the final plugin payload schema.
@@ -48,18 +50,24 @@ forensic-analytics-server
 | 00 | [Documentation Baseline Alignment](00-documentation-baseline-alignment.md) | Completed | Keep documentation entry points and workflow ownership aligned. |
 | 01 | [Orchestrator Domain Vocabulary](01-orchestrator-domain-vocabulary.md) | Completed | Define planned orchestration terms before queue and worker changes. |
 | 02 | [Source Snapshots and Workspaces](02-source-snapshots-and-workspaces.md) | Completed | Define immutable source snapshot vocabulary and workspace-managed raw source artifact paths. |
-| 03 | [Analysis Job Queue and Retry](03-analysis-job-queue-and-retry.md) | Planned | Plan queue-neutral job lifecycle, retry, and dead-letter behavior. |
-| 04 | [Typed Worker Contracts](04-typed-worker-contracts.md) | Planned | Plan worker input/output contracts for distributed execution. |
-| 05 | [Analysis Store and Artifact Store](05-analysis-store-and-artifact-store.md) | Planned | Plan canonical storage and artifact reference boundaries. |
-| 06 | [Graph, Report, and LLM Projections](06-graph-report-and-llm-projections.md) | Planned | Plan projections derived from canonical stored evidence. |
-| 07 | [Server API and Distributed Runtime](07-server-api-and-distributed-runtime.md) | Planned | Plan server-facing orchestration API and runtime wiring. |
-| 08 | [Quality, CI, and Rollout](08-quality-ci-and-rollout.md) | Planned | Plan verification, rollout order, and CI protection. |
+| 03 | [Analysis Job Queue and Retry](03-analysis-job-queue-and-retry.md) | Completed | Queue-neutral job lifecycle, retry, and dead-letter contract baseline. |
+| 04 | [Typed Worker Contracts](04-typed-worker-contracts.md) | Completed | Provider-neutral worker input/output contract baseline. |
+| 05 | [Analysis Store and Artifact Store](05-analysis-store-and-artifact-store.md) | Completed | Canonical store ports and in-memory idempotency adapters. |
+| 06 | [Graph, Report, and LLM Projections](06-graph-report-and-llm-projections.md) | Completed | Projection contracts derived from canonical stored evidence. |
+| 07 | [Server API and Distributed Runtime](07-server-api-and-distributed-runtime.md) | Completed | Server-facing request/status view contracts without runtime wiring. |
+| 08 | [Quality, CI, and Rollout](08-quality-ci-and-rollout.md) | Completed | Targeted tests, architecture boundary coverage, and CI status documentation. |
 
 ## Completed Slice Evidence
 
 - 00 completed: `docs/README.md` points to `docs/workplan`, and `docs/workplan/README.md` indexes the master workflow and all slice files.
 - 01 completed: orchestration vocabulary is documented with verified implemented terms and planned gaps; no queue lifecycle, retry, dead-letter, or worker status was introduced in this slice.
 - 02 completed: source snapshot domain vocabulary now models deterministic snapshot identity, optional revision metadata, artifact provenance, completeness, and limitations; workspace path resolution maps source snapshot artifacts into `evidence_original`.
+- 03 completed: job lifecycle contracts now model approved states, transition validation, retry failure provenance, and dead-letter provenance without a queue product.
+- 04 completed: typed worker input/output contracts now carry run, job, snapshot, artifact references, worker version, diagnostics, completeness, and artifact categories without worker runtime modules.
+- 05 completed: analysis/artifact store ports and minimal in-memory adapters now preserve job and artifact provenance, idempotent canonical writes, and explicit artifact conflicts without choosing a database or object store.
+- 06 completed: projection contracts now cover graph, report, LLM, and vector projections; available projections require artifacts, unavailable/failed projections require diagnostics, and LLM output is labeled generated or hypothesis.
+- 07 completed: application-layer server-facing request/status view contracts expose job states, diagnostics, artifact references, and projection availability without raw sensitive data or transport wiring.
+- 08 completed: targeted tests and provider-neutral architecture coverage were added; no CI workflows are present and no CI enforcement is claimed.
 
 ## Subagent Coordination Rules
 

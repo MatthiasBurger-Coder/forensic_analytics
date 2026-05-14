@@ -1,16 +1,17 @@
 # 04 - Typed Worker Contracts
 
-Status: planned slice.
+Status: completed contract-baseline slice.
 
 ## Objective
 
-Plan typed input and output contracts for distributed workers so each worker consumes explicit evidence references and produces deterministic results.
+Define typed input and output contracts for future distributed workers so each worker consumes explicit evidence references and produces deterministic results.
 
 ## Verified Current Baseline
 
 - Current analysis runs synchronously inside `DefaultRunRepositoryAnalysisUseCase`.
 - Existing ports cover repository source resolution, source scanning, semantic analysis, rule generation, and result storage.
-- No implemented `repository-analysis-worker`, `ast-analysis-worker`, `joern-analysis-worker`, `btm-generation-worker`, `graph-analysis-worker`, or `report-worker` modules were found.
+- No implemented `repository-analysis-worker`, `ast-analysis-worker`, `joern-analysis-worker`, `btm-generation-worker`, `graph-analysis-worker`, `report-worker`, or `llm-projection-worker` module exists.
+- Provider-neutral worker input and output contracts now exist in the application layer.
 
 ## Future Target
 
@@ -23,6 +24,14 @@ Plan typed input and output contracts for distributed workers so each worker con
   - `report-worker` builds reports from canonical evidence and projections.
 - Worker contracts carry analysis run ID, job ID, source snapshot reference, input artifact references, output artifact references, worker version, diagnostics, and completeness state.
 - Worker implementation modules remain adapters or infrastructure; domain/application contracts remain provider-neutral.
+
+## Completed Contract Baseline
+
+- `AnalysisWorkerKind` defines `REPOSITORY_ANALYSIS`, `AST_ANALYSIS`, `JOERN_ANALYSIS`, `BTM_GENERATION`, `GRAPH_ANALYSIS`, `REPORT`, and `LLM_PROJECTION`.
+- `AnalysisWorkerInput` and `AnalysisWorkerOutput` carry `AnalysisRunId`, `AnalysisJobId`, `SourceSnapshotId`, typed input/output artifact references, worker version, diagnostics, and completeness.
+- `AnalysisArtifactCategory` keeps static, runtime, projection, and generated artifacts distinguishable.
+- Tests reject missing required references and verify that generated LLM artifacts are categorized separately from static and projection artifacts.
+- No worker runtime, module addition, queue dispatch, or synchronous-flow migration was introduced.
 
 ## Subagent Roles
 
@@ -75,6 +84,6 @@ Run targeted contract and adapter tests first when available.
 
 ## Done Criteria
 
-- Each implemented worker contract has tests and explicit provenance.
+- Worker contracts have tests and explicit provenance.
 - Worker inputs and outputs are typed, deterministic, and provider-neutral.
 - No concrete queue or worker runtime is required for contract tests.
