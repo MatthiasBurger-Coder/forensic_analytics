@@ -1,5 +1,5 @@
 name = "commit_operator"
-description = "Executes the Forensic Analytics commit-preparation workflow after read-only review. Uses Commit.md, QUALITY.md, the commit-preparation skill, and commit_reviewer output to stage explicit files, create commits, push branches, and create GitHub pull requests against main when the user enters push."
+description = "Executes the Forensic Analytics commit-preparation workflow after read-only review. Uses AGENTS.md, QUALITY.md, commit-preparation, commit-message-preparation, and commit_reviewer output to stage explicit files, create commits, push branches, and create GitHub pull requests against main when the user enters push."
 developer_instructions = """
 You are the Commit Operator for the Forensic Analytics repository.
 
@@ -8,11 +8,12 @@ Your task is to execute the commit-preparation workflow only after the repositor
 Read these files first:
 - AGENTS.md
 - QUALITY.md
-- Commit.md
 - .agents/skills/commit-preparation/SKILL.md
+- .agents/skills/commit-message-preparation/SKILL.md
 - .agents/skills/commit-preparation/workflow.commit-preparation.md
 
 Use the commit-preparation skill.
+Use the commit-message-preparation skill for the final commit message.
 Use or reproduce the commit_reviewer read-only output contract before mutating Git state.
 
 You may stage explicit files only after inspecting:

@@ -5,6 +5,7 @@
 Describe how Codex prepares, reviews, verifies, and decides commit readiness in the Forensic Analytics repository.
 
 Use the commit-preparation skill.
+Use the commit-message-preparation skill for the proposed commit message.
 Use the commit_reviewer worker/subagent for read-only review.
 Use the commit_operator worker/subagent for commit, push, and GitHub pull-request execution.
 Do not commit if the commit reviewer returns NOT READY or BLOCKED.
@@ -17,8 +18,8 @@ Do not push or create a pull request unless the user enters `push` or explicitly
 - Current Git worktree.
 - `AGENTS.md`.
 - `QUALITY.md`.
-- `Commit.md`.
 - `.agents/skills/commit-preparation/SKILL.md`.
+- `.agents/skills/commit-message-preparation/SKILL.md`.
 - `.agents/skills/commit-preparation/workflow.commit-preparation.md`.
 - `.codex/agents/commit_reviewer.toml`.
 - `.codex/agents/commit_operator.toml`.
@@ -40,8 +41,8 @@ Read, in order:
 ```text
 1. AGENTS.md
 2. QUALITY.md
-3. Commit.md
-4. .agents/skills/commit-preparation/SKILL.md
+3. .agents/skills/commit-preparation/SKILL.md
+4. .agents/skills/commit-message-preparation/SKILL.md
 5. .agents/skills/commit-preparation/workflow.commit-preparation.md
 6. .codex/agents/commit_reviewer.toml
 7. .codex/agents/commit_operator.toml
@@ -69,13 +70,13 @@ Ask the `commit_reviewer` worker/subagent to perform a read-only commit-readines
 
 The reviewer must:
 
-- read `AGENTS.md`, `QUALITY.md`, `Commit.md`, and `.agents/skills/commit-preparation/SKILL.md`,
+- read `AGENTS.md`, `QUALITY.md`, `.agents/skills/commit-preparation/SKILL.md`, and `.agents/skills/commit-message-preparation/SKILL.md`,
 - read `.agents/skills/commit-preparation/workflow.commit-preparation.md` when using the reusable workflow,
 - inspect status and diffs,
 - classify every changed file,
 - check task scope,
 - check verification evidence,
-- return the output contract defined in `Commit.md`.
+- return the output contract defined in `.agents/skills/commit-preparation/SKILL.md`.
 
 The reviewer must not modify files, stage files, create commits, or push branches.
 
@@ -88,7 +89,7 @@ Use `commit_operator` only for mutating GitHub workflow steps:
 - pushing the current branch,
 - creating or completing a GitHub pull request against `main`.
 
-The operator must follow `Commit.md`, this workflow, and the commit-preparation skill. It must not proceed unless the reviewer output is `READY` or it has reproduced the same output contract from repository evidence.
+The operator must follow this workflow and the commit-preparation skill. It must not proceed unless the reviewer output is `READY` or it has reproduced the same output contract from repository evidence.
 
 ## Phase 4: Review Findings
 
@@ -100,7 +101,27 @@ If the reviewer returns `NOT READY`, fix only clear, in-scope blockers or stop a
 
 Do not continue to commit preparation while unrelated files, sensitive data, generated artifacts, or unclassified files remain.
 
-## Phase 5: Run Required Verification
+## Phase 5: Route Blockers To Repair Agents
+
+When a blocker is clear and in scope, route it to the appropriate role:
+
+- `implementation_worker` for implementation defects.
+- `quality_reviewer` or `test_archunit_reviewer` for tests, coverage, dependency verification, or build failures.
+- `documentation_reviewer` for documentation drift.
+- `architecture_reviewer` for architecture-boundary risks.
+- `security_reviewer` for credentials, tokens, or sensitive data.
+- `source_analysis_reviewer` for static source-analysis risks.
+- `ingestion_handoff_reviewer` for ingestion or handoff contract risks.
+- `joern_semantics_reviewer` for Joern semantic artifact risks.
+- `analytics_persistence_reviewer` for persistence or deterministic artifact risks.
+- `replay_graph_llm_reviewer` for replay, graph, reporting, or LLM evidence-package risks.
+- `commit-message-preparation` for commit-message defects.
+
+After repair, rerun `commit_reviewer`.
+
+Do not route speculative or unclear blockers to mutation workers. Report those instead.
+
+## Phase 6: Run Required Verification
 
 Use `QUALITY.md` for verification commands.
 
@@ -120,7 +141,7 @@ On Windows PowerShell, use `.\gradlew.bat` with the same arguments.
 
 For documentation-only and agent-instruction-only changes, run the minimum quality command when practical. If it is skipped, report the reason and do not claim it passed.
 
-## Phase 6: Stage Explicit Files
+## Phase 7: Stage Explicit Files
 
 Stage only files that are required for the current task.
 
@@ -136,7 +157,7 @@ Do not stage:
 - local trace dumps,
 - credentials, tokens, or private local configuration.
 
-## Phase 7: Final Diff Review
+## Phase 8: Final Diff Review
 
 After staging, run:
 
@@ -147,37 +168,15 @@ git diff --cached
 
 Review the staged diff before committing.
 
-## Phase 8: Prepare Commit Message
+## Phase 9: Prepare Commit Message
 
 Prepare the commit message from the final staged diff and actual verification evidence.
 
-Use the format from `Commit.md`:
-
-```text
-<type>(<scope>): <short imperative summary>
-
-Why:
-- ...
-
-What:
-- ...
-
-How:
-- ...
-
-Verification:
-- ...
-
-Impact:
-- ...
-
-Limitations:
-- ...
-```
+Use `.agents/skills/commit-message-preparation/SKILL.md`.
 
 Do not invent verification results, affected components, or impact.
 
-## Phase 9: Commit Decision
+## Phase 10: Commit Decision
 
 Commit only if:
 
@@ -190,7 +189,7 @@ Commit only if:
 
 Do not push or create a pull request during this phase.
 
-## Phase 10: Push Command and GitHub Pull Request
+## Phase 11: Push Command and GitHub Pull Request
 
 When the user enters exactly `push`, treat it as permission to complete publication:
 
@@ -227,7 +226,8 @@ Do not force-push. Do not merge. Do not enable auto-merge. Do not retarget the p
 
 Stop and report when:
 
-- `AGENTS.md`, `QUALITY.md`, `Commit.md`, or the commit-preparation skill cannot be read,
+- `AGENTS.md`, `QUALITY.md`, or the commit-preparation skill cannot be read,
+- `.agents/skills/commit-message-preparation/SKILL.md` cannot be read when drafting the commit message,
 - `.agents/skills/commit-preparation/workflow.commit-preparation.md` cannot be read when using the reusable workflow,
 - `.codex/agents/commit_operator.toml` cannot be read when commit, push, or pull-request execution is requested,
 - branch or worktree state is unclear,
@@ -265,6 +265,9 @@ Risks:
 Required fixes before commit:
 - <fixes or "None">
 
+Recommended remediation:
+- <role or skill to address each blocker, or "None">
+
 Proposed commit message:
 <full commit message>
 ```
@@ -274,17 +277,18 @@ Required execution order:
 ```text
 1. Read AGENTS.md
 2. Read QUALITY.md
-3. Read Commit.md
-4. Read .agents/skills/commit-preparation/SKILL.md
+3. Read .agents/skills/commit-preparation/SKILL.md
+4. Read .agents/skills/commit-message-preparation/SKILL.md
 5. Read .agents/skills/commit-preparation/workflow.commit-preparation.md
 6. Read .codex/agents/commit_reviewer.toml
 7. Read .codex/agents/commit_operator.toml when mutating execution is requested
 8. Inspect git status and diffs
 9. Ask commit_reviewer to review commit readiness
-10. Fix only clear, in-scope blockers
-11. Run required verification from QUALITY.md
-12. Inspect final staged diff
-13. Prepare commit message
-14. Use commit_operator to commit only if all required gates pass and user/task permits committing
-15. On `push`, use commit_operator to push the branch and create or complete a GitHub pull request against main
+10. Route only clear, in-scope blockers to the appropriate repair role
+11. Rerun commit_reviewer after repairs
+12. Run required verification from QUALITY.md
+13. Inspect final staged diff
+14. Prepare commit message with commit-message-preparation
+15. Use commit_operator to commit only if all required gates pass and user/task permits committing
+16. On `push`, use commit_operator to push the branch and create or complete a GitHub pull request against main
 ```
