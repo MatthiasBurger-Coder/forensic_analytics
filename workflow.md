@@ -1,1243 +1,285 @@
-# Codex Workflow Canvas — Workspace-System
+# Forensic Analytics Workflow
 
-Dieses Dokument beschreibt einen wiederverwendbaren Codex-Workflow für ein forensisches Workspace-System mit mehreren Projekten, Rollen, Assets, Audit-Logs, Storage-Isolation, Skills und Subagents.
+This document defines the operational workflow for the Forensic Analytics platform. It translates the target service structure into repository-level execution rules for analysis intake, orchestration, workspace handling, workers, storage, artifacts and eventing.
 
-## Ziel
+The workflow is documentation for implementation slices. It does not declare that every named target component already exists as a Gradle module. Current module names must always be verified from `settings.gradle.kts`, `docs/README.md`, source code and tests before implementation.
 
-Codex soll nicht einfach direkt Code erzeugen, sondern jedes neue Feature als klaren Slice planen, prüfen, implementieren, testen und dokumentieren.
+## Verified Repository Baseline
 
-Der Workflow stellt sicher, dass bei jedem Workspace-Feature folgende Bereiche betrachtet werden:
+The current repository baseline contains these verified modules:
 
-- Domain-Regeln
-- Datenbank
-- API
-- RBAC / Berechtigungen
-- Storage-Isolation
-- Audit / Chain of Custody
-- Frontend Canvas
-- Tests
-- Dokumentation
-- Deployment-Auswirkungen
+- `forensic-analytics-domain`
+- `forensic-analytics-application`
+- `forensic-analytics-engine`
+- `forensic-analytics-adapter-repository-source`
+- `forensic-analytics-adapter-javaparser`
+- `forensic-analytics-adapter-joern-docker`
+- `forensic-analytics-cli`
+- `forensic-analytics-testbed`
+- `forensic-analytics-persistence`
+- `forensic-analytics-ingestion-grpc`
+- `forensic-analytics-ingestion-request`
+- `forensic-analytics-bootstrap`
 
-## Grundregeln
+Target names such as `server`, `orchestrator`, `workers`, `analysis-store`, `artifact-store` and `eventing` are workflow responsibilities. Do not create packages, modules, tasks, graph labels, storage tables or API fields from these names without a dedicated verification slice.
 
-```text
-Kein Workspace-Feature ohne Rechteprüfung.
-Kein Projekt-Feature ohne Workspace-Kontext.
-Kein Datei-Feature ohne Storage-Isolation.
-Keine kritische Aktion ohne Audit-Event.
-Kein Slice ohne negative Permission-Tests.
-```
-
-## Kernmodell
+## Core Rules
 
 ```text
-Server-System
-└── Workspace
-    ├── Projekte
-    ├── Mitglieder & Rollen
-    ├── Gemeinsame Ressourcen
-    ├── Projektdateien
-    ├── Audit-Log
-    ├── Speicher / Isolation
-    └── Einstellungen
+No analysis job without explicit input provenance.
+No worker output without a stable analysis identity.
+No replay claim without runtime evidence or an explicit gap.
+No graph edge without evidence category and provenance.
+No report finding without evidence references or an explicit unknown state.
+No LLM text treated as verified evidence.
+No retry that mutates original evidence destructively.
 ```
 
-## Fachliche Regeln
+The canonical analysis model is the source of truth. Graph databases, vector stores, reports and visualizations are projections derived from canonical evidence and analysis results.
 
-- Ein Workspace ist die oberste organisatorische und sicherheitstechnische Einheit.
-- Ein Projekt gehört immer genau zu einem Workspace.
-- Ein Benutzer muss Mitglied eines Workspace sein, bevor er Workspace-Ressourcen sehen darf.
-- Projektzugriff wird zusätzlich zur Workspace-Mitgliedschaft geprüft.
-- Assets gehören entweder zu einem Projekt oder zum Shared-Bereich eines Workspace.
-- Originale forensische Daten dürfen nicht direkt verändert werden.
-- Archivierung und Soft Delete sind gegenüber Hard Delete zu bevorzugen.
-- Kritische Aktionen müssen Audit-Events erzeugen.
-- Cross-Workspace- und Cross-Project-Zugriffe müssen verhindert werden.
-
----
-
-# 1. Workflow Canvas
+## Target Architecture
 
 ```text
-┌────────────────────┬────────────────────┬────────────────────┬────────────────────┬────────────────────┬────────────────────┐
-│ 1. Intake           │ 2. Plan             │ 3. Skill Routing    │ 4. Subagents        │ 5. Implementation   │ 6. Review / Ship    │
-├────────────────────┼────────────────────┼────────────────────┼────────────────────┼────────────────────┼────────────────────┤
-│ Feature-Idee        │ Slice definieren    │ passende Skills     │ parallele Agenten   │ Code ändern         │ Tests laufen lassen │
-│ Ziel klären         │ Datenmodell         │ aktivieren          │ starten             │ Migrationen         │ Security Review     │
-│ Scope begrenzen     │ API                 │ Regeln laden        │ Ergebnisse sammeln  │ UI                  │ Audit Review        │
-│ Risiken notieren    │ UI                  │ Checks erzwingen    │ zusammenführen      │ Tests               │ Merge vorbereiten   │
-│                     │ Security            │                     │                     │ Doku                │ Release Notes       │
-└────────────────────┴────────────────────┴────────────────────┴────────────────────┴────────────────────┴────────────────────┘
+forensic_analytics
+├── server
+│   └── receives analysis jobs over gRPC
+│
+├── orchestrator
+│   └── controls analysis state and pipeline steps
+│
+├── workspace
+│   └── creates, locks, cleans and archives workspaces
+│
+├── workers
+│   ├── repository-worker
+│   ├── javaparser-worker
+│   ├── joern-worker
+│   ├── btm-worker
+│   ├── graph-worker
+│   └── report-worker
+│
+├── analysis-store
+│   └── stores jobs, status, findings and relationships
+│
+├── artifact-store
+│   └── stores large analysis results
+│
+└── eventing
+    └── handles queues, events, retries and dead letters
 ```
 
-## Ablauf als Mermaid Flow
+## Component Responsibilities
+
+| Target component | Responsibility | Verified repository mapping |
+|---|---|---|
+| `server` | Accept analysis requests, validate transport-level input and delegate to application use cases. It must not contain analysis, persistence, replay, report or LLM decisions. | `forensic-analytics-ingestion-grpc`, `forensic-analytics-bootstrap` |
+| `orchestrator` | Own the analysis state machine, decide the next pipeline step from explicit state and route work through ports. | `forensic-analytics-application`, `forensic-analytics-engine` |
+| `workspace` | Prepare isolated working areas, lock active jobs, keep originals immutable, clean temporary material and archive retained evidence. | `forensic-analytics-domain`, `forensic-analytics-application`, `forensic-analytics-persistence` |
+| `repository-worker` | Resolve repository input and source roots, preserve repository metadata and produce explicit source facts. | `forensic-analytics-adapter-repository-source`, `forensic-analytics-ingestion-request` |
+| `javaparser-worker` | Extract Java source facts and unresolved symbol diagnostics. Static facts must not be treated as runtime execution. | `forensic-analytics-adapter-javaparser` |
+| `joern-worker` | Produce semantic artifacts from Joern through infrastructure adapters. Joern output remains semantic analysis evidence, not runtime evidence. | `forensic-analytics-adapter-joern-docker`, `docs/workflows/joern-docker-container.workflow.md` |
+| `btm-worker` | Plan or render runtime instrumentation artifacts through verified ports. Generated rules are instrumentation plans, not observed execution. | Future adapter responsibility; verify current rule-generation ports before implementation. |
+| `graph-worker` | Build deterministic graph projections from canonical facts and runtime evidence. Graph projections are rebuildable and not the primary source of truth. | Future projection responsibility; see ADR-0004. |
+| `report-worker` | Render reports that separate confirmed evidence, derived analysis, gaps, hypotheses and verification status. | Future report adapter responsibility. |
+| `analysis-store` | Persist canonical job state, statuses, evidence metadata, findings, relationships and limitations. | `forensic-analytics-persistence`, application ports |
+| `artifact-store` | Store large artifacts with type, checksum, provenance and retention metadata. | `ArtifactReference`, workspace asset and storage concepts |
+| `eventing` | Coordinate asynchronous work, retries and dead-letter handling without hiding failed or incomplete evidence. | Future infrastructure responsibility. |
+
+## End-to-End Flow
 
 ```mermaid
 flowchart TD
-    A[Feature Request] --> B[Read AGENTS.md]
-    B --> C[Use workspace-slice-planner]
-    C --> D[Create Slice Plan]
+    A["gRPC analysis request"] --> B["Server validation"]
+    B --> C["Create or load analysis job"]
+    C --> D["Prepare and lock workspace"]
+    D --> E["Repository worker"]
+    E --> F["JavaParser worker"]
+    F --> G["Joern worker"]
+    G --> H["BTM worker"]
+    H --> I["Runtime evidence import"]
+    I --> J["Graph worker"]
+    J --> K["Finding generation"]
+    K --> L["Report worker"]
+    L --> M["Archive workspace"]
+    M --> N["Completed analysis"]
 
-    D --> E{Risky or cross-cutting?}
-
-    E -- Yes --> F[Spawn Subagents]
-    F --> F1[RBAC Subagent]
-    F --> F2[DB Subagent]
-    F --> F3[API Subagent]
-    F --> F4[Audit Subagent]
-    F --> F5[QA Subagent]
-    F --> F6[Threat Model Subagent]
-
-    F1 --> G[Consolidated Plan]
-    F2 --> G
-    F3 --> G
-    F4 --> G
-    F5 --> G
-    F6 --> G
-
-    E -- No --> G
-
-    G --> H[Implement DB Migration]
-    H --> I[Implement Backend API]
-    I --> J[Implement RBAC Checks]
-    J --> K[Implement Audit Events]
-    K --> L[Implement Frontend Canvas]
-    L --> M[Add Tests]
-    M --> N[Run Tests]
-    N --> O[Security and Permission Review]
-    O --> P[Update Docs]
-    P --> Q[PR Summary / Release Notes]
+    B --> X["Rejected request"]
+    E --> Y["Retry or dead letter"]
+    F --> Y
+    G --> Y
+    H --> Y
+    I --> Y
+    J --> Y
+    K --> Y
+    L --> Y
 ```
 
----
+Runtime evidence import is shown as a workflow step because replay and findings depend on observed runtime data. If no runtime evidence is available, the result must preserve that gap explicitly.
 
-# 2. Empfohlene Repo-Struktur
+## Analysis State Model
 
-```text
-repo/
-├── AGENTS.md
-├── workflow.md
-├── .agents/
-│   └── skills/
-│       ├── workspace-slice-planner/
-│       │   └── SKILL.md
-│       ├── workspace-domain-model/
-│       │   └── SKILL.md
-│       ├── workspace-rbac-matrix/
-│       │   └── SKILL.md
-│       ├── workspace-api-builder/
-│       │   └── SKILL.md
-│       ├── workspace-db-migrations/
-│       │   └── SKILL.md
-│       ├── workspace-storage-isolation/
-│       │   └── SKILL.md
-│       ├── workspace-audit-chain-of-custody/
-│       │   └── SKILL.md
-│       ├── workspace-threat-model/
-│       │   └── SKILL.md
-│       ├── workspace-permission-tests/
-│       │   └── SKILL.md
-│       ├── workspace-frontend-canvas/
-│       │   └── SKILL.md
-│       └── workspace-docs-release/
-│           └── SKILL.md
-├── backend/
-├── frontend/
-├── database/
-│   └── migrations/
-├── docs/
-├── tests/
-└── scripts/
-```
+Use explicit state transitions for analysis jobs. A target implementation should model states comparable to:
 
-## Rolle der Dateien
+| State | Meaning |
+|---|---|
+| Received | The server accepted the request envelope. |
+| Validated | Required transport and command fields were verified. |
+| WorkspacePrepared | The workspace exists and is locked for the analysis. |
+| RepositoryImported | Repository metadata and source inputs were captured. |
+| StaticFactsExtracted | JavaParser or other static facts were stored with source locations and unresolved diagnostics. |
+| SemanticArtifactsImported | Joern or equivalent semantic artifacts were stored with provenance and checksums. |
+| InstrumentationPlanned | Runtime instrumentation artifacts were generated or declared unavailable. |
+| RuntimeEvidenceImported | Runtime events were imported, or the absence of runtime evidence was recorded. |
+| GraphProjected | Rebuildable graph projections were created from canonical facts. |
+| FindingsGenerated | Findings were generated with evidence references and limitations. |
+| ReportGenerated | Human-readable output was rendered from stored analysis results. |
+| Completed | The job reached a terminal successful state. |
+| Failed | The job failed with a recorded reason and recoverability status. |
+| DeadLettered | Retry policy was exhausted and the job needs manual inspection. |
 
-```text
-AGENTS.md   = dauerhafte Projektregeln für Codex
-workflow.md = operativer Workflow für Slices, Skills und Subagents
-SKILL.md    = wiederverwendbarer Codex Skill für eine konkrete Aufgabe
-```
+These names are workflow terminology. Before introducing enum constants, database values or event types, inspect the current domain, application ports, persistence adapters and tests.
 
----
+## Worker Contract
 
-# 3. Board-Ansicht
+Each worker must follow the same contract:
 
-```text
-┌────────────────────────────────────────────────────────────────────────────────────────────────────┐
-│                                      CODEX WORKFLOW CANVAS                                         │
-├─────────────────────┬─────────────────────┬─────────────────────┬─────────────────────┬────────────┤
-│ INTAKE              │ PLAN                │ EXECUTE             │ VERIFY              │ SHIP       │
-├─────────────────────┼─────────────────────┼─────────────────────┼─────────────────────┼────────────┤
-│ Feature Request     │ Slice Plan          │ DB Migration        │ Unit Tests          │ PR Summary │
-│ Workspace-Regel     │ Domain Check        │ Backend API         │ Integration Tests   │ Docs       │
-│ Projekt-Regel       │ RBAC Matrix         │ Frontend Canvas     │ Permission Tests    │ Release    │
-│ Asset-Regel         │ Audit Events        │ Audit Hooks         │ Threat Review       │ Changelog  │
-│ Risiko              │ Storage Rules       │ Storage Layer       │ Chain-of-Custody    │ Merge      │
-└─────────────────────┴─────────────────────┴─────────────────────┴─────────────────────┴────────────┘
-```
+1. Read only declared inputs from the analysis store, artifact store or workspace.
+2. Verify the expected input shape before processing.
+3. Produce deterministic output for the same inputs.
+4. Store output as canonical facts, artifact references, diagnostics, findings or explicit gaps.
+5. Record provenance, checksums and limitations where applicable.
+6. Emit a completion or failure event without mutating original evidence.
+7. Be idempotent enough for retry, or declare why retry is unsafe.
 
----
+Workers must not call each other directly. The orchestrator advances the pipeline through explicit state and events.
 
-# 4. Standard-Ablauf pro Feature
+## Store Boundaries
 
-## Phase 1 — Intake
+### Analysis Store
 
-Ein Feature kommt rein, zum Beispiel:
+The analysis store persists small, queryable canonical data:
 
-```text
-Baue Projektrollen innerhalb eines Workspace.
-```
-
-Codex soll zuerst nicht implementieren, sondern den Slice klären.
-
-### Codex Prompt
-
-```text
-Read AGENTS.md.
-
-Use $workspace-slice-planner.
-
-Plan the implementation slice for project roles inside a workspace.
-
-Do not write code yet.
-
-Return:
-- goal
-- affected entities
-- database changes
-- API endpoints
-- frontend changes
-- permission rules
-- audit events
-- tests
-- subagents to spawn
-- risks
-- done criteria
-```
-
----
-
-## Phase 2 — Slice Planning
-
-Codex erzeugt daraus einen strukturierten Slice.
-
-### Slice Template
-
-```yaml
-slice:
-  id: S04
-  name: Project Access Control
-  goal: Manage project-specific access inside a workspace.
-
-  user_story:
-    as: Workspace Admin
-    i_want: to manage project-specific members and roles
-    so_that: not every workspace member can access every project
-
-  entities:
-    - workspaces
-    - projects
-    - workspace_members
-    - project_members
-
-  database:
-    tables:
-      - project_members
-    constraints:
-      - project_id references projects.id
-      - user_id references users.id
-      - unique(project_id, user_id)
-      - project must belong to the same workspace as the membership context
-
-  api:
-    - POST /workspaces/{workspace_id}/projects/{project_id}/members
-    - GET /workspaces/{workspace_id}/projects/{project_id}/members
-    - PATCH /workspaces/{workspace_id}/projects/{project_id}/members/{user_id}
-    - DELETE /workspaces/{workspace_id}/projects/{project_id}/members/{user_id}
-
-  permissions:
-    owner:
-      - manage_project_members
-    admin:
-      - manage_project_members
-    analyst:
-      - read_assigned_project
-    reviewer:
-      - read_assigned_project
-    viewer:
-      - read_assigned_project
-    auditor:
-      - read_project_audit
-
-  audit_events:
-    - project.member.added
-    - project.member.role_changed
-    - project.member.removed
-
-  storage:
-    affected: false
-    notes:
-      - no direct file access in this slice
-
-  tests:
-    - admin_can_add_project_member
-    - viewer_cannot_add_project_member
-    - analyst_cannot_access_unassigned_project
-    - user_from_other_workspace_cannot_be_added
-    - member_change_creates_audit_event
-
-  subagents:
-    - RBAC Security Subagent
-    - Database Migration Subagent
-    - Backend API Subagent
-    - Audit Chain-of-Custody Subagent
-    - QA Permission Test Subagent
-    - Threat Model Subagent
-
-  risks:
-    - Cross-workspace user assignment
-    - IDOR through guessed project_id
-    - Inconsistent workspace/project role behavior
-    - Missing audit event on role changes
-
-  done_when:
-    - API implemented
-    - DB migration added
-    - UI updated if required
-    - RBAC enforced server-side
-    - Audit events written
-    - Permission tests pass
-    - Documentation updated
-```
-
----
-
-# 5. Skill Routing Canvas
-
-```text
-Feature-Typ                         Codex Skill
-────────────────────────────────────────────────────────────────────
-Neues Workspace-/Projekt-Feature    $workspace-slice-planner
-Begriffe oder Statusmodell          $workspace-domain-model
-Rollen oder Rechte                  $workspace-rbac-matrix
-API-Endpunkte                       $workspace-api-builder
-Tabellen / Migrationen              $workspace-db-migrations
-Dateien / Uploads / Downloads       $workspace-storage-isolation
-Audit / Forensik                    $workspace-audit-chain-of-custody
-Security Review                     $workspace-threat-model
-Tests für Rechte                    $workspace-permission-tests
-Frontend / Canvas UI                $workspace-frontend-canvas
-Doku / Release                      $workspace-docs-release
-```
-
-## Start-Skills
-
-Für den Anfang reichen diese vier Skills:
-
-```text
-1. workspace-slice-planner
-2. workspace-rbac-matrix
-3. workspace-audit-chain-of-custody
-4. workspace-permission-tests
-```
-
-Danach ergänzen:
-
-```text
-5. workspace-db-migrations
-6. workspace-api-builder
-7. workspace-storage-isolation
-8. workspace-threat-model
-9. workspace-frontend-canvas
-10. workspace-docs-release
-```
-
----
-
-# 6. Subagent Canvas
-
-Subagents werden nur für größere oder riskantere Slices gestartet.
-
-```text
-┌──────────────────────────────┬─────────────────────────────────────┬──────────────────────────────┐
-│ Subagent                     │ Aufgabe                             │ Rückgabe                      │
-├──────────────────────────────┼─────────────────────────────────────┼──────────────────────────────┤
-│ Domain Subagent              │ Prüft Workspace-/Projektregeln       │ Domain Issues                 │
-│ DB Subagent                  │ Prüft Tabellen, Constraints, Indexes │ Migration Plan                │
-│ API Subagent                 │ Prüft Endpunkte und Validierung      │ API Checklist                 │
-│ RBAC Subagent                │ Prüft Rollen und Zugriff             │ Permission Matrix             │
-│ Audit Subagent               │ Prüft Audit-Events                   │ Audit Event List              │
-│ Storage Subagent             │ Prüft Dateipfade und Isolation       │ Storage Risk Report           │
-│ Frontend Subagent            │ Prüft Canvas UI                      │ UI Tasks                      │
-│ QA Subagent                  │ Prüft Tests und Edge Cases           │ Test Plan                     │
-│ Threat Model Subagent        │ Prüft Angriffswege                   │ Security Findings             │
-└──────────────────────────────┴─────────────────────────────────────┴──────────────────────────────┘
-```
-
-## Standard Subagent Prompt
-
-```text
-Use parallel subagents for this workspace slice.
-
-Spawn these subagents:
-1. Domain Subagent
-2. RBAC Security Subagent
-3. Database Migration Subagent
-4. Backend API Subagent
-5. Audit Chain-of-Custody Subagent
-6. QA Permission Test Subagent
-7. Threat Model Subagent
-
-Each subagent must return:
+- analysis job identity and status
+- ingestion session state
+- repository metadata
+- source facts
+- semantic graph facts
 - findings
-- required changes
-- risks
-- files likely affected
-- tests required
-- open questions
+- relationships
+- limitations and unresolved states
+- audit-relevant workflow events
 
-Wait for all subagents.
-Then consolidate their results into one implementation plan.
-Do not modify code until the consolidated plan is complete.
-```
+It must preserve forensic meaning. Missing or incomplete evidence is stored as missing or incomplete, not repaired silently.
 
----
+### Artifact Store
 
-# 7. Implementation Canvas pro Slice
+The artifact store persists large or binary outputs:
 
-```text
-┌────────────────────────────────────────────────────────────────────┐
-│ Slice: Workspace / Project / Asset / RBAC / Audit Feature           │
-├────────────────────┬───────────────────────────────────────────────┤
-│ Step 1             │ Read AGENTS.md                                │
-│ Step 2             │ Activate matching Codex Skill                 │
-│ Step 3             │ Produce Slice Plan                            │
-│ Step 4             │ Spawn Subagents if risky or cross-cutting     │
-│ Step 5             │ Consolidate Plan                              │
-│ Step 6             │ Implement DB Migration                        │
-│ Step 7             │ Implement Backend API                         │
-│ Step 8             │ Implement RBAC Checks                         │
-│ Step 9             │ Implement Audit Events                        │
-│ Step 10            │ Implement Frontend Canvas                     │
-│ Step 11            │ Add Unit + Integration + Permission Tests      │
-│ Step 12            │ Run Tests                                     │
-│ Step 13            │ Run Threat Review                             │
-│ Step 14            │ Update Docs                                   │
-│ Step 15            │ Produce PR Summary                            │
-└────────────────────┴───────────────────────────────────────────────┘
-```
+- uploaded payloads
+- generated rule files
+- Joern CPG files and query results
+- runtime trace files
+- report exports
+- graph export snapshots
 
----
+Every artifact reference must preserve type, location, checksum where available, origin and retention context. Generated local runtime artifacts must not be committed unless a task explicitly asks for fixture material.
 
-# 8. Workspace-Slices
+### Graph and Vector Projections
 
-```text
-┌──────┬──────────────────────────────┬───────────────────────────────┬──────────────────────────────┐
-│ ID   │ Slice                        │ Haupt-Skills                  │ Review-Fokus                 │
-├──────┼──────────────────────────────┼───────────────────────────────┼──────────────────────────────┤
-│ S00  │ Domain Foundation             │ domain-model, slice-planner   │ Begriffe, Grenzen, Status    │
-│ S01  │ Workspace CRUD                │ api, db, rbac, audit          │ Owner, Admin, Archivierung   │
-│ S02  │ Workspace Members             │ rbac, api, db, tests          │ Rollenwechsel, Einladung     │
-│ S03  │ Project CRUD                  │ api, db, rbac, audit          │ Workspace-Kontext            │
-│ S04  │ Project Access                │ rbac, tests, threat-model     │ Cross-Project-Leaks          │
-│ S05  │ Shared Assets                 │ storage, audit, rbac          │ Shared vs. Project Assets    │
-│ S06  │ Project Storage Isolation     │ storage, threat-model, tests  │ Path Traversal, Isolation    │
-│ S07  │ Audit Log                     │ audit, db, api                │ Vollständigkeit, Leserechte  │
-│ S08  │ Archive / Retention           │ audit, rbac, db               │ Soft Delete, Read-only       │
-│ S09  │ Frontend Workspace Canvas     │ frontend, rbac, tests         │ Rollenabhängige UI           │
-│ S10  │ Security Middleware           │ rbac, threat-model, api       │ IDOR, Auth, Object Scope     │
-│ S11  │ Docs / Release                │ docs-release                  │ Betrieb, Admin-Doku          │
-└──────┴──────────────────────────────┴───────────────────────────────┴──────────────────────────────┘
-```
+Graph and vector databases are projections. They may accelerate navigation, retrieval or LLM context building, but they must be rebuildable from canonical facts and artifacts.
 
-## Empfohlene Reihenfolge
+## Eventing and Retry
 
-```text
-Phase 1 — Fundament
-1. S00 Domain Foundation
-2. S01 Workspace CRUD
-3. S02 Workspace Members
+Eventing coordinates asynchronous steps. Events should carry stable identifiers and minimal routing metadata, not large evidence payloads.
 
-Phase 2 — Projektfähigkeit
-4. S03 Project CRUD
-5. S04 Project Access
-6. S06 Project Storage Isolation
+Retry rules:
 
-Phase 3 — Forensische Anforderungen
-7. S07 Audit Log
-8. S05 Shared Assets
-9. S08 Archive / Retention
+- Retry transient infrastructure failures only when the worker contract is idempotent.
+- Do not retry validation failures as infrastructure errors.
+- Preserve every terminal failure reason.
+- Move exhausted work to a dead-letter state with enough context for human inspection.
+- Never hide a partial result by converting it into a successful completed state.
 
-Phase 4 — Bedienung und Betrieb
-10. S09 Frontend Workspace Canvas
-11. S10 Security Middleware
-12. S11 Docs / Release
-```
+## Implementation Slice Template
 
----
-
-# 9. AGENTS.md Vorlage
-
-Diese Vorlage gehört in die Repo-Wurzel als `AGENTS.md`.
-
-```md
-# AGENTS.md
-
-## Project
-
-This repository implements a forensic analytics server system with workspaces, projects, members, roles, assets, audit logs, and storage isolation.
-
-## Core domain rules
-
-- Workspace is the top-level organizational and security boundary.
-- A project always belongs to exactly one workspace.
-- A user must be a workspace member before accessing workspace resources.
-- Project access must be checked separately when a feature is project-scoped.
-- Assets belong either to a project or to the workspace shared area.
-- Original forensic data must not be modified directly.
-- Prefer archive and soft delete over hard delete.
-- Critical actions must create audit events.
-- Cross-workspace and cross-project data access must be prevented.
-
-## Required checks for every feature
-
-Before implementation, create a slice plan containing:
-
-- Goal
-- Domain entities
-- Database changes
-- API endpoints
-- Frontend changes
-- Permission rules
-- Audit events
-- Storage implications
-- Tests
-- Risks
-- Done criteria
-
-## Required authorization checks
-
-For every API endpoint:
-
-1. Verify authentication.
-2. Verify workspace membership.
-3. Verify required workspace role.
-4. For project-scoped actions, verify project access.
-5. Verify that target objects belong to the same workspace.
-6. Verify archived/read-only behavior.
-7. Verify whether the action requires an audit event.
-
-## Roles
-
-- Owner: full control, including dangerous lifecycle actions.
-- Admin: manages workspace, projects, and members.
-- Analyst: works on assigned projects.
-- Reviewer: reviews project outputs.
-- Viewer: read-only access.
-- Auditor: reads audit logs and history, cannot modify project data.
-
-## Audit requirements
-
-Audit these actions:
-
-- Workspace created, updated, archived, deleted
-- Member invited, removed, role changed
-- Project created, updated, archived, deleted
-- Project member added, removed, role changed
-- Asset uploaded, downloaded, deleted, linked, unlinked
-- Analysis started, completed, failed
-- Report exported
-- Permission denied for sensitive actions
-
-## Storage rules
-
-- Never trust client-provided file paths.
-- Generate workspace and project paths server-side.
-- Prevent path traversal.
-- Keep project data isolated.
-- Keep shared workspace resources separate.
-- Store checksums for forensic files.
-- Separate original evidence from processed data and reports.
-
-## Testing requirements
-
-Every slice must include:
-
-- Unit tests
-- Integration tests
-- Permission tests
-- Negative authorization tests
-- Audit-event tests
-- Storage-isolation tests when files are involved
-
-## Done means
-
-A slice is done only when:
-
-- Code is implemented.
-- RBAC checks are enforced.
-- Audit events are written.
-- Tests pass.
-- Documentation is updated.
-- Security risks are reviewed.
-```
-
----
-
-# 10. Codex Skill Karten
-
-## Skill: `workspace-slice-planner`
-
-Pfad:
-
-```text
-.agents/skills/workspace-slice-planner/SKILL.md
-```
-
-Inhalt:
-
-```md
----
-name: workspace-slice-planner
-description: Use when planning any workspace, project, member, role, asset, storage, audit, or permission feature as a vertical implementation slice.
----
-
-# Workspace Slice Planner
-
-## Goal
-
-Turn a feature request into a complete implementation slice.
-
-## Output
-
-Return this structure:
+Use this template for future slices that implement or change this workflow:
 
 ```yaml
 slice:
-  id:
-  name:
-  goal:
-  user_story:
-  entities:
-  database:
-  api:
-  frontend:
-  permissions:
-  audit_events:
-  storage:
-  tests:
-  subagents:
-  risks:
-  done_when:
-```
-
-## Rules
-
-- Never plan backend without permission checks.
-- Never plan project features without workspace context.
-- Never plan file access without storage isolation.
-- Never plan critical actions without audit events.
-- Prefer archive over hard delete.
-```
-
----
-
-## Skill: `workspace-rbac-matrix`
-
-Pfad:
-
-```text
-.agents/skills/workspace-rbac-matrix/SKILL.md
-```
-
-Inhalt:
-
-```md
----
-name: workspace-rbac-matrix
-description: Use when designing, implementing, or reviewing workspace/project permissions, roles, access checks, RBAC matrices, or authorization tests.
----
-
-# Workspace RBAC Matrix
-
-## Goal
-
-Ensure every action has an explicit authorization rule.
-
-## Roles
-
-- Owner
-- Admin
-- Analyst
-- Reviewer
-- Viewer
-- Auditor
-
-## Required checks
-
-For every endpoint or UI action:
-
-1. Is the user authenticated?
-2. Is the user a workspace member?
-3. Does the user have the required workspace role?
-4. Is this action project-scoped?
-5. If project-scoped, does the user have project access?
-6. Does the target object belong to the same workspace?
-7. Is the target archived or read-only?
-8. Is an audit event required?
-
-## Output
-
-Return:
-
-- action
-- endpoint
-- allowed roles
-- denied roles
-- workspace check
-- project check
-- archived-state behavior
-- audit event
-- tests
-- risks
-```
-
----
-
-## Skill: `workspace-audit-chain-of-custody`
-
-Pfad:
-
-```text
-.agents/skills/workspace-audit-chain-of-custody/SKILL.md
-```
-
-Inhalt:
-
-```md
----
-name: workspace-audit-chain-of-custody
-description: Use when implementing or reviewing audit logs, asset handling, forensic evidence flows, reports, exports, analysis jobs, or chain-of-custody behavior.
----
-
-# Workspace Audit and Chain of Custody
-
-## Goal
-
-Ensure actions are traceable and forensic data integrity is preserved.
-
-## Required audit fields
-
-- workspace_id
-- project_id
-- user_id
-- action
-- target_type
-- target_id
-- timestamp
-- ip_address
-- user_agent
-- metadata
-
-## Forensic rules
-
-- Original evidence must not be modified directly.
-- Store checksums for uploaded evidence.
-- Separate original, processed, result, and report files.
-- Exports must be audited.
-- Failed sensitive operations should be auditable when useful.
-
-## Output
-
-Return:
-
-- required events
-- event payloads
-- chain-of-custody risks
-- missing audit hooks
-- required tests
-```
-
----
-
-## Skill: `workspace-storage-isolation`
-
-Pfad:
-
-```text
-.agents/skills/workspace-storage-isolation/SKILL.md
-```
-
-Inhalt:
-
-```md
----
-name: workspace-storage-isolation
-description: Use when implementing or reviewing file uploads, downloads, assets, workspace shared resources, project storage, checksums, or storage paths.
----
-
-# Workspace Storage Isolation
-
-## Goal
-
-Prevent cross-workspace and cross-project file access.
-
-## Rules
-
-- Never use raw client-provided paths.
-- Resolve all paths server-side.
-- Every asset must belong to a workspace.
-- Project assets must belong to a project inside the same workspace.
-- Shared assets must have project_id = null or an explicit shared scope.
-- Prevent path traversal.
-- Store file checksum and size.
-- Keep original evidence separate from analysis outputs.
-
-## Output
-
-Return:
-
-- storage paths
-- asset ownership rules
-- upload rules
-- download rules
-- checksum rules
-- risks
-- tests
-```
-
----
-
-## Skill: `workspace-permission-tests`
-
-Pfad:
-
-```text
-.agents/skills/workspace-permission-tests/SKILL.md
-```
-
-Inhalt:
-
-```md
----
-name: workspace-permission-tests
-description: Use when creating or reviewing permission tests, negative authorization tests, RBAC tests, workspace isolation tests, or project access tests.
----
-
-# Workspace Permission Tests
-
-## Goal
-
-Ensure workspace and project permissions are tested with positive and negative cases.
-
-## Required test categories
-
-- Workspace membership tests
-- Workspace role tests
-- Project access tests
-- Cross-workspace access denial tests
-- Cross-project access denial tests
-- Archived/read-only state tests
-- Audit-event tests
-
-## Example tests
-
-- viewer_cannot_create_project
-- analyst_cannot_access_unassigned_project
-- admin_can_invite_workspace_member
-- auditor_can_read_audit_but_not_modify_project
-- project_a_cannot_read_project_b_asset
-- archived_project_is_read_only
-- delete_creates_audit_event
-
-## Output
-
-Return:
-
-- test file suggestions
-- required fixtures
-- positive test cases
-- negative test cases
-- audit expectations
-- edge cases
-```
-
----
-
-## Skill: `workspace-threat-model`
-
-Pfad:
-
-```text
-.agents/skills/workspace-threat-model/SKILL.md
-```
-
-Inhalt:
-
-```md
----
-name: workspace-threat-model
-description: Use when reviewing security risks, IDOR risks, cross-workspace access, cross-project access, unsafe uploads, role escalation, or dangerous lifecycle actions.
----
-
-# Workspace Threat Model
-
-## Goal
-
-Find security risks before implementation or before merge.
-
-## Threat questions
-
-- Can a user guess a workspace_id or project_id and access foreign data?
-- Can a Viewer perform write actions through the API?
-- Can an Analyst access an unassigned project?
-- Can a user from another workspace be added to a project incorrectly?
-- Can archived projects still be modified?
-- Can client-provided paths escape the project directory?
-- Can audit logs be modified or deleted by normal users?
-- Can a user escalate role through an update request?
-
-## Output
-
-Return:
-
-- findings
-- severity
-- affected endpoints
-- affected files
-- required mitigations
-- required tests
-```
-
----
-
-# 11. Standard-Prompt für neue Slices
-
-Diesen Prompt bei neuen Workspace-Features verwenden:
-
-```text
-Read AGENTS.md.
-
-Use these skills:
-- $workspace-slice-planner
-- $workspace-domain-model
-- $workspace-rbac-matrix
-- $workspace-audit-chain-of-custody
-- $workspace-permission-tests
-
-Task:
-Plan and implement the next workspace slice: <SLICE NAME>.
-
-First produce a slice plan.
-Then spawn subagents for:
-- RBAC review
-- DB migration review
-- API review
-- Audit review
-- QA permission tests
-- Threat model review
-
-Wait for all subagents and consolidate their findings.
-
-After the consolidated plan:
-- implement the database changes
-- implement the backend API
-- implement RBAC checks
-- implement audit events
-- implement frontend changes if required
-- add tests
-- run the relevant tests
-- update documentation
-- return a final summary with changed files, risks, and remaining TODOs
-```
-
----
-
-# 12. Review Canvas vor jedem Merge
-
-```text
-┌──────────────────────────────┬───────────────────────────────────────────────┐
-│ Check                        │ Frage                                         │
-├──────────────────────────────┼───────────────────────────────────────────────┤
-│ Workspace Boundary           │ Gehört jedes Objekt zum Workspace?            │
-│ Project Boundary             │ Wird project_id korrekt geprüft?              │
-│ RBAC                         │ Sind Rollen serverseitig geprüft?             │
-│ UI Permissions               │ Ist die UI rollenabhängig korrekt?            │
-│ Audit                        │ Gibt es Events für kritische Aktionen?        │
-│ Storage                      │ Sind Dateipfade serverseitig sicher?          │
-│ Archive Behavior             │ Sind archivierte Projekte read-only?          │
-│ Negative Tests               │ Gibt es Tests für verbotene Aktionen?         │
-│ Cross-Workspace Leakage      │ Können fremde IDs missbraucht werden?         │
-│ Chain of Custody             │ Sind Originaldaten geschützt und nachvollziehbar? │
-│ Docs                         │ Ist die Änderung dokumentiert?                │
-└──────────────────────────────┴───────────────────────────────────────────────┘
-```
-
-## Merge-Gate
-
-Ein Slice darf erst gemerged werden, wenn folgende Punkte erfüllt sind:
-
-```text
-[ ] Slice Plan erstellt
-[ ] Datenmodell geprüft
-[ ] API-Endpunkte implementiert
-[ ] RBAC serverseitig erzwungen
-[ ] Audit-Events implementiert
-[ ] Storage-Regeln geprüft, falls Dateien betroffen sind
-[ ] Negative Permission-Tests vorhanden
-[ ] Cross-Workspace-Zugriff getestet
-[ ] Cross-Project-Zugriff getestet
-[ ] Archivierungsverhalten geprüft
-[ ] Dokumentation aktualisiert
-[ ] Tests laufen erfolgreich
-[ ] PR Summary vorhanden
-```
-
----
-
-# 13. PR Summary Template
-
-Codex soll nach jedem Slice eine Zusammenfassung in diesem Format liefern:
-
-```md
-# PR Summary
-
-## Slice
-
-- ID:
-- Name:
-- Goal:
-
-## Changed files
-
--
-
-## Implemented
-
--
-
-## Database changes
-
--
-
-## API changes
-
--
-
-## Permission changes
-
--
-
-## Audit events
-
--
-
-## Tests added
-
--
-
-## Security review
-
--
-
-## Risks
-
--
-
-## Remaining TODOs
-
-- 
-```
-
----
-
-# 14. Beispiel: Slice S01 Workspace CRUD
-
-```yaml
-slice:
-  id: S01
-  name: Workspace CRUD
-  goal: Create, read, update, archive, and delete workspaces.
-
-  entities:
-    - workspaces
-    - workspace_members
-    - audit_events
-
-  database:
-    tables:
-      workspaces:
-        fields:
-          - id
-          - name
-          - description
-          - owner_user_id
-          - status
-          - created_at
-          - updated_at
-          - archived_at
-      workspace_members:
-        fields:
-          - workspace_id
-          - user_id
-          - role
-          - status
-          - created_at
-
-  api:
-    - POST /workspaces
-    - GET /workspaces
-    - GET /workspaces/{workspace_id}
-    - PATCH /workspaces/{workspace_id}
-    - DELETE /workspaces/{workspace_id}
-
-  permissions:
-    owner:
-      - create_workspace
-      - read_workspace
-      - update_workspace
-      - archive_workspace
-      - delete_workspace
-    admin:
-      - read_workspace
-      - update_workspace
-      - archive_workspace
-    viewer:
-      - read_workspace
-
-  audit_events:
-    - workspace.created
-    - workspace.updated
-    - workspace.archived
-    - workspace.deleted
-
-  tests:
-    - owner_can_create_workspace
-    - owner_is_automatically_member
-    - viewer_cannot_update_workspace
-    - archived_workspace_is_readonly
-    - delete_creates_audit_event
-
-  risks:
-    - deleting workspace with active projects
-    - owner not added as workspace member
-    - archived workspace still writable
-
-  done_when:
-    - workspace API works
-    - owner assignment works
-    - RBAC checks exist
-    - audit events are written
+  id: SXX
+  name: Short workflow slice name
+  goal: One concrete workflow behavior.
+
+  verified_inputs:
+    modules:
+      - verified Gradle module
+    source_files:
+      - verified source or test file
+    docs:
+      - verified documentation file
+
+  affected_components:
+    - server
+    - orchestrator
+    - workspace
+    - one worker or store responsibility
+
+  evidence_contract:
+    input_evidence: explicit source, runtime or artifact inputs
+    output_evidence: canonical facts, artifact references, findings or gaps
+    uncertainty: how missing or incomplete evidence is represented
+
+  implementation:
+    production_changes:
+      - smallest verified change
+    tests:
+      - targeted regression or contract test
+    documentation:
+      - docs that must stay aligned
+
+  verification:
+    targeted_command: ./gradlew :affected-module:test --dependency-verification strict --console=plain --stacktrace
+    full_gate: ./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace
+
+  done:
+    - state transition is explicit
+    - evidence provenance is preserved
+    - missing evidence is visible
     - tests pass
+    - documentation is aligned
 ```
 
----
+## Slice Order
 
-# 15. Beispiel: Slice S06 Project Storage Isolation
+Prefer small implementation slices in this order:
 
-```yaml
-slice:
-  id: S06
-  name: Project Storage Isolation
-  goal: Ensure each project has isolated storage and cannot access files from other projects.
+1. Server intake and request validation.
+2. Durable analysis job state in the analysis store.
+3. Workspace creation, locking, cleanup and archival.
+4. Repository worker contract.
+5. JavaParser worker contract.
+6. Joern worker artifact import.
+7. Instrumentation planning through a verified port.
+8. Runtime evidence import and incomplete-event handling.
+9. Graph projection from canonical facts.
+10. Finding generation with evidence references.
+11. Report rendering with explicit gaps and hypotheses.
+12. Eventing, retry and dead-letter handling.
 
-  entities:
-    - workspaces
-    - projects
-    - assets
+Do not skip ahead by adding broad infrastructure before the corresponding evidence contract and tests exist.
 
-  storage:
-    layout:
-      - /workspaces/{workspace_id}/shared/
-      - /workspaces/{workspace_id}/projects/{project_id}/evidence_original/
-      - /workspaces/{workspace_id}/projects/{project_id}/evidence_processed/
-      - /workspaces/{workspace_id}/projects/{project_id}/analysis_results/
-      - /workspaces/{workspace_id}/projects/{project_id}/reports/
-      - /workspaces/{workspace_id}/projects/{project_id}/logs/
+## Verification Rules
 
-  rules:
-    - never accept raw file paths from clients
-    - resolve paths server-side
-    - check workspace_id and project_id before file access
-    - store checksum for uploaded files
-    - separate original evidence from processed outputs
+For documentation-only changes, inspect the relevant documentation and run a text-level verification such as:
 
-  api:
-    - POST /workspaces/{workspace_id}/projects/{project_id}/assets
-    - GET /workspaces/{workspace_id}/projects/{project_id}/assets
-    - GET /workspaces/{workspace_id}/projects/{project_id}/assets/{asset_id}
-    - DELETE /workspaces/{workspace_id}/projects/{project_id}/assets/{asset_id}
-
-  audit_events:
-    - asset.uploaded
-    - asset.downloaded
-    - asset.deleted
-    - asset.checksum_verified
-
-  tests:
-    - project_a_cannot_read_project_b_asset
-    - workspace_a_cannot_read_workspace_b_asset
-    - path_traversal_is_blocked
-    - upload_creates_checksum
-    - download_creates_audit_event
+```bash
+git diff --check
 ```
 
----
+For code changes, run the narrowest meaningful test first, then the repository quality gate from `QUALITY.md` when the slice is complete:
 
-# 16. Arbeitsweise mit Codex
-
-## Wenn ein neues Feature geplant wird
-
-```text
-1. Feature in natürlicher Sprache beschreiben.
-2. Codex mit workspace-slice-planner starten.
-3. Slice Plan prüfen.
-4. Bei Risiko Subagents starten.
-5. Plan konsolidieren.
-6. Erst danach implementieren lassen.
+```bash
+./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace
 ```
 
-## Wenn Codex Code ändern soll
-
-```text
-1. Immer AGENTS.md lesen lassen.
-2. Passenden Skill nennen.
-3. Konkreten Slice nennen.
-4. Tests verlangen.
-5. Final Summary verlangen.
-```
-
-## Wenn Codex reviewed
-
-```text
-1. workspace-threat-model nutzen.
-2. workspace-rbac-matrix nutzen.
-3. workspace-permission-tests nutzen.
-4. Audit-Events prüfen.
-5. Cross-Workspace- und Cross-Project-Risiken prüfen.
-```
-
----
-
-# 17. Wichtigster Prüfpunkt
-
-Der kritischste Punkt des gesamten Systems ist nicht, ob Workspaces erstellt werden können.
-
-Der kritischste Punkt ist:
-
-```text
-Kann das System zuverlässig verhindern,
-dass Benutzer oder Projekte Daten sehen,
-die nicht zu ihnen gehören?
-```
-
-Danach kommen:
-
-```text
-Kann man jede wichtige Aktion nachvollziehen?
-Sind Originaldaten geschützt?
-Kann man nach einem Fehler sauber wiederherstellen?
-```
-
-Wenn diese drei Bereiche sauber umgesetzt sind, ist die Basis für ein forensisches Workspace-System stabil.
+Do not claim that a workflow command, Gradle task, module, table, queue, graph label, event type or API field exists unless it has been verified from repository source, build files, schemas, fixtures or documentation.
