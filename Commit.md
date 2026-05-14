@@ -14,7 +14,34 @@ A commit is acceptable only when the changed files are task-related, reviewed, v
 
 `QUALITY.md` remains the authoritative source of truth for verification commands, quality gates, coverage requirements, dependency verification, and failure policy.
 
+The repository authority model is:
+
+```text
+AGENTS.md = primary source of truth for agent behavior and architecture rules
+QUALITY.md = authoritative source of truth for verification and quality gates
+Commit.md = commit preparation and commit-readiness workflow
+```
+
 This document does not replace either file. It defines how their rules are applied immediately before staging, committing, pushing, or opening a pull request.
+
+The reusable Codex commit-preparation skill is:
+
+```text
+.agents/skills/commit-preparation/SKILL.md
+```
+
+The reusable Codex execution workflow for this contract is:
+
+```text
+.agents/skills/commit-preparation/workflow.commit-preparation.md
+```
+
+The Codex agent roles for this contract are:
+
+```text
+.codex/agents/commit_reviewer.toml = read-only readiness reviewer
+.codex/agents/commit_operator.toml = mutating commit, push, and pull-request operator
+```
 
 This document applies to:
 
@@ -35,6 +62,28 @@ A commit must contain only changes that belong to the same task, defect, feature
 
 Do not mix unrelated cleanup, opportunistic refactoring, formatting-only changes, generated artifacts, local tooling files, or temporary output into a task commit.
 
+## Codex Role Model
+
+The commit process is intentionally split into three layers:
+
+1. `Commit.md` defines the repository contract.
+2. `.agents/skills/commit-preparation/SKILL.md` and `.agents/skills/commit-preparation/workflow.commit-preparation.md` apply the contract as a reusable Codex skill.
+3. `.codex/agents/commit_reviewer.toml` and `.codex/agents/commit_operator.toml` divide review and execution responsibilities.
+
+`commit_reviewer` is read-only. It may inspect rules, status, diffs, and verification evidence. It must not modify files, stage files, commit, push, or create pull requests.
+
+`commit_operator` is mutating. It may stage explicit files, create a commit, push a branch, and create or complete a GitHub pull request only when the contract allows it. It must use the commit-preparation skill and must not proceed unless commit readiness is `READY`.
+
+The preferred flow is:
+
+```text
+Commit.md contract
+-> commit-preparation skill and workflow
+-> commit_reviewer read-only readiness review
+-> commit_operator execution only after READY
+-> push and GitHub pull request only when the user enters push
+```
+
 ## Mandatory Commit Workflow
 
 ### Phase 0: Preconditions
@@ -50,13 +99,15 @@ Before preparing a commit, verify:
 
 If any prerequisite is unclear, stop and report before staging or committing.
 
-### Phase 1: Read the Repository Rules
+### Phase 1: Read Repository Rules
 
 Before inspecting the final diff, read or re-check:
 
 - `AGENTS.md`,
 - `QUALITY.md`,
 - this `Commit.md`,
+- `.agents/skills/commit-preparation/SKILL.md`,
+- `.agents/skills/commit-preparation/workflow.commit-preparation.md`,
 - the active `workflow.md` or task-specific workflow if present,
 - task-specific design notes, ADRs, or issue descriptions when they are part of the task.
 
@@ -122,6 +173,8 @@ The full local quality gate is:
 ```bash
 ./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace
 ```
+
+On Windows PowerShell, use `.\gradlew.bat` with the same arguments.
 
 When Gradle plugin metadata, task inputs, task outputs, or plugin declarations change, also run:
 
@@ -218,6 +271,58 @@ changes
 wip
 ```
 
+### Phase 9: Push Command and GitHub Pull Request
+
+The prompt command `push` is explicit permission to complete the commit publication workflow.
+
+When the user enters exactly `push`, Codex may:
+
+1. rerun this commit-readiness workflow,
+2. create the commit from the reviewed staged diff,
+3. push the current non-`main` branch to `origin`,
+4. create or complete a GitHub pull request from the current branch against `main`.
+
+The `push` command is not permission to:
+
+- push directly to `main`,
+- force-push,
+- merge a pull request,
+- enable auto-merge,
+- bypass a failed quality gate,
+- include unrelated files,
+- create a pull request against any branch other than `main`.
+
+Before pushing, Codex must verify:
+
+- `Commit.md`, `AGENTS.md`, and `QUALITY.md` were read,
+- `.agents/skills/commit-preparation/SKILL.md` was read,
+- `.agents/skills/commit-preparation/workflow.commit-preparation.md` was read when using the reusable Codex workflow,
+- `commit_reviewer` returned `READY` or an equivalent readiness review was completed from this contract,
+- `commit_operator` is the only Codex agent performing the mutating push and pull-request actions,
+- the current branch is not `main`,
+- the branch and upstream state are clear,
+- no unstaged changes exist,
+- the staged diff was inspected,
+- commit readiness is `READY`,
+- required verification passed,
+- `origin/main` exists after fetching from `origin`,
+- GitHub access is available for creating or updating the pull request.
+
+If the current branch already has an open GitHub pull request against `main`, Codex should reuse it and update or report the existing pull request instead of creating a duplicate.
+
+The pull request must be complete. Its title and body must be derived from the final commit message and actual verification evidence.
+
+The pull request body must include:
+
+- summary,
+- changed files or areas,
+- verification commands and results,
+- impact,
+- risks and limitations,
+- explicit note that no push to `main` or merge was performed.
+
+If commit creation succeeds but push or pull-request creation fails, Codex must stop and report the exact failing command or GitHub operation, the branch, the commit hash when available, and the smallest safe next step.
+
 ## Preferred Commit Message Format
 
 Use this structure unless the task explicitly requires another format:
@@ -248,18 +353,20 @@ Limitations:
 - <known limitation, blocker, skipped optional check, or "None">
 ```
 
-Recommended commit types:
+Allowed commit types:
 
-- `feat` for new user-visible or platform behavior,
-- `fix` for bug fixes,
-- `refactor` for behavior-preserving structural changes,
-- `test` for test-only changes,
-- `docs` for documentation-only changes,
-- `build` for Gradle, dependency, or build logic changes,
-- `ci` for CI workflow changes,
-- `quality` for quality-gate, coverage, or architecture-rule changes,
-- `agent` for AGENTS, skills, subagents, workflows, or automation instructions,
-- `chore` for repository maintenance that does not fit the categories above.
+```text
+feat
+fix
+refactor
+test
+docs
+build
+ci
+quality
+agent
+chore
+```
 
 ## Commit Readiness Checklist
 
@@ -267,6 +374,8 @@ A commit is ready only when all answers are yes:
 
 - [ ] The branch and worktree are correct.
 - [ ] `AGENTS.md`, `QUALITY.md`, and this `Commit.md` were considered.
+- [ ] `.agents/skills/commit-preparation/SKILL.md` was considered when Codex prepares the commit.
+- [ ] `.agents/skills/commit-preparation/workflow.commit-preparation.md` was considered when Codex runs the reusable workflow.
 - [ ] `git status`, `git diff`, and `git diff --cached` were inspected.
 - [ ] Every changed file is task-related.
 - [ ] Unexpected files were removed from the commit or reported.
@@ -319,6 +428,21 @@ Stop and report before committing if:
 - credentials or sensitive data appear in the diff,
 - generated artifacts appear unexpectedly,
 - the commit message would need to guess why a change exists.
+
+This document explicitly forbids:
+
+- vague commit messages,
+- committing unrelated files,
+- committing generated build output,
+- committing `.gradle/`,
+- committing `build/`,
+- committing IDE workspace metadata,
+- committing temporary logs,
+- committing local databases,
+- committing local trace dumps,
+- committing credentials or tokens,
+- claiming tests passed without execution evidence,
+- committing when required quality gates fail.
 
 ## Final Rule
 
