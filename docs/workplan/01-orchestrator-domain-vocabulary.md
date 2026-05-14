@@ -1,6 +1,6 @@
 # 01 - Orchestrator Domain Vocabulary
 
-Status: planned slice.
+Status: completed slice.
 
 ## Objective
 
@@ -18,6 +18,13 @@ Define the domain and application vocabulary for distributed analysis orchestrat
 - Planned vocabulary separates analysis run, analysis job, worker task, source snapshot, canonical evidence, artifact reference, projection, retry attempt, and terminal state.
 - Planned statuses must be introduced only after source, tests, and documentation agree on exact semantics.
 - Orchestration vocabulary lives inward of adapters and does not depend on queue, database, server, graph, or LLM provider APIs.
+
+## Completed Vocabulary Baseline
+
+- Implemented inward terms verified before this slice: `AnalysisRunId`, `RepositoryMetadata`, `RepositorySource`, `ArtifactReference`, and `RepositoryAnalysisStatus.COMPLETED`.
+- Source snapshot terms completed by slice 02: `SourceSnapshotId`, `SourceSnapshotMetadata`, `SourceSnapshot`, and `SourceSnapshotCompleteness`.
+- Planned gaps remain explicit: analysis job, worker task, retry attempt, dead-letter state, queue lifecycle, graph projection, report projection, LLM projection, analysis store, artifact store, and server runtime terms are not implemented by this slice.
+- `RepositoryAnalysisStatus` remains limited to `COMPLETED`; queued, running, retryable, failed, dead-lettered, partial, and skipped states are intentionally left for slice 03 or later lifecycle work.
 
 ## Subagent Roles
 
