@@ -14,6 +14,7 @@ Guide inbound gRPC adapter work while keeping transport concerns outside the dom
 - Keep Protobuf DTO mapping inside the gRPC adapter.
 - Validate transport-level fields before creating application requests.
 - Preserve correlation, session and evidence identifiers exactly.
+- Apply `.agents/skills/resilience-engineering/SKILL.md` for gRPC deadlines, cancellation, bounded retries, idempotency, retry provenance and degraded transport behavior.
 - Do not treat transport metadata as forensic evidence unless the contract says so.
 - Keep service methods thin and delegate use cases to application ports.
 

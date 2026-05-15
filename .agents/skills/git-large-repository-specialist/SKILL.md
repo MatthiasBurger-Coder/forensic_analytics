@@ -18,6 +18,7 @@ Guides Git adapter and checkout planning for large repositories such as WildFly 
 5. Preserve exact commit identity, remote URL, branch input, checkout mode, elapsed time, and diagnostics in the checkout result.
 6. Include repository corruption handling, timeout behavior, cancellation, retry boundaries, and safe `git gc` strategies.
 7. Use WildFly as a hardening scenario for clone, checkout, source-root detection, metrics, timeout, and cleanup only.
+8. Apply `.agents/skills/resilience-engineering/SKILL.md` for checkout timeouts, retry boundaries, cleanup-after-failure, dead-letter, diagnostics and graceful-degradation decisions.
 
 ## Expected Inputs
 

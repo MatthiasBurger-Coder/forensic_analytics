@@ -18,6 +18,7 @@ Guides gRPC/Protobuf design for plugin-to-analytics communication while keeping 
 5. Plan chunked uploads, gRPC retries, compression, message sizing, deadlines, cancellation, and performance tuning.
 6. Preserve plugin-to-server communication as plugin produces repository/build context and analytics creates sessions, workspaces, and checkout results.
 7. Mark future streaming progress events and chunked payload uploads as extensions unless the current slice explicitly implements them.
+8. Apply `.agents/skills/resilience-engineering/SKILL.md` for retry, idempotency, deadline, cancellation, circuit-breaker, bulkhead and retry-provenance decisions.
 
 ## Expected Inputs
 

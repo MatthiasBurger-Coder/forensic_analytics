@@ -18,6 +18,7 @@ Guides performance and scalability planning for large repositories and long-runn
 5. Use WildFly performance baseline only for Git/workspace hardening in the current phase.
 6. Keep performance metrics deterministic enough for comparison, but avoid brittle timing assertions in unit tests.
 7. Document resource limits, timeouts, concurrency boundaries, and backpressure signals.
+8. Apply `.agents/skills/resilience-engineering/SKILL.md` for timeout budgets, bulkheads, circuit breakers, degraded behavior, cleanup and retry-observability decisions.
 
 ## Expected Inputs
 

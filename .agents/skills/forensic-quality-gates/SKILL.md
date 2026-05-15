@@ -28,3 +28,4 @@ The full local gate is:
 - Do not claim a command passed unless it was executed.
 - Report exact failing tasks and suspected relation to the current change.
 - Skip optional external checks only when credentials or services are unavailable, and report the skip.
+- Apply `.agents/skills/resilience-engineering/SKILL.md` for quality-gate timeout, retry, health-check, diagnostics, cleanup and degraded-verification decisions.

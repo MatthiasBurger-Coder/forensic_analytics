@@ -14,6 +14,7 @@ Guide Docker-based local infrastructure and adapter integration.
 - Keep Docker-dependent workflows optional unless explicitly required.
 - Do not require Docker for the default quality gate unless `QUALITY.md` says so.
 - Preserve deterministic inputs and outputs for analysis containers.
+- Apply `.agents/skills/resilience-engineering/SKILL.md` for Docker Compose startup, health checks, readiness/liveness, timeouts, cleanup and degraded local-infrastructure decisions.
 - Avoid committing generated runtime data or container artifacts.
 
 ## Verification

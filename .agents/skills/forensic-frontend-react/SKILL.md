@@ -13,6 +13,7 @@ Guide React implementation when a verified frontend module exists.
 
 - Follow the existing frontend framework, state and styling conventions.
 - Keep API access behind adapters or hooks that are testable.
+- Apply `.agents/skills/resilience-engineering/SKILL.md` for UI timeouts, bounded retries, cancellation, partial failure states, diagnostics and graceful degradation decisions.
 - Preserve evidence categories and verification status in UI state.
 - Build accessible controls with clear focus and keyboard behavior.
 - Avoid marketing-style layouts for operational analysis tools.

@@ -16,6 +16,7 @@ Guide logging, metrics and diagnostics without compromising sensitive forensic d
 - Keep diagnostic output separate from verified evidence.
 - Avoid adding concrete logging providers unless explicitly required.
 - Make sampling, retention and redaction behavior explicit.
+- Apply `.agents/skills/resilience-engineering/SKILL.md` for retry provenance, failure diagnostics, health-check visibility, degraded-mode observability and secret-safe reporting.
 
 ## Verification
 
