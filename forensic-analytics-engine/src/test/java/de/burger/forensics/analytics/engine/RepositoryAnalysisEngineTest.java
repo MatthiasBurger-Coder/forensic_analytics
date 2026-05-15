@@ -9,8 +9,10 @@ import de.burger.forensics.analytics.domain.analysis.AnalysisRunId;
 import de.burger.forensics.analytics.domain.repository.RepositoryMetadata;
 import de.burger.forensics.analytics.domain.semantic.SemanticGraph;
 import de.burger.forensics.analytics.domain.source.SourceFact;
+import de.burger.forensics.analytics.observability.OperationLogger;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -28,6 +30,19 @@ class RepositoryAnalysisEngineTest {
         assertEquals(command, useCase.recordedCommand);
         assertEquals(command.analysisRunId(), result.analysisRunId());
         assertEquals(command.repositoryMetadata(), result.repositoryMetadata());
+    }
+
+    @Test
+    void logsRepositoryAnalysisLifecycle() {
+        var logger = new RecordingOperationLogger();
+        var engine = new RepositoryAnalysisEngine(new RecordingUseCase(), logger);
+
+        engine.run(command());
+
+        assertEquals(
+            List.of("started:engine.repository-analysis", "succeeded:engine.repository-analysis"),
+            logger.events()
+        );
     }
 
     @Test
@@ -64,6 +79,29 @@ class RepositoryAnalysisEngineTest {
                 new SemanticAnalysisResult("fake-semantic", "sha256:semantic", List.of(), SemanticGraph.empty()),
                 new RuleGenerationResult(List.of())
             );
+        }
+    }
+
+    private static final class RecordingOperationLogger implements OperationLogger {
+        private final List<String> events = new ArrayList<>();
+
+        @Override
+        public void started(String operation) {
+            events.add("started:" + operation);
+        }
+
+        @Override
+        public void succeeded(String operation, long durationMillis) {
+            events.add("succeeded:" + operation);
+        }
+
+        @Override
+        public void failed(String operation, long durationMillis, Throwable error) {
+            events.add("failed:" + operation);
+        }
+
+        private List<String> events() {
+            return List.copyOf(events);
         }
     }
 }

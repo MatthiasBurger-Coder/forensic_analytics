@@ -18,7 +18,7 @@ After this plan is executed, Forensic Analytics has a small, testable observabil
 
 - preserves incoming REST correlation IDs and generates explicit IDs when missing
 - can attach correlation IDs to adapter-level logs
-- logs inbound adapter lifecycle and failure boundaries without logging raw sensitive evidence
+- logs eligible adapter, engine, ingestion-request, persistence and bootstrap lifecycle boundaries without logging raw sensitive evidence
 - keeps domain and application packages free from logging framework dependencies
 - avoids Spring AOP and AspectJ unless a later architecture decision explicitly accepts them
 - keeps concrete logging providers out of the repository unless explicitly approved
@@ -36,6 +36,7 @@ Implemented:
 - gRPC operation logging without proto changes or correlation inference from request/session fields
 - CLI command logging without stdout/stderr contract changes
 - bootstrap lifecycle logging without startup/shutdown behavior changes
+- repository-source, JavaParser, Joern Docker, engine, engine-request import and persistence write operation logging
 - ArchUnit guardrails for logging boundary dependencies
 - ADR and arc42 documentation synchronization
 

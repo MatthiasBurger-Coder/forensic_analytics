@@ -4,6 +4,7 @@ import de.burger.forensics.analytics.application.ingestion.ForensicIngestionUseC
 import de.burger.forensics.analytics.application.ingestion.command.CompleteAnalysisSessionCommand;
 import de.burger.forensics.analytics.application.ingestion.command.StartAnalysisSessionCommand;
 import de.burger.forensics.analytics.application.ingestion.command.UploadAnalysisDataCommand;
+import de.burger.forensics.analytics.observability.OperationLogger;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -15,20 +16,34 @@ import java.util.Objects;
 public final class EngineIngestionRequestImporter {
     private final ForensicIngestionUseCase ingestionUseCase;
     private final EngineIngestionRequestReader requestReader;
+    private final OperationLogger operationLogger;
 
     public EngineIngestionRequestImporter(ForensicIngestionUseCase ingestionUseCase) {
-        this(ingestionUseCase, new EngineIngestionRequestReader());
+        this(ingestionUseCase, new EngineIngestionRequestReader(), OperationLogger.system(EngineIngestionRequestImporter.class));
     }
 
     EngineIngestionRequestImporter(
         ForensicIngestionUseCase ingestionUseCase,
         EngineIngestionRequestReader requestReader
     ) {
+        this(ingestionUseCase, requestReader, OperationLogger.system(EngineIngestionRequestImporter.class));
+    }
+
+    EngineIngestionRequestImporter(
+        ForensicIngestionUseCase ingestionUseCase,
+        EngineIngestionRequestReader requestReader,
+        OperationLogger operationLogger
+    ) {
         this.ingestionUseCase = Objects.requireNonNull(ingestionUseCase, "ingestionUseCase must not be null");
         this.requestReader = Objects.requireNonNull(requestReader, "requestReader must not be null");
+        this.operationLogger = Objects.requireNonNull(operationLogger, "operationLogger must not be null");
     }
 
     public EngineIngestionImportResult importRequest(Path requestFile) {
+        return operationLogger.logged("ingestion-request.import", () -> importVerifiedRequest(requestFile));
+    }
+
+    private EngineIngestionImportResult importVerifiedRequest(Path requestFile) {
         var request = requestReader.read(requestFile);
         var payloads = payloads(request);
         var session = ingestionUseCase.start(new StartAnalysisSessionCommand(

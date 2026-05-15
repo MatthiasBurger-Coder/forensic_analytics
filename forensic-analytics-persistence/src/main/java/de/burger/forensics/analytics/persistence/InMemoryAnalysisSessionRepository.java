@@ -3,6 +3,7 @@ package de.burger.forensics.analytics.persistence;
 import de.burger.forensics.analytics.application.ingestion.port.AnalysisSessionRepository;
 import de.burger.forensics.analytics.domain.analysis.AnalysisRunId;
 import de.burger.forensics.analytics.domain.analysis.AnalysisSession;
+import de.burger.forensics.analytics.observability.OperationLogger;
 
 import java.util.Comparator;
 import java.util.List;
@@ -13,11 +14,23 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public final class InMemoryAnalysisSessionRepository implements AnalysisSessionRepository {
     private final Map<AnalysisRunId, AnalysisSession> sessions = new ConcurrentHashMap<>();
+    private final OperationLogger operationLogger;
+
+    public InMemoryAnalysisSessionRepository() {
+        this(OperationLogger.system(InMemoryAnalysisSessionRepository.class));
+    }
+
+    InMemoryAnalysisSessionRepository(OperationLogger operationLogger) {
+        this.operationLogger = Objects.requireNonNull(operationLogger, "operationLogger must not be null");
+    }
 
     @Override
     public void save(AnalysisSession session) {
-        Objects.requireNonNull(session, "session must not be null");
-        sessions.put(session.id(), session);
+        var verifiedSession = Objects.requireNonNull(session, "session must not be null");
+        operationLogger.logged("persistence.analysis-session.save", () -> {
+            sessions.put(verifiedSession.id(), verifiedSession);
+            return null;
+        });
     }
 
     @Override

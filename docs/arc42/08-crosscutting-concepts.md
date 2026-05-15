@@ -81,7 +81,7 @@ The replay must explicitly show missing, incomplete or uncertain event chains.
 
 ## 8.8 Operational Observability
 
-Operational observability is adapter-scoped. REST, gRPC, CLI and bootstrap code create correlation scopes and sanitized operation logs through `forensic-analytics-observability`.
+Operational observability is scoped to non-core operational boundaries. REST, gRPC, CLI, bootstrap, source adapters, Joern Docker execution, engine entrypoints, engine-request import and persistence write operations create sanitized operation logs through `forensic-analytics-observability` where useful.
 
 The observability boundary uses JDK logging only. It does not introduce Spring AOP, AspectJ, SLF4J or concrete logging providers. Logs are diagnostics, not verified forensic evidence.
 

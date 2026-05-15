@@ -4,6 +4,7 @@ import de.burger.forensics.analytics.application.analysis.command.SemanticAnalys
 import de.burger.forensics.analytics.application.analysis.port.SemanticAnalysisPort;
 import de.burger.forensics.analytics.application.analysis.result.SemanticAnalysisResult;
 import de.burger.forensics.analytics.domain.artifact.ArtifactReference;
+import de.burger.forensics.analytics.observability.OperationLogger;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -22,6 +23,7 @@ public final class JoernDockerSemanticAnalysisAdapter implements SemanticAnalysi
     private final JoernDockerCommandBuilder commandBuilder;
     private final JoernDockerCommandRunner commandRunner;
     private final JoernDockerArtifactCollector artifactCollector;
+    private final OperationLogger operationLogger;
 
     public JoernDockerSemanticAnalysisAdapter(
         JoernDockerSettings settings,
@@ -29,15 +31,36 @@ public final class JoernDockerSemanticAnalysisAdapter implements SemanticAnalysi
         JoernDockerCommandRunner commandRunner,
         JoernDockerArtifactCollector artifactCollector
     ) {
+        this(
+            settings,
+            commandBuilder,
+            commandRunner,
+            artifactCollector,
+            OperationLogger.system(JoernDockerSemanticAnalysisAdapter.class)
+        );
+    }
+
+    JoernDockerSemanticAnalysisAdapter(
+        JoernDockerSettings settings,
+        JoernDockerCommandBuilder commandBuilder,
+        JoernDockerCommandRunner commandRunner,
+        JoernDockerArtifactCollector artifactCollector,
+        OperationLogger operationLogger
+    ) {
         this.settings = Objects.requireNonNull(settings, "settings must not be null");
         this.commandBuilder = Objects.requireNonNull(commandBuilder, "commandBuilder must not be null");
         this.commandRunner = Objects.requireNonNull(commandRunner, "commandRunner must not be null");
         this.artifactCollector = Objects.requireNonNull(artifactCollector, "artifactCollector must not be null");
+        this.operationLogger = Objects.requireNonNull(operationLogger, "operationLogger must not be null");
     }
 
     @Override
     public SemanticAnalysisResult analyze(SemanticAnalysisRequest request) {
-        Objects.requireNonNull(request, "request must not be null");
+        var verifiedRequest = Objects.requireNonNull(request, "request must not be null");
+        return operationLogger.logged("adapter.joern-docker.semantic-analysis", () -> analyzeVerified(verifiedRequest));
+    }
+
+    private SemanticAnalysisResult analyzeVerified(SemanticAnalysisRequest request) {
         createOutputDirectory();
         var paths = JoernDockerArtifactPaths.under(settings.outputDirectory());
         var operations = commandBuilder.buildAnalysisOperations(settings, request.repositorySource());
