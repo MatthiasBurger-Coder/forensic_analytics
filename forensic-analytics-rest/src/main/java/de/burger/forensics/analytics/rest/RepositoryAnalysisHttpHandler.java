@@ -23,6 +23,8 @@ import de.burger.forensics.analytics.domain.repository.SourceRoot;
 import de.burger.forensics.analytics.domain.workspace.WorkspaceCleanupPolicy;
 import de.burger.forensics.analytics.domain.workspace.WorkspaceId;
 import de.burger.forensics.analytics.domain.workspace.WorkspacePolicy;
+import de.burger.forensics.analytics.observability.CorrelationContext;
+import de.burger.forensics.analytics.observability.OperationLogger;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
@@ -36,6 +38,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 final class RepositoryAnalysisHttpHandler implements HttpHandler {
     private static final int MAX_REQUEST_BYTES = 64 * 1024;
@@ -45,6 +48,7 @@ final class RepositoryAnalysisHttpHandler implements HttpHandler {
 
     private final RepositoryAnalysisIngestionUseCase ingestionUseCase;
     private final RepositoryAnalysisQueryUseCase queryUseCase;
+    private final OperationLogger operationLogger;
     private final Gson gson = new GsonBuilder().serializeNulls().disableHtmlEscaping().create();
     private final DiagnosticSanitizer diagnostics = new DiagnosticSanitizer();
 
@@ -52,37 +56,57 @@ final class RepositoryAnalysisHttpHandler implements HttpHandler {
         RepositoryAnalysisIngestionUseCase ingestionUseCase,
         RepositoryAnalysisQueryUseCase queryUseCase
     ) {
+        this(ingestionUseCase, queryUseCase, OperationLogger.system(RepositoryAnalysisHttpHandler.class));
+    }
+
+    RepositoryAnalysisHttpHandler(
+        RepositoryAnalysisIngestionUseCase ingestionUseCase,
+        RepositoryAnalysisQueryUseCase queryUseCase,
+        OperationLogger operationLogger
+    ) {
         this.ingestionUseCase = Objects.requireNonNull(ingestionUseCase, "ingestionUseCase must not be null");
         this.queryUseCase = Objects.requireNonNull(queryUseCase, "queryUseCase must not be null");
+        this.operationLogger = Objects.requireNonNull(operationLogger, "operationLogger must not be null");
     }
 
     @Override
     public void handle(HttpExchange exchange) throws IOException {
-        var correlationId = correlationId(exchange);
-        try {
-            route(exchange, correlationId);
-        } catch (RestValidationException error) {
-            writeError(exchange, HttpURLConnection.HTTP_BAD_REQUEST, "VALIDATION_ERROR", false, correlationId, error);
-        } catch (RestNotFoundException error) {
-            writeError(exchange, HttpURLConnection.HTTP_NOT_FOUND, "NOT_FOUND", false, correlationId, error);
-        } catch (RepositoryAnalysisIngestionException | RepositoryCheckoutException error) {
-            writeError(
-                exchange,
-                HttpURLConnection.HTTP_UNAVAILABLE,
-                "BACKEND_UNAVAILABLE",
-                isIdempotent(exchange),
-                correlationId,
-                error
-            );
-        } catch (RuntimeException error) {
-            writeError(
-                exchange,
-                HttpURLConnection.HTTP_INTERNAL_ERROR,
-                "UNEXPECTED_ERROR",
-                isIdempotent(exchange),
-                correlationId,
-                error
-            );
+        var requestedCorrelationId = correlationId(exchange);
+        try (var correlationScope = CorrelationContext.open(requestedCorrelationId)) {
+            var correlationId = correlationScope.correlationId().value();
+            var operation = restOperation(exchange);
+            var startedAt = System.nanoTime();
+            operationLogger.started(operation);
+            try {
+                route(exchange, correlationId);
+                operationLogger.succeeded(operation, elapsedMillis(startedAt));
+            } catch (RestValidationException error) {
+                operationLogger.failed(operation, elapsedMillis(startedAt), error);
+                writeError(exchange, HttpURLConnection.HTTP_BAD_REQUEST, "VALIDATION_ERROR", false, correlationId, error);
+            } catch (RestNotFoundException error) {
+                operationLogger.failed(operation, elapsedMillis(startedAt), error);
+                writeError(exchange, HttpURLConnection.HTTP_NOT_FOUND, "NOT_FOUND", false, correlationId, error);
+            } catch (RepositoryAnalysisIngestionException | RepositoryCheckoutException error) {
+                operationLogger.failed(operation, elapsedMillis(startedAt), error);
+                writeError(
+                    exchange,
+                    HttpURLConnection.HTTP_UNAVAILABLE,
+                    "BACKEND_UNAVAILABLE",
+                    isIdempotent(exchange),
+                    correlationId,
+                    error
+                );
+            } catch (RuntimeException error) {
+                operationLogger.failed(operation, elapsedMillis(startedAt), error);
+                writeError(
+                    exchange,
+                    HttpURLConnection.HTTP_INTERNAL_ERROR,
+                    "UNEXPECTED_ERROR",
+                    isIdempotent(exchange),
+                    correlationId,
+                    error
+                );
+            }
         } finally {
             exchange.close();
         }
@@ -320,6 +344,28 @@ final class RepositoryAnalysisHttpHandler implements HttpHandler {
             return UUID.randomUUID().toString();
         }
         return header.strip().replaceAll("[^A-Za-z0-9_.:-]", "_");
+    }
+
+    private static String restOperation(HttpExchange exchange) {
+        var method = exchange.getRequestMethod();
+        var path = exchange.getRequestURI().getPath();
+        if ("/api/repository-analyses".equals(path)) {
+            return "rest.repository-analyses." + method;
+        }
+        if (path.startsWith("/api/repository-analyses/")) {
+            return "rest.repository-analysis." + method;
+        }
+        if ("/api/workspaces".equals(path)) {
+            return "rest.workspaces." + method;
+        }
+        if (path.startsWith("/api/workspaces/")) {
+            return "rest.workspace." + method;
+        }
+        return "rest.unknown." + method;
+    }
+
+    private static long elapsedMillis(long startedAt) {
+        return TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedAt);
     }
 
     private static boolean isIdempotent(HttpExchange exchange) {

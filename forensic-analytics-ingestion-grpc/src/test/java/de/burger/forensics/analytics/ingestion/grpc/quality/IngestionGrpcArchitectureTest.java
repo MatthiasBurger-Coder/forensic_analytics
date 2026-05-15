@@ -16,7 +16,7 @@ class IngestionGrpcArchitectureTest {
             .resideInAnyPackage("..application..", "..domain..")
             .should()
             .dependOnClassesThat()
-            .resideInAnyPackage("io.grpc..", "..ingestion.v1..");
+            .resideInAnyPackage("io.grpc..", "..ingestion.v1..", "..observability..");
 
     @ArchTest
     static final ArchRule grpc_adapter_does_not_depend_on_persistence =
@@ -26,6 +26,22 @@ class IngestionGrpcArchitectureTest {
             .should()
             .dependOnClassesThat()
             .resideInAPackage("..persistence..");
+
+    @ArchTest
+    static final ArchRule observability_does_not_depend_on_grpc_or_frameworks =
+        noClasses()
+            .that()
+            .resideInAPackage("..observability..")
+            .should()
+            .dependOnClassesThat()
+            .resideInAnyPackage(
+                "io.grpc..",
+                "org.springframework..",
+                "org.aspectj..",
+                "org.slf4j..",
+                "..persistence..",
+                "..ingestion.v1.."
+            );
 
     @SuppressWarnings("unused")
     private final ClassFileImporter importerReference = new ClassFileImporter();

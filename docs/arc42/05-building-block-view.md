@@ -15,6 +15,7 @@ Forensics Platform
 ├── Graph Projection
 ├── Vector Context Builder
 ├── LLM Diagnosis
+├── Observability Boundary
 ├── Repair Orchestration
 └── Adapters
     ├── Gradle Plugin Request Adapter
@@ -44,6 +45,7 @@ Forensics Platform
 | Graph Projection Service | Builds graph projections from canonical facts |
 | Vector Context Builder | Builds semantic context for retrieval and LLM use |
 | LLM Diagnosis Service | Creates evidence-based root-cause analysis |
+| Observability Boundary | Provides adapter-level correlation scopes and sanitized operation logging without becoming evidence storage |
 | Repair Orchestrator | Prepares future gated repair flows |
 
 ## 5.3 Hexagonal Architecture Mapping
@@ -53,7 +55,8 @@ Forensics Platform
 | Domain | IDs, analysis model, incident model, replay model, rule plan |
 | Application | Import use cases, replay use cases, diagnosis use cases |
 | Ports | Fact import port, event store port, graph port, LLM port, rule generation port |
-| Adapters | gRPC ingestion, Gradle/Maven request and runtime-binding adapters, server-side Joern, server-side Byteman/BTM, relational DB, graph DB, vector DB, LLM provider |
+| Infrastructure | Adapter-facing observability and correlation support |
+| Adapters | gRPC ingestion, REST API, CLI, Gradle/Maven request and runtime-binding adapters, server-side Joern, server-side Byteman/BTM, relational DB, graph DB, vector DB, LLM provider |
 
 ## 5.4 Important Boundary
 
@@ -70,3 +73,9 @@ Proto DTO
   -> Application Command
     -> Application Use Case
 ```
+
+## 5.6 Observability Boundary
+
+`forensic-analytics-observability` is an infrastructure module for operational diagnostics. REST, gRPC, CLI and bootstrap code may use it to create operation logs and correlation scopes.
+
+The observability module must not depend on domain, application, persistence, REST, gRPC, generated protobuf classes, Spring AOP, AspectJ, SLF4J or concrete logging providers. Domain and application code must not depend on observability.

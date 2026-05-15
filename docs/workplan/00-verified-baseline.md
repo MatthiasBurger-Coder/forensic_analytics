@@ -1,118 +1,146 @@
 # Verified Baseline
 
-This file records the repository facts verified before creating this workplan.
+## Verification Date
 
-## Inspected Files And Directories
+2026-05-15
+
+## Repository Root
+
+The repository root was verified through WSL as:
+
+```text
+/mnt/d/Projects/forensic_analytics
+```
+
+The matching Windows path is:
+
+```text
+D:/Projects/forensic_analytics
+```
+
+## Inspected Repository Files
 
 The read-only inspection covered:
 
 - `AGENTS.md`
 - `QUALITY.md`
-- `.agents/AGENTS.md`
-- `.agents/orchestrator/`
-- `.agents/roles/`
-- `.agents/skills/`
-- `.codex/config.toml`
-- `.codex/agents/`
+- `settings.gradle.kts`
+- `build.gradle.kts`
+- `gradle/libs.versions.toml`
 - `docs/workplan/`
-- `docs/arc42/`
-- `docs/adr/`
+- `docs/epics/forensics-platform-runtime-replay-llm-analysis-v0.1.md`
+- `docs/arc42/02-architecture-constraints.md`
+- `docs/arc42/05-building-block-view.md`
+- `docs/arc42/06-runtime-view.md`
+- `docs/arc42/08-crosscutting-concepts.md`
+- `docs/arc42/10-quality-requirements.md`
+- `docs/adr/ADR-0001-plugins-are-producers.md`
+- `docs/adr/ADR-0002-canonical-analysis-model.md`
+- `docs/adr/ADR-0003-runtime-events-are-sensitive.md`
+- `docs/adr/ADR-0004-graph-and-vector-db-as-projections.md`
+- `.agents/roles/`
 
-## Repository Rules
+## Inspected Current Implementation
 
-The root `AGENTS.md` is the mandatory source for agent behavior, architecture boundaries, evidence integrity, documentation language and stop conditions.
+The read-only implementation inspection covered representative integration points:
 
-`QUALITY.md` is the authoritative quality contract. It defines the minimum command:
+- `forensic-analytics-bootstrap/src/main/java/de/burger/forensics/analytics/bootstrap/ForensicAnalyticsBackendComponents.java`
+- `forensic-analytics-bootstrap/src/main/java/de/burger/forensics/analytics/bootstrap/ForensicAnalyticsServerApplication.java`
+- `forensic-analytics-bootstrap/src/main/java/de/burger/forensics/analytics/bootstrap/GrpcIngestionServerFactory.java`
+- `forensic-analytics-rest/src/main/java/de/burger/forensics/analytics/rest/RepositoryAnalysisHttpHandler.java`
+- `forensic-analytics-rest/src/main/java/de/burger/forensics/analytics/rest/RestApiServerFactory.java`
+- `forensic-analytics-ingestion-grpc/src/main/java/de/burger/forensics/analytics/ingestion/grpc/ForensicIngestionGrpcService.java`
+- `forensic-analytics-ingestion-grpc/src/main/proto/forensic_ingestion.proto`
+- `forensic-analytics-cli/src/main/java/de/burger/forensics/analytics/cli/ForensicAnalyticsCli.java`
+- `forensic-analytics-application/src/test/java/de/burger/forensics/analytics/application/analysis/quality/AnalysisContractArchitectureTest.java`
+- `forensic-analytics-ingestion-grpc/src/test/java/de/burger/forensics/analytics/ingestion/grpc/quality/IngestionGrpcArchitectureTest.java`
+
+## Source Logging Material
+
+The user-referenced file was:
+
+```text
+D:/Projects/SCXMLExample/src/main/java/de/burger/it/scxmlexample/infrastructure/logging.zip
+```
+
+That ZIP file was not present. The inspected parent directory contained:
+
+```text
+bootstrap/
+config/
+logging/
+```
+
+The inspected logging source files were:
+
+- `CentralLoggingAspect.java`
+- `LevelLogger.java`
+- `LevelLoggerRegistry.java`
+- `Loggable.java`
+- `correlation/CorrelationIdManager.java`
+- `strategy/TraceLevelLogger.java`
+- `strategy/DebugLevelLogger.java`
+- `strategy/InfoLevelLogger.java`
+- `strategy/WarnLevelLogger.java`
+- `strategy/ErrorLevelLogger.java`
+
+## Verified Quality Gate
+
+`QUALITY.md` defines the minimum verification command:
 
 ```bash
 ./gradlew test --dependency-verification strict --console=plain --stacktrace
 ```
 
-and the full local quality gate:
+`QUALITY.md` defines the full local quality gate:
 
 ```bash
 ./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace
 ```
 
-On Windows hosts, repository commands must run through WSL from the WSL-mounted worktree.
+Repository commands on this Windows host must run through WSL from `/mnt/d/Projects/forensic_analytics`.
 
-## Existing Agent Material
+## Verified Build Baseline
 
-`.agents/AGENTS.md` defines the agent directory model:
+The repository is a Gradle multi-project build with these included modules:
 
-- `orchestrator/` describes slice coordination, routing and conflict handling.
-- `roles/` defines role responsibilities and required reference skills.
-- `skills/<skill-name>/SKILL.md` contains discoverable Codex skills.
-- `.codex/agents/` contains project-scoped custom subagent TOML files.
+- `forensic-analytics-domain`
+- `forensic-analytics-application`
+- `forensic-analytics-engine`
+- `forensic-analytics-adapter-repository-source`
+- `forensic-analytics-adapter-javaparser`
+- `forensic-analytics-adapter-joern-docker`
+- `forensic-analytics-cli`
+- `forensic-analytics-testbed`
+- `forensic-analytics-persistence`
+- `forensic-analytics-ingestion-grpc`
+- `forensic-analytics-ingestion-request`
+- `forensic-analytics-rest`
+- `forensic-analytics-bootstrap`
 
-Existing roles are currently Markdown files under `.agents/roles/`, such as:
+The root build configures Java 25, JUnit 6, JaCoCo, strict dependency verification, and `checkPackageCoverage`.
 
-- `senior-documentation-engineer.md`
-- `senior-system-architect.md`
-- `senior-swarm-orchestrator.md`
-- `senior-java-backend.md`
-- `senior-tester.md`
+`gradle/libs.versions.toml` currently does not define SLF4J, Log4j2, Spring AOP, or AspectJ aliases.
 
-Existing skills are discoverable directories under `.agents/skills/`, each with a `SKILL.md` file and YAML frontmatter.
+## Verified Architecture Facts
 
-## Requested Governance Artifacts
+The architecture documentation and tests establish these constraints:
 
-Before this workplan was executed, these requested artifacts did not exist:
+- Domain and application logic must remain independent from frameworks and external tools.
+- Inbound adapters map transport DTOs into application commands.
+- Runtime data is sensitive by default.
+- Ambiguous mappings must be reported, not silently accepted.
+- Existing ArchUnit tests already forbid Spring, gRPC, persistence, and selected infrastructure dependencies from application analysis contracts.
+- The gRPC adapter must not depend on persistence.
 
-- `.agents/skills/workplan-authoring`
-- `.agents/skills/requirement-engineering`
-- `.agents/skills/arc42-architecture-governance`
-- `.agents/skills/engineering-governance`
-- `.agents/roles/senior-workplan-architect`
-- `.agents/roles/senior-requirement-engineer`
+## Current Logging And Correlation State
 
-This workplan intentionally treated them as new artifacts to create during execution. The executed governance slice has now added these artifacts.
+No existing Forensic Analytics source logging framework usage was found by repository search for logging, SLF4J, Log4j, Logback, Java logging, AspectJ, logger creation, or MDC terms outside generated/build output.
 
-## Existing Workplan Behavior
+The REST adapter already has a local `X-Correlation-Id` response/request header flow in `RepositoryAnalysisHttpHandler`. That ID is not currently stored in an MDC or shared logging context.
 
-The previous `docs/workplan` described an executed resilient React UI MVP plan. It was not the governance workplan requested here.
+The gRPC protocol has request/session/build identity fields such as `request_id`, `session_id`, `build_id`, `project_id`, and `schema_version`. It does not define a dedicated correlation ID field in the inspected proto.
 
-The previous workplan already included useful execution patterns:
+## Existing Workplan Replacement
 
-- read-only verification before implementation
-- ordered implementation slices
-- subagent and parallelization planning
-- architecture target documentation
-- resilience requirements
-- quality-gate documentation
-- commit and push planning
-
-This workplan regenerates `docs/workplan` completely so no stale UI-MVP slice remains active.
-
-## Existing Architecture Governance
-
-`docs/arc42/README.md` states that the EPIC remains the product and requirement baseline and that arc42 transforms that baseline into architectural structure.
-
-`docs/adr/README.md` states that decisions are derived from the EPIC baseline and refined during implementation.
-
-The current repository already contains architecture, quality and evidence-integrity rules, but it does not yet contain a reusable governance layer that explicitly synchronizes EPIC, arc42, ADRs, workplans, requirements, skills and roles.
-
-## Missing Synchronization Points
-
-The inspection found these missing governance links:
-
-- no reusable workplan-authoring skill exists
-- no reusable requirement-engineering skill exists
-- no arc42 synchronization skill exists
-- no umbrella engineering-governance skill exists
-- no Senior Workplan Architect role exists
-- no Senior Requirement Engineer role exists
-- no explicit rule in a reusable skill requires deleting `docs/workplan` before new workplan generation
-- no explicit requirement drift checklist is available as reusable agent guidance
-- no reusable checklist ties EPIC, arc42, ADR references, `QUALITY.md`, `docs/workplan`, skills and roles together
-
-## Stop Points
-
-Stop and report before implementing the governance artifacts if:
-
-- the root repository rules conflict with a planned governance rule
-- the target role directory format conflicts with `.agents/AGENTS.md` and cannot be justified by the task
-- EPIC location or current EPIC source cannot be verified for synchronization work
-- an arc42 section mentioned by a new skill cannot be found
-- a quality-gate command cannot be verified in `QUALITY.md`
-- multiple active workplans are discovered outside `docs/workplan` and their authority is unclear
+The previous active `docs/workplan` described an already executed governance workplan. It was deleted and regenerated for this logging integration plan as required by the repository workplan-authoring rule.

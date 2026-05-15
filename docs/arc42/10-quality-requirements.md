@@ -17,6 +17,10 @@ Quality
 │   ├── Secret protection
 │   ├── Auditability
 │   └── Retention control
+├── Observability
+│   ├── Adapter correlation
+│   ├── Sanitized operation logs
+│   └── Logging framework isolation
 ├── Traceability
 │   ├── Rule to source mapping
 │   ├── Event to rule mapping
@@ -36,6 +40,7 @@ Quality
 | Import changed Java files only | The platform detects changed files by hash and avoids full reprocessing |
 | Load incident by CorrelationID | Replay timeline is generated in interactive time |
 | Runtime event contains secret-like value | Value is redacted before persistence |
+| Adapter operation fails | Logs contain operation category, correlation ID and exception category without raw payloads or secrets |
 | Joern mapping is ambiguous | Mapping is marked as ambiguous and not silently linked |
 | LLM lacks evidence | Diagnosis reports insufficient evidence |
 | Tests fail after generated fix | No PR is created |

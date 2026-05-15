@@ -40,6 +40,7 @@ class GrpcIngestionServerSettingsTest {
     @Test
     void rejectsInvalidPort() {
         assertThrows(IllegalArgumentException.class, () -> new GrpcIngestionServerSettings(true, 0));
+        assertThrows(IllegalArgumentException.class, () -> new GrpcIngestionServerSettings(true, 65_536));
     }
 
     @Test
