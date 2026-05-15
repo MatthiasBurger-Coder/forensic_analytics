@@ -7,7 +7,7 @@ This directory contains the architecture and product documentation for the Foren
 - [arc42/](arc42/) - Architecture documentation based on the arc42 template
 - [epics/](epics/) - Versioned product and requirement epics
 - [adr/](adr/) - Architecture Decision Records, if present
-- [workplan/](workplan/) - Planned workspace, gRPC and server-side analysis workflows and execution slices
+- [workplan/](workplan/) - Current implementation workplan and execution slices for the resilient React UI MVP
 
 ## Modules
 
