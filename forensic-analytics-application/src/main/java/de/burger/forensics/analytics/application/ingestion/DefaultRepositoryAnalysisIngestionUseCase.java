@@ -56,6 +56,7 @@ public final class DefaultRepositoryAnalysisIngestionUseCase implements Reposito
         var checkoutResult = repositoryCheckoutService.checkout(new RepositoryCheckoutRequest(
             analysisSessionId,
             workspace,
+            command.workspacePolicy(),
             command.repository(),
             command.branch(),
             command.commit()

@@ -51,6 +51,7 @@ class GitRepositoryCheckoutAdapterTest {
         var result = new GitRepositoryCheckoutAdapter().checkout(new RepositoryCheckoutRequest(
             new AnalysisRunId("analysis-1"),
             workspace,
+            workspacePolicy(),
             new RepositoryReference(fixtureRepository.toUri().toString(), Optional.of("local-fixture"), Map.of()),
             new BranchReference(Optional.of("main"), true),
             new CommitReference(Optional.of(expectedCommit), true)
@@ -74,11 +75,36 @@ class GitRepositoryCheckoutAdapterTest {
     }
 
     @Test
+    void clonesOnlyRequestedBranchHeadWhenShallowCloneIsAllowed() throws Exception {
+        var fixtureRepository = createMiniRepository();
+        var expectedCommit = git(fixtureRepository, "rev-parse", "HEAD").strip();
+        var workspacePolicy = shallowClonePolicy();
+        var workspace = preparedWorkspace("analysis-shallow", workspacePolicy);
+
+        var result = new GitRepositoryCheckoutAdapter().checkout(new RepositoryCheckoutRequest(
+            new AnalysisRunId("analysis-shallow"),
+            workspace,
+            workspacePolicy,
+            new RepositoryReference(fixtureRepository.toUri().toString(), Optional.of("local-fixture"), Map.of()),
+            new BranchReference(Optional.of("main"), true),
+            new CommitReference(Optional.empty(), false)
+        ));
+
+        var checkoutDirectory = Path.of(workspace.path().value()).resolve("repository").toAbsolutePath().normalize();
+        assertEquals(expectedCommit, result.resolvedCommit());
+        assertEquals(Optional.of("main"), result.requestedBranch());
+        assertEquals(Optional.empty(), result.requestedCommit());
+        assertEquals(List.of("checkout mode: shallow branch head clone"), result.diagnostics());
+        assertTrue(Files.exists(checkoutDirectory.resolve(".git/shallow")));
+    }
+
+    @Test
     void rejectsUnsupportedRepositoryUrlsBeforeCloning() throws Exception {
         var workspace = preparedWorkspace("analysis-2");
         var request = new RepositoryCheckoutRequest(
             new AnalysisRunId("analysis-2"),
             workspace,
+            workspacePolicy(),
             new RepositoryReference("ssh://example.invalid/project.git", Optional.empty(), Map.of()),
             new BranchReference(Optional.of("main"), true),
             new CommitReference(Optional.empty(), false)
@@ -97,6 +123,7 @@ class GitRepositoryCheckoutAdapterTest {
         var result = new GitRepositoryCheckoutAdapter().checkout(new RepositoryCheckoutRequest(
             new AnalysisRunId("analysis-local-path"),
             workspace,
+            workspacePolicy(),
             new RepositoryReference(fixtureRepository.toString(), Optional.empty(), Map.of()),
             new BranchReference(Optional.of("main"), true),
             new CommitReference(Optional.empty(), false)
@@ -126,6 +153,7 @@ class GitRepositoryCheckoutAdapterTest {
         assertThrows(RepositoryCheckoutException.class, () -> new GitRepositoryCheckoutAdapter().checkout(new RepositoryCheckoutRequest(
             new AnalysisRunId("analysis-missing"),
             missingWorkspace,
+            workspacePolicy(),
             new RepositoryReference("https://example.invalid/project.git", Optional.empty(), Map.of()),
             new BranchReference(Optional.of("main"), true),
             new CommitReference(Optional.empty(), false)
@@ -133,6 +161,7 @@ class GitRepositoryCheckoutAdapterTest {
         assertThrows(RepositoryCheckoutException.class, () -> new GitRepositoryCheckoutAdapter().checkout(new RepositoryCheckoutRequest(
             new AnalysisRunId("analysis-occupied"),
             occupiedWorkspace,
+            workspacePolicy(),
             new RepositoryReference("https://example.invalid/project.git", Optional.empty(), Map.of()),
             new BranchReference(Optional.of("main"), true),
             new CommitReference(Optional.empty(), false)
@@ -145,6 +174,7 @@ class GitRepositoryCheckoutAdapterTest {
         assertThrows(RepositoryCheckoutException.class, () -> new GitRepositoryCheckoutAdapter().checkout(new RepositoryCheckoutRequest(
             new AnalysisRunId("analysis-unsafe-url"),
             unsafeUrlWorkspace,
+            workspacePolicy(),
             new RepositoryReference("git@example.invalid:project.git", Optional.empty(), Map.of()),
             new BranchReference(Optional.of("main"), true),
             new CommitReference(Optional.empty(), false)
@@ -154,6 +184,7 @@ class GitRepositoryCheckoutAdapterTest {
         assertThrows(RepositoryCheckoutException.class, () -> new GitRepositoryCheckoutAdapter().checkout(new RepositoryCheckoutRequest(
             new AnalysisRunId("analysis-user-info"),
             userInfoWorkspace,
+            workspacePolicy(),
             new RepositoryReference("https://token@example.invalid/project.git", Optional.empty(), Map.of()),
             new BranchReference(Optional.of("main"), true),
             new CommitReference(Optional.empty(), false)
@@ -163,6 +194,7 @@ class GitRepositoryCheckoutAdapterTest {
         assertThrows(RepositoryCheckoutException.class, () -> new GitRepositoryCheckoutAdapter().checkout(new RepositoryCheckoutRequest(
             new AnalysisRunId("analysis-unsafe-branch"),
             unsafeBranchWorkspace,
+            workspacePolicy(),
             new RepositoryReference("https://example.invalid/project.git", Optional.empty(), Map.of()),
             new BranchReference(Optional.of("-main"), true),
             new CommitReference(Optional.empty(), false)
@@ -172,6 +204,7 @@ class GitRepositoryCheckoutAdapterTest {
         assertThrows(RepositoryCheckoutException.class, () -> new GitRepositoryCheckoutAdapter().checkout(new RepositoryCheckoutRequest(
             new AnalysisRunId("analysis-unsafe-commit"),
             unsafeCommitWorkspace,
+            workspacePolicy(),
             new RepositoryReference("https://example.invalid/project.git", Optional.empty(), Map.of()),
             new BranchReference(Optional.of("main"), true),
             new CommitReference(Optional.of("-abcdef"), true)
@@ -186,6 +219,7 @@ class GitRepositoryCheckoutAdapterTest {
         var request = new RepositoryCheckoutRequest(
             new AnalysisRunId("analysis-3"),
             workspace,
+            workspacePolicy(),
             new RepositoryReference(fixtureRepository.toUri().toString(), Optional.empty(), Map.of()),
             new BranchReference(Optional.of("main"), true),
             new CommitReference(Optional.of("0123456789012345678901234567890123456789"), true)
@@ -196,8 +230,12 @@ class GitRepositoryCheckoutAdapterTest {
     }
 
     private PreparedWorkspace preparedWorkspace(String analysisId) {
+        return preparedWorkspace(analysisId, workspacePolicy());
+    }
+
+    private PreparedWorkspace preparedWorkspace(String analysisId, WorkspacePolicy workspacePolicy) {
         return new FileSystemWorkspacePreparationAdapter(tempDir.resolve("workspaces"))
-            .prepare(new WorkspacePreparationRequest(new AnalysisRunId(analysisId), workspacePolicy()));
+            .prepare(new WorkspacePreparationRequest(new AnalysisRunId(analysisId), workspacePolicy));
     }
 
     private Path createMiniRepository() throws Exception {
@@ -238,6 +276,18 @@ class GitRepositoryCheckoutAdapterTest {
         return new WorkspacePolicy(
             true,
             false,
+            false,
+            false,
+            Duration.ofSeconds(60),
+            0L,
+            WorkspaceCleanupPolicy.DELETE_ON_COMPLETION
+        );
+    }
+
+    private static WorkspacePolicy shallowClonePolicy() {
+        return new WorkspacePolicy(
+            true,
+            true,
             false,
             false,
             Duration.ofSeconds(60),

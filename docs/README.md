@@ -72,7 +72,9 @@ Implemented endpoints:
 
 `POST /api/repository-analyses` registers and prepares a repository analysis session through `RepositoryAnalysisIngestionUseCase#analyze`. It returns backend status `REGISTERED` and workflow `REPOSITORY_SESSION_REGISTRATION`; it does not claim completion of the full repository analysis pipeline.
 
-For this MVP, REST repository targets must be HTTPS URLs without user information. Workspace clone-mode and quota options are intentionally restricted to safe unsupported values until shallow/partial/sparse checkout, byte quotas and cleanup behavior are implemented end to end.
+For this MVP, REST repository targets must be HTTPS URLs without user information.
+`workspacePolicy.allowShallowClone` is supported for branch-head checkouts and uses a depth-1 single-branch clone when no commit is pinned.
+Partial clone, sparse checkout, byte quotas, and ephemeral REST cleanup remain intentionally restricted until implemented end to end.
 
 Runtime configuration:
 

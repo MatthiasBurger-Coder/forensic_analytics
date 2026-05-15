@@ -45,26 +45,19 @@ public final class GitRepositoryCheckoutAdapter implements RepositoryCheckoutPor
         request.branch().name().ifPresent(branch -> requireSafeGitReference(branch, "branch"));
         request.commit().hash().ifPresent(commit -> requireSafeGitReference(commit, "commit"));
 
-        commandRunner.run(workspacePath, timeout, List.of(
-            "git",
-            "-c",
-            "core.hooksPath=/dev/null",
-            "clone",
-            "--quiet",
-            "--no-tags",
-            "--",
-            request.repository().remoteUrl(),
-            repositoryDirectory.toString()
-        ));
-        request.branch().name().ifPresent(branch -> commandRunner.run(repositoryDirectory, timeout, List.of(
-            "git",
-            "-c",
-            "core.hooksPath=/dev/null",
-            "checkout",
-            "--quiet",
-            "--force",
-            branch
-        )));
+        var shallowBranchHeadClone = shallowBranchHeadClone(request);
+        commandRunner.run(workspacePath, timeout, cloneCommand(request, repositoryDirectory, shallowBranchHeadClone));
+        if (!shallowBranchHeadClone) {
+            request.branch().name().ifPresent(branch -> commandRunner.run(repositoryDirectory, timeout, List.of(
+                "git",
+                "-c",
+                "core.hooksPath=/dev/null",
+                "checkout",
+                "--quiet",
+                "--force",
+                branch
+            )));
+        }
         request.commit().hash().ifPresent(commit -> commandRunner.run(repositoryDirectory, timeout, List.of(
             "git",
             "-c",
@@ -85,7 +78,10 @@ public final class GitRepositoryCheckoutAdapter implements RepositoryCheckoutPor
         var sourceRoots = SourceRootDetector.sourceRoots(repositoryDirectory).stream()
             .map(SourceRoot::new)
             .toList();
-        diagnostics.add("checkout mode: full clone");
+        var checkoutMode = shallowBranchHeadClone
+            ? "checkout mode: shallow branch head clone"
+            : "checkout mode: full clone";
+        diagnostics.add(checkoutMode);
 
         return new CheckoutResult(
             resolvedRemoteUrl,
@@ -141,6 +137,37 @@ public final class GitRepositoryCheckoutAdapter implements RepositoryCheckoutPor
         if (!resolvedCommit.equals(expectedCommit)) {
             throw new RepositoryCheckoutException("Resolved checkout commit does not match requested commit");
         }
+    }
+
+    private static boolean shallowBranchHeadClone(RepositoryCheckoutRequest request) {
+        return request.workspacePolicy().allowShallowClone()
+            && request.branch().name().isPresent()
+            && request.commit().hash().isEmpty();
+    }
+
+    private static List<String> cloneCommand(
+        RepositoryCheckoutRequest request,
+        Path repositoryDirectory,
+        boolean shallowBranchHeadClone
+    ) {
+        var command = new ArrayList<String>();
+        command.add("git");
+        command.add("-c");
+        command.add("core.hooksPath=/dev/null");
+        command.add("clone");
+        command.add("--quiet");
+        command.add("--no-tags");
+        if (shallowBranchHeadClone) {
+            command.add("--depth");
+            command.add("1");
+            command.add("--branch");
+            command.add(request.branch().name().orElseThrow());
+            command.add("--single-branch");
+        }
+        command.add("--");
+        command.add(request.repository().remoteUrl());
+        command.add(repositoryDirectory.toString());
+        return List.copyOf(command);
     }
 
     private static List<String> git(String... arguments) {

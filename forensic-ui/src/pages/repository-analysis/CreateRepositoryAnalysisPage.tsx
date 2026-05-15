@@ -29,6 +29,7 @@ export const CreateRepositoryAnalysisPage = () => {
   const [declaredModules, setDeclaredModules] = useState("");
   const [attributes, setAttributes] = useState("");
   const [timeoutSeconds, setTimeoutSeconds] = useState(DEFAULT_TIMEOUT_SECONDS);
+  const [allowShallowClone, setAllowShallowClone] = useState(true);
   const [validationError, setValidationError] = useState<ApplicationError | null>(
     null
   );
@@ -71,7 +72,7 @@ export const CreateRepositoryAnalysisPage = () => {
     },
     workspacePolicy: {
       ephemeral: false,
-      allowShallowClone: false,
+      allowShallowClone,
       allowPartialClone: false,
       allowSparseCheckout: false,
       timeoutSeconds,
@@ -239,6 +240,16 @@ export const CreateRepositoryAnalysisPage = () => {
                   setTimeoutSeconds(Number(event.target.value))
                 }
               />
+            </label>
+          </div>
+          <div className="toggle-grid">
+            <label>
+              <input
+                type="checkbox"
+                checked={allowShallowClone}
+                onChange={(event) => setAllowShallowClone(event.target.checked)}
+              />
+              Shallow clone
             </label>
           </div>
         </section>

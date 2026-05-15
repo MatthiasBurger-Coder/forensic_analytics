@@ -36,6 +36,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class RepositoryAnalysisRestApiTest {
+    private static final String WILDFLY_REPOSITORY_URL = "https://github.com/wildfly/wildfly.git";
+
     private final RecordingIngestionUseCase ingestionUseCase = new RecordingIngestionUseCase();
     private final RecordingQueryUseCase queryUseCase = new RecordingQueryUseCase();
     private final HttpClient client = HttpClient.newHttpClient();
@@ -240,14 +242,6 @@ class RepositoryAnalysisRestApiTest {
                 """),
             validRequestWithWorkspacePolicy("""
                 "ephemeral": false,
-                "allowShallowClone": true,
-                "allowPartialClone": false,
-                "allowSparseCheckout": false,
-                "timeoutSeconds": 60,
-                "maxWorkspaceBytes": 0
-                """),
-            validRequestWithWorkspacePolicy("""
-                "ephemeral": false,
                 "allowShallowClone": false,
                 "allowPartialClone": true,
                 "allowSparseCheckout": false,
@@ -319,6 +313,25 @@ class RepositoryAnalysisRestApiTest {
     }
 
     @Test
+    void postRepositoryAnalysisAcceptsWildFlyRepositoryWithoutExecutingExternalCheckout() throws Exception {
+        var response = send("POST", "/api/repository-analyses", wildFlyRequest());
+
+        assertEquals(201, response.statusCode());
+        var body = json(response);
+        assertEquals(WILDFLY_REPOSITORY_URL, body.get("repositoryUrl").getAsString());
+        assertEquals(WILDFLY_REPOSITORY_URL, ingestionUseCase.command.repository().remoteUrl());
+        assertEquals(Optional.of("github"), ingestionUseCase.command.repository().provider());
+        assertEquals(Optional.of("main"), ingestionUseCase.command.branch().name());
+        assertTrue(ingestionUseCase.command.branch().required());
+        assertTrue(ingestionUseCase.command.commit().hash().isEmpty());
+        assertEquals("maven", ingestionUseCase.command.buildContext().buildTool());
+        assertEquals(Optional.of("wildfly"), ingestionUseCase.command.buildContext().rootProjectName());
+        assertEquals(Duration.ofMinutes(20), ingestionUseCase.command.workspacePolicy().timeout());
+        assertTrue(ingestionUseCase.command.workspacePolicy().allowShallowClone());
+        assertFalse(ingestionUseCase.command.workspacePolicy().ephemeral());
+    }
+
+    @Test
     void rejectsPathSegmentsThatDecodeToMultipleSegments() throws Exception {
         var response = send("GET", "/api/repository-analyses/analysis%2F1", "");
 
@@ -374,7 +387,7 @@ class RepositoryAnalysisRestApiTest {
               },
               "workspacePolicy": {
                 "ephemeral": false,
-                "allowShallowClone": false,
+                "allowShallowClone": true,
                 "allowPartialClone": false,
                 "allowSparseCheckout": false,
                 "timeoutSeconds": 60,
@@ -398,7 +411,7 @@ class RepositoryAnalysisRestApiTest {
               },
               "workspacePolicy": {
                 "ephemeral": false,
-                "allowShallowClone": false,
+                "allowShallowClone": true,
                 "allowPartialClone": false,
                 "allowSparseCheckout": false,
                 "timeoutSeconds": 60,
@@ -588,6 +601,33 @@ class RepositoryAnalysisRestApiTest {
               }
             }
             """;
+    }
+
+    private static String wildFlyRequest() {
+        return """
+            {
+              "repositoryUrl": "%s",
+              "provider": "github",
+              "branch": "main",
+              "requestId": "wildfly-request-1",
+              "schemaVersion": "schema-v1",
+              "buildContext": {
+                "buildTool": "maven",
+                "buildId": "manual-wildfly",
+                "rootProjectName": "wildfly",
+                "declaredModules": [],
+                "attributes": {"scenario": "wildfly-hardening"}
+              },
+              "workspacePolicy": {
+                "ephemeral": false,
+                "allowShallowClone": true,
+                "allowPartialClone": false,
+                "allowSparseCheckout": false,
+                "timeoutSeconds": 1200,
+                "maxWorkspaceBytes": 0
+              }
+            }
+            """.formatted(WILDFLY_REPOSITORY_URL);
     }
 
     private static RepositoryAnalysisView view(String analysisRunId, String workspaceId) {
