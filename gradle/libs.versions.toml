@@ -9,6 +9,8 @@ junit = "6.0.3"
 protobuf = "4.34.1"
 protobuf-plugin = "0.10.0"
 sonarqube-plugin = "7.3.0.8198"
+spring-boot = "4.0.6"
+spring-framework = "7.0.7"
 
 [libraries]
 # ArchUnit publishes its JUnit support artifact with junit5 in the artifact name.
@@ -29,7 +31,11 @@ junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher
 protobuf-java = { module = "com.google.protobuf:protobuf-java", version.ref = "protobuf" }
 protobuf-protoc = { module = "com.google.protobuf:protoc", version.ref = "protobuf" }
 protoc-gen-grpc-java = { module = "io.grpc:protoc-gen-grpc-java", version.ref = "grpc" }
+spring-boot = { module = "org.springframework.boot:spring-boot", version.ref = "spring-boot" }
+spring-boot-autoconfigure = { module = "org.springframework.boot:spring-boot-autoconfigure", version.ref = "spring-boot" }
+spring-test = { module = "org.springframework:spring-test", version.ref = "spring-framework" }
 
 [plugins]
 protobuf = { id = "com.google.protobuf", version.ref = "protobuf-plugin" }
 sonarqube = { id = "org.sonarqube", version.ref = "sonarqube-plugin" }
+spring-boot = { id = "org.springframework.boot", version.ref = "spring-boot" }

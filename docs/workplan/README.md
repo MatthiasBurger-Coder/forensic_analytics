@@ -1,68 +1,48 @@
-# Logging System Integration Workplan
+# Spring Boot Migration Workplan
 
-## Goal
+This directory contains the active workplan for migrating Forensic Analytics toward a Spring Boot based server application while preserving the existing hexagonal boundaries and evidence integrity rules.
 
-Integrate the logging system supplied from the SCXML example project into Forensic Analytics without weakening evidence integrity, hexagonal boundaries, dependency verification, or runtime-data sensitivity rules.
-
-The source ZIP referenced by the request was not present at the supplied path. The equivalent unzipped source package was found and inspected under:
+The workplan was regenerated on 2026-05-15 from the verified repository state at:
 
 ```text
-D:/Projects/SCXMLExample/src/main/java/de/burger/it/scxmlexample/infrastructure/logging
+/mnt/d/Projects/forensic_analytics
 ```
 
-The workplan treats that inspected source package as the current source material. If the ZIP file itself is required as the authoritative input, execution must stop until the ZIP path is corrected.
+The matching Windows path is:
 
-## Target Outcome
-
-After this plan is executed, Forensic Analytics has a small, testable observability/logging layer that:
-
-- preserves incoming REST correlation IDs and generates explicit IDs when missing
-- can attach correlation IDs to adapter-level logs
-- logs eligible adapter, engine, ingestion-request, persistence and bootstrap lifecycle boundaries without logging raw sensitive evidence
-- keeps domain and application packages free from logging framework dependencies
-- avoids Spring AOP and AspectJ unless a later architecture decision explicitly accepts them
-- keeps concrete logging providers out of the repository unless explicitly approved
-
-## Implementation Status
-
-This workplan has been executed for the initial adapter-scoped observability slice.
-
-Implemented:
-
-- `forensic-analytics-observability` module
-- JDK `System.Logger` operation logging facade
-- correlation ID scope handling
-- REST operation logging with existing `X-Correlation-Id` behavior preserved
-- gRPC operation logging without proto changes or correlation inference from request/session fields
-- CLI command logging without stdout/stderr contract changes
-- bootstrap lifecycle logging without startup/shutdown behavior changes
-- repository-source, JavaParser, Joern Docker, engine, engine-request import and persistence write operation logging
-- ArchUnit guardrails for logging boundary dependencies
-- ADR and arc42 documentation synchronization
-
-Not implemented:
-
-- Spring AOP
-- AspectJ
-- SLF4J, Logback or Log4j2 dependencies
-- annotation-driven `@Loggable` usage
-- method argument or return-value logging
-- treating logs as canonical forensic evidence
+```text
+D:/Projects/forensic_analytics
+```
 
 ## Workplan Files
 
-1. [00-verified-baseline.md](00-verified-baseline.md) - verified repository, quality, source, and architecture facts.
-2. [01-target-and-non-goals.md](01-target-and-non-goals.md) - target integration shape and explicit non-goals.
-3. [02-source-logging-inventory.md](02-source-logging-inventory.md) - source logging package inventory and portability assessment.
-4. [03-architecture-and-security-constraints.md](03-architecture-and-security-constraints.md) - boundaries, sensitivity rules, and dependency constraints.
-5. [04-integration-strategy.md](04-integration-strategy.md) - proposed adapter-scoped integration approach.
-6. [05-implementation-slices.md](05-implementation-slices.md) - ordered implementation slices with owners, write scopes, and stop points.
-7. [06-dependency-graph-and-parallelization.md](06-dependency-graph-and-parallelization.md) - slice dependency graph and parallel work notes.
-8. [07-quality-gates.md](07-quality-gates.md) - targeted and full verification commands.
-9. [08-documentation-sync.md](08-documentation-sync.md) - documentation and ADR synchronization points.
-10. [09-stop-conditions-and-uncertainty.md](09-stop-conditions-and-uncertainty.md) - conditions that require stopping instead of guessing.
-11. [10-commit-and-push-plan.md](10-commit-and-push-plan.md) - commit preparation notes if implementation is later requested.
+1. [spring-boot-migration/00-inventory.md](spring-boot-migration/00-inventory.md) - verified repository, dependency, module, logging and quality inventory.
+2. [spring-boot-migration/01-target-architecture.md](spring-boot-migration/01-target-architecture.md) - target architecture, non-goals and module mapping.
+3. [spring-boot-migration/02-version-and-dependency-plan.md](spring-boot-migration/02-version-and-dependency-plan.md) - Spring Boot, Gradle and dependency verification plan.
+4. [spring-boot-migration/03-implementation-slices.md](spring-boot-migration/03-implementation-slices.md) - ordered executable slices with owners, write scopes, done criteria and stop conditions.
+5. [spring-boot-migration/04-dependency-graph-and-parallelization.md](spring-boot-migration/04-dependency-graph-and-parallelization.md) - slice dependency graph and parallelization opportunities.
+6. [spring-boot-migration/05-quality-gates.md](spring-boot-migration/05-quality-gates.md) - targeted and full verification commands from `QUALITY.md`.
+7. [spring-boot-migration/06-documentation-sync.md](spring-boot-migration/06-documentation-sync.md) - documentation, ADR and arc42 synchronization points.
+8. [spring-boot-migration/07-stop-conditions-and-uncertainty.md](spring-boot-migration/07-stop-conditions-and-uncertainty.md) - conditions that require stopping instead of guessing.
+9. [spring-boot-migration/08-commit-and-push-plan.md](spring-boot-migration/08-commit-and-push-plan.md) - suggested commit boundaries for later implementation.
+10. [spring-boot-migration/quality-log.md](spring-boot-migration/quality-log.md) - initial quality log and future execution log.
 
-## Execution Rule
+## Planning Status
 
-This workplan is planning material only. It does not authorize speculative implementation. Each slice must begin with read-only verification of the exact files it will touch.
+This workplan is planning material only. It does not authorize speculative implementation.
+
+Each slice must begin with read-only verification of the exact files, symbols, tasks, modules and contracts it will touch. If an expected class, task, schema field, package, dependency alias, Gradle plugin or architecture rule cannot be verified, implementation must stop and report the mismatch.
+
+## Key Direction
+
+Spring Boot is introduced at the outer server/bootstrap boundary.
+
+Core domain and application code remain framework-free:
+
+```text
+Spring Boot adapters / boot app / infrastructure
+        -> application ports and use cases
+        -> domain
+```
+
+The current repository already contains `forensic-analytics-domain`, `forensic-analytics-application`, `forensic-analytics-observability`, gRPC ingestion, REST, persistence, source adapters and bootstrap modules. The migration therefore starts by adding a Spring Boot application boundary around verified modules instead of renaming modules first.

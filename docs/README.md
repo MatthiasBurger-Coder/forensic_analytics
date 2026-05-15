@@ -29,6 +29,7 @@ The current implementation baseline contains the technical modules for ingestion
 - `forensic-analytics-ingestion-request` - engine request importer for plugin-produced analysis request manifests
 - `forensic-analytics-rest` - UI-facing inbound HTTP/REST adapter for the React MVP
 - `forensic-analytics-bootstrap` - executable bootstrap wiring for gRPC and REST servers
+- `forensic-analytics-boot-app` - Spring Boot outer server boundary for typed configuration and lifecycle wiring
 - `forensic-ui` - standalone React, TypeScript and Vite operator UI; it is not a Gradle subproject
 
 ### gRPC Ingestion
@@ -37,6 +38,7 @@ The current implementation baseline contains the technical modules for ingestion
 
 The service methods are:
 
+- `AnalyzeRepository`
 - `StartAnalysisSession`
 - `UploadAnalysisData`
 - `CompleteAnalysisSession`
@@ -99,6 +101,29 @@ Run the local backend from WSL with:
 ```
 
 The bootstrap currently uses in-memory repositories for local runs, so sessions and repository-analysis workspace views are not durable across process restarts.
+
+### Spring Boot Server
+
+`forensic-analytics-boot-app` is the Spring Boot outer server boundary accepted by ADR-0006. It wires existing application use cases and adapters from the outside; domain and application modules remain Spring-free.
+
+The Boot app uses `application.properties` plus profile-specific `.properties` files for `local`, `test`, `docker` and `prod`. The default and `local` profiles bind REST and gRPC to `127.0.0.1`; `docker` and `prod` keep both inbound servers disabled until explicitly enabled. Workspace paths are validated under `forensics.analytics.workspace.root-path`.
+
+Build the executable jar with:
+
+```bash
+./gradlew :forensic-analytics-boot-app:bootJar --dependency-verification strict --console=plain --stacktrace
+```
+
+Run it explicitly from the generated jar, for example with only gRPC enabled:
+
+```bash
+java -jar forensic-analytics-boot-app/build/libs/forensic-analytics-boot-app-0.1.0-SNAPSHOT.jar \
+  --forensics.analytics.ingestion.grpc.enabled=true \
+  --forensics.analytics.ingestion.grpc.host=127.0.0.1 \
+  --forensics.analytics.rest.enabled=false
+```
+
+Joern Docker settings are Spring-configurable, but Boot does not wire full repository-analysis execution because production `RuleGenerationPort` and `RepositoryAnalysisResultStore` adapters are not yet verified. Joern execution remains optional and disabled by default.
 
 ### React UI
 

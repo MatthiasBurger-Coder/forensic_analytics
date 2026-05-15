@@ -14,5 +14,6 @@ dependencies {
     testImplementation(project(":forensic-analytics-persistence"))
     testImplementation(project(":forensic-analytics-rest"))
     testImplementation(project(":forensic-analytics-bootstrap"))
+    testImplementation(project(":forensic-analytics-boot-app"))
     testImplementation(libs.grpc.inprocess)
 }

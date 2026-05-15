@@ -6,7 +6,7 @@ This directory contains the arc42-based architecture documentation for the Foren
 
 This documentation is based on the EPIC:
 
-- Name: Forensics Platform – Exception-zentriertes Runtime Replay und LLM-gestützte Fehleranalyse
+- Name: Forensics Platform - Exception-Centered Runtime Replay and LLM-Assisted Failure Analysis
 - Version: 0.1
 - Date: 2026-05-03
 - Status: Draft

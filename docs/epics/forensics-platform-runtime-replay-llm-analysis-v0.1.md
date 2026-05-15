@@ -1,4 +1,4 @@
-# EPIC: Forensics Platform – Exception-zentriertes Runtime Replay und LLM-gestützte Fehleranalyse
+# EPIC: Forensics Platform - Exception-Centered Runtime Replay and LLM-Assisted Failure Analysis
 
 **Status:** Draft
 **Version:** 0.1

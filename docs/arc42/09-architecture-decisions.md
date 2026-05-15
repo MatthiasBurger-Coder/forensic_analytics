@@ -10,6 +10,9 @@
 | AD-004 | Runtime data is sensitive by default | Accepted | Protects secrets, personal data and business-critical values |
 | AD-005 | LLM diagnosis must be evidence-based | Accepted | Reduces hallucination risk and improves reviewability |
 | AD-006 | Automated repair is gated | Accepted | Prevents unsafe autonomous changes |
+| ADR-0005 | Adapter logging uses a JDK observability boundary | Accepted | Keeps operational logging framework-neutral and separate from forensic evidence |
+| ADR-0006 | Spring Boot owns the outer server boundary | Accepted | Allows Boot only at the server bootstrap boundary while preserving framework-free core modules |
+| ADR-0007 | REST API strategy under Spring Boot | Accepted | Keeps the existing JDK REST adapter behind Boot lifecycle wiring and defers Spring MVC/WebFlux |
 
 ## 9.2 Open Decisions
 

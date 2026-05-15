@@ -8,6 +8,7 @@ plugins {
     base
     alias(libs.plugins.protobuf) apply false
     alias(libs.plugins.sonarqube)
+    alias(libs.plugins.spring.boot) apply false
 }
 
 val localSonarProperties = mapOf(
