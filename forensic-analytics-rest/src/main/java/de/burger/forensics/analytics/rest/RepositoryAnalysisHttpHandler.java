@@ -194,7 +194,7 @@ final class RepositoryAnalysisHttpHandler implements HttpHandler {
         var allowPartialClone = requiredBoolean(request.allowPartialClone(), "workspacePolicy.allowPartialClone");
         var allowSparseCheckout = requiredBoolean(request.allowSparseCheckout(), "workspacePolicy.allowSparseCheckout");
         var maxWorkspaceBytes = requiredNonNegativeLong(request.maxWorkspaceBytes(), "workspacePolicy.maxWorkspaceBytes");
-        rejectUnsupportedWorkspacePolicy(ephemeral, allowShallowClone, allowPartialClone, allowSparseCheckout, maxWorkspaceBytes);
+        rejectUnsupportedWorkspacePolicy(ephemeral, allowPartialClone, allowSparseCheckout, maxWorkspaceBytes);
         return new WorkspacePolicy(
             ephemeral,
             allowShallowClone,
@@ -362,7 +362,6 @@ final class RepositoryAnalysisHttpHandler implements HttpHandler {
 
     private static void rejectUnsupportedWorkspacePolicy(
         boolean ephemeral,
-        boolean allowShallowClone,
         boolean allowPartialClone,
         boolean allowSparseCheckout,
         long maxWorkspaceBytes
@@ -370,8 +369,10 @@ final class RepositoryAnalysisHttpHandler implements HttpHandler {
         if (ephemeral) {
             throw new RestValidationException("workspacePolicy.ephemeral is not supported by this REST slice");
         }
-        if (allowShallowClone || allowPartialClone || allowSparseCheckout) {
-            throw new RestValidationException("workspacePolicy clone mode options are not supported by this REST slice");
+        if (allowPartialClone || allowSparseCheckout) {
+            throw new RestValidationException(
+                "workspacePolicy partial clone and sparse checkout options are not supported by this REST slice"
+            );
         }
         if (maxWorkspaceBytes > 0) {
             throw new RestValidationException("workspacePolicy.maxWorkspaceBytes is not enforced by this REST slice");

@@ -51,6 +51,7 @@ class DefaultRepositoryAnalysisIngestionUseCaseTest {
         assertEquals(expectedSessionId, workspacePreparationPort.request.analysisSessionId());
         assertEquals(command.workspacePolicy(), workspacePreparationPort.request.policy());
         assertEquals(workspacePreparationPort.workspace, repositoryCheckoutPort.request.workspace());
+        assertEquals(command.workspacePolicy(), repositoryCheckoutPort.request.workspacePolicy());
         assertEquals(command.repository(), repositoryCheckoutPort.request.repository());
         assertEquals(command.branch(), repositoryCheckoutPort.request.branch());
         assertEquals(command.commit(), repositoryCheckoutPort.request.commit());
@@ -160,6 +161,7 @@ class DefaultRepositoryAnalysisIngestionUseCaseTest {
             () -> new RepositoryCheckoutService(ignored -> null).checkout(new RepositoryCheckoutRequest(
                 AnalysisRunId.deterministic("request-1"),
                 workspacePreparationPort.workspace,
+                command().workspacePolicy(),
                 command().repository(),
                 command().branch(),
                 command().commit()
