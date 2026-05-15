@@ -106,6 +106,15 @@ Slice 9:
 Slices 10 and 11:
 
 - opt-in WildFly hardening scenario only
+- default verification must confirm the opt-in test is skipped unless `FORENSIC_ANALYTICS_WILDFLY_HARDENING=true`
+- local execution command:
+
+```bash
+FORENSIC_ANALYTICS_WILDFLY_HARDENING=true \
+FORENSIC_ANALYTICS_WILDFLY_BRANCH=<verified-branch> \
+FORENSIC_ANALYTICS_WILDFLY_TIMEOUT_SECONDS=1800 \
+./gradlew :forensic-analytics-testbed:test --tests de.burger.forensics.analytics.testbed.WildFlyRepositoryHardeningTest --rerun-tasks --dependency-verification strict --console=plain --stacktrace
+```
 
 Slice 12:
 

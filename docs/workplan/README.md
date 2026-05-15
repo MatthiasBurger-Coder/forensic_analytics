@@ -45,5 +45,6 @@ Work through the files in order:
 4. Keep the contract, workspace, Git, plugin and test plans aligned through [05-grpc-contract.md](05-grpc-contract.md) to [10-wildfly-hardening-test.md](10-wildfly-hardening-test.md).
 5. Run the quality gates described in [11-quality-gates.md](11-quality-gates.md).
 6. Finish with the Git workflow in [12-commit-and-push-plan.md](12-commit-and-push-plan.md).
+7. When the opt-in WildFly hardening scenario is executed, record the result in [13-wildfly-hardening-result.md](13-wildfly-hardening-result.md).
 
 Every slice must keep the domain free of framework dependencies, keep application services behind ports, and preserve uncertainty explicitly. WildFly is a later hardening target, not the first functional test.

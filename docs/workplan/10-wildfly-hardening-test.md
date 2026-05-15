@@ -56,9 +56,29 @@ Metrics are operational hardening evidence. They are not analysis findings.
 
 - The test is disabled by default.
 - The test requires explicit opt-in.
+- The prepared opt-in test is `WildFlyRepositoryHardeningTest` in `forensic-analytics-testbed`.
+- The checkout target must be provided explicitly with either `FORENSIC_ANALYTICS_WILDFLY_BRANCH` or `FORENSIC_ANALYTICS_WILDFLY_COMMIT`.
 - Disk-space expectations must be checked before execution.
 - Timeout and cleanup policy must be configured before execution.
 - The result must be documented even when the run times out or fails.
+
+## Local Opt-In Command
+
+Run the hardening scenario only after the mini and medium checks pass and a concrete WildFly branch or commit has been verified by the operator:
+
+```bash
+FORENSIC_ANALYTICS_WILDFLY_HARDENING=true \
+FORENSIC_ANALYTICS_WILDFLY_BRANCH=<verified-branch> \
+FORENSIC_ANALYTICS_WILDFLY_TIMEOUT_SECONDS=1800 \
+./gradlew :forensic-analytics-testbed:test --tests de.burger.forensics.analytics.testbed.WildFlyRepositoryHardeningTest --rerun-tasks --dependency-verification strict --console=plain --stacktrace
+```
+
+Optional settings:
+
+- `FORENSIC_ANALYTICS_WILDFLY_MIN_FREE_BYTES` sets the minimum free workspace disk in bytes. The default is 5 GiB.
+- `FORENSIC_ANALYTICS_WILDFLY_REPORT_DIR` sets the metrics output directory. The default is `build/reports/wildfly-hardening` under the testbed module.
+
+The metrics report is generated build output and must not be committed unless a later task explicitly requests hardening evidence archival.
 
 ## Acceptance Criteria
 

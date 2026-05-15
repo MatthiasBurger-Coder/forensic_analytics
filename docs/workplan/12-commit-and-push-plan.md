@@ -17,11 +17,11 @@ Before staging:
 - inspect every changed file
 - classify changes outside `docs/workplan` before continuing
 
-If files outside `docs/workplan` changed, document why they changed and whether they belong to the task. Unrelated files must not be staged.
+If files outside `docs/workplan` changed, document why they changed and whether they belong to the task. Implementation files are in scope only when they directly execute one of the verified slices in [02-slices.md](02-slices.md). Unrelated files must not be staged.
 
 ## Final Git Flow
 
-Run:
+For documentation-only workplan updates, run:
 
 ```bash
 git status
@@ -59,7 +59,9 @@ Use:
 docs: add workspace grpc integration workplan
 ```
 
-The commit covers documentation only. It must not include implementation code, generated build output or quality reports.
+For implementation-slice execution, stage only the exact in-scope source, test and documentation files touched by the executed slice. The commit message must be prepared from the staged diff and the verification evidence, not reused from the documentation-only workplan commit.
+
+The documentation-only commit covers documentation only. It must not include implementation code, generated build output or quality reports.
 
 ## Push Rules
 
