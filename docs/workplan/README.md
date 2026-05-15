@@ -1,58 +1,133 @@
-# Resilient React UI MVP Workplan
+# Build Engineering Governance System Workplan
 
-This workplan replaces the previous workspace and gRPC integration plan. The current target is the first resilient UI MVP for Forensic Analytics:
+## Goal
+
+Create a reusable engineering governance system for Codex-based development.
+
+The system standardizes:
+
+- requirements
+- EPIC management
+- arc42 synchronization
+- workplan generation
+- slice orchestration
+- architecture governance
+- quality governance
+- resilience governance
+- agent coordination
+
+The work introduces two reusable project roles:
+
+- Senior Workplan Architect
+- Senior Requirement Engineer
+
+## Target Outcome
+
+After this workplan is executed, the repository contains:
 
 ```text
-Browser
-  -> forensic-ui Docker container
-  -> HTTP/REST UI-facing backend API
-  -> application use cases
-  -> existing repository analysis and ingestion workflows
+.agents/
++-- roles/
+|   +-- senior-workplan-architect/
+|   +-- senior-requirement-engineer/
+|
++-- skills/
+    +-- workplan-authoring/
+    +-- requirement-engineering/
+    +-- arc42-architecture-governance/
+    +-- engineering-governance/
 ```
 
-The React UI must communicate with the backend only through HTTP/REST in this slice. It must not use direct gRPC, gRPC-Web, WebSocket, SSE or browser-to-gRPC communication.
+The governance system keeps these artifacts synchronized:
+
+- EPIC
+- arc42
+- workplans
+- requirements
+- slices
+- architecture
 
 ## Implementation Status
 
-This workplan has been executed for the MVP slice. The current implementation adds:
+This workplan has been executed for the governance infrastructure slice. The repository now contains:
 
-- `forensic-analytics-rest`, a UI-facing Java inbound REST adapter based on JDK `HttpServer` and Gson.
-- REST endpoints under `/api/repository-analyses` and `/api/workspaces`.
-- Shared bootstrap wiring so gRPC and REST use the same in-memory analysis-session repository.
-- `forensic-ui`, a standalone React, TypeScript and Vite application that is not a Gradle subproject.
-- `forensic-ui/Dockerfile`, `forensic-ui/nginx.conf` and `forensic-ui/.dockerignore`.
+- reusable governance skills under `.agents/skills`
+- Senior Workplan Architect and Senior Requirement Engineer role directories under `.agents/roles`
+- matching Codex agent definitions under `.codex/agents`
+- governance routing updates under `.agents/orchestrator`
+- governance documentation under `docs/governance`
+- skill-audit inventory updates for the new governance artifacts
 
-The UI-visible repository action registers and prepares a repository analysis session. It does not claim that the full repository analysis pipeline has completed.
+No runtime business functionality, parser execution, Joern execution, graph runtime, replay runtime or LLM runtime was implemented.
 
-## Verified Starting Point
+## Core Governance Rules
 
-Read-only inspection found:
+### Rule 01 - Workplan Regeneration
 
-- Before this slice, no `forensic-ui` directory, React, Vite, TypeScript, nginx UI runtime or frontend package scripts existed.
-- No root Docker Compose file exists. Existing non-UI Docker material is Joern-specific under `docker/joern`.
-- Before this slice, no Spring Boot application, REST controller, REST endpoint or HTTP server implementation existed.
-- The current executable backend is `forensic-analytics-bootstrap`, which starts a gRPC ingestion server.
-- The verified unary gRPC `AnalyzeRepository` path delegates to `RepositoryAnalysisIngestionUseCase`.
-- A separate repository analysis pipeline exists through `RunRepositoryAnalysisUseCase`.
-- Workspace and analysis-session persistence currently use in-memory adapters.
-- `QUALITY.md` defines the Gradle minimum and full local quality gates.
-- `.agents/skills/resilience-engineering/SKILL.md` exists and must be applied by the implementation slices.
+When a new workplan is created, `docs/workplan` must be deleted completely first.
 
-These facts are recorded in [00-verified-baseline.md](00-verified-baseline.md). If implementation discovers different facts, stop and update this workplan before proceeding.
+The new workplan must then fully regenerate `docs/workplan`. This prevents stale slices, obsolete workflows, conflicting plans, dead planning artifacts and historical leftovers from being treated as current instructions.
+
+### Rule 02 - Requirement Drift Detection
+
+The Requirement Engineer must continuously verify whether:
+
+- architecture changed
+- runtime behavior changed
+- responsibilities moved
+- service boundaries changed
+- new resilience requirements appeared
+- scalability assumptions changed
+- UX requirements changed
+- observability requirements changed
+
+### Rule 03 - Synchronization Obligation
+
+If architecture or requirements changed, these artifacts must be reviewed:
+
+- EPIC
+- arc42
+- ADR references
+- `QUALITY.md`
+- `docs/workplan`
+- related skills
+- related roles
 
 ## Workplan Files
 
-1. [00-verified-baseline.md](00-verified-baseline.md) - verified repository state and stop points.
-2. [01-architecture-target.md](01-architecture-target.md) - target architecture and non-goals.
-3. [02-subagents-and-parallelization.md](02-subagents-and-parallelization.md) - dependency graph, ownership map and parallel execution plan.
-4. [03-implementation-slices.md](03-implementation-slices.md) - ordered implementation slices with owners, write scopes and done criteria.
-5. [04-rest-api-contract.md](04-rest-api-contract.md) - proposed UI-facing REST contract and verification rules.
-6. [05-frontend-architecture.md](05-frontend-architecture.md) - React/Vite structure, routing, state and UI rules.
-7. [06-resilience-requirements.md](06-resilience-requirements.md) - frontend, backend and Docker resilience requirements.
-8. [07-docker-and-local-start.md](07-docker-and-local-start.md) - Docker, nginx and local run plan.
-9. [08-verification-and-quality-gates.md](08-verification-and-quality-gates.md) - frontend and backend verification commands.
-10. [09-commit-and-push-plan.md](09-commit-and-push-plan.md) - commit and push workflow.
+1. [00-verified-baseline.md](00-verified-baseline.md) - read-only repository findings and missing synchronization points.
+2. [01-governance-target.md](01-governance-target.md) - target governance model and non-goals.
+3. [02-workplan-lifecycle.md](02-workplan-lifecycle.md) - workplan generation, slice and stop rules.
+4. [03-requirement-engineering-lifecycle.md](03-requirement-engineering-lifecycle.md) - EPIC and requirement governance.
+5. [04-arc42-synchronization.md](04-arc42-synchronization.md) - arc42 and ADR synchronization rules.
+6. [05-engineering-governance-umbrella.md](05-engineering-governance-umbrella.md) - cross-artifact governance checkpoints.
+7. [06-role-and-skill-design.md](06-role-and-skill-design.md) - planned skills and roles.
+8. [07-implementation-slices.md](07-implementation-slices.md) - ordered slices, dependencies and done criteria.
+9. [08-validation-checklists.md](08-validation-checklists.md) - governance validation checklists.
+10. [09-documentation-and-examples.md](09-documentation-and-examples.md) - documentation flow and examples.
+11. [10-verification-and-quality-gates.md](10-verification-and-quality-gates.md) - local verification plan.
+12. [11-commit-and-push-plan.md](11-commit-and-push-plan.md) - commit and push workflow for execution.
 
-## Execution Rule
+## Explicit Non-Goals
 
-Work as much in parallel as the dependency graph allows, but keep write ownership disjoint. Shared contracts must be stabilized before multiple workers edit dependent code. No worker may invent REST framework names, endpoint DTOs, status mappings, Gradle tasks, package names or frontend scripts that were not created and verified in an earlier slice.
+Do not implement runtime business functionality in this workplan.
+
+The following are out of scope:
+
+- runtime business logic
+- parser execution
+- Joern execution
+- BTM execution
+- graph runtime
+- replay runtime
+- LLM runtime
+- Kubernetes deployment
+- authentication
+- authorization
+- real-time streaming
+
+This workplan creates governance infrastructure only.
+
+## Expected Result
+
+Future Codex work becomes structured, traceable, architecture-safe, requirement-aware, resilience-aware and governed.

@@ -13,10 +13,12 @@ Creates a structured slice-based implementation plan from a task, repository rul
 2. Read AGENTS.md.
 3. Read QUALITY.md.
 4. Inspect relevant repository files.
-5. Identify the smallest meaningful implementation slices.
-6. Order slices by dependency and risk.
-7. Define done criteria for each slice.
-8. Do not implement before the slice plan is complete.
+5. Apply `workplan-authoring` when creating or regenerating `docs/workplan`.
+6. Apply `engineering-governance` when EPIC, arc42, requirement, resilience, quality or role synchronization is affected.
+7. Identify the smallest meaningful implementation slices.
+8. Order slices by dependency and risk.
+9. Define done criteria for each slice.
+10. Do not implement before the slice plan is complete.
 
 ## Expected Inputs
 - user task
@@ -24,12 +26,14 @@ Creates a structured slice-based implementation plan from a task, repository rul
 - QUALITY.md
 - existing workflow files
 - relevant source files
+- EPIC, arc42 and ADR files when governance synchronization is affected
 
 ## Expected Outputs
 - ordered slice plan
 - affected files per slice
 - verification commands per slice
 - risks and open points
+- governance synchronization points when applicable
 
 ## Stop Conditions
 Stop if:

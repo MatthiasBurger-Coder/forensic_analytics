@@ -16,7 +16,10 @@ Keeps project documentation, examples, workflow files, ADRs, architecture docs, 
 5. Inspect ADR, arc42, migration, and example files.
 6. Compare documented commands with build files.
 7. Identify stale examples, outdated commands, non-English repository documentation, and contradictory instructions.
-8. Propose documentation-only slices.
+8. Apply `engineering-governance` when EPIC, arc42, ADR, workplan, skill, role, quality or resilience synchronization is affected.
+9. Apply `arc42-architecture-governance` when architecture documentation changes.
+10. Apply `requirement-engineering` when requirement assumptions or EPIC consistency are affected.
+11. Propose documentation-only slices.
 
 ## Expected Inputs
 - README files
@@ -26,12 +29,14 @@ Keeps project documentation, examples, workflow files, ADRs, architecture docs, 
 - ADRs and architecture docs
 - examples
 - build files
+- related governance skills and roles
 
 ## Expected Outputs
 - documentation findings
 - stale sections
 - proposed corrections
 - documentation-only slice plan
+- governance synchronization notes when applicable
 
 ## Stop Conditions
 Stop if:

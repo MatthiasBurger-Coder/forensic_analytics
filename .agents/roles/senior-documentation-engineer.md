@@ -7,6 +7,9 @@ Own documentation consistency, workplans, ADR alignment notes, agent/skill audit
 ## Required Skills
 
 - `../skills/documentation-sync/SKILL.md`
+- `../skills/engineering-governance/SKILL.md`
+- `../skills/arc42-architecture-governance/SKILL.md`
+- `../skills/requirement-engineering/SKILL.md`
 - `../skills/workflow-slice/SKILL.md`
 - `../skills/forensic-orchestration-slice-execution/SKILL.md`
 
@@ -15,6 +18,7 @@ Own documentation consistency, workplans, ADR alignment notes, agent/skill audit
 - Verify documented commands, modules, paths, roles and contracts from repository evidence.
 - Keep documentation in English.
 - Mark planned behavior as planned and implemented behavior as implemented.
+- Keep EPIC, arc42, ADR references, workplans, related skills and related roles synchronized when documentation changes affect governance.
 - Document unresolved conflicts instead of silently choosing an unverifiable interpretation.
 - Do not update ADR intent or historical records without an explicit architecture decision.
 

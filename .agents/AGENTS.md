@@ -16,7 +16,7 @@ The repository root `AGENTS.md` remains the authoritative source for engineering
 ## Directory Map
 
 - `orchestrator/` describes slice coordination, routing and conflict handling.
-- `roles/` defines role responsibilities and required reference skills.
+- `roles/` defines role responsibilities and required reference skills. Existing roles may be flat Markdown files; reusable governance roles may be directories with a `SKILL.md`.
 - `skills/<skill-name>/SKILL.md` contains repo-scoped Codex skills discovered by Codex.
 - `../.codex/agents/` contains project-scoped custom subagent TOML files.
 
@@ -24,6 +24,7 @@ The repository root `AGENTS.md` remains the authoritative source for engineering
 
 - A discoverable skill must be a directory under `.agents/skills/` with a `SKILL.md` file.
 - Every `SKILL.md` must include YAML frontmatter with `name` and `description`.
+- Reusable governance role directories under `.agents/roles/` also use `SKILL.md` with YAML frontmatter.
 - Custom subagents live under `.codex/agents/` as standalone TOML files with `name`, `description` and `developer_instructions`.
 
 ## Verification
