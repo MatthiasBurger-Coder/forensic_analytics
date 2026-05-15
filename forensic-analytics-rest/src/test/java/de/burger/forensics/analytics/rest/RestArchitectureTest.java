@@ -21,7 +21,8 @@ class RestArchitectureTest {
             .dependOnClassesThat()
             .resideInAnyPackage(
                 "com.sun.net.httpserver..",
-                "com.google.gson.."
+                "com.google.gson..",
+                "de.burger.forensics.analytics.observability.."
             );
 
     @ArchTest

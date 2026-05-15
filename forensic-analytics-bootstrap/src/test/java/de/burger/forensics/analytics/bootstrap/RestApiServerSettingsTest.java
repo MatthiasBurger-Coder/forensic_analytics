@@ -43,8 +43,10 @@ class RestApiServerSettingsTest {
 
     @Test
     void rejectsInvalidSettings() {
+        assertThrows(IllegalArgumentException.class, () -> new RestApiServerSettings(true, null, 8080));
         assertThrows(IllegalArgumentException.class, () -> new RestApiServerSettings(true, "", 8080));
         assertThrows(IllegalArgumentException.class, () -> new RestApiServerSettings(true, "127.0.0.1", 0));
+        assertThrows(IllegalArgumentException.class, () -> new RestApiServerSettings(true, "127.0.0.1", 65_536));
     }
 
     @Test

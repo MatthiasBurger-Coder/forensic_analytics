@@ -69,3 +69,16 @@ Incident
 ## 6.6 Missing Event Handling
 
 The Replay Engine must explicitly show uncertainty if events are missing, incomplete or ambiguous. It must not pretend that a reconstructed path is complete when the evidence is incomplete.
+
+## 6.7 Operational Logging Flow
+
+```text
+REST / gRPC / CLI / Bootstrap boundary
+  -> Correlation scope
+  -> Sanitized operation event
+  -> JDK System.Logger
+```
+
+Operational logs record request, command and server lifecycle categories. They do not contain raw runtime payloads, source content, method arguments, method return values, LLM prompts or raw exception messages.
+
+Operational correlation IDs help connect adapter logs for diagnostics. They are not canonical evidence and must not be used as proof of runtime execution.

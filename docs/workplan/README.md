@@ -1,133 +1,67 @@
-# Build Engineering Governance System Workplan
+# Logging System Integration Workplan
 
 ## Goal
 
-Create a reusable engineering governance system for Codex-based development.
+Integrate the logging system supplied from the SCXML example project into Forensic Analytics without weakening evidence integrity, hexagonal boundaries, dependency verification, or runtime-data sensitivity rules.
 
-The system standardizes:
+The source ZIP referenced by the request was not present at the supplied path. The equivalent unzipped source package was found and inspected under:
 
-- requirements
-- EPIC management
-- arc42 synchronization
-- workplan generation
-- slice orchestration
-- architecture governance
-- quality governance
-- resilience governance
-- agent coordination
+```text
+D:/Projects/SCXMLExample/src/main/java/de/burger/it/scxmlexample/infrastructure/logging
+```
 
-The work introduces two reusable project roles:
-
-- Senior Workplan Architect
-- Senior Requirement Engineer
+The workplan treats that inspected source package as the current source material. If the ZIP file itself is required as the authoritative input, execution must stop until the ZIP path is corrected.
 
 ## Target Outcome
 
-After this workplan is executed, the repository contains:
+After this plan is executed, Forensic Analytics has a small, testable observability/logging layer that:
 
-```text
-.agents/
-+-- roles/
-|   +-- senior-workplan-architect/
-|   +-- senior-requirement-engineer/
-|
-+-- skills/
-    +-- workplan-authoring/
-    +-- requirement-engineering/
-    +-- arc42-architecture-governance/
-    +-- engineering-governance/
-```
-
-The governance system keeps these artifacts synchronized:
-
-- EPIC
-- arc42
-- workplans
-- requirements
-- slices
-- architecture
+- preserves incoming REST correlation IDs and generates explicit IDs when missing
+- can attach correlation IDs to adapter-level logs
+- logs inbound adapter lifecycle and failure boundaries without logging raw sensitive evidence
+- keeps domain and application packages free from logging framework dependencies
+- avoids Spring AOP and AspectJ unless a later architecture decision explicitly accepts them
+- keeps concrete logging providers out of the repository unless explicitly approved
 
 ## Implementation Status
 
-This workplan has been executed for the governance infrastructure slice. The repository now contains:
+This workplan has been executed for the initial adapter-scoped observability slice.
 
-- reusable governance skills under `.agents/skills`
-- Senior Workplan Architect and Senior Requirement Engineer role directories under `.agents/roles`
-- matching Codex agent definitions under `.codex/agents`
-- governance routing updates under `.agents/orchestrator`
-- governance documentation under `docs/governance`
-- skill-audit inventory updates for the new governance artifacts
+Implemented:
 
-No runtime business functionality, parser execution, Joern execution, graph runtime, replay runtime or LLM runtime was implemented.
+- `forensic-analytics-observability` module
+- JDK `System.Logger` operation logging facade
+- correlation ID scope handling
+- REST operation logging with existing `X-Correlation-Id` behavior preserved
+- gRPC operation logging without proto changes or correlation inference from request/session fields
+- CLI command logging without stdout/stderr contract changes
+- bootstrap lifecycle logging without startup/shutdown behavior changes
+- ArchUnit guardrails for logging boundary dependencies
+- ADR and arc42 documentation synchronization
 
-## Core Governance Rules
+Not implemented:
 
-### Rule 01 - Workplan Regeneration
-
-When a new workplan is created, `docs/workplan` must be deleted completely first.
-
-The new workplan must then fully regenerate `docs/workplan`. This prevents stale slices, obsolete workflows, conflicting plans, dead planning artifacts and historical leftovers from being treated as current instructions.
-
-### Rule 02 - Requirement Drift Detection
-
-The Requirement Engineer must continuously verify whether:
-
-- architecture changed
-- runtime behavior changed
-- responsibilities moved
-- service boundaries changed
-- new resilience requirements appeared
-- scalability assumptions changed
-- UX requirements changed
-- observability requirements changed
-
-### Rule 03 - Synchronization Obligation
-
-If architecture or requirements changed, these artifacts must be reviewed:
-
-- EPIC
-- arc42
-- ADR references
-- `QUALITY.md`
-- `docs/workplan`
-- related skills
-- related roles
+- Spring AOP
+- AspectJ
+- SLF4J, Logback or Log4j2 dependencies
+- annotation-driven `@Loggable` usage
+- method argument or return-value logging
+- treating logs as canonical forensic evidence
 
 ## Workplan Files
 
-1. [00-verified-baseline.md](00-verified-baseline.md) - read-only repository findings and missing synchronization points.
-2. [01-governance-target.md](01-governance-target.md) - target governance model and non-goals.
-3. [02-workplan-lifecycle.md](02-workplan-lifecycle.md) - workplan generation, slice and stop rules.
-4. [03-requirement-engineering-lifecycle.md](03-requirement-engineering-lifecycle.md) - EPIC and requirement governance.
-5. [04-arc42-synchronization.md](04-arc42-synchronization.md) - arc42 and ADR synchronization rules.
-6. [05-engineering-governance-umbrella.md](05-engineering-governance-umbrella.md) - cross-artifact governance checkpoints.
-7. [06-role-and-skill-design.md](06-role-and-skill-design.md) - planned skills and roles.
-8. [07-implementation-slices.md](07-implementation-slices.md) - ordered slices, dependencies and done criteria.
-9. [08-validation-checklists.md](08-validation-checklists.md) - governance validation checklists.
-10. [09-documentation-and-examples.md](09-documentation-and-examples.md) - documentation flow and examples.
-11. [10-verification-and-quality-gates.md](10-verification-and-quality-gates.md) - local verification plan.
-12. [11-commit-and-push-plan.md](11-commit-and-push-plan.md) - commit and push workflow for execution.
+1. [00-verified-baseline.md](00-verified-baseline.md) - verified repository, quality, source, and architecture facts.
+2. [01-target-and-non-goals.md](01-target-and-non-goals.md) - target integration shape and explicit non-goals.
+3. [02-source-logging-inventory.md](02-source-logging-inventory.md) - source logging package inventory and portability assessment.
+4. [03-architecture-and-security-constraints.md](03-architecture-and-security-constraints.md) - boundaries, sensitivity rules, and dependency constraints.
+5. [04-integration-strategy.md](04-integration-strategy.md) - proposed adapter-scoped integration approach.
+6. [05-implementation-slices.md](05-implementation-slices.md) - ordered implementation slices with owners, write scopes, and stop points.
+7. [06-dependency-graph-and-parallelization.md](06-dependency-graph-and-parallelization.md) - slice dependency graph and parallel work notes.
+8. [07-quality-gates.md](07-quality-gates.md) - targeted and full verification commands.
+9. [08-documentation-sync.md](08-documentation-sync.md) - documentation and ADR synchronization points.
+10. [09-stop-conditions-and-uncertainty.md](09-stop-conditions-and-uncertainty.md) - conditions that require stopping instead of guessing.
+11. [10-commit-and-push-plan.md](10-commit-and-push-plan.md) - commit preparation notes if implementation is later requested.
 
-## Explicit Non-Goals
+## Execution Rule
 
-Do not implement runtime business functionality in this workplan.
-
-The following are out of scope:
-
-- runtime business logic
-- parser execution
-- Joern execution
-- BTM execution
-- graph runtime
-- replay runtime
-- LLM runtime
-- Kubernetes deployment
-- authentication
-- authorization
-- real-time streaming
-
-This workplan creates governance infrastructure only.
-
-## Expected Result
-
-Future Codex work becomes structured, traceable, architecture-safe, requirement-aware, resilience-aware and governed.
+This workplan is planning material only. It does not authorize speculative implementation. Each slice must begin with read-only verification of the exact files it will touch.

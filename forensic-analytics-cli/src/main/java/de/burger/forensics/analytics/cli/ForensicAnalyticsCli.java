@@ -4,12 +4,15 @@ import de.burger.forensics.analytics.application.analysis.RunRepositoryAnalysisU
 import de.burger.forensics.analytics.application.ingestion.DefaultForensicIngestionUseCase;
 import de.burger.forensics.analytics.ingestion.request.EngineIngestionRequestException;
 import de.burger.forensics.analytics.ingestion.request.EngineIngestionRequestImporter;
+import de.burger.forensics.analytics.observability.CorrelationContext;
+import de.burger.forensics.analytics.observability.OperationLogger;
 import de.burger.forensics.analytics.persistence.InMemoryIngestionSessionRepository;
 
 import java.io.PrintStream;
 import java.io.UncheckedIOException;
 import java.util.Objects;
 import java.util.ServiceLoader;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 public final class ForensicAnalyticsCli {
@@ -20,6 +23,7 @@ public final class ForensicAnalyticsCli {
     private final EngineRequestImportOutput requestImportOutput;
     private final PrintStream standardOutput;
     private final PrintStream errorOutput;
+    private final OperationLogger operationLogger;
 
     public ForensicAnalyticsCli(
         RunRepositoryAnalysisUseCase useCase,
@@ -33,7 +37,8 @@ public final class ForensicAnalyticsCli {
             new AnalysisResultOutput(),
             new EngineRequestImportOutput(),
             standardOutput,
-            errorOutput
+            errorOutput,
+            OperationLogger.system(ForensicAnalyticsCli.class)
         );
     }
 
@@ -44,7 +49,8 @@ public final class ForensicAnalyticsCli {
         AnalysisResultOutput resultOutput,
         EngineRequestImportOutput requestImportOutput,
         PrintStream standardOutput,
-        PrintStream errorOutput
+        PrintStream errorOutput,
+        OperationLogger operationLogger
     ) {
         this.parser = Objects.requireNonNull(parser, "parser must not be null");
         this.useCaseFactory = Objects.requireNonNull(useCaseFactory, "useCaseFactory must not be null");
@@ -53,6 +59,7 @@ public final class ForensicAnalyticsCli {
         this.requestImportOutput = Objects.requireNonNull(requestImportOutput, "requestImportOutput must not be null");
         this.standardOutput = Objects.requireNonNull(standardOutput, "standardOutput must not be null");
         this.errorOutput = Objects.requireNonNull(errorOutput, "errorOutput must not be null");
+        this.operationLogger = Objects.requireNonNull(operationLogger, "operationLogger must not be null");
     }
 
     public static void main(String[] args) {
@@ -83,6 +90,22 @@ public final class ForensicAnalyticsCli {
         PrintStream standardOutput,
         PrintStream errorOutput
     ) {
+        return withFactories(
+            useCaseFactory,
+            requestImporterFactory,
+            standardOutput,
+            errorOutput,
+            OperationLogger.system(ForensicAnalyticsCli.class)
+        );
+    }
+
+    static ForensicAnalyticsCli withFactories(
+        Function<AnalyzeCommand, RunRepositoryAnalysisUseCase> useCaseFactory,
+        Function<EngineRequestImportCommand, EngineIngestionRequestImporter> requestImporterFactory,
+        PrintStream standardOutput,
+        PrintStream errorOutput,
+        OperationLogger operationLogger
+    ) {
         return new ForensicAnalyticsCli(
             useCaseFactory,
             requestImporterFactory,
@@ -90,7 +113,8 @@ public final class ForensicAnalyticsCli {
             new AnalysisResultOutput(),
             new EngineRequestImportOutput(),
             standardOutput,
-            errorOutput
+            errorOutput,
+            operationLogger
         );
     }
 
@@ -102,7 +126,7 @@ public final class ForensicAnalyticsCli {
 
     public int run(String[] args) {
         try {
-            return runParsed(parser.parse(args));
+            return runParsedWithLogging(parser.parse(args));
         } catch (CliUsageException e) {
             errorOutput.println(e.getMessage());
             errorOutput.print(CliArgumentParser.USAGE);
@@ -110,6 +134,23 @@ public final class ForensicAnalyticsCli {
         } catch (CliConfigurationException | EngineIngestionRequestException | UncheckedIOException | IllegalArgumentException | IllegalStateException e) {
             errorOutput.println("Command failed: " + e.getMessage());
             return 1;
+        }
+    }
+
+    private int runParsedWithLogging(CliCommand command) {
+        try (var correlationScope = CorrelationContext.openGenerated()) {
+            correlationScope.correlationId();
+            var operation = operationName(command);
+            var startedAt = System.nanoTime();
+            operationLogger.started(operation);
+            try {
+                var exitCode = runParsed(command);
+                operationLogger.succeeded(operation, elapsedMillis(startedAt));
+                return exitCode;
+            } catch (RuntimeException error) {
+                operationLogger.failed(operation, elapsedMillis(startedAt), error);
+                throw error;
+            }
         }
     }
 
@@ -149,5 +190,17 @@ public final class ForensicAnalyticsCli {
         standardOutput.print(requestImportOutput.format(command, result));
         standardOutput.println("summaryPath=" + summaryPath);
         return 0;
+    }
+
+    private static String operationName(CliCommand command) {
+        return switch (command) {
+            case AnalyzeCommand ignored -> "cli.analyze";
+            case EngineRequestImportCommand ignored -> "cli.ingest-request";
+            case HelpCommand ignored -> "cli.help";
+        };
+    }
+
+    private static long elapsedMillis(long startedAt) {
+        return TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedAt);
     }
 }

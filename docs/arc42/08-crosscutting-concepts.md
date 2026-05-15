@@ -78,3 +78,11 @@ Ambiguous mappings between JavaParser, Joern, Byteman rules and runtime events m
 ## 8.7 Replay Uncertainty
 
 The replay must explicitly show missing, incomplete or uncertain event chains.
+
+## 8.8 Operational Observability
+
+Operational observability is adapter-scoped. REST, gRPC, CLI and bootstrap code create correlation scopes and sanitized operation logs through `forensic-analytics-observability`.
+
+The observability boundary uses JDK logging only. It does not introduce Spring AOP, AspectJ, SLF4J or concrete logging providers. Logs are diagnostics, not verified forensic evidence.
+
+Logging must avoid raw payloads, source content, method arguments, method return values, credentials, local paths, stack frames and LLM prompt content. Failure logs use exception categories instead of raw exception messages.

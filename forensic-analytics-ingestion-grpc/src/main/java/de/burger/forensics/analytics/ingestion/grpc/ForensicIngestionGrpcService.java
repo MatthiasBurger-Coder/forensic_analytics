@@ -31,10 +31,14 @@ import de.burger.forensics.analytics.ingestion.v1.ForensicIngestionServiceGrpc;
 import de.burger.forensics.analytics.ingestion.v1.StartAnalysisSessionRequest;
 import de.burger.forensics.analytics.ingestion.v1.StartAnalysisSessionResponse;
 import de.burger.forensics.analytics.ingestion.v1.UploadAnalysisDataResponse;
+import de.burger.forensics.analytics.observability.CorrelationContext;
+import de.burger.forensics.analytics.observability.CorrelationScope;
+import de.burger.forensics.analytics.observability.OperationLogger;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 
 public final class ForensicIngestionGrpcService
     extends ForensicIngestionServiceGrpc.ForensicIngestionServiceImplBase {
@@ -51,6 +55,7 @@ public final class ForensicIngestionGrpcService
     private final AnalysisDataEnvelopeMapper envelopeMapper;
     private final AnalyzeRepositoryMapper analyzeRepositoryMapper;
     private final IngestionStatusMapper statusMapper;
+    private final OperationLogger operationLogger;
 
     public ForensicIngestionGrpcService(
         ForensicIngestionUseCase useCase,
@@ -72,7 +77,34 @@ public final class ForensicIngestionGrpcService
                 new PluginIdentityMapper()
             ),
             new AnalyzeRepositoryMapper(),
-            new IngestionStatusMapper()
+            new IngestionStatusMapper(),
+            OperationLogger.system(ForensicIngestionGrpcService.class)
+        );
+    }
+
+    ForensicIngestionGrpcService(
+        ForensicIngestionUseCase useCase,
+        RepositoryAnalysisIngestionUseCase repositoryAnalysisUseCase,
+        OperationLogger operationLogger
+    ) {
+        this(
+            useCase,
+            repositoryAnalysisUseCase,
+            new AnalyzeRepositoryRequestValidator(),
+            new StartAnalysisSessionRequestValidator(),
+            new AnalysisDataEnvelopeValidator(),
+            new CompleteAnalysisSessionRequestValidator(),
+            new AbortAnalysisSessionRequestValidator(),
+            new BuildIdentityMapper(),
+            new PluginIdentityMapper(),
+            new AnalysisDataEnvelopeMapper(
+                new BuildIdentityMapper(),
+                new ModuleIdentityMapper(),
+                new PluginIdentityMapper()
+            ),
+            new AnalyzeRepositoryMapper(),
+            new IngestionStatusMapper(),
+            operationLogger
         );
     }
 
@@ -88,7 +120,8 @@ public final class ForensicIngestionGrpcService
         PluginIdentityMapper pluginIdentityMapper,
         AnalysisDataEnvelopeMapper envelopeMapper,
         AnalyzeRepositoryMapper analyzeRepositoryMapper,
-        IngestionStatusMapper statusMapper
+        IngestionStatusMapper statusMapper,
+        OperationLogger operationLogger
     ) {
         this.useCase = Objects.requireNonNull(useCase, "useCase must not be null");
         this.repositoryAnalysisUseCase = Objects.requireNonNull(
@@ -111,6 +144,7 @@ public final class ForensicIngestionGrpcService
             "analyzeRepositoryMapper must not be null"
         );
         this.statusMapper = Objects.requireNonNull(statusMapper, "statusMapper must not be null");
+        this.operationLogger = Objects.requireNonNull(operationLogger, "operationLogger must not be null");
     }
 
     @Override
@@ -118,13 +152,18 @@ public final class ForensicIngestionGrpcService
         AnalyzeRepositoryRequest request,
         StreamObserver<AnalyzeRepositoryResponse> responseObserver
     ) {
-        try {
-            analyzeRepositoryValidator.validate(request);
-            var result = repositoryAnalysisUseCase.analyze(analyzeRepositoryMapper.toCommand(request));
-            responseObserver.onNext(analyzeRepositoryMapper.toProto(result));
-            responseObserver.onCompleted();
-        } catch (RuntimeException error) {
-            responseObserver.onError(toStatus(error).asRuntimeException());
+        try (var correlationScope = CorrelationContext.openGenerated()) {
+            var operation = start("grpc.AnalyzeRepository", correlationScope);
+            try {
+                analyzeRepositoryValidator.validate(request);
+                var result = repositoryAnalysisUseCase.analyze(analyzeRepositoryMapper.toCommand(request));
+                responseObserver.onNext(analyzeRepositoryMapper.toProto(result));
+                responseObserver.onCompleted();
+                succeeded(operation);
+            } catch (RuntimeException error) {
+                failed(operation, error);
+                responseObserver.onError(toStatus(error).asRuntimeException());
+            }
         }
     }
 
@@ -133,21 +172,26 @@ public final class ForensicIngestionGrpcService
         StartAnalysisSessionRequest request,
         StreamObserver<StartAnalysisSessionResponse> responseObserver
     ) {
-        try {
-            startValidator.validate(request);
-            var result = useCase.start(new StartAnalysisSessionCommand(
-                buildIdentityMapper.toCommand(request.getBuildIdentity()),
-                pluginIdentityMapper.toCommand(request.getPluginIdentity()),
-                request.getSchemaVersion()
-            ));
-            responseObserver.onNext(StartAnalysisSessionResponse.newBuilder()
-                .setSessionId(result.sessionId())
-                .setStatus(statusMapper.toProto(result.status()))
-                .setMessage(result.message())
-                .build());
-            responseObserver.onCompleted();
-        } catch (RuntimeException error) {
-            responseObserver.onError(toStatus(error).asRuntimeException());
+        try (var correlationScope = CorrelationContext.openGenerated()) {
+            var operation = start("grpc.StartAnalysisSession", correlationScope);
+            try {
+                startValidator.validate(request);
+                var result = useCase.start(new StartAnalysisSessionCommand(
+                    buildIdentityMapper.toCommand(request.getBuildIdentity()),
+                    pluginIdentityMapper.toCommand(request.getPluginIdentity()),
+                    request.getSchemaVersion()
+                ));
+                responseObserver.onNext(StartAnalysisSessionResponse.newBuilder()
+                    .setSessionId(result.sessionId())
+                    .setStatus(statusMapper.toProto(result.status()))
+                    .setMessage(result.message())
+                    .build());
+                responseObserver.onCompleted();
+                succeeded(operation);
+            } catch (RuntimeException error) {
+                failed(operation, error);
+                responseObserver.onError(toStatus(error).asRuntimeException());
+            }
         }
     }
 
@@ -155,10 +199,13 @@ public final class ForensicIngestionGrpcService
     public StreamObserver<AnalysisDataEnvelope> uploadAnalysisData(
         StreamObserver<UploadAnalysisDataResponse> responseObserver
     ) {
+        var correlationScope = CorrelationContext.openGenerated();
+        var operation = start("grpc.UploadAnalysisData");
         return new StreamObserver<>() {
             private long receivedItems;
             private String sessionId = "";
             private boolean failed;
+            private boolean completed;
 
             @Override
             public void onNext(AnalysisDataEnvelope envelope) {
@@ -172,6 +219,9 @@ public final class ForensicIngestionGrpcService
                     receivedItems++;
                 } catch (RuntimeException error) {
                     failed = true;
+                    completed = true;
+                    ForensicIngestionGrpcService.this.failed(operation, error);
+                    correlationScope.close();
                     responseObserver.onError(toStatus(error).asRuntimeException());
                 }
             }
@@ -179,6 +229,11 @@ public final class ForensicIngestionGrpcService
             @Override
             public void onError(Throwable throwable) {
                 failed = true;
+                if (!completed) {
+                    completed = true;
+                    ForensicIngestionGrpcService.this.failed(operation, throwable);
+                    correlationScope.close();
+                }
             }
 
             @Override
@@ -193,6 +248,9 @@ public final class ForensicIngestionGrpcService
                     .setMessage("Analysis data stream accepted")
                     .build());
                 responseObserver.onCompleted();
+                completed = true;
+                ForensicIngestionGrpcService.this.succeeded(operation);
+                correlationScope.close();
             }
         };
     }
@@ -202,17 +260,22 @@ public final class ForensicIngestionGrpcService
         CompleteAnalysisSessionRequest request,
         StreamObserver<CompleteAnalysisSessionResponse> responseObserver
     ) {
-        try {
-            completeValidator.validate(request);
-            var result = useCase.complete(new CompleteAnalysisSessionCommand(request.getSessionId()));
-            responseObserver.onNext(CompleteAnalysisSessionResponse.newBuilder()
-                .setSessionId(result.sessionId())
-                .setStatus(statusMapper.toProto(result.status()))
-                .setMessage(result.message())
-                .build());
-            responseObserver.onCompleted();
-        } catch (RuntimeException error) {
-            responseObserver.onError(toStatus(error).asRuntimeException());
+        try (var correlationScope = CorrelationContext.openGenerated()) {
+            var operation = start("grpc.CompleteAnalysisSession", correlationScope);
+            try {
+                completeValidator.validate(request);
+                var result = useCase.complete(new CompleteAnalysisSessionCommand(request.getSessionId()));
+                responseObserver.onNext(CompleteAnalysisSessionResponse.newBuilder()
+                    .setSessionId(result.sessionId())
+                    .setStatus(statusMapper.toProto(result.status()))
+                    .setMessage(result.message())
+                    .build());
+                responseObserver.onCompleted();
+                succeeded(operation);
+            } catch (RuntimeException error) {
+                failed(operation, error);
+                responseObserver.onError(toStatus(error).asRuntimeException());
+            }
         }
     }
 
@@ -221,18 +284,45 @@ public final class ForensicIngestionGrpcService
         AbortAnalysisSessionRequest request,
         StreamObserver<AbortAnalysisSessionResponse> responseObserver
     ) {
-        try {
-            abortValidator.validate(request);
-            var result = useCase.abort(new AbortAnalysisSessionCommand(request.getSessionId(), request.getReason()));
-            responseObserver.onNext(AbortAnalysisSessionResponse.newBuilder()
-                .setSessionId(result.sessionId())
-                .setStatus(statusMapper.toProto(result.status()))
-                .setMessage(result.message())
-                .build());
-            responseObserver.onCompleted();
-        } catch (RuntimeException error) {
-            responseObserver.onError(toStatus(error).asRuntimeException());
+        try (var correlationScope = CorrelationContext.openGenerated()) {
+            var operation = start("grpc.AbortAnalysisSession", correlationScope);
+            try {
+                abortValidator.validate(request);
+                var result = useCase.abort(new AbortAnalysisSessionCommand(request.getSessionId(), request.getReason()));
+                responseObserver.onNext(AbortAnalysisSessionResponse.newBuilder()
+                    .setSessionId(result.sessionId())
+                    .setStatus(statusMapper.toProto(result.status()))
+                    .setMessage(result.message())
+                    .build());
+                responseObserver.onCompleted();
+                succeeded(operation);
+            } catch (RuntimeException error) {
+                failed(operation, error);
+                responseObserver.onError(toStatus(error).asRuntimeException());
+            }
         }
+    }
+
+    private OperationCall start(String operation) {
+        operationLogger.started(operation);
+        return new OperationCall(operation, System.nanoTime());
+    }
+
+    private OperationCall start(String operation, CorrelationScope correlationScope) {
+        Objects.requireNonNull(correlationScope, "correlationScope must not be null").correlationId();
+        return start(operation);
+    }
+
+    private void succeeded(OperationCall operation) {
+        operationLogger.succeeded(operation.name(), elapsedMillis(operation.startedAt()));
+    }
+
+    private void failed(OperationCall operation, Throwable error) {
+        operationLogger.failed(operation.name(), elapsedMillis(operation.startedAt()), error);
+    }
+
+    private static long elapsedMillis(long startedAt) {
+        return TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedAt);
     }
 
     private Status toStatus(RuntimeException error) {
@@ -245,5 +335,8 @@ public final class ForensicIngestionGrpcService
             return Status.FAILED_PRECONDITION.withDescription(error.getMessage()).withCause(error);
         }
         return Status.INTERNAL.withDescription("Unexpected ingestion failure").withCause(error);
+    }
+
+    private record OperationCall(String name, long startedAt) {
     }
 }

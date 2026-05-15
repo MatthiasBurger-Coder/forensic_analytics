@@ -42,6 +42,8 @@ import de.burger.forensics.analytics.ingestion.v1.RepositoryReference;
 import de.burger.forensics.analytics.ingestion.v1.StartAnalysisSessionRequest;
 import de.burger.forensics.analytics.ingestion.v1.UploadAnalysisDataResponse;
 import de.burger.forensics.analytics.ingestion.v1.WorkspacePolicy;
+import de.burger.forensics.analytics.observability.CorrelationContext;
+import de.burger.forensics.analytics.observability.OperationLogger;
 import io.grpc.ManagedChannel;
 import io.grpc.Server;
 import io.grpc.Status;
@@ -59,6 +61,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -71,6 +74,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class ForensicIngestionGrpcServiceTest {
     private final FakeIngestionUseCase useCase = new FakeIngestionUseCase();
     private final FakeRepositoryAnalysisUseCase repositoryAnalysisUseCase = new FakeRepositoryAnalysisUseCase();
+    private final RecordingOperationLogger operationLogger = new RecordingOperationLogger();
     private Server server;
     private ManagedChannel channel;
     private ForensicIngestionServiceGrpc.ForensicIngestionServiceBlockingStub blockingStub;
@@ -81,7 +85,7 @@ class ForensicIngestionGrpcServiceTest {
         var serverName = InProcessServerBuilder.generateName();
         server = InProcessServerBuilder.forName(serverName)
             .directExecutor()
-            .addService(new ForensicIngestionGrpcService(useCase, repositoryAnalysisUseCase))
+            .addService(new ForensicIngestionGrpcService(useCase, repositoryAnalysisUseCase, operationLogger))
             .build()
             .start();
         channel = InProcessChannelBuilder.forName(serverName)
@@ -123,6 +127,17 @@ class ForensicIngestionGrpcServiceTest {
     }
 
     @Test
+    void logsUnaryGrpcOperationWithGeneratedOperationalCorrelationId() {
+        blockingStub.analyzeRepository(analyzeRepositoryRequest());
+
+        assertEquals(List.of("STARTED", "SUCCEEDED"), operationLogger.phases());
+        assertEquals("grpc.AnalyzeRepository", operationLogger.events.get(0).operation());
+        assertFalse(operationLogger.events.get(0).correlationId().isBlank());
+        assertFalse(operationLogger.events.get(0).correlationId().contains("request-1"));
+        assertTrue(operationLogger.events.get(1).durationMillis() >= 0L);
+    }
+
+    @Test
     void analyzeRepositoryRejectsMissingCheckoutTarget() {
         var invalidRequest = analyzeRepositoryRequest().toBuilder()
             .clearBranch()
@@ -147,6 +162,9 @@ class ForensicIngestionGrpcServiceTest {
         );
 
         assertEquals(Status.Code.FAILED_PRECONDITION, error.getStatus().getCode());
+        assertEquals(List.of("STARTED", "FAILED"), operationLogger.phases());
+        assertEquals("grpc.AnalyzeRepository", operationLogger.events.get(0).operation());
+        assertEquals("RepositoryAnalysisIngestionException", operationLogger.events.get(1).errorType());
     }
 
     @Test
@@ -238,7 +256,8 @@ class ForensicIngestionGrpcServiceTest {
     void uploadObserverIgnoresFurtherEventsAfterValidationFailure() throws Exception {
         var responseObserver = new RecordingStreamObserver<UploadAnalysisDataResponse>();
         StreamObserver<AnalysisDataEnvelope> requestObserver =
-            new ForensicIngestionGrpcService(useCase, repositoryAnalysisUseCase).uploadAnalysisData(responseObserver);
+            new ForensicIngestionGrpcService(useCase, repositoryAnalysisUseCase, operationLogger)
+                .uploadAnalysisData(responseObserver);
 
         requestObserver.onNext(envelope("session-1", "payload-a").toBuilder().clearPayloadDescriptor().build());
         requestObserver.onNext(envelope("session-1", "payload-a"));
@@ -248,6 +267,9 @@ class ForensicIngestionGrpcServiceTest {
         assertTrue(responseObserver.awaitCompletion(5, TimeUnit.SECONDS));
         assertEquals(Status.Code.INVALID_ARGUMENT, Status.fromThrowable(responseObserver.getError()).getCode());
         assertEquals(0, useCase.uploadCount);
+        assertEquals(List.of("STARTED", "FAILED"), operationLogger.phases());
+        assertEquals("grpc.UploadAnalysisData", operationLogger.events.get(0).operation());
+        assertEquals("ValidationException", operationLogger.events.get(1).errorType());
     }
 
     @Test
@@ -318,7 +340,7 @@ class ForensicIngestionGrpcServiceTest {
         var serverName = InProcessServerBuilder.generateName();
         server = InProcessServerBuilder.forName(serverName)
             .directExecutor()
-            .addService(new ForensicIngestionGrpcService(nextUseCase, nextRepositoryAnalysisUseCase))
+            .addService(new ForensicIngestionGrpcService(nextUseCase, nextRepositoryAnalysisUseCase, operationLogger))
             .build()
             .start();
         channel = InProcessChannelBuilder.forName(serverName)
@@ -553,5 +575,55 @@ class ForensicIngestionGrpcServiceTest {
         Throwable getError() {
             return error;
         }
+    }
+
+    private static final class RecordingOperationLogger implements OperationLogger {
+        private final List<Event> events = new CopyOnWriteArrayList<>();
+
+        @Override
+        public void started(String operation) {
+            events.add(new Event(
+                operation,
+                "STARTED",
+                CorrelationContext.current().map(correlationId -> correlationId.value()).orElse(""),
+                -1L,
+                ""
+            ));
+        }
+
+        @Override
+        public void succeeded(String operation, long durationMillis) {
+            events.add(new Event(
+                operation,
+                "SUCCEEDED",
+                CorrelationContext.current().map(correlationId -> correlationId.value()).orElse(""),
+                durationMillis,
+                ""
+            ));
+        }
+
+        @Override
+        public void failed(String operation, long durationMillis, Throwable error) {
+            events.add(new Event(
+                operation,
+                "FAILED",
+                CorrelationContext.current().map(correlationId -> correlationId.value()).orElse(""),
+                durationMillis,
+                error.getClass().getSimpleName()
+            ));
+        }
+
+        private List<String> phases() {
+            return events.stream().map(Event::phase).toList();
+        }
+    }
+
+    private record Event(
+        String operation,
+        String phase,
+        String correlationId,
+        long durationMillis,
+        String errorType
+    ) {
     }
 }

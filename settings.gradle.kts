@@ -22,6 +22,7 @@ include(
     "forensic-analytics-domain",
     "forensic-analytics-application",
     "forensic-analytics-engine",
+    "forensic-analytics-observability",
     "forensic-analytics-adapter-repository-source",
     "forensic-analytics-adapter-javaparser",
     "forensic-analytics-adapter-joern-docker",

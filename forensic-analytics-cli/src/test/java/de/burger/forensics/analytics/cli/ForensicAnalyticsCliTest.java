@@ -9,6 +9,8 @@ import de.burger.forensics.analytics.domain.artifact.ArtifactReference;
 import de.burger.forensics.analytics.domain.semantic.SemanticGraph;
 import de.burger.forensics.analytics.domain.source.SourceFact;
 import de.burger.forensics.analytics.domain.source.SourceLocation;
+import de.burger.forensics.analytics.observability.CorrelationContext;
+import de.burger.forensics.analytics.observability.OperationLogger;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -18,6 +20,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -139,6 +142,68 @@ class ForensicAnalyticsCliTest {
     }
 
     @Test
+    void logsCommandFailuresWithoutChangingErrorOutputContract() {
+        var standardOutput = new ByteArrayOutputStream();
+        var errorOutput = new ByteArrayOutputStream();
+        var operationLogger = new RecordingOperationLogger();
+        var cli = ForensicAnalyticsCli.withFactories(
+            command -> new FailingUseCase(),
+            command -> {
+                throw new AssertionError("request importer must not be used");
+            },
+            stream(standardOutput),
+            stream(errorOutput),
+            operationLogger
+        );
+
+        var exitCode = cli.run(new String[] {
+            "analyze",
+            "--repo", "project",
+            "--profile", "baseline",
+            "--output", tempDir.resolve("analysis-out").toString(),
+            "--joern-mode", "docker"
+        });
+
+        assertEquals(1, exitCode);
+        assertTrue(errorOutput.toString(StandardCharsets.UTF_8).contains("Command failed: failed"));
+        assertEquals(List.of("STARTED", "FAILED"), operationLogger.phases());
+        assertEquals("cli.analyze", operationLogger.events.get(0).operation());
+        assertEquals("IllegalStateException", operationLogger.events.get(1).errorType());
+    }
+
+    @Test
+    void logsParsedCommandWithoutChangingStandardOutputContract() {
+        var useCase = new RecordingUseCase();
+        var standardOutput = new ByteArrayOutputStream();
+        var errorOutput = new ByteArrayOutputStream();
+        var operationLogger = new RecordingOperationLogger();
+        var cli = ForensicAnalyticsCli.withFactories(
+            ignored -> useCase,
+            command -> {
+                throw new AssertionError("request importer must not be used");
+            },
+            stream(standardOutput),
+            stream(errorOutput),
+            operationLogger
+        );
+
+        var exitCode = cli.run(new String[] {
+            "analyze",
+            "--repo", "project",
+            "--profile", "baseline",
+            "--output", tempDir.resolve("analysis-out").toString(),
+            "--joern-mode", "off"
+        });
+
+        assertEquals(0, exitCode);
+        assertTrue(standardOutput.toString(StandardCharsets.UTF_8).contains("summaryPath="));
+        assertEquals("", errorOutput.toString(StandardCharsets.UTF_8));
+        assertEquals(List.of("STARTED", "SUCCEEDED"), operationLogger.phases());
+        assertEquals("cli.analyze", operationLogger.events.get(0).operation());
+        assertFalse(operationLogger.events.get(0).correlationId().isBlank());
+    }
+
+    @Test
     void reportsMissingServiceProviderForStandaloneMainWiring() {
         var standardOutput = new ByteArrayOutputStream();
         var errorOutput = new ByteArrayOutputStream();
@@ -244,6 +309,56 @@ class ForensicAnalyticsCliTest {
 
     private static String engineRequestJson(Path payloadFile) {
         return engineRequestJson(payloadFile, "RULE_ARTIFACTS");
+    }
+
+    private static final class RecordingOperationLogger implements OperationLogger {
+        private final List<Event> events = new CopyOnWriteArrayList<>();
+
+        @Override
+        public void started(String operation) {
+            events.add(new Event(
+                operation,
+                "STARTED",
+                CorrelationContext.current().map(correlationId -> correlationId.value()).orElse(""),
+                -1L,
+                ""
+            ));
+        }
+
+        @Override
+        public void succeeded(String operation, long durationMillis) {
+            events.add(new Event(
+                operation,
+                "SUCCEEDED",
+                CorrelationContext.current().map(correlationId -> correlationId.value()).orElse(""),
+                durationMillis,
+                ""
+            ));
+        }
+
+        @Override
+        public void failed(String operation, long durationMillis, Throwable error) {
+            events.add(new Event(
+                operation,
+                "FAILED",
+                CorrelationContext.current().map(correlationId -> correlationId.value()).orElse(""),
+                durationMillis,
+                error.getClass().getSimpleName()
+            ));
+        }
+
+        private List<String> phases() {
+            return events.stream().map(Event::phase).toList();
+        }
+    }
+
+    private record Event(
+        String operation,
+        String phase,
+        String correlationId,
+        long durationMillis,
+        String errorType
+    ) {
     }
 
     private static String engineRequestJson(Path payloadFile, String kind) {

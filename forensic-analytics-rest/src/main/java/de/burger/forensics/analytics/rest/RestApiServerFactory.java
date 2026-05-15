@@ -3,6 +3,7 @@ package de.burger.forensics.analytics.rest;
 import com.sun.net.httpserver.HttpServer;
 import de.burger.forensics.analytics.application.ingestion.RepositoryAnalysisIngestionUseCase;
 import de.burger.forensics.analytics.application.ingestion.RepositoryAnalysisQueryUseCase;
+import de.burger.forensics.analytics.observability.OperationLogger;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -16,6 +17,16 @@ public final class RestApiServerFactory {
     private static final int BACKLOG = 32;
     private static final int WORKER_THREADS = 4;
 
+    private final OperationLogger operationLogger;
+
+    public RestApiServerFactory() {
+        this(OperationLogger.system(RepositoryAnalysisHttpHandler.class));
+    }
+
+    RestApiServerFactory(OperationLogger operationLogger) {
+        this.operationLogger = Objects.requireNonNull(operationLogger, "operationLogger must not be null");
+    }
+
     public RestApiServer create(
         InetSocketAddress address,
         RepositoryAnalysisIngestionUseCase ingestionUseCase,
@@ -23,7 +34,7 @@ public final class RestApiServerFactory {
     ) throws IOException {
         Objects.requireNonNull(address, "address must not be null");
         var server = HttpServer.create(address, BACKLOG);
-        server.createContext("/api", new RepositoryAnalysisHttpHandler(ingestionUseCase, queryUseCase));
+        server.createContext("/api", new RepositoryAnalysisHttpHandler(ingestionUseCase, queryUseCase, operationLogger));
         var executor = restExecutor();
         server.setExecutor(executor);
         return new JdkRestApiServer(server, executor);

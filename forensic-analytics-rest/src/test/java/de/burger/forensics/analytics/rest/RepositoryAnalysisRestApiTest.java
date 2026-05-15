@@ -15,6 +15,8 @@ import de.burger.forensics.analytics.domain.analysis.AnalysisSessionState;
 import de.burger.forensics.analytics.domain.repository.CheckoutResult;
 import de.burger.forensics.analytics.domain.repository.SourceRoot;
 import de.burger.forensics.analytics.domain.workspace.WorkspaceId;
+import de.burger.forensics.analytics.observability.CorrelationContext;
+import de.burger.forensics.analytics.observability.OperationLogger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -29,6 +31,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -40,12 +43,13 @@ class RepositoryAnalysisRestApiTest {
 
     private final RecordingIngestionUseCase ingestionUseCase = new RecordingIngestionUseCase();
     private final RecordingQueryUseCase queryUseCase = new RecordingQueryUseCase();
+    private final RecordingOperationLogger operationLogger = new RecordingOperationLogger();
     private final HttpClient client = HttpClient.newHttpClient();
     private RestApiServer server;
 
     @BeforeEach
     void startServer() throws Exception {
-        server = new RestApiServerFactory().create(
+        server = new RestApiServerFactory(operationLogger).create(
             new InetSocketAddress("127.0.0.1", 0),
             ingestionUseCase,
             queryUseCase
@@ -171,9 +175,48 @@ class RepositoryAnalysisRestApiTest {
 
         assertEquals(200, response.statusCode());
         assertTrue(response.headers().firstValue("X-Correlation-Id").orElseThrow().length() > 10);
+        assertEquals(
+            response.headers().firstValue("X-Correlation-Id").orElseThrow(),
+            operationLogger.events.get(0).correlationId()
+        );
         var items = json(response).getAsJsonArray("items");
         assertEquals(2, items.size());
         assertEquals("analysis-1", items.get(0).getAsJsonObject().get("analysisRunId").getAsString());
+    }
+
+    @Test
+    void logsRestOperationWithCorrelationIdWithoutChangingResponseContract() throws Exception {
+        queryUseCase.analyses = List.of(view("analysis-1", "workspace-1"));
+
+        var response = send("GET", "/api/repository-analyses", "");
+
+        assertEquals(200, response.statusCode());
+        assertEquals("test-correlation", response.headers().firstValue("X-Correlation-Id").orElseThrow());
+        assertEquals(List.of("STARTED", "SUCCEEDED"), operationLogger.phases());
+        assertEquals("rest.repository-analyses.GET", operationLogger.events.get(0).operation());
+        assertEquals("test-correlation", operationLogger.events.get(0).correlationId());
+        assertTrue(operationLogger.events.get(1).durationMillis() >= 0L);
+        assertTrue(json(response).has("items"));
+    }
+
+    @Test
+    void logsRestFailuresWithoutRawDiagnosticMessage() throws Exception {
+        queryUseCase.error = new IllegalStateException("read failed at C:\\secret\\repo password=hunter2");
+
+        var response = send("GET", "/api/repository-analyses", "");
+
+        assertEquals(500, response.statusCode());
+        assertEquals(List.of("STARTED", "FAILED"), operationLogger.phases());
+        var failure = operationLogger.events.get(1);
+        assertEquals("rest.repository-analyses.GET", failure.operation());
+        assertEquals("test-correlation", failure.correlationId());
+        assertTrue(failure.durationMillis() >= 0L);
+        assertEquals("IllegalStateException", failure.errorType());
+        assertFalse(failure.errorType().contains("hunter2"));
+        assertFalse(failure.errorType().contains("secret"));
+        var diagnostic = json(response).get("diagnostics").getAsJsonArray().get(0).getAsString();
+        assertFalse(diagnostic.contains("C:\\secret\\repo"));
+        assertFalse(diagnostic.contains("hunter2"));
     }
 
     @Test
@@ -363,6 +406,56 @@ class RepositoryAnalysisRestApiTest {
 
     private static JsonObject json(HttpResponse<String> response) {
         return JsonParser.parseString(response.body()).getAsJsonObject();
+    }
+
+    private static final class RecordingOperationLogger implements OperationLogger {
+        private final List<Event> events = new CopyOnWriteArrayList<>();
+
+        @Override
+        public void started(String operation) {
+            events.add(new Event(
+                operation,
+                "STARTED",
+                CorrelationContext.current().map(correlationId -> correlationId.value()).orElse(""),
+                -1L,
+                ""
+            ));
+        }
+
+        @Override
+        public void succeeded(String operation, long durationMillis) {
+            events.add(new Event(
+                operation,
+                "SUCCEEDED",
+                CorrelationContext.current().map(correlationId -> correlationId.value()).orElse(""),
+                durationMillis,
+                ""
+            ));
+        }
+
+        @Override
+        public void failed(String operation, long durationMillis, Throwable error) {
+            events.add(new Event(
+                operation,
+                "FAILED",
+                CorrelationContext.current().map(correlationId -> correlationId.value()).orElse(""),
+                durationMillis,
+                error.getClass().getSimpleName()
+            ));
+        }
+
+        private List<String> phases() {
+            return events.stream().map(Event::phase).toList();
+        }
+    }
+
+    private record Event(
+        String operation,
+        String phase,
+        String correlationId,
+        long durationMillis,
+        String errorType
+    ) {
     }
 
     private static String validRequest() {

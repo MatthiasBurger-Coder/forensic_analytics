@@ -1,8 +1,12 @@
 package de.burger.forensics.analytics.bootstrap;
 
 import io.grpc.Server;
+import de.burger.forensics.analytics.observability.CorrelationContext;
+import de.burger.forensics.analytics.observability.OperationLogger;
 import de.burger.forensics.analytics.rest.RestApiServer;
 
+import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 public final class ForensicAnalyticsServerApplication {
@@ -28,18 +32,81 @@ public final class ForensicAnalyticsServerApplication {
     }
 
     static boolean run(GrpcIngestionServerSettings settings, Supplier<Server> serverSupplier) throws Exception {
+        return run(settings, serverSupplier, OperationLogger.system(ForensicAnalyticsServerApplication.class));
+    }
+
+    static boolean run(
+        GrpcIngestionServerSettings settings,
+        Supplier<Server> serverSupplier,
+        OperationLogger operationLogger
+    ) throws Exception {
+        Objects.requireNonNull(operationLogger, "operationLogger must not be null");
         if (!settings.enabled()) {
             return false;
         }
 
-        var server = serverSupplier.get();
-        server.start();
-        Runtime.getRuntime().addShutdownHook(new Thread(server::shutdown));
-        server.awaitTermination();
-        return true;
+        try (var correlationScope = CorrelationContext.openGenerated()) {
+            correlationScope.correlationId();
+            var operation = "bootstrap.grpc-server";
+            var startedAt = System.nanoTime();
+            operationLogger.started(operation);
+            try {
+                var server = serverSupplier.get();
+                server.start();
+                Runtime.getRuntime().addShutdownHook(new Thread(server::shutdown));
+                server.awaitTermination();
+                operationLogger.succeeded(operation, elapsedMillis(startedAt));
+                return true;
+            } catch (Exception error) {
+                operationLogger.failed(operation, elapsedMillis(startedAt), error);
+                throw error;
+            }
+        }
     }
 
     static boolean run(
+        GrpcIngestionServerSettings grpcSettings,
+        Supplier<Server> grpcServerSupplier,
+        RestApiServerSettings restSettings,
+        Supplier<RestApiServer> restServerSupplier
+    ) throws Exception {
+        return run(
+            grpcSettings,
+            grpcServerSupplier,
+            restSettings,
+            restServerSupplier,
+            OperationLogger.system(ForensicAnalyticsServerApplication.class)
+        );
+    }
+
+    static boolean run(
+        GrpcIngestionServerSettings grpcSettings,
+        Supplier<Server> grpcServerSupplier,
+        RestApiServerSettings restSettings,
+        Supplier<RestApiServer> restServerSupplier,
+        OperationLogger operationLogger
+    ) throws Exception {
+        Objects.requireNonNull(operationLogger, "operationLogger must not be null");
+        if (!grpcSettings.enabled() && !restSettings.enabled()) {
+            return false;
+        }
+        try (var correlationScope = CorrelationContext.openGenerated()) {
+            correlationScope.correlationId();
+            var operation = "bootstrap.server-application";
+            var startedAt = System.nanoTime();
+            operationLogger.started(operation);
+            try {
+                var result = runWithServers(grpcSettings, grpcServerSupplier, restSettings, restServerSupplier);
+                operationLogger.succeeded(operation, elapsedMillis(startedAt));
+                return result;
+            } catch (Exception error) {
+                operationLogger.failed(operation, elapsedMillis(startedAt), error);
+                throw error;
+            }
+        }
+    }
+
+    private static boolean runWithServers(
         GrpcIngestionServerSettings grpcSettings,
         Supplier<Server> grpcServerSupplier,
         RestApiServerSettings restSettings,
@@ -50,10 +117,6 @@ public final class ForensicAnalyticsServerApplication {
         try {
             grpcServer = startGrpc(grpcSettings, grpcServerSupplier);
             restServer = startRest(restSettings, restServerSupplier);
-            if (grpcServer == null && restServer == null) {
-                return false;
-            }
-
             var startedGrpcServer = grpcServer;
             var startedRestServer = restServer;
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
@@ -79,6 +142,10 @@ public final class ForensicAnalyticsServerApplication {
             }
             throw error;
         }
+    }
+
+    private static long elapsedMillis(long startedAt) {
+        return TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedAt);
     }
 
     private static Server startGrpc(GrpcIngestionServerSettings settings, Supplier<Server> serverSupplier)
