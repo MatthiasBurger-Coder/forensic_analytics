@@ -18,6 +18,7 @@ Guides evidence-first storage architecture for analysis sessions, raw inputs, no
 5. Treat graph databases, vector databases, reports, and LLM packages as projections unless repository documentation says otherwise.
 6. Keep persistence implementation details in outbound adapters or infrastructure.
 7. Ensure unknown, incomplete, unresolved, or unavailable evidence remains explicit in stored state.
+8. Apply `.agents/skills/resilience-engineering/SKILL.md` for storage retry idempotency, dead-letter handling, retry provenance, cleanup, health checks and partial-write diagnostics.
 
 ## Expected Inputs
 

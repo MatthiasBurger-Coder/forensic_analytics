@@ -16,6 +16,7 @@ Guide continuous integration and delivery changes.
 - Do not require external credentials for default local verification.
 - Treat optional external checks as additive and report skipped credentials.
 - Keep artifacts deterministic and avoid committing generated analysis output.
+- Apply `.agents/skills/resilience-engineering/SKILL.md` for CI retry policy, timeout, dependency-health, artifact cleanup, diagnostic redaction and quality-gate degradation decisions.
 
 ## Verification
 

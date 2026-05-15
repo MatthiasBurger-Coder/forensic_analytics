@@ -18,6 +18,7 @@ Guides distributed Forensic Analytics platform design while keeping orchestratio
 5. Keep queue, worker-runtime, scheduler, and transport products outside domain and application. Represent them behind ports.
 6. Preserve evidence provenance, job attempts, worker identity, input artifact references, output artifact references, and completeness state.
 7. Plan worker/workspace interaction before parser, Joern, graph, replay, or LLM execution work.
+8. Apply `.agents/skills/resilience-engineering/SKILL.md` for retries, backoff, circuit breakers, bulkheads, idempotency, dead-letter handling, retry provenance and graceful degradation.
 
 ## Expected Inputs
 

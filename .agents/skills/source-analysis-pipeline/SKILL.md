@@ -17,6 +17,7 @@ Reviews and plans changes in repository source ingestion, static source facts, s
 6. Check deterministic output ordering.
 7. Check that static facts are not treated as proof of runtime execution.
 8. Define regression tests for source facts and semantic artifacts.
+9. Apply `.agents/skills/resilience-engineering/SKILL.md` for parser execution timeouts, retry safety, partial source facts, cleanup, diagnostics and degraded behavior.
 
 ## Expected Inputs
 - repository source adapter files

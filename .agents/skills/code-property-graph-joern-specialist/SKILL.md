@@ -18,6 +18,7 @@ Guides optional Joern and Code Property Graph work while keeping CPG generation 
 5. Keep Joern optional for the default quality gate unless repository documentation explicitly changes that.
 6. Place Joern execution after workspace checkout and source-root detection, not in the plugin.
 7. Use WildFly only as a later hardening candidate for workspace and Git first; do not run Joern for the current workspace/gRPC phase.
+8. Apply `.agents/skills/resilience-engineering/SKILL.md` for Joern execution timeouts, bounded retries, cleanup, partial artifact handling, health checks and diagnostics decisions.
 
 ## Expected Inputs
 
