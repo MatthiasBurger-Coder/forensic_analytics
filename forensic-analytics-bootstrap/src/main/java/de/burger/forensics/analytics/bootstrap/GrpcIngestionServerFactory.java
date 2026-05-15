@@ -1,34 +1,25 @@
 package de.burger.forensics.analytics.bootstrap;
 
-import de.burger.forensics.analytics.adapter.repository.source.FileSystemWorkspacePreparationAdapter;
-import de.burger.forensics.analytics.adapter.repository.source.GitRepositoryCheckoutAdapter;
-import de.burger.forensics.analytics.application.ingestion.DefaultForensicIngestionUseCase;
-import de.burger.forensics.analytics.application.ingestion.DefaultRepositoryAnalysisIngestionUseCase;
 import de.burger.forensics.analytics.ingestion.grpc.ForensicIngestionGrpcService;
-import de.burger.forensics.analytics.persistence.InMemoryAnalysisSessionRepository;
-import de.burger.forensics.analytics.persistence.InMemoryIngestionSessionRepository;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
 
-import java.nio.file.Path;
+import java.util.Objects;
 
 public final class GrpcIngestionServerFactory {
     public Server create(GrpcIngestionServerSettings settings) {
-        var ingestionRepository = new InMemoryIngestionSessionRepository();
-        var analysisSessionRepository = new InMemoryAnalysisSessionRepository();
-        var ingestionUseCase = new DefaultForensicIngestionUseCase(ingestionRepository);
-        var repositoryAnalysisUseCase = new DefaultRepositoryAnalysisIngestionUseCase(
-            new FileSystemWorkspacePreparationAdapter(defaultWorkspaceRoot()),
-            new GitRepositoryCheckoutAdapter(),
-            analysisSessionRepository
+        return create(settings, ForensicAnalyticsBackendComponents.createDefault());
+    }
+
+    Server create(GrpcIngestionServerSettings settings, ForensicAnalyticsBackendComponents components) {
+        Objects.requireNonNull(settings, "settings must not be null");
+        Objects.requireNonNull(components, "components must not be null");
+        var service = new ForensicIngestionGrpcService(
+            components.ingestionUseCase(),
+            components.repositoryAnalysisIngestionUseCase()
         );
-        var service = new ForensicIngestionGrpcService(ingestionUseCase, repositoryAnalysisUseCase);
         return ServerBuilder.forPort(settings.port())
             .addService(service)
             .build();
-    }
-
-    private static Path defaultWorkspaceRoot() {
-        return Path.of(System.getProperty("java.io.tmpdir"), "forensic-analytics-workspaces");
     }
 }

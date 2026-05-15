@@ -12,13 +12,25 @@ Browser
 
 The React UI must communicate with the backend only through HTTP/REST in this slice. It must not use direct gRPC, gRPC-Web, WebSocket, SSE or browser-to-gRPC communication.
 
+## Implementation Status
+
+This workplan has been executed for the MVP slice. The current implementation adds:
+
+- `forensic-analytics-rest`, a UI-facing Java inbound REST adapter based on JDK `HttpServer` and Gson.
+- REST endpoints under `/api/repository-analyses` and `/api/workspaces`.
+- Shared bootstrap wiring so gRPC and REST use the same in-memory analysis-session repository.
+- `forensic-ui`, a standalone React, TypeScript and Vite application that is not a Gradle subproject.
+- `forensic-ui/Dockerfile`, `forensic-ui/nginx.conf` and `forensic-ui/.dockerignore`.
+
+The UI-visible repository action registers and prepares a repository analysis session. It does not claim that the full repository analysis pipeline has completed.
+
 ## Verified Starting Point
 
 Read-only inspection found:
 
-- No `forensic-ui` directory, React, Vite, TypeScript, nginx UI runtime or frontend package scripts exist yet.
-- No root Docker Compose file exists. Existing Docker material is Joern-specific under `docker/joern`.
-- No Spring Boot application, REST controller, REST endpoint or HTTP server implementation exists yet.
+- Before this slice, no `forensic-ui` directory, React, Vite, TypeScript, nginx UI runtime or frontend package scripts existed.
+- No root Docker Compose file exists. Existing non-UI Docker material is Joern-specific under `docker/joern`.
+- Before this slice, no Spring Boot application, REST controller, REST endpoint or HTTP server implementation existed.
 - The current executable backend is `forensic-analytics-bootstrap`, which starts a gRPC ingestion server.
 - The verified unary gRPC `AnalyzeRepository` path delegates to `RepositoryAnalysisIngestionUseCase`.
 - A separate repository analysis pipeline exists through `RunRepositoryAnalysisUseCase`.

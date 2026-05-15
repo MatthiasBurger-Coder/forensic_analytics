@@ -4,6 +4,8 @@ import de.burger.forensics.analytics.application.ingestion.port.AnalysisSessionR
 import de.burger.forensics.analytics.domain.analysis.AnalysisRunId;
 import de.burger.forensics.analytics.domain.analysis.AnalysisSession;
 
+import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -22,5 +24,12 @@ public final class InMemoryAnalysisSessionRepository implements AnalysisSessionR
     public Optional<AnalysisSession> findById(AnalysisRunId sessionId) {
         Objects.requireNonNull(sessionId, "sessionId must not be null");
         return Optional.ofNullable(sessions.get(sessionId));
+    }
+
+    @Override
+    public List<AnalysisSession> findAll() {
+        return sessions.values().stream()
+            .sorted(Comparator.comparing(session -> session.id().value()))
+            .toList();
     }
 }

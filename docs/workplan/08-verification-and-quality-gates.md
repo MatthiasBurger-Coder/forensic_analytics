@@ -18,12 +18,13 @@ npm install
 npm run build
 ```
 
-If configured:
+The current frontend has `test` but no `lint` script:
 
 ```bash
 npm run test
-npm run lint
 ```
+
+After `package-lock.json` exists, `npm ci` is the repeatable install command.
 
 Prefer adding focused frontend tests for:
 
@@ -55,7 +56,7 @@ Full local gate when feasible:
 ./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace
 ```
 
-If Spring Boot or another REST framework plugin/dependency is added, verify dependency verification metadata and any new plugin validation requirements from the actual build files.
+The implemented REST adapter uses JDK `HttpServer` and Gson. No Spring Boot plugin or Gradle plugin validation is required for this slice. Gson `2.13.2` is declared in `gradle/libs.versions.toml` and verified by strict Gradle dependency verification.
 
 ## Docker Checks
 
@@ -64,6 +65,8 @@ After Docker files exist:
 ```bash
 docker build -t forensic-ui:local ./forensic-ui
 ```
+
+This build was executed successfully for the current slice.
 
 If a compose file exists:
 
