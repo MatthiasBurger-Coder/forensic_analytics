@@ -5,6 +5,7 @@ import de.burger.forensics.analytics.application.ingestion.command.RepositoryChe
 import de.burger.forensics.analytics.application.ingestion.port.RepositoryCheckoutPort;
 import de.burger.forensics.analytics.domain.repository.CheckoutResult;
 import de.burger.forensics.analytics.domain.repository.SourceRoot;
+import de.burger.forensics.analytics.observability.OperationLogger;
 
 import java.net.URI;
 import java.nio.file.Files;
@@ -23,18 +24,28 @@ public final class GitRepositoryCheckoutAdapter implements RepositoryCheckoutPor
     private static final Pattern URI_SCHEME = Pattern.compile("^[a-zA-Z][a-zA-Z0-9+.-]*:.*");
     private static final Pattern SCP_STYLE_REMOTE = Pattern.compile("^[^/\\\\]+@[^:]+:.+");
     private final GitCommandRunner commandRunner;
+    private final OperationLogger operationLogger;
 
     public GitRepositoryCheckoutAdapter() {
-        this(new GitCommandRunner());
+        this(new GitCommandRunner(), OperationLogger.system(GitRepositoryCheckoutAdapter.class));
     }
 
     GitRepositoryCheckoutAdapter(GitCommandRunner commandRunner) {
+        this(commandRunner, OperationLogger.system(GitRepositoryCheckoutAdapter.class));
+    }
+
+    GitRepositoryCheckoutAdapter(GitCommandRunner commandRunner, OperationLogger operationLogger) {
         this.commandRunner = Objects.requireNonNull(commandRunner, "commandRunner must not be null");
+        this.operationLogger = Objects.requireNonNull(operationLogger, "operationLogger must not be null");
     }
 
     @Override
     public CheckoutResult checkout(RepositoryCheckoutRequest request) {
-        Objects.requireNonNull(request, "request must not be null");
+        var verifiedRequest = Objects.requireNonNull(request, "request must not be null");
+        return operationLogger.logged("adapter.repository-source.git-checkout", () -> checkoutVerified(verifiedRequest));
+    }
+
+    private CheckoutResult checkoutVerified(RepositoryCheckoutRequest request) {
         var workspacePath = Path.of(request.workspace().path().value()).toAbsolutePath().normalize();
         var repositoryDirectory = workspacePath.resolve("repository").normalize();
         var timeout = commandTimeout(request);

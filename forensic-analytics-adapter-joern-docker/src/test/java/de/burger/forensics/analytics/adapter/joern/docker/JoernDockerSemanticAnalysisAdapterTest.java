@@ -6,6 +6,7 @@ import de.burger.forensics.analytics.domain.repository.RepositoryMetadata;
 import de.burger.forensics.analytics.domain.repository.RepositorySource;
 import de.burger.forensics.analytics.domain.source.SourceFact;
 import de.burger.forensics.analytics.domain.source.SourceLocation;
+import de.burger.forensics.analytics.observability.OperationLogger;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -45,6 +46,29 @@ class JoernDockerSemanticAnalysisAdapterTest {
         assertEquals(1, result.semanticGraph().controlFlowRelations().size());
         assertEquals(1, result.semanticGraph().dataFlowPaths().size());
         assertEquals(1, result.semanticGraph().anchors().size());
+    }
+
+    @Test
+    void logsSemanticAnalysisLifecycle() throws Exception {
+        var logger = new RecordingOperationLogger();
+        var runner = new RecordingRunner(tempDir.resolve("joern"));
+        var adapter = new JoernDockerSemanticAnalysisAdapter(
+            settings(true),
+            new JoernDockerCommandBuilder(),
+            runner,
+            new FileSystemJoernDockerArtifactCollector(),
+            logger
+        );
+
+        adapter.analyze(request());
+
+        assertEquals(
+            List.of(
+                "started:adapter.joern-docker.semantic-analysis",
+                "succeeded:adapter.joern-docker.semantic-analysis"
+            ),
+            logger.events()
+        );
     }
 
     @Test
@@ -129,6 +153,29 @@ class JoernDockerSemanticAnalysisAdapterTest {
             runner,
             new FileSystemJoernDockerArtifactCollector()
         );
+    }
+
+    private static final class RecordingOperationLogger implements OperationLogger {
+        private final List<String> events = new ArrayList<>();
+
+        @Override
+        public void started(String operation) {
+            events.add("started:" + operation);
+        }
+
+        @Override
+        public void succeeded(String operation, long durationMillis) {
+            events.add("succeeded:" + operation);
+        }
+
+        @Override
+        public void failed(String operation, long durationMillis, Throwable error) {
+            events.add("failed:" + operation);
+        }
+
+        private List<String> events() {
+            return List.copyOf(events);
+        }
     }
 
     private JoernDockerSettings settings(boolean failOnError) {

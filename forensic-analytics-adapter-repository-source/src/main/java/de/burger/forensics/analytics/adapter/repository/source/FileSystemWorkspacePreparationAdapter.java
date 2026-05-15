@@ -8,6 +8,7 @@ import de.burger.forensics.analytics.domain.workspace.WorkspaceId;
 import de.burger.forensics.analytics.domain.workspace.WorkspaceLease;
 import de.burger.forensics.analytics.domain.workspace.WorkspacePath;
 import de.burger.forensics.analytics.domain.workspace.WorkspacePreparationStatus;
+import de.burger.forensics.analytics.observability.OperationLogger;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -21,16 +22,26 @@ import java.util.Optional;
 
 public final class FileSystemWorkspacePreparationAdapter implements WorkspacePreparationPort {
     private final Path workspaceRoot;
+    private final OperationLogger operationLogger;
 
     public FileSystemWorkspacePreparationAdapter(Path workspaceRoot) {
+        this(workspaceRoot, OperationLogger.system(FileSystemWorkspacePreparationAdapter.class));
+    }
+
+    FileSystemWorkspacePreparationAdapter(Path workspaceRoot, OperationLogger operationLogger) {
         this.workspaceRoot = Objects.requireNonNull(workspaceRoot, "workspaceRoot must not be null")
             .toAbsolutePath()
             .normalize();
+        this.operationLogger = Objects.requireNonNull(operationLogger, "operationLogger must not be null");
     }
 
     @Override
     public PreparedWorkspace prepare(WorkspacePreparationRequest request) {
-        Objects.requireNonNull(request, "request must not be null");
+        var verifiedRequest = Objects.requireNonNull(request, "request must not be null");
+        return operationLogger.logged("adapter.repository-source.workspace-prepare", () -> prepareVerified(verifiedRequest));
+    }
+
+    private PreparedWorkspace prepareVerified(WorkspacePreparationRequest request) {
         var workspaceId = new WorkspaceId("workspace-" + request.analysisSessionId().value());
         var workspacePath = confinedWorkspacePath(workspaceId);
         try {
@@ -53,7 +64,11 @@ public final class FileSystemWorkspacePreparationAdapter implements WorkspacePre
 
     @Override
     public PreparedWorkspace cleanup(PreparedWorkspace workspace) {
-        Objects.requireNonNull(workspace, "workspace must not be null");
+        var verifiedWorkspace = Objects.requireNonNull(workspace, "workspace must not be null");
+        return operationLogger.logged("adapter.repository-source.workspace-cleanup", () -> cleanupVerified(verifiedWorkspace));
+    }
+
+    private PreparedWorkspace cleanupVerified(PreparedWorkspace workspace) {
         var workspacePath = confinedCleanupPath(Path.of(workspace.path().value()));
         try {
             deleteRecursively(workspacePath);

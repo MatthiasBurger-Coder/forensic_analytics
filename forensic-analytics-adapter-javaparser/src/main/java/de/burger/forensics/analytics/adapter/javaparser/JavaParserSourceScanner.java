@@ -15,6 +15,7 @@ import de.burger.forensics.analytics.application.analysis.port.SourceScannerPort
 import de.burger.forensics.analytics.domain.repository.RepositorySource;
 import de.burger.forensics.analytics.domain.source.SourceFact;
 import de.burger.forensics.analytics.domain.source.SourceLocation;
+import de.burger.forensics.analytics.observability.OperationLogger;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -28,28 +29,30 @@ import java.util.Objects;
 public final class JavaParserSourceScanner implements SourceScannerPort {
     private final JavaSourceFileCollector sourceFileCollector;
     private final JavaParser javaParser;
+    private final OperationLogger operationLogger;
 
     public JavaParserSourceScanner() {
         this(new JavaSourceFileCollector(), new JavaParser(new ParserConfiguration()
-            .setLanguageLevel(ParserConfiguration.LanguageLevel.BLEEDING_EDGE)));
+            .setLanguageLevel(ParserConfiguration.LanguageLevel.BLEEDING_EDGE)), OperationLogger.system(JavaParserSourceScanner.class));
     }
 
-    JavaParserSourceScanner(JavaSourceFileCollector sourceFileCollector, JavaParser javaParser) {
+    JavaParserSourceScanner(JavaSourceFileCollector sourceFileCollector, JavaParser javaParser, OperationLogger operationLogger) {
         this.sourceFileCollector = Objects.requireNonNull(sourceFileCollector, "sourceFileCollector must not be null");
         this.javaParser = Objects.requireNonNull(javaParser, "javaParser must not be null");
+        this.operationLogger = Objects.requireNonNull(operationLogger, "operationLogger must not be null");
     }
 
     @Override
     public List<SourceFact> scan(RepositorySource source) {
-        Objects.requireNonNull(source, "source must not be null");
-        return source.sourceRoots().stream()
+        var verifiedSource = Objects.requireNonNull(source, "source must not be null");
+        return operationLogger.logged("adapter.javaparser.scan", () -> verifiedSource.sourceRoots().stream()
             .map(Path::of)
             .map(Path::toAbsolutePath)
             .map(Path::normalize)
             .flatMap(sourceRoot -> sourceFileCollector.collect(sourceRoot).stream()
                 .flatMap(sourceFile -> scanFile(sourceRoot, sourceFile).stream()))
             .sorted(Comparator.comparing(JavaParserSourceScanner::sortKey))
-            .toList();
+            .toList());
     }
 
     private List<SourceFact> scanFile(Path sourceRoot, Path sourceFile) {

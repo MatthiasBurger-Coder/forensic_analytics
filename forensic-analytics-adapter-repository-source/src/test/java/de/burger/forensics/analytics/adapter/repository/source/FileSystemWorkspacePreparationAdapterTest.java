@@ -10,6 +10,7 @@ import de.burger.forensics.analytics.domain.workspace.WorkspaceLease;
 import de.burger.forensics.analytics.domain.workspace.WorkspacePath;
 import de.burger.forensics.analytics.domain.workspace.WorkspacePolicy;
 import de.burger.forensics.analytics.domain.workspace.WorkspacePreparationStatus;
+import de.burger.forensics.analytics.observability.OperationLogger;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -18,6 +19,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -54,6 +56,19 @@ class FileSystemWorkspacePreparationAdapterTest {
         assertEquals(WorkspacePreparationStatus.CLEANED, cleaned.lease().status());
         assertFalse(Files.exists(workspacePath));
         assertTrue(Files.isDirectory(workspaceRoot));
+    }
+
+    @Test
+    void logsWorkspacePreparationLifecycle() {
+        var logger = new RecordingOperationLogger();
+        var adapter = new FileSystemWorkspacePreparationAdapter(tempDir.resolve("workspaces"), logger);
+
+        adapter.prepare(new WorkspacePreparationRequest(new AnalysisRunId("analysis-log"), workspacePolicy()));
+
+        assertEquals(
+            List.of("started:adapter.repository-source.workspace-prepare", "succeeded:adapter.repository-source.workspace-prepare"),
+            logger.events()
+        );
     }
 
     @Test
@@ -110,5 +125,28 @@ class FileSystemWorkspacePreparationAdapterTest {
             new WorkspaceLease("analysis-1", Instant.parse("2026-05-14T12:00:00Z"), Optional.empty(), WorkspacePreparationStatus.READY),
             List.of("fixture workspace")
         );
+    }
+
+    private static final class RecordingOperationLogger implements OperationLogger {
+        private final List<String> events = new ArrayList<>();
+
+        @Override
+        public void started(String operation) {
+            events.add("started:" + operation);
+        }
+
+        @Override
+        public void succeeded(String operation, long durationMillis) {
+            events.add("succeeded:" + operation);
+        }
+
+        @Override
+        public void failed(String operation, long durationMillis, Throwable error) {
+            events.add("failed:" + operation);
+        }
+
+        private List<String> events() {
+            return List.copyOf(events);
+        }
     }
 }

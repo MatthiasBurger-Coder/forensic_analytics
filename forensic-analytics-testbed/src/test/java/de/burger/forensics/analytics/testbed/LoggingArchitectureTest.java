@@ -55,10 +55,16 @@ class LoggingArchitectureTest {
             );
 
     @ArchTest
-    static final ArchRule inbound_adapters_do_not_import_concrete_logging_providers_or_aop =
+    static final ArchRule operational_modules_do_not_import_concrete_logging_providers_or_aop =
         noClasses()
             .that()
             .resideInAnyPackage(
+                "de.burger.forensics.analytics.adapter.javaparser..",
+                "de.burger.forensics.analytics.adapter.joern.docker..",
+                "de.burger.forensics.analytics.adapter.repository.source..",
+                "de.burger.forensics.analytics.engine..",
+                "de.burger.forensics.analytics.ingestion.request..",
+                "de.burger.forensics.analytics.persistence..",
                 "de.burger.forensics.analytics.rest..",
                 "de.burger.forensics.analytics.ingestion.grpc..",
                 "de.burger.forensics.analytics.cli..",

@@ -76,6 +76,6 @@ Proto DTO
 
 ## 5.6 Observability Boundary
 
-`forensic-analytics-observability` is an infrastructure module for operational diagnostics. REST, gRPC, CLI and bootstrap code may use it to create operation logs and correlation scopes.
+`forensic-analytics-observability` is an infrastructure module for operational diagnostics. Adapter, engine, ingestion-request, persistence and bootstrap code may use it to create sanitized operation logs and correlation scopes where a request or command boundary exists.
 
 The observability module must not depend on domain, application, persistence, REST, gRPC, generated protobuf classes, Spring AOP, AspectJ, SLF4J or concrete logging providers. Domain and application code must not depend on observability.

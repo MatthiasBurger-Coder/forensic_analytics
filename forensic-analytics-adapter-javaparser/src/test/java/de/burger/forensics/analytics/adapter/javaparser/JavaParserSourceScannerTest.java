@@ -1,10 +1,14 @@
 package de.burger.forensics.analytics.adapter.javaparser;
 
+import com.github.javaparser.JavaParser;
+import com.github.javaparser.ParserConfiguration;
 import de.burger.forensics.analytics.domain.repository.RepositoryMetadata;
 import de.burger.forensics.analytics.domain.repository.RepositorySource;
+import de.burger.forensics.analytics.observability.OperationLogger;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.util.ArrayList;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -62,6 +66,25 @@ class JavaParserSourceScannerTest {
         assertEquals("com/example/Sample.java", facts.getFirst().location().sourcePath());
         assertEquals("com.example.Sample", facts.getFirst().location().fullyQualifiedClassName());
         assertEquals("greet", facts.getFirst().location().methodName());
+    }
+
+    @Test
+    void logsScannerLifecycle() throws Exception {
+        var sourceRoot = Files.createDirectories(tempDir.resolve("src/main/java"));
+        write(sourceRoot.resolve("com/example/Sample.java"), "package com.example; class Sample { void run() {} }");
+        var logger = new RecordingOperationLogger();
+        var loggingScanner = new JavaParserSourceScanner(
+            new JavaSourceFileCollector(),
+            new JavaParser(new ParserConfiguration().setLanguageLevel(ParserConfiguration.LanguageLevel.BLEEDING_EDGE)),
+            logger
+        );
+
+        loggingScanner.scan(source(sourceRoot));
+
+        assertEquals(
+            List.of("started:adapter.javaparser.scan", "succeeded:adapter.javaparser.scan"),
+            logger.events()
+        );
     }
 
     @Test
@@ -155,5 +178,28 @@ class JavaParserSourceScannerTest {
     private static void write(Path file, String content) throws Exception {
         Files.createDirectories(file.getParent());
         Files.writeString(file, content, StandardCharsets.UTF_8);
+    }
+
+    private static final class RecordingOperationLogger implements OperationLogger {
+        private final List<String> events = new ArrayList<>();
+
+        @Override
+        public void started(String operation) {
+            events.add("started:" + operation);
+        }
+
+        @Override
+        public void succeeded(String operation, long durationMillis) {
+            events.add("succeeded:" + operation);
+        }
+
+        @Override
+        public void failed(String operation, long durationMillis, Throwable error) {
+            events.add("failed:" + operation);
+        }
+
+        private List<String> events() {
+            return List.copyOf(events);
+        }
     }
 }

@@ -11,6 +11,7 @@ import de.burger.forensics.analytics.application.ingestion.result.IngestionStatu
 import de.burger.forensics.analytics.application.ingestion.result.StartAnalysisSessionResult;
 import de.burger.forensics.analytics.application.ingestion.result.UploadAnalysisDataResult;
 import de.burger.forensics.analytics.domain.ingestion.AnalysisPayloadKind;
+import de.burger.forensics.analytics.observability.OperationLogger;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -57,6 +58,27 @@ class EngineIngestionRequestImporterTest {
         assertArrayEquals("RULE test\n".getBytes(StandardCharsets.UTF_8), useCase.uploadCommands.getFirst().payload());
         assertArrayEquals("{\"analysis\":true}".getBytes(StandardCharsets.UTF_8), useCase.uploadCommands.get(1).payload());
         assertArrayEquals("abc123  rules.btm\n".getBytes(StandardCharsets.UTF_8), useCase.uploadCommands.get(2).payload());
+    }
+
+    @Test
+    void logsEngineRequestImportLifecycle() throws Exception {
+        var rules = Files.writeString(tempDir.resolve("rules.btm"), "RULE test\n", StandardCharsets.UTF_8);
+        var manifest = Files.writeString(tempDir.resolve("manifest.json"), "{\"analysis\":true}", StandardCharsets.UTF_8);
+        var checksums = Files.writeString(tempDir.resolve("checksums.sha256"), "abc123  rules.btm\n", StandardCharsets.UTF_8);
+        var requestFile = Files.writeString(tempDir.resolve("engine-request.json"), requestJson(rules, manifest, checksums), StandardCharsets.UTF_8);
+        var logger = new RecordingOperationLogger();
+        var importer = new EngineIngestionRequestImporter(
+            new RecordingIngestionUseCase(),
+            new EngineIngestionRequestReader(OperationLogger.noop()),
+            logger
+        );
+
+        importer.importRequest(requestFile);
+
+        assertEquals(
+            List.of("started:ingestion-request.import", "succeeded:ingestion-request.import"),
+            logger.events()
+        );
     }
 
     @Test
@@ -171,5 +193,28 @@ class EngineIngestionRequestImporterTest {
             return new AbortAnalysisSessionResult(command.sessionId(), IngestionStatus.ABORTED, command.reason());
         }
 
+    }
+
+    private static final class RecordingOperationLogger implements OperationLogger {
+        private final List<String> events = new ArrayList<>();
+
+        @Override
+        public void started(String operation) {
+            events.add("started:" + operation);
+        }
+
+        @Override
+        public void succeeded(String operation, long durationMillis) {
+            events.add("succeeded:" + operation);
+        }
+
+        @Override
+        public void failed(String operation, long durationMillis, Throwable error) {
+            events.add("failed:" + operation);
+        }
+
+        private List<String> events() {
+            return List.copyOf(events);
+        }
     }
 }

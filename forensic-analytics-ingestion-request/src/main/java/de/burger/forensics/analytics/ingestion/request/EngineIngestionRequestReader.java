@@ -5,6 +5,7 @@ import de.burger.forensics.analytics.application.ingestion.command.ModuleIdentit
 import de.burger.forensics.analytics.application.ingestion.command.PluginIdentityCommand;
 import de.burger.forensics.analytics.domain.ingestion.AnalysisPayloadDescriptor;
 import de.burger.forensics.analytics.domain.ingestion.AnalysisPayloadKind;
+import de.burger.forensics.analytics.observability.OperationLogger;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -17,9 +18,23 @@ import java.util.Map;
 import java.util.Objects;
 
 public final class EngineIngestionRequestReader {
+    private final OperationLogger operationLogger;
+
+    public EngineIngestionRequestReader() {
+        this(OperationLogger.system(EngineIngestionRequestReader.class));
+    }
+
+    EngineIngestionRequestReader(OperationLogger operationLogger) {
+        this.operationLogger = Objects.requireNonNull(operationLogger, "operationLogger must not be null");
+    }
+
     public EngineIngestionRequest read(Path requestFile) {
         Objects.requireNonNull(requestFile, "requestFile must not be null");
         var normalizedRequestFile = requestFile.toAbsolutePath().normalize();
+        return operationLogger.logged("ingestion-request.read", () -> readVerified(normalizedRequestFile));
+    }
+
+    private EngineIngestionRequest readVerified(Path normalizedRequestFile) {
         try {
             return fromJson(normalizedRequestFile, Files.readString(normalizedRequestFile, StandardCharsets.UTF_8));
         } catch (IOException exception) {
