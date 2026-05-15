@@ -11,3 +11,5 @@ The decisions are derived from the EPIC baseline and refined during implementati
 - [ADR-0003: Runtime events are sensitive by default](ADR-0003-runtime-events-are-sensitive.md)
 - [ADR-0004: Graph DB and Vector DB are projections](ADR-0004-graph-and-vector-db-as-projections.md)
 - [ADR-0005: Adapter logging uses a JDK observability boundary](ADR-0005-adapter-logging-observability-boundary.md)
+- [ADR-0006: Spring Boot owns the outer server boundary](ADR-0006-spring-boot-server-boundary.md)
+- [ADR-0007: REST API strategy under Spring Boot](ADR-0007-rest-api-spring-strategy.md)

@@ -86,3 +86,9 @@ Operational observability is scoped to non-core operational boundaries. REST, gR
 The observability boundary uses JDK logging only. It does not introduce Spring AOP, AspectJ, SLF4J or concrete logging providers. Logs are diagnostics, not verified forensic evidence.
 
 Logging must avoid raw payloads, source content, method arguments, method return values, credentials, local paths, stack frames and LLM prompt content. Failure logs use exception categories instead of raw exception messages.
+
+## 8.9 Spring Boot Boundary
+
+Spring Boot is a server bootstrap and adapter wiring concern. It may configure outer modules and lifecycle adapters, but it must not become a domain or application dependency.
+
+The accepted Boot boundary preserves ADR-0005. Spring-specific method logging, MDC propagation, SLF4J bindings, AspectJ weaving and concrete logging providers require a separate architecture decision before they can be introduced. Boot-scoped REST behavior follows ADR-0007 and initially wraps the existing JDK REST adapter instead of adding Spring MVC or WebFlux.

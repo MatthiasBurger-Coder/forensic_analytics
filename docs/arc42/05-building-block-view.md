@@ -4,6 +4,7 @@
 
 ```text
 Forensics Platform
+├── Spring Boot Server Boundary
 ├── Application Core
 ├── Canonical Analysis Model
 ├── gRPC Ingestion Adapter
@@ -33,6 +34,7 @@ Forensics Platform
 
 | Building Block | Responsibility |
 |---|---|
+| Spring Boot Server Boundary | Owns Spring Boot startup, profile configuration and outer adapter lifecycle wiring for verified adapters |
 | Canonical Analysis Model | Owns stable IDs and normalized facts |
 | gRPC Ingestion Adapter | Receives plugin-triggered server analysis requests and maps transport DTOs to application commands |
 | Static Fact Import | Imports server-side AST, build and dependency facts |
@@ -55,7 +57,7 @@ Forensics Platform
 | Domain | IDs, analysis model, incident model, replay model, rule plan |
 | Application | Import use cases, replay use cases, diagnosis use cases |
 | Ports | Fact import port, event store port, graph port, LLM port, rule generation port |
-| Infrastructure | Adapter-facing observability and correlation support |
+| Infrastructure | Adapter-facing observability, correlation support and outer server bootstrap configuration |
 | Adapters | gRPC ingestion, REST API, CLI, Gradle/Maven request and runtime-binding adapters, server-side Joern, server-side Byteman/BTM, relational DB, graph DB, vector DB, LLM provider |
 
 ## 5.4 Important Boundary
@@ -79,3 +81,11 @@ Proto DTO
 `forensic-analytics-observability` is an infrastructure module for operational diagnostics. Adapter, engine, ingestion-request, persistence and bootstrap code may use it to create sanitized operation logs and correlation scopes where a request or command boundary exists.
 
 The observability module must not depend on domain, application, persistence, REST, gRPC, generated protobuf classes, Spring AOP, AspectJ, SLF4J or concrete logging providers. Domain and application code must not depend on observability.
+
+## 5.7 Spring Boot Server Boundary
+
+ADR-0006 accepts Spring Boot as the outer server boundary. The implemented module is `forensic-analytics-boot-app`, which owns the Spring Boot application entrypoint, typed configuration and Spring bean wiring for verified adapters.
+
+The existing `forensic-analytics-bootstrap` module remains available while parity is phased in. Spring Boot adoption must not add Spring dependencies or annotations to `forensic-analytics-domain` or `forensic-analytics-application`.
+
+ADR-0007 keeps the existing JDK REST adapter behind Boot lifecycle wiring. Spring MVC, WebFlux and Actuator endpoints are not part of the current Boot boundary.

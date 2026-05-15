@@ -33,4 +33,5 @@ include(
     "forensic-analytics-ingestion-request",
     "forensic-analytics-rest",
     "forensic-analytics-bootstrap",
+    "forensic-analytics-boot-app",
 )

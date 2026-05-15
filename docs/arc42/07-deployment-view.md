@@ -58,3 +58,19 @@ Environment variable equivalents:
 FORENSICS_ANALYTICS_INGESTION_GRPC_ENABLED=true
 FORENSICS_ANALYTICS_INGESTION_GRPC_PORT=9090
 ```
+
+## 7.5 Spring Boot Deployment Direction
+
+ADR-0006 accepts `forensic-analytics-boot-app` as the outer server boundary. The Boot app owns Spring Boot startup, typed configuration, profiles and adapter lifecycle wiring for verified inbound adapters.
+
+A minimal Boot startup does not require a database, Joern container, graph database, vector database or live LLM provider. The existing bootstrap module remains available while parity is phased in.
+
+Boot configuration is provided through `application.properties` and profile-specific `.properties` files. The `docker` and `prod` profiles disable gRPC and REST by default; operators must explicitly enable the inbound adapter they intend to expose.
+
+The Boot app can be packaged with:
+
+```bash
+./gradlew :forensic-analytics-boot-app:bootJar --dependency-verification strict --console=plain --stacktrace
+```
+
+The Docker baseline lives under `docker/boot-app/`. It copies only the generated Boot jar, defines `/var/lib/forensic-analytics/workspaces` as the workspace volume and does not define an Actuator healthcheck because no accepted health endpoint exists yet.
