@@ -46,6 +46,30 @@ class ForensicLoggingSettingsTest {
             ForensicLoggingMode.APPLICATION,
             ForensicLogLevel.INFO
         ));
+        assertThrows(IllegalArgumentException.class, () -> new ForensicLoggingSettings(
+            true,
+            ".de.burger",
+            ForensicLoggingMode.APPLICATION,
+            ForensicLogLevel.INFO
+        ));
+        assertThrows(IllegalArgumentException.class, () -> new ForensicLoggingSettings(
+            true,
+            "de..burger",
+            ForensicLoggingMode.APPLICATION,
+            ForensicLogLevel.INFO
+        ));
+        assertThrows(IllegalArgumentException.class, () -> new ForensicLoggingSettings(
+            true,
+            "de.burger.",
+            ForensicLoggingMode.APPLICATION,
+            ForensicLogLevel.INFO
+        ));
+        assertThrows(IllegalArgumentException.class, () -> new ForensicLoggingSettings(
+            true,
+            "1de.burger",
+            ForensicLoggingMode.APPLICATION,
+            ForensicLogLevel.INFO
+        ));
         assertThrows(IllegalArgumentException.class, () -> ForensicLoggingSettings.from(new MockEnvironment()
             .withProperty("forensics.analytics.logging.mode", "invalid")));
         assertThrows(IllegalArgumentException.class, () -> ForensicLoggingSettings.from(new MockEnvironment()

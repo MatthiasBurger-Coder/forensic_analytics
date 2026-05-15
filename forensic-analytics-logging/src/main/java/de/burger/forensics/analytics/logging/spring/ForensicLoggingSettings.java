@@ -8,7 +8,6 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Locale;
 import java.util.Objects;
-import java.util.regex.Pattern;
 
 record ForensicLoggingSettings(
     boolean enabled,
@@ -16,13 +15,10 @@ record ForensicLoggingSettings(
     ForensicLoggingMode mode,
     ForensicLogLevel defaultLevel
 ) {
-    private static final Pattern PACKAGE_NAME = Pattern.compile(
-        "[A-Za-z_][A-Za-z0-9_]*(\\.[A-Za-z_][A-Za-z0-9_]*)*"
-    );
     private static final String DEFAULT_BASE_PACKAGE = "de.burger.forensics.analytics";
 
     ForensicLoggingSettings {
-        if (basePackage == null || !PACKAGE_NAME.matcher(basePackage).matches()) {
+        if (!isPackageName(basePackage)) {
             throw new IllegalArgumentException("basePackage must be a Java package name");
         }
         mode = Objects.requireNonNull(mode, "mode must not be null");
@@ -105,5 +101,37 @@ record ForensicLoggingSettings(
             names[index] = constants[index].name();
         }
         return names;
+    }
+
+    private static boolean isPackageName(String value) {
+        if (value == null || value.isBlank() || value.startsWith(".") || value.endsWith(".")) {
+            return false;
+        }
+        for (var segment : value.split("\\.", -1)) {
+            if (!isPackageSegment(segment)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static boolean isPackageSegment(String segment) {
+        if (segment.isEmpty() || !isIdentifierStart(segment.charAt(0))) {
+            return false;
+        }
+        for (var index = 1; index < segment.length(); index++) {
+            if (!isIdentifierPart(segment.charAt(index))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static boolean isIdentifierStart(char value) {
+        return value == '_' || value >= 'A' && value <= 'Z' || value >= 'a' && value <= 'z';
+    }
+
+    private static boolean isIdentifierPart(char value) {
+        return isIdentifierStart(value) || value >= '0' && value <= '9';
     }
 }
