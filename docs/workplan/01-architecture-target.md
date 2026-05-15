@@ -1,132 +1,114 @@
 # Architecture Target
 
-The target architecture keeps Forensic Analytics hexagonal:
+## Target Runtime Shape
 
 ```text
-Inbound adapters
-  -> application services
-    -> domain model and ports
-      <- outbound adapters
+Browser
+  -> forensic-ui container
+  -> nginx static runtime
+  -> HTTP/REST API base URL
+  -> UI-facing backend REST adapter
+  -> application use cases
+  -> domain model and outbound adapters
 ```
 
-The plugin remains outside the analysis platform. It is a producer and gRPC client only. The Analytics server owns workspace preparation, repository checkout, session persistence and all later analysis execution.
+The React app is a standalone frontend under:
 
-## Inbound Adapter
+```text
+forensic-ui/
+```
 
-### gRPC Server
+It is not a Gradle Java subproject in this slice unless the build logic is explicitly changed and verified.
 
-Module: `forensic-analytics-ingestion-grpc`
+## Backend Boundary
 
-Responsibilities:
+Create REST endpoints as UI-facing inbound adapters. Controllers may depend inward on application use cases and DTO mappers. They must not contain checkout, analysis, persistence, graph, replay, LLM or reporting business logic.
 
-- expose the repository-ingestion RPC
-- validate transport-level request completeness
-- map Protobuf DTOs to application commands
-- map application results to Protobuf responses
-- never perform Git, filesystem, parser, persistence or analysis behavior directly
+The REST adapter may delegate to verified application services such as:
 
-The existing `forensic_ingestion.proto` must be verified before implementation changes. If a field or service name differs from this workplan, the implementation slice must stop and report the mismatch before changing code.
+- `RepositoryAnalysisIngestionUseCase`
+- `RunRepositoryAnalysisUseCase`
+- `WorkspaceManagementUseCase`
+- any new UI query use case added by this workplan
 
-## Application Services
+The REST adapter must not delegate to gRPC service classes. gRPC remains a separate inbound adapter.
 
-Target service concepts:
+## Frontend Boundary
 
-- `AnalysisIngestionService`
-- `WorkspacePreparationService`
-- `RepositoryCheckoutService`
+The frontend follows a hexagonal structure:
 
-These names describe the intended responsibilities. During implementation, existing use cases and services must be inspected first. If an equivalent service already exists under another verified name, the slice must decide whether to extend the existing service or introduce the planned name with a documented reason.
+```text
+forensic-ui/src/
+  app/
+  domain/
+    workspace/
+    repository-analysis/
+    analysis-job/
+  application/
+    ports/
+    usecases/
+  adapters/
+    api/
+    ui/
+  pages/
+  widgets/
+  shared/
+  layouts/
+```
 
-### AnalysisIngestionService
+Rules:
 
-Responsibilities:
+- Domain models must not depend on React.
+- Pages and visual components must not call `fetch` directly.
+- API calls live in `adapters/api`.
+- UI components consume application use cases, hooks or view models.
+- Backend DTOs must be mapped into frontend domain/view models before visual rendering.
+- Diagnostics must be sanitized and rendered as data, not injected as HTML.
 
-- accept an `AnalyzeRepository` command from the gRPC adapter
-- create or register an `AnalysisSession`
-- coordinate workspace preparation
-- register the analysis job context
-- return session, workspace and checkout result
+## UI Screens
 
-### WorkspacePreparationService
+The MVP must implement:
 
-Responsibilities:
+- Dashboard
+- Workspace List
+- Create Repository Analysis
+- Analysis Job Detail
+- Diagnostics View
+- Backend Unavailable View
 
-- allocate a `WorkspaceId`
-- create a workspace path through a filesystem port
-- apply `WorkspacePolicy`
-- create a `WorkspaceLease`
-- clean up failed or completed workspaces according to policy
+Navigation must include:
 
-### RepositoryCheckoutService
+- Dashboard
+- Workspaces
+- Repository Analysis
+- Analysis Jobs
+- Diagnostics
+- Settings placeholder
 
-Responsibilities:
+The operator UI must always answer:
 
-- call the Git port for clone, fetch and checkout
-- resolve the effective commit
-- detect source roots through an application port or repository-source adapter
-- build a deterministic `CheckoutResult`
-- report missing branch, missing commit or checkout failures explicitly
+- What is running?
+- Which repository and commit are being analyzed?
+- What failed?
+- What can be retried?
+- Which evidence or diagnostics exist?
 
-## Outbound Adapters
+## Explicit Non-Goals
 
-### Git Client
+Do not implement in this workplan:
 
-Target module: `forensic-analytics-adapter-repository-source`
+- Joern UI
+- AST graph UI
+- Replay UI
+- BTM editor
+- LLM findings dashboard
+- WebSocket
+- SSE
+- gRPC-Web
+- direct browser-to-gRPC communication
+- real-time log streaming
+- authentication
+- authorization
+- production Kubernetes deployment
 
-Responsibilities:
-
-- clone repositories
-- fetch updates
-- checkout branches and commits
-- resolve the current commit
-- detect the effective remote URL
-- clean up repository working copies
-
-The adapter may call the local Git executable or a verified library only after the dependency and operational impact are reviewed. Parser execution must not be introduced here.
-
-### Filesystem Workspace
-
-Target module: `forensic-analytics-adapter-repository-source` or a dedicated filesystem adapter if the existing boundary proves insufficient.
-
-Responsibilities:
-
-- create workspace directories
-- enforce workspace path boundaries
-- report disk and permission failures
-- support deterministic cleanup
-- avoid writing outside the configured workspace root
-
-### Persistence / Analysis Session Store
-
-Target module: `forensic-analytics-persistence`
-
-Responsibilities:
-
-- persist `AnalysisSession`
-- persist job/workspace association
-- persist checkout result metadata
-- keep generated analysis output separate from verified repository evidence
-
-## Domain Concepts
-
-Required concepts for this platform step:
-
-- `AnalysisSession`
-- `Workspace`
-- `RepositoryReference`
-- `BranchReference`
-- `CommitReference`
-- `SourceRoot`
-- `CheckoutResult`
-
-Additional workspace concepts are detailed in [06-workspace-domain.md](06-workspace-domain.md).
-
-## Boundary Rules
-
-- Domain code depends only on domain-internal code and the Java standard library.
-- Application code depends on domain and ports, not concrete adapters.
-- gRPC DTOs stay in the gRPC adapter.
-- Git and filesystem APIs stay in outbound adapters.
-- Persistence APIs stay in persistence adapters.
-- The plugin must not contain parser, Joern, BTM, replay or LLM logic.
-- Static source roots are repository facts, not proof of runtime execution.
+Future live logging may use WebSocket or SSE after a separate workplan. Internal service-to-service communication may use gRPC later, but the browser-facing UI boundary for this slice is HTTP/REST only.

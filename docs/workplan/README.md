@@ -1,50 +1,46 @@
-# Workspace and gRPC Integration Workplan
+# Resilient React UI MVP Workplan
 
-This workplan defines the next platform step for Forensic Analytics:
+This workplan replaces the previous workspace and gRPC integration plan. The current target is the first resilient UI MVP for Forensic Analytics:
 
 ```text
-Plugin
-  -> gRPC request
-    -> forensic_analytics ingestion
-      -> workspace preparation
-        -> repository clone or checkout
-          -> analysis job registration
-            -> later parser or analyzer execution
+Browser
+  -> forensic-ui Docker container
+  -> HTTP/REST UI-facing backend API
+  -> application use cases
+  -> existing repository analysis and ingestion workflows
 ```
 
-The plan deliberately prepares workspace, checkout, ingestion and session boundaries before parser work. A parser can only produce trustworthy forensic evidence when the platform can already prove which repository, branch, commit, workspace path, source roots and analysis session were used. This workplan therefore treats repository acquisition and session registration as the next evidence-preserving foundation.
+The React UI must communicate with the backend only through HTTP/REST in this slice. It must not use direct gRPC, gRPC-Web, WebSocket, SSE or browser-to-gRPC communication.
 
-Parser implementation, Joern execution, BTM generation, replay, LLM diagnosis and report generation are outside this workplan. The plugin remains a producer and gRPC client. `forensic_analytics` remains the consumer and analysis platform.
+## Verified Starting Point
 
-## Verified Repository Baseline
+Read-only inspection found:
 
-The repository currently contains these relevant modules:
+- No `forensic-ui` directory, React, Vite, TypeScript, nginx UI runtime or frontend package scripts exist yet.
+- No root Docker Compose file exists. Existing Docker material is Joern-specific under `docker/joern`.
+- No Spring Boot application, REST controller, REST endpoint or HTTP server implementation exists yet.
+- The current executable backend is `forensic-analytics-bootstrap`, which starts a gRPC ingestion server.
+- The verified unary gRPC `AnalyzeRepository` path delegates to `RepositoryAnalysisIngestionUseCase`.
+- A separate repository analysis pipeline exists through `RunRepositoryAnalysisUseCase`.
+- Workspace and analysis-session persistence currently use in-memory adapters.
+- `QUALITY.md` defines the Gradle minimum and full local quality gates.
+- `.agents/skills/resilience-engineering/SKILL.md` exists and must be applied by the implementation slices.
 
-- `forensic-analytics-domain`
-- `forensic-analytics-application`
-- `forensic-analytics-engine`
-- `forensic-analytics-adapter-repository-source`
-- `forensic-analytics-adapter-javaparser`
-- `forensic-analytics-adapter-joern-docker`
-- `forensic-analytics-cli`
-- `forensic-analytics-testbed`
-- `forensic-analytics-persistence`
-- `forensic-analytics-ingestion-grpc`
-- `forensic-analytics-ingestion-request`
-- `forensic-analytics-bootstrap`
+These facts are recorded in [00-verified-baseline.md](00-verified-baseline.md). If implementation discovers different facts, stop and update this workplan before proceeding.
 
-The future implementation slices in this directory must verify existing contracts before changing them. The current gRPC module already contains `forensic_ingestion.proto` with an `AnalyzeRepository` RPC and the planned request and response model names. The implementation work must preserve compatibility intentionally and must not silently replace verified names.
+## Workplan Files
 
-## How To Use This Workplan
+1. [00-verified-baseline.md](00-verified-baseline.md) - verified repository state and stop points.
+2. [01-architecture-target.md](01-architecture-target.md) - target architecture and non-goals.
+3. [02-subagents-and-parallelization.md](02-subagents-and-parallelization.md) - dependency graph, ownership map and parallel execution plan.
+4. [03-implementation-slices.md](03-implementation-slices.md) - ordered implementation slices with owners, write scopes and done criteria.
+5. [04-rest-api-contract.md](04-rest-api-contract.md) - proposed UI-facing REST contract and verification rules.
+6. [05-frontend-architecture.md](05-frontend-architecture.md) - React/Vite structure, routing, state and UI rules.
+7. [06-resilience-requirements.md](06-resilience-requirements.md) - frontend, backend and Docker resilience requirements.
+8. [07-docker-and-local-start.md](07-docker-and-local-start.md) - Docker, nginx and local run plan.
+9. [08-verification-and-quality-gates.md](08-verification-and-quality-gates.md) - frontend and backend verification commands.
+10. [09-commit-and-push-plan.md](09-commit-and-push-plan.md) - commit and push workflow.
 
-Work through the files in order:
+## Execution Rule
 
-1. Start with [00-overview.md](00-overview.md) and [01-architecture-target.md](01-architecture-target.md).
-2. Execute the implementation slices from [02-slices.md](02-slices.md) in dependency order.
-3. Use [03-subagents.md](03-subagents.md) and [04-parallelization-plan.md](04-parallelization-plan.md) to coordinate parallel work and reviews.
-4. Keep the contract, workspace, Git, plugin and test plans aligned through [05-grpc-contract.md](05-grpc-contract.md) to [10-wildfly-hardening-test.md](10-wildfly-hardening-test.md).
-5. Run the quality gates described in [11-quality-gates.md](11-quality-gates.md).
-6. Finish with the Git workflow in [12-commit-and-push-plan.md](12-commit-and-push-plan.md).
-7. When the opt-in WildFly hardening scenario is executed, record the result in [13-wildfly-hardening-result.md](13-wildfly-hardening-result.md).
-
-Every slice must keep the domain free of framework dependencies, keep application services behind ports, and preserve uncertainty explicitly. WildFly is a later hardening target, not the first functional test.
+Work as much in parallel as the dependency graph allows, but keep write ownership disjoint. Shared contracts must be stabilized before multiple workers edit dependent code. No worker may invent REST framework names, endpoint DTOs, status mappings, Gradle tasks, package names or frontend scripts that were not created and verified in an earlier slice.
