@@ -1,16 +1,25 @@
-# 05 - gRPC Contract
+# gRPC Contract
 
-## Contract Goal
+The planned repository-ingestion contract lets a producer plugin ask the Analytics platform to prepare a server-side repository workspace and register an analysis session.
 
-The planned contract lets the plugin send repository context and lets Analytics create an analysis session, prepare a workspace, check out the repository and return deterministic identifiers and checkout metadata.
+The current repository already contains `forensic-analytics-ingestion-grpc/src/main/proto/forensic_ingestion.proto` with an `AnalyzeRepository` RPC and the model names listed below. Future implementation work must verify that file before changing any field, field number, package, Java package or service name.
 
-This is a planned contract. Existing `.proto` symbols must be verified before implementation.
+## Service Shape
 
-## Required Models
+```proto
+service ForensicIngestionService {
+  rpc AnalyzeRepository(AnalyzeRepositoryRequest)
+      returns (AnalyzeRepositoryResponse);
+}
+```
+
+Other ingestion RPCs may continue to exist. This workplan focuses on repository preparation and analysis session creation.
+
+## Required Request Models
 
 ### AnalyzeRepositoryRequest
 
-Fields:
+Carries:
 
 - `RepositoryReference repository`
 - `BranchReference branch`
@@ -20,114 +29,108 @@ Fields:
 - `string request_id`
 - `string schema_version`
 
-The request is created by the plugin. It must not include AST facts, Joern output, BTM rules, replay data or graph data for this phase.
+Validation:
+
+- repository remote URL is required
+- branch may be optional only when policy allows the server to use the remote default branch
+- commit may be optional, but if present and marked required it must be checked out exactly
+- request ID and schema version must be preserved for traceability
 
 ### RepositoryReference
 
-Fields:
+Carries:
 
-- `string remote_url`
-- `string provider`
-- `map<string, string> attributes`
+- remote URL
+- provider, if known
+- attributes for explicit producer metadata
+
+The attributes map must not carry secrets. Unknown provider values remain unknown instead of being normalized to a guessed provider.
 
 ### BranchReference
 
-Fields:
+Carries:
 
-- `string name`
-- `bool required`
+- branch name
+- whether the branch is required
 
-Branch may be empty only when an exact commit is supplied and the application contract allows detached checkout.
+If the branch is required and missing on the remote, checkout fails explicitly.
 
 ### CommitReference
 
-Fields:
+Carries:
 
-- `string hash`
-- `bool required`
+- commit hash
+- whether the commit is required
 
-Commit pinning is preferred for deterministic analysis. When a branch is supplied without a commit, Analytics must resolve and return the actual commit checked out.
+If the commit is required and cannot be resolved after clone or fetch, checkout fails explicitly.
 
 ### WorkspacePolicy
 
-Fields:
+Carries:
 
-- `bool ephemeral`
-- `bool allow_shallow_clone`
-- `bool allow_partial_clone`
-- `bool allow_sparse_checkout`
-- `int64 timeout_seconds`
-- `int64 max_workspace_bytes`
+- ephemeral flag
+- shallow clone allowance
+- partial clone allowance
+- sparse checkout allowance
+- timeout in seconds
+- maximum workspace bytes
 
-Policy values are requests, not guarantees. Analytics decides supported behavior and reports the actual checkout mode.
+Policy values guide the server. They do not authorize the plugin to create workspaces or perform analysis itself.
 
 ### BuildContext
 
-Fields:
+Carries:
 
-- `string build_tool`
-- `string build_id`
-- `string root_project_name`
-- `repeated string declared_modules`
-- `map<string, string> attributes`
+- build tool
+- build ID
+- root project name
+- declared modules
+- explicit attributes
 
-The plugin supplies build context only. It does not run analysis.
+Build context is producer metadata. It can help correlate a request with a build, but it is not proof that any source path was parsed or executed.
+
+## Required Response Models
 
 ### AnalyzeRepositoryResponse
 
-Fields:
+Carries:
 
 - `AnalysisSessionId analysis_session_id`
 - `WorkspaceId workspace_id`
 - `CheckoutResult checkout_result`
-- `string message`
+- message
+
+The response represents repository preparation, not completed analysis.
 
 ### AnalysisSessionId
 
-Fields:
-
-- `string value`
+Stable identifier for the server-side analysis session. It must be generated or persisted by Analytics, not by the plugin.
 
 ### WorkspaceId
 
-Fields:
-
-- `string value`
+Stable identifier for the server-side workspace. The plugin may display it or use it for follow-up calls, but it must not assume the filesystem path.
 
 ### CheckoutResult
 
-Fields:
+Carries:
 
-- `string resolved_remote_url`
-- `string requested_branch`
-- `string requested_commit`
-- `string resolved_commit`
-- `repeated string detected_source_roots`
-- `string checkout_status`
-- `repeated string diagnostics`
+- resolved remote URL
+- requested branch
+- requested commit
+- resolved commit
+- detected source roots
+- checkout status
+- diagnostics
 
-## RPC Shape
+Diagnostics must preserve checkout uncertainty. For example, no detected source roots is a valid explicit outcome and must not be converted into a parser failure.
 
-Initial implementation:
+## Error Handling
 
-```text
-rpc AnalyzeRepository(AnalyzeRepositoryRequest)
-    returns (AnalyzeRepositoryResponse);
-```
-
-Future extensions:
-
-- server streaming for job progress events,
-- client streaming for chunked payload upload,
-- bidirectional streaming for long-running interactive analysis sessions,
-- compression for large metadata payloads,
-- explicit deadlines and retry policy,
-- idempotency keys for safe retries.
+Transport errors describe gRPC-level failures. Domain or application errors are mapped into explicit response status and diagnostics where the contract supports that. The server must preserve the original cause internally for logs and tests without exposing secrets.
 
 ## Compatibility Rules
 
-- Use schema versioning.
-- Reserve removed field numbers.
-- Keep new fields additive where possible.
-- Validate required business fields in the adapter/application layer.
-- Do not add hidden aliases or undocumented compatibility wrappers.
+- Do not reuse Protobuf field numbers for different meanings.
+- Do not rename public messages without a dedicated compatibility plan.
+- Do not add fallback aliases unless backward compatibility is explicitly requested and tested.
+- Keep Protobuf DTOs out of domain and application service APIs.

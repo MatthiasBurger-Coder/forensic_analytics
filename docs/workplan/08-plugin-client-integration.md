@@ -1,57 +1,71 @@
-# 08 - Plugin Client Integration
+# Plugin Client Integration
+
+The plugin is a producer and client. It must not become an analysis platform.
 
 ## Plugin Responsibilities
 
-The plugin should only:
+The plugin may:
 
-- create the request,
-- determine repository URL,
-- determine branch,
-- determine commit,
-- determine build context,
-- send the gRPC request,
-- evaluate the response,
-- receive server-generated BTM files in a later instrumentation slice,
-- bind server-generated BTM files to the target implementation through the runtime agent when debugging requires instrumentation,
-- report errors clearly.
-
-The plugin remains the producer and build adapter. It does not own analysis.
+- determine the repository remote URL from the build checkout
+- determine branch and commit when available
+- collect build context such as build tool, build ID, root project name and declared modules
+- build `AnalyzeRepositoryRequest`
+- send the request through gRPC
+- receive `AnalyzeRepositoryResponse`
+- display or persist the analysis session ID and checkout diagnostics as client-visible status
+- report communication, validation and server-side checkout errors clearly
 
 ## Analytics Responsibilities
 
-Analytics should:
+Analytics owns:
 
-- receive the request,
-- create the analysis session,
-- prepare the workspace,
-- clone or checkout the repository,
-- resolve the commit,
-- detect source roots as metadata,
-- register the first job state,
-- return session and checkout result.
+- workspace creation
+- Git clone and checkout
+- commit resolution
+- source-root detection
+- analysis session creation
+- job registration
+- later parser or analyzer execution
 
-## Explicit Non-Responsibilities For The Plugin
+The plugin must not duplicate these responsibilities.
+
+## Explicit Plugin Non-Scope
 
 The plugin must not:
 
-- analyze AST,
-- execute Joern,
-- generate BTM rules,
-- replace server-side workspace creation,
-- become the analysis platform,
-- persist canonical analysis data,
-- build replay, graph or LLM evidence packages.
+- perform AST analysis
+- run JavaParser for platform evidence
+- run Joern or create CPG artifacts
+- generate BTM files
+- run replay
+- construct LLM prompts
+- write server-side workspace files
+- decide that analysis is complete
 
-## Error Handling
+## Request Construction
 
-Plugin errors should distinguish:
+The plugin should construct requests from verified build and Git metadata only. Missing branch or commit information must remain missing and be marked according to the request contract. The plugin must not guess the current branch from display text if Git metadata is unavailable.
 
-- unavailable Analytics endpoint,
-- request validation failure,
-- rejected repository reference,
-- checkout failure,
-- timeout,
-- incompatible schema version,
-- server-side internal failure.
+## Response Handling
 
-Errors should include the Analytics message and correlation/request identifier where available, without leaking secrets.
+The plugin should handle:
+
+- accepted session with ready checkout
+- accepted session with checkout diagnostics
+- rejected request
+- gRPC unavailable
+- timeout
+- schema mismatch
+- authentication or authorization failure if later introduced
+
+The plugin should surface session ID, workspace ID and resolved commit when present. It should never claim that parser analysis completed from an `AnalyzeRepositoryResponse`.
+
+## Tests
+
+Required plugin-side tests:
+
+- request builder maps repository, branch, commit and build context
+- missing optional values remain explicit
+- fake gRPC server receives the expected request
+- checkout diagnostics are shown without converting them into analysis findings
+- network and server errors are reported clearly
