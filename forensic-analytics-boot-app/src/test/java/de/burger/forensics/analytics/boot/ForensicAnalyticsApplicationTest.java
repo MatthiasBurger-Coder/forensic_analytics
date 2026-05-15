@@ -12,6 +12,7 @@ import de.burger.forensics.analytics.ingestion.v1.ForensicIngestionServiceGrpc;
 import de.burger.forensics.analytics.ingestion.v1.IngestionStatus;
 import de.burger.forensics.analytics.ingestion.v1.PluginIdentity;
 import de.burger.forensics.analytics.ingestion.v1.StartAnalysisSessionRequest;
+import de.burger.forensics.analytics.logging.ForensicLoggerFactory;
 import io.grpc.ManagedChannelBuilder;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.WebApplicationType;
@@ -33,6 +34,7 @@ class ForensicAnalyticsApplicationTest {
             .run("--spring.main.banner-mode=off")) {
 
             assertNotNull(context.getBean(ForensicAnalyticsProperties.class));
+            assertNotNull(context.getBean(ForensicLoggerFactory.class));
             assertNotNull(context.getBean(JoernDockerSettings.class));
             assertNotNull(context.getBean(ForensicIngestionUseCase.class));
             assertNotNull(context.getBean(RepositoryAnalysisIngestionUseCase.class));

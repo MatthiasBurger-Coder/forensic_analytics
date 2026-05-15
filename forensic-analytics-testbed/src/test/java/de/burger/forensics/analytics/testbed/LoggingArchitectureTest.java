@@ -20,6 +20,7 @@ class LoggingArchitectureTest {
             .should()
             .dependOnClassesThat()
             .resideInAnyPackage(
+                "de.burger.forensics.analytics.logging..",
                 "de.burger.forensics.analytics.observability..",
                 "org.slf4j..",
                 "ch.qos.logback..",

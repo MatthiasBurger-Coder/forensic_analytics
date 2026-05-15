@@ -19,6 +19,8 @@ The current implementation baseline contains the technical modules for ingestion
 - `forensic-analytics-domain` - domain model for ingestion sessions, artifact metadata, source facts and semantic Joern graph facts
 - `forensic-analytics-application` - application use case contracts for ingestion and server-side repository analysis orchestration
 - `forensic-analytics-engine` - engine facade for repository analysis use cases
+- `forensic-analytics-logging` - cross-cutting logging module for injectable logger wrappers and Boot-runtime method interception
+- `forensic-analytics-observability` - framework-neutral operational correlation and sanitized diagnostic logging support
 - `forensic-analytics-adapter-repository-source` - outbound adapter for server-side workspace repository source acquisition
 - `forensic-analytics-adapter-javaparser` - outbound adapter for Java source scanning with JavaParser
 - `forensic-analytics-adapter-joern-docker` - outbound adapter for Docker-based Joern analysis and semantic artifact parsing
