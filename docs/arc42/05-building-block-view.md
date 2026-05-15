@@ -17,6 +17,7 @@ Forensics Platform
 ├── Vector Context Builder
 ├── LLM Diagnosis
 ├── Observability Boundary
+├── Cross-cutting Logging Module
 ├── Repair Orchestration
 └── Adapters
     ├── Gradle Plugin Request Adapter
@@ -48,6 +49,7 @@ Forensics Platform
 | Vector Context Builder | Builds semantic context for retrieval and LLM use |
 | LLM Diagnosis Service | Creates evidence-based root-cause analysis |
 | Observability Boundary | Provides adapter-level correlation scopes and sanitized operation logging without becoming evidence storage |
+| Cross-cutting Logging Module | Provides injectable logger wrappers and Boot-scoped method interception for sanitized operational diagnostics |
 | Repair Orchestrator | Prepares future gated repair flows |
 
 ## 5.3 Hexagonal Architecture Mapping
@@ -89,3 +91,11 @@ ADR-0006 accepts Spring Boot as the outer server boundary. The implemented modul
 The existing `forensic-analytics-bootstrap` module remains available while parity is phased in. Spring Boot adoption must not add Spring dependencies or annotations to `forensic-analytics-domain` or `forensic-analytics-application`.
 
 ADR-0007 keeps the existing JDK REST adapter behind Boot lifecycle wiring. Spring MVC, WebFlux and Actuator endpoints are not part of the current Boot boundary.
+
+## 5.8 Cross-cutting Logging Module
+
+ADR-0008 accepts `forensic-analytics-logging` as a cross-cutting infrastructure module. It provides `ForensicLoggerFactory` for explicit logger injection and optional Spring method interception in the Boot runtime.
+
+The logging module may depend on `forensic-analytics-observability` for correlation context and on Spring AOP/Context for the accepted method-interception exception. It may publish Boot auto-configuration metadata. It must not depend on domain, application, adapters, persistence, REST, gRPC, generated Protobuf, AspectJ, SLF4J or concrete logging providers.
+
+Automatic logging records operation name, phase, duration, correlation ID and exception category only. It must not log method arguments, return values, raw exception messages, stack frames, payloads, source content, credentials or LLM prompt content.

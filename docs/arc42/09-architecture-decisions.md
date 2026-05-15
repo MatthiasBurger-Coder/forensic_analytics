@@ -13,6 +13,7 @@
 | ADR-0005 | Adapter logging uses a JDK observability boundary | Accepted | Keeps operational logging framework-neutral and separate from forensic evidence |
 | ADR-0006 | Spring Boot owns the outer server boundary | Accepted | Allows Boot only at the server bootstrap boundary while preserving framework-free core modules |
 | ADR-0007 | REST API strategy under Spring Boot | Accepted | Keeps the existing JDK REST adapter behind Boot lifecycle wiring and defers Spring MVC/WebFlux |
+| ADR-0008 | Cross-cutting logging module with Spring method interception | Accepted | Allows a named logging-module exception for Boot-scoped method logging while keeping observability framework-neutral |
 
 ## 9.2 Open Decisions
 

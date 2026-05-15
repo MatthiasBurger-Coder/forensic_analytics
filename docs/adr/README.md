@@ -13,3 +13,4 @@ The decisions are derived from the EPIC baseline and refined during implementati
 - [ADR-0005: Adapter logging uses a JDK observability boundary](ADR-0005-adapter-logging-observability-boundary.md)
 - [ADR-0006: Spring Boot owns the outer server boundary](ADR-0006-spring-boot-server-boundary.md)
 - [ADR-0007: REST API strategy under Spring Boot](ADR-0007-rest-api-spring-strategy.md)
+- [ADR-0008: Cross-cutting logging module with Spring method interception](ADR-0008-cross-cutting-logging-module.md)

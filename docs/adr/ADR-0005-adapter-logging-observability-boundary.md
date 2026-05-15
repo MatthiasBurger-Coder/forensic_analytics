@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Accepted. Partially extended by ADR-0008 for the separate cross-cutting `forensic-analytics-logging` module.
 
 ## Context
 
@@ -29,4 +29,4 @@ Do not introduce Spring AOP, AspectJ, SLF4J, Logback, Log4j2 or annotation-drive
 - Logging is explicit at operational boundaries instead of implicit through method weaving.
 - Strict dependency verification is unchanged because no external logging dependency is added.
 - Correlation IDs support operational diagnostics but are not treated as canonical evidence.
-- Future SLF4J, OpenTelemetry or annotation-driven logging would require a separate architecture and dependency decision.
+- Future SLF4J, OpenTelemetry or logging-provider changes still require a separate architecture and dependency decision. ADR-0008 accepts Spring method interception only in `forensic-analytics-logging`; the observability module remains framework-neutral.

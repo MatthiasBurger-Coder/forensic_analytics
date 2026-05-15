@@ -87,6 +87,10 @@ The observability boundary uses JDK logging only. It does not introduce Spring A
 
 Logging must avoid raw payloads, source content, method arguments, method return values, credentials, local paths, stack frames and LLM prompt content. Failure logs use exception categories instead of raw exception messages.
 
+ADR-0008 adds `forensic-analytics-logging` as a separate cross-cutting module for the Spring Boot runtime. It provides an injectable `ForensicLoggerFactory` and optional method interception while reusing the observability correlation context. This exception is limited to the logging module; domain and application code remain independent from logging and Spring.
+
+Automatic method logging records method operation names, phases, durations, correlation IDs and exception categories only. It must not record arguments, return values, raw exception messages, stack frames or evidence payloads.
+
 ## 8.9 Spring Boot Boundary
 
 Spring Boot is a server bootstrap and adapter wiring concern. It may configure outer modules and lifecycle adapters, but it must not become a domain or application dependency.
