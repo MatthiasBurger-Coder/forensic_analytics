@@ -17,11 +17,12 @@ Coordinate small implementation slices across roles while preserving architectur
 
 1. Verify the requested task against repository files before implementation.
 2. Identify affected modules, documentation and quality checks.
-3. Select the smallest set of roles needed for the slice.
-4. Assign non-overlapping file ownership when multiple workers are explicitly requested.
-5. Keep implementation slices small enough to test and review independently.
-6. Run targeted checks first, then the applicable quality gate from `QUALITY.md`.
-7. Record blockers instead of guessing missing symbols, commands, contracts or evidence.
+3. Apply engineering governance when EPIC, arc42, requirements, resilience, quality expectations or workplans may drift.
+4. Select the smallest set of roles needed for the slice.
+5. Assign non-overlapping file ownership when multiple workers are explicitly requested.
+6. Keep implementation slices small enough to test and review independently.
+7. Run targeted checks first, then the applicable quality gate from `QUALITY.md`.
+8. Record blockers instead of guessing missing symbols, commands, contracts or evidence.
 
 ## Output
 

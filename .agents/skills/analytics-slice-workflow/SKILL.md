@@ -13,9 +13,11 @@ Creates implementation slices for Forensic Analytics features such as ingestion,
 2. Identify the affected forensic analytics capability.
 3. Identify the domain model, application use case, port, adapter, and documentation impact.
 4. Identify ingestion, persistence, graph, replay, report, or LLM evidence impact.
-5. Identify required JUnit 6, ArchUnit, fixture, and integration tests.
-6. Preserve evidence categories and uncertainty markers.
-7. Produce small implementation slices with verification commands.
+5. Apply `requirement-engineering` when EPIC assumptions, responsibilities or requirements may drift.
+6. Apply `arc42-architecture-governance` when service boundaries, runtime behavior, deployment, resilience or architecture documentation may change.
+7. Identify required JUnit 6, ArchUnit, fixture, and integration tests.
+8. Preserve evidence categories and uncertainty markers.
+9. Produce small implementation slices with verification commands.
 
 ## Expected Inputs
 - user task
