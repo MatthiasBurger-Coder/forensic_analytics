@@ -57,6 +57,17 @@ class InMemoryAnalysisSessionRepositoryTest {
     }
 
     @Test
+    void listsSessionsInDeterministicAnalysisRunIdOrder() {
+        repository.save(session("analysis-c"));
+        repository.save(session("analysis-a"));
+        repository.save(session("analysis-b"));
+
+        assertEquals(List.of("analysis-a", "analysis-b", "analysis-c"), repository.findAll().stream()
+            .map(session -> session.id().value())
+            .toList());
+    }
+
+    @Test
     void requiresInputs() {
         assertThrows(NullPointerException.class, () -> repository.save(null));
         assertThrows(NullPointerException.class, () -> repository.findById(null));

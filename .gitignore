@@ -59,6 +59,14 @@ forensics-output/
 coverage/
 .scannerwork/
 
+# Frontend generated output
+forensic-ui/node_modules/
+forensic-ui/dist/
+forensic-ui/coverage/
+forensic-ui/.vite/
+forensic-ui/.vitest/
+forensic-ui/tsconfig.*.tsbuildinfo
+
 # OS metadata
 .DS_Store
 Thumbs.db

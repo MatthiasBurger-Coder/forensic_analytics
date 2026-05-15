@@ -1,6 +1,20 @@
 # Verified Baseline
 
 This file records the repository facts verified before creating this workplan.
+The implementation slice has now added REST, frontend and Docker UI files; the baseline below remains the pre-implementation reference used to avoid guessing.
+
+## Current Slice Additions
+
+The executed slice deliberately added:
+
+- `forensic-analytics-rest` as a Java UI-facing inbound adapter.
+- JDK `HttpServer` REST runtime wiring in `forensic-analytics-bootstrap`.
+- Gson JSON mapping through `gradle/libs.versions.toml`.
+- `forensic-ui` as a standalone React, TypeScript and Vite application.
+- `forensic-ui/Dockerfile`, `forensic-ui/nginx.conf` and `forensic-ui/.dockerignore`.
+- Frontend generated-output ignores in `.gitignore`.
+
+The frontend remains outside `settings.gradle.kts`. Only the Java REST adapter was added as a Gradle subproject.
 
 ## Build And Modules
 
@@ -90,13 +104,13 @@ IngestionSessionRepository
 InMemoryIngestionSessionRepository
 ```
 
-`AnalysisSessionRepository` was verified with `save` and `findById`. A list query for all analysis runs was not verified. Workspace management use cases exist, including `WorkspaceManagementUseCase#list`, but prepared repository-analysis workspaces are a separate concern and must be mapped explicitly.
+`AnalysisSessionRepository` was initially verified with `save` and `findById`. This slice added `findAll` and `RepositoryAnalysisQueryUseCase` so list/detail REST endpoints can read through application contracts instead of persistence internals. Workspace management use cases exist, including `WorkspaceManagementUseCase#list`, but prepared repository-analysis workspaces remain a separate concern and are exposed as repository-analysis workspace views with unknown lifecycle fields kept explicit.
 
 If UI list/detail endpoints need additional query ports or repository methods, add the smallest application-level query contract and tests. Do not expose persistence internals through REST controllers.
 
 ## Frontend And Docker
 
-No frontend was found:
+Before implementation no frontend was found:
 
 - no `forensic-ui/`
 - no root `package.json`
@@ -109,7 +123,7 @@ No frontend was found:
 
 Docker files are currently Joern-only under `docker/joern`. No root `docker-compose.yml` was found.
 
-`.gitignore` does not yet include Node/Vite outputs such as `node_modules/`, `dist/` or frontend coverage output.
+`.gitignore` now includes frontend generated output such as `node_modules/`, `dist/`, `.vite/`, `.vitest/`, coverage and TypeScript build-info files under `forensic-ui`.
 
 ## Required Stop Points
 

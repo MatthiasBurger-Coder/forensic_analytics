@@ -26,7 +26,9 @@ The current implementation baseline contains the technical modules for ingestion
 - `forensic-analytics-persistence` - persistence adapter boundary, currently with an in-memory implementation for local bootstrap and tests
 - `forensic-analytics-ingestion-grpc` - inbound gRPC adapter for plugin-triggered server-side analysis requests
 - `forensic-analytics-ingestion-request` - engine request importer for plugin-produced analysis request manifests
-- `forensic-analytics-bootstrap` - executable bootstrap wiring for the gRPC ingestion server
+- `forensic-analytics-rest` - UI-facing inbound HTTP/REST adapter for the React MVP
+- `forensic-analytics-bootstrap` - executable bootstrap wiring for gRPC and REST servers
+- `forensic-ui` - standalone React, TypeScript and Vite operator UI; it is not a Gradle subproject
 
 ### gRPC Ingestion
 
@@ -54,6 +56,68 @@ FORENSICS_ANALYTICS_INGESTION_GRPC_PORT=9090
 ```
 
 The final plugin payload schema is intentionally not part of this module. Parser execution, Joern execution, BTM generation, replay, LLM context construction and direct database logic are outside the gRPC adapter boundary.
+
+### REST UI API
+
+`forensic-analytics-rest` exposes UI-facing HTTP endpoints under `/api`. The adapter uses JDK `HttpServer` and Gson, delegates to application use cases and does not reuse gRPC transport classes as browser DTOs.
+
+Implemented endpoints:
+
+- `POST /api/repository-analyses`
+- `GET /api/repository-analyses`
+- `GET /api/repository-analyses/{analysisRunId}`
+- `GET /api/workspaces`
+- `GET /api/workspaces/{workspaceId}`
+
+`POST /api/repository-analyses` registers and prepares a repository analysis session through `RepositoryAnalysisIngestionUseCase#analyze`. It returns backend status `REGISTERED` and workflow `REPOSITORY_SESSION_REGISTRATION`; it does not claim completion of the full repository analysis pipeline.
+
+For this MVP, REST repository targets must be HTTPS URLs without user information. Workspace clone-mode and quota options are intentionally restricted to safe unsupported values until shallow/partial/sparse checkout, byte quotas and cleanup behavior are implemented end to end.
+
+Runtime configuration:
+
+```properties
+forensics.analytics.rest.enabled=true
+forensics.analytics.rest.host=127.0.0.1
+forensics.analytics.rest.port=8080
+```
+
+Environment variable equivalents:
+
+```text
+FORENSICS_ANALYTICS_REST_ENABLED=true
+FORENSICS_ANALYTICS_REST_HOST=127.0.0.1
+FORENSICS_ANALYTICS_REST_PORT=8080
+```
+
+Run the local backend from WSL with:
+
+```bash
+./gradlew :forensic-analytics-bootstrap:run --dependency-verification strict --console=plain --stacktrace
+```
+
+The bootstrap currently uses in-memory repositories for local runs, so sessions and repository-analysis workspace views are not durable across process restarts.
+
+### React UI
+
+The `forensic-ui` app communicates with the backend only through HTTP/REST. Browser gRPC, gRPC-Web, WebSocket and SSE are intentionally excluded from this MVP slice.
+
+Local frontend commands:
+
+```bash
+cd forensic-ui
+npm ci
+npm run dev
+npm run test
+npm run build
+```
+
+The default API base URL is `/api`. For local Vite development against the default backend port, run:
+
+```bash
+VITE_API_BASE_URL=http://127.0.0.1:8080/api npm run dev
+```
+
+The nginx container serves the built Vite assets with SPA fallback. It does not proxy `/api` because the repository has no root compose file or verified backend service name.
 
 ### Server-Side Repository Analysis
 

@@ -236,6 +236,11 @@ class DefaultRepositoryAnalysisIngestionUseCaseTest {
         public Optional<AnalysisSession> findById(AnalysisRunId sessionId) {
             return Optional.ofNullable(session).filter(stored -> stored.id().equals(sessionId));
         }
+
+        @Override
+        public List<AnalysisSession> findAll() {
+            return Optional.ofNullable(session).stream().toList();
+        }
     }
 
     private static final class NullWorkspacePreparationPort implements WorkspacePreparationPort {

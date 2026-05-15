@@ -30,5 +30,6 @@ include(
     "forensic-analytics-persistence",
     "forensic-analytics-ingestion-grpc",
     "forensic-analytics-ingestion-request",
+    "forensic-analytics-rest",
     "forensic-analytics-bootstrap",
 )
