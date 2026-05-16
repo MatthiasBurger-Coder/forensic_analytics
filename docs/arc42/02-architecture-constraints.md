@@ -11,6 +11,7 @@
 | Hexagonal Architecture | Core domain logic must be independent from frameworks and external tools. |
 | Plugins as adapters | Gradle and Maven plugins are producers of facts, not the central platform. |
 | Spring Boot server boundary | Spring Boot is approved only as an outer server/bootstrap technology. Domain and application modules remain Spring-free. |
+| Microservice autonomy | Future service-split work must keep services independently buildable, runnable, testable, containerized and deployable without shared Java code modules. Service integration is limited to REST/OpenAPI, gRPC/protobuf and RabbitMQ/message contracts. |
 | Joern as adapter | Joern integration must be encapsulated behind a port. |
 | Byteman integration | BTM files are generated server-side from the analysis model and runtime planning, then bound by the plugin through the runtime agent when debugging requires instrumentation. |
 
@@ -37,3 +38,4 @@
 - LLM output must be evidence-based.
 - Automated repair must be gated by tests, quality gates and human review.
 - Spring Boot wiring must stay outside the forensic core and must not weaken the observability boundary from ADR-0005.
+- Future microservices must not share Java code modules, domain models, event classes or test fixtures.

@@ -10,6 +10,12 @@ This directory contains the architecture and product documentation for the Foren
 - [governance/](governance/) - Reusable engineering governance flow for EPIC, arc42, workplans, skills and roles
 - [workplan/](workplan/) - Current governance workplan and execution slices for the engineering governance system
 
+## Future Microservice Boundary Direction
+
+Future service-split work follows strict microservice autonomy. Services must not share Java code modules, domain models, event classes or test fixtures. Integration between services is allowed only through REST/OpenAPI, gRPC/protobuf or RabbitMQ/message contracts.
+
+Contracts may be centrally documented under `contracts/`, but they must not become shared Java implementation modules. Each future service must be independently buildable, runnable, testable, containerized and deployable to Docker, Docker Swarm and Kubernetes.
+
 ## Modules
 
 The current platform direction is server-bound repository analysis. Plugins trigger analysis on the Forensic Analytics server; Analytics prepares workspaces, checks out repositories, runs parser/Joern/BTM capabilities server-side and returns the artifacts needed by clients.
