@@ -19,6 +19,10 @@ The repository root `AGENTS.md` remains the authoritative source for engineering
 - `orchestrator/` describes slice coordination, routing and conflict handling.
 - `roles/` defines role responsibilities and required reference skills. Existing roles may be flat Markdown files; reusable governance roles may be directories with a `SKILL.md`.
 - `skills/<skill-name>/SKILL.md` contains repo-scoped Codex skills discovered by Codex.
+- `../.codex/AGENTS.md` is the Codex-team entrypoint for the durable subagent hierarchy.
+- `../.codex/workflow/` contains Codex-team workflow execution rules.
+- `../.codex/subagents/` contains durable subagent role descriptions that point back to these authoritative role files.
+- `../.codex/skills/` contains Codex-team skill entrypoints that delegate to authoritative repository skills under `.agents/skills`.
 - `../.codex/agents/` contains project-scoped custom subagent TOML files.
 
 ## Codex Compatibility
@@ -26,6 +30,7 @@ The repository root `AGENTS.md` remains the authoritative source for engineering
 - A discoverable skill must be a directory under `.agents/skills/` with a `SKILL.md` file.
 - Every `SKILL.md` must include YAML frontmatter with `name` and `description`.
 - Reusable governance role directories under `.agents/roles/` also use `SKILL.md` with YAML frontmatter.
+- Codex-team skill entrypoints under `.codex/skills/` must use YAML frontmatter with `name` and `description` and must avoid redefining rules already owned by root `AGENTS.md`, `QUALITY.md` or `.agents/skills`.
 - Custom subagents live under `.codex/agents/` as standalone TOML files with `name`, `description` and `developer_instructions`.
 
 ## Verification

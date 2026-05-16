@@ -38,6 +38,33 @@ Agents must execute repository commands in the environment that matches the host
 
 If a baseline, command, or quality rule in this document differs from `AGENTS.md`, `QUALITY.md`, `settings.gradle(.kts)`, `build.gradle(.kts)`, or CI workflow files in the repository, the repository files must be inspected and the conflict must be reported before continuing.
 
+## Mandatory Subagent Workflow
+
+All non-trivial repository work must be routed through the configured subagent workflow.
+
+The Agent Workflow Orchestrator is responsible for:
+
+- reading workplans,
+- detecting slices,
+- assigning subagents or role reviews,
+- enforcing architecture rules,
+- enforcing quality gates,
+- coordinating execution,
+- preserving stop-rule behavior,
+- collecting and reporting results.
+
+Direct implementation of non-trivial work without subagent or role review is forbidden.
+
+Use these sources for workflow routing:
+
+1. `.codex/AGENTS.md`
+2. `.codex/workflow/workflow-execution-rules.md`
+3. `.agents/orchestrator/routing-rules.md`
+4. `.agents/orchestrator/swarm-orchestrator.md`
+5. relevant `.agents/roles` and `.agents/skills`
+
+Callable subagents should be used when the active request or workplan command authorizes delegated execution. If callable subagents are unavailable in the current runtime, the corresponding role file must be used as an explicit review checklist and the limitation must be reported.
+
 ## Mandatory Workplan Execution Command
 
 When the user writes exactly:
