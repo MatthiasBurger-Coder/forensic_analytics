@@ -11,6 +11,39 @@ Create executable, repository-specific workflows that preserve `AGENTS.md`, `QUA
 
 This skill governs workflow creation. It does not implement runtime business functionality.
 
+## Mandatory Branch-First Rule
+
+Every workflow creation must start by ensuring a dedicated Git branch for that workflow exists and is active.
+
+For a new workflow this means creating and checking out a workflow branch before mutating workflow artifacts. If the current branch already exactly matches the current workflow, verify it before continuing.
+
+Read-only verification, requirement intake, routing-rule inspection, and role selection may occur before branch creation. Mutating workflow creation must not.
+
+This rule applies before any workflow artifact is created or modified: `workflow.md`, `docs/workflow/**`, workplans, slice definitions, workflow-specific documentation changes, implementation tasks, or write-capable agent assignments.
+
+Required order:
+
+1. Verify the Git repository context.
+2. Check the working tree status.
+3. Stop if the current branch is detached, unclear, or if unrelated or unclear uncommitted changes exist.
+4. Create a dedicated workflow branch, unless the current branch already matches the current workflow.
+5. Check local and remote branch-name collisions, choosing the next clear unique suffix when needed.
+6. Checkout the workflow branch, or verify the existing matching workflow branch.
+7. Verify the active branch.
+8. Create or regenerate workflow artifacts only after successful branch verification.
+9. Continue with slices, subagents, quality gates, commits, and optional push.
+
+Default branch naming:
+
+```text
+feature/workflow-<short-topic>-<yyyyMMdd>
+fix/workflow-<short-topic>-<yyyyMMdd>
+docs/workflow-<short-topic>-<yyyyMMdd>
+architecture/workflow-<short-topic>-<yyyyMMdd>
+```
+
+Never create or modify workflow artifacts on `main`, `master`, `develop`, or any shared branch. If branch creation, checkout or verification fails, stop and report the reason instead of continuing in the current branch.
+
 ## Required Inputs
 
 Read before authoring or regenerating a workflow:
@@ -29,9 +62,10 @@ Read before authoring or regenerating a workflow:
 Before creating a new workflow:
 
 1. Verify the repository root and the absolute target path.
-2. Delete `docs/workflow` completely, unless the user explicitly asks to preserve an existing workflow.
-3. Recreate `docs/workflow`.
-4. Regenerate the full workflow structure.
+2. Verify that the dedicated workflow branch exists and is active.
+3. Delete `docs/workflow` completely, unless the user explicitly asks to preserve an existing workflow.
+4. Recreate `docs/workflow`.
+5. Regenerate the full workflow structure.
 
 Do not partially overwrite old slices. Do not keep stale workflow files unless the user explicitly asks to archive them outside the active workflow.
 
@@ -92,6 +126,8 @@ Assign roles by verified responsibility:
 
 Use subagents only when the user explicitly asks for delegated or parallel agent work.
 
+Subagents must verify that the active branch belongs to the current workflow before modifying files. They must not switch branches or implement on `main`, `master`, `develop`, or any shared branch unless the workflow explicitly authorizes the branch operation.
+
 ## Quality Gates
 
 Read `QUALITY.md` before documenting quality commands.
@@ -102,6 +138,12 @@ Do not invent Gradle task names, CI jobs or quality scripts. If a command cannot
 
 Stop and report if:
 
+- the Git repository context cannot be verified
+- the current branch is detached or unclear
+- unrelated or unclear uncommitted changes exist before workflow branch creation
+- the branch name collides with an existing local or remote branch and no clear unique suffix can be chosen
+- the dedicated workflow branch cannot be created, checked out, or verified as active
+- the active branch is `main`, `master`, `develop`, or another shared branch when workflow files would be created
 - `docs/workflow` cannot be safely deleted and regenerated
 - architecture conflicts are unclear
 - EPIC contradicts implementation and the source of truth is unclear

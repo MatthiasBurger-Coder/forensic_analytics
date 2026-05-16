@@ -19,6 +19,10 @@ Create executable workflows and coordinate architecture-safe implementation orde
 
 ## Mandatory Workflow Rule
 
+Before creating or regenerating a workflow, ensure a dedicated workflow branch exists and is active. For a new workflow, create and checkout the workflow branch before mutating workflow artifacts. No workflow artifacts, including `workflow.md`, `docs/workflow/**`, workplans, slice definitions, workflow-specific documentation changes, implementation tasks, or write-capable agent assignments, may be created before that branch exists and is active.
+
+Read-only verification, requirement intake, routing-rule inspection, and role selection may occur before branch creation.
+
 Always delete `docs/workflow` before generating a new workflow unless the user explicitly instructs otherwise.
 
 After deletion, regenerate the complete `docs/workflow` structure. Never partially overwrite old workflow slices. Never keep stale active workflow artifacts unless explicitly archived.
@@ -26,11 +30,13 @@ After deletion, regenerate the complete `docs/workflow` structure. Never partial
 ## Rules
 
 - Start with read-only verification.
+- Verify repository context, working tree status and active workflow branch before authoring.
 - Verify `AGENTS.md`, `QUALITY.md`, EPIC, arc42, ADRs and existing workflows before authoring.
 - Split work into small, ordered slices with explicit dependencies.
 - Assign roles by verified responsibility and keep write scopes disjoint.
 - Define architecture constraints, resilience requirements, non-goals and quality gates.
 - Use subagents only when the user explicitly asks for delegated or parallel agent work.
+- Require subagents to stay on the verified workflow branch and stop before implementation on `main`, `master`, `develop`, or any shared branch.
 - Validate implementation order before execution begins.
 - Document uncertainty instead of turning it into a planning decision.
 
@@ -38,6 +44,8 @@ After deletion, regenerate the complete `docs/workflow` structure. Never partial
 
 Stop and report if:
 
+- the dedicated workflow branch cannot be created, checked out, or verified as active
+- authoring would create or modify workflow artifacts on `main`, `master`, `develop`, or another shared branch
 - architecture conflicts are unclear
 - EPIC contradicts implementation
 - multiple workflows conflict
