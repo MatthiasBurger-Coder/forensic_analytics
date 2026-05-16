@@ -1,40 +1,22 @@
 # Agent Handoff Matrix
 
-## Purpose
+This matrix records owner and review expectations for the Git Branch Strategy
+workflow.
 
-This matrix defines expected handoffs between workflow roles and skills.
+| Slice | Owner | Inputs | Outputs | Review / Handoff |
+| --- | --- | --- | --- | --- |
+| 00 - Baseline And Reconciliation Gate | Senior Workflow Architect | Git status, default branch, related governance branch | Updated git-state review and execution notes | Senior Git Workspace Specialist confirms branch safety. |
+| 01 - Repository-Governance Rule | Senior Git Workspace Specialist | `AGENTS.md`, branch-governance skills, branch-first predecessor branch | Updated workflow-create branch rule | Senior System Architect checks governance authority. |
+| 02 - Workflow-Scope Classification | Senior Workflow Architect | Branch rule, prompts, routing docs | Prefix decision order and required output text | Senior Agent Orchestrator verifies routing impact. |
+| 03 - Branch Conflict Check | Senior Git Workspace Specialist | Branch strategy rules, workflow prompt, conflict skill | Local and remote collision behavior | Senior Tester verifies reproducible command evidence. |
+| 04 - Subagent Assignment By Scope | Senior Agent Orchestrator | Scope rules, routing docs, role files | Scope-to-role mapping | Senior System Architect checks architecture cases. |
+| 05 - Quality Assurance By Scope | Senior Tester | `QUALITY.md`, Gradle build, quality skills | Scope quality expectations | Senior Git Workspace Specialist checks commit/push readiness. |
+| 06 - Documentation, Prompts And Skills Sync | Senior Documentation Engineer | All changed governance files | Consistent docs, prompts and execution summary | Senior Agent Orchestrator verifies no stale route remains. |
 
-## Matrix
+## Handoff Rules
 
-| From | To | Handoff trigger | Required artifacts |
-| --- | --- | --- | --- |
-| Three Amigos Requirement Gatekeeper | Workflow Authoring | `READY_FOR_WORKFLOW` | normalized requirement, acceptance criteria, role map, blockers |
-| Workflow Authoring | Workflow Executor | executable workflow approved for execution | slice plan, dependencies, write scopes, quality gates |
-| Workflow Executor | Skill Registry & Conflict Auditor | before new skill creation or governance edits | active slice, affected skills, expected outputs |
-| Skill Registry & Conflict Auditor | Specialist reviewer | conflict found | conflict type, affected files, required resolution |
-| Senior Swarm Orchestrator | Agent Handoff Protocol | parallel or delegated work begins | owner map, disjoint write scopes, merge order |
-| Contract-First API Steward | Senior gRPC/Proto Specialist | gRPC/protobuf contract change | proto files, message semantics, compatibility report |
-| Data Ownership & Persistence Steward | Security & Threat Modeling | sensitive data or cross-boundary flow | data ownership report, sensitivity assessment |
-| Observability & Runtime Diagnostics | Security & Threat Modeling | logging or telemetry contains sensitive context | observability check, redaction needs |
-| Quality Gate Orchestrator | Release & Branch Governance | commit or push readiness | quality result report, failed or skipped checks |
-| Release & Branch Governance | Git commit preparation skills | commit explicitly allowed | changed-file scope, message draft, validation evidence |
-
-## Required Handoff Fields
-
-- `source_agent`
-- `target_agent`
-- `slice_id`
-- `input_artifacts`
-- `output_artifacts`
-- `assumptions`
-- `known_risks`
-- `blockers`
-- `validation_status`
-- `next_action`
-
-## Rules
-
-- Every handoff has one source and one target owner.
-- Reviewers may block but must provide resolution steps.
-- Handoffs must not hide unresolved assumptions.
-- File ownership and merge order are required for parallel work.
+- Each owner verifies the active branch before editing.
+- Each owner records changed files and verification evidence before handoff.
+- Reviewers do not approve uncertain branch ownership, missing quality evidence
+  or unresolved prompt conflicts.
+- Write-capable parallel work is blocked unless file ownership is disjoint.
