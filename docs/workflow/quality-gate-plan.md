@@ -2,7 +2,7 @@
 
 `QUALITY.md` is the authoritative quality contract.
 
-## Required Commands
+## Required Commands From QUALITY.md
 
 Minimum command:
 
@@ -16,7 +16,19 @@ Full local quality gate:
 ./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace
 ```
 
-Documentation and workflow artifact checks:
+Diagnostic command only:
+
+```bash
+./gradlew clean check --dependency-verification strict --console=plain --stacktrace
+```
+
+`clean check` is not the full gate unless `checkPackageCoverage` is explicitly
+wired into `check`.
+
+## Workflow Creation Checks
+
+For this `workflow create` step, the changed files are workflow documents only.
+The narrow checks are:
 
 ```bash
 git status --short --branch
@@ -25,25 +37,25 @@ git diff -- docs/workflow
 git diff --check
 ```
 
-## Scope-Based Minimums
+Gradle is not required to validate docs-only workflow creation, but the full
+quality gate remains required before later commit/push readiness unless an
+explicit documented exception is accepted.
 
-| Workflow scope | Branch example | Minimum verification |
-| --- | --- | --- |
-| Feature/default | `feature/workflow-grpc-ingestion-20260516` | Tests, build and quality according to `QUALITY.md`. |
-| Fix | `fix/workflow-branch-conflict-check-20260516` | Regression test or documented defect reproduction plus `QUALITY.md` gate. |
-| Docs | `docs/workflow-git-branch-strategy-20260516` | Documentation diff review, `git diff --check`, and documented reason if Gradle gate is not run. |
-| Architecture | `architecture/workflow-microservice-boundaries-20260516` | Architecture consistency review with `AGENTS.md`, skills and ADRs plus `QUALITY.md` gate. |
+## Execution Slice Checks
 
-## Commit And Push Readiness
+Future execution slices must run at least:
 
-Before commit or push readiness is claimed:
+```bash
+git diff --check
+```
 
-1. Run the narrowest meaningful checks for the slice.
-2. Run the full local quality gate from `QUALITY.md`, or document why it could
-   not be executed and treat the result as not fully clean.
-3. Inspect `git diff` and `git diff --check`.
-4. Verify no broad line-ending-only changes are present.
-5. Verify the branch push target explicitly.
+and any targeted checks implied by the changed files. If a slice changes
+`QUALITY.md`, Gradle build logic, plugin metadata, task inputs/outputs or
+production code, it must use the applicable `QUALITY.md` gate before claiming
+readiness.
 
 `validatePlugins` is required only when Gradle plugin metadata, task
-inputs/outputs or plugin implementation classes change.
+inputs/outputs or plugin implementation classes are changed.
+
+Do not document mutation testing or CI workflow checks unless the repository
+contains verified tooling for them.
