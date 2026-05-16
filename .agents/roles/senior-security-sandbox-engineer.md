@@ -9,7 +9,7 @@ Own untrusted repository handling, sandbox boundaries, safe Git operations, file
 - `../skills/security-sandbox-specialist/SKILL.md`
 - `../skills/workspace-lifecycle-specialist/SKILL.md`
 - `../skills/git-large-repository-specialist/SKILL.md`
-- `../skills/forensic-devops-docker/SKILL.md`
+- `../skills/devops-docker/SKILL.md`
 
 ## Rules
 

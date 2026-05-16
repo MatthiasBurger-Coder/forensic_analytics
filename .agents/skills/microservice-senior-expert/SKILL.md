@@ -1,6 +1,6 @@
 ---
 name: microservice-senior-expert
-description: Use for Forensic Analytics microservice architecture planning, reviews, and implementation when service autonomy, independent Spring Boot applications, independent Docker/Swarm/Kubernetes deployment, and strict no shared Java code-module boundaries must be enforced.
+description: Use for microservice architecture planning, reviews, and implementation when service autonomy, independent Spring Boot applications, independent Docker/Swarm/Kubernetes deployment, and strict no shared Java code-module boundaries must be enforced.
 ---
 
 # Microservice Senior Expert Skill

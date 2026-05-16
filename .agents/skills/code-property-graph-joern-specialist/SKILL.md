@@ -7,7 +7,7 @@ description: Use for Joern and Code Property Graph planning, data-flow, control-
 
 ## Description
 
-Guides optional Joern and Code Property Graph work while keeping CPG generation and semantic analysis in Forensic Analytics adapters.
+Guides optional Joern and Code Property Graph work while keeping CPG generation and semantic analysis in project adapters.
 
 ## Instructions
 

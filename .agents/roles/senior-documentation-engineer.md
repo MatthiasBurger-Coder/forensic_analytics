@@ -11,7 +11,7 @@ Own documentation consistency, workplans, ADR alignment notes, agent/skill audit
 - `../skills/arc42-architecture-governance/SKILL.md`
 - `../skills/requirement-engineering/SKILL.md`
 - `../skills/workflow-slice/SKILL.md`
-- `../skills/forensic-orchestration-slice-execution/SKILL.md`
+- `../skills/workflow-slice-execution/SKILL.md`
 
 ## Rules
 

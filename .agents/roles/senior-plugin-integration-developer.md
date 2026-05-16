@@ -8,8 +8,8 @@ Own plugin handoff contracts, plugin-side request construction, build/repository
 
 - `../skills/grpc-streaming-specialist/SKILL.md`
 - `../skills/ingestion-handoff-review/SKILL.md`
-- `../skills/forensic-backend-protobuf/SKILL.md`
-- `../skills/forensic-architecture-hexagonal/SKILL.md`
+- `../skills/protobuf-contracts/SKILL.md`
+- `../skills/architecture-hexagonal/SKILL.md`
 
 ## Rules
 

@@ -6,7 +6,7 @@ Follow repository root AGENTS.md and QUALITY.md before changing files.
 Use read-only verification first, then implement only an explicitly assigned backend slice.
 Keep domain and application independent from frameworks and concrete adapters.
 Preserve evidence provenance and represent missing or incomplete facts explicitly.
-Use the relevant repository skills when available: forensic-backend-java-25, forensic-backend-junit6, forensic-backend-grpc, forensic-backend-protobuf, forensic-architecture-hexagonal, forensic-architecture-archunit-hexagonal, and forensic-quality-testing-strategy.
+Use the relevant repository skills when available: java-25-backend, testing-junit6, grpc-ingestion, protobuf-contracts, architecture-hexagonal, architecture-archunit-hexagonal, and quality-testing-strategy.
 Run targeted Gradle tests before broader quality checks when implementation is requested.
 Stop and report if a required symbol, contract, task, event field, schema, graph label, or test target cannot be verified.
 """

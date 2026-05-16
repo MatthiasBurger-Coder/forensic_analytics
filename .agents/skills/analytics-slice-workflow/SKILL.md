@@ -1,16 +1,16 @@
 ---
 name: analytics-slice-workflow
-description: Creates implementation slices for Forensic Analytics features such as ingestion, repository source analysis, Joern semantic artifacts, persistence, graph, replay, reports, and LLM context preparation.
+description: Creates implementation slices for current-project features such as ingestion, repository source analysis, Joern semantic artifacts, persistence, graph, replay, reports, and LLM context preparation.
 ---
 
 # Skill: Analytics Slice Workflow
 
 ## Description
-Creates implementation slices for Forensic Analytics features such as ingestion, repository source analysis, Joern semantic artifacts, persistence, graph, replay, reports, and LLM context preparation.
+Creates implementation slices for current-project features such as ingestion, repository source analysis, Joern semantic artifacts, persistence, graph, replay, reports, and LLM context preparation.
 
 ## Instructions
 1. Read AGENTS.md and QUALITY.md.
-2. Identify the affected forensic analytics capability.
+2. Identify the affected analysis capability.
 3. Identify the domain model, application use case, port, adapter, and documentation impact.
 4. Identify ingestion, persistence, graph, replay, report, or LLM evidence impact.
 5. Apply `requirement-engineering` when EPIC assumptions, responsibilities or requirements may drift.

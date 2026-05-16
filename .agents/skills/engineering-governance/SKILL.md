@@ -36,7 +36,7 @@ Use these skills for focused work:
 - `requirement-engineering` for EPIC and requirement drift
 - `arc42-architecture-governance` for architecture documentation synchronization
 - `documentation-sync` for documentation consistency
-- `quality-gate` or `forensic-quality-gates` for verification commands
+- `quality-gate` or `quality-gate-governance` for verification commands
 
 ## Synchronization Model
 

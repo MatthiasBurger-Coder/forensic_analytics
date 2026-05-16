@@ -1,6 +1,6 @@
 ---
 name: git-commit-message-preparation
-description: Use when drafting, reviewing, or validating a Forensic Analytics Git commit message from actual git status, diffs, changed-file classification, task scope, verification evidence, AGENTS.md, QUALITY.md, and git-commit-preparation output. Stops when message content would require guessing.
+description: Use when drafting, reviewing, or validating a current-project Git commit message from actual git status, diffs, changed-file classification, task scope, verification evidence, AGENTS.md, QUALITY.md, and git-commit-preparation output. Stops when message content would require guessing.
 ---
 
 # Commit Message Preparation Skill

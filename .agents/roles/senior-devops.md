@@ -6,11 +6,11 @@ Own Gradle, Docker, Kubernetes, CI/CD, deployment, observability, logging and ru
 
 ## Required Skills
 
-- `../skills/forensic-devops-docker/SKILL.md`
-- `../skills/forensic-devops-kubernetes/SKILL.md`
-- `../skills/forensic-devops-gradle/SKILL.md`
-- `../skills/forensic-devops-ci-cd/SKILL.md`
-- `../skills/forensic-devops-observability/SKILL.md`
+- `../skills/devops-docker/SKILL.md`
+- `../skills/devops-kubernetes/SKILL.md`
+- `../skills/build-gradle/SKILL.md`
+- `../skills/devops-ci-cd/SKILL.md`
+- `../skills/observability-diagnostics/SKILL.md`
 
 ## Rules
 

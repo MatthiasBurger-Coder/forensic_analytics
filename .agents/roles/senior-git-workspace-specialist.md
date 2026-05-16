@@ -10,7 +10,7 @@ Own Git checkout, repository reference handling, workspace lifecycle, workspace 
 - `../skills/git-large-repository-specialist/SKILL.md`
 - `../skills/security-sandbox-specialist/SKILL.md`
 - `../skills/performance-scalability-engineer/SKILL.md`
-- `../skills/forensic-architecture-hexagonal/SKILL.md`
+- `../skills/architecture-hexagonal/SKILL.md`
 
 ## Rules
 

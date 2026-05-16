@@ -9,7 +9,7 @@ Own performance budgets, scalability risk, large repository metrics, resource qu
 - `../skills/performance-scalability-engineer/SKILL.md`
 - `../skills/distributed-systems-architect/SKILL.md`
 - `../skills/git-large-repository-specialist/SKILL.md`
-- `../skills/forensic-quality-gates/SKILL.md`
+- `../skills/quality-gate-governance/SKILL.md`
 
 ## Rules
 

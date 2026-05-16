@@ -199,7 +199,7 @@ Hide, redact, or generalize diagnostics when they contain:
 
 ## Project Application Notes
 
-For Forensic Analytics, apply these generic resilience rules to:
+For the current project, apply these generic resilience rules to:
 
 - React UI
 - Spring Boot services
@@ -214,7 +214,7 @@ For Forensic Analytics, apply these generic resilience rules to:
 - Docker Compose startup
 - CI and quality gates
 
-Preserve forensic evidence semantics: runtime, static, graph, replay, report, and LLM-related failures must remain explicit and must not be converted into confirmed evidence, successful analysis, or hidden partial output.
+Preserve domain evidence semantics: runtime, static, graph, replay, report, and LLM-related failures must remain explicit and must not be converted into confirmed evidence, successful analysis, or hidden partial output.
 
 ## Validation Checklist
 

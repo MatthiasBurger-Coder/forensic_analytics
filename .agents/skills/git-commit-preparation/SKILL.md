@@ -1,13 +1,13 @@
 ---
 name: git-commit-preparation
-description: Use when preparing, reviewing, validating, repairing, committing, pushing, creating a PR, or running `push auto` for Forensic Analytics changes. This skill is the commit-readiness workflow and enforces AGENTS.md, QUALITY.md, git diff inspection, task-scope validation, quality-gate verification, blocker routing, git-commit-message-preparation, PR creation on explicit `push`, and PR merge plus branch cleanup on explicit `push auto`.
+description: Use when preparing, reviewing, validating, repairing, committing, pushing, creating a PR, or running `push auto` for the current project changes. This skill is the commit-readiness workflow and enforces AGENTS.md, QUALITY.md, git diff inspection, task-scope validation, quality-gate verification, blocker routing, git-commit-message-preparation, PR creation on explicit `push`, and PR merge plus branch cleanup on explicit `push auto`.
 ---
 
 # Commit Preparation Skill
 
 ## Goal
 
-Prepare, review, repair, commit, push, and open a pull request for Forensic Analytics changes without weakening repository rules, mixing unrelated changes, or claiming unexecuted verification.
+Prepare, review, repair, commit, push, and open a pull request for the current project changes without weakening repository rules, mixing unrelated changes, or claiming unexecuted verification.
 
 This `SKILL.md` is the single source for the git-commit-preparation workflow. The previous standalone workflow content is consolidated here.
 

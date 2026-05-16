@@ -1,6 +1,6 @@
 ---
 name: git-clean
-description: Use when the user enters exactly `clean`, when `push auto` needs post-merge cleanup, or when Codex is asked to clean up after a GitHub pull request was merged in the Forensic Analytics repository. Verifies the PR merge, fetches and prunes origin, switches the worktree to main, fast-forwards main, deletes only local branches proven merged and unnecessary, and reports blockers without force deletion.
+description: Use when the user enters exactly `clean`, when `push auto` needs post-merge cleanup, or when Codex is asked to clean up after a GitHub pull request was merged in the repository. Verifies the PR merge, fetches and prunes origin, switches the worktree to main, fast-forwards main, deletes only local branches proven merged and unnecessary, and reports blockers without force deletion.
 ---
 
 # Clean Skill

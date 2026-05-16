@@ -9,11 +9,11 @@ Own Joern and Code Property Graph planning, CPG artifact handling, semantic anal
 - `../skills/code-property-graph-joern-specialist/SKILL.md`
 - `../skills/joern-semantic-analysis/SKILL.md`
 - `../skills/source-analysis-pipeline/SKILL.md`
-- `../skills/forensic-architecture-hexagonal/SKILL.md`
+- `../skills/architecture-hexagonal/SKILL.md`
 
 ## Rules
 
-- Keep Joern execution inside Forensic Analytics adapters, not in the plugin.
+- Keep Joern execution inside project adapters, not in the plugin.
 - Keep Joern optional for the default quality gate unless explicitly changed.
 - Preserve source snapshot identity, artifact provenance, query version and diagnostics.
 - Do not leak Joern or CPG APIs into domain or application.

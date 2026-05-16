@@ -1,6 +1,6 @@
 # Agent Team Instructions
 
-This directory contains the role, orchestration and repository-skill material for the Forensic Analytics development-team agent model.
+This directory contains reusable role, orchestration and repository-skill material for current-project development-team agent model.
 
 The repository root `AGENTS.md` remains the authoritative source for engineering rules, evidence integrity, architecture boundaries, documentation language and stop conditions. `QUALITY.md` remains the authoritative source for local verification commands. If any file under `.agents/` conflicts with those root documents, the root document wins and the conflict must be reported before continuing.
 
@@ -9,7 +9,7 @@ The repository root `AGENTS.md` remains the authoritative source for engineering
 - Work in small, reviewable slices with explicit scope and verification.
 - Preserve hexagonal architecture: adapters and infrastructure depend inward on application and domain, never the reverse.
 - Preserve microservice autonomy for service-split work: services must not share Java code modules and must integrate only through REST/OpenAPI, gRPC/protobuf or RabbitMQ/message contracts.
-- Keep forensic evidence semantics explicit; never convert unknown or incomplete facts into confirmed evidence.
+- Keep domain evidence semantics explicit; never convert unknown or incomplete facts into confirmed evidence.
 - Reuse shared Codex skills instead of duplicating role-specific knowledge.
 - Extend existing agent material only when the requested task requires it.
 - Do not overwrite or rewrite existing repository-specific `SKILL.md` workflows unless the task explicitly targets them.
