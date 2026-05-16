@@ -59,3 +59,26 @@ inputs/outputs or plugin implementation classes are changed.
 
 Do not document mutation testing or CI workflow checks unless the repository
 contains verified tooling for them.
+
+## Governance Manual Checks
+
+When no automated checker is verified, execution must record manual review for:
+
+- branch-first workflow creation;
+- Three Amigos readiness before workflow authoring;
+- role authority conflicts;
+- Senior System Architect final architecture authority;
+- executor and orchestrator boundary limits;
+- microservice no-shared-code invariants;
+- subagent handoff rules;
+- traceability from requirement to quality evidence.
+
+## Optional Checks
+
+- Markdown linting: not verified during workflow creation.
+- Link checking: not verified during workflow creation.
+- SonarCloud: optional and credential-dependent.
+- Docker, Docker Swarm and Kubernetes checks: not verified for this
+  governance-only workflow creation.
+- `validatePlugins`: required only if Gradle plugin metadata, task inputs,
+  task outputs or plugin implementation classes change.
