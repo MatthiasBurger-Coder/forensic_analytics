@@ -1,43 +1,43 @@
 ---
-name: workplan-authoring
-description: Use for creating or regenerating the current project workplans with verified baselines, executable slices, dependency ordering, subagent ownership, architecture constraints, resilience requirements, quality gates, stop conditions, and full docs/workplan lifecycle control.
+name: workflow-authoring
+description: Use for creating or regenerating the current project workflows with verified baselines, executable slices, dependency ordering, subagent ownership, architecture constraints, resilience requirements, quality gates, stop conditions, and full docs/workflow lifecycle control.
 ---
 
-# Skill: Workplan Authoring
+# Skill: Workflow Authoring
 
 ## Purpose
 
-Create executable, repository-specific workplans that preserve `AGENTS.md`, `QUALITY.md`, architecture governance, requirement traceability and evidence integrity.
+Create executable, repository-specific workflows that preserve `AGENTS.md`, `QUALITY.md`, architecture governance, requirement traceability and evidence integrity.
 
-This skill governs workplan creation. It does not implement runtime business functionality.
+This skill governs workflow creation. It does not implement runtime business functionality.
 
 ## Required Inputs
 
-Read before authoring or regenerating a workplan:
+Read before authoring or regenerating a workflow:
 
 1. User request.
 2. Root `AGENTS.md`.
 3. Root `QUALITY.md`.
-4. Existing `docs/workplan` if present.
+4. Existing `docs/workflow` if present.
 5. Relevant EPIC files under `docs/epics`.
 6. Relevant `docs/arc42` and `docs/adr` files.
 7. Relevant `.agents/skills` and `.agents/roles` files.
 8. Build or CI files only when quality-gate behavior is affected.
 
-## Workplan Regeneration Rule
+## Workflow Regeneration Rule
 
-Before creating a new workplan:
+Before creating a new workflow:
 
 1. Verify the repository root and the absolute target path.
-2. Delete `docs/workplan` completely.
-3. Recreate `docs/workplan`.
-4. Regenerate the full workplan structure.
+2. Delete `docs/workflow` completely, unless the user explicitly asks to preserve an existing workflow.
+3. Recreate `docs/workflow`.
+4. Regenerate the full workflow structure.
 
-Do not partially overwrite old slices. Do not keep stale workplan files unless the user explicitly asks to archive them outside the active workplan.
+Do not partially overwrite old slices. Do not keep stale workflow files unless the user explicitly asks to archive them outside the active workflow.
 
-## Workplan Structure
+## Workflow Structure
 
-Every workplan should include:
+Every workflow should include:
 
 - verified baseline
 - target outcome
@@ -83,7 +83,7 @@ Parallelize only when write scopes are disjoint, shared contracts are stable and
 
 Assign roles by verified responsibility:
 
-- workplan creation and dependency ordering: Senior Workplan Architect
+- workflow creation and dependency ordering: Senior Workflow Architect
 - requirement and EPIC drift: Senior Requirement Engineer
 - architecture boundaries and arc42: Senior System Architect or arc42 governance
 - documentation consistency: Senior Documentation Engineer
@@ -102,10 +102,10 @@ Do not invent Gradle task names, CI jobs or quality scripts. If a command cannot
 
 Stop and report if:
 
-- `docs/workplan` cannot be safely deleted and regenerated
+- `docs/workflow` cannot be safely deleted and regenerated
 - architecture conflicts are unclear
 - EPIC contradicts implementation and the source of truth is unclear
-- multiple active workplans conflict
+- multiple active workflows conflict
 - service ownership is ambiguous
 - resilience expectations are unclear
 - quality-gate authority is unclear
@@ -114,7 +114,7 @@ Stop and report if:
 
 ## Expected Outputs
 
-- fully regenerated `docs/workplan`
+- fully regenerated `docs/workflow`
 - ordered slice plan
 - dependency graph or dependency summary
 - role ownership map

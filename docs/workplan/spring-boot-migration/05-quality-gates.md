@@ -111,7 +111,7 @@ Record:
 
 ## Known Initial Blocker
 
-During workplan creation, task discovery through Gradle failed because the Gradle file hash cache was locked:
+During workflow creation, task discovery through Gradle failed because the Gradle file hash cache was locked:
 
 ```text
 /mnt/d/Projects/forensic_analytics/.gradle/9.4.0/fileHashes/fileHashes.lock

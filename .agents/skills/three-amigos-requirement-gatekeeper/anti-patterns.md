@@ -33,4 +33,4 @@ When one of these patterns appears:
 1. Name the pattern.
 2. Explain the concrete repository risk.
 3. Return `REQUIRES_REFINEMENT`.
-4. Ask for the smallest missing decision that would unblock workplan authoring.
+4. Ask for the smallest missing decision that would unblock workflow authoring.

@@ -44,7 +44,7 @@ All non-trivial repository work must be routed through the configured subagent w
 
 The Agent Workflow Orchestrator is responsible for:
 
-- reading workplans,
+- reading workflows,
 - detecting slices,
 - assigning subagents or role reviews,
 - enforcing architecture rules,
@@ -63,27 +63,27 @@ Use these sources for workflow routing:
 4. `.agents/orchestrator/swarm-orchestrator.md`
 5. relevant `.agents/roles` and `.agents/skills`
 
-Callable subagents should be used when the active request or workplan command authorizes delegated execution. If callable subagents are unavailable in the current runtime, the corresponding role file must be used as an explicit review checklist and the limitation must be reported.
+Callable subagents should be used when the active request or workflow command authorizes delegated execution. If callable subagents are unavailable in the current runtime, the corresponding role file must be used as an explicit review checklist and the limitation must be reported.
 
-## Mandatory Workplan Execution Command
+## Mandatory Workflow Execution Command
 
 When the user writes exactly:
 
 ```text
-workplan execute
+workflow execute
 ```
 
-Codex must not start ad-hoc implementation. The command is explicit authorization to execute the active workplan through the configured subagent workflow.
+Codex must not start ad-hoc implementation. The command is explicit authorization to execute the active workflow through the configured subagent workflow.
 
 Execution order:
 
-1. Locate the active workplan:
-    - `docs/workplan/workflow.md`, when present
-    - otherwise the active workplan described by `docs/workplan/README.md`, when present
-    - otherwise the most recent `docs/workplan/*.md`
-2. Read the complete workplan before implementation.
+1. Locate the active workflow:
+    - `docs/workflow/workflow.md`, when present
+    - otherwise the active workflow described by `docs/workflow/README.md`, when present
+    - otherwise the most recent `docs/workflow/*.md`
+2. Read the complete workflow before implementation.
 3. Identify all slices and their dependencies.
-4. Use `.agents/skills/workplan-executor/SKILL.md` for the execution protocol.
+4. Use `.agents/skills/workflow-executor/SKILL.md` for the execution protocol.
 5. Assign suitable subagents or roles for each slice through `.agents/orchestrator/routing-rules.md` and `.agents/orchestrator/swarm-orchestrator.md`.
 6. Execute one slice at a time.
 7. After each slice:
@@ -94,9 +94,9 @@ Execution order:
 8. If a slice requires specialist review, spawn or route to the matching subagent or role.
 9. Never bypass configured architecture, testing, DevOps, security, or microservice review for decisions in those areas.
 10. Stop if assumptions about classes, modules, APIs, quality commands, or architecture are uncertain.
-11. Commit or push only when the workplan explicitly allows commit or push.
+11. Commit or push only when the workflow explicitly allows commit or push.
 
-For `workplan execute`, no direct implementation of a slice is allowed before the relevant subagent or role has reviewed the slice, except read-only verification needed to route the slice.
+For `workflow execute`, no direct implementation of a slice is allowed before the relevant subagent or role has reviewed the slice, except read-only verification needed to route the slice.
 
 ## Core Principle
 

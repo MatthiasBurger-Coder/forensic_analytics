@@ -61,7 +61,7 @@ These slices may run in parallel after their prerequisites if write scopes remai
 
 | Slice | Primary owner | Review partners |
 |---|---|---|
-| 00 | Senior Workplan Architect | Senior Documentation Engineer |
+| 00 | Senior Workflow Architect | Senior Documentation Engineer |
 | 01 | Senior System Architect | Senior Documentation Engineer, Senior Requirement Engineer |
 | 02 | Senior DevOps | Senior Java Backend, Senior Tester |
 | 03 | Senior Java Backend | Senior DevOps, Senior Tester |

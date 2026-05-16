@@ -1,6 +1,6 @@
 ---
 name: three-amigos-requirement-gatekeeper
-description: "Use before workplan authoring or execution to validate incoming requirements with a Three Amigos gate: requirement completeness, architecture fit, quality/testability, dependency cycles, deadlock risks, slice boundaries, required skills, subagent availability, and READY_FOR_WORKPLAN versus REQUIRES_REFINEMENT decisions."
+description: "Use before workflow authoring or execution to validate incoming requirements with a Three Amigos gate: requirement completeness, architecture fit, quality/testability, dependency cycles, deadlock risks, slice boundaries, required skills, subagent availability, and READY_FOR_WORKFLOW versus REQUIRES_REFINEMENT decisions."
 ---
 
 # Skill: Three Amigos Requirement Gatekeeper
@@ -14,7 +14,7 @@ Prevent:
 - architecture drift
 - undefined ownership
 - unclear acceptance criteria
-- incomplete workplans
+- incomplete workflows
 - invalid slice dependencies
 - deadlocks caused by unstable contracts, cyclic workflows or shared file ownership
 
@@ -27,13 +27,13 @@ The gatekeeper may:
 - request refinements
 - split oversized slices
 - enforce architecture, quality and evidence-integrity rules
-- require specialist role or subagent review before workplan authoring
+- require specialist role or subagent review before workflow authoring
 
 ## Boundaries
 
 - Do not implement production code.
-- Do not generate workplan files directly; route ready requirements to `workplan-authoring`.
-- Do not execute workplans; route execution to `workplan-executor`.
+- Do not generate workflow files directly; route ready requirements to `workflow-authoring`.
+- Do not execute workflows; route execution to `workflow-executor`.
 - Do not override root `AGENTS.md`, `QUALITY.md`, ADRs or verified repository behavior.
 - Do not treat planned behavior, LLM output or inferred relationships as verified evidence.
 
@@ -47,7 +47,7 @@ Inspect the relevant subset of:
 - `docs/epics`
 - `docs/arc42`
 - `docs/adr`
-- existing `docs/workplan`
+- existing `docs/workflow`
 - `.agents/orchestrator`
 - `.agents/roles`
 - `.agents/skills`
@@ -57,11 +57,11 @@ Inspect the relevant subset of:
 Use EPIC source precedence:
 
 1. the EPIC explicitly named by the user
-2. the EPIC referenced by the active workplan
+2. the EPIC referenced by the active workflow
 3. the EPIC that directly matches the requested domain area under `docs/epics`
 4. no EPIC, reported as an open traceability gap
 
-When an active workplan exists and the user asks for a new requirement or workplan, first determine whether the request extends, replaces or conflicts with the active workplan. Return `REQUIRES_REFINEMENT` if that relationship is unclear.
+When an active workflow exists and the user asks for a new requirement or workflow, first determine whether the request extends, replaces or conflicts with the active workflow. Return `REQUIRES_REFINEMENT` if that relationship is unclear.
 
 ## Reference Files
 
@@ -113,7 +113,7 @@ Use related skills instead of duplicating their full workflows:
 - `engineering-governance` for cross-document governance synchronization.
 - `arc42-architecture-governance` for architecture documentation impact.
 - `workflow-slice` for implementation slice planning after the gate.
-- `workplan-authoring` only after a `READY_FOR_WORKPLAN` decision.
+- `workflow-authoring` only after a `READY_FOR_WORKFLOW` decision.
 - `quality-gate-governance` for verified quality commands.
 - `documentation-sync` for documentation alignment.
 - `agent-swarm-coordination-specialist` when the user explicitly authorizes subagent or parallel work.
@@ -123,7 +123,7 @@ Use related skills instead of duplicating their full workflows:
 Return exactly one decision:
 
 ```text
-READY_FOR_WORKPLAN
+READY_FOR_WORKFLOW
 ```
 
 or
@@ -132,7 +132,7 @@ or
 REQUIRES_REFINEMENT
 ```
 
-Use `READY_FOR_WORKPLAN` only when:
+Use `READY_FOR_WORKFLOW` only when:
 
 - the business goal and technical goal are explicit
 - scope and non-goals are clear
@@ -146,7 +146,7 @@ Use `READY_FOR_WORKPLAN` only when:
 
 Use `REQUIRES_REFINEMENT` when any requirement, ownership, API, quality command, architecture impact, evidence semantic, dependency edge or acceptance criterion would require guessing.
 
-Draft slices may be included with `REQUIRES_REFINEMENT` only when they are clearly labeled provisional and used to explain dependency or ownership questions. Do not present provisional slices as executable workplan slices.
+Draft slices may be included with `REQUIRES_REFINEMENT` only when they are clearly labeled provisional and used to explain dependency or ownership questions. Do not present provisional slices as executable workflow slices.
 
 Treat a user-accepted blocker-free assumption as ready only when the gate report records the assumption, the user acceptance source and the affected slices or decisions.
 

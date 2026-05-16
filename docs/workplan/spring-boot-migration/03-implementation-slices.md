@@ -21,7 +21,7 @@ Affected files:
 
 Owner role:
 
-- Senior Workplan Architect
+- Senior Workflow Architect
 
 Allowed write scope:
 

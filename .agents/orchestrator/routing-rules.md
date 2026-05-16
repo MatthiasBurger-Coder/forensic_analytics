@@ -11,14 +11,14 @@ Use these rules to select roles for a slice. Prefer the smallest set that covers
 - Microservice boundaries, service autonomy, independent deployability or no-shared-code service reviews route to `roles/microservice-senior-expert.md`.
 - Test strategy, regression coverage, ArchUnit, coverage gates or quality failures route to `roles/senior-tester.md`.
 - Gradle, Docker, Kubernetes, CI, observability or deployment work routes to `roles/senior-devops.md`.
-- New workplan creation, full `docs/workplan` regeneration, slice dependency planning or planning-risk review routes to `roles/senior-workplan-architect/SKILL.md`.
+- New workflow creation, full `docs/workflow` regeneration, slice dependency planning or planning-risk review routes to `roles/senior-workflow-architect/SKILL.md`.
 - EPIC consistency, requirement drift, requirement classification, assumption tracking or requirement-to-architecture synchronization routes to `roles/senior-requirement-engineer/SKILL.md`.
-- Incoming requirement gatekeeping before workplan authoring, Three Amigos review, acceptance-criteria validation, dependency/deadlock checks or `READY_FOR_WORKPLAN` versus `REQUIRES_REFINEMENT` decisions route to `skills/three-amigos-requirement-gatekeeper/SKILL.md`.
+- Incoming requirement gatekeeping before workflow authoring, Three Amigos review, acceptance-criteria validation, dependency/deadlock checks or `READY_FOR_WORKFLOW` versus `REQUIRES_REFINEMENT` decisions route to `skills/three-amigos-requirement-gatekeeper/SKILL.md`.
 - Multi-role coordination, conflict resolution or slice planning routes to `roles/senior-swarm-orchestrator.md`.
 - Protobuf contracts, streaming RPC design, request validation or gRPC compatibility route to `roles/senior-grpc-proto-specialist.md`.
 - Repository checkout, workspace lifecycle, source-root preparation or large Git repositories route to `roles/senior-git-workspace-specialist.md`.
 - Plugin producer handoff, plugin-side request construction or plugin-to-server communication routes to `roles/senior-plugin-integration-developer.md`.
-- Documentation, skill-audit material, existing workplan updates or ADR alignment notes route to `roles/senior-documentation-engineer.md`.
+- Documentation, skill-audit material, existing workflow updates or ADR alignment notes route to `roles/senior-documentation-engineer.md`.
 - Untrusted repository handling, sandboxing, safe Git operations or secret leakage risks route to `roles/senior-security-sandbox-engineer.md`.
 - Performance budgets, large repository metrics, timeouts, quotas or scalability testing route to `roles/senior-performance-engineer.md`.
 - Analysis-session storage, raw ingestion storage, artifact storage or projection boundaries route to `roles/senior-analysis-storage-architect.md`.

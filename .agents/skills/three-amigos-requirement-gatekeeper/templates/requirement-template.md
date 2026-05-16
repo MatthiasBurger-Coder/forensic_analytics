@@ -30,6 +30,6 @@
 
 ## EPIC Traceability
 
-## Active Workplan Relationship
+## Active Workflow Relationship
 
 ## Open Questions

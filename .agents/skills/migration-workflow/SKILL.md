@@ -24,7 +24,7 @@ Plans and executes repository, module, or cross-repo migrations in small, verifi
 - migration task
 - AGENTS.md
 - QUALITY.md
-- migration workplan if present
+- migration workflow if present
 
 ## Expected Outputs
 - migration plan

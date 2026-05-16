@@ -15,14 +15,14 @@ Actions:
 2. Separate confirmed requirements from assumptions.
 3. Mark missing fields as open questions, not inferred facts.
 4. Identify the EPIC source by the precedence defined in `SKILL.md`.
-5. If an active workplan exists, classify the request as extending, replacing, conflicting with or unrelated to that workplan.
+5. If an active workflow exists, classify the request as extending, replacing, conflicting with or unrelated to that workflow.
 
 Output:
 
 - normalized requirement document
 - assumptions and missing information
 - requirement classification
-- active workplan relationship, when relevant
+- active workflow relationship, when relevant
 
 ## Phase 2 - Three Amigos Review
 
@@ -94,14 +94,14 @@ Generate only a gate-level slice outline:
 
 When the decision is `REQUIRES_REFINEMENT`, slice outlines are provisional only and must name the missing decision, contract or ownership point that prevents execution.
 
-Do not create or regenerate `docs/workplan` here. Route that work to `workplan-authoring` after a `READY_FOR_WORKPLAN` decision.
+Do not create or regenerate `docs/workflow` here. Route that work to `workflow-authoring` after a `READY_FOR_WORKFLOW` decision.
 
 ## Inspection Depth Rule
 
 For broad cross-cutting requests, inspect enough repository evidence to verify every named or implied owner, contract, source of truth and quality command that affects the readiness decision. At minimum inspect:
 
 - the governing EPIC or report its absence
-- active workplan state when present
+- active workflow state when present
 - root `AGENTS.md`
 - root `QUALITY.md`
 - directly affected architecture docs or ADRs
@@ -110,12 +110,12 @@ For broad cross-cutting requests, inspect enough repository evidence to verify e
 
 Stop with `REQUIRES_REFINEMENT` when the readiness decision depends on artifacts that cannot be inspected or found.
 
-## Phase 6 - Workplan Approval
+## Phase 6 - Workflow Approval
 
 Decision:
 
 ```text
-READY_FOR_WORKPLAN
+READY_FOR_WORKFLOW
 ```
 
 or

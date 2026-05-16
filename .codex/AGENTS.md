@@ -43,7 +43,7 @@ All non-trivial work must be routed through the subagent workflow before impleme
 
 The Agent Workflow Orchestrator coordinates:
 
-- workplan discovery and reading,
+- workflow discovery and reading,
 - slice detection,
 - subagent or role assignment,
 - architecture-rule enforcement,
@@ -53,34 +53,34 @@ The Agent Workflow Orchestrator coordinates:
 
 Direct implementation without subagent or role review is forbidden for non-trivial work.
 
-Callable subagents should be used when the active request or workplan command authorizes delegated execution. If callable subagents are unavailable, apply the matching file under `subagents/` or a discovered project role file as an explicit local review checklist and report that no callable subagent was used.
+Callable subagents should be used when the active request or workflow command authorizes delegated execution. If callable subagents are unavailable, apply the matching file under `subagents/` or a discovered project role file as an explicit local review checklist and report that no callable subagent was used.
 
 ## Mandatory Command
 
 When the user writes exactly:
 
 ```text
-workplan execute
+workflow execute
 ```
 
 Codex must:
 
-1. Locate the active workplan.
+1. Locate the active workflow.
 2. Read all slices.
 3. Assign subagents or role reviews.
 4. Execute slice by slice.
 5. Run tests and quality checks after each slice.
 6. Review `git diff` and `git diff --check`.
-7. Continue only when the slice is clean or a documented blocker is explicitly allowed by the workplan.
+7. Continue only when the slice is clean or a documented blocker is explicitly allowed by the workflow.
 
-If a project-specific workplan-executor skill exists, use it after reading this reusable workflow.
+If a project-specific workflow-executor skill exists, use it after reading this reusable workflow.
 
 ## Team Hierarchy
 
 ```text
 Agent Workflow Orchestrator
 |
-+-- Workplan Executor Skill
++-- Workflow Executor Skill
 |
 +-- Senior System Architect
     |

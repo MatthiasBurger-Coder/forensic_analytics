@@ -21,7 +21,7 @@ Guides secure handling of untrusted repositories and workspace execution boundar
 
 ## Expected Inputs
 
-- Git and workspace workplan
+- Git and workspace workflow
 - filesystem root policy
 - secret and logging rules
 - container or process execution requirements
