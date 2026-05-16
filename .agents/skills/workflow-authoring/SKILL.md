@@ -29,9 +29,10 @@ Required order:
 4. Create a dedicated workflow branch, unless the current branch already matches the current workflow.
 5. Check local and remote branch-name collisions, choosing the next clear unique suffix when needed.
 6. Checkout the workflow branch, or verify the existing matching workflow branch.
-7. Verify the active branch.
-8. Create or regenerate workflow artifacts only after successful branch verification.
-9. Continue with slices, subagents, quality gates, commits, and optional push.
+7. Verify that the local branch ref exists.
+8. Verify the active branch.
+9. Create or regenerate workflow artifacts only after successful branch verification.
+10. Continue with slices, subagents, quality gates, commits, and optional push.
 
 Default branch naming:
 
@@ -43,6 +44,15 @@ architecture/workflow-<short-topic>-<yyyyMMdd>
 ```
 
 Never create or modify workflow artifacts on `main`, `master`, `develop`, or any shared branch. If branch creation, checkout or verification fails, stop and report the reason instead of continuing in the current branch.
+
+Branch verification after creation or checkout must include both:
+
+```bash
+git show-ref --verify --quiet refs/heads/<workflow-branch>
+git branch --show-current
+```
+
+Do not rely on generated workflow notes as proof that a branch exists.
 
 ## Required Inputs
 
@@ -142,7 +152,7 @@ Stop and report if:
 - the current branch is detached or unclear
 - unrelated or unclear uncommitted changes exist before workflow branch creation
 - the branch name collides with an existing local or remote branch and no clear unique suffix can be chosen
-- the dedicated workflow branch cannot be created, checked out, or verified as active
+- the dedicated workflow branch cannot be created, checked out, verified as a local ref, or verified as active
 - the active branch is `main`, `master`, `develop`, or another shared branch when workflow files would be created
 - `docs/workflow` cannot be safely deleted and regenerated
 - architecture conflicts are unclear

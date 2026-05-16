@@ -42,15 +42,22 @@ architecture/workflow-<short-topic>-<yyyyMMdd>
 git checkout -b <workflow-branch>
 ```
 
-14. Verify the active branch:
+14. Verify that the branch ref exists and that it is active:
 
 ```bash
+git show-ref --verify --quiet refs/heads/<workflow-branch>
 git branch --show-current
 ```
 
-15. Continue only when the active branch exactly matches the workflow branch.
+15. Continue only when the local branch ref exists and the active branch exactly
+    matches the workflow branch.
 16. Create or regenerate workflow artifacts only after successful branch verification.
 17. Build slices, role ownership, quality gates and stop conditions through the workflow-authoring skill.
+
+For microservice migration workflows, record the Three Amigos decision before
+workflow authoring continues. The decision must include scope, non-scope,
+acceptance criteria, service boundary, contract impact, test impact, risk level
+and stop conditions.
 
 ## Subagent Rules
 
@@ -70,6 +77,7 @@ Stop when:
 - local or remote branch-name collisions cannot be resolved with a clear unique suffix;
 - the workflow branch cannot be created;
 - the workflow branch cannot be checked out;
+- the workflow branch ref cannot be verified after creation or checkout;
 - the active branch after checkout does not match the expected workflow branch;
 - workflow rules conflict and cannot be resolved from repository sources;
 - creating or modifying workflow artifacts would happen on `main`, `master`, `develop`, or another shared branch.

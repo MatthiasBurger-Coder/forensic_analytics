@@ -14,8 +14,11 @@
 | ADR-0006 | Spring Boot owns the outer server boundary | Accepted | Allows Boot only at the server bootstrap boundary while preserving framework-free core modules |
 | ADR-0007 | REST API strategy under Spring Boot | Accepted | Keeps the existing JDK REST adapter behind Boot lifecycle wiring and defers Spring MVC/WebFlux |
 | ADR-0008 | Cross-cutting logging module with Spring method interception | Accepted | Allows a named logging-module exception for Boot-scoped method logging while keeping observability framework-neutral |
+| ADR-0009 | Do not share Java implementation modules between services | Accepted | Preserves service autonomy and prevents shared-code coupling in future service-split work |
+| ADR-0010 | Use contract-first REST and gRPC communication | Accepted | Requires explicit REST/gRPC contracts, compatibility review and tests before service communication changes |
 | ADR-0011 | Run Three Amigos requirement gate before workflow authoring | Accepted | Keeps new requirements validated before executable workflow generation |
 | ADR-0012 | Require quality gates before commit and push | Accepted | Keeps commit and push readiness tied to verified local quality evidence |
+| ADR-0013 | Assign data ownership per service | Accepted | Requires one owner and one write path for persistent data and blocks cross-service database coupling |
 | ADR-0014 | Use an explicit agent handoff protocol | Accepted | Keeps delegated workflow ownership, blockers and validation evidence explicit |
 | ADR-0015 | Use skill registry and conflict auditing | Accepted | Prevents hidden role, skill and governance conflicts during workflow work |
 | ADR-0016 | Create workflow branches before workflow artifacts | Accepted | Keeps workflow creation isolated from shared branches before mutating workflow files |

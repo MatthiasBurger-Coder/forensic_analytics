@@ -61,3 +61,39 @@ documentation files may overlap.
   container, configuration and healthcheck evidence.
 - A workflow references missing commands, skills, roles or contract files and
   would continue by guessing.
+
+## Execution Refresh
+
+Decision refreshed during `workflow execute` after Slice 00 branch verification:
+
+```text
+READY_FOR_WORKFLOW
+```
+
+Requirement Analyst finding:
+
+- The workflow remains governance-only. The active execution request adds an
+  explicit branch-created verification requirement for workflow execution
+  guidance and does not request production service extraction.
+
+Architecture Validator finding:
+
+- The branch verification requirement is an orchestration safeguard and does
+  not change product architecture, service boundaries, API contracts, storage,
+  runtime evidence, graph, replay or LLM behavior.
+- Future microservice work must still use bounded-context ownership,
+  contract-first communication and no shared Java implementation modules.
+
+Quality Validator finding:
+
+- The added branch-created verification is testable with Git commands:
+  `git branch --show-current`, `git show-ref --verify --quiet
+  refs/heads/<workflow-branch>` and `git status --short --branch`.
+- Slice execution quality remains governed by `QUALITY.md`; documentation-only
+  slices require `git diff --check` plus the slice-specific diff inspection.
+
+Dependency finding:
+
+- Slice order remains acyclic. The persistent executor guidance update belongs
+  to Slice 07 after the Skill Registry gate and skill-boundary slices establish
+  ownership.
