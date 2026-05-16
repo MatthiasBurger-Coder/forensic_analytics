@@ -1,15 +1,41 @@
 # Codex Team Instructions
 
-This directory defines the durable Codex development-team structure for the Forensic Analytics repository.
+This directory defines a reusable Codex development-team structure for a repository.
 
-The repository root `AGENTS.md` is the authoritative source for engineering rules, forensic evidence integrity, architecture boundaries, stop conditions, documentation language, and final reporting. `QUALITY.md` is the authoritative source for verification commands. If this file conflicts with either root document, the root document wins and the conflict must be reported before continuing.
+The repository root `AGENTS.md`, when present, is the authoritative source for project-specific engineering rules, safety rules, architecture boundaries, stop conditions, documentation language, and final reporting. `QUALITY.md`, when present, is the authoritative source for verification commands. If this file conflicts with a root project document, the root document wins and the conflict must be reported before continuing.
 
 ## Directory Map
 
-- `workflow/workflow-execution-rules.md` defines the team execution workflow.
+- `workflow/workflow-execution-rules.md` defines the reusable team execution workflow.
 - `subagents/` describes the durable role hierarchy and responsibilities.
-- `skills/<skill-name>/SKILL.md` contains Codex-team skill entrypoints that delegate to the authoritative repository skills under `.agents/skills`.
-- `agents/` contains project-scoped custom subagent TOML definitions used by Codex runtimes that support callable subagents.
+- `skills/<skill-name>/SKILL.md` contains reusable Codex-team skill entrypoints.
+- `agents/` may contain project-scoped custom subagent TOML definitions used by Codex runtimes that support callable subagents.
+- `.agents/`, when present, may contain project-specific role and skill extensions.
+
+## Project Extension Model
+
+Keep `.codex` portable.
+
+Reusable `.codex` files must:
+
+- avoid project names,
+- avoid project-specific package names,
+- avoid project-specific build tasks unless they are discovered from repository files,
+- avoid hard dependencies on `.agents/skills/<project-name>-*`,
+- prefer root `AGENTS.md`, `QUALITY.md`, and discovered local role or skill files for project-specific rules.
+
+Project-specific rules belong in root `AGENTS.md`, `QUALITY.md`, `.agents/`, or project documentation.
+
+## Portable Copy Set
+
+To reuse this team model in another project, copy these paths:
+
+- `.codex/AGENTS.md`
+- `.codex/workflow/`
+- `.codex/subagents/`
+- `.codex/skills/`
+
+Do not copy `.codex/agents/` as part of the portable template unless those TOML files have been generalized for the target project. That directory is allowed to contain runtime-specific or project-specific callable-agent definitions.
 
 ## Mandatory Subagent Workflow
 
@@ -27,7 +53,7 @@ The Agent Workflow Orchestrator coordinates:
 
 Direct implementation without subagent or role review is forbidden for non-trivial work.
 
-Callable subagents should be used when the active request or workplan command authorizes delegated execution. If callable subagents are unavailable, apply the matching file under `subagents/` or `.agents/roles/` as an explicit local review checklist and report that no callable subagent was used.
+Callable subagents should be used when the active request or workplan command authorizes delegated execution. If callable subagents are unavailable, apply the matching file under `subagents/` or a discovered project role file as an explicit local review checklist and report that no callable subagent was used.
 
 ## Mandatory Command
 
@@ -47,7 +73,7 @@ Codex must:
 6. Review `git diff` and `git diff --check`.
 7. Continue only when the slice is clean or a documented blocker is explicitly allowed by the workplan.
 
-The detailed command behavior is defined by root `AGENTS.md` and `.agents/skills/workplan-executor/SKILL.md`.
+If a project-specific workplan-executor skill exists, use it after reading this reusable workflow.
 
 ## Team Hierarchy
 
@@ -67,17 +93,15 @@ Agent Workflow Orchestrator
     +-- Microservice Senior Expert
 ```
 
-## Mandatory Architecture Rules
+## Default Microservice Guardrails
 
-For service-split work:
+For service-split work, apply these guardrails unless the root project rules define a stricter or incompatible policy:
 
-- No shared Java code modules between microservices.
-- No shared domain models.
-- No shared event classes.
+- No shared implementation modules between independently deployable services.
+- No shared domain models between services.
+- No shared event implementation classes between services.
 - No direct class dependencies between services.
-- Communication is allowed only through REST/OpenAPI, gRPC/protobuf, or RabbitMQ/message contracts.
-- Every service must be independently runnable, testable, containerized, and deployable.
-- Every service must have its own Docker image.
-- Every service must be deployable to Docker, Docker Swarm, and Kubernetes when the slice targets service deployment.
+- Communication must use explicit external contracts such as REST/OpenAPI, gRPC/protobuf, or message contracts.
+- Every service must be independently runnable, testable, containerized when containers are in scope, and deployable through the project's documented deployment targets.
 
-These rules do not authorize speculative service extraction. Service extraction requires a dedicated verified workplan slice.
+These guardrails do not authorize speculative service extraction. Service extraction requires a dedicated verified slice or explicit user request.

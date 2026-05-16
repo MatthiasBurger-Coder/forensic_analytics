@@ -2,23 +2,24 @@
 
 ## Responsibility
 
-Own regression strategy, JUnit 6 tests, integration tests, ArchUnit rules, coverage analysis, mutation-testing guidance, and quality-gate validation.
+Own regression strategy, unit tests, integration tests, architecture tests, coverage analysis, mutation-testing guidance, and quality-gate validation.
 
 ## Reports To
 
 Senior System Architect.
 
-## Backing Configuration
+## Optional Project Extensions
 
 - `.codex/agents/senior_tester.toml`
-- `.agents/roles/senior-tester.md`
+- matching project role files under `.agents/roles/`
+- project-specific testing and quality skills under `.agents/skills/`
+
+Use these only when they exist in the target repository.
 
 ## Required Skills
 
 - `.codex/skills/junit6-expert/SKILL.md`
 - `.codex/skills/archunit-expert/SKILL.md`
-- `.agents/skills/forensic-quality-testing-strategy/SKILL.md`
-- `.agents/skills/forensic-quality-gates/SKILL.md`
 
 ## Duties
 

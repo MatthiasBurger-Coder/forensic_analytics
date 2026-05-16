@@ -1,21 +1,22 @@
 # Workflow Execution Rules
 
-Use this workflow for non-trivial Forensic Analytics work.
+Use this reusable workflow for non-trivial repository work.
 
-Root `AGENTS.md` and `QUALITY.md` remain authoritative. This file coordinates the durable Codex team structure and must not override repository safety, evidence, architecture, or verification rules.
+Root `AGENTS.md` and `QUALITY.md`, when present, remain authoritative for project-specific safety, architecture, documentation, and verification rules. This file coordinates the reusable Codex team structure and must not override project rules.
 
 ## Execution Phases
 
 1. Read-only verification
-   - Inspect the task, root `AGENTS.md`, `QUALITY.md`, affected files, build files, relevant documentation, `.agents/orchestrator/routing-rules.md`, and role or skill files.
-   - Verify exact symbols, modules, Gradle tasks, contracts, schema fields, graph labels, event fields, and commands before implementation.
+   - Inspect the task, root project instructions, quality documentation, affected files, build files, relevant documentation, reusable `.codex` role or skill files, and any discovered project-specific role or skill files.
+   - Verify exact symbols, modules, build tasks, contracts, schema fields, event fields, and commands before implementation.
 
 2. Slice detection
    - Identify the smallest meaningful implementation or documentation slice.
    - Record dependencies, affected files, role owners, verification commands, and stop conditions.
 
 3. Role assignment
-   - Route slices through `.agents/orchestrator/routing-rules.md`.
+   - Route slices to the smallest suitable set of subagents or role reviews.
+   - Prefer project-specific routing rules when the repository provides them.
    - Use callable subagents only when delegated execution is authorized by the active request or workplan command.
    - If callable subagents are unavailable, perform an explicit local review with the matching role file and report that limitation.
 
@@ -25,7 +26,7 @@ Root `AGENTS.md` and `QUALITY.md` remain authoritative. This file coordinates th
 
 5. Verification
    - Run the narrowest meaningful checks first.
-   - Run the applicable quality gate from `QUALITY.md` when required by the slice or commit readiness.
+   - Run the applicable quality gate from project quality documentation when required by the slice or commit readiness.
    - Run `git diff` and `git diff --check` before claiming completion.
 
 6. Reporting
@@ -33,7 +34,7 @@ Root `AGENTS.md` and `QUALITY.md` remain authoritative. This file coordinates th
 
 ## Workplan Execute Protocol
 
-When the active command is `workplan execute`, use `.codex/skills/workplan-executor/SKILL.md` and `.agents/skills/workplan-executor/SKILL.md`.
+When the active command is `workplan execute`, use `.codex/skills/workplan-executor/SKILL.md` first, then use any discovered project-specific workplan-executor skill.
 
 Execution order:
 
@@ -44,15 +45,15 @@ Execution order:
 5. Execute one slice at a time.
 6. Run required tests and quality checks after each slice.
 7. Inspect diffs after each slice.
-8. Stop on unverifiable assumptions, architecture conflicts, missing commands, quality failures, or evidence-risking ambiguity.
+8. Stop on unverifiable assumptions, architecture conflicts, missing commands, quality failures, or ambiguity that could change behavior.
 
 ## Stop Conditions
 
 Stop and report when:
 
-- a required file, class, method, task, schema, contract, field, graph label, or event name cannot be verified exactly;
+- a required file, class, method, task, schema, contract, field, or event name cannot be verified exactly;
 - source and documentation conflict in a behavior-relevant way;
-- a change would fabricate forensic evidence or hide uncertainty;
-- a slice would introduce shared Java code modules between services;
-- a quality command cannot be verified from `QUALITY.md` or Gradle files;
+- a change would fabricate evidence, test data, runtime facts, analysis output, or user-visible behavior;
+- a slice would violate verified architecture or service-boundary rules;
+- a quality command cannot be verified from repository documentation or build files;
 - continuing would require guessing.

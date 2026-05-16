@@ -22,7 +22,7 @@ The repository root `AGENTS.md` remains the authoritative source for engineering
 - `../.codex/AGENTS.md` is the Codex-team entrypoint for the durable subagent hierarchy.
 - `../.codex/workflow/` contains Codex-team workflow execution rules.
 - `../.codex/subagents/` contains durable subagent role descriptions that point back to these authoritative role files.
-- `../.codex/skills/` contains Codex-team skill entrypoints that delegate to authoritative repository skills under `.agents/skills`.
+- `../.codex/skills/` contains reusable Codex-team skill entrypoints that may load project-specific repository skills under `.agents/skills`.
 - `../.codex/agents/` contains project-scoped custom subagent TOML files.
 
 ## Codex Compatibility

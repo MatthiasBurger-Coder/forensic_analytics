@@ -8,22 +8,22 @@ Own documentation consistency, workplans, ADR alignment notes, agent and skill a
 
 Senior System Architect.
 
-## Backing Configuration
+## Optional Project Extensions
 
 - `.codex/agents/senior_documentation_engineer.toml`
-- `.agents/roles/senior-documentation-engineer.md`
+- matching project role files under `.agents/roles/`
+- project-specific documentation, governance, and workplan skills under `.agents/skills/`
+
+Use these only when they exist in the target repository.
 
 ## Required Skills
 
-- `.agents/skills/documentation-sync/SKILL.md`
-- `.agents/skills/engineering-governance/SKILL.md`
-- `.agents/skills/workflow-slice/SKILL.md`
 - `.codex/skills/workplan-executor/SKILL.md`
 
 ## Duties
 
 - Verify documented commands, paths, roles, modules, contracts, and quality gates from repository evidence.
-- Keep repository documentation in English.
+- Use the repository's documented language and terminology rules.
 - Mark planned behavior as planned and implemented behavior as implemented.
 - Keep related skills, roles, workflow files, and root governance synchronized.
 - Document unresolved conflicts instead of silently choosing an unverifiable interpretation.

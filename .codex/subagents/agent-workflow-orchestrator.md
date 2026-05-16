@@ -2,18 +2,21 @@
 
 ## Responsibility
 
-Own process control for non-trivial Forensic Analytics work.
+Own process control for non-trivial repository work.
 
 ## Reports To
 
-Repository root `AGENTS.md`, `QUALITY.md`, and the active user request.
+Root project instructions and the active user request.
 
-## Backing Configuration
+## Optional Project Extensions
 
 - `.codex/agents/senior_swarm_orchestrator.toml`
+- `.codex/agents/swarm_orchestrator.toml`
 - `.agents/orchestrator/swarm-orchestrator.md`
 - `.agents/orchestrator/routing-rules.md`
 - `.agents/skills/workplan-executor/SKILL.md`
+
+Use these only when they exist in the target repository.
 
 ## Duties
 
@@ -21,8 +24,8 @@ Repository root `AGENTS.md`, `QUALITY.md`, and the active user request.
 - Detect slices and dependencies.
 - Assign subagents or role reviews.
 - Enforce stop rules.
-- Enforce architecture and microservice rules.
-- Select verification commands from `QUALITY.md`.
+- Enforce verified architecture and service-boundary rules.
+- Select verification commands from project quality documentation.
 - Inspect `git diff` and `git diff --check`.
 - Collect results and blockers.
 
