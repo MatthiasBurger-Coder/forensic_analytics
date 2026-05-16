@@ -8,6 +8,7 @@ The repository root `AGENTS.md` remains the authoritative source for engineering
 
 - Work in small, reviewable slices with explicit scope and verification.
 - Preserve hexagonal architecture: adapters and infrastructure depend inward on application and domain, never the reverse.
+- Preserve microservice autonomy for service-split work: services must not share Java code modules and must integrate only through REST/OpenAPI, gRPC/protobuf or RabbitMQ/message contracts.
 - Keep forensic evidence semantics explicit; never convert unknown or incomplete facts into confirmed evidence.
 - Reuse shared Codex skills instead of duplicating role-specific knowledge.
 - Extend existing agent material only when the requested task requires it.

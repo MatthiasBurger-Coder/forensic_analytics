@@ -295,6 +295,24 @@ adapters / infrastructure / plugins / UI / CLI
 
 The reverse direction is forbidden.
 
+### Microservice Boundary Rule
+
+The project follows strict microservice autonomy for service-split work.
+
+Services must not share Java code modules.
+
+Allowed integration mechanisms are:
+
+- REST/OpenAPI
+- gRPC/protobuf
+- RabbitMQ/message contracts
+
+Contracts may be centrally documented, but they must not be used as shared Java implementation modules.
+
+Each service must be independently buildable, runnable, testable, containerized and deployable. Each microservice must own its Spring Boot application, configuration, ports, tests, Dockerfile, health checks, README, adapters and internal domain model.
+
+This rule does not authorize speculative migration of existing modules. Service extraction must be performed through dedicated, verified slices.
+
 ### Package Responsibility Map
 
 The following package responsibilities apply to the Forensic Analytics repository. If the repository uses a different concrete package layout, inspect the current source tree first and map the responsibilities accordingly.

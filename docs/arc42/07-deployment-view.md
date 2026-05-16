@@ -74,3 +74,19 @@ The Boot app can be packaged with:
 ```
 
 The Docker baseline lives under `docker/boot-app/`. It copies only the generated Boot jar, defines `/var/lib/forensic-analytics/workspaces` as the workspace volume and does not define an Actuator healthcheck because no accepted health endpoint exists yet.
+
+## 7.6 Future Microservice Deployment Boundaries
+
+Future microservice extraction must keep every service independently deployable. Each service must own its Spring Boot application, Dockerfile, health checks, configuration, tests and service-local domain model.
+
+The planned service roots are:
+
+```text
+services/forensic-server
+services/java-ast-scanner-worker
+services/joern-scanner-worker
+services/btm-generator-worker
+services/report-generator-worker
+```
+
+Shared Java implementation modules between these services are forbidden. Service-to-service integration is limited to REST/OpenAPI, gRPC/protobuf and RabbitMQ/message contracts. Deployment targets must cover local Spring Boot startup, Docker, Docker Swarm and Kubernetes through service-owned deployment material.

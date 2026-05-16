@@ -8,6 +8,7 @@ Use these rules to select roles for a slice. Prefer the smallest set that covers
 - React, frontend state, API client integration or UI component work routes to `roles/senior-react-frontend.md`.
 - Information architecture, accessibility, visualization UX or user-flow work routes to `roles/senior-ux-designer.md`.
 - Cross-module design, package boundaries, architecture tests or module restructuring routes to `roles/senior-system-architect.md`.
+- Microservice boundaries, service autonomy, independent deployability or no-shared-code service reviews route to `roles/microservice-senior-expert.md`.
 - Test strategy, regression coverage, ArchUnit, coverage gates or quality failures route to `roles/senior-tester.md`.
 - Gradle, Docker, Kubernetes, CI, observability or deployment work routes to `roles/senior-devops.md`.
 - New workplan creation, full `docs/workplan` regeneration, slice dependency planning or planning-risk review routes to `roles/senior-workplan-architect/SKILL.md`.

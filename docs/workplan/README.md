@@ -27,6 +27,10 @@ D:/Projects/forensic_analytics
 9. [spring-boot-migration/08-commit-and-push-plan.md](spring-boot-migration/08-commit-and-push-plan.md) - suggested commit boundaries for later implementation.
 10. [spring-boot-migration/quality-log.md](spring-boot-migration/quality-log.md) - initial quality log and future execution log.
 
+Additional planning material:
+
+- [microservice-architecture-workplan.md](microservice-architecture-workplan.md) - future microservice split preparation with service-autonomy, contract and deployment guardrails.
+
 ## Planning Status
 
 This workplan is planning material only. It does not authorize speculative implementation.
