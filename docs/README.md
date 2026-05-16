@@ -108,7 +108,7 @@ The bootstrap currently uses in-memory repositories for local runs, so sessions 
 
 `forensic-analytics-boot-app` is the Spring Boot outer server boundary accepted by ADR-0006. It wires existing application use cases and adapters from the outside; domain and application modules remain Spring-free.
 
-The Boot app uses `application.properties` plus profile-specific `.properties` files for `local`, `test`, `docker` and `prod`. The default and `local` profiles bind REST and gRPC to `127.0.0.1`; `docker` and `prod` keep both inbound servers disabled until explicitly enabled. Workspace paths are validated under `forensics.analytics.workspace.root-path`.
+The Boot app uses `application.properties` plus profile-specific `.properties` files for `local`, `test`, `docker` and `prod`. The default and `local` profiles bind REST and gRPC to `127.0.0.1`; `docker` and `prod` keep both inbound servers disabled until explicitly enabled. Workspace paths are validated under `forensics.analytics.workspace.root-path`. Linux/container-style root-anchored defaults such as `/var/lib/forensic-analytics` are accepted during Windows-native local runs and normalized on the host filesystem; use explicit Windows absolute paths when a fixed drive location is required.
 
 Build the executable jar with:
 
