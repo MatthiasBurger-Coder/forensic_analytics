@@ -38,6 +38,39 @@ Agents must execute repository commands in the environment that matches the host
 
 If a baseline, command, or quality rule in this document differs from `AGENTS.md`, `QUALITY.md`, `settings.gradle(.kts)`, `build.gradle(.kts)`, or CI workflow files in the repository, the repository files must be inspected and the conflict must be reported before continuing.
 
+## Mandatory Workplan Execution Command
+
+When the user writes exactly:
+
+```text
+workplan execute
+```
+
+Codex must not start ad-hoc implementation. The command is explicit authorization to execute the active workplan through the configured subagent workflow.
+
+Execution order:
+
+1. Locate the active workplan:
+    - `docs/workplan/workflow.md`, when present
+    - otherwise the active workplan described by `docs/workplan/README.md`, when present
+    - otherwise the most recent `docs/workplan/*.md`
+2. Read the complete workplan before implementation.
+3. Identify all slices and their dependencies.
+4. Use `.agents/skills/workplan-executor/SKILL.md` for the execution protocol.
+5. Assign suitable subagents or roles for each slice through `.agents/orchestrator/routing-rules.md` and `.agents/orchestrator/swarm-orchestrator.md`.
+6. Execute one slice at a time.
+7. After each slice:
+    - run required tests
+    - run required quality checks
+    - inspect git diff
+    - document the result
+8. If a slice requires specialist review, spawn or route to the matching subagent or role.
+9. Never bypass configured architecture, testing, DevOps, security, or microservice review for decisions in those areas.
+10. Stop if assumptions about classes, modules, APIs, quality commands, or architecture are uncertain.
+11. Commit or push only when the workplan explicitly allows commit or push.
+
+For `workplan execute`, no direct implementation of a slice is allowed before the relevant subagent or role has reviewed the slice, except read-only verification needed to route the slice.
+
 ## Core Principle
 
 Prefer the smallest correct change.
