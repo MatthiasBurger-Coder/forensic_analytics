@@ -1,40 +1,42 @@
 # Deadlock Prevention Rules
 
-## Core Rules
+This workflow changes branch and workflow-governance rules. These controls
+prevent circular waits, branch collisions and overlapping agent edits.
 
-- Every slice has exactly one owner at a time.
-- Every reviewer may block, but must provide concrete resolution steps.
-- No agent may wait for an artifact without knowing its owner.
-- No cyclic handoff chain may continue without Senior Swarm Orchestrator or Agent Workflow Orchestrator decision.
-- No parallel work may edit the same files without ownership and merge order.
-- Generated artifacts must not become inputs until their generation contract is stable.
+## Dependency Rules
 
-## Blocker Classes
+- Slice 00 must complete before any governance file is edited.
+- Slices 01 through 06 are sequential by default because their write scopes
+  overlap.
+- Read-only reviews may run in parallel after the active branch is verified.
+- Write-capable parallel work requires disjoint files and an explicit handoff in
+  `agent-handoff-matrix.md`.
 
-```text
-REQUIRES_INPUT
-REQUIRES_DECISION
-REQUIRES_FIX
-REQUIRES_ARCHITECTURE_DECISION
-```
+## Branch Rules
 
-## Deadlock Patterns
+- Work must stay on `feature/workflow-git-branch-strategy-20260516` unless the
+  user explicitly approves a different branch.
+- Do not merge, rebase or delete `feature/workflow-branch-isolation-20260516`
+  without explicit user approval.
+- Before branch creation logic is changed, verify local and remote collision
+  commands exactly.
+- Do not infer that a missing remote branch means a local branch is safe to
+  overwrite.
 
-| Pattern | Risk | Resolution |
-| --- | --- | --- |
-| Mutual artifact wait | Two agents wait on each other's output. | Orchestrator assigns source of truth and sequence. |
-| Shared file ownership | Parallel workers edit the same file. | Split ownership or serialize work. |
-| Missing reviewer | Slice requires a target skill that does not exist. | Use documented bootstrap role or stop. |
-| Unstable contract | Implementation depends on unapproved API or data contract. | Run contract or data steward first. |
-| Quality gate ambiguity | Commit readiness depends on unknown command. | Verify `QUALITY.md` and build files or stop. |
-| ADR uncertainty | Implementation conflicts with existing decision. | Route to ADR Steward and Senior System Architect. |
+## Ownership Rules
+
+- Senior Git Workspace Specialist owns branch-state review and collision logic.
+- Senior Workflow Architect owns workflow artifact structure and slice order.
+- Senior System Architect owns architecture-sensitive scope classification.
+- Senior Tester owns quality-gate classification and required command evidence.
+- Senior Documentation Engineer owns final discoverability and consistency.
 
 ## Stop Conditions
 
-Stop when:
-
-- owner cannot be named;
-- dependency cycle cannot be broken;
-- handoff target is missing;
-- blocker class is unknown;
-- conflict resolution would require guessing repository rules or architecture authority.
+- A dependency cycle appears between branch rules, workflow prompts and release
+  governance.
+- Two slices need the same file and no handoff is recorded.
+- The predecessor branch changes the same governance file and no reconciliation
+  decision exists.
+- A commit or push is requested before required quality evidence exists.
+- A reviewer cannot verify the files or commands it is asked to approve.
