@@ -1,24 +1,25 @@
 ---
 name: workplan-executor
-description: Codex-team entrypoint for executing Forensic Analytics workplans when the user writes workplan execute; routes slices through subagents or role reviews, quality gates, diff inspection, and commit restrictions.
+description: Reusable entrypoint for executing repository workplans when the user writes workplan execute; routes slices through subagents or role reviews, quality gates, diff inspection, stop conditions, and commit restrictions.
 ---
 
 # Workplan Executor
 
-Use this skill only when the user writes `workplan execute` or explicitly asks to execute the active Forensic Analytics workplan.
+Use this skill only when the user writes `workplan execute` or explicitly asks to execute the active repository workplan.
 
 ## Authoritative Sources
 
-- Root `AGENTS.md`
-- Root `QUALITY.md`
-- `.agents/skills/workplan-executor/SKILL.md`
-- `.agents/orchestrator/routing-rules.md`
-- `.agents/orchestrator/swarm-orchestrator.md`
+Read, when present:
+
+- root `AGENTS.md`
+- root `QUALITY.md`
 - `.codex/workflow/workflow-execution-rules.md`
+- project workplan files such as `docs/workplan/workflow.md`, `docs/workplan/README.md`, or the newest relevant `docs/workplan/*.md`
+- project-specific workplan, routing, role, or skill files under `.agents/`
 
 ## Workflow
 
-1. Locate the active workplan in the order defined by root `AGENTS.md`.
+1. Locate the active workplan using project instructions when they exist.
 2. Read the full workplan before implementation.
 3. Identify slices, dependencies, write scopes, and verification commands.
 4. Route each slice to the smallest suitable set of subagents or role reviews.
@@ -29,4 +30,4 @@ Use this skill only when the user writes `workplan execute` or explicitly asks t
 
 ## Stop Conditions
 
-Stop when a slice, symbol, module, API, Gradle task, schema, command, architecture rule, quality gate, or service boundary cannot be verified exactly.
+Stop when a slice, symbol, module, API, build task, schema, command, architecture rule, quality gate, or service boundary cannot be verified exactly.

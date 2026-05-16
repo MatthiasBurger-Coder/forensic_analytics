@@ -1,27 +1,30 @@
 ---
 name: microservice-architecture-expert
-description: Use for Forensic Analytics microservice planning, service extraction, independent Spring Boot applications, no shared Java code modules, contract-only integration, Docker, Docker Swarm, and Kubernetes deployability.
+description: Use for microservice planning, service extraction, independent service applications, no shared implementation modules, contract-only integration, containerization, orchestration, and independent deployability.
 ---
 
 # Microservice Architecture Expert
 
-Use this skill for service-split work, microservice reviews, deployment autonomy, or no-shared-code boundary checks.
+Use this skill for service-split work, microservice reviews, deployment autonomy, or no-shared-implementation boundary checks.
 
 ## Authoritative Sources
 
-- Root `AGENTS.md`
-- `.agents/skills/microservice-senior-expert/SKILL.md`
-- `.agents/roles/microservice-senior-expert.md`
-- `.codex/subagents/microservice-senior-expert.md`
+Read, when present:
 
-## Mandatory Rules
+- root `AGENTS.md`
+- root `QUALITY.md`
+- project deployment documentation
+- project-specific microservice, container, REST, messaging, gRPC, or Protobuf roles and skills under `.agents/`
+- build files and service manifests
 
-- Do not introduce shared Java code modules between services.
-- Do not share domain models, event classes, service fixtures, or direct class dependencies between services.
-- Allow integration only through REST/OpenAPI, gRPC/protobuf, or RabbitMQ/message contracts.
-- Keep contracts as interface descriptions, not shared Java implementation modules.
-- Require every service to own its Spring Boot application, configuration, ports, adapters, tests, Dockerfile, health checks, README, and internal domain model.
-- Require every service to be independently runnable, testable, containerized, and deployable to Docker, Docker Swarm, and Kubernetes when deployment is in scope.
+## Default Guardrails
+
+- Do not introduce shared implementation modules between independently deployable services.
+- Do not share domain models, event implementation classes, service fixtures, or direct class dependencies between services.
+- Allow integration only through explicit external contracts such as REST/OpenAPI, gRPC/protobuf, or message contracts.
+- Keep contracts as interface descriptions, not shared implementation modules.
+- Require every service to own its application entrypoint, configuration, ports, adapters, tests, health checks, documentation, and internal domain model unless the project architecture documents a different pattern.
+- Require every service to be independently runnable, testable, and deployable through the project's documented deployment targets.
 
 ## Stop Conditions
 

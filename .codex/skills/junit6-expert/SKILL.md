@@ -1,19 +1,21 @@
 ---
 name: junit6-expert
-description: Use when writing or reviewing Forensic Analytics JUnit 6 tests, deterministic fixtures, regression-first bug fixes, integration tests, filesystem test isolation, and quality-gate verification.
+description: Use when writing or reviewing JUnit 6 tests, deterministic fixtures, regression-first bug fixes, integration tests, filesystem test isolation, and project quality-gate verification.
 ---
 
 # JUnit 6 Expert
 
-Use this skill for unit tests, integration tests, regression-first fixes, deterministic fixtures, and test placement.
+Use this skill for unit tests, integration tests, regression-first fixes, deterministic fixtures, and test placement in Java projects that use JUnit 6.
 
 ## Authoritative Sources
 
-- Root `AGENTS.md`
-- Root `QUALITY.md`
-- `.agents/skills/forensic-backend-junit6/SKILL.md`
-- `.agents/skills/forensic-quality-testing-strategy/SKILL.md`
-- `.agents/roles/senior-tester.md`
+Read, when present:
+
+- root `AGENTS.md`
+- root `QUALITY.md`
+- build files that define the Java and JUnit versions
+- existing tests near the affected code
+- project-specific testing or quality skills under `.agents/`
 
 ## Rules
 
@@ -22,8 +24,8 @@ Use this skill for unit tests, integration tests, regression-first fixes, determ
 - Keep fixtures small, explicit, deterministic, and clearly synthetic.
 - Use temporary directories for filesystem output.
 - Avoid shared mutable state, order-dependent tests, and external services by default.
-- Use descriptive English test names.
+- Use the repository's documented language for test names and comments.
 
 ## Verification
 
-Run the narrowest relevant Gradle test first. Use `QUALITY.md` for the applicable broader quality gate.
+Run the narrowest relevant test first. Use project quality documentation for the applicable broader quality gate.
