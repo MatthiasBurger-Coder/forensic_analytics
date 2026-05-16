@@ -27,6 +27,7 @@ User request
   -> requirement classification
   -> EPIC drift check
   -> arc42 and ADR impact check
+  -> dedicated workflow branch creation and checkout
   -> workflow regeneration or update
   -> slice execution
   -> quality verification
@@ -39,12 +40,22 @@ New workflows must be generated through `.agents/skills/workflow-authoring/SKILL
 
 Before creating a new workflow:
 
-1. Verify the repository root and target path.
-2. Delete `docs/workflow` completely, unless the user explicitly asks to preserve an existing workflow.
-3. Recreate `docs/workflow`.
-4. Regenerate the complete workflow structure.
+1. Verify the Git repository context.
+2. Check the working tree status.
+3. Stop if the current branch is detached, unclear, or if unrelated or unclear uncommitted changes exist.
+4. Create and checkout a dedicated workflow branch, unless the current branch already matches the current workflow.
+5. Check local and remote branch-name collisions, choosing the next clear unique suffix when needed.
+6. Verify the active workflow branch.
+7. Verify the repository root and target path.
+8. Delete `docs/workflow` completely, unless the user explicitly asks to preserve an existing workflow.
+9. Recreate `docs/workflow`.
+10. Regenerate the complete workflow structure.
 
 This prevents stale slices, obsolete workflows, conflicting plans and historical leftovers from remaining active.
+
+Read-only verification, requirement intake, routing-rule inspection and role selection may occur before branch creation. Mutating workflow creation must not.
+
+Never create or modify workflow artifacts, including `workflow.md`, `docs/workflow/**`, workplans, slice definitions, workflow-specific documentation changes, implementation tasks, or write-capable agent assignments, on `main`, `master`, `develop`, or any shared branch.
 
 ## Requirement Lifecycle
 

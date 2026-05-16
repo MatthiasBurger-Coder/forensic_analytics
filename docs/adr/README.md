@@ -21,3 +21,4 @@ The decisions are derived from the EPIC baseline and refined during implementati
 - [ADR-0013: Assign data ownership per service](ADR-0013-data-ownership-per-service.md)
 - [ADR-0014: Use an explicit agent handoff protocol](ADR-0014-agent-handoff-protocol.md)
 - [ADR-0015: Use skill registry and conflict auditing](ADR-0015-skill-registry-conflict-auditing.md)
+- [ADR-0016: Create workflow branches before workflow artifacts](ADR-0016-branch-first-workflow-creation.md)

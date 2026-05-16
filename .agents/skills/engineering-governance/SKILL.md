@@ -96,6 +96,10 @@ Require:
 
 ### Workflow Consistency
 
+- Dedicated workflow branch created, checked out and verified before any workflow artifact is created or modified: `workflow.md`, `docs/workflow/**`, workplans, slice definitions, workflow-specific documentation changes, implementation tasks or write-capable agent assignments.
+- Working tree checked before branch creation; unrelated or unclear uncommitted changes stop workflow creation.
+- Detached or unclear branch state and unresolved local or remote branch-name collisions stop workflow creation.
+- No workflow creation or implementation work runs on `main`, `master`, `develop` or another shared branch.
 - `docs/workflow` deleted before new workflow generation, unless the user explicitly asks to preserve an existing workflow.
 - Full workflow structure regenerated.
 - No stale slices remain.

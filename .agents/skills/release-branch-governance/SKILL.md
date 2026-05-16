@@ -13,7 +13,7 @@ This skill governs release readiness. It does not stage, commit, push or merge b
 
 ## Responsibilities
 
-- Verify branch context before commit or push.
+- Verify workflow branch context before workflow creation, commit or push.
 - Require commit messages to explain summary, why, what changed, validation and risks.
 - Require successful required quality gates before commit and push.
 - Keep workflow slices commit-sized and rollback-aware.
@@ -23,7 +23,7 @@ This skill governs release readiness. It does not stage, commit, push or merge b
 
 ## Authority
 
-Release & Branch Governance may block commit, push or release readiness when branch context, changed-file ownership, quality evidence or commit message content is incomplete.
+Release & Branch Governance may block workflow branch readiness, commit, push or release readiness when branch context, changed-file ownership, quality evidence or commit message content is incomplete.
 
 ## Forbidden
 
@@ -48,6 +48,7 @@ Release & Branch Governance may block commit, push or release readiness when bra
 ## Outputs
 
 - branch readiness report
+- workflow branch readiness report
 - commit readiness report
 - push readiness report
 - rollback notes

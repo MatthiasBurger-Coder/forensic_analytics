@@ -95,6 +95,51 @@ The Workflow Executor executes approved slices. It must not be the sole authorit
 
 The Senior System Architect owns architecture governance and may block architecture-sensitive workflows. The Three Amigos Requirement Gatekeeper is the intake gate for new or changed requirements. The Skill Registry & Conflict Auditor is the governance control for skill overlap, conflicting ownership and incompatible workflow rules.
 
+## Mandatory Workflow Creation Command
+
+When the user writes exactly:
+
+```text
+workflow create
+```
+
+Codex must ensure a dedicated Git branch for the new workflow exists and is active before creating or modifying workflow artifacts: `workflow.md`, `docs/workflow/**`, workplans, slice definitions, workflow-specific documentation changes, implementation tasks, or write-capable agent assignments for that workflow.
+
+Read-only verification, requirement intake, routing-rule inspection, and role selection may occur before branch creation. Mutating workflow creation must not.
+
+The required order is:
+
+1. Verify the Git repository context with `git rev-parse --show-toplevel`.
+2. Check the current working tree with `git status --short`.
+3. Stop if the current branch is detached, unclear, or if unrelated or unclear uncommitted changes exist.
+4. Generate a dedicated workflow branch name unless the current branch is already a matching branch for this workflow.
+5. Check local and remote branch-name collisions, choosing the next clear unique suffix when needed.
+6. Create and checkout the workflow branch, or verify the existing matching workflow branch.
+7. Verify the active branch with `git branch --show-current`.
+8. Create or regenerate workflow artifacts only after the branch exists and is active.
+9. Continue with workflow slices, subagent routing, quality gates, commits, and optional push only inside the verified workflow branch.
+
+Default workflow branch names use:
+
+```text
+feature/workflow-<short-topic>-<yyyyMMdd>
+fix/workflow-<short-topic>-<yyyyMMdd>
+docs/workflow-<short-topic>-<yyyyMMdd>
+architecture/workflow-<short-topic>-<yyyyMMdd>
+```
+
+Use `feature/` unless the workflow is clearly a bugfix, documentation-only change, or architecture/agent-structure change.
+
+Never create or modify workflow artifacts on `main`, `master`, `develop`, or any shared branch. If the branch cannot be created, checked out, or verified as active, stop and report:
+
+```text
+STOP: workflow create cannot continue safely.
+Reason: <concrete reason>
+No workflow files were created before resolving the branch isolation issue.
+```
+
+Subagents must never perform implementation work on `main`, `master`, `develop`, or any shared branch. Before modifying files, every subagent or role execution must verify that the active branch belongs to the current workflow. Subagents must not switch branches unless the workflow explicitly authorizes that branch operation.
+
 ## Mandatory Workflow Execution Command
 
 When the user writes exactly:
