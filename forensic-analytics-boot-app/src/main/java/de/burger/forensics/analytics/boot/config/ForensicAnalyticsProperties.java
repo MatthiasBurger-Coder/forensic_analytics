@@ -82,7 +82,7 @@ public record ForensicAnalyticsProperties(
 
     private static Path configuredPath(Path path, String name, boolean allowRelativePaths) {
         var configured = Objects.requireNonNull(path, name + " must not be null");
-        if (!allowRelativePaths && !configured.isAbsolute()) {
+        if (!allowRelativePaths && !configured.isAbsolute() && !isHostRootAnchored(configured)) {
             throw new IllegalArgumentException(name + " must be absolute");
         }
         var normalized = configured.toAbsolutePath().normalize();
@@ -93,6 +93,11 @@ public record ForensicAnalyticsProperties(
             throw new IllegalArgumentException(name + " must not be the user home directory");
         }
         return normalized;
+    }
+
+    private static boolean isHostRootAnchored(Path path) {
+        var root = path.getRoot();
+        return root != null && root.toString().startsWith(path.getFileSystem().getSeparator());
     }
 
     private static java.util.Optional<Path> homePath() {

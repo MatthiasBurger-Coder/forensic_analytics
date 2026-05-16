@@ -134,6 +134,12 @@ class GitRepositoryCheckoutAdapterTest {
     }
 
     @Test
+    void acceptsWindowsAbsoluteLocalPathWithoutUriScheme() {
+        GitRepositoryCheckoutAdapter.requireSupportedRepositoryUrl("C:\\Users\\micro\\fixture-repository");
+        GitRepositoryCheckoutAdapter.requireSupportedRepositoryUrl("C:/Users/micro/fixture-repository");
+    }
+
+    @Test
     void rejectsMissingOrAlreadyPopulatedCheckoutWorkspaceBeforeGitRuns() throws Exception {
         var missingWorkspace = new PreparedWorkspace(
             new WorkspaceId("workspace-missing"),

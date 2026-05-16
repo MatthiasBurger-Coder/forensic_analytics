@@ -22,6 +22,7 @@ public final class GitRepositoryCheckoutAdapter implements RepositoryCheckoutPor
     private static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(60);
     private static final Set<String> SUPPORTED_URI_SCHEMES = Set.of("file", "http", "https");
     private static final Pattern URI_SCHEME = Pattern.compile("^[a-zA-Z][a-zA-Z0-9+.-]*:.*");
+    private static final Pattern WINDOWS_ABSOLUTE_PATH = Pattern.compile("^[a-zA-Z]:[\\\\/].*");
     private static final Pattern SCP_STYLE_REMOTE = Pattern.compile("^[^/\\\\]+@[^:]+:.+");
     private final GitCommandRunner commandRunner;
     private final OperationLogger operationLogger;
@@ -117,7 +118,10 @@ public final class GitRepositoryCheckoutAdapter implements RepositoryCheckoutPor
         }
     }
 
-    private static void requireSupportedRepositoryUrl(String remoteUrl) {
+    static void requireSupportedRepositoryUrl(String remoteUrl) {
+        if (WINDOWS_ABSOLUTE_PATH.matcher(remoteUrl).matches()) {
+            return;
+        }
         if (SCP_STYLE_REMOTE.matcher(remoteUrl).matches()) {
             throw new RepositoryCheckoutException("SCP-style repository URLs are not supported");
         }
