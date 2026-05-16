@@ -65,6 +65,36 @@ Use these sources for workflow routing:
 
 Callable subagents should be used when the active request or workflow command authorizes delegated execution. If callable subagents are unavailable in the current runtime, the corresponding role file must be used as an explicit review checklist and the limitation must be reported.
 
+## Workflow Governance Hierarchy
+
+The Agent Workflow Orchestrator owns workflow execution governance.
+
+```text
+Agent Workflow Orchestrator
+|
++-- Workflow Executor
+|
++-- Senior System Architect
+|   +-- Skill Registry & Conflict Auditor
+|   +-- Three Amigos Requirement Gatekeeper
+|   +-- Contract-First API Steward
+|   +-- Data Ownership & Persistence Steward
+|   +-- Security & Threat Modeling
+|   +-- Observability & Runtime Diagnostics
+|   +-- ADR Steward
+|
++-- Senior Swarm Orchestrator
++-- Senior Java Backend Engineer
++-- Senior React Frontend Engineer
++-- Senior UX Designer
++-- Senior DevOps Engineer
++-- Senior Tester
+```
+
+The Workflow Executor executes approved slices. It must not be the sole authority for requirement, architecture, security, data ownership, quality, ADR or release decisions.
+
+The Senior System Architect owns architecture governance and may block architecture-sensitive workflows. The Three Amigos Requirement Gatekeeper is the intake gate for new or changed requirements. The Skill Registry & Conflict Auditor is the governance control for skill overlap, conflicting ownership and incompatible workflow rules.
+
 ## Mandatory Workflow Execution Command
 
 When the user writes exactly:

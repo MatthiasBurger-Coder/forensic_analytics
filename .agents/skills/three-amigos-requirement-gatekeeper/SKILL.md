@@ -150,6 +150,21 @@ Draft slices may be included with `REQUIRES_REFINEMENT` only when they are clear
 
 Treat a user-accepted blocker-free assumption as ready only when the gate report records the assumption, the user acceptance source and the affected slices or decisions.
 
+## STOP Rules
+
+Stop with `REQUIRES_REFINEMENT` when:
+
+- business goal is missing;
+- non-goals are missing;
+- affected services, APIs, storage, data ownership or deployment impact are unclear;
+- acceptance criteria are missing or not testable;
+- API contracts or message semantics are unclear;
+- rollback strategy is missing when the change affects deployable behavior or persisted state;
+- required skills, roles or callable subagents cannot be verified;
+- slice dependencies are cyclic or file ownership overlaps without handoff rules;
+- quality commands cannot be verified from `QUALITY.md` or build files;
+- continuing would require guessing architecture, runtime facts, evidence semantics, data ownership or implementation details.
+
 ## Expected Output
 
 Produce a concise gate report containing:

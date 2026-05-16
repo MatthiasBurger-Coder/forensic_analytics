@@ -14,15 +14,19 @@
 
 ## Database Impact
 
+## Data Ownership
+
 ## Deployment Impact
 
 ## Rollback Strategy
+
+## Testability
 
 ## Acceptance Criteria
 
 ## Required Skills
 
-## Required Subagents
+## Required Role Reviews Or Subagents
 
 ## Assumptions
 

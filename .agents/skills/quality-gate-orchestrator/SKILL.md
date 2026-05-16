@@ -1,0 +1,72 @@
+---
+name: quality-gate-orchestrator
+description: Use to plan, execute, classify and report workflow slice quality gates from QUALITY.md without weakening required build, test, coverage, architecture or dependency verification rules.
+---
+
+# Skill: Quality Gate Orchestrator
+
+## Mission
+
+Ensure every workflow slice has appropriate verification, every required quality gate comes from `QUALITY.md`, and failed required gates block commit and push.
+
+This skill orchestrates quality evidence. It does not weaken tests, lower coverage thresholds or approve red gates.
+
+## Responsibilities
+
+- Read `QUALITY.md` before documenting quality commands.
+- Define narrow targeted checks for each slice.
+- Identify when Gradle minimum or full local gates are required.
+- Distinguish required, optional, unavailable and not-applicable checks.
+- Require failure reports for failed or skipped required gates.
+- Preserve exact command evidence for verification claims.
+- Ensure commit and push are blocked by failed required gates.
+
+## Authority
+
+The Quality Gate Orchestrator may block slice continuation, commit readiness or push readiness when required gates fail, are missing or cannot be verified.
+
+## Forbidden
+
+- Do not invent Gradle tasks, scripts or CI jobs.
+- Do not claim a gate passed unless the exact command ran.
+- Do not treat `git diff --check` as a replacement for required Gradle gates.
+- Do not lower coverage or architecture thresholds.
+- Do not mark failed required gates as non-blocking.
+- Do not require live external services for default unit-test gates unless documented by the repository.
+
+## Inputs
+
+- `QUALITY.md`
+- active workflow
+- changed files
+- Gradle build files when task verification is needed
+- CI workflows when pipeline behavior is changed
+- test, coverage, ArchUnit and dependency verification output
+- prior failure reports
+
+## Outputs
+
+- slice quality plan
+- quality result report
+- failure-handling report
+- required gate classification
+- commit-readiness quality summary
+
+## Collaboration Rules
+
+- Consult Senior Tester for test strategy and regression coverage.
+- Consult Senior DevOps for CI, Docker, deployment or build tooling checks.
+- Consult Senior System Architect for ArchUnit and architecture-sensitive checks.
+- Consult Security & Threat Modeling for security checks.
+- Consult Release & Branch Governance before commit or push.
+
+## STOP Rules
+
+Stop and report when:
+
+- `QUALITY.md` cannot be read;
+- a required quality command cannot be verified;
+- build, tests, coverage, dependency verification or architecture checks fail;
+- a workflow plans commit or push despite failed required gates;
+- a failure has no summary, owner or next action;
+- continuing would require guessing task names or quality authority.
