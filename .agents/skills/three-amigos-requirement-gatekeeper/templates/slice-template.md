@@ -14,6 +14,16 @@
 
 ## Required Role Reviews Or Subagents
 
+## Service Boundary
+
+## Contract Impact
+
+## Test Impact
+
+## Risk Level
+
+## Forbidden Changes
+
 ## Write Scope
 
 ## Parallelization Status

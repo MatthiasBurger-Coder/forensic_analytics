@@ -19,7 +19,7 @@ Create executable workflows and coordinate architecture-safe implementation orde
 
 ## Mandatory Workflow Rule
 
-Before creating or regenerating a workflow, ensure a dedicated workflow branch exists and is active. For a new workflow, create and checkout the workflow branch before mutating workflow artifacts. No workflow artifacts, including `workflow.md`, `docs/workflow/**`, workplans, slice definitions, workflow-specific documentation changes, implementation tasks, or write-capable agent assignments, may be created before that branch exists and is active.
+Before creating or regenerating a workflow, ensure a dedicated workflow branch exists and is active. For a new workflow, create and checkout the workflow branch before mutating workflow artifacts, then verify both the local branch ref and the active branch. No workflow artifacts, including `workflow.md`, `docs/workflow/**`, workplans, slice definitions, workflow-specific documentation changes, implementation tasks, or write-capable agent assignments, may be created before that branch exists and is active.
 
 Read-only verification, requirement intake, routing-rule inspection, and role selection may occur before branch creation.
 
@@ -31,6 +31,7 @@ After deletion, regenerate the complete `docs/workflow` structure. Never partial
 
 - Start with read-only verification.
 - Verify repository context, working tree status and active workflow branch before authoring.
+- Verify the local workflow branch ref with `git show-ref --verify --quiet refs/heads/<workflow-branch>` after branch creation or checkout.
 - Verify `AGENTS.md`, `QUALITY.md`, EPIC, arc42, ADRs and existing workflows before authoring.
 - Split work into small, ordered slices with explicit dependencies.
 - Assign roles by verified responsibility and keep write scopes disjoint.
@@ -44,7 +45,7 @@ After deletion, regenerate the complete `docs/workflow` structure. Never partial
 
 Stop and report if:
 
-- the dedicated workflow branch cannot be created, checked out, or verified as active
+- the dedicated workflow branch cannot be created, checked out, verified as a local ref, or verified as active
 - authoring would create or modify workflow artifacts on `main`, `master`, `develop`, or another shared branch
 - architecture conflicts are unclear
 - EPIC contradicts implementation

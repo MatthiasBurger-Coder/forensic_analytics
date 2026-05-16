@@ -13,9 +13,11 @@ This directory contains the architecture and product documentation for the Foren
 
 ## Future Microservice Boundary Direction
 
-Future service-split work follows strict microservice autonomy. Services must not share Java code modules, domain models, event classes or test fixtures. Integration between services is allowed only through REST/OpenAPI, gRPC/protobuf or RabbitMQ/message contracts.
+Future service-split work follows strict microservice autonomy. Services must not share Java implementation modules, domain models, DTO modules, service modules, repository modules, utility modules, internal error models, event implementation classes or test fixtures. Integration between services is allowed only through REST/OpenAPI, gRPC/protobuf or RabbitMQ/message contracts.
 
-Contracts may be centrally documented under `contracts/`, but they must not become shared Java implementation modules. Each future service must be independently buildable, runnable, testable, containerized and deployable to Docker, Docker Swarm and Kubernetes.
+Contracts may be centrally documented under `contracts/`, but they must not become shared Java implementation modules. Each future service must be independently buildable, runnable, testable, configurable, observable, health-checkable and container-ready before it is called a microservice.
+
+Microservice governance is documented in [architecture/microservice-governance.md](architecture/microservice-governance.md). Contract-first service communication governance is documented in [governance/contract-governance.md](governance/contract-governance.md). Docker, Docker Swarm and Kubernetes readiness must be verified from repository tooling before deployment commands or manifests are documented.
 
 ## Modules
 

@@ -36,6 +36,19 @@ A ready requirement must contain:
 - EPIC traceability status
 - active workflow relationship, when an active workflow exists
 
+For microservice migration work, a ready requirement must also contain:
+
+- service boundary
+- target service responsibility
+- inputs and outputs crossing the boundary
+- owned data
+- allowed dependencies
+- allowed communication mechanisms
+- contract impact
+- test impact
+- risk level
+- forbidden changes
+
 Missing fields are blockers unless the user explicitly states they are not applicable.
 
 If the user accepts a blocker-free assumption, record:
@@ -53,6 +66,8 @@ Require:
 - adapters and infrastructure depend inward on application and domain
 - domain and application stay independent from concrete frameworks, storage, runtime tooling, LLM providers and build-tool APIs
 - service-split work preserves independent deployability and no shared Java implementation modules
+- microservice slices define service boundary, contract impact, data ownership,
+  test impact, risk level and forbidden changes before implementation
 - runtime, graph, replay, finding and LLM behavior preserve evidence provenance and uncertainty
 - architecture decisions are made before implementation slices, not inside them
 
@@ -76,6 +91,8 @@ Reject or refine when:
 - two slices need to edit the same files in parallel
 - a slice depends on another slice's unstable API contract
 - a service needs another service's private database or implementation classes
+- target service ownership, service inputs, service outputs, allowed
+  dependencies or allowed communication mechanisms are unclear
 - two agents wait on each other's outputs
 - rollback of one slice would leave another slice unrecoverable
 - generated artifacts become inputs before their generation contract is stable

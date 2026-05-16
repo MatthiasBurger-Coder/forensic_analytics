@@ -9,6 +9,10 @@ Use these rules to select roles for a slice. Prefer the smallest set that covers
 - Information architecture, accessibility, visualization UX or user-flow work routes to `roles/senior-ux-designer.md`.
 - Cross-module design, package boundaries, architecture tests or module restructuring routes to `roles/senior-system-architect.md`.
 - Microservice boundaries, service autonomy, independent deployability or no-shared-code service reviews route to `roles/microservice-senior-expert.md`.
+- Bounded-context service decomposition and "technical module is not a microservice" decisions route to `skills/service-decomposition-bounded-context/SKILL.md`.
+- Cross-service REST/OpenAPI, gRPC/protobuf or event contract governance routes to `skills/contract-governance-expert/SKILL.md`.
+- Production microservice migration safety, rollback, strangler strategy or multi-service risk gates route to `skills/microservice-migration-safety-gate/SKILL.md`.
+- Microservice runtime independence, healthcheck, observability or container-readiness evidence routes to `skills/microservice-runtime-readiness-expert/SKILL.md`.
 - Test strategy, regression coverage, ArchUnit, coverage gates or quality failures route to `roles/senior-tester.md`.
 - Gradle, Docker, Kubernetes, CI, observability or deployment work routes to `roles/senior-devops.md`.
 - New workflow creation, full `docs/workflow` regeneration, slice dependency planning or planning-risk review routes to `roles/senior-workflow-architect/SKILL.md`.

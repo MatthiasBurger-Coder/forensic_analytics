@@ -59,3 +59,4 @@ The governance update added reusable workflow, requirement, arc42 and engineerin
 - [conflicts-resolved.md](conflicts-resolved.md)
 - [manual-review-required.md](manual-review-required.md)
 - [skill-inventory.md](skill-inventory.md)
+- [microservice-skill-sharpening-audit.md](microservice-skill-sharpening-audit.md)

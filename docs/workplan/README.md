@@ -30,6 +30,8 @@ D:/Projects/forensic_analytics
 Additional planning material:
 
 - [microservice-architecture-workplan.md](microservice-architecture-workplan.md) - future microservice split preparation with service-autonomy, contract and deployment guardrails.
+- [../architecture/microservice-governance.md](../architecture/microservice-governance.md) - active governance for future service boundaries, no shared Java implementation modules and runtime independence evidence.
+- [../governance/contract-governance.md](../governance/contract-governance.md) - active governance for REST/OpenAPI, gRPC/protobuf and event contract-first service communication.
 
 ## Planning Status
 

@@ -110,6 +110,11 @@ The governance system requires:
 
 Stop and report when ownership, architecture conflicts or requirement intent cannot be verified.
 
+Microservice migration governance is documented in
+[`docs/architecture/microservice-governance.md`](../architecture/microservice-governance.md).
+Contract-first service communication governance is documented in
+[`contract-governance.md`](contract-governance.md).
+
 ## Quality Governance
 
 Quality commands must come from `QUALITY.md`.

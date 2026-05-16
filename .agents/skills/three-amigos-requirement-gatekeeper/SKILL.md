@@ -91,6 +91,29 @@ Always ask:
 Does the implementation still match the EPIC?
 ```
 
+For microservice migration requests, require a Three Amigos Decision Record with:
+
+- scope
+- non-scope
+- acceptance criteria
+- service boundary
+- contract impact
+- data ownership impact
+- test impact
+- risk level
+- rollback or strangler strategy
+- stop conditions
+
+Ask explicitly:
+
+- What service problem is being solved?
+- What inputs and outputs cross the service boundary?
+- What data is owned by the target service?
+- Which dependencies are allowed?
+- Which communication mechanisms are allowed?
+- Which tests prove the slice is safe?
+- Which changes are forbidden in this slice?
+
 Classify the requirement as one or more of:
 
 - functional requirement
@@ -137,6 +160,7 @@ Use `READY_FOR_WORKFLOW` only when:
 - the business goal and technical goal are explicit
 - scope and non-goals are clear
 - affected services, APIs, storage and deployment impact are identified or explicitly not affected
+- microservice service boundary, contract impact, data ownership impact, test impact, risk level and stop conditions are explicit when service-split work is requested
 - acceptance criteria are testable
 - required skills and role or subagent ownership are known
 - slice dependencies are acyclic
@@ -157,6 +181,7 @@ Stop with `REQUIRES_REFINEMENT` when:
 - business goal is missing;
 - non-goals are missing;
 - affected services, APIs, storage, data ownership or deployment impact are unclear;
+- microservice service boundary, contract impact, test impact, risk level or forbidden changes are unclear;
 - acceptance criteria are missing or not testable;
 - API contracts or message semantics are unclear;
 - rollback strategy is missing when the change affects deployable behavior or persisted state;

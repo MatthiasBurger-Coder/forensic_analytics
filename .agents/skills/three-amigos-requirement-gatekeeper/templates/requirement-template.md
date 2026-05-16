@@ -10,17 +10,37 @@
 
 ## Affected Services
 
+## Service Boundary
+
+## Target Service Responsibility
+
+## Service Inputs
+
+## Service Outputs
+
 ## API Changes
+
+## Contract Impact
 
 ## Database Impact
 
 ## Data Ownership
 
+## Allowed Dependencies
+
+## Allowed Communication
+
+## Forbidden Changes
+
 ## Deployment Impact
 
 ## Rollback Strategy
 
+## Risk Level
+
 ## Testability
+
+## Test Impact
 
 ## Acceptance Criteria
 

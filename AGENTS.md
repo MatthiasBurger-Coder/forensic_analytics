@@ -434,7 +434,7 @@ The reverse direction is forbidden.
 
 The project follows strict microservice autonomy for service-split work.
 
-Services must not share Java code modules.
+Services must not share Java implementation modules, domain modules, DTO modules, repository modules, service modules, utility modules, test-fixture modules, or internal error-model modules.
 
 Allowed integration mechanisms are:
 
@@ -442,11 +442,11 @@ Allowed integration mechanisms are:
 - gRPC/protobuf
 - RabbitMQ/message contracts
 
-Contracts may be centrally documented, but they must not be used as shared Java implementation modules.
+Contracts may be centrally documented, but they must not be used as shared Java implementation modules or as a substitute for service-owned domain models.
 
-Each service must be independently buildable, runnable, testable, containerized and deployable. Each microservice must own its Spring Boot application, configuration, ports, tests, Dockerfile, health checks, README, adapters and internal domain model.
+Each service must be independently buildable, runnable, testable, configurable, observable, health-checkable, containerized and deployable. Each microservice must own its Spring Boot application, configuration, ports, tests, Dockerfile, health checks, README, adapters and internal domain model.
 
-This rule does not authorize speculative migration of existing modules. Service extraction must be performed through dedicated, verified slices.
+This rule does not authorize speculative migration of existing modules. The current modular-monolith modules must not be described as implemented microservices. Service extraction must be performed through dedicated, verified slices with explicit service boundary, contract impact, data ownership, test impact, rollback or strangler strategy, quality-gate commands and forbidden changes.
 
 ### Package Responsibility Map
 

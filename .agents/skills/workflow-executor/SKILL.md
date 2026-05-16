@@ -41,6 +41,25 @@ Locate the active workflow in this order:
 
 Stop if multiple workflows appear active and the execution target cannot be verified.
 
+## Branch Verification
+
+Before implementation, verify the workflow branch from the active workflow with:
+
+```bash
+git branch --show-current
+git show-ref --verify --quiet refs/heads/<workflow-branch>
+git status --short --branch
+```
+
+Continue only when the active branch matches the workflow branch and the local
+branch ref exists. If the branch is missing or inactive, stop before file
+changes. Create or restore the branch only when the user explicitly approves
+that remediation, then rerun the active-branch and local-ref checks before
+continuing.
+
+Do not rely on workflow notes or execution summaries as proof that the branch
+exists.
+
 ## Core Rule
 
 Never implement a workflow slice directly before the relevant subagent or role has reviewed the slice.
@@ -84,6 +103,7 @@ Stop and report if:
 - tests fail and cannot be fixed safely inside the slice
 - the workflow conflicts with `AGENTS.md` or `QUALITY.md`
 - multiple active workflows conflict
+- the workflow branch is missing, inactive, or cannot be verified as a local ref
 - a change would introduce shared Java code modules between microservices
 - subagent or role execution is required but unavailable
 - commit or push is requested but not explicitly allowed by the workflow
