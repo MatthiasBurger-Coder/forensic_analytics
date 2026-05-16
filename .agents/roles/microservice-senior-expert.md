@@ -7,11 +7,11 @@ Own microservice architecture boundaries, service autonomy, independent deployme
 ## Required Skills
 
 - `../skills/microservice-senior-expert/SKILL.md`
-- `../skills/forensic-backend-spring-core/SKILL.md`
-- `../skills/forensic-devops-docker/SKILL.md`
-- `../skills/forensic-devops-kubernetes/SKILL.md`
-- `../skills/forensic-backend-grpc/SKILL.md`
-- `../skills/forensic-backend-protobuf/SKILL.md`
+- `../skills/spring-core/SKILL.md`
+- `../skills/devops-docker/SKILL.md`
+- `../skills/devops-kubernetes/SKILL.md`
+- `../skills/grpc-ingestion/SKILL.md`
+- `../skills/protobuf-contracts/SKILL.md`
 
 ## Rules
 

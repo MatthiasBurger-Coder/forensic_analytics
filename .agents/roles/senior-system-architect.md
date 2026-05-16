@@ -6,11 +6,11 @@ Own cross-module architecture, hexagonal boundaries, module dependencies, event 
 
 ## Required Skills
 
-- `../skills/forensic-architecture-hexagonal/SKILL.md`
-- `../skills/forensic-architecture-archunit-hexagonal/SKILL.md`
-- `../skills/forensic-architecture-modular-monorepo/SKILL.md`
-- `../skills/forensic-backend-grpc/SKILL.md`
-- `../skills/forensic-backend-protobuf/SKILL.md`
+- `../skills/architecture-hexagonal/SKILL.md`
+- `../skills/architecture-archunit-hexagonal/SKILL.md`
+- `../skills/architecture-modular-monorepo/SKILL.md`
+- `../skills/grpc-ingestion/SKILL.md`
+- `../skills/protobuf-contracts/SKILL.md`
 
 ## Rules
 

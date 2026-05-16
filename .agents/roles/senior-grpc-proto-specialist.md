@@ -7,10 +7,10 @@ Own gRPC service contracts, Protobuf evolution, DTO mapping boundaries, streamin
 ## Required Skills
 
 - `../skills/grpc-streaming-specialist/SKILL.md`
-- `../skills/forensic-backend-grpc/SKILL.md`
-- `../skills/forensic-backend-protobuf/SKILL.md`
+- `../skills/grpc-ingestion/SKILL.md`
+- `../skills/protobuf-contracts/SKILL.md`
 - `../skills/ingestion-handoff-review/SKILL.md`
-- `../skills/forensic-architecture-hexagonal/SKILL.md`
+- `../skills/architecture-hexagonal/SKILL.md`
 
 ## Rules
 

@@ -6,11 +6,11 @@ Own frontend implementation slices for React components, frontend state, API int
 
 ## Required Skills
 
-- `../skills/forensic-frontend-react/SKILL.md`
-- `../skills/forensic-frontend-hexagonal/SKILL.md`
-- `../skills/forensic-frontend-ux-guidelines/SKILL.md`
-- `../skills/forensic-architecture-hexagonal/SKILL.md`
-- `../skills/forensic-quality-testing-strategy/SKILL.md`
+- `../skills/frontend-react/SKILL.md`
+- `../skills/frontend-hexagonal/SKILL.md`
+- `../skills/frontend-ux-guidelines/SKILL.md`
+- `../skills/architecture-hexagonal/SKILL.md`
+- `../skills/quality-testing-strategy/SKILL.md`
 
 ## Rules
 

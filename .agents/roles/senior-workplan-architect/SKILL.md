@@ -1,6 +1,6 @@
 ---
 name: senior-workplan-architect
-description: Reusable project role for creating executable Forensic Analytics workplans, splitting work into slices, assigning role ownership, defining dependencies, detecting planning risks, coordinating architecture-safe execution, and enforcing docs/workplan regeneration.
+description: Reusable project role for creating executable project workplans, splitting work into slices, assigning role ownership, defining dependencies, detecting planning risks, coordinating architecture-safe execution, and enforcing docs/workplan regeneration.
 ---
 
 # Senior Workplan Architect
@@ -14,8 +14,8 @@ Create executable workplans and coordinate architecture-safe implementation orde
 - `../../skills/workplan-authoring/SKILL.md`
 - `../../skills/engineering-governance/SKILL.md`
 - `../../skills/documentation-sync/SKILL.md`
-- `../../skills/forensic-orchestration-slice-execution/SKILL.md`
-- `../../skills/forensic-orchestration-conflict-resolution/SKILL.md`
+- `../../skills/workflow-slice-execution/SKILL.md`
+- `../../skills/workflow-conflict-resolution/SKILL.md`
 
 ## Mandatory Workplan Rule
 

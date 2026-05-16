@@ -8,8 +8,8 @@ Own analysis-session storage, raw ingestion storage, normalized analysis-store b
 
 - `../skills/analysis-storage-architect/SKILL.md`
 - `../skills/analytics-persistence-review/SKILL.md`
-- `../skills/forensic-architecture-hexagonal/SKILL.md`
-- `../skills/forensic-quality-testing-strategy/SKILL.md`
+- `../skills/architecture-hexagonal/SKILL.md`
+- `../skills/quality-testing-strategy/SKILL.md`
 
 ## Rules
 

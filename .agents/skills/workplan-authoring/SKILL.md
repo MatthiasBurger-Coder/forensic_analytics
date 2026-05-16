@@ -1,6 +1,6 @@
 ---
 name: workplan-authoring
-description: Use for creating or regenerating Forensic Analytics workplans with verified baselines, executable slices, dependency ordering, subagent ownership, architecture constraints, resilience requirements, quality gates, stop conditions, and full docs/workplan lifecycle control.
+description: Use for creating or regenerating the current project workplans with verified baselines, executable slices, dependency ordering, subagent ownership, architecture constraints, resilience requirements, quality gates, stop conditions, and full docs/workplan lifecycle control.
 ---
 
 # Skill: Workplan Authoring

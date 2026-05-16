@@ -23,6 +23,6 @@ Contracts may be centrally documented, but they must not be used as shared Java 
 Require every microservice to have its own Spring Boot application, configuration, ports, tests, Dockerfile, health checks, README, adapters and internal domain.
 Require every microservice to be independently buildable, runnable, testable, containerized and deployable to Docker, Docker Swarm and Kubernetes.
 
-Use related repository skills when relevant: forensic-backend-spring-core, forensic-devops-docker, forensic-devops-kubernetes, forensic-backend-grpc and forensic-backend-protobuf.
+Use related repository skills when relevant: spring-core, devops-docker, devops-kubernetes, grpc-ingestion and protobuf-contracts.
 Stop and report when service boundaries, contract ownership, deployment targets or module dependencies cannot be verified from repository files.
 """

@@ -1,6 +1,6 @@
 ---
 name: workplan-executor
-description: Use when the user writes workplan execute or asks to execute the active Forensic Analytics workplan through the configured subagent workflow with slice sequencing, specialist reviews, quality gates, git diff review, and commit restrictions.
+description: Use when the user writes workplan execute or asks to execute the active project workplan through the configured subagent workflow with slice sequencing, specialist reviews, quality gates, git diff review, and commit restrictions.
 ---
 
 # Workplan Executor Skill

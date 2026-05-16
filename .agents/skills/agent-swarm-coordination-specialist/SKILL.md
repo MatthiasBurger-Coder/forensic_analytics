@@ -7,7 +7,7 @@ description: Use for dependency graph planning, slice orchestration, multi-agent
 
 ## Description
 
-Guides coordinated multi-agent planning for Forensic Analytics while keeping edits scoped and reviewable.
+Guides coordinated multi-agent planning for the current project while keeping edits scoped and reviewable.
 
 ## Instructions
 

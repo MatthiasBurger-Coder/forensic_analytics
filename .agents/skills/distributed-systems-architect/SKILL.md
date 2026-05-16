@@ -7,7 +7,7 @@ description: Use for distributed analysis-platform design, long-running job orch
 
 ## Description
 
-Guides distributed Forensic Analytics platform design while keeping orchestration in application services and concrete infrastructure in adapters.
+Guides distributed project platform design while keeping orchestration in application services and concrete infrastructure in adapters.
 
 ## Instructions
 

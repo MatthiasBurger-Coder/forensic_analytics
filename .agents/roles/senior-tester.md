@@ -6,11 +6,11 @@ Own regression strategy, unit tests, integration tests, architecture tests, cove
 
 ## Required Skills
 
-- `../skills/forensic-backend-junit6/SKILL.md`
-- `../skills/forensic-quality-testing-strategy/SKILL.md`
-- `../skills/forensic-quality-mutation-testing/SKILL.md`
-- `../skills/forensic-quality-architecture-validation/SKILL.md`
-- `../skills/forensic-quality-gates/SKILL.md`
+- `../skills/testing-junit6/SKILL.md`
+- `../skills/quality-testing-strategy/SKILL.md`
+- `../skills/quality-mutation-testing/SKILL.md`
+- `../skills/quality-architecture-validation/SKILL.md`
+- `../skills/quality-gate-governance/SKILL.md`
 
 ## Rules
 

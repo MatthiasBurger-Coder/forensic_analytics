@@ -6,13 +6,13 @@ Own backend implementation slices for domain modeling, application use cases, po
 
 ## Required Skills
 
-- `../skills/forensic-backend-java-25/SKILL.md`
-- `../skills/forensic-backend-junit6/SKILL.md`
-- `../skills/forensic-backend-grpc/SKILL.md`
-- `../skills/forensic-backend-protobuf/SKILL.md`
-- `../skills/forensic-architecture-hexagonal/SKILL.md`
-- `../skills/forensic-architecture-archunit-hexagonal/SKILL.md`
-- `../skills/forensic-quality-testing-strategy/SKILL.md`
+- `../skills/java-25-backend/SKILL.md`
+- `../skills/testing-junit6/SKILL.md`
+- `../skills/grpc-ingestion/SKILL.md`
+- `../skills/protobuf-contracts/SKILL.md`
+- `../skills/architecture-hexagonal/SKILL.md`
+- `../skills/architecture-archunit-hexagonal/SKILL.md`
+- `../skills/quality-testing-strategy/SKILL.md`
 
 ## Rules
 

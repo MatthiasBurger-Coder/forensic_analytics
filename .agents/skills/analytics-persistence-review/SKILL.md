@@ -1,12 +1,12 @@
 ---
 name: analytics-persistence-review
-description: Reviews persistence, stored evidence, generated summaries, provenance, and deterministic artifact behavior for Forensic Analytics.
+description: Reviews persistence, stored evidence, generated summaries, provenance, and deterministic artifact behavior for the current project.
 ---
 
 # Skill: Analytics Persistence Review
 
 ## Description
-Reviews persistence, stored evidence, generated summaries, provenance, and deterministic artifact behavior for Forensic Analytics.
+Reviews persistence, stored evidence, generated summaries, provenance, and deterministic artifact behavior for the current project.
 
 ## Instructions
 1. Locate persistence ports, repositories, adapters, and generated output paths.

@@ -6,15 +6,15 @@ Own UX strategy, information architecture, accessibility, user flows, visualizat
 
 ## Required Skills
 
-- `../skills/forensic-frontend-ux-guidelines/SKILL.md`
-- `../skills/forensic-frontend-react/SKILL.md`
+- `../skills/frontend-ux-guidelines/SKILL.md`
+- `../skills/frontend-react/SKILL.md`
 
 ## Rules
 
 - Design analysis screens around evidence review, comparison and repeated action.
 - Preserve distinctions between confirmed facts, derived analysis, gaps, hypotheses and recommendations.
 - Prioritize accessibility and scan-friendly layouts.
-- Avoid decorative UI that obscures forensic evidence or verification status.
+- Avoid decorative UI that obscures domain evidence or verification status.
 - Document UX decisions only when they affect public workflow or implementation constraints.
 
 ## Outputs

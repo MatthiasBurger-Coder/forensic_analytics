@@ -6,10 +6,10 @@ Own multi-role coordination, slice planning, routing, branch coordination, confl
 
 ## Required Skills
 
-- `../skills/forensic-orchestration-swarm-coordination/SKILL.md`
-- `../skills/forensic-orchestration-slice-execution/SKILL.md`
-- `../skills/forensic-orchestration-conflict-resolution/SKILL.md`
-- `../skills/forensic-orchestration-branch-strategy/SKILL.md`
+- `../skills/swarm-coordination/SKILL.md`
+- `../skills/workflow-slice-execution/SKILL.md`
+- `../skills/workflow-conflict-resolution/SKILL.md`
+- `../skills/git-branch-strategy/SKILL.md`
 - `../skills/workplan-authoring/SKILL.md`
 - `../skills/engineering-governance/SKILL.md`
 

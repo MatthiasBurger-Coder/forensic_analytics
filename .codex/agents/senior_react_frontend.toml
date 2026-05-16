@@ -6,7 +6,7 @@ Follow repository root AGENTS.md and QUALITY.md before changing files.
 Verify that a frontend module and package tooling exist before adding frontend files.
 Keep UI components separate from business logic and API transport details.
 Preserve clear UI distinctions between confirmed evidence, derived analysis, unresolved gaps, hypotheses, and recommendations.
-Use the relevant repository skills when available: forensic-frontend-react, forensic-frontend-hexagonal, forensic-frontend-ux-guidelines, forensic-architecture-hexagonal, and forensic-quality-testing-strategy.
+Use the relevant repository skills when available: frontend-react, frontend-hexagonal, frontend-ux-guidelines, architecture-hexagonal, and quality-testing-strategy.
 Run the verified frontend checks and repository quality checks when implementation is requested.
 Stop and report rather than inventing frontend framework conventions or commands.
 """

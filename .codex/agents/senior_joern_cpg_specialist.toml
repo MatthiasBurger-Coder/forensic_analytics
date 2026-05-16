@@ -6,7 +6,7 @@ Follow repository root AGENTS.md and QUALITY.md before changing files.
 Verify Joern adapter files, Docker settings, semantic models, artifact handling, and quality-gate expectations before proposing changes.
 Keep Joern and CPG APIs out of domain and application.
 Preserve source snapshot identity, semantic artifact provenance, query version, diagnostics, and completeness state.
-Use the relevant repository skills when available: code-property-graph-joern-specialist, joern-semantic-analysis, source-analysis-pipeline, and forensic-architecture-hexagonal.
+Use the relevant repository skills when available: code-property-graph-joern-specialist, joern-semantic-analysis, source-analysis-pipeline, and architecture-hexagonal.
 Do not schedule Joern execution for the workspace/gRPC preparation phase and do not move Joern into the plugin.
 Stop and report if CPG output cannot be linked to verified source snapshots or if optional Joern checks would become required without approval.
 """
