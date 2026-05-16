@@ -1,35 +1,46 @@
 # Agent Handoff Matrix
 
-| Slice | Primary owner | Required reviewers | Write scope |
-| --- | --- | --- | --- |
-| 00 | Senior Workflow Architect | Senior DevOps Engineer, Senior Git Workspace Specialist when needed | `docs/workflow/execution-summary.md` |
-| 01 | Senior Documentation Engineer | Senior Swarm Orchestrator, Skill Registry and Conflict Auditor | `docs/governance/skill-agent-inventory.md`, `docs/workflow/execution-summary.md` |
-| 02 | Senior System Architect | Workflow / Workplan Executor, Three Amigos Gatekeeper, Senior Documentation Engineer | `AGENTS.md`, `docs/governance/agent-decision-chain.md` |
-| 03 | Three Amigos Gatekeeper | Senior Tester, Senior System Architect, Senior Requirement Engineer | `.agents/skills/three-amigos-requirement-gatekeeper/**`, `.agents/prompts/workflow-create.md`, `docs/governance/three-amigos-gate.md` |
-| 04 | Senior DevOps Engineer | Senior Workflow Architect, Senior Git Workspace Specialist | `.agents/skills/git-branch-strategy/SKILL.md`, `.agents/prompts/workflow-create.md`, `docs/governance/workflow-branching.md` |
-| 05 | Senior Workflow Architect | Senior System Architect, Senior Tester | workflow executor/authoring skills, execution prompts, `docs/governance/workplan-slice-template.md` |
-| 06 | Senior Swarm Orchestrator | Senior System Architect, Agent Handoff Protocol | swarm orchestrator role/skill/docs |
-| 07 | Microservice Senior Expert | Senior System Architect, Senior DevOps Engineer, Senior gRPC/Proto Specialist, Contract Governance Expert | microservice expert role/skill/docs and verified ADR/arc42 references |
-| 08 | Senior System Architect | Skill Registry and Conflict Auditor, Senior Swarm Orchestrator, Senior Documentation Engineer | `.agents/skills/**`, `docs/governance/skill-agent-inventory.md` |
-| 09 | Senior Documentation Engineer | Senior System Architect, Senior Tester, Senior DevOps Engineer | `docs/governance/development-model-alignment.md`, optional `AGENTS.md` references |
-| 10 | Senior Tester | Senior Workflow Architect, Senior Documentation Engineer | `docs/governance/workflow-traceability-matrix.md`, `.agents/prompts/workflow-create.md` |
-| 11 | Senior Tester | Senior DevOps Engineer, Security / Supply Chain Expert | `QUALITY.md`, `docs/governance/governance-quality-gate.md` |
-| 12 | Senior System Architect | Senior Documentation Engineer, Senior Workflow Architect, Microservice Senior Expert | `AGENTS.md` |
-| 13 | Senior Tester | Senior System Architect, Senior Workflow Architect, Skill Registry and Conflict Auditor | `docs/governance/skill-agent-integrity-audit.md`, scoped follow-up fixes |
-| 14 | Senior Workflow Architect | Senior DevOps Engineer, Senior Tester, git commit preparation skills | final execution notes and commit metadata only when authorized |
+Callable subagents may be used only when the active request explicitly
+authorizes delegated or parallel agent work. Otherwise, the matching role file
+or skill is used as a local review checklist.
+
+Each role or subagent must verify the active branch before modifying files:
+
+```text
+architecture/microservices-ecosystem-conversion-20260516
+```
+
+| Slice | Owner | Required Reviews |
+|---:|---|---|
+| 00 | Senior System Architect | Microservice Senior Expert, Senior Java Backend Developer, Senior DevOps Engineer, Senior Tester |
+| 01 | Senior System Architect | Three Amigos Requirement Gatekeeper, Microservice Senior Expert, Data Ownership And Persistence Steward, Senior Tester |
+| 02 | Senior DevOps Engineer | Senior System Architect, Senior Java Backend Developer, Senior Tester |
+| 03 | Senior gRPC/Proto Specialist | Contract Governance Expert, Senior System Architect, Microservice Senior Expert, Senior Tester |
+| 04 | Senior Java Backend Developer | Senior gRPC/Proto Specialist, Microservice Senior Expert, Senior DevOps Engineer, Senior Tester |
+| 05 | Senior Java Backend Developer | Data Ownership And Persistence Steward, Senior System Architect, Senior DevOps Engineer, Senior Tester |
+| 06 | Senior Java Backend Developer | Microservice Senior Expert, Senior DevOps Engineer, Senior Git Workspace Specialist, Senior Tester |
+| 07 | Senior Java Backend Developer | Source Analysis Pipeline, Microservice Senior Expert, Senior Tester |
+| 08 | Senior Java Backend Developer | Senior Joern CPG Specialist, Senior DevOps Engineer, Microservice Senior Expert, Senior Tester |
+| 09 | Senior Java Backend Developer | Microservice Senior Expert, Senior Tester |
+| 10 | Senior Java Backend Developer | Senior System Architect, Replay/Graph/LLM Reviewer, Data Ownership And Persistence Steward, Senior Tester |
+| 11 | Senior Java Backend Developer | Senior UX Designer, Replay/Graph/LLM Reviewer, Microservice Senior Expert, Senior Tester |
+| 12 | Senior Java Backend Developer | Senior System Architect, Senior UX Designer, Contract Governance Expert, Senior Tester |
+| 13 | Senior React Frontend Developer | Senior UX Designer, Senior Tester |
+| 14 | Senior DevOps Engineer | Senior System Architect, Microservice Runtime Readiness Expert, Senior Tester |
+| 15 | Senior DevOps Engineer | Senior System Architect, Microservice Runtime Readiness Expert, Senior Tester |
+| 16 | Senior Tester | Senior gRPC/Proto Specialist, Senior Java Backend Developer, Senior DevOps Engineer |
+| 17 | Senior System Architect | Senior Java Backend Developer, Senior Tester |
+| 18 | Senior System Architect | Microservice Senior Expert, Senior DevOps Engineer, Senior Tester |
+| 19 | Senior Documentation Engineer | Senior System Architect, Senior DevOps Engineer, Senior UX Designer, Senior Tester |
+| 20 | Senior Swarm Orchestrator | Senior System Architect, Senior Tester, Git Commit Reviewer |
 
 ## Handoff Rules
 
-- Every write-capable agent must verify the active branch before modifying
-  files.
-- Subagents must not switch branches.
-- No implementation work may happen on `main`, `master`, `develop` or another
-  shared branch.
-- Each slice must record owner, acceptance criteria, affected files, expected
-  tests, rollback notes and quality-gate command before implementation.
-- A reviewer can block a slice when service ownership, contract ownership,
-  quality commands or evidence semantics are unclear.
-- Callable subagents are used only when explicitly authorized. Otherwise the
-  matching role or skill file is used as a local review checklist.
-- Handoffs must name the source slice, target slice, changed files, unresolved
-  questions and verification evidence.
+- No role may introduce shared Java implementation modules between services.
+- No role may implement service communication before the relevant contract
+  exists and has review notes.
+- No role may move source packages unless the slice write scope explicitly
+  allows it.
+- No role may claim runtime independence without build, start, test,
+  configuration, healthcheck and container evidence.
+- Every slice ends with diff inspection, quality evidence and a result note.

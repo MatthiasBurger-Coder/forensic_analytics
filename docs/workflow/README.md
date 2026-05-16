@@ -9,20 +9,20 @@ the user runs the explicit workflow execution command.
 
 ## Active Workflow
 
-- [workflow.md](workflow.md) - Skill and Agent Integrity Correction workflow for
-  branch-safe, Three-Amigos-led, architecture-governed agent and skill
-  governance.
+- [workflow.md](workflow.md) - Microservices Ecosystem Conversion workflow for
+  converting the current modular Forensic Analytics platform into independently
+  buildable, startable, testable, containerized services through contract-first
+  migration slices.
 
 ## Supporting Files
 
 - [three-amigos-decision-record.md](three-amigos-decision-record.md) records the
   requirement gate result used before authoring this workflow.
-- [skill-agent-inventory-baseline.md](skill-agent-inventory-baseline.md) records
-  the verified starting inventory and path conventions for the workflow.
-- [governance-conflict-review.md](governance-conflict-review.md) records
-  repository conflicts, path mismatches and non-blocking risks found during
-  read-only review.
-- [slice-dependency-map.md](slice-dependency-map.md) lists execution order,
+- [current-state-baseline.md](current-state-baseline.md) records the verified
+  repository state used as the migration baseline.
+- [governance-conflict-review.md](governance-conflict-review.md) records draft
+  adjustments, repository conflicts and execution risks.
+- [slice-dependency-map.md](slice-dependency-map.md) lists slice order,
   dependencies and parallelization limits.
 - [agent-handoff-matrix.md](agent-handoff-matrix.md) maps slices to owner and
   review roles.
@@ -30,7 +30,7 @@ the user runs the explicit workflow execution command.
   `QUALITY.md` and workflow-specific checks.
 - [execution-summary.md](execution-summary.md) records workflow creation status
   and open execution prerequisites.
-- [prompts/skill-agent-integrity-correction.md](prompts/skill-agent-integrity-correction.md)
+- [prompts/microservices-ecosystem-conversion.md](prompts/microservices-ecosystem-conversion.md)
   provides the execution prompt for this workflow.
 
 ## Execution Rule

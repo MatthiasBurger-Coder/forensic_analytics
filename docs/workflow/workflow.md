@@ -1,43 +1,35 @@
-# Skill And Agent Integrity Correction Workflow
+# Microservices Ecosystem Conversion Workflow
 
 ## Status
 
-Planned active workflow. This document converts the user-supplied Skill and
-Agent Integrity Correction draft into the active repository workflow under
-`docs/workflow`.
+Planned active workflow.
 
-This workflow governs repository agent, skill, prompt, workflow and governance
-documentation. It does not change production Java code, runtime behavior,
-contracts, persistence schemas, graph semantics, replay output, LLM integration
-or deployment descriptors.
+This workflow converts the user-supplied Microservices Ecosystem Conversion
+draft into the active repository workflow under `docs/workflow`.
+
+The workflow governs future migration work. It does not itself move production
+code, create service implementations, change contracts, alter persistence,
+publish deployment descriptors, commit or push.
 
 ## Verified Baseline
 
 - Repository root: `/mnt/d/Projects/forensic_analytics`
 - Windows path: `D:/Projects/forensic_analytics`
-- Active branch: `feature/workflow-skill-agent-integrity-correction-20260516`
-- Branch type: `feature`, selected because the workflow creates a new
-  governance workflow rather than a bug fix, documentation-only update or pure
-  architecture decision.
-- Branch collision checks: no local branch, no remote-tracking branch and no
-  remote head with the requested branch name were found before creation.
+- Active branch: `architecture/microservices-ecosystem-conversion-20260516`
+- Branch type: `architecture`, selected because the workflow plans an
+  architecture-changing microservice conversion.
 - Authoritative agent rules: `AGENTS.md`
 - Authoritative quality rules: `QUALITY.md`
 - Workflow authoring rules: `.agents/skills/workflow-authoring/SKILL.md`
-- Workflow execution rules: `.agents/skills/workflow-executor/SKILL.md`
+- Workflow execution rules: `.codex/workflow/workflow-execution-rules.md`
 - Project routing rules: `.agents/orchestrator/routing-rules.md`
 - Project swarm rules: `.agents/orchestrator/swarm-orchestrator.md`
-- Workflow create prompt: `.agents/prompts/workflow-create.md`
-- Existing active workflow replaced: Microservice Skill Sharpening workflow
-  under `docs/workflow/**`.
-- New active workflow location: `docs/workflow/**`.
+- Current state baseline: `docs/workflow/current-state-baseline.md`
 
 ## Requirement Source And Gate Decision
 
-The user supplied a `workflow create` draft for Skill and Agent Integrity
-Correction on 2026-05-16. Repository documentation must be English, so this
-workflow records the requirement in English while preserving the requested
-governance intent.
+The user supplied a `workflow create` draft for converting the active
+`forensic_analytics` project into a microservices ecosystem on 2026-05-16.
 
 Three Amigos decision:
 
@@ -45,803 +37,969 @@ Three Amigos decision:
 READY_FOR_WORKFLOW
 ```
 
-Gate findings:
-
-- Business goal: make agent and skill governance coherent, auditable and safe
-  for future workflow creation and execution.
-- Technical goal: harden branch-first workflow creation, Three Amigos intake,
-  architecture authority, orchestration boundaries, microservice invariants,
-  handoffs, quality gates and traceability.
-- Scope: workflow documents, root governance, `.agents/**`, prompts,
-  governance docs, architecture docs, ADR references, workplan docs,
-  `QUALITY.md` and README references where verified.
-- Non-scope: production code implementation, service extraction, runtime
-  behavior changes, API endpoint changes, storage changes, deployment manifests
-  and evidence model changes.
-- EPIC traceability: no EPIC was named by the user. This is recorded as a
-  non-blocking traceability gap because the request targets repository
-  governance, not runtime platform behavior.
-- Architecture impact: governance-only workflow creation now. Later execution
-  may update root governance, role hierarchy, ADR references and arc42
-  governance sections.
-- Quality impact: workflow creation requires documentation diff review and
-  `git diff --check`. Later execution slices must use the `QUALITY.md` gates
-  appropriate to their write scopes.
+This decision approves workflow authoring only. Service extraction remains
+subject to slice-specific service-boundary, contract, data-ownership,
+runtime-readiness, rollback and quality-gate reviews.
 
 ## Target Outcome
 
 After `workflow execute` completes this workflow:
 
-- `workflow create` is branch-first and cannot modify workflow artifacts before
-  a dedicated branch exists and is active.
-- Branch type selection happens before branch creation.
-- Three Amigos review is mandatory before workflow authoring continues.
-- The Senior System Architect is the highest technical architecture authority
-  over backend, frontend, DevOps, testing, documentation and microservice
-  governance.
-- The Workflow or Workplan Executor orchestrates slices but does not decide
-  architecture.
-- The Agent Swarm Orchestrator coordinates subagents but does not override
-  specialist decisions.
-- Microservice rules are documented as hard invariants.
-- Skill and agent overlaps are inventoried, resolved or explicitly marked for
-  manual review.
-- Every slice has owner, reviewers, quality gate, stop rule and handoff rule.
-- The skill landscape is checked against V-Model, Scrum, DevOps/DORA,
-  DDD/Hexagonal Architecture and Team Topologies.
+- The platform has documented and implemented service boundaries for gateway,
+  ingestion, repository analysis, AST analysis, Joern analysis, BTM generation,
+  analysis storage, graph/replay, report generation and frontend access.
+- Each service is independently buildable, startable, testable, configurable,
+  health-checkable, containerized and deployable.
+- No service shares Java implementation, domain, DTO, repository, service,
+  fixture, utility or internal error-model modules with another service.
+- Cross-service communication uses only REST/OpenAPI, gRPC/protobuf or approved
+  event contracts.
+- `contracts/` contains interface contracts only.
+- Docker Compose, Docker Swarm and Kubernetes material exists for the service
+  ecosystem.
+- Documentation, tests and quality-gate evidence describe the new runtime
+  model.
+- Commit and push happen only in the final slice after required quality gates
+  and commit-readiness review pass.
 
 ## Non-Goals
 
-- Do not implement production Java behavior.
-- Do not create microservice directories, endpoints, deployment descriptors,
-  persistence migrations or contract files unless a later governance slice
-  proves the file is documentation-only and explicitly in scope.
-- Do not move packages or modules.
-- Do not create shared Java implementation, domain, DTO, event or test-fixture
-  modules.
-- Do not weaken existing root `AGENTS.md`, `QUALITY.md`, ADR or arc42 rules.
-- Do not embed project-specific governance into portable `.codex` assets unless
-  a dedicated portability review approves that target.
-- Do not commit or push during workflow creation. Commit and push are reserved
-  for the final execution slice after required gates pass and the workflow or
-  user explicitly authorizes them.
+- Do not perform a big-bang migration.
+- Do not move existing production code before current-state and service-boundary
+  slices prove the target ownership.
+- Do not introduce `forensic-common`, `shared-core`, `common-utils` or any
+  equivalent shared runtime code module.
+- Do not share Java domain models, DTOs, events, repositories, services,
+  utility classes, test fixtures or internal error models across services.
+- Do not treat current Gradle modules as deployed microservices without runtime
+  evidence.
+- Do not directly access another service's database.
+- Do not invent missing contracts, event fields, graph labels, table names,
+  Gradle tasks or API routes.
+- Do not claim Docker Swarm or Kubernetes readiness before manifests and
+  validation evidence exist.
 
-## Governance Hierarchy
+## Architecture Constraints
 
-The intended decision order is:
+- Every service owns its own hexagonal architecture:
+  - `domain`
+  - `application`
+  - `adapter/inbound`
+  - `adapter/outbound`
+  - `infrastructure`
+- Domain and application code remain independent from frameworks, generated
+  transport types, storage clients, runtime infrastructure and provider SDKs.
+- Adapters and infrastructure depend inward. Domain and application do not
+  depend outward.
+- Contracts are external interface descriptions, not Java implementation
+  sharing.
+- Graph, vector and report views are projections or derived outputs, not hidden
+  sources of truth.
+- LLM output remains generated analysis or hypothesis, never verified evidence.
 
-```text
-Three Amigos Requirement Gatekeeper
-  -> Senior System Architect
-  -> Microservice Senior Expert
-  -> Workflow / Workplan Executor
-  -> Agent Swarm Orchestrator
-  -> Specialist subagents or role reviews
-```
+## Target Service Landscape
 
-Authority boundaries:
+| Service | Responsibility | Initial Source Evidence | Primary Protocols |
+|---|---|---|---|
+| `forensic-gateway-service` | UI, CLI and external client entry point; orchestration facade without analysis logic | `forensic-analytics-rest`, `forensic-analytics-cli`, Boot wiring | REST inbound, REST/gRPC outbound |
+| `forensic-ingestion-service` | Receive plugin, scanner and runtime data over gRPC; validate ingestion packages | `forensic-analytics-ingestion-grpc`, `forensic_ingestion.proto`, ingestion use cases | gRPC inbound, REST/gRPC/event outbound |
+| `repository-analysis-service` | Repository checkout, branch resolution and workspace preparation | `forensic-analytics-adapter-repository-source`, ingestion workspace services | REST/gRPC inbound, gRPC/event outbound |
+| `java-ast-analysis-service` | JavaParser source scanning and stable source identifiers | `forensic-analytics-adapter-javaparser` | gRPC/event inbound and outbound |
+| `joern-cpg-analysis-service` | Joern CPG/CFG/DFG analysis and semantic artifact mapping | `forensic-analytics-adapter-joern-docker`, `docker/joern/**` | gRPC/event inbound and outbound |
+| `btm-generation-service` | Generate versioned BTM rule artifacts from delivered analysis facts | `RuleGenerationPort`, `.btm` tests and arc42 BTM decisions | REST/gRPC inbound, artifact outbound |
+| `analysis-store-service` | Own normalized analysis facts, sessions, incidents and correlations | `forensic-analytics-persistence`, analysis stores and ports | REST/gRPC inbound, database outbound |
+| `graph-replay-service` | Build graph/runtime overlays and exception-centered replay | arc42 graph/replay concepts, semantic graph model | REST/gRPC inbound, graph DB outbound |
+| `report-generation-service` | Produce reports, incident context packages and LLM-ready packages | arc42 reporting/LLM concepts, artifact/report storage areas | REST/gRPC inbound, storage outbound |
+| `frontend-web-app` | React frontend communicating through Gateway or public APIs only | `forensic-ui` | REST through Gateway |
 
-- Three Amigos validates readiness, risks, acceptance criteria and testability.
-- Senior System Architect owns final architecture decisions and may block
-  architecture-sensitive work.
-- Microservice Senior Expert owns service-autonomy and no-shared-code
-  invariant review.
-- Workflow / Workplan Executor owns slice planning, dependency order, progress
-  checks and stop-rule enforcement.
-- Agent Swarm Orchestrator owns coordination, parallelization, conflict
-  detection and handoff monitoring.
-- Specialist subagents or role reviews implement or review only within the
-  approved slice scope.
+## Target Repository Shape
 
-## Branch-First Rule For Workflow Creation
-
-Every future `workflow create` must follow this order:
-
-```text
-1. Determine branch type.
-2. Check local and remote branch conflicts.
-3. Create the dedicated workflow branch.
-4. Checkout and verify the branch.
-5. Create or modify workflow artifacts only after branch verification.
-```
-
-Default workflow branch:
+The planned target structure is:
 
 ```text
-feature/workflow-<short-topic>-<yyyyMMdd>
-```
-
-Allowed exceptions when the scope clearly fits:
-
-```text
-fix/
+services/
+  forensic-gateway-service/
+  forensic-ingestion-service/
+  repository-analysis-service/
+  java-ast-analysis-service/
+  joern-cpg-analysis-service/
+  btm-generation-service/
+  analysis-store-service/
+  graph-replay-service/
+  report-generation-service/
+frontend/
+  frontend-web-app/
+contracts/
+  grpc/
+  openapi/
+  events/
+deployment/
+  docker-compose/
+  docker-swarm/
+  kubernetes/
 docs/
-architecture/
+  architecture/
+  workflow/
 ```
 
-Do not use these prefixes for `workflow create` unless repository governance is
-explicitly changed to allow them:
+`contracts/` may contain `.proto`, OpenAPI YAML/JSON, event schema documents and
+contract documentation only. It must not contain Java service code, shared
+utility classes, shared domain models, shared mappers, shared exceptions or
+shared Spring configuration.
 
-```text
-feat/
-refactor/
-test/
-build/
-ci/
-quality/
-agent/
-chore/
-```
+## Slice Execution Protocol
 
-## Microservice Invariants
+Each slice follows this sequence:
 
-Future microservice work must preserve these hard rules:
+1. Read the slice goal.
+2. Verify the active workflow branch.
+3. Identify affected services and files.
+4. Run the Three Amigos or migration safety gate when required.
+5. Run Senior System Architect boundary review.
+6. Route implementation to the listed owner and reviews.
+7. Apply only the smallest verified change.
+8. Run targeted tests and applicable quality checks.
+9. Inspect `git diff` and `git diff --check`.
+10. Document the result before continuing.
 
-- Each microservice is independently runnable.
-- Each microservice has its own Docker container when containerization is in
-  scope.
-- Each microservice can run in Docker Swarm or Kubernetes only when repository
-  tooling or manifests are verified.
-- No microservice shares domain code with another service.
-- No shared `forensic-common` module.
-- No shared entity, DTO, event or test-fixture implementation classes.
-- Communication is only through REST/OpenAPI, gRPC/protobuf or defined event
-  contracts.
-- Contracts are versioned and protected by contract tests.
+Stop if any expected module, class, method, package, contract, task, endpoint,
+event field, graph label, table, deployment file or quality command cannot be
+verified exactly.
 
-Allowed coupling mechanisms:
+## Slice 00 - Repository And Current-State Analysis
 
-- OpenAPI specifications.
-- gRPC or protobuf contracts.
-- Event schema documentation.
-- Contract-test definitions.
-- Documented API versions.
+Purpose: record the current project state before architecture changes.
 
-## Verified Path Conventions
+Owner: Senior System Architect.
 
-The user draft names some paths that do not match the verified repository
-layout. Execution must not silently create alternate paths when a verified
-project convention exists.
+Reviews: Microservice Senior Expert, Senior Java Backend Developer, Senior
+DevOps Engineer, Senior Tester.
 
-- Skills use `.agents/skills/<skill-name>/SKILL.md`, not flat
-  `.agents/skills/<skill-name>.md` files.
-- Project prompts currently use `.agents/prompts/*.md`.
-- `.codex/prompts/**` is not present, and `.codex/AGENTS.md` says `.codex`
-  should remain portable.
-- Root `README.md` is not present; `docs/README.md` is present.
+Allowed write scope:
 
-Execution slices may create missing files only after verifying that the target
-does not conflict with these conventions.
+- `docs/architecture/current-state.md`
+- `docs/architecture/current-coupling-map.md`
+- `docs/architecture/current-build-and-test-map.md`
 
-## Quality Gate Expectations
+Tasks:
 
-`QUALITY.md` is authoritative.
+- Document all Gradle modules and current responsibilities.
+- Identify current repository analysis, JavaParser, Joern, BTM, persistence,
+  graph/replay/report, gRPC, CLI, REST, Boot and frontend capabilities.
+- Document current build, test, Docker and deployment material.
+- Document current coupling and no service-independence claims.
+- Record `QUALITY.md` requirements.
 
-Minimum command:
+Done criteria:
+
+- All verified modules are documented.
+- Current capabilities are mapped to candidate target services.
+- Critical couplings are visible.
+- No architecture change has been made.
+
+Verification:
 
 ```bash
+git diff --check
+```
+
+For non-documentation changes, also run the minimum command from `QUALITY.md`.
+
+## Slice 01 - Target Architecture And Service Boundaries
+
+Purpose: define the final service decomposition and service ownership model.
+
+Owner: Senior System Architect.
+
+Reviews: Three Amigos Requirement Gatekeeper, Microservice Senior Expert, Data
+Ownership And Persistence Steward, Senior Tester.
+
+Allowed write scope:
+
+- `docs/architecture/target-microservices-architecture.md`
+- `docs/architecture/service-boundaries.md`
+- `docs/architecture/service-communication-matrix.md`
+- `docs/architecture/data-ownership.md`
+- related arc42 and ADR updates when required by governance review
+
+Tasks:
+
+- Finalize service boundaries, ownership, data authority and non-scope.
+- Define inbound and outbound protocols for each service.
+- Create the communication matrix.
+- Model analysis-job, plugin-ingestion, report and replay data flows.
+- Define rollback or strangler strategy for behavior-changing extraction.
+- Document forbidden coupling and shared-code rules.
+
+Done criteria:
+
+- Each service has a business responsibility and owned process or data.
+- Each service has explicit allowed communication.
+- No shared runtime-code module is planned.
+- Data ownership and non-owner access paths are explicit.
+
+Verification:
+
+```bash
+git diff --check
+```
+
+## Slice 02 - Prepare Independent-Service Monorepo Structure
+
+Purpose: prepare repository structure for independently buildable services
+without moving business logic blindly.
+
+Owner: Senior DevOps Engineer.
+
+Reviews: Senior System Architect, Senior Java Backend Developer, Senior Tester.
+
+Allowed write scope:
+
+- `services/**`
+- `frontend/**`
+- `contracts/**`
+- `deployment/**`
+- `docs/architecture/service-migration-map.md`
+- `docs/architecture/monorepo-service-build-strategy.md`
+- build files only after Gradle strategy review
+
+Tasks:
+
+- Create target directories.
+- Keep `contracts/` contract-only.
+- Document which current code is planned for which target service.
+- Decide whether each service uses its own Gradle build or root-included
+  projects.
+- Do not move functional logic in this slice unless separately approved.
+
+Done criteria:
+
+- Target structure exists.
+- Migration mapping is documented.
+- No uncontrolled logic move occurred.
+- `contracts/` contains no runtime Java code.
+
+Verification:
+
+```bash
+git diff --check
+```
+
+Run repository Gradle checks if build files changed.
+
+## Slice 03 - Introduce Contract-First Communication
+
+Purpose: define service communication contracts before service implementation.
+
+Owner: Senior gRPC/Proto Specialist.
+
+Reviews: Contract Governance Expert, Senior System Architect, Microservice
+Senior Expert, Senior Tester.
+
+Allowed write scope:
+
+- `contracts/grpc/forensic-ingestion.proto`
+- `contracts/grpc/analysis-job.proto`
+- `contracts/openapi/gateway-api.yaml`
+- `contracts/events/analysis-events.md`
+- `docs/architecture/contract-versioning.md`
+- contract-test planning docs
+
+Tasks:
+
+- Define gRPC ingestion and analysis-job contracts.
+- Define Gateway OpenAPI for workspaces, analysis jobs, results, reports,
+  replay and health/status.
+- Define event schemas when a broker is selected or planned.
+- Document versioning, compatibility and breaking-change rules.
+- Define contract-test strategy.
+
+Done criteria:
+
+- Planned service communication has explicit contracts.
+- Contracts avoid implementation details.
+- Error/status models and compatibility rules are documented.
+- Generated-code boundaries are documented.
+
+Verification:
+
+```bash
+git diff --check
 ./gradlew test --dependency-verification strict --console=plain --stacktrace
 ```
 
-Full local quality gate:
+## Slice 04 - Build `forensic-ingestion-service`
+
+Purpose: create the first independent gRPC ingestion service.
+
+Owner: Senior Java Backend Developer.
+
+Reviews: Senior gRPC/Proto Specialist, Microservice Senior Expert, Senior
+DevOps Engineer, Senior Tester.
+
+Allowed write scope:
+
+- `services/forensic-ingestion-service/**`
+- service-local build files
+- service-local tests
+- service README and Dockerfile
+- root build files only when required to register the service
+
+Tasks:
+
+- Create an independent Spring Boot service.
+- Create service-local hexagonal layers.
+- Implement the gRPC inbound adapter from verified contracts.
+- Define service-internal ingestion domain models.
+- Define outbound ports for store or broker handoff.
+- Add healthcheck, tests, README and Dockerfile.
+
+Done criteria:
+
+- Service starts independently.
+- gRPC endpoint is reachable in local verification.
+- No dependency on internal classes of another service exists.
+- Docker image can be built.
+
+Verification:
+
+- Use service-specific Gradle or service-local commands only after verifying the
+  build path exists.
+- Run the applicable `QUALITY.md` gate for production/build changes.
+
+## Slice 05 - Build `analysis-store-service`
+
+Purpose: create the owned storage service for normalized analysis facts,
+sessions, incidents and correlations.
+
+Owner: Senior Java Backend Developer.
+
+Reviews: Data Ownership And Persistence Steward, Senior System Architect,
+Senior DevOps Engineer, Senior Tester.
+
+Allowed write scope:
+
+- `services/analysis-store-service/**`
+- service-local database configuration and migrations
+- service README and Dockerfile
+- related ownership documentation
+
+Tasks:
+
+- Create an independent Spring Boot service.
+- Define service-owned persistence and migration structure.
+- Expose APIs for storing and querying normalized analysis facts.
+- Document data ownership and one-writer rules.
+- Prevent direct database access from other services.
+
+Done criteria:
+
+- Analysis store runs independently.
+- Database access is service-owned.
+- Analysis IDs can be stored and queried through APIs.
+- No shared entity class is introduced.
+
+Verification:
+
+- Service-specific tests after service build registration.
+- Applicable `QUALITY.md` gate.
+
+## Slice 06 - Build `repository-analysis-service`
+
+Purpose: move repository checkout, branch selection and workspace preparation
+behind a service boundary.
+
+Owner: Senior Java Backend Developer.
+
+Reviews: Microservice Senior Expert, Senior DevOps Engineer, Senior Git
+Workspace Specialist, Senior Tester.
+
+Allowed write scope:
+
+- `services/repository-analysis-service/**`
+- service-local tests
+- service README and Dockerfile
+- contract adapters related to repository-analysis requests
+
+Tasks:
+
+- Encapsulate Git and workspace functionality inside the service.
+- Define service-internal workspace models.
+- Provide an API for analysis preparation.
+- Prepare handoff to AST and Joern services through contracts.
+- Document failure cases for missing repository, branch, checkout, workspace
+  conflict and permissions.
+
+Done criteria:
+
+- The service can independently prepare a repository-analysis job.
+- Other services do not access its workspace internals.
+- Failure cases are testable.
+- Docker image can be built.
+
+Verification: service-specific tests and applicable `QUALITY.md` gate.
+
+## Slice 07 - Build `java-ast-analysis-service`
+
+Purpose: extract JavaParser and AST analysis into an independent worker service.
+
+Owner: Senior Java Backend Developer.
+
+Reviews: Source Analysis Pipeline, Microservice Senior Expert, Senior Tester.
+
+Allowed write scope:
+
+- `services/java-ast-analysis-service/**`
+- service-local tests
+- service README and Dockerfile
+- AST contract adapters
+
+Tasks:
+
+- Identify existing AST analysis behavior.
+- Migrate or reimplement only verified AST responsibility.
+- Create service-internal models and stable ID generation.
+- Implement inbound analysis-job and outbound result contracts.
+- Preserve unresolved symbol diagnostics.
+
+Done criteria:
+
+- Service runs independently.
+- Java sources can be analyzed through the service boundary.
+- Results are delivered through contracts.
+- No shared domain class is used.
+
+Verification: service-specific tests and applicable `QUALITY.md` gate.
+
+## Slice 08 - Build `joern-cpg-analysis-service`
+
+Purpose: isolate Joern analysis and CPG/CFG/DFG handling in its own runtime.
+
+Owner: Senior Java Backend Developer.
+
+Reviews: Senior Joern CPG Specialist, Senior DevOps Engineer, Microservice
+Senior Expert, Senior Tester.
+
+Allowed write scope:
+
+- `services/joern-cpg-analysis-service/**`
+- Joern service Dockerfile and runtime scripts
+- service-local tests
+- Joern contract adapters
+
+Tasks:
+
+- Capture Joern runtime requirements.
+- Encapsulate Joern invocation inside the service.
+- Map CPG/CFG/DFG artifacts into service-internal models.
+- Prepare mapping to analysis IDs from contract data.
+- Test unavailable Joern, oversized analysis, timeout, invalid workspace and
+  incomplete mapping cases.
+
+Done criteria:
+
+- Service is independently startable.
+- Joern dependencies are container-contained.
+- No local developer Joern installation is required for service operation.
+- Results are exchanged only through contracts.
+
+Verification: service-specific tests, Docker build and applicable
+`QUALITY.md` gate.
+
+## Slice 09 - Build `btm-generation-service`
+
+Purpose: move BTM rule generation into a service that generates artifacts from
+delivered analysis facts.
+
+Owner: Senior Java Backend Developer.
+
+Reviews: Microservice Senior Expert, Senior Tester.
+
+Allowed write scope:
+
+- `services/btm-generation-service/**`
+- service-local tests
+- service README and Dockerfile
+- BTM contract adapters
+
+Tasks:
+
+- Identify existing rule-generation behavior.
+- Accept input only through contract data.
+- Generate deterministic artifacts or API results.
+- Test rule ID stability.
+- Keep repository analysis out of this service.
+
+Done criteria:
+
+- Service generates BTM files from supplied facts.
+- Service performs no repository scanning.
+- Rules are reproducible.
+- Docker image can be built.
+
+Verification: service-specific tests and applicable `QUALITY.md` gate.
+
+## Slice 10 - Build `graph-replay-service`
+
+Purpose: isolate graph, runtime overlay and exception-centered replay.
+
+Owner: Senior Java Backend Developer.
+
+Reviews: Senior System Architect, Replay/Graph/LLM Reviewer, Data Ownership And
+Persistence Steward, Microservice Senior Expert, Senior Tester.
+
+Allowed write scope:
+
+- `services/graph-replay-service/**`
+- service-local tests
+- service README and Dockerfile
+- graph/replay contracts and documentation
+
+Tasks:
+
+- Identify graph and replay responsibilities from current code and docs.
+- Model replay domain inside the service boundary.
+- Access analysis-store data only through owner APIs.
+- Encapsulate graph database access inside the service.
+- Define exception-centered replay APIs.
+- Test path reconstruction and missing-evidence representation.
+
+Done criteria:
+
+- Service runs independently.
+- No direct analysis-store database coupling exists.
+- Replay queries are available through API.
+- Runtime overlay responsibility is documented.
+
+Verification: service-specific tests and applicable `QUALITY.md` gate.
+
+## Slice 11 - Build `report-generation-service`
+
+Purpose: isolate reports and LLM context packages.
+
+Owner: Senior Java Backend Developer.
+
+Reviews: Senior UX Designer, Replay/Graph/LLM Reviewer, Microservice Senior
+Expert, Senior Tester.
+
+Allowed write scope:
+
+- `services/report-generation-service/**`
+- service-local tests
+- service README and Dockerfile
+- report and LLM package contracts
+
+Tasks:
+
+- Define report types and export formats.
+- Define reproducible LLM context package structure.
+- Access analysis-store and graph-replay services only through APIs.
+- Preserve distinctions between confirmed evidence, derived analysis, gaps,
+  hypotheses and generated text.
+
+Done criteria:
+
+- Reports are generated independently from Gateway.
+- No direct foreign database coupling exists.
+- LLM context packages are reproducible and labeled.
+- Docker image can be built.
+
+Verification: service-specific tests and applicable `QUALITY.md` gate.
+
+## Slice 12 - Build `forensic-gateway-service`
+
+Purpose: create the central API gateway for frontend, CLI and external access.
+
+Owner: Senior Java Backend Developer.
+
+Reviews: Senior System Architect, Senior UX Designer, Contract Governance
+Expert, Senior Tester.
+
+Allowed write scope:
+
+- `services/forensic-gateway-service/**`
+- service-local tests
+- service README and Dockerfile
+- Gateway OpenAPI adapters
+
+Tasks:
+
+- Implement REST API from the Gateway OpenAPI contract.
+- Prepare analysis-job orchestration without analysis business logic.
+- Provide UI-facing status and error models.
+- Configure service discovery or local static service endpoints.
+
+Done criteria:
+
+- Gateway starts independently.
+- Frontend can communicate through Gateway.
+- Gateway contains no AST, Joern, BTM, store, report or replay domain logic.
+- Gateway calls other services only through defined APIs.
+
+Verification: service-specific tests and applicable `QUALITY.md` gate.
+
+## Slice 13 - Decouple Frontend
+
+Purpose: align the React frontend with Gateway/API communication only.
+
+Owner: Senior React Frontend Developer.
+
+Reviews: Senior UX Designer, Senior Tester.
+
+Allowed write scope:
+
+- `forensic-ui/**` or `frontend/frontend-web-app/**` after target root is
+  verified
+- frontend API clients and tests
+- frontend documentation
+
+Tasks:
+
+- Identify direct backend or worker-service coupling.
+- Introduce or update API client structure through Gateway.
+- Show analysis-job status, long-running operation state and service errors.
+- Prepare replay and report flows.
+- Add frontend tests.
+
+Done criteria:
+
+- Frontend does not call internal worker services directly.
+- Gateway is the central UI API boundary.
+- Long-running analysis jobs and errors are visible.
+
+Verification:
+
+```bash
+npm test
+npm run build
+```
+
+Run inside the verified frontend root.
+
+## Slice 14 - Local Docker Compose Landscape
+
+Purpose: make the service ecosystem startable locally.
+
+Owner: Senior DevOps Engineer.
+
+Reviews: Senior System Architect, Microservice Runtime Readiness Expert, Senior
+Tester.
+
+Allowed write scope:
+
+- `deployment/docker-compose/docker-compose.yml`
+- `deployment/docker-compose/.env.example`
+- `docs/deployment/local-microservices.md`
+- service-local Dockerfiles only when owned by this slice
+
+Tasks:
+
+- Define networks, ports, healthchecks, databases and minimal dependencies.
+- Ensure containers do not share runtime code volumes.
+- Document local start and stop flow.
+
+Done criteria:
+
+- All services can be started locally as containers.
+- Every service has a healthcheck.
+- Local environment is documented.
+
+Verification:
+
+```bash
+docker compose -f deployment/docker-compose/docker-compose.yml config
+docker compose -f deployment/docker-compose/docker-compose.yml build
+docker compose -f deployment/docker-compose/docker-compose.yml up -d
+docker compose -f deployment/docker-compose/docker-compose.yml ps
+docker compose -f deployment/docker-compose/docker-compose.yml down
+```
+
+## Slice 15 - Prepare Docker Swarm And Kubernetes
+
+Purpose: prepare cluster deployment without blocking local development.
+
+Owner: Senior DevOps Engineer.
+
+Reviews: Senior System Architect, Microservice Runtime Readiness Expert, Senior
+Tester.
+
+Allowed write scope:
+
+- `deployment/docker-swarm/stack.yml`
+- `deployment/kubernetes/**`
+- `docs/deployment/swarm.md`
+- `docs/deployment/kubernetes.md`
+
+Tasks:
+
+- Prepare Swarm stack and Kubernetes manifests or Helm structure.
+- Document ConfigMap and secret strategy.
+- Define readiness and liveness probes.
+- Prepare worker-service scalability and resource limits.
+
+Done criteria:
+
+- Services are modeled as independent deployments.
+- Worker services are horizontally scalable.
+- Gateway and ingestion exposure is explicit.
+- Internal services remain internal.
+
+Verification:
+
+```bash
+docker compose -f deployment/docker-compose/docker-compose.yml config
+```
+
+When available:
+
+```bash
+kubectl apply --dry-run=client -f deployment/kubernetes/
+```
+
+## Slice 16 - Integration Tests And Contract Tests
+
+Purpose: prove that the services cooperate through contracts.
+
+Owner: Senior Tester.
+
+Reviews: Senior gRPC/Proto Specialist, Senior Java Backend Developer, Senior
+DevOps Engineer.
+
+Allowed write scope:
+
+- contract tests
+- integration tests
+- test fixtures
+- test documentation
+- build files required for test tasks
+
+Tasks:
+
+- Add REST and gRPC contract tests.
+- Define test data for the analysis flow.
+- Automate at least one end-to-end analysis flow.
+- Test failure, timeout and retry behavior.
+- If `integrationTest` does not exist, define and document the chosen test
+  structure before requiring the command.
+
+Done criteria:
+
+- Contract breaks are detected.
+- At least one complete analysis flow is automated.
+- Services remain individually testable.
+
+Verification:
+
+```bash
+./gradlew clean test check --dependency-verification strict --console=plain --stacktrace
+```
+
+Use the full `QUALITY.md` gate when production or build changes require it.
+
+## Slice 17 - Complete Monolith Path Migration
+
+Purpose: remove obsolete direct couplings only after service replacements are
+verified.
+
+Owner: Senior System Architect.
+
+Reviews: Senior Java Backend Developer, Senior Tester.
+
+Allowed write scope:
+
+- obsolete module dependencies
+- obsolete packages and entrypoints
+- migration documentation
+- build cleanup files
+
+Tasks:
+
+- Verify old module dependencies.
+- Remove obsolete direct method calls across target service boundaries.
+- Archive or update outdated documentation.
+- Remove dead code only when replacement evidence exists.
+- Ensure no shared runtime code library remains.
+
+Done criteria:
+
+- No direct runtime-code coupling remains between services.
+- Documentation describes the new target state.
+- Tests pass.
+
+Verification: applicable `QUALITY.md` gate and diff inspection.
+
+## Slice 18 - Architecture Readiness Review
+
+Purpose: validate the resulting ecosystem against microservice guardrails.
+
+Owner: Senior System Architect.
+
+Reviews: Microservice Senior Expert, Senior DevOps Engineer, Senior Tester.
+
+Allowed write scope:
+
+- `docs/architecture/microservices-readiness-review.md`
+- `docs/architecture/service-independence-checklist.md`
+- `docs/architecture/architecture-decision-records/adr-microservices-ecosystem.md`
+- arc42 and ADR synchronization files
+
+Tasks:
+
+- Verify independent build, start, test, container and deployment evidence per
+  service.
+- Verify no shared Java implementation modules exist.
+- Verify communication only through allowed contracts.
+- Verify data ownership and service-private persistence.
+- Verify tests and deployment documentation.
+- Verify `AGENTS.md`, `.agents/skills` and `.codex` consistency.
+
+Done criteria:
+
+- All microservice rules are reviewed.
+- Blocking deviations are fixed.
+- Non-blocking deviations have follow-ups.
+
+Verification: applicable `QUALITY.md` gate and diff inspection.
+
+## Slice 19 - Finalize Documentation
+
+Purpose: document the ecosystem for development and operations.
+
+Owner: Senior Documentation Engineer.
+
+Reviews: Senior System Architect, Senior DevOps Engineer, Senior UX Designer,
+Senior Tester.
+
+Allowed write scope:
+
+- `README.md`
+- `docs/architecture/overview.md`
+- `docs/deployment/local-microservices.md`
+- `docs/testing/microservices-testing.md`
+- `docs/contracts/contract-guidelines.md`
+- service READMEs and diagrams
+
+Tasks:
+
+- Update overview, local start, deployment, testing, contract versioning and
+  troubleshooting docs.
+- Ensure new developers can start the local service landscape.
+- Ensure service boundaries and contract ownership are understandable.
+
+Done criteria:
+
+- Development, operation, testing and contract workflows are documented.
+- Documentation does not claim unverified runtime evidence.
+
+Verification:
+
+```bash
+git diff --check
+```
+
+Run repository quality gates when docs change build, code or tests.
+
+## Slice 20 - Final Review, Commit And Push
+
+Purpose: close the workflow with review, quality evidence, commit and push.
+
+Owner: Senior Swarm Orchestrator.
+
+Reviews: Senior System Architect, Senior Tester, Git Commit Reviewer.
+
+Allowed write scope:
+
+- final workflow execution notes
+- commit preparation artifacts when required by repository governance
+
+Tasks:
+
+- Inspect full diff and changed-file ownership.
+- Run final architecture and microservice rule checks.
+- Run final tests and quality gate.
+- Verify documentation consistency.
+- Prepare the commit message.
+- Commit and push only after quality and commit-readiness review pass.
+
+Required final commands:
+
+```bash
+git status --short
+./gradlew clean test check --dependency-verification strict --console=plain --stacktrace
+```
+
+Use the full `QUALITY.md` gate when required:
 
 ```bash
 ./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace
 ```
 
-Documentation-only governance slices must at least run:
+When Docker artifacts are part of the final result:
 
 ```bash
-git diff --check
+docker compose -f deployment/docker-compose/docker-compose.yml config
+docker compose -f deployment/docker-compose/docker-compose.yml build
 ```
 
-and inspect the slice-specific diff. Do not claim Markdown linting, link
-checking, Sonar, Docker, Kubernetes or plugin validation unless the exact tool
-or command was verified and executed.
-
-## Traceability Chain
-
-Every execution slice must preserve this chain:
+Commit subject:
 
 ```text
-Requirement
--> Three Amigos decision
--> Architecture decision or ADR reference
--> Workflow slice
--> responsible skill, role or subagent
--> verification evidence
--> quality-gate evidence
--> commit or push evidence when authorized
+architecture: convert forensic analytics to microservices ecosystem
 ```
 
-## Callable Subagent Policy
+Push branch:
 
-The repository supports callable subagents, but workflow-authoring and
-orchestrator rules say to use callable subagents only when the user explicitly
-asks for delegated or parallel agent work. This workflow creation used local
-role-review checklists instead of spawning callable subagents.
-
-During `workflow execute`, use callable subagents only when the active user
-request or workflow execution context explicitly authorizes delegated execution.
-Otherwise, apply the matching role and skill files as review checklists and
-report that limitation.
-
-## Slice Dependency Order
-
-```text
-00 -> 01 -> 02 -> 03 -> 04 -> 05 -> 06 -> 07 -> 08 -> 09 -> 10 -> 11 -> 12 -> 13 -> 14
+```bash
+git push -u origin architecture/microservices-ecosystem-conversion-20260516
 ```
-
-Write-capable work is sequential by default because the slices share
-governance, role, skill, prompt and documentation files. Read-only specialist
-reviews may run in parallel. Write-capable parallel work requires disjoint write
-scopes, stable terminology, explicit handoff records and branch verification.
-
-## Slice Template
-
-Each execution slice must record:
-
-- purpose
-- prerequisites
-- affected files
-- owner role
-- review roles
-- allowed write scope
-- dependencies
-- done criteria
-- verification commands
-- stop conditions
-- handoff rule
-
-## Workflow Slices
-
-### Slice 00 - Repository Preparation And Branch Verification
-
-Purpose: reverify repository state, active workflow branch, local branch ref,
-root rules, workflow rules, skill layout and quality authority.
-
-Owner role: Senior Workflow Architect.
-
-Review roles: Senior DevOps Engineer, Senior Git Workspace Specialist when
-branch state is unclear.
-
-Allowed write scope: `docs/workflow/execution-summary.md`.
-
-Dependencies: none.
 
 Done criteria:
 
-- Repository root, active branch, local branch ref and working tree state are
-  documented.
-- No implementation work starts on `main`, `master`, `develop` or another
-  shared branch.
-
-Verification commands:
-
-```bash
-git rev-parse --show-toplevel
-git branch --show-current
-git show-ref --verify --quiet refs/heads/feature/workflow-skill-agent-integrity-correction-20260516
-git status --short --branch
-```
-
-Stop conditions: branch is missing, inactive or not locally verifiable;
-unrelated or unclear uncommitted changes exist.
-
-Handoff rule: hand off to Slice 01 only after branch verification is recorded.
-
-### Slice 01 - Inventory Existing Skill And Agent Files
-
-Purpose: inventory existing agent, skill, prompt, workflow and governance files;
-mark missing, duplicate or conflicting responsibilities.
-
-Owner role: Senior Documentation Engineer.
-
-Review roles: Senior Swarm Orchestrator, Skill Registry and Conflict Auditor.
-
-Allowed write scope: `docs/governance/skill-agent-inventory.md` and
-`docs/workflow/execution-summary.md`.
-
-Dependencies: Slice 00.
-
-Done criteria:
-
-- Relevant governance files and directories are listed.
-- Skills and agents are assigned to categories.
-- Unclear roles are marked rather than guessed.
-
-Verification commands:
-
-```bash
-rg --files AGENTS.md QUALITY.md .agents .codex docs/governance docs/architecture docs/adr docs/workplan docs/workflow
-git diff --check
-```
-
-Stop conditions: a required governance path cannot be verified and no safe
-repository convention exists.
-
-Handoff rule: inventory findings feed Slices 02, 08 and 13.
-
-### Slice 02 - Define Decision And Escalation Chain
-
-Purpose: prevent multiple roles from claiming the same final decision authority.
-
-Owner role: Senior System Architect.
-
-Review roles: Workflow / Workplan Executor, Three Amigos Gatekeeper, Senior
-Documentation Engineer.
-
-Allowed write scope: `AGENTS.md` and
-`docs/governance/agent-decision-chain.md`.
-
-Dependencies: Slice 01.
-
-Done criteria:
-
-- Each role defines what it may decide, review, implement, stop, escalate and
-  must not override.
-- Senior System Architect is clearly above backend, frontend, DevOps, testing,
-  documentation and microservice governance for architecture decisions.
-- No two roles claim contradictory final authority.
-
-Verification commands:
-
-```bash
-git diff -- AGENTS.md docs/governance/agent-decision-chain.md
-git diff --check
-```
-
-Stop conditions: role hierarchy conflicts cannot be resolved from existing
-root rules, ADRs or role files.
-
-Handoff rule: decision chain becomes input for Slices 05, 06, 12 and 13.
-
-### Slice 03 - Formalize Three Amigos Gate
-
-Purpose: make Three Amigos review mandatory before workflow authoring continues.
-
-Owner role: Three Amigos Requirement Gatekeeper.
-
-Review roles: Senior Tester, Senior System Architect, Senior Requirement
-Engineer.
-
-Allowed write scope:
-
-- `.agents/skills/three-amigos-requirement-gatekeeper/**`
-- `docs/governance/three-amigos-gate.md`
-- `.agents/prompts/workflow-create.md`
-
-Dependencies: Slice 02.
-
-Done criteria:
-
-- Checklist includes business goal, non-goals, architecture impact, affected
-  services, affected contracts, test strategy, risks, definition of done and
-  stop conditions.
-- Gate states that Three Amigos does not implement production code and does not
-  replace architecture decisions.
-
-Verification commands:
-
-```bash
-git diff -- .agents/skills/three-amigos-requirement-gatekeeper docs/governance/three-amigos-gate.md .agents/prompts/workflow-create.md
-git diff --check
-```
-
-Stop conditions: gate language conflicts with ADR-0011 or root `AGENTS.md`.
-
-Handoff rule: gate output becomes mandatory input for future workflow creation
-and Slice 10 traceability.
-
-### Slice 04 - Codify Workflow Create Branching
-
-Purpose: prevent workflow artifacts from being created on shared or wrong
-branches.
-
-Owner role: Senior DevOps Engineer.
-
-Review roles: Senior Workflow Architect, Senior Git Workspace Specialist.
-
-Allowed write scope:
-
-- `.agents/skills/git-branch-strategy/SKILL.md`
-- `.agents/prompts/workflow-create.md`
-- `docs/governance/workflow-branching.md`
-- ADR index or architecture-decision references only when verified
-
-Dependencies: Slice 03.
-
-Done criteria:
-
-- `workflow create` starts with branch type selection.
-- Branch is created and verified before workflow artifacts are created.
-- Allowed and forbidden prefixes are documented.
-- Local and remote branch collision checks are documented.
-
-Verification commands:
-
-```bash
-git diff -- .agents/skills/git-branch-strategy/SKILL.md .agents/prompts/workflow-create.md docs/governance/workflow-branching.md
-git diff --check
-```
-
-Stop conditions: branch rules conflict with ADR-0016, root `AGENTS.md` or
-`.agents/prompts/workflow-create.md`.
-
-Handoff rule: branching rules feed Slices 05, 06, 11 and 14.
-
-### Slice 05 - Correct Workflow / Workplan Executor Boundaries
-
-Purpose: ensure the executor orchestrates and enforces slices but does not own
-architecture decisions.
-
-Owner role: Senior Workflow Architect.
-
-Review roles: Senior System Architect, Senior Tester.
-
-Allowed write scope:
-
-- `.agents/skills/workflow-executor/SKILL.md`
-- `.agents/skills/workflow-authoring/SKILL.md`
-- `.agents/prompts/workflow-execute.md`
-- `.agents/prompts/slice-execute.md`
-- `docs/governance/workplan-slice-template.md`
-
-Dependencies: Slices 02 and 04.
-
-Done criteria:
-
-- Executor may plan, prioritize, assign subagents, enforce stop rules and
-  verify progress.
-- Executor may not override architecture, quality gates, branch rules or
-  specialist stop decisions.
-- Slice template includes goal, lead agent, support agents, input, output,
-  acceptance criteria, quality gate, stop rule and handoff rule.
-
-Verification commands:
-
-```bash
-git diff -- .agents/skills/workflow-executor/SKILL.md .agents/skills/workflow-authoring/SKILL.md .agents/prompts/workflow-execute.md .agents/prompts/slice-execute.md docs/governance/workplan-slice-template.md
-git diff --check
-```
-
-Stop conditions: executor role would become the final architecture authority.
-
-Handoff rule: corrected executor boundaries feed all remaining slices.
-
-### Slice 06 - Bound Agent Swarm Orchestrator Authority
-
-Purpose: define the orchestrator as coordinator, not a final technical decision
-role.
-
-Owner role: Senior Swarm Orchestrator.
-
-Review roles: Senior System Architect, Agent Handoff Protocol.
-
-Allowed write scope:
-
-- `.agents/orchestrator/swarm-orchestrator.md`
-- `.agents/roles/senior-swarm-orchestrator.md`
-- `.agents/skills/agent-swarm-coordination-specialist/SKILL.md`
-- `docs/governance/subagent-orchestration.md`
-
-Dependencies: Slice 05.
-
-Done criteria:
-
-- Orchestrator may coordinate, parallelize, monitor handoffs, detect conflicts
-  and aggregate status.
-- Orchestrator may not replace architecture decisions, skip Three Amigos,
-  bypass quality gates or weaken microservice rules.
-- Escalation paths are documented.
-
-Verification commands:
-
-```bash
-git diff -- .agents/orchestrator/swarm-orchestrator.md .agents/roles/senior-swarm-orchestrator.md .agents/skills/agent-swarm-coordination-specialist/SKILL.md docs/governance/subagent-orchestration.md
-git diff --check
-```
-
-Stop conditions: orchestrator authority conflicts with Senior System Architect
-or Three Amigos authority.
-
-Handoff rule: orchestrator limits feed Slice 13 consistency audit.
-
-### Slice 07 - Harden Microservice Expert And Invariants
-
-Purpose: anchor microservice autonomy and no-shared-code rules as hard
-governance.
-
-Owner role: Microservice Senior Expert.
-
-Review roles: Senior System Architect, Senior DevOps Engineer, Senior
-gRPC/Proto Specialist, Contract Governance Expert.
-
-Allowed write scope:
-
-- `.agents/skills/microservice-senior-expert/SKILL.md`
-- `.agents/roles/microservice-senior-expert.md`
-- `docs/governance/microservice-invariants.md`
-- Relevant ADR or arc42 references when verified
-
-Dependencies: Slices 02 and 06.
-
-Done criteria:
-
-- No shared code, domain, DTO, event, entity, fixture, repository, service,
-  utility or internal error-model implementation modules between services.
-- Each service must be independently buildable, startable, testable,
-  configurable, observable, health-checkable, containerized and deployable
-  before it is called a microservice.
-- REST/OpenAPI, gRPC/protobuf and event contracts are the only allowed service
-  integration mechanisms.
-- Violation handling is documented.
-
-Verification commands:
-
-```bash
-git diff -- .agents/skills/microservice-senior-expert/SKILL.md .agents/roles/microservice-senior-expert.md docs/governance/microservice-invariants.md
-git diff --check
-```
-
-Stop conditions: a rule would describe the current modular monolith as already
-implementing microservices; Docker Swarm or Kubernetes commands would be
-invented without repository tooling.
-
-Handoff rule: microservice invariants feed Slices 08, 09, 12 and 13.
-
-### Slice 08 - Audit Missing Governance Skills
-
-Purpose: add or sharpen missing governance skills without duplicating existing
-responsibilities.
-
-Owner role: Senior System Architect.
-
-Review roles: Skill Registry and Conflict Auditor, Senior Swarm Orchestrator,
-Senior Documentation Engineer.
-
-Allowed write scope:
-
-- Existing verified skill directories under `.agents/skills/**`
-- New skill directories only when no verified equivalent exists
-- `docs/governance/skill-agent-inventory.md`
-
-Dependencies: Slices 01 and 07.
-
-Done criteria:
-
-- Requested responsibilities are mapped to existing skills or newly created
-  skill directories.
-- Each skill has responsibility, boundaries, inputs, outputs and stop rules.
-- No skill silently overlaps Senior System Architect authority.
-
-Verification commands:
-
-```bash
-rg --files .agents/skills
-git diff -- .agents/skills docs/governance/skill-agent-inventory.md
-git diff --check
-```
-
-Stop conditions: existing skill responsibilities overlap and cannot be resolved
-without a governance decision; a flat `.agents/skills/*.md` target would be
-created despite the verified `.agents/skills/<name>/SKILL.md` convention.
-
-Handoff rule: skill audit results feed Slice 13 consistency audit.
-
-### Slice 09 - Document Development Model Alignment
-
-Purpose: validate the agent workflow against established delivery and
-architecture models.
-
-Owner role: Senior Documentation Engineer.
-
-Review roles: Senior System Architect, Senior Tester, Senior DevOps Engineer.
-
-Allowed write scope: `docs/governance/development-model-alignment.md` and
-minimal verified references in `AGENTS.md`.
-
-Dependencies: Slices 02 through 08.
-
-Done criteria:
-
-- V-Model, Scrum, DevOps/DORA, Team Topologies and DDD/Hexagonal Architecture
-  are mapped to the agent structure.
-- Deviations are documented.
-- Required corrections are fed back to `AGENTS.md` or skills.
-
-Verification commands:
-
-```bash
-git diff -- docs/governance/development-model-alignment.md AGENTS.md
-git diff --check
-```
-
-Stop conditions: a model mapping would falsely describe planned behavior as
-implemented.
-
-Handoff rule: alignment results feed Slice 12 consolidation and Slice 13 audit.
-
-### Slice 10 - Introduce Workflow Traceability Matrix
-
-Purpose: make workflow decisions traceable from requirement to verification
-evidence.
-
-Owner role: Senior Tester.
-
-Review roles: Senior Workflow Architect, Senior Documentation Engineer.
-
-Allowed write scope:
-
-- `docs/governance/workflow-traceability-matrix.md`
-- `.agents/prompts/workflow-create.md`
-
-Dependencies: Slices 03 and 05.
-
-Done criteria:
-
-- Traceability chain covers requirement, Three Amigos, architecture or ADR,
-  workflow slice, responsible skill or subagent, tests, quality gate and commit
-  or push evidence.
-- Traceability is required for new workflows.
-
-Verification commands:
-
-```bash
-git diff -- docs/governance/workflow-traceability-matrix.md .agents/prompts/workflow-create.md
-git diff --check
-```
-
-Stop conditions: traceability would require unverifiable evidence or fabricated
-quality results.
-
-Handoff rule: traceability matrix becomes required evidence for Slice 14.
-
-### Slice 11 - Add Governance Quality Gate
-
-Purpose: ensure agent and skill governance changes have explicit verification.
-
-Owner role: Senior Tester.
-
-Review roles: Senior DevOps Engineer, Security / Supply Chain Expert.
-
-Allowed write scope:
-
-- `QUALITY.md`
-- `docs/governance/governance-quality-gate.md`
-
-Dependencies: Slices 03, 04 and 10.
-
-Done criteria:
-
-- Governance-specific checks are documented.
-- Automated checks and manual checks are separated.
-- Manual checks cover role conflict review, branch-rule review,
-  Three-Amigos-gate review and microservice-invariant review.
-- Unverified tooling such as Markdown lint or link checking is not claimed as
-  available.
-
-Verification commands:
-
-```bash
-git diff -- QUALITY.md docs/governance/governance-quality-gate.md
-git diff --check
-```
-
-Stop conditions: quality commands cannot be verified from `QUALITY.md` or build
-files; the slice would weaken strict dependency verification or existing quality
-gates.
-
-Handoff rule: governance quality gate feeds Slice 14 final verification.
-
-### Slice 12 - Consolidate Root AGENTS.md
-
-Purpose: make root `AGENTS.md` the central truth for corrected agent
-governance.
-
-Owner role: Senior System Architect.
-
-Review roles: Senior Documentation Engineer, Senior Workflow Architect,
-Microservice Senior Expert.
-
-Allowed write scope: `AGENTS.md`.
-
-Dependencies: Slices 02 through 11.
-
-Done criteria:
-
-- Root governance includes the hierarchy, decision order, branch-first rule,
-  Three Amigos obligation, microservice invariant references, stop rules and
-  links to detail skills.
-- Detail skills do not contradict root `AGENTS.md`.
-
-Verification commands:
-
-```bash
-git diff -- AGENTS.md
-git diff --check
-```
-
-Stop conditions: root rules would conflict with `QUALITY.md`, accepted ADRs,
-verified role files or workflow prompts.
-
-Handoff rule: consolidated root governance is the source for Slice 13 audit.
-
-### Slice 13 - Run Cross-Skill Consistency Audit
-
-Purpose: verify that no logical conflicts remain after governance changes.
-
-Owner role: Senior Tester.
-
-Review roles: Senior System Architect, Senior Workflow Architect, Skill
-Registry and Conflict Auditor.
-
-Allowed write scope:
-
-- `docs/governance/skill-agent-integrity-audit.md`
-- Minimal follow-up fixes in files changed by prior slices only when the owning
-  role approves the handoff
-
-Dependencies: Slices 01 through 12.
-
-Done criteria:
-
-- Every role is clearly ordered.
-- No duplicate final decision authority remains undocumented.
-- `workflow create` cannot proceed without branch verification and Three
-  Amigos readiness.
-- Subagents cannot override architecture decisions.
-- Microservices cannot use shared Java implementation modules.
-- Quality gates, stop rules and handoffs are documented.
-- Remaining uncertainty is explicitly marked.
-
-Verification commands:
-
-```bash
-git diff -- docs/governance/skill-agent-integrity-audit.md AGENTS.md .agents docs/governance QUALITY.md
-git diff --check
-```
-
-Stop conditions: a conflict remains that would make workflow execution unsafe.
-
-Handoff rule: audit result is required input for Slice 14.
-
-### Slice 14 - Final Verification, Commit And Push
-
-Purpose: finish the workflow with verified evidence and optional branch
-publication.
-
-Owner role: Senior Workflow Architect.
-
-Review roles: Senior DevOps Engineer, Senior Tester, git commit preparation
-skills.
-
-Allowed write scope: final execution notes and commit metadata only when
-authorized.
-
-Dependencies: Slice 13.
-
-Done criteria:
-
-- Git diff and file list reviewed.
-- Required quality gates executed or blockers documented.
-- Commit message includes what changed, why, how, affected files, quality
-  checks, governance decisions and breaking-change status.
-- Push occurs only when explicitly authorized and all required checks pass or a
-  documented blocker is accepted by the workflow.
-
-Verification commands:
-
-```bash
-git status --short --branch
-git diff --check
-./gradlew test --dependency-verification strict --console=plain --stacktrace
-./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace
-```
-
-Stop conditions: quality gate fails and cannot be safely corrected; broad
-line-ending-only changes appear; commit or push is not explicitly authorized;
-open governance conflicts remain undocumented.
-
-Handoff rule: final report must list executed commands, skipped commands,
-changed files, residual risks and commit or push status.
+- Final diff is reviewed.
+- Required quality gates pass or blockers are documented.
+- Commit is created only from reviewed files.
+- Branch is pushed only after commit-readiness approval.
+
+## Global Stop Rules
+
+Stop and report when:
+
+- an expected module, class, method, task, package, build file, contract,
+  endpoint, schema field, event field, graph label or deployment file cannot be
+  verified exactly;
+- a change would introduce shared Java runtime code between services;
+- service boundaries or data ownership are unclear;
+- a slice would directly access another service's database;
+- a service cannot be independently built, started, tested or containerized;
+- Dockerization is not possible for a required service;
+- `QUALITY.md` requires different commands than the slice plan;
+- continuing would require guessing.
+
+## Definition Of Done
+
+The workflow is complete when:
+
+- a dedicated branch exists;
+- service decomposition is documented;
+- every planned service has its own structure;
+- every service is independently buildable, startable, testable and
+  containerized;
+- no shared runtime-code modules exist;
+- REST, gRPC and event contracts are present;
+- Gateway, ingestion, workers, store, graph/replay and reports are separated;
+- local Docker Compose exists;
+- Swarm and Kubernetes structure is prepared;
+- tests and quality checks pass;
+- documentation is updated;
+- commit is created;
+- branch is pushed.
+
+## Optional Follow-Up Workflows
+
+After this workflow completes, create separate workflows for:
+
+- service mesh observability;
+- message broker eventing;
+- microservice security;
+- scalable worker execution;
+- LLM incident context pipeline.
