@@ -1,84 +1,91 @@
 # Quality Gate Plan
 
-`QUALITY.md` is the authoritative quality contract.
+`QUALITY.md` is the authoritative quality contract for this repository.
 
-## Required Commands From QUALITY.md
+## Workflow Creation Verification
 
-Minimum command:
+Workflow creation is documentation-only. Required verification after authoring:
+
+```bash
+git diff --check
+```
+
+Diff inspection is also required:
+
+```bash
+git status --short
+git diff -- docs/workflow
+```
+
+## Minimum Repository Verification
+
+Use before broader validation when production code, tests, build logic,
+contracts or runtime behavior change:
 
 ```bash
 ./gradlew test --dependency-verification strict --console=plain --stacktrace
 ```
 
-Full local quality gate:
+## Full Local Quality Gate
+
+Use as the final repository quality gate for production, build, contract,
+adapter, persistence, runtime, replay, graph, reporting, LLM or architecture
+changes:
 
 ```bash
 ./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace
 ```
 
-Diagnostic command only:
+## Diagnostic Build Health
+
+This command is useful but incomplete unless `checkPackageCoverage` is known to
+be wired into `check`:
 
 ```bash
 ./gradlew clean check --dependency-verification strict --console=plain --stacktrace
 ```
 
-`clean check` is not the full gate unless `checkPackageCoverage` is explicitly
-wired into `check`.
+## Frontend Verification
 
-## Workflow Creation Checks
+The verified current frontend root is `forensic-ui`.
 
-For this `workflow create` step, the changed files are workflow documents only.
-The narrow checks are:
-
-```bash
-git status --short --branch
-git diff --name-status -- docs/workflow
-git diff -- docs/workflow
-git diff --check
-```
-
-Gradle is not required to validate docs-only workflow creation, but the full
-quality gate remains required before later commit/push readiness unless an
-explicit documented exception is accepted.
-
-## Execution Slice Checks
-
-Future execution slices must run at least:
+Use inside `forensic-ui` until a later slice verifies a move to
+`frontend/frontend-web-app`:
 
 ```bash
-git diff --check
+npm test
+npm run build
 ```
 
-and any targeted checks implied by the changed files. If a slice changes
-`QUALITY.md`, Gradle build logic, plugin metadata, task inputs/outputs or
-production code, it must use the applicable `QUALITY.md` gate before claiming
-readiness.
+## Service-Specific Verification
 
-`validatePlugins` is required only when Gradle plugin metadata, task
-inputs/outputs or plugin implementation classes are changed.
+Service-specific commands such as:
 
-Do not document mutation testing or CI workflow checks unless the repository
-contains verified tooling for them.
+```bash
+./gradlew :services:forensic-ingestion-service:test
+```
 
-## Governance Manual Checks
+are planned targets only until the service exists in `settings.gradle.kts` or an
+independent service-local build is verified. Do not claim these commands pass
+before they are executable in the repository.
 
-When no automated checker is verified, execution must record manual review for:
+## Docker Verification
 
-- branch-first workflow creation;
-- Three Amigos readiness before workflow authoring;
-- role authority conflicts;
-- Senior System Architect final architecture authority;
-- executor and orchestrator boundary limits;
-- microservice no-shared-code invariants;
-- subagent handoff rules;
-- traceability from requirement to quality evidence.
+Docker Compose, Docker Swarm and Kubernetes checks are required only after the
+corresponding manifests are created and verified.
 
-## Optional Checks
+Planned local compose checks:
 
-- Markdown linting: not verified during workflow creation.
-- Link checking: not verified during workflow creation.
-- SonarCloud: optional and credential-dependent.
-- Docker, Docker Swarm and Kubernetes checks: not verified for this
-  governance-only workflow creation.
-- `validatePlugins`: required only if Gradle plugin metadata, task inputs,
-  task outputs or plugin implementation classes change.
+```bash
+docker compose -f deployment/docker-compose/docker-compose.yml config
+docker compose -f deployment/docker-compose/docker-compose.yml build
+docker compose -f deployment/docker-compose/docker-compose.yml up -d
+docker compose -f deployment/docker-compose/docker-compose.yml ps
+docker compose -f deployment/docker-compose/docker-compose.yml down
+```
+
+Planned Kubernetes dry run when `kubectl` is locally available:
+
+```bash
+kubectl apply --dry-run=client -f deployment/kubernetes/
+```

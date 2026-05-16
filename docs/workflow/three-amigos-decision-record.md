@@ -1,85 +1,129 @@
 # Three Amigos Decision Record
 
+## Requirement
+
+Convert the active `forensic_analytics` project from the current modular
+platform into an independently deployable microservices ecosystem.
+
+The user supplied a detailed `workflow create` draft on 2026-05-16. Repository
+documentation must be written in English, so this workflow records the
+requirement in English while preserving the requested architecture intent.
+
 ## Decision
 
 ```text
 READY_FOR_WORKFLOW
 ```
 
-## Requirement Summary
+This decision approves workflow authoring only. It does not approve direct
+service extraction, production code moves, persistence changes, runtime routing,
+deployment publication, commit or push.
 
-Correct the repository's agent, skill, prompt and governance landscape so future
-workflow creation and execution are branch-safe, Three-Amigos-led,
-architecture-governed, quality-gated and traceable.
+## Requirement Analyst Findings
 
-## Requirement View
-
-- Scope: root governance, workflow rules, skills, roles, prompts, quality
-  documentation, architecture documentation, ADR references, governance docs,
-  workplan docs and README references where verified.
-- Non-scope: production code changes, service extraction, endpoint
-  implementation, persistence splitting, runtime evidence changes, graph
-  changes, replay behavior, LLM behavior and deployment finalization.
-- Acceptance criteria: active workflow exists, slices are ordered, owners are
-  named, quality gates are verified from `QUALITY.md`, stop conditions are
-  explicit, branch-first and Three Amigos rules are hard requirements and
-  microservice invariants are documented as non-optional.
-- EPIC traceability: no EPIC was named. This is a non-blocking traceability gap
-  for workflow creation because the request concerns governance rather than a
-  runtime product capability.
-
-## Architecture View
-
-- Senior System Architect owns final architecture decisions and may block
-  architecture-sensitive workflows.
-- Workflow / Workplan Executor orchestrates slices and stop rules but does not
-  override architecture.
-- Agent Swarm Orchestrator coordinates subagents and handoffs but does not
-  override architecture, Three Amigos, quality gates or microservice rules.
-- Microservice invariants remain hard: no shared Java implementation modules,
-  no shared domain or DTO classes, no shared event or test-fixture
-  implementation classes and communication only through REST/OpenAPI,
+- Business goal: make forensic analysis workloads independently scalable,
+  independently deployable and operationally isolated.
+- Technical goal: split gateway, ingestion, repository analysis, AST analysis,
+  Joern analysis, BTM generation, analysis storage, graph/replay, reporting and
+  frontend concerns into service-owned runtime boundaries.
+- Scope: workflow artifacts, migration planning, service-boundary decisions,
+  contract-first sequencing, service scaffolding, contracts, tests, deployment
+  material and documentation when the workflow is executed.
+- Non-scope during workflow creation: production Java changes, source moves,
+  endpoint implementation, persistence schema changes, Docker or Kubernetes
+  manifests, commits and push.
+- Acceptance criteria: each planned service has explicit ownership,
+  independently verifiable build/start/test/container evidence, no shared Java
+  runtime implementation modules, and communication only through REST/OpenAPI,
   gRPC/protobuf or approved event contracts.
-- The current repository contains `.agents/prompts/*.md`; `.codex/prompts/**`
-  is not present and `.codex/AGENTS.md` states that `.codex` should remain
-  portable.
 
-## Quality View
+## Architecture Validator Findings
 
-- Workflow creation requires documentation diff review and `git diff --check`.
-- Later execution must use `QUALITY.md` commands and strict dependency
-  verification.
-- Commit or push readiness cannot be claimed unless required gates actually run
-  or the workflow records a blocker.
-- Governance-only slices may use documented manual checks when no automated
-  Markdown, link or role-conflict checker is verified.
+- The current repository is a modular Gradle platform, not a microservice
+  ecosystem.
+- `docs/adr/ADR-0009-no-shared-common-modules.md`,
+  `docs/adr/ADR-0010-contract-first-rest-and-grpc.md` and
+  `docs/adr/ADR-0013-data-ownership-per-service.md` already support the core
+  microservice constraints.
+- `docs/arc42/07-deployment-view.md` currently lists future service roots that
+  differ from the user-supplied target service landscape. This workflow treats
+  the user-supplied service landscape as the new target to be validated and then
+  synchronized into arc42 during execution.
+- Behavior-changing service extraction remains blocked until the early
+  architecture slices define a strangler or rollback strategy for each extracted
+  runtime path.
+- Current modular-monolith modules must not be renamed as services without
+  independent runtime evidence.
 
-## Dependency And Deadlock View
+## Quality Validator Findings
 
-- Slice dependencies are acyclic and sequential by default.
-- Shared files such as `AGENTS.md`, `QUALITY.md`, `.agents/prompts/**`,
-  `.agents/skills/**` and `docs/governance/**` require explicit handoff.
-- Read-only reviews may run in parallel.
-- Write-capable parallel work is allowed only when file ownership is disjoint
-  and the Senior Workflow Architect records the handoff.
+- `QUALITY.md` overrides the simpler quality commands in the user draft.
+- Minimum repository verification is:
+
+```bash
+./gradlew test --dependency-verification strict --console=plain --stacktrace
+```
+
+- Full local quality gate is:
+
+```bash
+./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace
+```
+
+- Documentation-only slices must at least run `git diff --check` and inspect the
+  diff. Build, production, contract, test or deployment slices must run the
+  applicable `QUALITY.md` commands.
+- Frontend verification currently belongs to `forensic-ui` unless a later slice
+  moves or replaces that root after verification.
+
+## Dependency And Deadlock Review
+
+- Service implementation slices depend on service-boundary and contract-first
+  decisions.
+- Persistence-owning and graph/replay slices depend on data ownership decisions.
+- Frontend decoupling depends on gateway contracts.
+- Local compose, Swarm and Kubernetes slices depend on service Dockerfiles and
+  healthcheck contracts.
+- Contract and integration tests depend on the contract slice and at least one
+  independently startable service.
+- Final migration cleanup depends on successful service replacement evidence.
 
 ## Risk Level
 
 ```text
-MEDIUM
+HIGH
 ```
 
-Reason: this workflow changes governance and skill authority, not production
-behavior. Risk increases during execution because multiple agent, skill, prompt
-and documentation files overlap.
+The workflow is high risk because it plans service extraction, independent
+runtime boundaries, contracts, persistence ownership and deployment material.
+The risk is acceptable for workflow authoring because execution is split into
+gated slices with explicit stop conditions.
 
-## Stop Conditions
+## Required Skills And Role Reviews
 
-- The active workflow branch is missing, inactive or unverifiable.
-- Three Amigos readiness is skipped or becomes stale.
-- Skill Registry ownership is unresolved.
-- A role claims authority above its verified governance boundary.
-- A slice introduces shared Java implementation between services.
-- A workflow references missing commands, skills, roles or contract files and
-  would continue by guessing.
-- A quality gate fails and cannot be safely corrected.
+- Senior Workflow Architect
+- Senior Requirement Engineer
+- Senior System Architect
+- Microservice Senior Expert
+- Senior Java Backend Developer
+- Senior gRPC/Proto Specialist
+- Senior React Frontend Developer
+- Senior UX Designer
+- Senior DevOps Engineer
+- Senior Tester
+- Senior Swarm Orchestrator
+- Service Decomposition And Bounded Context
+- Contract Governance Expert
+- Data Ownership And Persistence Steward
+- Microservice Migration Safety Gate
+- Microservice Runtime Readiness Expert
+
+## Open Execution Preconditions
+
+- Before any behavior-changing migration slice, record a service-specific
+  migration safety record with scope, non-scope, contract impact, data ownership,
+  tests, rollback or strangler strategy and forbidden changes.
+- Before any service-specific Gradle command is documented as executable, verify
+  that the service is included in the actual build.
+- Before any Docker, Swarm or Kubernetes command is required, verify that the
+  corresponding local tooling and manifests exist.

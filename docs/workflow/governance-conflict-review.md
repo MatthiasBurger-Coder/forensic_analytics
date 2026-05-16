@@ -1,55 +1,75 @@
 # Governance Conflict Review
 
-## Resolved During Workflow Creation
+## Branch Rule
 
-- The workflow branch
-  `feature/workflow-skill-agent-integrity-correction-20260516` was created
-  before workflow artifacts were modified.
-- The previous active workflow under `docs/workflow/**` described Microservice
-  Skill Sharpening. It has been regenerated for this Skill and Agent Integrity
-  Correction workflow.
-- Three Amigos readiness was completed before authoring this workflow.
-- Callable subagents were not spawned during workflow creation because the
-  verified workflow-authoring and orchestrator rules require explicit delegated
-  execution authorization. Local role-review checklists were used instead.
+The requested branch name is architecture-scoped and was created before
+workflow artifacts were regenerated:
 
-## Path Mismatches Requiring Execution Care
+```text
+architecture/microservices-ecosystem-conversion-20260516
+```
 
-- The user draft names flat skill files such as
-  `.agents/skills/workplan-executor.md`. The verified repository convention is
-  `.agents/skills/<skill-name>/SKILL.md`.
-- The user draft names `.codex/prompts/workflow-create.md`. The verified
-  repository contains `.agents/prompts/workflow-create.md`; `.codex/prompts/**`
-  is not present.
-- Root `README.md` is not present. `docs/README.md` is present.
-- `workplan execute` appears in the user draft's expected end state, while the
-  verified repository command is `workflow execute`. Slice execution must
-  decide whether this is terminology drift or requires prompt documentation.
+Workflow artifacts must not be modified on `main`, `master`, `develop` or any
+other shared branch.
 
-## Existing Governance Constraints
+## Documentation Language
 
-- ADR-0011 requires Three Amigos before workflow authoring.
-- ADR-0015 requires skill registry and conflict auditing for governance changes
-  that affect skill ownership.
-- ADR-0016 requires workflow branches before workflow artifacts.
-- `QUALITY.md` requires strict dependency verification for Gradle quality gates.
-- Repository documentation must be English.
+The user draft is German. Root `AGENTS.md` requires repository documentation to
+be English. The workflow was therefore authored in English while preserving the
+German draft's architecture intent.
 
-## Non-Blocking Risks
+## Quality Command Conflict
 
-- No EPIC was named. The workflow records this as a traceability gap but not a
-  workflow creation blocker because the requested change is governance-only.
-- Several requested governance skills already exist under different names.
-  Slice 08 must audit before creating duplicates.
-- Documentation-only slices still risk authority drift because the same files
-  are referenced by multiple roles. Handoffs must be explicit.
+The user draft lists simplified commands such as:
 
-## Execution Stop Rules
+```bash
+./gradlew clean test
+./gradlew check
+```
 
-Stop during `workflow execute` if:
+`QUALITY.md` is authoritative and requires strict dependency verification. The
+workflow must use `QUALITY.md` commands during execution and may list draft
+commands only as non-authoritative intent.
 
-- path mapping would require guessing;
-- a requested file location conflicts with verified repository conventions;
-- a role claims authority above its documented boundary;
-- a quality command cannot be verified;
-- a slice would modify production code without a new workflow decision.
+## Existing Workflow Replacement
+
+The previous active workflow under `docs/workflow/**` described Skill and Agent
+Integrity Correction. The workflow-authoring rules require deleting and
+regenerating `docs/workflow` for a new active workflow unless the user asks to
+preserve the previous workflow. The user did not request preservation.
+
+## Target Path Differences
+
+- Current frontend root is `forensic-ui`, while the target landscape names
+  `frontend/frontend-web-app`.
+- Current contracts live under a module-specific proto directory, while the
+  target landscape names `contracts/grpc`, `contracts/openapi` and
+  `contracts/events`.
+- Current Docker material is Joern-only under `docker/joern`, while the target
+  landscape names `deployment/**`.
+- Root `README.md` is not currently present. `docs/README.md` exists. A final
+  documentation slice may create root `README.md` only after verifying the
+  repository convention and documenting the reason.
+
+## Service Landscape Adjustment
+
+`docs/arc42/07-deployment-view.md` currently names a smaller future service
+set:
+
+```text
+services/forensic-server
+services/java-ast-scanner-worker
+services/joern-scanner-worker
+services/btm-generator-worker
+services/report-generator-worker
+```
+
+The user-supplied workflow names a broader target ecosystem. This is not treated
+as a conflict that blocks workflow creation. It is recorded as an architecture
+synchronization task for Slice 01 and later arc42 updates.
+
+## Commit And Push
+
+The user draft includes final commit and push steps. Workflow creation does not
+commit or push. Commit and push are reserved for the final execution slice after
+quality gates and commit-preparation review pass.
