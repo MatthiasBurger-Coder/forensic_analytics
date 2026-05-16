@@ -52,7 +52,7 @@ Existing skills did not contain direct Java 17, Gradle 9.1/9.3, JUnit 5, Spring 
 
 The audit added missing platform-phase skills and matching senior roles for distributed systems, workspace lifecycle, large Git repositories, gRPC streaming, analysis storage, replay/runtime correlation, Joern/CPG planning, performance/scalability, swarm coordination and security sandboxing.
 
-The governance update added reusable workplan, requirement, arc42 and engineering governance skills plus Senior Workplan Architect and Senior Requirement Engineer roles. The previous `docs/workplan/` content was removed and replaced with a governance workplan for building that system.
+The governance update added reusable workflow, requirement, arc42 and engineering governance skills plus Senior Workflow Architect and Senior Requirement Engineer roles. The previous `docs/workplan/` content was removed and replaced with a governance workflow for building that system.
 
 ## Audit Files
 

@@ -17,7 +17,7 @@ Coordinate small implementation slices across roles while preserving architectur
 
 1. Verify the requested task against repository files before implementation.
 2. Identify affected modules, documentation and quality checks.
-3. Apply engineering governance when EPIC, arc42, requirements, resilience, quality expectations or workplans may drift.
+3. Apply engineering governance when EPIC, arc42, requirements, resilience, quality expectations or workflows may drift.
 4. Select the smallest set of roles needed for the slice.
 5. Assign non-overlapping file ownership when multiple workers are explicitly requested.
 6. Keep implementation slices small enough to test and review independently.

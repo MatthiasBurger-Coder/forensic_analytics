@@ -14,15 +14,19 @@
 
 ## Database Impact
 
+## Data Ownership
+
 ## Deployment Impact
 
 ## Rollback Strategy
+
+## Testability
 
 ## Acceptance Criteria
 
 ## Required Skills
 
-## Required Subagents
+## Required Role Reviews Or Subagents
 
 ## Assumptions
 
@@ -30,6 +34,6 @@
 
 ## EPIC Traceability
 
-## Active Workplan Relationship
+## Active Workflow Relationship
 
 ## Open Questions

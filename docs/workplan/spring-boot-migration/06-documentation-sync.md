@@ -50,6 +50,6 @@ After implementation, `docs/README.md` material should include:
 This workplan remains planning material. When implementation is completed, either:
 
 - update this workplan with execution status and quality log, or
-- replace `docs/workplan` with the next active workplan according to the repository workplan-authoring rule.
+- replace `docs/workplan` with the next active workplan according to the repository workflow-authoring rule.
 
 Do not leave stale completed plans mixed with active future plans.

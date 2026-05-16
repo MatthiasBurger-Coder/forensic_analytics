@@ -25,7 +25,7 @@ Guides distributed project platform design while keeping orchestration in applic
 - `AGENTS.md`
 - `QUALITY.md`
 - `settings.gradle.kts`
-- workflow or workplan files
+- workflow or workflow files
 - analysis job and worker domain models
 - ingestion, workspace, persistence, and adapter contracts
 

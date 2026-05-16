@@ -24,7 +24,7 @@ Guides coordinated multi-agent planning for the current project while keeping ed
 - user task and acceptance criteria
 - `.agents/roles`
 - `.codex/agents`
-- repository workplan
+- repository workflow
 - current git status and diff
 - quality-gate requirements
 

@@ -7,7 +7,7 @@ description: Use for EPIC lifecycle work, requirement drift detection, functiona
 
 ## Purpose
 
-Keep requirements, EPIC assumptions, architecture documentation, workplans, skills and roles synchronized with verified repository behavior.
+Keep requirements, EPIC assumptions, architecture documentation, workflows, skills and roles synchronized with verified repository behavior.
 
 LLM output, generated summaries and inferred plans are not requirements unless confirmed by explicit user input, EPIC text, architecture decisions or verified implementation behavior.
 
@@ -21,7 +21,7 @@ Inspect the relevant subset of:
 - `docs/epics`
 - `docs/arc42`
 - `docs/adr`
-- `docs/workplan`
+- `docs/workflow`
 - affected source, tests, schemas, examples or fixtures
 - affected `.agents/skills` and `.agents/roles`
 
@@ -32,7 +32,7 @@ Before changing requirement-sensitive artifacts:
 1. Identify the current EPIC source.
 2. Verify whether implementation assumptions still match the EPIC.
 3. Classify the requirement or drift.
-4. Trace the change into arc42, ADR references, workplan slices and quality checks.
+4. Trace the change into arc42, ADR references, workflow slices and quality checks.
 5. Document unresolved conflicts instead of choosing silently.
 
 Ask internally:
@@ -84,7 +84,7 @@ If drift is detected:
 1. Update the EPIC when the requirement baseline changed, or document why the EPIC update is blocked.
 2. Update arc42 when architecture, runtime, deployment or crosscutting behavior changed.
 3. Review ADR references.
-4. Regenerate or update `docs/workplan` through `workplan-authoring`.
+4. Regenerate or update `docs/workflow` through `workflow-authoring`.
 5. Review related skills and roles.
 6. Document unresolved conflicts.
 
@@ -120,5 +120,5 @@ Stop and report if:
 - requirement classification
 - drift findings
 - traceability notes
-- required EPIC, arc42, ADR, workplan, skill or role updates
+- required EPIC, arc42, ADR, workflow, skill or role updates
 - unresolved conflicts and stop reports

@@ -9,7 +9,7 @@ The governance system keeps these artifacts synchronized:
 - EPIC and requirements
 - arc42 architecture documentation
 - ADR references
-- workplans
+- workflows
 - quality gates
 - resilience requirements
 - skills
@@ -27,22 +27,22 @@ User request
   -> requirement classification
   -> EPIC drift check
   -> arc42 and ADR impact check
-  -> workplan regeneration or update
+  -> workflow regeneration or update
   -> slice execution
   -> quality verification
   -> documentation and role/skill synchronization
 ```
 
-## Workplan Lifecycle
+## Workflow Lifecycle
 
-New workplans must be generated through `.agents/skills/workplan-authoring/SKILL.md`.
+New workflows must be generated through `.agents/skills/workflow-authoring/SKILL.md`.
 
-Before creating a new workplan:
+Before creating a new workflow:
 
 1. Verify the repository root and target path.
-2. Delete `docs/workplan` completely.
-3. Recreate `docs/workplan`.
-4. Regenerate the complete workplan structure.
+2. Delete `docs/workflow` completely, unless the user explicitly asks to preserve an existing workflow.
+3. Recreate `docs/workflow`.
+4. Regenerate the complete workflow structure.
 
 This prevents stale slices, obsolete workflows, conflicting plans and historical leftovers from remaining active.
 
@@ -62,7 +62,7 @@ If drift is detected, review:
 - arc42
 - ADR references
 - `QUALITY.md`
-- `docs/workplan`
+- `docs/workflow`
 - related skills
 - related roles
 
@@ -84,7 +84,7 @@ Review arc42 when:
 - scalability constraints change
 - observability requirements change
 
-ADRs record decisions and context. arc42 records active architectural consequences. Workplans route implementation according to those consequences.
+ADRs record decisions and context. arc42 records active architectural consequences. Workflows route implementation according to those consequences.
 
 ## Architecture Governance
 
@@ -95,7 +95,7 @@ The governance system requires:
 - no undocumented resilience changes
 - no undocumented deployment changes
 - no stale EPIC assumptions
-- no stale workplan slices
+- no stale workflow slices
 
 Stop and report when ownership, architecture conflicts or requirement intent cannot be verified.
 
@@ -126,7 +126,7 @@ When responsibility moves from plugin to server:
 - update or review the EPIC
 - update arc42 building block and runtime views
 - review ADR references about plugin producer boundaries
-- regenerate or update the workplan
+- regenerate or update the workflow
 - update affected skills and roles only where ownership guidance is verified
 
 ### UI Communication Strategy Changed
@@ -137,7 +137,7 @@ When UI communication changes:
 - update the EPIC if user-facing behavior changed
 - update arc42 runtime and deployment views
 - review resilience requirements for timeouts, retries and degraded states
-- update workplan verification steps
+- update workflow verification steps
 
 ### New Resilience Requirement Introduced
 
@@ -146,5 +146,5 @@ When a new resilience requirement appears:
 - classify it as a non-functional requirement
 - update or review the EPIC
 - update arc42 crosscutting concepts and quality requirements
-- update affected workplan slices
+- update affected workflow slices
 - document unresolved operational assumptions

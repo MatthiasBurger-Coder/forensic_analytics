@@ -17,7 +17,7 @@ Root `AGENTS.md` and `QUALITY.md`, when present, remain authoritative for projec
 3. Role assignment
    - Route slices to the smallest suitable set of subagents or role reviews.
    - Prefer project-specific routing rules when the repository provides them.
-   - Use callable subagents only when delegated execution is authorized by the active request or workplan command.
+   - Use callable subagents only when delegated execution is authorized by the active request or workflow command.
    - If callable subagents are unavailable, perform an explicit local review with the matching role file and report that limitation.
 
 4. Implementation
@@ -32,14 +32,14 @@ Root `AGENTS.md` and `QUALITY.md`, when present, remain authoritative for projec
 6. Reporting
    - Report changed files, main changes, executed commands, failures, quality-gate result, known limitations, and blockers.
 
-## Workplan Execute Protocol
+## Workflow Execute Protocol
 
-When the active command is `workplan execute`, use `.codex/skills/workplan-executor/SKILL.md` first, then use any discovered project-specific workplan-executor skill.
+When the active command is `workflow execute`, use `.codex/skills/workflow-executor/SKILL.md` first, then use any discovered project-specific workflow-executor skill.
 
 Execution order:
 
-1. Locate the active workplan.
-2. Read the complete workplan.
+1. Locate the active workflow.
+2. Read the complete workflow.
 3. Identify all slices and dependencies.
 4. Assign roles or subagents.
 5. Execute one slice at a time.

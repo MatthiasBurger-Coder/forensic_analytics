@@ -25,7 +25,7 @@ Guides runtime correlation and replay planning without fabricating execution fac
 - exception and stacktrace models
 - analysis session and workspace context
 - source snapshot and checkout identity
-- replay workplan requirements
+- replay workflow requirements
 
 ## Expected Outputs
 

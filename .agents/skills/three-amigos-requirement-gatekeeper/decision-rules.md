@@ -34,7 +34,7 @@ A ready requirement must contain:
 - required subagents or role reviews
 - requirement classification
 - EPIC traceability status
-- active workplan relationship, when an active workplan exists
+- active workflow relationship, when an active workflow exists
 
 Missing fields are blockers unless the user explicitly states they are not applicable.
 
@@ -94,12 +94,12 @@ A slice may run in parallel only if:
 
 ## Decision Rules
 
-Return `READY_FOR_WORKPLAN` only when the gate report contains no blockers and the next safe action is workplan authoring.
+Return `READY_FOR_WORKFLOW` only when the gate report contains no blockers and the next safe action is workflow authoring.
 
 Return `REQUIRES_REFINEMENT` when any blocker remains. Include precise questions or missing artifacts needed to unblock the gate.
 
-Do not approve workplan authoring when:
+Do not approve workflow authoring when:
 
-- an active workplan may conflict with the new request
+- an active workflow may conflict with the new request
 - EPIC drift cannot be classified
 - provisional slices are still needed to explain missing ownership or contracts

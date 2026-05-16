@@ -1,13 +1,13 @@
 ---
 name: engineering-governance
-description: Use as umbrella governance for synchronizing EPIC, requirements, arc42, ADR references, workplans, quality gates, resilience requirements, architecture consistency checks, documentation consistency checks, skills, roles, and Codex agent coordination.
+description: Use as umbrella governance for synchronizing EPIC, requirements, arc42, ADR references, workflows, quality gates, resilience requirements, architecture consistency checks, documentation consistency checks, skills, roles, and Codex agent coordination.
 ---
 
 # Skill: Engineering Governance
 
 ## Purpose
 
-Coordinate requirement, architecture, workplan, quality, resilience and agent-governance changes.
+Coordinate requirement, architecture, workflow, quality, resilience and agent-governance changes.
 
 This skill applies repository rules. It does not replace root `AGENTS.md` or `QUALITY.md`.
 
@@ -21,7 +21,7 @@ Inspect the relevant subset of:
 - `docs/epics`
 - `docs/arc42`
 - `docs/adr`
-- `docs/workplan`
+- `docs/workflow`
 - `.agents/skills`
 - `.agents/roles`
 - `.agents/orchestrator`
@@ -32,7 +32,7 @@ Inspect the relevant subset of:
 
 Use these skills for focused work:
 
-- `workplan-authoring` for full workplan lifecycle and slice plans
+- `workflow-authoring` for full workflow lifecycle and slice plans
 - `requirement-engineering` for EPIC and requirement drift
 - `arc42-architecture-governance` for architecture documentation synchronization
 - `documentation-sync` for documentation consistency
@@ -47,7 +47,7 @@ EPIC
   <-> requirements
   <-> arc42
   <-> ADR references
-  <-> docs/workplan
+  <-> docs/workflow
   <-> skills
   <-> roles
   <-> QUALITY.md
@@ -57,7 +57,7 @@ EPIC
 
 Run governance checks:
 
-- before creating a new workplan
+- before creating a new workflow
 - before changing architecture documentation
 - before moving responsibilities across service boundaries
 - before adding resilience behavior
@@ -74,7 +74,7 @@ Require:
 - no undocumented resilience changes
 - no undocumented deployment changes
 - no stale EPIC assumptions
-- no stale workplan slices
+- no stale workflow slices
 - no hidden compatibility governance
 
 ## Validation Checklists
@@ -94,10 +94,10 @@ Require:
 - Runtime and deployment changes are documented when applicable.
 - Planned behavior is not described as implemented behavior.
 
-### Workplan Consistency
+### Workflow Consistency
 
-- `docs/workplan` deleted before new workplan generation.
-- Full workplan structure regenerated.
+- `docs/workflow` deleted before new workflow generation, unless the user explicitly asks to preserve an existing workflow.
+- Full workflow structure regenerated.
 - No stale slices remain.
 - Dependencies, parallelization, stop conditions and verification commands are explicit.
 
@@ -127,7 +127,7 @@ Stop and report if:
 
 - architecture conflicts are unclear
 - EPIC contradicts implementation
-- multiple workplans conflict
+- multiple workflows conflict
 - service ownership is ambiguous
 - resilience expectations are unclear
 - quality-gate authority is unclear

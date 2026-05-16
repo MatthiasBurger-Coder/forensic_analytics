@@ -22,7 +22,7 @@ Guides performance and scalability planning for large repositories and long-runn
 
 ## Expected Inputs
 
-- workspace and Git workplan
+- workspace and Git workflow
 - large repository scenarios
 - Gradle and CI constraints
 - quality-gate runtime expectations

@@ -7,7 +7,7 @@ description: Use for keeping arc42 architecture documentation synchronized with 
 
 ## Purpose
 
-Keep `docs/arc42` aligned with verified requirements, architecture decisions, runtime behavior and workplans.
+Keep `docs/arc42` aligned with verified requirements, architecture decisions, runtime behavior and workflows.
 
 This skill updates architecture documentation. It does not create architecture decisions from guesses.
 
@@ -20,7 +20,7 @@ Inspect the relevant subset of:
 - `docs/epics`
 - `docs/arc42`
 - `docs/adr`
-- `docs/workplan`
+- `docs/workflow`
 - affected source, tests, schemas or examples
 - affected skills and roles
 
@@ -59,7 +59,7 @@ Use the existing arc42 sections:
 
 ## ADR Propagation
 
-ADRs record decisions and context. arc42 summarizes active architectural consequences. Workplans route implementation according to those consequences.
+ADRs record decisions and context. arc42 summarizes active architectural consequences. Workflows route implementation according to those consequences.
 
 Do not rewrite ADR history or intent without an explicit architecture decision.
 

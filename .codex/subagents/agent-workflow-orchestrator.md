@@ -14,13 +14,13 @@ Root project instructions and the active user request.
 - `.codex/agents/swarm_orchestrator.toml`
 - `.agents/orchestrator/swarm-orchestrator.md`
 - `.agents/orchestrator/routing-rules.md`
-- `.agents/skills/workplan-executor/SKILL.md`
+- `.agents/skills/workflow-executor/SKILL.md`
 
 Use these only when they exist in the target repository.
 
 ## Duties
 
-- Read active workplans.
+- Read active workflows.
 - Detect slices and dependencies.
 - Assign subagents or role reviews.
 - Enforce stop rules.
