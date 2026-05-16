@@ -1,42 +1,41 @@
-# Git Branch Strategy Workflow For `workflow create`
+# Microservice Skill Sharpening Workflow
 
 ## Status
 
-Planned active workflow. This document converts the requested Git Branch
-Strategy draft for `workflow create` into the active repository workflow under
+Planned active workflow. This document converts the user-supplied
+Microservice Skill Sharpening draft into the active repository workflow under
 `docs/workflow`.
 
-This workflow is planning and routing material only. It does not update
-`AGENTS.md`, `.agents/skills`, `.agents/prompts`, `.codex`, ADRs or governance
-documentation until `workflow execute` is requested and the configured subagent
-or role-review process approves each slice.
+This workflow prepares governance, skills, roles, prompts and quality rules for
+later microservice migration work. It does not extract production services,
+move modules, create service directories, implement REST or gRPC endpoints, add
+deployment descriptors, split persistence models or introduce shared Java code.
 
 ## Verified Baseline
 
 - Repository root: `/mnt/d/Projects/forensic_analytics`
 - Windows path: `D:/Projects/forensic_analytics`
-- Active branch: `feature/workflow-git-branch-strategy-20260516`
-- Default integration branch: `main`, verified through `git remote show origin`
-- Branch collision check: no local or remote branch existed before creation for
-  `feature/workflow-git-branch-strategy-20260516`
-- `origin/HEAD` is not configured; use explicit `origin/main` when a default
-  remote reference is required.
+- Active branch: `feature/workflow-microservice-skill-sharpening-20260516`
+- Branch collision checks: no local or remote branch existed before creation.
 - Authoritative agent rules: `AGENTS.md`
 - Authoritative quality rules: `QUALITY.md`
-- Workflow execution rules: `.codex/workflow/workflow-execution-rules.md`
+- Workflow authoring rules: `.agents/skills/workflow-authoring/SKILL.md`
+- Workflow execution rules: `.agents/skills/workflow-executor/SKILL.md`
 - Project routing rules: `.agents/orchestrator/routing-rules.md`
 - Project swarm rules: `.agents/orchestrator/swarm-orchestrator.md`
-- Existing active workflow replaced: Skill Landscape Expansion workflow under
+- Existing active workflow replaced: Git Branch Strategy workflow under
   `docs/workflow/**`
 - New active workflow location: `docs/workflow/**`
-- Related local branch requiring execution-time reconciliation:
-  `feature/workflow-branch-isolation-20260516`
+- Root `README.md`: not present. Future README links must target an existing
+  repository README such as `docs/README.md`, or explicitly create a root README
+  as a documented slice.
 
-## Requirement Source / Gate Decision
+## Requirement Source And Gate Decision
 
-The user supplied a `workflow.md` draft titled "Git Branch Strategy for
-`workflow create`" on 2026-05-16. The draft defines the repository branch
-strategy to use when creating new workflows.
+The user supplied a `workflow create` draft titled "Skill-Scharfung fur
+Microservice-Migration" on 2026-05-16. The draft requests skill and governance
+preparation for controlled future migration from the current modular monolith to
+real microservices.
 
 Three Amigos decision:
 
@@ -46,550 +45,974 @@ READY_FOR_WORKFLOW
 
 Gate findings:
 
-- Business goal: make `workflow create` branch naming predictable,
-  governance-compliant and collision-safe.
-- Technical goal: update repository workflow, agent, skill and prompt rules so
-  `workflow create` uses only `feature/`, `fix/`, `docs/` or `architecture/`
-  prefixes.
-- EPIC traceability: no EPIC was named. This is an open traceability gap, but it
-  is non-blocking because the request targets repository governance rather than
-  platform runtime functionality.
-- Architecture impact: no production architecture or microservice boundary
-  changes are planned. Governance and agent workflow documents are affected.
-- Quality impact: docs and governance changes require `git diff --check` and the
-  quality gate from `QUALITY.md` before commit/push readiness is claimed.
-
-## Branch Prefix Decision For This Workflow
-
-Detected workflow branch prefix: `feature`
-
-Reason: the user-provided workflow defines `feature/` as the default for
-`workflow create` and gives Git Branch Strategy extension as a default feature
-example. The workflow is not a concrete bug fix, is not documentation-only and
-does not change platform architecture or service structure. Architecture review
-flagged that governance changes could be interpreted as `architecture/`; this is
-recorded as a resolved branch-scope decision because the user request explicitly
-requires the `feature/workflow-git-branch-strategy-20260516` form.
-
-Proposed and active branch name:
-
-```text
-feature/workflow-git-branch-strategy-20260516
-```
+- Business goal: prepare the agent, skill, prompt and governance landscape so
+  future microservice migration can be executed in small, reviewed slices.
+- Technical goal: define and later implement repository governance for bounded
+  context decomposition, contract-first communication, no shared Java code
+  modules, runtime independence, Three Amigos intake and quality gates.
+- Scope: workflow, skill, role, prompt, architecture documentation, governance
+  documentation, quality documentation and workplan alignment.
+- Non-scope: production service extraction, module moves, endpoint
+  implementation, persistence splitting, deployment descriptor creation and
+  Docker/Kubernetes/Swarm finalization.
+- EPIC traceability: no EPIC was named by the user. This is recorded as a
+  non-blocking traceability gap because the request targets repository
+  governance rather than runtime behavior.
+- Architecture impact: governance-only workflow creation now. Later execution
+  may update architecture governance and ADR/arc42 references.
+- Quality impact: workflow creation requires documentation diff review and
+  `git diff --check`. Later execution slices must use `QUALITY.md` gates.
 
 ## Target Outcome
 
-- Every new `workflow create` starts on a dedicated workflow branch before any
-  workflow artifacts are created or modified.
-- Default branch naming for `workflow create` is:
+After `workflow execute` completes this workflow:
 
-```text
-feature/workflow-<short-topic>-<yyyyMMdd>
-```
-
-- `fix/`, `docs/` and `architecture/` are used only when the workflow scope
-  clearly matches that special category.
-- Other prefixes such as `feat/`, `refactor/`, `test/`, `build/`, `ci/`,
-  `quality/`, `agent/` and `chore/` are not used for `workflow create` unless
-  repository governance is explicitly changed to allow them.
-- Branch names are dated, readable, unique locally and unique remotely.
-- Existing user or agent branches are not overwritten or silently mixed.
-- Scope decision, branch name and branch conflict checks are documented before
-  implementation begins.
+- New or updated skills can evaluate service decomposition, contract
+  governance, migration safety and runtime readiness.
+- Existing workflow, architecture, Three Amigos and execution skills route
+  microservice migration through explicit gates.
+- Root governance states that microservices cannot share Java implementation,
+  domain, DTO, repository, service or utility modules.
+- Every future cross-service call must be contract-first through REST/OpenAPI,
+  gRPC/protobuf or approved eventing.
+- Runtime independence is mandatory: each service must be buildable, runnable,
+  testable, configurable, observable, health-checkable and containerizable on
+  its own before it is called a microservice.
+- Later code changes use small migration slices with named owner agents,
+  acceptance criteria, affected files, expected tests, rollback notes and
+  quality-gate commands.
 
 ## Non-Goals
 
-- Do not implement runtime business functionality.
-- Do not change production Java source, tests, graph schema, replay behavior,
-  persistence, LLM integration or build-tool adapters.
-- Do not silently merge or rebase `feature/workflow-branch-isolation-20260516`.
-  That branch must be reconciled explicitly during workflow execution before
-  overlapping governance files are changed.
-- Do not introduce a new repository-wide branch strategy for all development
-  branches. This workflow targets `workflow create` only.
-- Do not create compatibility aliases or fallback branch names outside the four
-  allowed workflow prefixes.
-- Do not commit or push implementation slices unless workflow execution reaches
-  commit readiness and the required gates are clean.
+- Do not migrate existing modules into microservices.
+- Do not create or finalize `services/**`, `contracts/**`, Docker Swarm or
+  Kubernetes material as part of this workflow.
+- Do not move production Java packages.
+- Do not implement REST, gRPC or messaging endpoints.
+- Do not split database models or persistence ownership.
+- Do not introduce shared Java libraries such as `forensic-common`,
+  `shared-domain`, `shared-dto`, `shared-service` or shared internal error
+  model libraries.
+- Do not treat the current Gradle modules as independently deployable
+  microservices.
+- Do not embed project-specific governance into portable `.codex` assets unless
+  a slice explicitly reviews portability.
 
 ## Architecture And Governance Constraints
 
 - Root `AGENTS.md` and `QUALITY.md` remain authoritative.
-- `.codex` files stay reusable and must not embed project-specific branch policy
-  unless they are explicitly intended as portable workflow behavior.
-- Project-specific rules belong in `AGENTS.md`, `QUALITY.md`, `.agents/**` or
-  repository governance documentation.
-- `workflow create` must verify the Git repository and branch state before
-  mutating workflow artifacts.
-- Subagents must verify the active workflow branch before modifying files.
-- The Senior System Architect must review `architecture/` classifications and
-  any governance change that could alter architecture authority.
-- The Senior Git Workspace Specialist or equivalent role must review branch
-  creation, collision handling and line-ending risk.
-- The Senior Tester or Quality Gate Orchestrator must review quality commands
-  against `QUALITY.md`.
+- `.codex/AGENTS.md` and `.codex/skills/**` are portable assets. Project
+  governance belongs in root docs, `.agents/**`, ADRs, arc42 or workflow docs.
+- ADR-0011 requires the Three Amigos gate before workflow authoring or
+  execution.
+- ADR-0015 requires skill registry and conflict auditing for new skills and
+  governance changes that affect skill ownership.
+- ADR-0006 currently allows Spring Boot only in `forensic-analytics-boot-app`.
+  Any later service scaffold requiring its own Spring Boot application must
+  include an ADR and architecture-test slice first.
+- The current Gradle layout is a modular monolith. Shared domain, application,
+  logging and observability modules are valid today, but they must not become
+  shared Java libraries between independently deployable services.
+- Kubernetes and Docker Swarm tooling is not verified. Future runtime-readiness
+  slices may require it as a target, but must not invent commands or manifests.
 
-## Resilience And Git Safety Requirements
+## Service Target Picture For Later Work
 
-- Treat local uncommitted changes as user-owned unless proven otherwise.
-- Stop when branch ownership, branch purpose or local changes are unclear.
-- Use explicit `origin/main` because `origin/HEAD` is not configured.
-- Verify local and remote branch-name collisions before branch creation.
-- Use readable suffixes for collision fallback names; do not overwrite local or
-  remote branches.
-- On Windows-hosted worktrees, run Git and Gradle through WSL and stop if broad
-  line-ending-only noise appears.
-- Preserve a clear audit trail: status before branch creation, branch decision,
-  branch collision checks, active branch verification and quality evidence.
-
-## Repository Target Structure
-
-This workflow creation owns only `docs/workflow/**`.
-
-Implementation slices may change these files after `workflow execute`, subject
-to slice ownership and verification:
+The following service names are planning candidates only:
 
 ```text
-AGENTS.md
-.agents/orchestrator/routing-rules.md
-.agents/orchestrator/swarm-orchestrator.md
-.agents/prompts/workflow-create.md
-.agents/roles/senior-workflow-architect/SKILL.md
-.agents/skills/git-branch-strategy/SKILL.md
-.agents/skills/workflow-authoring/SKILL.md
-.agents/skills/workflow-conflict-resolution/SKILL.md
-.agents/skills/workflow-slice-execution/SKILL.md
-.agents/skills/release-branch-governance/SKILL.md
-.agents/skills/release-branch-governance/branch-rules.md
-.codex/agents/senior_workflow_architect.toml
-docs/adr/**
-docs/arc42/**
-docs/governance/**
-docs/workflow/**
+forensic-analytics-server
+repository-analysis-service
+java-ast-scanner-service
+joern-cpg-scanner-service
+btm-generation-service
+analysis-store-service
+graph-replay-report-service
+frontend-app
 ```
 
-Execution must first inspect the related branch
-`feature/workflow-branch-isolation-20260516` because it already modifies many
-of these governance files.
+Execution of this workflow must not create these services. Later workflows must
+verify bounded context ownership before any directory, module, build, container
+or contract file is created.
 
-## Quality Gates
+## Microservice Migration Slice Format
 
-Minimum verification from `QUALITY.md`:
+Every later production code migration must use this format:
 
-```bash
-./gradlew test --dependency-verification strict --console=plain --stacktrace
+```text
+Microservice Migration Slice
+
+1. Branch
+   - branch name:
+   - branch type:
+
+2. Three Amigos Decision
+   - scope:
+   - non-scope:
+   - acceptance criteria:
+   - risk level:
+   - stop conditions:
+
+3. Service Boundary
+   - target service:
+   - owned responsibility:
+   - owned data:
+   - inbound communication:
+   - outbound communication:
+
+4. Contract
+   - protocol:
+   - contract file:
+   - version:
+   - request model:
+   - response model:
+   - error model:
+
+5. Implementation Slice
+   - affected files:
+   - agent owner:
+   - expected change:
+   - forbidden changes:
+
+6. Tests
+   - unit tests:
+   - contract tests:
+   - integration tests:
+   - runtime start test:
+
+7. Quality Gate
+   - commands:
+   - expected result:
+
+8. Rollback
+   - rollback strategy:
+   - files to revert:
+
+9. Result
+   - implemented:
+   - not implemented:
+   - risks:
+   - next slice:
 ```
-
-Full local quality gate from `QUALITY.md`:
-
-```bash
-./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace
-```
-
-Every slice must run the narrowest relevant local check first. Documentation
-workflow changes add at least:
-
-```bash
-git diff --check
-```
-
-This does not replace `QUALITY.md`. The full local quality gate remains required
-before claiming commit/push readiness unless a documented exception is accepted
-for a non-implementation workflow artifact change. Failed required gates are
-blocking.
 
 ## Slice Dependency Order
 
 ```text
-00 -> 01 -> 02 -> 03 -> 04 -> 05 -> 06
+00 -> 01 -> 02 -> 03 -> 04 -> 05 -> 06 -> 07 -> 08 -> 09 -> 10 -> 11 -> 12 -> 13
 ```
 
 All implementation slices are sequential by default because they share
-governance files. Read-only specialist reviews may run in parallel. Any
-write-capable parallel work requires disjoint write scopes and explicit handoff
-records.
+governance, role and skill files. Read-only specialist reviews may run in
+parallel. Write-capable parallel work requires disjoint write scopes, stable
+contracts and explicit handoff records.
 
-## Role Ownership Map
+## Workflow Slices
 
-| Slice | Primary owner | Review roles |
-| --- | --- | --- |
-| 00 | Senior Workflow Architect | Senior Git Workspace Specialist, Senior System Architect, Senior Tester |
-| 01 | Senior Git Workspace Specialist | Senior System Architect, Senior Documentation Engineer |
-| 02 | Senior Workflow Architect | Senior Agent Orchestrator, Senior Git Workspace Specialist |
-| 03 | Senior Git Workspace Specialist | Senior Tester, Workflow Conflict Resolution |
-| 04 | Senior Agent Orchestrator | Senior System Architect, Senior Documentation Engineer |
-| 05 | Senior Tester | Senior Git Workspace Specialist, Senior System Architect |
-| 06 | Senior Documentation Engineer | Senior System Architect, Senior Agent Orchestrator |
+### Slice 00 - Repository And Rule Verification
 
-Callable subagents may be used only when the active request authorizes delegated
-execution. During `workflow execute`, use matching role files as local checklists
-when callable subagents are unavailable.
+Purpose:
 
-## Slice 00 - Baseline And Reconciliation Gate
+- Reverify repository state before execution.
+- Confirm branch, active workflow, rules, skill layout and quality authority.
+- Record contradictions before any governance file is changed.
 
-Purpose: verify the branch, working tree, default branch and related local
-governance branches before any implementation changes.
+Prerequisites:
 
-Prerequisites: active branch is
-`feature/workflow-git-branch-strategy-20260516`; worktree is clean.
+- Active branch is `feature/workflow-microservice-skill-sharpening-20260516`.
+- Working tree changes are understood and belong to this workflow.
 
-Affected files: read-only review of `AGENTS.md`, `QUALITY.md`, `.agents/**`,
-`.codex/**`, `docs/adr/**`, `docs/arc42/**`, `docs/governance/**` and
-`docs/workflow/**`.
+Affected files:
 
-Allowed write scope: `docs/workflow/git-state-review.md` and
-`docs/workflow/execution-summary.md` only when recording execution results.
+- `docs/workflow/execution-summary.md`
+- `docs/workflow/conflict-review.md`
 
-Dependencies: none.
+Owner role:
+
+- Senior Workflow Architect
+
+Review roles:
+
+- Senior System Architect
+- Senior Documentation Engineer
+- Senior Tester
+
+Allowed write scope:
+
+- Workflow execution notes only.
 
 Done criteria:
 
-- `feature/workflow-branch-isolation-20260516` is inspected and either merged,
-  rebased, superseded or explicitly kept separate before overlapping files are
-  edited.
-- Branch scope, branch prefix and active branch are documented.
-- No unrelated local changes are present.
+- Repository root and active branch are verified.
+- Root `AGENTS.md`, `QUALITY.md`, `.codex/AGENTS.md`,
+  `.codex/workflow/workflow-execution-rules.md`, `.agents/orchestrator/**`,
+  relevant `.agents/skills/**` and relevant `.agents/roles/**` are read.
+- The skill path convention is recorded.
+- No production source code is changed.
 
 Verification commands:
 
 ```bash
 git status --short --branch
-git branch --show-current
-git remote show origin
-git diff --name-status origin/main..feature/workflow-branch-isolation-20260516
+git diff -- docs/workflow
 git diff --check
 ```
 
 Stop conditions:
 
-- The related branch cannot be inspected.
-- Overlapping governance changes cannot be reconciled safely.
-- Branch status is dirty, detached or unclear.
+- Active branch is not the workflow branch.
+- Unrelated or unclear uncommitted changes exist.
+- The skill or role structure cannot be verified.
+- Workflow execution would require guessing repository rules.
 
-## Slice 01 - Repository-Governance Rule For `workflow create`
+### Slice 01 - Three Amigos And Skill Registry Gate
 
-Purpose: add the workflow-specific branch schema to repository governance.
+Purpose:
 
-Prerequisites: Slice 00 completed and overlapping branch-first changes are
-reconciled.
+- Run and record Three Amigos readiness for the execution workflow.
+- Run a Skill Registry and Conflict Auditor review before new skills are added.
+
+Prerequisites:
+
+- Slice 00 complete.
 
 Affected files:
 
-- `AGENTS.md`
-- `.agents/skills/git-branch-strategy/SKILL.md`
-- `.agents/skills/workflow-authoring/SKILL.md`
-- `.agents/skills/release-branch-governance/SKILL.md`
-- `.agents/skills/release-branch-governance/branch-rules.md`
-- governance or ADR files when a decision record already exists or is required
+- `docs/workflow/three-amigos-decision-record.md`
+- `docs/workflow/conflict-review.md`
+- `docs/skill-audit/**`
 
-Allowed write scope: only the verified governance files above.
+Owner role:
 
-Dependencies: Slice 00.
+- Senior Requirement Engineer
+
+Review roles:
+
+- Senior System Architect
+- Senior Tester
+- Skill Registry and Conflict Auditor
+- Senior Documentation Engineer
+
+Allowed write scope:
+
+- Workflow decision record and skill-audit documentation.
 
 Done criteria:
 
-- `workflow create` defaults to
-  `feature/workflow-<short-topic>-<yyyyMMdd>`.
-- `fix/`, `docs/` and `architecture/` are documented as special cases only for
-  clearly matching scopes.
-- Disallowed workflow prefixes are listed and cannot be mistaken as valid for
-  `workflow create`.
+- Decision is `READY_FOR_WORKFLOW` or execution stops.
+- New skill ownership, overlap and authority are documented.
+- Blocking conflicts are resolved before later slices continue.
 
 Verification commands:
 
 ```bash
-git diff -- AGENTS.md .agents/skills/git-branch-strategy/SKILL.md .agents/skills/workflow-authoring/SKILL.md .agents/skills/release-branch-governance
+git diff -- docs/workflow docs/skill-audit
 git diff --check
 ```
 
 Stop conditions:
 
-- Existing branch or release governance contradicts the new rule and cannot be
-  resolved with at least 95 percent confidence.
-- A rule would permit work on `main`, `master`, `develop` or an unrelated branch.
+- Three Amigos is skipped.
+- Skill ownership is unresolved.
+- A new skill would duplicate existing authority without a documented boundary.
 
-## Slice 02 - Workflow-Scope Classification
+### Slice 02 - Service Decomposition Skill
 
-Purpose: define how `workflow create` chooses one of the four allowed prefixes
-before branch creation.
+Purpose:
 
-Prerequisites: Slice 01 completed.
+- Add a skill that evaluates bounded-context service decomposition.
+- Prevent treating a technical module as a microservice.
+
+Prerequisites:
+
+- Slice 01 complete.
+- Target path convention from `skill-target-map.md` confirmed.
 
 Affected files:
 
-- `AGENTS.md`
-- `.agents/skills/workflow-authoring/SKILL.md`
+- `.agents/skills/service-decomposition-bounded-context/SKILL.md`
+- `docs/skill-audit/**`
+
+Owner role:
+
+- Service Decomposition / Bounded Context Expert
+
+Review roles:
+
+- Senior System Architect
+- Senior Documentation Engineer
+- Microservice Senior Expert
+
+Allowed write scope:
+
+- New skill directory and skill-audit notes.
+
+Done criteria:
+
+- Skill defines mission, authority, forbidden scope, required inputs, outputs,
+  collaboration rules and STOP rules.
+- Skill checks business responsibility, ownership, data responsibility,
+  independent deployability, communication boundaries and slice size.
+- Skill states: "A technical module is not a microservice."
+- Skill outputs a Service Boundary Decision Record.
+
+Verification commands:
+
+```bash
+git diff -- .agents/skills/service-decomposition-bounded-context docs/skill-audit
+git diff --check
+```
+
+Stop conditions:
+
+- Execution cannot decide whether to use repository skill-directory convention.
+- Service ownership would require guessing.
+
+### Slice 03 - Contract Governance Skill
+
+Purpose:
+
+- Add a skill for REST/OpenAPI, gRPC/protobuf and event contract governance.
+- Prevent hidden Java coupling across service boundaries.
+
+Prerequisites:
+
+- Slice 01 complete.
+
+Affected files:
+
+- `.agents/skills/contract-governance-expert/SKILL.md`
+- `docs/skill-audit/**`
+
+Owner role:
+
+- Contract Governance Expert
+
+Review roles:
+
+- Senior Java Backend Engineer
+- Senior gRPC/Proto Specialist
+- Senior System Architect
+
+Allowed write scope:
+
+- New skill directory and skill-audit notes.
+
+Done criteria:
+
+- Skill defines contract-first as mandatory.
+- Skill covers versioning, compatibility, DTO boundaries, error/status models,
+  streaming, batch communication, idempotency, timeouts and generated code.
+- Skill allows shared versioned OpenAPI/protobuf files but forbids shared Java
+  implementation or business-code modules.
+
+Verification commands:
+
+```bash
+git diff -- .agents/skills/contract-governance-expert docs/skill-audit
+git diff --check
+```
+
+Stop conditions:
+
+- A contract field, RPC method, REST route or event field cannot be verified.
+- A slice would introduce shared Java DTO, domain, service or error-model code.
+
+### Slice 04 - Microservice Migration Safety Gate Skill
+
+Purpose:
+
+- Add a gatekeeper skill for later production microservice migration code
+  changes.
+- Block big-bang migration and multi-service changes without contract-first
+  slices.
+
+Prerequisites:
+
+- Slices 02 and 03 complete.
+
+Affected files:
+
+- `.agents/skills/microservice-migration-safety-gate/SKILL.md`
+- `docs/skill-audit/**`
+
+Owner role:
+
+- Microservice Senior Expert
+
+Review roles:
+
+- Senior System Architect
+- Senior Tester
+- Senior DevOps Engineer
+
+Allowed write scope:
+
+- New skill directory and skill-audit notes.
+
+Done criteria:
+
+- Skill requires clear scope, target service, communication path, contract,
+  data responsibility, tests, rollback or strangler strategy and slice size.
+- Skill defines risk levels and release/rollback evidence.
+- Skill stops when a change deeply modifies multiple services without a
+  contract-first slice.
+
+Verification commands:
+
+```bash
+git diff -- .agents/skills/microservice-migration-safety-gate docs/skill-audit
+git diff --check
+```
+
+Stop conditions:
+
+- A later code change would affect several services without stable contracts.
+- No rollback or strangler strategy exists for behavior-changing migration.
+
+### Slice 05 - Microservice Runtime Readiness Skill
+
+Purpose:
+
+- Add a skill that verifies whether a candidate service is independently
+  runnable and deployable.
+
+Prerequisites:
+
+- Slice 01 complete.
+- DevOps review confirms which deployment targets are verified and which remain
+  planning constraints.
+
+Affected files:
+
+- `.agents/skills/microservice-runtime-readiness-expert/SKILL.md`
+- `docs/skill-audit/**`
+
+Owner role:
+
+- Senior DevOps Engineer
+
+Review roles:
+
+- Microservice Senior Expert
+- Senior Tester
+
+Allowed write scope:
+
+- New skill directory and skill-audit notes.
+
+Done criteria:
+
+- Skill checks own build, start command, configuration, Docker build,
+  healthchecks, tests, ports, observability and no direct class coupling.
+- Skill treats Docker Swarm and Kubernetes as readiness goals that must be
+  verified from repository tooling before commands are documented.
+- Skill states that a service is not a microservice until it can be built,
+  started, tested and containerized independently.
+
+Verification commands:
+
+```bash
+git diff -- .agents/skills/microservice-runtime-readiness-expert docs/skill-audit
+git diff --check
+```
+
+Stop conditions:
+
+- The workflow invents Kubernetes, Swarm or container commands.
+- A service is presented as independently runnable without verified evidence.
+
+### Slice 06 - Senior System Architect Authority
+
+Purpose:
+
+- Update architecture governance so the Senior System Architect owns service
+  boundary decisions and conflict escalation for microservice migration work.
+
+Prerequisites:
+
+- Slices 02 through 05 complete.
+
+Affected files:
+
+- `.agents/roles/senior-system-architect.md`
+- `.codex/agents/senior_system_architect.toml`, only if runtime agent metadata
+  requires the same responsibility update
+- `AGENTS.md`, only if root governance needs project-wide wording
+
+Owner role:
+
+- Senior System Architect
+
+Review roles:
+
+- Senior Workflow Architect
+- Senior Documentation Engineer
+- Microservice Senior Expert
+
+Allowed write scope:
+
+- Verified role and governance files only.
+
+Done criteria:
+
+- Architecture boundary validation, contract strategy validation, runtime
+  independence validation and quality-gate strategy validation are required
+  before any microservice extraction starts.
+- Relationship to Backend, Frontend, UX, DevOps, Tester, Documentation,
+  Microservice Senior Expert, Contract Governance and Service Decomposition is
+  explicit.
+
+Verification commands:
+
+```bash
+git diff -- .agents/roles/senior-system-architect.md .codex/agents/senior_system_architect.toml AGENTS.md
+git diff --check
+```
+
+Stop conditions:
+
+- The update would make the architect the sole authority for requirements,
+  quality, security or release decisions.
+- Root governance and role files disagree.
+
+### Slice 07 - Workflow Authoring And Execution Rules
+
+Purpose:
+
+- Update workflow create and workflow execute guidance so microservice
+  migration slices use branch-first, Three Amigos, service-boundary,
+  contract-first and quality-gate rules.
+
+Prerequisites:
+
+- Slice 01 complete.
+
+Affected files:
+
 - `.agents/prompts/workflow-create.md`
-- `.agents/orchestrator/routing-rules.md`
-- `.agents/orchestrator/swarm-orchestrator.md`
+- `.agents/prompts/workflow-execute.md`
+- `.agents/prompts/slice-execute.md`
+- `.agents/skills/workflow-authoring/SKILL.md`
+- `.agents/skills/workflow-executor/SKILL.md`
+- `.agents/roles/senior-workflow-architect/SKILL.md`
 
-Allowed write scope: the verified classification and orchestration files.
+Owner role:
 
-Dependencies: Slice 01.
+- Senior Workflow Architect
+
+Review roles:
+
+- Senior Tester
+- Senior DevOps Engineer
+- Senior System Architect
+
+Allowed write scope:
+
+- Workflow, prompt and execution-skill guidance only.
 
 Done criteria:
 
-- Decision order is documented: `fix`, `docs`, `architecture`, then `feature`.
-- `feature/` is the fallback for unclear non-special cases.
-- Required workflow output records detected prefix, reason and proposed branch
-  name before branch creation.
-- Branch names always include `workflow-` and end with `yyyyMMdd`.
+- `workflow create` records Three Amigos readiness.
+- `workflow execute` requires owner agent, acceptance criteria, affected files,
+  expected tests, rollback notes and quality-gate command before implementation.
+- Implementation sequence is branch check, repository rules, Three Amigos,
+  architecture boundary, contract-first slice, affected services, subagent
+  ownership, minimal change, tests, quality gate, diff, commit preparation.
 
 Verification commands:
 
 ```bash
-rg -n "workflow create|feature/workflow|fix/workflow|docs/workflow|architecture/workflow" AGENTS.md .agents .codex docs
+git diff -- .agents/prompts .agents/skills/workflow-authoring .agents/skills/workflow-executor .agents/roles/senior-workflow-architect
 git diff --check
 ```
 
 Stop conditions:
 
-- A special scope must be used but cannot be classified safely.
-- Existing prompts or skills permit unsupported prefixes for `workflow create`.
+- Workflow execution would allow implementation before owner, tests, rollback
+  or quality gate are named.
+- Quality commands are invented or downgraded.
 
-## Slice 03 - Branch Conflict Check
+### Slice 08 - Three Amigos Microservice Decision Record
 
-Purpose: document and enforce local and remote branch collision checks before
-creating workflow branches.
+Purpose:
 
-Prerequisites: Slice 02 completed.
+- Extend Three Amigos intake for microservice slices.
+
+Prerequisites:
+
+- Slice 07 complete.
 
 Affected files:
 
-- `AGENTS.md`
-- `.agents/skills/git-branch-strategy/SKILL.md`
-- `.agents/skills/workflow-authoring/SKILL.md`
-- `.agents/skills/workflow-conflict-resolution/SKILL.md`
+- `.agents/skills/three-amigos-requirement-gatekeeper/SKILL.md`
+- `.agents/skills/three-amigos-requirement-gatekeeper/templates/**`
+- `.agents/skills/three-amigos-requirement-gatekeeper/decision-rules.md`
 - `.agents/prompts/workflow-create.md`
 
-Allowed write scope: branch conflict rules, prompt text and workflow-conflict
-documentation only.
+Owner role:
 
-Dependencies: Slice 02.
+- Senior Requirement Engineer
+
+Review roles:
+
+- Senior System Architect
+- Senior Tester
+- Microservice Senior Expert
+
+Allowed write scope:
+
+- Three Amigos skill and prompt guidance.
 
 Done criteria:
 
-- Local check uses `git branch --list <branch-name>`.
-- Remote check uses `git ls-remote --heads origin <branch-name>`.
-- Existing branches are reused only when they clearly belong to the same task.
-- Fallback names remain readable and governance-compliant.
-- STOP behavior is defined for unclear branch ownership.
+- Every future microservice slice has a Three Amigos Decision Record with
+  Scope, Non-Scope, Acceptance Criteria, Service Boundary, Contract Impact,
+  Test Impact, Risk Level and Stop Conditions.
+- Required questions cover service problem, inputs, outputs, owned data,
+  allowed dependencies, allowed communication, tests and forbidden changes.
 
 Verification commands:
 
 ```bash
-git branch --list feature/workflow-git-branch-strategy-20260516
-git ls-remote --heads origin feature/workflow-git-branch-strategy-20260516
+git diff -- .agents/skills/three-amigos-requirement-gatekeeper .agents/prompts/workflow-create.md
 git diff --check
 ```
 
 Stop conditions:
 
-- A branch collision cannot be classified as same-task or different-task.
-- Remote access fails and the workflow cannot verify branch uniqueness.
+- A microservice slice lacks explicit non-scope, contract impact or test impact.
+- Service ownership or communication is unclear.
 
-## Slice 04 - Subagent Assignment By Workflow Scope
+### Slice 09 - Root Microservice Governance
 
-Purpose: map workflow scopes to required and optional specialist roles.
+Purpose:
 
-Prerequisites: Slice 03 completed.
+- Add or refine central microservice governance where root rules require it.
 
-Affected files:
+Prerequisites:
 
-- `.agents/orchestrator/routing-rules.md`
-- `.agents/orchestrator/swarm-orchestrator.md`
-- `.agents/roles/**`
-- `.agents/skills/workflow-authoring/SKILL.md`
-
-Allowed write scope: routing and workflow-authoring governance only.
-
-Dependencies: Slice 03.
-
-Done criteria:
-
-- Every workflow scope has at least one owner role.
-- `architecture/` workflows always involve Senior System Architect review.
-- `fix/` workflows always involve Senior Tester or Quality Gate review.
-- `feature/` workflows route to the relevant domain, governance or workflow
-  specialist.
-- Parallel work requires explicit ownership and disjoint write scopes.
-
-Verification commands:
-
-```bash
-rg -n "workflow scope|feature/|fix/|docs/|architecture/" .agents/orchestrator .agents/skills .agents/roles
-git diff --check
-```
-
-Stop conditions:
-
-- A scope has no responsible role.
-- Two roles own the same output with conflicting authority.
-
-## Slice 05 - Quality Assurance By Workflow Scope
-
-Purpose: define minimum verification expectations for each workflow scope while
-preserving `QUALITY.md` authority.
-
-Prerequisites: Slice 04 completed.
+- Slices 02 through 08 complete.
 
 Affected files:
 
 - `AGENTS.md`
-- `QUALITY.md` only if a verified inconsistency requires it
-- `.agents/skills/quality-gate-orchestrator/SKILL.md`
-- `.agents/skills/workflow-authoring/SKILL.md`
-- `.agents/skills/release-branch-governance/**`
-- `docs/governance/**`
 
-Allowed write scope: quality-governance text only.
+Owner role:
 
-Dependencies: Slice 04.
+- Senior System Architect
+
+Review roles:
+
+- Senior Documentation Engineer
+- Microservice Senior Expert
+- Contract Governance Expert
+
+Allowed write scope:
+
+- Root governance wording only.
 
 Done criteria:
 
-- Each workflow scope has clear minimum checks.
-- `QUALITY.md` remains the source of truth for required Gradle commands.
-- Documentation-only and architecture-only special cases still record
-  verification evidence.
-- Skipped checks require explicit rationale.
+- Root rules define no shared Java code modules, contract-first communication,
+  runtime independence and migration slice size.
+- Existing root rules are not overwritten blindly.
+- Current modular-monolith modules are not described as microservices.
 
 Verification commands:
+
+```bash
+git diff -- AGENTS.md
+git diff --check
+```
+
+Stop conditions:
+
+- Root `AGENTS.md`, ADRs or implementation baseline conflict in a way that
+  cannot be resolved with at least 95 percent confidence.
+
+### Slice 10 - Architecture And Contract Governance Documentation
+
+Purpose:
+
+- Document microservice governance and contract governance for humans and
+  agents.
+- Synchronize arc42 decision references when required.
+
+Prerequisites:
+
+- Slice 09 complete.
+
+Affected files:
+
+- `docs/architecture/microservice-governance.md`, if this directory is accepted
+  for the new governance page
+- `docs/governance/contract-governance.md`
+- `docs/arc42/09-architecture-decisions.md`
+- `docs/adr/README.md`, only if ADR references require synchronization
+
+Owner role:
+
+- Senior Documentation Engineer
+
+Review roles:
+
+- Senior System Architect
+- Senior DevOps Engineer
+- Microservice Senior Expert
+
+Allowed write scope:
+
+- Architecture and governance documentation only.
+
+Done criteria:
+
+- Documentation states that target services are a future target picture, not an
+  implemented structure.
+- Allowed and forbidden coupling are clear.
+- Contract-first and runtime-independence evidence are clear.
+- Missing arc42 ADR references for accepted microservice-critical ADRs are
+  reconciled or documented as blockers.
+
+Verification commands:
+
+```bash
+git diff -- docs/architecture docs/governance docs/arc42 docs/adr
+git diff --check
+```
+
+Stop conditions:
+
+- The documentation would claim that services, contracts, Kubernetes or Swarm
+  deployment are implemented when they are only planned.
+
+### Slice 11 - Quality And Execution Documentation
+
+Purpose:
+
+- Verify and document quality gates for later microservice skill and migration
+  work.
+
+Prerequisites:
+
+- Slice 10 complete.
+
+Affected files:
+
+- `QUALITY.md`
+- `docs/README.md`, only if governance links need an existing README target
+- `docs/workplan/**`, only for alignment notes
+
+Owner role:
+
+- Senior Tester
+
+Review roles:
+
+- Senior DevOps Engineer
+- Senior Workflow Architect
+
+Allowed write scope:
+
+- Quality and documentation guidance only.
+
+Done criteria:
+
+- Quality commands remain sourced from `QUALITY.md`.
+- Missing quality commands are documented instead of invented.
+- `validatePlugins` is required only for Gradle plugin metadata, task
+  inputs/outputs or plugin implementation changes.
+- No Java, Gradle, dependency or framework versions are changed.
+
+Verification commands:
+
+```bash
+git diff -- QUALITY.md docs/README.md docs/workplan
+git diff --check
+```
+
+Stop conditions:
+
+- Quality gate wording downgrades strict dependency verification.
+- A command cannot be verified from repository docs or build files.
+
+### Slice 12 - Consistency Review
+
+Purpose:
+
+- Compare all new and changed skills, prompts, roles, docs and root governance.
+- Remove contradictions before final verification.
+
+Prerequisites:
+
+- Slices 02 through 11 complete.
+
+Affected files:
+
+- `docs/workflow/conflict-review.md`
+- `docs/skill-audit/**`
+- Any changed governance or skill file from prior slices, only for consistency
+  fixes within the same approved scope
+
+Owner role:
+
+- Senior System Architect
+
+Review roles:
+
+- Senior Workflow Architect
+- Senior Documentation Engineer
+- Microservice Senior Expert
+- Skill Registry and Conflict Auditor
+
+Allowed write scope:
+
+- Consistency notes and minimal corrections to files already touched by this
+  workflow.
+
+Done criteria:
+
+- No contradictory branch rules.
+- No contradictory no-common-code rules.
+- No contradictory contract-first rules.
+- No contradictory runtime-independence rules.
+- No contradictory agent responsibilities.
+- Stop rules are explicit.
+
+Verification commands:
+
+```bash
+git diff --check
+git status --short --branch
+```
+
+Stop conditions:
+
+- Conflicts remain blocking after review.
+- A correction would require changing unapproved production source files.
+
+### Slice 13 - Final Verification And Commit Preparation
+
+Purpose:
+
+- Review all diffs, run required checks and prepare a commit message.
+
+Prerequisites:
+
+- Slice 12 complete.
+
+Affected files:
+
+- `docs/workflow/execution-summary.md`
+
+Owner role:
+
+- Senior Workflow Architect
+
+Review roles:
+
+- Senior Tester
+- Senior System Architect
+- git commit preparation skills
+
+Allowed write scope:
+
+- Final execution notes and commit-preparation material.
+
+Done criteria:
+
+- All diffs are inspected.
+- `git diff --check` passes.
+- Minimum or full quality gate from `QUALITY.md` is executed when required for
+  commit readiness, or the workflow records why it could not be executed and
+  treats the result as not fully clean.
+- Commit message is prepared but not committed unless the user explicitly asks.
+- Push is not performed unless explicitly requested and repository rules allow
+  it.
+
+Verification commands:
+
+```bash
+git diff --check
+git status --short --branch
+./gradlew test --dependency-verification strict --console=plain --stacktrace
+./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace
+```
+
+Stop conditions:
+
+- Required quality gates fail.
+- Broad line-ending-only changes appear.
+- Commit or push would happen without explicit user authorization.
+
+## Quality Gates
+
+Minimum command from `QUALITY.md`:
 
 ```bash
 ./gradlew test --dependency-verification strict --console=plain --stacktrace
-git diff --check
 ```
 
-Full commit-readiness command:
+Full local gate from `QUALITY.md`:
 
 ```bash
 ./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace
 ```
 
-Stop conditions:
-
-- A required quality command cannot be verified from `QUALITY.md` or Gradle.
-- A failed required quality gate is treated as non-blocking.
-
-## Slice 06 - Documentation, Prompts And Skills Synchronization
-
-Purpose: make the new rule discoverable to users, Codex prompts and subagents.
-
-Prerequisites: Slice 05 completed.
-
-Affected files:
-
-- `AGENTS.md`
-- `.agents/prompts/workflow-create.md`
-- `.agents/skills/**` files touched by earlier slices
-- `.codex/agents/senior_workflow_architect.toml` if the current
-  project-specific agent prompt already owns workflow creation behavior
-- `docs/adr/**`, `docs/arc42/**`, `docs/governance/**` when touched or required
-- `docs/workflow/**`
-
-Allowed write scope: synchronization updates for the same branch-strategy rule.
-
-Dependencies: Slice 05.
-
-Done criteria:
-
-- Branch-governance rule is discoverable.
-- Prompts and skills do not contradict the rule.
-- Existing skill rules are updated instead of duplicated.
-- Old contradictory rules are removed only when the correct replacement is
-  verified with at least 95 percent confidence.
-- Execution summary records changed files, checks, limits and open items.
-
-Verification commands:
+Workflow-documentation creation checks:
 
 ```bash
-rg -n "workflow create|workflow-<short-topic>|feature/workflow|fix/workflow|docs/workflow|architecture/workflow|codex/" AGENTS.md .agents .codex docs
+git status --short --branch
+git diff -- docs/workflow
 git diff --check
-./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace
 ```
 
-Stop conditions:
+Documentation checks do not replace the `QUALITY.md` gate for commit/push
+readiness.
 
-- Contradictory old rules cannot be resolved safely.
-- Documentation would claim a command passed without executed evidence.
+## Commit Plan
 
-## Parallelization Plan
+Do not commit during `workflow create`. If the user later requests commit
+preparation after successful execution, use this draft message:
 
-Implementation slices are sequential because they overlap `AGENTS.md`,
-workflow-authoring skills, branch-governance skills and prompts. Read-only
-specialist review may run in parallel for each slice. Write-capable subagents
-may be used only when their file ownership is disjoint and the active branch is
-verified before editing.
+```text
+feat(workflow): sharpen microservice migration skills and governance
 
-## Documentation Synchronization Points
+Add workflow, skill and governance preparation for future microservice
+migration slices.
 
-- After Slice 01: synchronize branch-governance decision records.
-- After Slice 03: synchronize prompts and branch conflict documentation.
-- After Slice 05: synchronize quality and release/branch governance language.
-- After Slice 06: update `docs/workflow/execution-summary.md` with final changed
-  files, quality evidence and limitations.
+What changed:
+- add service decomposition and bounded-context skill planning
+- add contract governance skill planning
+- add microservice migration safety-gate planning
+- add runtime readiness skill planning
+- route system architect, workflow executor and Three Amigos updates
+- document no-common-code, contract-first and runtime-independence rules
 
-## Stop Conditions
-
-Stop and report when:
-
-1. The active branch is not the expected workflow branch.
-2. `feature/workflow-branch-isolation-20260516` cannot be reconciled before
-   overlapping governance files are edited.
-3. Uncommitted changes appear and their ownership is unclear.
-4. The default branch cannot be determined.
-5. A local or remote branch collision cannot be classified safely.
-6. Existing workflow, skill or agent rules conflict and cannot be resolved with
-   at least 95 percent confidence.
-7. A change would permit workflow artifact edits on `main`, `master`, `develop`
-   or an unrelated branch.
-8. A required quality command cannot be run or fails.
-9. Continuing would require guessing branch ownership, Gradle task names, prompt
-   ownership or governance authority.
-
-## Uncertainty Escalation Rules
-
-- Treat unmerged local branches as user-owned until proven otherwise.
-- Record unresolved branch, prompt or skill conflicts in
-  `docs/workflow/git-governance-conflict-matrix.md`.
-- Ask the user before merging, rebasing or superseding unrelated local branches.
-- When a special prefix is unclear, use `feature/` only if doing so does not hide
-  a known fix, docs-only or architecture-only scope.
-- Do not infer that static workflow plans are implemented behavior.
-
-## Commit And Push Plan
-
-For workflow creation, commit only regenerated `docs/workflow/**` files after
-diff review and applicable quality checks.
-
-For workflow execution, commit only after all slices pass their required checks
-and the final diff is reviewed. Commit messages must document:
-
-1. What changed.
-2. Why it changed.
-3. How it was implemented.
-4. Affected files.
-5. Tests and quality checks executed.
-6. Limits and open items.
-
-Push must explicitly target the workflow branch:
-
-```bash
-git push -u origin feature/workflow-git-branch-strategy-20260516
+Quality:
+- inspect workflow and governance diffs
+- run git diff --check
+- run available quality gates according to QUALITY.md where required
 ```
 
-Do not use a plain push while the branch tracks `origin/main`.
+## Definition Of Done
 
-## Whole Workflow Definition Of Done
+This workflow is complete after execution when:
 
-- `workflow create` branch rule is implemented in the verified governance files.
-- `feature/` is documented as the default workflow-create prefix.
-- `fix/`, `docs/` and `architecture/` are documented as special cases only.
-- Unsupported prefixes are not documented as valid for `workflow create`.
-- Branch-name generation, local collision check and remote collision check are
-  documented and tested by review or command evidence.
-- Subagent routing and quality-gate expectations match repository rules.
-- `QUALITY.md` commands were executed or any unavailable checks were documented
-  with reason.
-- Final diff contains only the approved workflow scope.
+- a dedicated branch exists and remains active for the workflow;
+- new microservice governance skills exist with verified ownership;
+- existing workflow, architecture and Three Amigos skills are updated;
+- root governance contains microservice rules when required;
+- workflow creation records branch-first and Three Amigos readiness;
+- workflow execution requires slice, contract and quality gates;
+- no shared Java code module solution is allowed;
+- runtime independence and contract-first rules are documented;
+- skill consistency has been reviewed;
+- final diffs and required checks have been inspected;
+- commit preparation is documented without committing or pushing unless the user
+  explicitly requests it.
+
+Recommended next workflow after completion:
+
+```text
+workflow create microservice-target-architecture-and-first-extraction-slice
+```
