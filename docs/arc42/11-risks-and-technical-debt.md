@@ -21,3 +21,13 @@
 - UI may start as minimal read-only analysis view.
 - Joern mapping may initially support only selected node types.
 - Governance diagrams and skill registry need periodic review as agent definitions evolve.
+
+## 11.2 Agent Governance Risks
+
+| Risk | Impact | Mitigation |
+|---|---|---|
+| Agent mixes process strands | Wrong files changed or unsafe publication | Explicit command routing and strand-scoped file permissions |
+| Requirement is ambiguous | Wrong workflow or implementation | Requirement Clarification Loop and blocking questions |
+| arc42 is not updated | Architecture drift | `workflow create` requires checked or updated arc42 |
+| Slice work is lost locally | Rework after machine failure | Slice checkpoint commit and push after every successful slice |
+| `push auto` used too broadly | Product implementation may be merged accidentally | Push Auto Guard restricts it to `skills-agents` |
