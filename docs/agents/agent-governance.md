@@ -157,6 +157,13 @@ The workflow create end state is:
 
 ```mermaid
 flowchart TD
+  Status["S3_STATUS: Check working tree"]
+  Branch["S3_BRANCH: Check execution branch"]
+  Scope["S3_SCOPE: Check workflow scope"]
+  Classify["S3_CLASSIFY: Classify slice"]
+  StopStatus["STOP: Dirty working tree - report only"]
+  StopBranch["STOP: Wrong branch - report only"]
+  StopScope["STOP: Scope conflict - escalate"]
   Executor["workflow-executor"]
   Swarm["Agent Swarm Orchestrator"]
   Backend["Backend Strand"]
@@ -168,6 +175,13 @@ flowchart TD
   Push["Push Workflow Branch"]
   Final["Final Workflow Execute Gate"]
 
+  Status -->|clean| Branch
+  Status -->|dirty working tree| StopStatus
+  Branch -->|valid workflow branch| Scope
+  Branch -->|wrong branch| StopBranch
+  Scope -->|scope valid| Classify
+  Scope -->|scope conflict| StopScope
+  Classify --> Executor
   Executor --> Swarm
   Swarm --> Backend
   Swarm --> Frontend

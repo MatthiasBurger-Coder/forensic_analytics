@@ -57,6 +57,7 @@ Resolution: the user request defines these as target Governance Flowchart V2 sem
 | 00 | Completed | Inventory expanded with concrete target artifacts, quality commands from `QUALITY.md`, introduced V2 labels and target-file inference risk. Verification: `git status --short`, `git diff --check`, slice diff review. |
 | 01 | Completed | Branch governance confirmed for `architecture/workflow-governance-flowchart-v2-20260517`; active branch, local ref, upstream, remote-tracking ref and clean pre-slice status verified. |
 | 02 | Completed | Bounded governance feedback loops with `maxRetries = 3`, Root Architect escalation, synchronized workflow-create loop diagrams and S1 guard notes. |
+| 03 | Completed | Added S3 safety preflight with explicit STOP paths for dirty working tree, wrong branch and scope conflict before slice classification. |
 
 ## Slice 01 Branch Governance Evidence
 

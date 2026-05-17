@@ -52,7 +52,14 @@ Stop when either artifact is missing or contradicts `AGENTS.md`, `QUALITY.md`, A
 
 ## Branch Verification
 
-Before implementation, verify the workflow branch from the active workflow with:
+Before implementation, run the S3 safety preflight:
+
+1. `S3_STATUS`: check the working tree. Dirty or unclear status stops and reports only.
+2. `S3_BRANCH`: verify the active workflow branch and local branch ref. Wrong branch stops and reports only.
+3. `S3_SCOPE`: verify that the requested slice belongs to the checked active workflow scope. Scope conflict stops and escalates.
+4. `S3_CLASSIFY`: classify the slice only after status, branch and scope are valid.
+
+Verify the workflow branch from the active workflow with:
 
 ```bash
 git branch --show-current
@@ -132,6 +139,9 @@ Stop and report if:
 - tests fail and cannot be fixed safely inside the slice
 - the workflow conflicts with `AGENTS.md` or `QUALITY.md`
 - multiple active workflows conflict
+- `S3_STATUS` finds a dirty or unclear working tree
+- `S3_BRANCH` finds the wrong branch or a missing local branch ref
+- `S3_SCOPE` finds that the requested work is outside the checked active workflow
 - checked `docs/workflow/workflow.md` is missing
 - checked or updated arc42 documentation is missing
 - the workflow branch is missing, inactive, or cannot be verified as a local ref

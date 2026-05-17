@@ -13,6 +13,24 @@ It executes a checked `docs/workflow/workflow.md` slice by slice through the con
 
 Stop when either artifact is missing or contradicts `AGENTS.md`, `QUALITY.md`, ADRs or verified repository state.
 
+## S3 Safety Preflight
+
+`workflow execute` must pass these safety nodes before any slice is routed or
+implemented:
+
+```mermaid
+flowchart TD
+  S3_STATUS["S3_STATUS: Check working tree"] -->|clean| S3_BRANCH["S3_BRANCH: Check execution branch"]
+  S3_STATUS -->|dirty working tree| S3_STOP_STATUS["STOP: Dirty working tree - report only"]
+  S3_BRANCH -->|valid workflow branch| S3_SCOPE["S3_SCOPE: Check workflow scope"]
+  S3_BRANCH -->|wrong branch| S3_STOP_BRANCH["STOP: Wrong branch - report only"]
+  S3_SCOPE -->|scope valid| S3_CLASSIFY["S3_CLASSIFY: Classify slice"]
+  S3_SCOPE -->|scope conflict| S3_STOP_SCOPE["STOP: Scope conflict - escalate"]
+```
+
+S3 STOP paths report the blocker and do not jump back to `workflow create`.
+Scope conflicts escalate to the Root Architect for a decision.
+
 ## Execution Strands
 
 Workflow execution must keep these implementation and documentation strands separate:

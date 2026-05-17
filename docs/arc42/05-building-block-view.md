@@ -228,6 +228,9 @@ Responsibilities:
 
 - load checked workflow
 - load checked arc42 documentation
+- check `S3_STATUS` working-tree safety before routing slices
+- check `S3_BRANCH` execution branch safety before routing slices
+- check `S3_SCOPE` workflow scope safety before classifying slices
 - classify backend, frontend, runtime and documentation work
 - route to roles or subagents
 - run Slice Quality Gates
