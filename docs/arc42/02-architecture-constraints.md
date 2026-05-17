@@ -18,6 +18,11 @@
 | skills update command | Exact `skills update` activates only the `skills-agents` strand for skills, agents, roles, prompts, routing rules, organigramm, skill registry and process documentation. |
 | workflow create end state | `workflow create` ends only after no blocking questions remain, `docs/workflow/workflow.md` is checked, arc42 is checked or updated, Documentation Governance passes and workflow execute is explicitly released. |
 | bounded governance loops | Automatic governance feedback, correction and clarification loops are capped at `maxRetries = 3`; retry exhaustion stops and escalates to the Root Architect. |
+| workflow execute safety preflight | `workflow execute` must pass `S3_STATUS`, `S3_BRANCH`, `S3_SCOPE` and `S3_CLASSIFY` before write-capable slice execution. Failure paths STOP, report and escalate instead of continuing silently. |
+| typed workflow failure routing | Quality and validation failures in `workflow execute` route through the Typed Error Router before retry or targeted fixes. |
+| one slice one commit | Every `workflow execute` checkpoint commit represents exactly one slice and must preserve workflow-version, slice, files, quality-gate, commit and rollback traceability. |
+| no backward workflow jump | `workflow execute` must not automatically call, rewrite or regenerate `workflow create` artifacts. |
+| two-level governance diagrams | Governance Flowchart V2 diagrams are maintained as a Level 1 overview plus Level 2 subgraphs under `docs/governance/workflow/`. |
 | workflow execute checkpoints | `workflow execute` commits and pushes a slice-scoped checkpoint after each successful slice quality gate. |
 | push auto restriction | `push auto` is restricted to `skills-agents` and must not publish product implementation, services, contracts, Docker/runtime, build logic, frontend or analytics implementation files. |
 
@@ -65,6 +70,13 @@ The strands must not be mixed.
 Automatic governance feedback, correction and clarification loops are capped at `maxRetries = 3`. Retry exhaustion stops the active strand and escalates to the Root Architect.
 
 `workflow execute` is responsible for executing checked workflow slices through role or subagent routing, quality gates, documentation synchronization and slice checkpoint commits.
+
+`workflow execute` must pass S3 safety preflight, classify the slice, run S3D
+orchestration and use the Typed Error Router for failures before any retry.
+
+`workflow execute` must never jump backward into `workflow create`
+automatically. Manual workflow refinement remains a Root Architect or user
+decision.
 
 `push auto` is restricted to the `skills-agents` strand and must not publish backend, frontend, Docker/runtime, contract or analytics implementation changes.
 

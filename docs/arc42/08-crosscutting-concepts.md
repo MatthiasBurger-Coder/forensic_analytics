@@ -128,6 +128,16 @@ Typed Error Router before retry or escalation. The router categories are
 unowned failures escalate to the Root Architect instead of starting a generic
 retry loop.
 
+Governance Flowchart V2 extends ADR-0020 with S3 safety preflight, S3D
+execution orchestration, one-slice-one-commit traceability, `CP_ROLLBACK`
+rollback decisions, explicit publication terminals and two-level diagram
+governance. The canonical diagrams live in `docs/governance/workflow/`.
+
+`workflow execute` does not automatically jump backward to `workflow create`.
+When workflow scope, dependencies or governance assumptions are wrong, the
+allowed outcomes are STOP, report, Root Architect escalation and a manual
+recommendation to refine the workflow.
+
 Documentation synchronization must keep `AGENTS.md`, `QUALITY.md`, process docs, workflow docs, skill-audit docs, arc42 and ADR references consistent. Planned behavior is not implemented behavior.
 
 ## 8.11 Agent Governance

@@ -51,8 +51,8 @@ Scope conflicts escalate to the Root Architect for a decision.
 Unclassifiable slices must not execute automatically.
 
 Explicitly declared governance, metadata and documentation-only slices may route
-through the Documentation Strand only when the active workflow declares that
-scope. Otherwise they are unclassified and must escalate.
+through `S3_DOC` only when the active workflow declares that scope. Otherwise
+they are unclassified and must escalate.
 
 ## S3D Execution Orchestrator
 
@@ -94,11 +94,11 @@ typed ownership before any retry or fix attempt starts:
 ```mermaid
 flowchart TD
   Q10["Q10: Quality Gate / Validation Failure"] --> R["Typed Error Router"]
-  R -->|ARCH_VIOLATION| A["Root Architect / Senior System Architect / Hexagonal Architecture Expert"]
-  R -->|BUILD_FAILURE| B["Responsible Backend or Frontend Agent / DevOps / Build Owner"]
+  R -->|ARCH_VIOLATION| A["Root Architect / Senior System Architect / architecture-hexagonal"]
+  R -->|BUILD_FAILURE| B["Responsible Backend or Frontend Agent / Senior DevOps / build-gradle"]
   R -->|TEST_FAILURE| T["Senior Tester / Responsible Slice Agent"]
-  R -->|DOC_GOVERNANCE_FAILURE| D["Documentation Governance Agent / Requirement Engineer"]
-  R -->|LOCK_CONFLICT| L["Execution Orchestrator Specialist / Root Architect"]
+  R -->|DOC_GOVERNANCE_FAILURE| D["Senior Documentation Engineer / Senior Requirement Engineer"]
+  R -->|LOCK_CONFLICT| L["Senior Swarm Orchestrator / Root Architect"]
   R -->|UNKNOWN_FAILURE| X["Root Architect Escalation"]
   A --> RC{"Retry <= 3?"}
   B --> RC
@@ -115,11 +115,11 @@ The router categories are:
 
 | Error type | Target role |
 |---|---|
-| `ARCH_VIOLATION` | Root Architect, Senior System Architect, Hexagonal Architecture Expert |
-| `BUILD_FAILURE` | responsible Backend or Frontend Agent, DevOps, Build Owner |
+| `ARCH_VIOLATION` | Root Architect, Senior System Architect, `architecture-hexagonal` |
+| `BUILD_FAILURE` | responsible Backend or Frontend Agent, Senior DevOps, `build-gradle` for Gradle-specific failures |
 | `TEST_FAILURE` | Senior Tester, responsible Slice Agent |
-| `DOC_GOVERNANCE_FAILURE` | Documentation Governance Agent, Requirement Engineer |
-| `LOCK_CONFLICT` | Execution Orchestrator Specialist, Root Architect |
+| `DOC_GOVERNANCE_FAILURE` | Senior Documentation Engineer, Senior Requirement Engineer |
+| `LOCK_CONFLICT` | Senior Swarm Orchestrator, Root Architect |
 | `UNKNOWN_FAILURE` | Root Architect |
 
 Automatic fix attempts are capped at `maxRetries = 3`. Retry exhaustion,
@@ -135,7 +135,7 @@ Workflow execution must keep these implementation and documentation strands sepa
 - Backend Strand
 - Frontend Strand
 - Docker / Runtime Strand
-- Documentation Strand
+- `S3_DOC` documentation path inside `workflow execute`
 
 ## Backend Strand
 

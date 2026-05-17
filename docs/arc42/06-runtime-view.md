@@ -196,13 +196,23 @@ flowchart TD
   StopStatus["STOP: Dirty working tree - report only"]
   StopBranch["STOP: Wrong branch - report only"]
   StopScope["STOP: Scope conflict - escalate"]
+  S3D["S3D: Execution Orchestrator"]
   Executor["workflow-executor"]
   Swarm["Agent Swarm Orchestrator"]
   Backend["Backend Strand"]
   Frontend["Frontend Strand"]
   Runtime["Docker / Runtime Strand"]
-  Docs["S3_DOC: Documentation Strand"]
-  Gate["Slice Quality Gate"]
+  Docs["S3_DOC: Documentation path inside workflow execute"]
+  Gate["D8: Blocking Slice Quality Gate"]
+  QG_STOP["QG_STOP: Stop execution"]
+  CP_RECORD["CP_RECORD: Slice traceability"]
+  CP_COMMIT["CP_COMMIT: Commit exact slice"]
+  CP_PUSH["CP_PUSH: Push workflow branch"]
+  CP_FINAL["CP_FINAL"]
+  CP_ROLLBACK["CP_ROLLBACK: Rollback / Revert Decision"]
+  CMD_PUSH["CMD_PUSH"]
+  RELEASE["RELEASE"]
+  Q11["Q11: Async execution report"]
   Router["Typed Error Router"]
   ArchFailure["ARCH_VIOLATION"]
   BuildFailure["BUILD_FAILURE"]
@@ -213,9 +223,6 @@ flowchart TD
   Retry{"Retry <= 3?"}
   Fix["Targeted Fix Slice"]
   Escalate["Root Architect Escalation"]
-  Commit["Slice Checkpoint Commit"]
-  Push["Push Workflow Branch"]
-  Final["Final Workflow Execute Gate"]
 
   Status -->|clean| Branch
   Status -->|dirty working tree| StopStatus
@@ -223,11 +230,14 @@ flowchart TD
   Branch -->|wrong branch| StopBranch
   Scope -->|scope valid| Classify
   Scope -->|scope conflict| StopScope
-  Classify -->|backend| BE_Q --> Executor
-  Classify -->|frontend| FE_Q --> Executor
-  Classify -->|runtime / devops / contracts| RT_Q --> Executor
-  Classify -->|documentation / governance / metadata declared by workflow| DOC_Q --> Executor
+  Classify -->|backend| BE_Q --> S3D
+  Classify -->|frontend| FE_Q --> S3D
+  Classify -->|runtime / devops / contracts| RT_Q --> S3D
+  Classify -->|documentation / governance / metadata declared by workflow| DOC_Q --> S3D
   Classify -->|none of the above| Unclassified --> RootArchitect
+  S3D -->|dependency graph and locks valid| Executor
+  S3D -->|lock conflict| Router
+  S3D -->|cycle, missing metadata or unknown dependency| Escalate
   Executor --> Swarm
   Swarm --> Backend
   Swarm --> Frontend
@@ -237,7 +247,7 @@ flowchart TD
   Frontend --> Gate
   Runtime --> Gate
   Docs --> Gate
-  Gate -->|passed| Commit --> Push --> Final
+  Gate -->|passed| CP_RECORD --> CP_COMMIT --> CP_PUSH
   Gate -->|failed| Router
   Router --> ArchFailure --> Retry
   Router --> BuildFailure --> Retry
@@ -246,5 +256,21 @@ flowchart TD
   Router --> LockFailure --> Retry
   Router --> UnknownFailure --> Escalate
   Retry -->|yes| Fix --> Gate
-  Retry -->|no| Escalate
+  Retry -->|no| QG_STOP --> CP_ROLLBACK
+  CP_PUSH -->|success| CP_FINAL
+  CP_PUSH -->|failed| CP_ROLLBACK
+  CP_FINAL --> CMD_PUSH
+  CP_FINAL --> RELEASE
+  CP_FINAL --> Q11
+  CP_ROLLBACK --> RootArchitect
 ```
+
+`CP_FINAL` does not end workflow governance by itself. It hands off to normal
+push, release preparation or the non-blocking Q11 execution report path.
+`CP_ROLLBACK` is a decision node and must not be interpreted as blind history
+rewriting.
+
+Publication-mode details remain separate from workflow execution. Normal
+publication outcomes are `PUB_DONE`, `PUB_PR_RESULT`, `PUB_PUSH_FAILED` and
+`PUB_REJECTED`; failed publication routes to `CP_ROLLBACK` when a rollback
+point exists or to Root Architect escalation when it does not.

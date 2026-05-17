@@ -95,11 +95,11 @@ These labels are introduced by the Governance Flowchart V2 workflow and must be 
 | S2 | Existing `workflow create` strand | Introduced by workflow, mapped to existing strand |
 | S3 | Existing `workflow execute` strand | Introduced by workflow, mapped to existing strand |
 | S3D | Execution-orchestration node inside S3 | Mapped by Slice 06 to workflow-execute, Senior Swarm Orchestrator, dependency graph and conflict-lock governance |
-| `S3_STATUS` | Working-tree preflight node | Introduced by workflow, not yet implemented outside `docs/workflow` |
-| `S3_BRANCH` | Execution-branch preflight node | Introduced by workflow, not yet implemented outside `docs/workflow` |
-| `S3_SCOPE` | Workflow-scope preflight node | Introduced by workflow, not yet implemented outside `docs/workflow` |
-| `S3_CLASSIFY` | Slice classification node | Introduced by workflow, not yet implemented outside `docs/workflow` |
-| `S3_UNCLASSIFIED` | Unclassifiable-slice stop and escalation node | Introduced by workflow, not yet implemented outside `docs/workflow` |
+| `S3_STATUS` | Working-tree preflight node | Mapped by Slice 03 in workflow-execute process, workflow-executor skill and Governance Flowchart V2 diagrams |
+| `S3_BRANCH` | Execution-branch preflight node | Mapped by Slice 03 in workflow-execute process, workflow-executor skill and Governance Flowchart V2 diagrams |
+| `S3_SCOPE` | Workflow-scope preflight node | Mapped by Slice 03 in workflow-execute process, workflow-executor skill and Governance Flowchart V2 diagrams |
+| `S3_CLASSIFY` | Slice classification node | Mapped by Slice 04 in workflow-execute process, workflow-executor skill and Governance Flowchart V2 diagrams |
+| `S3_UNCLASSIFIED` | Unclassifiable-slice stop and escalation node | Mapped by Slice 04 as STOP and Root Architect escalation path |
 | `ARCH_VIOLATION` | Typed Error Router category | Mapped by Slice 05 in workflow-execute, routing rules and quality-gate governance |
 | `BUILD_FAILURE` | Typed Error Router category | Mapped by Slice 05 in workflow-execute, routing rules and quality-gate governance |
 | `TEST_FAILURE` | Typed Error Router category | Mapped by Slice 05 in workflow-execute, routing rules and quality-gate governance |
@@ -114,7 +114,7 @@ These labels are introduced by the Governance Flowchart V2 workflow and must be 
 | `PUB_DONE` | Publication completed terminal | Mapped by Slice 07 as verified checkpoint or merge completion |
 | `PUB_PUSH_FAILED` | Push failure terminal | Mapped by Slice 07 to `CP_ROLLBACK` handoff or Root Architect escalation |
 | `PUB_REJECTED` | Publication rejected terminal | Mapped by Slice 07 as governance, scope, branch or guard rejection |
-| R10 | No automatic backward jump from S3 to S2 | Introduced by workflow, not yet implemented outside `docs/workflow` |
+| R10 | No automatic backward jump from S3 to S2 | Mapped by Slice 03 through workflow-execute safety governance and accepted by ADR-0021 |
 | R11 | One slice, one commit | Mapped by Slice 09 in process, prompt and commit-governance rules |
 | `CP_RECORD` | Slice traceability record | Mapped by Slice 09 with workflow version, changed files, quality evidence, commit hash, rollback reference and documentation update status fields |
 | workflow history | Workflow-version and slice-history artifact | Mapped by Slice 09 in `docs/workflow/workflow.history.md` |

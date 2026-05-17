@@ -4,6 +4,8 @@ This directory contains the two-level diagram package for Governance Flowchart
 V2. The diagrams are visual projections of the authoritative rules in
 `AGENTS.md`, `QUALITY.md`, `docs/process/**`, `docs/workflow/**`,
 `docs/agents/**`, `docs/arc42/**` and `docs/adr/**`.
+The governing architecture decision is
+[`ADR-0021: Governance Flowchart V2`](../../adr/ADR-0021-governance-flowchart-v2.md).
 
 ## Diagram Levels
 

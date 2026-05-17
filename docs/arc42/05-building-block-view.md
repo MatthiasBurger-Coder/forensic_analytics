@@ -156,9 +156,11 @@ facts, incident records, correlation indexes or database migrations.
 
 ## 5.10 Agent Governance Building Blocks
 
-The complete agent governance diagrams are maintained in
-`docs/agents/organigramm.md` and explained in
-`docs/agents/agent-governance.md`. The arc42 building-block view embeds the
+ADR-0021 accepts Governance Flowchart V2 as the active repository governance
+model. The canonical Governance Flowchart V2 diagrams are maintained in
+`docs/governance/workflow/`. Agent governance explanations remain in
+`docs/agents/agent-governance.md`, and the role organigramm remains in
+`docs/agents/organigramm.md`. The arc42 building-block view embeds the
 architecture-relevant governance overview and publication-mode separation
 directly because they define ownership boundaries for repository changes.
 
@@ -201,8 +203,12 @@ flowchart TD
 | `PUB_PR_MERGE_GUARD` | Decides whether a PR may merge, stay open, be blocked or be rejected. |
 | docs/workflow/workflow.md Maintainer | Maintains the checked active workflow produced by `workflow create`. |
 | arc42 Architecture Documentation Maintainer | Checks or updates arc42 before workflow execute is released. |
+| S3D Execution Orchestrator | Extracts slice metadata, builds the dependency graph, runs topological sort and enforces file, contract, module and architecture-boundary locks. |
+| Typed Error Router | Classifies workflow-execute validation failures before retry, targeted fix or escalation. |
+| `CP_ROLLBACK` | Decides between file revert, slice-commit revert, fix slice, branch discard, workflow recut or Root Architect escalation. |
 | Testing Documentation Maintainer | Maintains workflow test strategy and quality-gate evidence. |
 | Execution Report Maintainer | Records slice checkpoint commit SHA, push result and blockers during `workflow execute`. |
+| Governance Flowchart V2 diagram package | Maintains the Level 1 overview and Level 2 subgraphs used for flowchart integrity review. |
 
 ### Senior System Architect
 
@@ -239,12 +245,13 @@ Responsibilities:
 - check `S3_BRANCH` execution branch safety before routing slices
 - check `S3_SCOPE` workflow scope safety before classifying slices
 - classify backend, frontend, runtime and documentation work
-- route explicitly declared governance, metadata and documentation-only slices through the Documentation Strand only when the checked workflow declares that scope
+- run S3D dependency, topological-order and lock checks
+- route explicitly declared governance, metadata and documentation-only slices through `S3_DOC` only when the checked workflow declares that scope
 - stop and escalate unclassifiable slices through `S3_UNCLASSIFIED` instead of executing them automatically
 - route to roles or subagents
 - run Slice Quality Gates
 - route quality-gate or validation failures through the Typed Error Router
-- create Slice Checkpoint Commit
+- create a one-slice Slice Checkpoint Commit
 - push workflow branch to origin
 - update execution report and arc42 consistency
 

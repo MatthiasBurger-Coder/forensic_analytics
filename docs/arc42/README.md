@@ -32,7 +32,9 @@ The EPIC remains the product and requirement baseline. The arc42 documentation t
 
 ## Governance Check Status
 
-The three-strand agent and workflow governance model was checked for Governance Flowchart V2 workflow creation on branch `architecture/workflow-governance-flowchart-v2-20260517`.
+The three-strand agent and workflow governance model was checked and
+synchronized for Governance Flowchart V2 workflow execution on branch
+`architecture/workflow-governance-flowchart-v2-20260517`.
 
 Checked sections:
 
@@ -48,6 +50,7 @@ Checked sections:
 - Quality Requirements: checked for governance quality scenarios.
 - Risks and Technical Debt: checked for governance drift, checkpoint and push automation risks.
 - Glossary: checked for governance terms.
+- ADR-0021: added for Governance Flowchart V2.
 
 The checked workflow create end state is:
 
@@ -70,6 +73,7 @@ The agent organigramm and process-strand model are documented in:
 - `docs/process/workflow-create.md`
 - `docs/process/workflow-execute.md`
 - `docs/process/push-auto.md`
+- `docs/governance/workflow/`
 
 arc42 sections updated for agent governance:
 

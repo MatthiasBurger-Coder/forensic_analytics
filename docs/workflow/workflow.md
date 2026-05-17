@@ -390,11 +390,11 @@ Required error types:
 
 | Error type | Target role |
 |---|---|
-| `ARCH_VIOLATION` | Root Architect, Senior System Architect, Hexagonal Architecture Expert |
-| `BUILD_FAILURE` | Responsible Backend or Frontend Agent, DevOps, Build Owner |
+| `ARCH_VIOLATION` | Root Architect, Senior System Architect, `architecture-hexagonal` |
+| `BUILD_FAILURE` | Responsible Backend or Frontend Agent, Senior DevOps, `build-gradle` for Gradle-specific failures |
 | `TEST_FAILURE` | Senior Tester, Responsible Slice Agent |
-| `DOC_GOVERNANCE_FAILURE` | Documentation Governance Agent, Requirement Engineer |
-| `LOCK_CONFLICT` | Execution Orchestrator Specialist, Root Architect |
+| `DOC_GOVERNANCE_FAILURE` | Senior Documentation Engineer, Senior Requirement Engineer |
+| `LOCK_CONFLICT` | Senior Swarm Orchestrator, Root Architect |
 | `UNKNOWN_FAILURE` | Root Architect |
 
 Required flow:
@@ -403,10 +403,10 @@ Required flow:
 flowchart TD
     Q10["Q10: Quality Gate / Validation Failure"] --> R["Typed Error Router"]
     R -->|ARCH_VIOLATION| A["Root Architect / System Architect"]
-    R -->|BUILD_FAILURE| B["Build Owner / DevOps / Responsible Lead"]
+    R -->|BUILD_FAILURE| B["Responsible Lead / Senior DevOps / build-gradle"]
     R -->|TEST_FAILURE| T["Senior Tester + Responsible Slice Agent"]
-    R -->|DOC_GOVERNANCE_FAILURE| D["Documentation Governance Agent"]
-    R -->|LOCK_CONFLICT| L["Execution Orchestrator"]
+    R -->|DOC_GOVERNANCE_FAILURE| D["Senior Documentation Engineer / Senior Requirement Engineer"]
+    R -->|LOCK_CONFLICT| L["Senior Swarm Orchestrator"]
     R -->|UNKNOWN_FAILURE| X["Root Architect Escalation"]
     A --> RC{"Retry <= 3?"}
     B --> RC

@@ -13,6 +13,11 @@
 | push auto too broad | `push auto` might be interpreted as permission to publish implementation changes | Restrict `push auto` to `skills-agents` and block product implementation scopes |
 | checkpoint push confused with push auto | Slice checkpoint push might be mistaken for PR merge and cleanup authority | Document slice checkpoint push as workflow-execute-only branch push with no PR merge or cleanup |
 | unbounded governance loop | Automatic clarification or correction loops may keep cycling without a decision | Cap automatic governance loops at `maxRetries = 3` and escalate to Root Architect |
+| unclassified workflow slice executes | A slice without a verified owner might change files outside the checked workflow | Route `none of the above` to `S3_UNCLASSIFIED` and Root Architect escalation |
+| generic quality failure retry | A build, test, architecture, documentation or lock failure might be retried by the wrong role | Route failures through the Typed Error Router before retry |
+| rollback path is unclear | Failed quality gates or push failures might lead to unsafe history rewriting | Use `CP_ROLLBACK` as a decision node and forbid blind `git reset --hard` |
+| flowchart becomes unreviewable | Large diagrams can hide dead nodes, missing paths and wrong backward jumps | Maintain Level 1 overview and Level 2 subgraphs in `docs/governance/workflow/` |
+| governance role remains bootstrap-only | Root Architect and Flowchart Integrity Audit are mapped but lack dedicated artifacts | Keep bootstrap owners documented and create dedicated artifacts only through a future `skills-agents` slice |
 
 ## 11.1 Technical Debt Candidates
 
@@ -34,3 +39,4 @@
 | Slice work is lost locally | Rework after machine failure | Slice checkpoint commit and push after every successful slice |
 | Quality failure has generic ownership | Wrong role fixes the wrong cause or retries indefinitely | Typed Error Router assigns `ARCH_VIOLATION`, `BUILD_FAILURE`, `TEST_FAILURE`, `DOC_GOVERNANCE_FAILURE`, `LOCK_CONFLICT` or `UNKNOWN_FAILURE` and caps retries at `maxRetries = 3` |
 | `push auto` used too broadly | Product implementation may be merged accidentally | `S1_PUSH_ELIGIBILITY_GUARD` restricts it to `skills-agents` |
+| `workflow execute` rewrites workflow scope | Execution could hide requirement drift by changing the workflow during execution | R10 forbids automatic backward jumps to `workflow create`; unresolved scope conflicts stop and escalate |
