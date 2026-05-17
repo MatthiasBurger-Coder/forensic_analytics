@@ -32,22 +32,22 @@ The EPIC remains the product and requirement baseline. The arc42 documentation t
 
 ## Governance Check Status
 
-The three-strand agent and workflow governance model was checked on branch `architecture/workflow-align-agent-workflow-strands-20260517`.
+The three-strand agent and workflow governance model was checked for Governance Flowchart V2 workflow creation on branch `architecture/workflow-governance-flowchart-v2-20260517`.
 
 Checked sections:
 
 - Introduction and Goals: no product goal change required.
-- Architecture Constraints: updated with agent and workflow governance constraints.
+- Architecture Constraints: checked for agent and workflow governance constraints.
 - System Scope and Context: no runtime system boundary change required.
-- Solution Strategy: updated with repository governance strategy.
-- Building Block View: updated with repository governance building blocks.
-- Runtime View: updated with repository governance runtime flows.
+- Solution Strategy: checked for repository governance strategy.
+- Building Block View: checked for repository governance building blocks.
+- Runtime View: checked for repository governance runtime flows.
 - Deployment View: no deployment topology change required.
-- Crosscutting Concepts: updated with engineering governance and documentation synchronization.
-- Architecture Decisions: updated with active workflow and agent governance decisions.
-- Quality Requirements: updated with governance quality scenarios.
-- Risks and Technical Debt: updated with governance drift, checkpoint and push automation risks.
-- Glossary: updated with governance terms.
+- Crosscutting Concepts: checked for engineering governance and documentation synchronization.
+- Architecture Decisions: checked for active workflow and agent governance decisions.
+- Quality Requirements: checked for governance quality scenarios.
+- Risks and Technical Debt: checked for governance drift, checkpoint and push automation risks.
+- Glossary: checked for governance terms.
 
 The checked workflow create end state is:
 
@@ -83,4 +83,4 @@ arc42 sections updated for agent governance:
 - Risks and Technical Debt
 - Glossary
 
-Current documentation branch: `docs/arc42-agent-organigramm-governance-20260517`.
+Current workflow branch: `architecture/workflow-governance-flowchart-v2-20260517`.
