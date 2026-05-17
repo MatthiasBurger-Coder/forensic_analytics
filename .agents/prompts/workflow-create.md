@@ -4,6 +4,31 @@ Use when the user writes `workflow create`.
 
 Read-only verification, requirement intake, routing-rule inspection and role selection may occur before branch creation. Mutating workflow creation must not.
 
+## Requirement Clarification Loop
+
+Before authoring or regenerating `docs/workflow/workflow.md`, run the requirement clarification loop from `docs/process/workflow-create.md` and `.agents/skills/three-amigos-requirement-gatekeeper/SKILL.md`.
+
+Record:
+
+- Original Request
+- Interpreted Intent
+- Change Type
+- Affected Process Strand
+- Affected Architecture Area
+- Explicit Requirements
+- Implicit Requirements
+- Assumptions
+- Non-Goals
+- Risks
+- Open Questions
+- Blocking Questions
+- Confidence Level
+- Decision: `READY_FOR_WORKFLOW`, `PROCEED_WITH_ACCEPTED_ASSUMPTIONS` or `REQUIRES_REFINEMENT`
+
+Ask focused clarification questions when blocking questions remain. Do not create a final workflow and do not release `workflow execute` while blocking questions remain.
+
+`workflow create` must use five mandatory roles: Senior Requirement Engineer, Senior System Architect, Senior Java Backend Developer, Senior React Frontend Developer and Senior Tester.
+
 ## Required Branch-First Flow
 
 1. Load root `AGENTS.md`.
@@ -53,6 +78,7 @@ git branch --show-current
     matches the workflow branch.
 16. Create or regenerate workflow artifacts only after successful branch verification.
 17. Build slices, role ownership, quality gates and stop conditions through the workflow-authoring skill.
+18. Validate that `docs/workflow/workflow.md` and checked or updated `docs/arc42/**` documentation exist before releasing `workflow execute`.
 
 For microservice migration workflows, record the Three Amigos decision before
 workflow authoring continues. The decision must include scope, non-scope,
@@ -81,6 +107,9 @@ Stop when:
 - the active branch after checkout does not match the expected workflow branch;
 - workflow rules conflict and cannot be resolved from repository sources;
 - creating or modifying workflow artifacts would happen on `main`, `master`, `develop`, or another shared branch.
+- blocking requirement questions remain;
+- `docs/workflow/workflow.md` cannot be validated;
+- arc42 documentation cannot be checked or updated.
 
 Use this stop report:
 

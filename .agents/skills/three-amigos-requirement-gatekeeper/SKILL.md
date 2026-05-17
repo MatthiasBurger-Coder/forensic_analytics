@@ -75,13 +75,17 @@ Load these files only when needed:
 - `templates/acceptance-template.md` when acceptance criteria are missing or incomplete.
 - `examples/forensic-analytics-example.md` for a compact example output.
 
-## Three Amigos Review
+## Five-Role Three Amigos Review
 
-Run the review from three perspectives:
+Run the review through five mandatory roles:
 
-- Requirement Analyst: business goal, technical goal, scope, non-goals, assumptions, affected systems and acceptance criteria.
-- Architecture Validator: hexagonal boundaries, service ownership, API contracts, database ownership, evidence semantics, deployment impact and rollback strategy.
-- Quality Validator: testability, regression coverage, ArchUnit or coverage needs, deterministic outputs, quality commands and documentation impact.
+- Senior Requirement Engineer: target, scope, non-goals, acceptance criteria, assumptions, open questions and confidence level.
+- Senior System Architect: architecture boundaries, arc42, service boundaries, plugin-vs-analytics boundary, governance risks and planned-vs-implemented status.
+- Senior Java Backend Developer: backend impact, ports, adapters, domain, JUnit 6 testability, Spring wiring impact and microservice consequences.
+- Senior React Frontend Developer: frontend impact, UX flows, React components, state, API adapters and build or test consequences.
+- Senior Tester: testability, regression, quality gates, acceptance criteria and slice acceptance.
+
+Classic labels such as Requirement Analyst, Architecture Validator and Quality Validator may be used as additional perspectives. They do not replace the five mandatory roles.
 
 Add a Dependency / Deadlock Validator pass when the request contains multiple slices, services, subagents, shared files, shared APIs, orchestration steps, queues, workers or rollout dependencies.
 
@@ -152,10 +156,16 @@ READY_FOR_WORKFLOW
 or
 
 ```text
+PROCEED_WITH_ACCEPTED_ASSUMPTIONS
+```
+
+or
+
+```text
 REQUIRES_REFINEMENT
 ```
 
-Use `READY_FOR_WORKFLOW` only when:
+Use `READY_FOR_WORKFLOW` only when confidence is at least 90 percent and:
 
 - the business goal and technical goal are explicit
 - scope and non-goals are clear
@@ -166,9 +176,12 @@ Use `READY_FOR_WORKFLOW` only when:
 - slice dependencies are acyclic
 - parallelization groups have disjoint write scopes and stable contracts
 - quality commands are verified from `QUALITY.md` or repository build files
-- unresolved uncertainty is either absent or documented as a blocker-free assumption accepted by the user
+- no blocking questions remain
+- unresolved uncertainty is absent
 
-Use `REQUIRES_REFINEMENT` when any requirement, ownership, API, quality command, architecture impact, evidence semantic, dependency edge or acceptance criterion would require guessing.
+Use `PROCEED_WITH_ACCEPTED_ASSUMPTIONS` only when confidence is from 70 to 89 percent and every remaining assumption is non-blocking, documented and accepted.
+
+Use `REQUIRES_REFINEMENT` when confidence is below 70 percent, any blocking question remains, or any requirement, ownership, API, quality command, architecture impact, evidence semantic, dependency edge or acceptance criterion would require guessing.
 
 Draft slices may be included with `REQUIRES_REFINEMENT` only when they are clearly labeled provisional and used to explain dependency or ownership questions. Do not present provisional slices as executable workflow slices.
 
@@ -184,6 +197,7 @@ Stop with `REQUIRES_REFINEMENT` when:
 - microservice service boundary, contract impact, test impact, risk level or forbidden changes are unclear;
 - acceptance criteria are missing or not testable;
 - API contracts or message semantics are unclear;
+- architecture boundaries, testability, data ownership, service boundaries, APIs, contracts, runtime behavior or scope are unclear;
 - rollback strategy is missing when the change affects deployable behavior or persisted state;
 - required skills, roles or callable subagents cannot be verified;
 - slice dependencies are cyclic or file ownership overlaps without handoff rules;

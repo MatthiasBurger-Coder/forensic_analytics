@@ -35,6 +35,8 @@ A ready requirement must contain:
 - requirement classification
 - EPIC traceability status
 - active workflow relationship, when an active workflow exists
+- confidence level
+- blocking questions status
 
 For microservice migration work, a ready requirement must also contain:
 
@@ -112,6 +114,8 @@ A slice may run in parallel only if:
 ## Decision Rules
 
 Return `READY_FOR_WORKFLOW` only when the gate report contains no blockers and the next safe action is workflow authoring.
+
+Return `PROCEED_WITH_ACCEPTED_ASSUMPTIONS` only when confidence is from 70 to 89 percent, every remaining assumption is documented, non-blocking and accepted, and the next safe action is workflow authoring with those assumptions recorded.
 
 Return `REQUIRES_REFINEMENT` when any blocker remains. Include precise questions or missing artifacts needed to unblock the gate.
 

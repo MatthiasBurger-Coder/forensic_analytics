@@ -11,6 +11,41 @@ Create executable, repository-specific workflows that preserve `AGENTS.md`, `QUA
 
 This skill governs workflow creation. It does not implement runtime business functionality.
 
+## Requirement Clarification Gate
+
+Before workflow authoring, run the `workflow create` requirement clarification loop.
+
+Record:
+
+- Original Request
+- Interpreted Intent
+- Change Type
+- Affected Process Strand
+- Affected Architecture Area
+- Explicit Requirements
+- Implicit Requirements
+- Assumptions
+- Non-Goals
+- Risks
+- Open Questions
+- Blocking Questions
+- Confidence Level
+- Decision: `READY_FOR_WORKFLOW`, `PROCEED_WITH_ACCEPTED_ASSUMPTIONS` or `REQUIRES_REFINEMENT`
+
+Confidence greater than or equal to 90 percent may be `READY_FOR_WORKFLOW` when no blocking questions remain. Confidence from 70 to 89 percent may be `PROCEED_WITH_ACCEPTED_ASSUMPTIONS` only when every assumption is non-blocking and documented. Confidence below 70 percent is `REQUIRES_REFINEMENT`.
+
+Blocking questions prevent final workflow authoring and release for `workflow execute`.
+
+`workflow create` must use five mandatory roles:
+
+- Senior Requirement Engineer
+- Senior System Architect
+- Senior Java Backend Developer
+- Senior React Frontend Developer
+- Senior Tester
+
+Classic labels such as Requirement Analyst, Architecture Validator and Quality Validator are optional perspectives. They do not replace the five mandatory roles.
+
 ## Mandatory Branch-First Rule
 
 Every workflow creation must start by ensuring a dedicated Git branch for that workflow exists and is active.
@@ -83,10 +118,16 @@ Do not partially overwrite old slices. Do not keep stale workflow files unless t
 
 Every workflow should include:
 
+- Executive Summary
+- Target Picture
 - verified baseline
 - target outcome
+- Scope
 - explicit non-goals
 - architecture constraints
+- Backend Assessment
+- Frontend Assessment
+- Test Strategy
 - resilience requirements
 - ordered slices
 - slice dependency graph
@@ -97,6 +138,14 @@ Every workflow should include:
 - stop conditions
 - uncertainty escalation rules
 - commit and push plan when requested
+- Definition of Done
+- Handoff to workflow execute
+- arc42 Check Status
+
+Workflow creation is complete only when both of these artifacts have been checked:
+
+1. complete checked `docs/workflow/workflow.md`
+2. checked or updated `docs/arc42/**` documentation
 
 ## Slice Rules
 
@@ -162,6 +211,9 @@ Stop and report if:
 - resilience expectations are unclear
 - quality-gate authority is unclear
 - planned file paths cannot be verified
+- blocking requirement questions remain
+- `docs/workflow/workflow.md` cannot be validated
+- arc42 documentation cannot be checked or updated
 - continuing would require guessing governance decisions
 
 ## Expected Outputs
