@@ -44,8 +44,8 @@ the current state.
 | REST API | `forensic-analytics-rest` | JDK HTTP server adapter |
 | Persistence | `forensic-analytics-persistence` | In-memory stores and repositories |
 | Docker | `docker/boot-app`, `docker/joern`, `forensic-ui/Dockerfile` | Existing container material, not a service ecosystem |
-| Service roots | `services/` | Not present |
-| External contracts root | `contracts/` | Not present |
+| Service roots | `services/` | Six registered service projects and three README-only planned service roots |
+| External contracts root | `contracts/` | Present with gRPC, OpenAPI and event contract documentation |
 | Deployment roots | `deployment/`, Kubernetes, Swarm, Helm roots | Not present |
 
 ## Current Gradle Modules
@@ -134,8 +134,6 @@ Verified existing deployment-related material:
 
 Missing target material:
 
-- `services/**`
-- `contracts/**`
 - `deployment/docker-compose/**`
 - `deployment/docker-swarm/**`
 - `deployment/kubernetes/**`
@@ -158,18 +156,16 @@ The current repository has limited platform-level runtime evidence:
 
 The current repository does not have verified per-service:
 
-- Spring Boot applications;
-- service-local domain models;
-- service-local ports and adapters;
-- service-local tests;
-- service-local Dockerfiles and READMEs;
-- health checks;
-- OpenAPI contracts;
-- event contracts;
 - service-private databases;
 - Docker Compose service landscape;
 - Docker Swarm or Kubernetes deployment manifests.
 
-Future slices must treat current service names as planned targets until each
-service has build, start, test, configuration, healthcheck, container and
-deployment evidence.
+The six registered service projects have service-local READMEs, tests and
+Dockerfiles where verified in `services/**`. Gateway, graph-replay and
+report-generation remain README-only planned roots. Health check and production
+runtime readiness evidence remains incomplete unless a service-specific README
+states otherwise.
+
+Future slices must treat README-only service roots as planned targets. Registered
+service projects still need explicit start, healthcheck, orchestration and
+deployment evidence before production readiness is claimed.

@@ -84,8 +84,9 @@ currently prove service-to-service API boundaries.
 
 `forensic-analytics-persistence` implements application ports with in-memory
 stores and repositories. It shares application and domain models in-process.
-There is no verified independent analysis-store service or service-owned
-durable database yet.
+An independent `analysis-store-service` project now exists for job lifecycle
+and artifact metadata service behavior. A service-owned durable database is not
+verified yet.
 
 ### Observability And Logging
 
@@ -103,7 +104,8 @@ operational contracts without shared runtime code.
 contains in-process mini end-to-end and architecture tests. These tests verify
 the current modular monolith, not networked service boundaries.
 
-Contract and integration tests for services do not exist yet.
+Contract and architecture tests exist for implemented service slices, but
+networked integration coverage is not complete for the whole target landscape.
 
 ## Current Hexagonal Boundary Evidence
 
@@ -130,11 +132,13 @@ The following current couplings block microservice claims:
 - current modules share Java domain and application code;
 - current candidates share in-memory persistence implementations;
 - the existing gRPC proto is stored inside a Java implementation module;
-- no external `contracts/` area exists;
-- no OpenAPI or event contract files were verified;
+- external `contracts/` exists, but not every planned service interaction has
+  complete contract-test coverage;
+- OpenAPI and event contract files exist, but not every planned interaction is
+  implemented or tested;
 - no service-private persistence ownership exists;
 - no per-service health checks exist;
-- no service-local Dockerfiles, READMEs, tests or configuration exist;
+- gateway, graph-replay and report-generation remain README-only planned roots;
 - no Docker Swarm or Kubernetes manifests exist;
 - no service-specific CI workflow exists.
 

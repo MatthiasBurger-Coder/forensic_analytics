@@ -75,14 +75,14 @@ The Boot app can be packaged with:
 
 The Docker baseline lives under `docker/boot-app/`. It copies only the generated Boot jar, defines `/var/lib/forensic-analytics/workspaces` as the workspace volume and does not define an Actuator healthcheck because no accepted health endpoint exists yet.
 
-## 7.6 Future Microservice Deployment Boundaries
+## 7.6 Microservice Deployment Boundaries
 
-ADR-0017 defines the active target service landscape. Future microservice
-extraction must keep every service independently deployable. Each service must
-own its Spring Boot application, Dockerfile, health checks, configuration,
-tests and service-local domain model.
+ADR-0017 defines the active target service landscape. Microservice extraction
+must keep every service independently deployable. Each service must own its
+Spring Boot application, Dockerfile, health checks, configuration, tests and
+service-local domain model before production readiness is claimed.
 
-The planned service roots are:
+The target service roots are:
 
 ```text
 services/forensic-gateway-service

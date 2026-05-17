@@ -22,7 +22,13 @@ Microservice governance is documented in [architecture/microservice-governance.m
 
 ## Modules
 
-The current platform direction is server-bound repository analysis. Plugins trigger analysis on the Forensic Analytics server; Analytics prepares workspaces, checks out repositories, runs parser/Joern/BTM capabilities server-side and returns the artifacts needed by clients.
+The current platform direction supports two Analytics-owned input paths:
+server-side repository analysis and producer-supplied artifact package
+ingestion. Plugins trigger analysis on the Forensic Analytics server or submit
+producer-packaged artifacts as provenance-bearing inputs; Analytics prepares
+workspaces, checks out repositories when required, runs parser/Joern/BTM
+capabilities server-side where owned by the platform and returns the artifacts
+needed by clients.
 
 The current implementation baseline contains the technical modules for ingestion, server-side repository analysis preparation and local bootstrap/test scenarios:
 
@@ -170,8 +176,8 @@ When runtime debugging requires instrumentation, Analytics owns BTM generation f
 The current architecture baseline is derived from:
 
 - EPIC: Forensics Platform - Exception-centered Runtime Replay and LLM-assisted Error Analysis
-- Version: 0.1
-- Date: 2026-05-03
+- Version: 0.2
+- Date: 2026-05-17
 
 ## Core Vision
 

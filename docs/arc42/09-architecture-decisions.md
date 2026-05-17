@@ -32,9 +32,9 @@
 
 | ID | Open Decision | Notes |
 |---|---|---|
-| OD-001 | Initial relational database | Not selected in EPIC v0.1 |
-| OD-002 | Initial Graph DB | Not selected in EPIC v0.1 |
-| OD-003 | Initial Vector DB | Not selected in EPIC v0.1 |
+| OD-001 | Initial relational database | Not selected in EPIC v0.2 |
+| OD-002 | Initial Graph DB | Not selected in EPIC v0.2 |
+| OD-003 | Initial Vector DB | Not selected in EPIC v0.2 |
 | OD-004 | Runtime ingestion mode | JSONL likely for MVP, HTTP collector later |
 | OD-005 | Runtime value storage policy | Needs redaction rule model |
 | OD-006 | Initial LLM provider | Must remain replaceable |

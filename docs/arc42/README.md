@@ -7,8 +7,8 @@ This directory contains the arc42-based architecture documentation for the Foren
 This documentation is based on the EPIC:
 
 - Name: Forensics Platform - Exception-Centered Runtime Replay and LLM-Assisted Failure Analysis
-- Version: 0.1
-- Date: 2026-05-03
+- Version: 0.2
+- Date: 2026-05-17
 - Status: Draft
 
 ## Sections
@@ -34,7 +34,11 @@ The EPIC remains the product and requirement baseline. The arc42 documentation t
 
 The three-strand agent and workflow governance model was checked and
 synchronized for Governance Flowchart V2 workflow execution on branch
-`architecture/workflow-governance-flowchart-v2-20260517`.
+`architecture/workflow-governance-flowchart-v2-20260517`. That branch is now
+historical governance context.
+
+The current checked workflow is the EPIC v0.2 alignment workflow on branch
+`docs/workflow-forensics-tracing-analytics-epic-alignment-20260516`.
 
 Checked sections:
 
@@ -87,4 +91,5 @@ arc42 sections updated for agent governance:
 - Risks and Technical Debt
 - Glossary
 
-Current workflow branch: `architecture/workflow-governance-flowchart-v2-20260517`.
+Current workflow branch:
+`docs/workflow-forensics-tracing-analytics-epic-alignment-20260516`.
