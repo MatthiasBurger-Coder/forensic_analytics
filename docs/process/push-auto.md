@@ -60,6 +60,17 @@ Outcome meanings:
 `PUB_PUSH` must not point to itself. `PUB_PUSH_FAILED` is a controlled
 publication outcome with a rollback or escalation handoff.
 
+## CP_ROLLBACK Boundary
+
+`CP_ROLLBACK` is a rollback or revert decision node for the active workflow
+branch. It may select a current-slice file revert, one slice-commit revert, a
+new fix slice, branch discard with explicit approval, manual workflow recut or
+Root Architect escalation.
+
+`CP_ROLLBACK` is not `push auto`, does not authorize force-push, does not run
+branch cleanup, does not create or merge a PR and must not be implemented as
+blind `git reset --hard`.
+
 ## Allowed Review Scope
 
 `push auto` may consider only these areas:

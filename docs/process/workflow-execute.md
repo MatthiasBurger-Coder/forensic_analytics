@@ -178,6 +178,44 @@ If the branch push fails, record the outcome as `PUB_PUSH_FAILED`. Route to
 to the Root Architect. Do not retry indefinitely, force-push, create a PR, run
 `push auto` or jump back to `workflow create`.
 
+## Commit, Checkpoint And Rollback
+
+The checkpoint subgraph is explicit:
+
+```mermaid
+flowchart TD
+  QG_START["QG_START"] --> QG_PASS{"Quality Gate passed?"}
+  QG_PASS -->|yes| CP_RECORD["CP_RECORD: Record slice result"]
+  QG_PASS -->|no| QG_STOP["QG_STOP: Stop execution"]
+  QG_STOP --> CP_ROLLBACK["CP_ROLLBACK: Rollback / Revert Decision"]
+  CP_RECORD --> CP_COMMIT["CP_COMMIT: Commit exact slice"]
+  CP_COMMIT --> CP_PUSH["CP_PUSH: Push or prepare publication"]
+  CP_PUSH -->|success| CP_FINAL["CP_FINAL"]
+  CP_PUSH -->|failed| CP_ROLLBACK
+  CP_FINAL --> CMD_PUSH["CMD_PUSH"]
+  CP_FINAL --> RELEASE["RELEASE"]
+  CP_FINAL --> Q11["Q11: Async Execution Report"]
+  CP_ROLLBACK --> RA["Root Architect Decision"]
+```
+
+`QG_STOP` is the stop state after an unrecovered or blocked quality gate. It
+does not create a commit. `CP_FINAL` is not a dead terminal; it may continue to
+an explicit `CMD_PUSH`, `RELEASE` preparation or the non-blocking `Q11` async
+execution report path when those paths are authorized.
+
+`CP_ROLLBACK` is a decision node, not a command. It may choose:
+
+- revert current-slice file changes
+- revert one slice commit
+- create a new fix slice
+- discard the branch with explicit approval
+- recommend manual workflow recut
+- escalate to the Root Architect
+
+`CP_ROLLBACK` must not be documented or executed as blind `git reset --hard`,
+force-push, hidden history rewrite, branch cleanup or automatic `workflow
+create` rerun.
+
 Not allowed:
 
 - no commit when the slice quality gate failed

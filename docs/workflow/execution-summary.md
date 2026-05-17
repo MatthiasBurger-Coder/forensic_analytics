@@ -62,6 +62,7 @@ Resolution: the user request defines these as target Governance Flowchart V2 sem
 | 05 | Completed | Added Typed Error Router mapping for quality-gate and validation failures, owner routing, `maxRetries = 3` retry cap, Root Architect escalation for unknown or exhausted failures and S3-only targeted fix loops. |
 | 06 | Completed | Mapped S3D as the workflow-execute Execution Orchestrator with explicit slice metadata, dependency graph source of truth, topological ordering, parallelization groups, conflict locks and `LOCK_CONFLICT` routing. |
 | 07 | Completed | Cleaned publication outcomes: no `PUB_PUSH` self-reference, normal `push` ends in `PUB_PR_RESULT`, successful completion uses `PUB_DONE`, failures use `PUB_PUSH_FAILED`, and governance rejections use `PUB_REJECTED`. |
+| 08 | Completed | Added commit/checkpoint/rollback governance: `QG_STOP` and failed `CP_PUSH` route to `CP_ROLLBACK`, `CP_FINAL` has `CMD_PUSH`, `RELEASE` and `Q11` outgoing paths, and rollback forbids blind `git reset --hard`. |
 
 ## Slice 01 Branch Governance Evidence
 

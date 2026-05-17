@@ -118,6 +118,15 @@ flowchart TD
   Runtime["Docker / Runtime Strand"]
   Docs["Documentation Strand"]
   Gate["Slice Quality Gate"]
+  QG_STOP["QG_STOP: Stop execution"]
+  CP_RECORD["CP_RECORD: Record slice result"]
+  CP_COMMIT["CP_COMMIT: Commit exact slice"]
+  CP_PUSH["CP_PUSH: Push or prepare publication"]
+  CP_FINAL["CP_FINAL"]
+  CP_ROLLBACK["CP_ROLLBACK: Rollback / Revert Decision"]
+  CMD_PUSH["CMD_PUSH"]
+  RELEASE["RELEASE"]
+  Q11["Q11: Async Execution Report"]
   Router["Typed Error Router"]
   ArchFailure["ARCH_VIOLATION"]
   BuildFailure["BUILD_FAILURE"]
@@ -128,9 +137,6 @@ flowchart TD
   Retry{"Retry <= 3?"}
   Fix["Targeted Fix Slice"]
   Escalate["Root Architect Escalation"]
-  Commit["Slice Checkpoint Commit"]
-  Push["Push Workflow Branch"]
-  Final["Final Workflow Execute Gate"]
 
   Status -->|clean| Branch
   Status -->|dirty working tree| StopStatus
@@ -155,17 +161,28 @@ flowchart TD
   Frontend --> Gate
   Runtime --> Gate
   Docs --> Gate
-  Gate -->|passed| Commit --> Push --> Final
+  Gate -->|passed| CP_RECORD --> CP_COMMIT --> CP_PUSH
+  CP_PUSH -->|success| CP_FINAL
+  CP_PUSH -->|failed| CP_ROLLBACK
+  CP_FINAL --> CMD_PUSH
+  CP_FINAL --> RELEASE
+  CP_FINAL --> Q11
+  CP_ROLLBACK --> RootArchitect
   Gate -->|failed| Router
   Router --> ArchFailure --> Retry
   Router --> BuildFailure --> Retry
   Router --> TestFailure --> Retry
   Router --> DocFailure --> Retry
   Router --> LockFailure --> Retry
-  Router --> UnknownFailure --> Escalate
+  Router --> UnknownFailure --> QG_STOP
   Retry -->|yes| Fix --> Gate
-  Retry -->|no| Escalate
+  Retry -->|no| QG_STOP
+  QG_STOP --> CP_ROLLBACK
 ```
+
+Unrecovered quality-gate failures reach `QG_STOP` and then `CP_ROLLBACK`.
+`CP_FINAL` continues only to explicit `CMD_PUSH`, `RELEASE` or non-blocking
+`Q11` reporting paths.
 
 ## Publication Modes
 

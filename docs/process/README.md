@@ -36,6 +36,9 @@ Publication outcomes are explicit:
 - `PUB_PUSH_FAILED`: push failed and routes to rollback or escalation.
 - `PUB_REJECTED`: governance, scope, branch or guard rejection.
 
+Rollback is governed through `CP_ROLLBACK`; it is a decision node and must not
+be treated as blind `git reset --hard`.
+
 Slice checkpoint push is not `push auto`.
 `push` is not `push auto`.
 `skills update` is not `push auto`.

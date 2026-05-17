@@ -106,9 +106,9 @@ These labels are introduced by the Governance Flowchart V2 workflow and must be 
 | `DOC_GOVERNANCE_FAILURE` | Typed Error Router category | Mapped by Slice 05 in workflow-execute, routing rules and quality-gate governance |
 | `LOCK_CONFLICT` | Typed Error Router category | Mapped by Slice 05 in workflow-execute, routing rules and quality-gate governance |
 | `UNKNOWN_FAILURE` | Typed Error Router category | Mapped by Slice 05 in workflow-execute, routing rules and quality-gate governance |
-| CP | Commit, checkpoint and rollback subgraph | Introduced by workflow, not yet implemented outside `docs/workflow` |
-| `CP_ROLLBACK` | Rollback and revert decision node | Introduced by workflow, not yet implemented outside `docs/workflow` |
-| `CP_FINAL` | Post-checkpoint continuation node | Introduced by workflow, not yet implemented outside `docs/workflow` |
+| CP | Commit, checkpoint and rollback subgraph | Mapped by Slice 08 in workflow-execute, branch and agent governance |
+| `CP_ROLLBACK` | Rollback and revert decision node | Mapped by Slice 08 as explicit rollback decision with safe options |
+| `CP_FINAL` | Post-checkpoint continuation node | Mapped by Slice 08 with outgoing `CMD_PUSH`, `RELEASE` and `Q11` paths |
 | PUB | Publication-mode subgraph | Mapped by Slice 07 in process and agent publication governance |
 | `PUB_PR_RESULT` | PR-open terminal for normal push path | Mapped by Slice 07 as normal `push` outcome without automatic merge |
 | `PUB_DONE` | Publication completed terminal | Mapped by Slice 07 as verified checkpoint or merge completion |

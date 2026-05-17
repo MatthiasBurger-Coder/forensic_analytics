@@ -52,6 +52,29 @@ A successful checkpoint branch push is `PUB_DONE`. A failed checkpoint branch
 push is `PUB_PUSH_FAILED` and must route to `CP_ROLLBACK` when a rollback point
 exists, otherwise to Root Architect escalation.
 
+Checkpoint governance uses this control flow:
+
+```mermaid
+flowchart TD
+  QG_START["QG_START"] --> QG_PASS{"Quality Gate passed?"}
+  QG_PASS -->|yes| CP_RECORD["CP_RECORD"]
+  QG_PASS -->|no| QG_STOP["QG_STOP"]
+  QG_STOP --> CP_ROLLBACK["CP_ROLLBACK"]
+  CP_RECORD --> CP_COMMIT["CP_COMMIT: Commit exact slice"]
+  CP_COMMIT --> CP_PUSH["CP_PUSH"]
+  CP_PUSH -->|success| CP_FINAL["CP_FINAL"]
+  CP_PUSH -->|failed| CP_ROLLBACK
+  CP_FINAL --> CMD_PUSH["CMD_PUSH"]
+  CP_FINAL --> RELEASE["RELEASE"]
+  CP_FINAL --> Q11["Q11: Async Execution Report"]
+  CP_ROLLBACK --> RA["Root Architect Decision"]
+```
+
+`CP_ROLLBACK` chooses between current-slice file revert, one slice-commit
+revert, a new fix slice, branch discard with explicit approval, manual workflow
+recut or Root Architect escalation. It is not blind `git reset --hard`, a
+force-push, branch cleanup or hidden history rewrite.
+
 It must not:
 
 - create or merge a PR
