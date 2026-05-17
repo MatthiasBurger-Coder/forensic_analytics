@@ -22,11 +22,11 @@ these router types before retry or escalation:
 
 | Error type | Owner |
 |---|---|
-| `ARCH_VIOLATION` | Root Architect, Senior System Architect, Hexagonal Architecture Expert |
-| `BUILD_FAILURE` | responsible Backend or Frontend Agent, Senior DevOps, Build Owner |
+| `ARCH_VIOLATION` | Root Architect, Senior System Architect, `architecture-hexagonal` |
+| `BUILD_FAILURE` | responsible Backend or Frontend Agent, Senior DevOps, `build-gradle` for Gradle-specific failures |
 | `TEST_FAILURE` | Senior Tester, responsible Slice Agent |
-| `DOC_GOVERNANCE_FAILURE` | Documentation Governance Agent, Requirement Engineer |
-| `LOCK_CONFLICT` | Execution Orchestrator Specialist, Root Architect |
+| `DOC_GOVERNANCE_FAILURE` | Senior Documentation Engineer, Requirement Engineer |
+| `LOCK_CONFLICT` | Senior Swarm Orchestrator, Root Architect |
 | `UNKNOWN_FAILURE` | Root Architect |
 
 `UNKNOWN_FAILURE` is a valid classification only when the cause cannot be

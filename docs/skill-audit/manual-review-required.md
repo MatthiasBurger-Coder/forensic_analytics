@@ -31,12 +31,14 @@ Two non-blocking dedicated-artifact gaps remain documented:
 Create these dedicated artifacts only through a future `skills-agents` slice or
 an explicit workflow that authorizes new role or skill creation.
 
-## Missing Paths
+## Historical Missing Paths
 
-The following requested inspection paths were absent:
+The following requested inspection paths were absent during the original skill
+audit:
 
 - root `README.md`
 - root `workflow.md`
-- `docs/workflow/`
 
-No substitute content was invented for these paths.
+No substitute content was invented for these paths. `docs/workflow/` now exists
+as the active Governance Flowchart V2 workflow documentation package and is
+covered by `docs/skill-audit/governance-flowchart-v2-linkage.md`.

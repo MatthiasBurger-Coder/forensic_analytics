@@ -240,10 +240,13 @@ flowchart TD
   PUB_GUARD -->|"rejected"| PUB_REJECTED
   PUB_PUSH -->|"push rejected"| PUB_PUSH_FAILED
   PUB_MERGE --> PUB_DONE
-  PUB_PR_RESULT --> PUB_DONE
   PUB_PUSH_FAILED --> CP_ROLLBACK
   PUB_REJECTED --> RA
 ```
+
+`PUB_PR_RESULT` is the terminal for an open PR without automatic merge.
+`PUB_DONE` is reserved for a verified checkpoint publication completion,
+automatic merge, or explicitly completed publication path.
 
 ## DOC Documentation Governance
 

@@ -122,7 +122,7 @@ flowchart TD
   Backend["Backend Strand"]
   Frontend["Frontend Strand"]
   Runtime["Docker / Runtime Strand"]
-  Docs["S3_DOC: Documentation Strand"]
+  Docs["S3_DOC: Documentation path inside workflow execute"]
   Gate["D8: Blocking Slice Quality Gate"]
   QG_STOP["QG_STOP: Stop execution"]
   CP_RECORD["CP_RECORD: Record slice result"]

@@ -95,8 +95,8 @@ typed ownership before any retry or fix attempt starts:
 flowchart TD
   Q10["Q10: Quality Gate / Validation Failure"] --> R["Typed Error Router"]
   R -->|ARCH_VIOLATION| A["Root Architect / Senior System Architect / architecture-hexagonal"]
-  R -->|BUILD_FAILURE| B["Responsible Backend or Frontend Agent / Senior DevOps / build-gradle"]
-  R -->|TEST_FAILURE| T["Senior Tester / Responsible Slice Agent"]
+  R -->|BUILD_FAILURE| B["Slice-assigned Backend or Frontend Agent / Senior DevOps / build-gradle"]
+  R -->|TEST_FAILURE| T["Senior Tester / slice-assigned implementation agent"]
   R -->|DOC_GOVERNANCE_FAILURE| D["Senior Documentation Engineer / Senior Requirement Engineer"]
   R -->|LOCK_CONFLICT| L["Senior Swarm Orchestrator / Root Architect"]
   R -->|UNKNOWN_FAILURE| X["Root Architect Escalation"]
@@ -116,8 +116,8 @@ The router categories are:
 | Error type | Target role |
 |---|---|
 | `ARCH_VIOLATION` | Root Architect, Senior System Architect, `architecture-hexagonal` |
-| `BUILD_FAILURE` | responsible Backend or Frontend Agent, Senior DevOps, `build-gradle` for Gradle-specific failures |
-| `TEST_FAILURE` | Senior Tester, responsible Slice Agent |
+| `BUILD_FAILURE` | slice-assigned Backend or Frontend Agent, Senior DevOps, `build-gradle` for Gradle-specific failures |
+| `TEST_FAILURE` | Senior Tester, slice-assigned implementation agent |
 | `DOC_GOVERNANCE_FAILURE` | Senior Documentation Engineer, Senior Requirement Engineer |
 | `LOCK_CONFLICT` | Senior Swarm Orchestrator, Root Architect |
 | `UNKNOWN_FAILURE` | Root Architect |

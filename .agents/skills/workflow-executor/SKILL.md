@@ -145,7 +145,7 @@ Keep these strands separate while executing workflow slices:
 - Backend Strand
 - Frontend Strand
 - Docker / Runtime Strand
-- Documentation Strand
+- S3_DOC documentation path inside workflow execute
 
 Backend work routes through Senior Java Backend Developer, Microservice Senior Expert, `architecture-hexagonal`, `testing-junit6`, `spring-core` when Spring wiring is affected, and Senior DevOps with `devops-docker` when container readiness is affected.
 
@@ -158,11 +158,11 @@ starting any retry or targeted fix:
 
 | Error type | Route to |
 |---|---|
-| `ARCH_VIOLATION` | Root Architect, Senior System Architect, `architecture-hexagonal` or Hexagonal Architecture Expert |
-| `BUILD_FAILURE` | responsible Backend or Frontend Agent, Senior DevOps, Build Owner mapping |
+| `ARCH_VIOLATION` | Root Architect, Senior System Architect, `architecture-hexagonal` |
+| `BUILD_FAILURE` | responsible Backend or Frontend Agent, Senior DevOps, `build-gradle` for Gradle-specific failures |
 | `TEST_FAILURE` | Senior Tester and responsible Slice Agent |
-| `DOC_GOVERNANCE_FAILURE` | Documentation Governance Agent or Senior Documentation Engineer, Requirement Engineer |
-| `LOCK_CONFLICT` | Senior Swarm Orchestrator or Workflow Executor, Root Architect |
+| `DOC_GOVERNANCE_FAILURE` | Senior Documentation Engineer, Requirement Engineer |
+| `LOCK_CONFLICT` | Senior Swarm Orchestrator, Workflow Executor, Root Architect |
 | `UNKNOWN_FAILURE` | Root Architect escalation |
 
 Every failure report must include the error type, owner, retry count, next
