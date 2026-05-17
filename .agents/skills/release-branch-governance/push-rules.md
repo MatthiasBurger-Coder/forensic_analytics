@@ -11,6 +11,14 @@ Push requires:
 - PR or release expectations known;
 - no secrets or sensitive data in diff.
 
+Push readiness is governed by `D8`. Failed build, tests, architecture
+validation, required documentation, workflow version or required quality gates
+block push readiness.
+
+`Q11` execution reporting is non-blocking by default for normal push and PR
+creation. Regulatory or compliance reporting blocks only when the active
+workflow explicitly declares it as a D8 requirement.
+
 ## Publication Modes
 
 There are three separate publication modes:

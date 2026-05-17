@@ -293,6 +293,12 @@ It does not create or merge a PR, does not clean up branches and must not force-
 
 Do not create a pull request, merge a pull request, delete remote branches, delete local branches, run git-clean, push to `main`, run `push auto`, or force-push.
 
+The required commit-readiness decision is `D8` for workflow-execute checkpoint
+commits. D8 blocks commit and push when build, tests, architecture validation,
+required documentation, workflow version or a required quality gate fails or is
+missing. Q11 execution-report notes are non-blocking by default and must not be
+used to approve a failed D8 result.
+
 For workflow-execute checkpoint commits:
 
 - commit exactly one slice;

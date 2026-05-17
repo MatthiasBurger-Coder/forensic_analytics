@@ -54,3 +54,11 @@ Return:
 - `BLOCKED` when required checks fail or cannot be verified;
 - `NOT_COMMIT_READY` when checks are deferred by documented execution scope;
 - `NON_BLOCKING_NOTE` only for optional, unavailable or not-applicable checks.
+
+Map required-check decisions to `D8`. A `BLOCKED` D8 result stops commit,
+checkpoint push and release readiness.
+
+Map asynchronous execution-report findings to `Q11`. A Q11 finding is
+non-blocking by default and may not downgrade a failed required check to a
+non-blocking note. Regulatory or compliance reporting may block only when the
+active workflow explicitly declares it as part of D8.

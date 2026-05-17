@@ -64,6 +64,7 @@ Resolution: the user request defines these as target Governance Flowchart V2 sem
 | 07 | Completed | Cleaned publication outcomes: no `PUB_PUSH` self-reference, normal `push` ends in `PUB_PR_RESULT`, successful completion uses `PUB_DONE`, failures use `PUB_PUSH_FAILED`, and governance rejections use `PUB_REJECTED`. |
 | 08 | Completed | Added commit/checkpoint/rollback governance: `QG_STOP` and failed `CP_PUSH` route to `CP_ROLLBACK`, `CP_FINAL` has `CMD_PUSH`, `RELEASE` and `Q11` outgoing paths, and rollback forbids blind `git reset --hard`. |
 | 09 | Completed | Added workflow-version and commit-traceability governance: `CP_RECORD` fields, one-slice-one-commit enforcement, workflow history artifact and commit-message requirements now align across process docs, prompts and commit-governance skills. |
+| 10 | Completed | Separated D8 and Q11: D8 is the synchronous blocking gate for build, tests, architecture, required docs, workflow version and required quality gates; Q11 is asynchronous and non-blocking by default unless regulatory reporting is explicitly promoted to D8. |
 
 ## Active Workflow Version
 

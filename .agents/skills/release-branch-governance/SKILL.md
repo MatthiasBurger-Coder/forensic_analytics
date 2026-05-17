@@ -25,6 +25,17 @@ This skill governs release readiness. It does not stage, commit, push or merge b
 
 Release & Branch Governance may block workflow branch readiness, commit, push or release readiness when branch context, changed-file ownership, quality evidence or commit message content is incomplete.
 
+## D8 And Q11 Boundary
+
+`D8` is the synchronous gate for commit, push and release readiness. Failed
+builds, failed tests, architecture violations, missing required documentation,
+missing workflow version and failed required quality gates block readiness.
+
+`Q11` is the asynchronous execution report path. Q11 does not block commit,
+push, PR creation or release preparation by default. Regulatory or compliance
+reporting blocks only when the active workflow explicitly declares that report
+as a D8 requirement.
+
 ## Forbidden
 
 - Do not commit without required quality gate evidence.

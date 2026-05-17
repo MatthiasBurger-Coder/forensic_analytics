@@ -32,6 +32,8 @@
 - Stage explicit files only.
 - Do not stage unrelated user-owned changes.
 - Do not commit with failed required gates.
+- Treat workflow-execute commit readiness as `D8`; failed build, tests, architecture validation, required documentation, workflow version or required quality gates block the commit.
+- Q11 report notes are non-blocking by default and must not override a failed D8 result.
 - Do not include generated or cache output unless explicitly required.
 - A workflow-execute checkpoint commit must represent exactly one slice.
 - Do not combine multiple slice IDs in one checkpoint commit.

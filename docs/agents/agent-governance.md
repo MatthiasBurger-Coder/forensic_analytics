@@ -177,7 +177,7 @@ flowchart TD
   Frontend["Frontend Strand"]
   Runtime["Docker / Runtime Strand"]
   Docs["Documentation Strand"]
-  Gate["Slice Quality Gate"]
+  Gate["D8: Blocking Slice Quality Gate"]
   QG_STOP["QG_STOP: Stop execution"]
   CP_RECORD["CP_RECORD: Record slice result"]
   CP_COMMIT["CP_COMMIT: Commit exact slice"]
@@ -250,6 +250,11 @@ execution scope, are capped at `maxRetries = 3` and must not jump back to
 Unrecovered quality-gate failures reach `QG_STOP` and then `CP_ROLLBACK`.
 `CP_FINAL` continues only to explicit `CMD_PUSH`, `RELEASE` or non-blocking
 `Q11` reporting paths.
+
+`D8` is the synchronous blocking gate for commit, checkpoint push and release
+readiness. `Q11` is asynchronous and non-blocking by default. Regulatory or
+compliance reporting blocks only when the active workflow explicitly declares
+that report as part of D8.
 
 ## Publication Modes
 

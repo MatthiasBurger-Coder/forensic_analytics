@@ -32,15 +32,22 @@ git status --short --branch
 16. Assign subagents or role reviews.
 17. Use Agent Handoff Protocol for owner changes and parallel work.
 18. Run required quality gates.
-19. After each successful slice, create the `CP_RECORD` defined by
+19. Evaluate the required quality decision as `D8`; D8 blocks commit,
+   checkpoint push and release readiness on failed build, failed tests,
+   architecture violation, missing required documentation, missing workflow
+   version or failed required quality gate.
+20. After each successful slice, create the `CP_RECORD` defined by
    `docs/process/workflow-execute.md` with workflow version, slice ID, slice
    title, responsible agent, changed files, quality-gate commands,
    quality-gate result, rollback reference, arc42 update status and ADR update
    status.
-20. Run the slice checkpoint push defined by `docs/process/workflow-execute.md`.
-21. After `CP_COMMIT` succeeds, record the actual commit hash and push result.
-22. Produce a summary with exact validation evidence.
-23. Commit or push only when the workflow explicitly allows it and required gates are clean.
+21. Run the slice checkpoint push defined by `docs/process/workflow-execute.md`.
+22. After `CP_COMMIT` succeeds, record the actual commit hash and push result.
+23. Route asynchronous execution-report findings through `Q11`; Q11 is
+   non-blocking by default unless the workflow explicitly declares a regulatory
+   or compliance reporting gate as part of D8.
+24. Produce a summary with exact validation evidence.
+25. Commit or push only when the workflow explicitly allows it and required gates are clean.
 
 ## Stop Conditions
 
@@ -56,6 +63,7 @@ Stop when:
 - S3D cannot verify slice metadata, dependency order or conflict locks;
 - handoff rules are missing for parallel work;
 - required quality gates fail or cannot be verified;
+- D8 fails or cannot be verified;
 - commit or push is requested without workflow permission.
 - slice checkpoint push would include files outside the current slice;
 - slice checkpoint push would push to `main`, create or merge a PR, run `push auto`, run branch cleanup or force-push.

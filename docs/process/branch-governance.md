@@ -96,6 +96,16 @@ adrUpdated
 `pending`; the post-commit checkpoint report must replace or supplement it with
 the actual hash and push result.
 
+`D8` is the blocking gate for checkpoint commit and release readiness. It blocks
+commit or release when build, tests, architecture validation, required
+documentation, workflow versioning or any required quality gate fails or is
+missing.
+
+`Q11` is the asynchronous execution report after `CP_FINAL`. It is
+non-blocking by default and must not block checkpoint push, normal PR creation
+or release preparation unless the active workflow explicitly promotes a
+regulatory or compliance report to a `D8` requirement.
+
 It must not:
 
 - create or merge a PR

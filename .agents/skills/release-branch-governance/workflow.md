@@ -26,6 +26,10 @@ Require quality result evidence from Quality Gate Orchestrator or `QUALITY.md`.
 
 Failed required gates block commit and push.
 
+This phase is the `D8` readiness decision for workflow-execute commit, push and
+release preparation. Q11 reporting notes are non-blocking by default and must
+not override a failed D8 result.
+
 ## Phase 4 - Prepare Commit Readiness
 
 Commit readiness requires:

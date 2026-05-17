@@ -184,17 +184,24 @@ For each slice:
 4. Apply only the changes authorized by the slice.
 5. Run targeted tests first.
 6. Run the required quality checks from `QUALITY.md` or the workflow.
-7. Inspect `git diff` and `git diff --check`.
-8. Document the result in the workflow quality log or the workflow-designated location.
-9. When the slice quality gate passed, stage only files changed by the current slice.
-10. Run `git diff --cached --check`.
-11. Create the slice-scoped checkpoint commit.
-12. Push the current workflow branch to `origin`.
-13. Record the workflow version, slice ID, slice title, responsible agent,
+7. Treat the required quality decision as `D8`. Failed build, failed tests,
+   architecture violation, missing required documentation, missing workflow
+   version or failed required quality gate blocks commit, checkpoint push and
+   release readiness.
+8. Inspect `git diff` and `git diff --check`.
+9. Document the result in the workflow quality log or the workflow-designated location.
+10. When the slice quality gate passed, stage only files changed by the current slice.
+11. Run `git diff --cached --check`.
+12. Create the slice-scoped checkpoint commit.
+13. Push the current workflow branch to `origin`.
+14. Record the workflow version, slice ID, slice title, responsible agent,
     changed files, quality-gate commands, quality-gate result, commit SHA,
     rollback reference, arc42 update status, ADR update status and push result
     in the execution report.
-14. Continue with the next slice only when the current slice is clean, the checkpoint push succeeded, or the workflow explicitly permits carrying a documented blocker without a commit.
+15. Route asynchronous execution-report notes through `Q11`; Q11 is
+    non-blocking by default unless the active workflow explicitly declares a
+    regulatory or compliance report as a D8 requirement.
+16. Continue with the next slice only when the current slice is clean, the checkpoint push succeeded, or the workflow explicitly permits carrying a documented blocker without a commit.
 
 Slice checkpoint push is not `push auto`. It must not create or merge a PR, run branch cleanup, force-push or push to `main`.
 

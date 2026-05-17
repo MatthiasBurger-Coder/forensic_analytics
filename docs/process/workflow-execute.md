@@ -216,6 +216,31 @@ execution report path when those paths are authorized.
 force-push, hidden history rewrite, branch cleanup or automatic `workflow
 create` rerun.
 
+## D8 And Q11 Reporting Boundary
+
+`D8` is the synchronous blocking decision before `CP_RECORD`, `CP_COMMIT`,
+`CP_PUSH`, `CMD_PUSH` or `RELEASE`.
+
+`D8` blocks when any required evidence is missing or failed:
+
+- failed build
+- failed tests
+- architecture violation
+- missing required documentation
+- missing workflow version
+- failed required quality gate from `QUALITY.md` or the active workflow
+
+`Q11` is the asynchronous execution-report path after `CP_FINAL`. By default it
+does not block commit, checkpoint push, normal PR creation or release
+preparation. `Q11` may record delayed reporting issues, missing optional report
+details or follow-up notes, but it must not be used to reclassify a failed `D8`
+gate as non-blocking.
+
+Regulatory, compliance or audit reporting may block only when the active
+workflow explicitly declares that reporting gate as part of `D8`. Without that
+explicit declaration, report publication belongs to `Q11` and remains
+non-blocking by default.
+
 ## Workflow Versioning And CP_RECORD Traceability
 
 The active workflow version for a `workflow execute` run is the checked workflow
