@@ -41,6 +41,17 @@ Use these rules to select roles for a slice. Prefer the smallest set that covers
 - Performance budgets, large repository metrics, timeouts, quotas or scalability testing route to `roles/senior-performance-engineer.md`.
 - Analysis-session storage, raw ingestion storage, artifact storage or projection boundaries route to `roles/senior-analysis-storage-architect.md`.
 - Joern, Code Property Graph, semantic artifact handling or CPG large-project planning route to `roles/senior-joern-cpg-specialist.md`.
+- Root Architect escalation routes through the documented Root Architect
+  decision path and `roles/senior-system-architect.md` until a dedicated
+  Root Architect role file exists.
+- Rollback governance routes to `skills/release-branch-governance/SKILL.md`,
+  `skills/git-commit-preparation/SKILL.md` and `roles/senior-devops.md`.
+- Quality gate classification routes to
+  `skills/quality-gate-orchestrator/SKILL.md`, `skills/quality-gate/SKILL.md`
+  and `roles/senior-tester.md`.
+- Flowchart integrity audit routes to `roles/senior-documentation-engineer.md`
+  and `roles/senior-system-architect.md` using the review rules in
+  `docs/governance/workflow/README.md` until a dedicated skill exists.
 
 ## Escalation
 

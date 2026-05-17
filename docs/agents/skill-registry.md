@@ -70,3 +70,19 @@ Must not change:
 | Testing Documentation Maintainer | `workflow execute` | Senior Tester | keep test strategy and quality-gate evidence |
 | Execution Report Maintainer | `workflow execute` | Workflow Executor | record workflow version, slice ID, responsible agent, changed files, quality gates, commit SHA, rollback reference, documentation update status, push result and blockers |
 | Commit Traceability Maintainer | `workflow execute` | Senior Documentation Engineer / Workflow Executor | keep `CP_RECORD` fields, one-slice-one-commit evidence and workflow history synchronized |
+
+## Governance Flowchart V2 Capability Linkage
+
+| Capability | Owner or source | Status |
+|---|---|---|
+| Root Architect Escalation | Senior System Architect via Root Architect decision path | MAPPED_WITH_GAP: no dedicated `.agents/roles/root-architect.md` exists |
+| Typed Error Routing | Workflow Executor, Quality Gate Orchestrator, routing rules | VERIFIED |
+| Execution Orchestration | Senior Swarm Orchestrator, S3D, Agent Swarm Coordination Specialist | VERIFIED |
+| Conflict Locking | Senior Swarm Orchestrator, S3D, Workflow Executor | VERIFIED |
+| Rollback Governance | Release and Branch Governance, Git Commit Preparation, Senior DevOps | VERIFIED |
+| Documentation Governance | Senior Documentation Engineer, Documentation Sync, `DOCROOT` | VERIFIED |
+| Quality Gate Classification | Senior Tester, Quality Gate Orchestrator, Quality Gate skill | VERIFIED |
+| Flowchart Integrity Audit | Senior Documentation Engineer and Senior System Architect using `docs/governance/workflow/` rules | MAPPED_WITH_GAP: no dedicated flowchart-integrity skill exists |
+
+Detailed evidence is recorded in
+[`../skill-audit/governance-flowchart-v2-linkage.md`](../skill-audit/governance-flowchart-v2-linkage.md).

@@ -60,6 +60,7 @@ The governance update added reusable workflow, requirement, arc42 and engineerin
 - [manual-review-required.md](manual-review-required.md)
 - [skill-inventory.md](skill-inventory.md)
 - [microservice-skill-sharpening-audit.md](microservice-skill-sharpening-audit.md)
+- [governance-flowchart-v2-linkage.md](governance-flowchart-v2-linkage.md)
 
 ## Three-Strand Governance Addendum
 

@@ -143,11 +143,22 @@ These labels are introduced by the Governance Flowchart V2 workflow and must be 
 | Workflow-create artifacts collide with `push auto` | Branches containing `docs/workflow/**` use normal `push` or workflow-execute slice checkpoint push, not `push auto`. |
 | Later slices infer target files from descriptive names | Slice 00 records concrete candidate target paths; later slices must stop if a target artifact cannot be verified. |
 
-## Open Governance Gaps For Slice 14
+## Governance Gaps Resolved Or Classified By Slice 14
 
-- Dedicated Root Architect role file is not present.
-- Dedicated Flowchart Integrity Audit skill is not present.
-- Typed Error Router is mapped into workflow-execute and quality-gate governance; a dedicated standalone skill remains a Slice 14 linkage decision.
-- Conflict Locking is mapped into S3D orchestration; a dedicated standalone skill remains a Slice 14 linkage decision.
+Slice 14 records the capability linkage evidence in
+`docs/skill-audit/governance-flowchart-v2-linkage.md`.
 
-These gaps are documented and are not blockers for workflow creation because the user request defines the target semantics and Slice 14 owns the linkage decision.
+- Dedicated Root Architect role file is not present. This is classified as
+  `MAPPED_WITH_GAP`; Root Architect escalation uses the documented Root
+  Architect decision path and Senior System Architect ownership until a future
+  `skills-agents` slice creates a dedicated role.
+- Dedicated Flowchart Integrity Audit skill is not present. This is classified
+  as `MAPPED_WITH_GAP`; Senior Documentation Engineer and Senior System
+  Architect own the review through `docs/governance/workflow/` rules until a
+  future `skills-agents` slice creates a dedicated skill.
+- Typed Error Router is verified through workflow-execute, routing rules and
+  quality-gate governance.
+- Conflict Locking is verified through S3D orchestration, workflow-execute and
+  swarm coordination governance.
+
+No blocking linkage conflict remains for workflow execution.

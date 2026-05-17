@@ -14,6 +14,23 @@ Manual review must keep the three process strands separate:
 
 Manual review is required if `push auto` would include files outside the `skills-agents` governance scope.
 
+## Governance Flowchart V2 Linkage
+
+No unresolved blocking governance conflicts remain after the Slice 14 linkage
+audit.
+
+Two non-blocking dedicated-artifact gaps remain documented:
+
+- No dedicated `.agents/roles/root-architect.md` file exists. Root Architect
+  escalation currently uses the documented Root Architect decision path with
+  Senior System Architect ownership.
+- No dedicated flowchart-integrity audit skill exists. Flowchart integrity is
+  currently governed by the Senior Documentation Engineer and Senior System
+  Architect using the review rules in `docs/governance/workflow/`.
+
+Create these dedicated artifacts only through a future `skills-agents` slice or
+an explicit workflow that authorizes new role or skill creation.
+
 ## Missing Paths
 
 The following requested inspection paths were absent:
