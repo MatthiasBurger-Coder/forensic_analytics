@@ -8,10 +8,16 @@ No unresolved governance conflicts remain from adding the engineering governance
 
 ## Missing Paths
 
-The following requested inspection paths were absent:
+The following requested inspection paths were absent during the original audit:
 
 - root `README.md`
 - root `workflow.md`
 - `docs/workflow/`
 
 No substitute content was invented for these paths.
+
+Current state: `docs/workflow/**` now exists. Under the three-strand governance
+model, only checked `docs/workflow/workflow.md` plus checked or updated arc42
+documentation can start `workflow execute`; older sidecars remain historical
+supporting material unless a later workflow explicitly migrates or archives
+them.

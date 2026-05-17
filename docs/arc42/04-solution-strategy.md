@@ -42,3 +42,23 @@ The following items are explicitly postponed:
 - Full Vector DB integration
 - Production-ready multi-tenant architecture
 - Complete graph UI with all layers
+
+## 4.5 Repository Governance Strategy
+
+Agent, skill and workflow automation is governed outside the Forensics Platform
+runtime. The repository uses three separated process strands:
+`skills-agents`, `workflow create` and `workflow execute`.
+
+The strategy is:
+
+1. Keep skill and agent lifecycle changes in the `skills-agents` strand with
+   registry, organigramm, documentation and `push auto` guard checks.
+2. Keep `workflow create` as a branch-first planning strand that produces
+   checked `docs/workflow/workflow.md` and checked or updated arc42
+   documentation.
+3. Keep `workflow execute` as the only strand that implements a checked
+   workflow, with backend, frontend, Docker/runtime and documentation work
+   classified separately.
+4. Keep governance artifacts separate from forensic evidence. They may guide
+   implementation work, but they do not create runtime facts, analysis evidence
+   or product behavior by themselves.

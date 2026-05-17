@@ -94,7 +94,8 @@ Generate only a gate-level slice outline:
 
 When the decision is `REQUIRES_REFINEMENT`, slice outlines are provisional only and must name the missing decision, contract or ownership point that prevents execution.
 
-Do not create or regenerate `docs/workflow` here. Route that work to `workflow-authoring` after a `READY_FOR_WORKFLOW` decision.
+Do not create or update checked `docs/workflow/workflow.md` here. Route that
+work to `workflow-authoring` after a `READY_FOR_WORKFLOW` decision.
 
 ## Inspection Depth Rule
 

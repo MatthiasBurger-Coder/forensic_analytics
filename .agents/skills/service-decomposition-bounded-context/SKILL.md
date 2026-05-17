@@ -63,7 +63,7 @@ Inspect the relevant subset of:
 
 - root `AGENTS.md`
 - root `QUALITY.md`
-- active `docs/workflow/**`
+- checked `docs/workflow/workflow.md` when workflow work is relevant
 - `docs/adr/**`, especially service, contract and data ownership ADRs
 - `docs/arc42/**`
 - `docs/workplan/**` when referenced by the workflow

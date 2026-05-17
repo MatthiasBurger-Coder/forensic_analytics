@@ -66,7 +66,7 @@ Inspect the relevant subset of:
 
 - root `AGENTS.md`
 - root `QUALITY.md`
-- active `docs/workflow/**`
+- checked `docs/workflow/workflow.md` when workflow work is relevant
 - `docs/adr/**` for API, compatibility and service-boundary decisions
 - REST/OpenAPI files when present
 - protobuf files when present

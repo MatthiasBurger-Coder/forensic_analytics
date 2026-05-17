@@ -96,14 +96,16 @@ Require:
 
 ### Workflow Consistency
 
-- Dedicated workflow branch created, checked out and verified before any workflow artifact is created or modified: `workflow.md`, `docs/workflow/**`, workplans, slice definitions, workflow-specific documentation changes, implementation tasks or write-capable agent assignments.
+- Dedicated workflow branch created, checked out and verified before any workflow planning artifact is created or modified.
 - Working tree checked before branch creation; unrelated or unclear uncommitted changes stop workflow creation.
 - Detached or unclear branch state and unresolved local or remote branch-name collisions stop workflow creation.
 - No workflow creation or implementation work runs on `main`, `master`, `develop` or another shared branch.
-- `docs/workflow` deleted before new workflow generation, unless the user explicitly asks to preserve an existing workflow.
-- Full workflow structure regenerated.
-- No stale slices remain.
-- Dependencies, parallelization, stop conditions and verification commands are explicit.
+- `workflow create` produces checked `docs/workflow/workflow.md` plus checked or updated `docs/arc42/**`.
+- `workflow create` does not implement backend, frontend, Docker/runtime or analytics product code.
+- Historical or sidecar workflow files do not replace the checked `docs/workflow/workflow.md`.
+- Dependencies, parallelization, stop conditions and verification commands are explicit in `docs/workflow/workflow.md`.
+- `workflow execute` starts only from checked `docs/workflow/workflow.md` and checked or updated arc42 documentation.
+- `push auto` is restricted to the `skills-agents` strand.
 
 ### Resilience Consistency
 

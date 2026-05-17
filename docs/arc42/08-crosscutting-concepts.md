@@ -96,3 +96,25 @@ Automatic method logging records method operation names, phases, durations, corr
 Spring Boot is a server bootstrap and adapter wiring concern. It may configure outer modules and lifecycle adapters, but it must not become a domain or application dependency.
 
 The accepted Boot boundary preserves ADR-0005. Spring-specific method logging, MDC propagation, SLF4J bindings, AspectJ weaving and concrete logging providers require a separate architecture decision before they can be introduced. Boot-scoped REST behavior follows ADR-0007 and initially wraps the existing JDK REST adapter instead of adding Spring MVC or WebFlux.
+
+## 8.10 Engineering Governance And Documentation Synchronization
+
+Engineering governance is a crosscutting repository concern. It keeps
+`AGENTS.md`, `QUALITY.md`, skills, roles, prompts, Codex agents, process
+documentation, workflow artifacts, ADR references and arc42 documentation
+consistent.
+
+The governance model has exactly three process strands:
+
+- `skills-agents`
+- `workflow create`
+- `workflow execute`
+
+Documentation Governance participates in every strand. A strand is not complete
+until its registry, organigramm, process, workflow, arc42 or execution-report
+documentation duty is complete.
+
+Governance artifacts guide agent work but do not create forensic evidence. They
+must not invent runtime facts, analysis facts, service behavior or product
+capabilities. Planned behavior must remain distinct from implemented behavior,
+and unresolved uncertainty must remain visible.

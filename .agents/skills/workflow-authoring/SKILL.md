@@ -1,6 +1,6 @@
 ---
 name: workflow-authoring
-description: Use for creating or regenerating the current project workflows with verified baselines, executable slices, dependency ordering, subagent ownership, architecture constraints, resilience requirements, quality gates, stop conditions, and full docs/workflow lifecycle control.
+description: Use for creating or sharpening the current project `workflow create` output with verified baselines, executable slices, dependency ordering, subagent ownership, architecture constraints, resilience requirements, quality gates, stop conditions, checked `docs/workflow/workflow.md`, and checked or updated arc42 documentation.
 ---
 
 # Skill: Workflow Authoring
@@ -9,17 +9,22 @@ description: Use for creating or regenerating the current project workflows with
 
 Create executable, repository-specific workflows that preserve `AGENTS.md`, `QUALITY.md`, architecture governance, requirement traceability and evidence integrity.
 
-This skill governs workflow creation. It does not implement runtime business functionality.
+This skill governs the `workflow create` strand. It does not implement runtime business functionality, backend features, frontend features, Docker/runtime code, analytics engine code or product behavior.
+
+`workflow create` has exactly two checked end artifacts:
+
+1. `docs/workflow/workflow.md`
+2. checked or updated `docs/arc42/**` documentation
 
 ## Mandatory Branch-First Rule
 
 Every workflow creation must start by ensuring a dedicated Git branch for that workflow exists and is active.
 
-For a new workflow this means creating and checking out a workflow branch before mutating workflow artifacts. If the current branch already exactly matches the current workflow, verify it before continuing.
+For a new workflow this means creating and checking out a workflow branch before mutating workflow planning artifacts. If the current branch already exactly matches the current workflow, verify it before continuing.
 
 Read-only verification, requirement intake, routing-rule inspection, and role selection may occur before branch creation. Mutating workflow creation must not.
 
-This rule applies before any workflow artifact is created or modified: `workflow.md`, `docs/workflow/**`, workplans, slice definitions, workflow-specific documentation changes, implementation tasks, or write-capable agent assignments.
+This rule applies before any workflow planning artifact is created or modified, including `docs/workflow/workflow.md`, arc42 workflow-impact sections, workflow-specific planning notes, slice definitions or write-capable agent assignments.
 
 Required order:
 
@@ -31,8 +36,10 @@ Required order:
 6. Checkout the workflow branch, or verify the existing matching workflow branch.
 7. Verify that the local branch ref exists.
 8. Verify the active branch.
-9. Create or regenerate workflow artifacts only after successful branch verification.
-10. Continue with slices, subagents, quality gates, commits, and optional push.
+9. Run the Three Amigos Requirement Gate before authoring executable slices.
+10. Create or sharpen `docs/workflow/workflow.md` only after successful branch verification.
+11. Check and update arc42 documentation when affected.
+12. Validate both checked outputs before releasing the workflow for `workflow execute`.
 
 Default branch naming:
 
@@ -43,7 +50,7 @@ docs/workflow-<short-topic>-<yyyyMMdd>
 architecture/workflow-<short-topic>-<yyyyMMdd>
 ```
 
-Never create or modify workflow artifacts on `main`, `master`, `develop`, or any shared branch. If branch creation, checkout or verification fails, stop and report the reason instead of continuing in the current branch.
+Never create or modify workflow planning artifacts on `main`, `master`, `develop`, or any shared branch. If branch creation, checkout or verification fails, stop and report the reason instead of continuing in the current branch.
 
 Branch verification after creation or checkout must include both:
 
@@ -61,42 +68,44 @@ Read before authoring or regenerating a workflow:
 1. User request.
 2. Root `AGENTS.md`.
 3. Root `QUALITY.md`.
-4. Existing `docs/workflow` if present.
+4. Existing `docs/workflow/workflow.md` if present.
 5. Relevant EPIC files under `docs/epics`.
 6. Relevant `docs/arc42` and `docs/adr` files.
 7. Relevant `.agents/skills` and `.agents/roles` files.
 8. Build or CI files only when quality-gate behavior is affected.
 
-## Workflow Regeneration Rule
+## Workflow Output Rule
 
-Before creating a new workflow:
+Before creating or sharpening a workflow:
 
 1. Verify the repository root and the absolute target path.
 2. Verify that the dedicated workflow branch exists and is active.
-3. Delete `docs/workflow` completely, unless the user explicitly asks to preserve an existing workflow.
-4. Recreate `docs/workflow`.
-5. Regenerate the full workflow structure.
+3. Create or update `docs/workflow/workflow.md` as the checked workflow artifact.
+4. Check every relevant arc42 section and update `docs/arc42/**` when affected.
+5. Record the arc42 check status in `docs/workflow/workflow.md`.
 
-Do not partially overwrite old slices. Do not keep stale workflow files unless the user explicitly asks to archive them outside the active workflow.
+Do not delete historical or sidecar workflow files unless the task explicitly asks to archive or migrate them. Supporting sidecars are not the completion criteria for `workflow create`; executable scope must be consolidated into `docs/workflow/workflow.md`.
 
 ## Workflow Structure
 
 Every workflow should include:
 
-- verified baseline
-- target outcome
-- explicit non-goals
-- architecture constraints
-- resilience requirements
-- ordered slices
-- slice dependency graph
-- parallelization opportunities
-- role or subagent ownership map
-- quality-gate expectations from `QUALITY.md`
-- documentation synchronization points
-- stop conditions
-- uncertainty escalation rules
-- commit and push plan when requested
+- Executive Summary
+- Target Picture
+- Scope
+- Non-Goals
+- Architecture Boundaries
+- Backend Assessment
+- Frontend Assessment
+- Test Strategy
+- Slice Structure
+- Subagent Assignment
+- Quality Gates
+- Definition of Done
+- Handoff to `workflow execute`
+- arc42 Check Status
+
+The arc42 Check Status must record inspected sections, updated sections or `no update required`, reviewer or role, date, branch and unresolved drift.
 
 ## Slice Rules
 
@@ -130,6 +139,8 @@ Assign roles by verified responsibility:
 - workflow creation and dependency ordering: Senior Workflow Architect
 - requirement and EPIC drift: Senior Requirement Engineer
 - architecture boundaries and arc42: Senior System Architect or arc42 governance
+- backend impact assessment: Senior Java Backend Developer
+- frontend impact assessment: Senior React Frontend Developer
 - documentation consistency: Senior Documentation Engineer
 - quality verification: Senior Tester or quality-gate skills
 - branch, commit and push readiness: git commit preparation skills
@@ -154,7 +165,9 @@ Stop and report if:
 - the branch name collides with an existing local or remote branch and no clear unique suffix can be chosen
 - the dedicated workflow branch cannot be created, checked out, verified as a local ref, or verified as active
 - the active branch is `main`, `master`, `develop`, or another shared branch when workflow files would be created
-- `docs/workflow` cannot be safely deleted and regenerated
+- `docs/workflow/workflow.md` cannot be completed
+- arc42 cannot be checked or updated from verified evidence
+- authoring would require backend, frontend, Docker/runtime or analytics implementation
 - architecture conflicts are unclear
 - EPIC contradicts implementation and the source of truth is unclear
 - multiple active workflows conflict
@@ -166,9 +179,10 @@ Stop and report if:
 
 ## Expected Outputs
 
-- fully regenerated `docs/workflow`
-- ordered slice plan
-- dependency graph or dependency summary
-- role ownership map
-- verification plan
+- checked `docs/workflow/workflow.md`
+- checked or updated `docs/arc42/**`
+- ordered slice plan inside `docs/workflow/workflow.md`
+- dependency graph or dependency summary inside `docs/workflow/workflow.md`
+- role ownership map inside `docs/workflow/workflow.md`
+- verification plan inside `docs/workflow/workflow.md`
 - documented assumptions and unresolved conflicts

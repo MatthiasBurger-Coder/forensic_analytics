@@ -124,3 +124,48 @@ worker or future Gateway
 This path supports job submission, leasing, progress, completion, failure,
 listing and artifact metadata registration. It does not yet ingest normalized
 fact bodies, runtime trace facts, incidents or correlation indexes.
+
+## 6.9 Repository Governance Runtime Flows
+
+These flows describe repository process execution by Codex agents. They are not
+Forensics Platform runtime evidence flows.
+
+### workflow create
+
+```text
+User requirement
+  -> read-only repository verification
+  -> branch collision check
+  -> dedicated workflow branch verification
+  -> Three Amigos Requirement Gate
+  -> checked docs/workflow/workflow.md
+  -> checked or updated docs/arc42
+  -> release for workflow execute
+```
+
+### workflow execute
+
+```text
+workflow execute
+  -> load checked docs/workflow/workflow.md
+  -> load checked or updated docs/arc42
+  -> verify workflow branch
+  -> verify worktree state
+  -> role/subagent review
+  -> strand-classified slice execution
+  -> slice quality gate
+  -> final workflow execute gate
+```
+
+### skills-agents push auto
+
+```text
+skills-agents change
+  -> skill integrity check
+  -> registry and organigramm check
+  -> documentation check
+  -> changed-file guard
+  -> push auto eligibility
+```
+
+`push auto` stops when product implementation files are present.

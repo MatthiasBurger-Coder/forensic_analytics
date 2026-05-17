@@ -6,14 +6,16 @@ Read the authoritative sources before classifying conflicts:
 
 1. `AGENTS.md`
 2. `QUALITY.md`
-3. active `docs/workflow/**`
-4. `.agents/orchestrator/**`
-5. `.agents/skills/**`
-6. `.agents/roles/**`
-7. `.codex/AGENTS.md`
-8. `.codex/skills/**`
-9. `.codex/agents/**`
-10. `docs/adr/**`
+3. checked `docs/workflow/workflow.md` when workflow work is relevant
+4. `docs/agents/**`
+5. `docs/process/**`
+6. `.agents/orchestrator/**`
+7. `.agents/skills/**`
+8. `.agents/roles/**`
+9. `.codex/AGENTS.md`
+10. `.codex/skills/**`
+11. `.codex/agents/**`
+12. `docs/adr/**`
 
 ## Phase 2 - Build Registry
 

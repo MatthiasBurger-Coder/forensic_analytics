@@ -4,6 +4,13 @@ Use when the user writes `workflow create`.
 
 Read-only verification, requirement intake, routing-rule inspection and role selection may occur before branch creation. Mutating workflow creation must not.
 
+`workflow create` is a planning and documentation strand. It must not implement
+backend, frontend, Docker/runtime or analytics product code. It is complete only
+when both checked outputs exist:
+
+1. `docs/workflow/workflow.md`
+2. checked or updated `docs/arc42/**` documentation
+
 ## Required Branch-First Flow
 
 1. Load root `AGENTS.md`.
@@ -51,13 +58,45 @@ git branch --show-current
 
 15. Continue only when the local branch ref exists and the active branch exactly
     matches the workflow branch.
-16. Create or regenerate workflow artifacts only after successful branch verification.
-17. Build slices, role ownership, quality gates and stop conditions through the workflow-authoring skill.
+16. Create or sharpen `docs/workflow/workflow.md` only after successful branch verification.
+17. Check and update arc42 documentation when the workflow affects architecture.
+18. Validate both checked outputs before release for `workflow execute`.
+19. Build slices, role ownership, quality gates and stop conditions through the workflow-authoring skill.
 
-For microservice migration workflows, record the Three Amigos decision before
-workflow authoring continues. The decision must include scope, non-scope,
-acceptance criteria, service boundary, contract impact, test impact, risk level
-and stop conditions.
+Before workflow authoring continues, record a Three Amigos decision with these
+roles:
+
+- Senior Requirement Engineer
+- Senior System Architect
+- Senior Java Backend Developer
+- Senior React Frontend Developer
+- Senior Tester
+
+For microservice migration workflows, the decision must include scope,
+non-scope, acceptance criteria, service boundary, contract impact, data
+ownership impact, test impact, risk level and stop conditions.
+
+## Required docs/workflow/workflow.md Sections
+
+`docs/workflow/workflow.md` must include:
+
+- Executive Summary
+- Target Picture
+- Scope
+- Non-Goals
+- Architecture Boundaries
+- Backend Assessment
+- Frontend Assessment
+- Test Strategy
+- Slice Structure
+- Subagent Assignment
+- Quality Gates
+- Definition of Done
+- Handoff to `workflow execute`
+- arc42 Check Status
+
+The arc42 check status must record inspected sections, updated sections or
+`no update required`, reviewer or role, date, branch and unresolved drift.
 
 ## Subagent Rules
 
@@ -80,7 +119,10 @@ Stop when:
 - the workflow branch ref cannot be verified after creation or checkout;
 - the active branch after checkout does not match the expected workflow branch;
 - workflow rules conflict and cannot be resolved from repository sources;
-- creating or modifying workflow artifacts would happen on `main`, `master`, `develop`, or another shared branch.
+- creating or modifying workflow planning artifacts would happen on `main`, `master`, `develop`, or another shared branch;
+- backend, frontend, Docker/runtime or analytics implementation would be required;
+- `docs/workflow/workflow.md` cannot be completed;
+- arc42 cannot be checked or updated from verified evidence.
 
 Use this stop report:
 

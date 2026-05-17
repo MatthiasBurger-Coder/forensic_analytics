@@ -95,6 +95,28 @@ The Workflow Executor executes approved slices. It must not be the sole authorit
 
 The Senior System Architect owns architecture governance and may block architecture-sensitive workflows. The Three Amigos Requirement Gatekeeper is the intake gate for new or changed requirements. The Skill Registry & Conflict Auditor is the governance control for skill overlap, conflicting ownership and incompatible workflow rules.
 
+## Mandatory Process Strands
+
+Repository agent work is organized into exactly three process strands:
+
+1. `skills-agents`
+2. `workflow create`
+3. `workflow execute`
+
+The strands must not be mixed. Shared governance roles such as Senior System Architect, Documentation Governance, Skill Registry Maintainer, Organigramm Maintainer, Process Governance Maintainer and Push Auto Guard execute inside the active strand and must apply that strand's file scope, quality gate and documentation duty.
+
+The `skills-agents` strand is the only strand that may use `push auto`. `push auto` must not publish backend, frontend, Docker/runtime, gRPC, REST, persistence, analysis-engine, Joern, JavaParser, BTM generator or product implementation changes.
+
+The process model, organigramm and registry are documented in:
+
+1. `docs/process/README.md`
+2. `docs/process/skill-agent-creation.md`
+3. `docs/process/workflow-create.md`
+4. `docs/process/workflow-execute.md`
+5. `docs/process/push-auto.md`
+6. `docs/agents/organigramm.md`
+7. `docs/agents/skill-registry.md`
+
 ## Mandatory Workflow Creation Command
 
 When the user writes exactly:
@@ -103,7 +125,16 @@ When the user writes exactly:
 workflow create
 ```
 
-Codex must ensure a dedicated Git branch for the new workflow exists and is active before creating or modifying workflow artifacts: `workflow.md`, `docs/workflow/**`, workplans, slice definitions, workflow-specific documentation changes, implementation tasks, or write-capable agent assignments for that workflow.
+Codex must ensure a dedicated Git branch for the new workflow exists and is active before creating or modifying workflow planning artifacts.
+
+`workflow create` is a requirements, architecture, planning and documentation strand. It must not implement product backend, frontend, Docker/runtime or analytics code.
+
+The required checked outputs are:
+
+1. a complete checked `docs/workflow/workflow.md`,
+2. checked or updated arc42 documentation under `docs/arc42/**`.
+
+Supporting sidecar files under `docs/workflow/**` are not completion criteria for new workflow creation. They may be archived or migrated only through an explicit workflow-governance task. The checked `docs/workflow/workflow.md` and checked arc42 review are mandatory.
 
 Read-only verification, requirement intake, routing-rule inspection, and role selection may occur before branch creation. Mutating workflow creation must not.
 
@@ -116,8 +147,11 @@ The required order is:
 5. Check local and remote branch-name collisions, choosing the next clear unique suffix when needed.
 6. Create and checkout the workflow branch, or verify the existing matching workflow branch.
 7. Verify the active branch with `git branch --show-current`.
-8. Create or regenerate workflow artifacts only after the branch exists and is active.
-9. Continue with workflow slices, subagent routing, quality gates, commits, and optional push only inside the verified workflow branch.
+8. Run the Three Amigos Requirement Gate with Senior Requirement Engineer, Senior System Architect, Senior Java Backend Developer, Senior React Frontend Developer and Senior Tester perspectives.
+9. Create or sharpen `docs/workflow/workflow.md` only after the branch exists and is active.
+10. Check and update arc42 documentation when affected.
+11. Validate both required outputs.
+12. Release the workflow for `workflow execute` only after both required outputs are checked.
 
 Default workflow branch names use:
 
@@ -130,7 +164,7 @@ architecture/workflow-<short-topic>-<yyyyMMdd>
 
 Use `feature/` unless the workflow is clearly a bugfix, documentation-only change, or architecture/agent-structure change.
 
-Never create or modify workflow artifacts on `main`, `master`, `develop`, or any shared branch. If the branch cannot be created, checked out, or verified as active, stop and report:
+Never create or modify workflow planning artifacts on `main`, `master`, `develop`, or any shared branch. If the branch cannot be created, checked out, or verified as active, stop and report:
 
 ```text
 STOP: workflow create cannot continue safely.
@@ -139,6 +173,8 @@ No workflow files were created before resolving the branch isolation issue.
 ```
 
 Subagents must never perform implementation work on `main`, `master`, `develop`, or any shared branch. Before modifying files, every subagent or role execution must verify that the active branch belongs to the current workflow. Subagents must not switch branches unless the workflow explicitly authorizes that branch operation.
+
+If architecture boundaries or testability are unclear, return to the Three Amigos Requirement Gate instead of producing an executable workflow.
 
 ## Mandatory Workflow Execution Command
 
@@ -152,26 +188,29 @@ Codex must not start ad-hoc implementation. The command is explicit authorizatio
 
 Execution order:
 
-1. Locate the active workflow:
-    - `docs/workflow/workflow.md`, when present
-    - otherwise the active workflow described by `docs/workflow/README.md`, when present
-    - otherwise the most recent `docs/workflow/*.md`
-2. Read the complete workflow before implementation.
-3. Identify all slices and their dependencies.
-4. Use `.agents/skills/workflow-executor/SKILL.md` for the execution protocol.
-5. Assign suitable subagents or roles for each slice through `.agents/orchestrator/routing-rules.md` and `.agents/orchestrator/swarm-orchestrator.md`.
-6. Execute one slice at a time.
-7. After each slice:
+1. Load the checked workflow from `docs/workflow/workflow.md`.
+2. Verify that `docs/workflow/workflow.md` records a checked arc42 review or update.
+3. Load the checked or updated arc42 documentation from `docs/arc42/**`.
+4. Verify the current workflow branch and local worktree state.
+5. Read the complete workflow before implementation.
+6. Identify all slices and their dependencies.
+7. Use `.agents/skills/workflow-executor/SKILL.md` for the execution protocol.
+8. Assign suitable subagents or roles for each slice through `.agents/orchestrator/routing-rules.md` and `.agents/orchestrator/swarm-orchestrator.md`.
+9. Classify backend, frontend, Docker/runtime and documentation work into separate execution strands.
+10. Execute one slice at a time.
+11. After each slice:
     - run required tests
     - run required quality checks
     - inspect git diff
     - document the result
-8. If a slice requires specialist review, spawn or route to the matching subagent or role.
-9. Never bypass configured architecture, testing, DevOps, security, or microservice review for decisions in those areas.
-10. Stop if assumptions about classes, modules, APIs, quality commands, or architecture are uncertain.
-11. Commit or push only when the workflow explicitly allows commit or push.
+12. If a slice requires specialist review, spawn or route to the matching subagent or role.
+13. Never bypass configured architecture, testing, DevOps, security, or microservice review for decisions in those areas.
+14. Stop if assumptions about classes, modules, APIs, quality commands, or architecture are uncertain.
+15. Commit or push only when the workflow explicitly allows commit or push.
 
 For `workflow execute`, no direct implementation of a slice is allowed before the relevant subagent or role has reviewed the slice, except read-only verification needed to route the slice.
+
+For backend slices, require JUnit 6 test coverage or a checked workflow exception, hexagonal architecture review, and Microservice Senior Expert review when service autonomy or service boundaries are affected. For frontend slices, require Senior React Frontend Developer and Senior UX Designer review when a frontend module is affected. Documentation synchronization and arc42 consistency are part of the final definition of done.
 
 ## Core Principle
 

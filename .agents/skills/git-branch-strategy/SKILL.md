@@ -13,7 +13,7 @@ Keep slices isolated and reviewable.
 
 - Use focused `codex/` branches for agent-created implementation work unless the user requests another branch strategy.
 - For `workflow create`, follow the workflow-specific branch naming requested by repository governance: `feature/workflow-<short-topic>-<yyyyMMdd>` by default, with `fix/`, `docs/`, or `architecture/` when the workflow scope clearly matches that category.
-- Create and checkout the workflow branch before creating or modifying workflow artifacts: `workflow.md`, `docs/workflow/**`, workplans, slice definitions, workflow-specific documentation changes, implementation tasks, or write-capable agent assignments.
+- Create and checkout the workflow branch before creating or modifying workflow planning artifacts. For `workflow create`, the required checked outputs are `docs/workflow/workflow.md` and checked or updated `docs/arc42/**`.
 - Stop if unrelated or unclear uncommitted changes exist before branch creation.
 - Stop if the current branch is detached or unclear.
 - Check local and remote branch-name collisions; choose the next clear unique suffix when needed.

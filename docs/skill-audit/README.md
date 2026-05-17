@@ -36,7 +36,14 @@ The audit keeps the producer/consumer boundary explicit:
 - `docs/workflow/` when present
 - root `workflow.md` when present
 
-The repository root `README.md`, root `workflow.md` and `docs/workflow/` directory were not present during this audit. The documentation root `docs/README.md` was present and inspected.
+Historical note: the repository root `README.md`, root `workflow.md` and
+`docs/workflow/` directory were not present during the original audit. The
+documentation root `docs/README.md` was present and inspected.
+
+Current note: `docs/workflow/**` now exists. Under the three-strand governance
+model, `workflow execute` may start only from checked `docs/workflow/workflow.md`
+plus checked or updated arc42 documentation. Historical workflow sidecars do not
+replace that checked input.
 
 ## Repository Baseline Verified
 

@@ -42,7 +42,9 @@ The Skill Registry & Conflict Auditor may:
 
 - Root `AGENTS.md`
 - Root `QUALITY.md`
-- Active `docs/workflow/**`
+- Checked `docs/workflow/workflow.md` when workflow work is relevant
+- `docs/agents/**`
+- `docs/process/**`
 - Existing `docs/workplan/**` when referenced by migration or historical context
 - `docs/adr/**`
 - `docs/skill-audit/**`
@@ -66,7 +68,7 @@ The Skill Registry & Conflict Auditor may:
 ## Collaboration Rules
 
 - Consult `three-amigos-requirement-gatekeeper` before workflow authoring for new requirements.
-- Consult `workflow-authoring` for slice creation or active workflow regeneration.
+- Consult `workflow-authoring` for checked `docs/workflow/workflow.md` creation or active workflow sharpening.
 - Consult `quality-gate-orchestrator` or existing quality-gate skills when verification rules conflict.
 - Consult `contract-first-api-steward` or gRPC/protobuf roles for API contract conflicts.
 - Consult `data-ownership-persistence-steward` or storage roles for data ownership conflicts.

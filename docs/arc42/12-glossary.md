@@ -29,3 +29,12 @@
 | Vector Projection | Semantic vector representation derived from selected canonical facts |
 | Redaction | Removal or masking of sensitive runtime values |
 | Repair Orchestrator | Future component for gated fix, test and PR preparation |
+| Agent Workflow Orchestrator | Repository governance role that routes workflow slices, role reviews, quality gates and stop conditions |
+| Workflow Authoring | `workflow create` activity that creates checked `docs/workflow/workflow.md` and checked or updated arc42 documentation |
+| Workflow Executor | `workflow execute` activity that implements only checked workflow slices through role/subagent review and quality gates |
+| Skill Registry / Conflict Auditor | Governance capability that inventories skills, roles and agents and blocks hidden responsibility conflicts |
+| `skills-agents` | Process strand for skill, role, prompt, Codex agent, registry, organigramm and process-governance changes |
+| `workflow create` | Process strand for requirement, architecture, planning and documentation; it does not implement product code |
+| `workflow execute` | Process strand that executes only a checked workflow with checked arc42 input |
+| `push auto` | Operational release command allowed only for approved `skills-agents` changes after guard checks |
+| No-Product-Code Boundary | Rule that governance-only work must not modify backend, frontend, Docker/runtime or analytics implementation files |

@@ -43,6 +43,9 @@ Also use it when the user explicitly asks to clean up after a merged PR.
 
 Also use it when `.agents/skills/git-commit-preparation/SKILL.md` invokes cleanup after a successful `push auto` merge.
 
+`push auto` cleanup is valid only after the guarded `skills-agents` publication
+workflow has verified the pull request merge.
+
 Do not treat Gradle's `clean` task as this workflow unless the request is about Git or PR cleanup.
 
 ## Mandatory Behavior

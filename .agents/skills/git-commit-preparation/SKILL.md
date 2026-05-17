@@ -9,6 +9,9 @@ description: Use when preparing, reviewing, validating, repairing, committing, p
 
 Prepare, review, repair, commit, push, and open a pull request for the current project changes without weakening repository rules, mixing unrelated changes, or claiming unexecuted verification.
 
+`push auto` is restricted to the `skills-agents` process strand. It must not
+publish backend, frontend, Docker/runtime or analytics implementation changes.
+
 This `SKILL.md` is the single source for the git-commit-preparation workflow. The previous standalone workflow content is consolidated here.
 
 This skill does not replace repository rules. This skill applies repository rules.
@@ -50,6 +53,9 @@ When the user enters exactly `push auto`, also read:
 
 ```text
 .agents/skills/git-clean/SKILL.md
+docs/process/push-auto.md
+docs/agents/skill-registry.md
+docs/agents/organigramm.md
 ```
 
 If any required reference cannot be read, stop and report the missing file.
@@ -76,6 +82,9 @@ Use this skill when:
 - documenting verification evidence before commit,
 - acting on exact `push`,
 - acting on exact `push auto`.
+
+For exact `push auto`, use this skill only after the diff is verified as a
+`skills-agents` strand change.
 
 When only drafting or validating the commit message, use `.agents/skills/git-commit-message-preparation/SKILL.md`.
 
@@ -319,6 +328,22 @@ If an open pull request already exists for the current branch against `main`, re
 
 When the user enters exactly `push auto`, treat it as explicit permission to run the normal `push` workflow and then automatically finish the GitHub pull request lifecycle.
 
+Before running the normal `push` workflow, verify the `push auto` guard:
+
+- the task is a `skills-agents` strand task,
+- every changed file is allowed by `docs/process/push-auto.md`,
+- no backend, frontend, Docker/runtime or analytics implementation files are present,
+- skill integrity, registry, organigramm and documentation checks passed,
+- the exact files to publish are listed.
+
+If any changed file is outside the allowed `skills-agents` set, stop with:
+
+```text
+STOP: push auto is limited to the skills-agents strand.
+Reason: <blocked file path> is outside the allowed skills-agents file set.
+No push, merge or cleanup was performed.
+```
+
 Execute this order:
 
 1. Rerun commit readiness and verification.
@@ -425,6 +450,7 @@ Stop if:
 - `QUALITY.md` cannot be read,
 - `.agents/skills/git-commit-message-preparation/SKILL.md` cannot be read when drafting the commit message,
 - `.agents/skills/git-clean/SKILL.md` cannot be read when the user enters `push auto`,
+- `docs/process/push-auto.md` cannot be read when the user enters `push auto`,
 - `.codex/agents/git_commit_operator.toml` cannot be read when commit, push, or pull-request execution is requested,
 - branch or worktree is unclear,
 - the worktree is detached,
@@ -440,6 +466,8 @@ Stop if:
 - the commit reviewer returns `NOT READY` or `BLOCKED`,
 - the commit message would require guessing,
 - the user requested `push` but GitHub pull request creation is unavailable or would require guessing,
+- the user requested `push auto` for a change set that is not fully within the `skills-agents` strand,
+- the user requested `push auto` and a backend, frontend, Docker/runtime or analytics implementation file is present,
 - the user requested `push auto` but mergeability, required-check status, merge result, remote branch deletion target, or clean execution cannot be verified.
 
 ## Forbidden Actions
@@ -452,6 +480,8 @@ Do not:
 - push or create pull requests unless the user enters `push`, enters `push auto`, or explicitly requests that action,
 - push directly to `main`,
 - merge pull requests unless the user enters exactly `push auto`,
+- run `push auto` outside the `skills-agents` strand,
+- run `push auto` when backend, frontend, Docker/runtime or analytics implementation files are present,
 - delete remote branches unless the user enters exactly `push auto` and the pull request was verified as merged,
 - delete local branches directly instead of using the git-clean workflow after push auto,
 - force-push,

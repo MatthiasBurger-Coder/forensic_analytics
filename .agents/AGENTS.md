@@ -24,6 +24,8 @@ The repository root `AGENTS.md` remains the authoritative source for engineering
 - `../.codex/subagents/` contains durable subagent role descriptions that point back to these authoritative role files.
 - `../.codex/skills/` contains reusable Codex-team skill entrypoints that may load project-specific repository skills under `.agents/skills`.
 - `../.codex/agents/` contains project-scoped custom subagent TOML files.
+- `../docs/agents/` contains the project organigramm and process-governance registry.
+- `../docs/process/` contains the three-strand process model for `skills-agents`, `workflow create` and `workflow execute`.
 
 ## Codex Compatibility
 

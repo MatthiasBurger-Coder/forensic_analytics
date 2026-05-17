@@ -40,7 +40,7 @@ The Agent Handoff Protocol may block parallel or delegated work when:
 
 ## Inputs
 
-- Active `docs/workflow/**`
+- Checked `docs/workflow/workflow.md` when workflow work is relevant
 - `.agents/orchestrator/**`
 - `.agents/roles/**`
 - `.agents/skills/**`

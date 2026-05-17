@@ -28,15 +28,23 @@ User request
   -> EPIC drift check
   -> arc42 and ADR impact check
   -> dedicated workflow branch creation and checkout
-  -> workflow regeneration or update
+  -> checked docs/workflow/workflow.md and arc42 review
   -> slice execution
   -> quality verification
   -> documentation and role/skill synchronization
 ```
 
+Repository agent work is separated into exactly three process strands:
+
+1. `skills-agents`
+2. `workflow create`
+3. `workflow execute`
+
+`push auto` belongs only to the `skills-agents` strand.
+
 ## Workflow Lifecycle
 
-New workflows must be generated through `.agents/skills/workflow-authoring/SKILL.md`.
+New workflows must be created or sharpened through `.agents/skills/workflow-authoring/SKILL.md`.
 
 Before creating a new workflow:
 
@@ -47,15 +55,20 @@ Before creating a new workflow:
 5. Check local and remote branch-name collisions, choosing the next clear unique suffix when needed.
 6. Verify the active workflow branch.
 7. Verify the repository root and target path.
-8. Delete `docs/workflow` completely, unless the user explicitly asks to preserve an existing workflow.
-9. Recreate `docs/workflow`.
-10. Regenerate the complete workflow structure.
+8. Create or sharpen `docs/workflow/workflow.md`.
+9. Check every affected arc42 section and update `docs/arc42/**` when required.
+10. Record the arc42 check status in `docs/workflow/workflow.md`.
 
-This prevents stale slices, obsolete workflows, conflicting plans and historical leftovers from remaining active.
+This keeps executable workflow scope in one checked file while preserving
+historical or sidecar workflow files until a task explicitly archives or
+migrates them.
 
 Read-only verification, requirement intake, routing-rule inspection and role selection may occur before branch creation. Mutating workflow creation must not.
 
-Never create or modify workflow artifacts, including `workflow.md`, `docs/workflow/**`, workplans, slice definitions, workflow-specific documentation changes, implementation tasks, or write-capable agent assignments, on `main`, `master`, `develop`, or any shared branch.
+Never create or modify workflow planning artifacts, including
+`docs/workflow/workflow.md`, arc42 workflow-impact sections, slice definitions
+or write-capable agent assignments, on `main`, `master`, `develop`, or any
+shared branch.
 
 ## Requirement Lifecycle
 
@@ -142,7 +155,7 @@ When responsibility moves from plugin to server:
 - update or review the EPIC
 - update arc42 building block and runtime views
 - review ADR references about plugin producer boundaries
-- regenerate or update the workflow
+- create or sharpen the checked `docs/workflow/workflow.md`
 - update affected skills and roles only where ownership guidance is verified
 
 ### UI Communication Strategy Changed

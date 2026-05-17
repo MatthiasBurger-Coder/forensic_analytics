@@ -20,7 +20,18 @@ Creating or updating workflow artifacts on shared branches such as `main`, `mast
 
 Read-only verification, requirement intake, routing-rule inspection and role selection may happen before branch creation. Mutating workflow creation must not.
 
-Workflow artifacts, including `workflow.md`, `docs/workflow/**`, workplans, slice definitions, workflow-specific documentation changes, implementation tasks and write-capable agent assignments, must only be created after the workflow branch is verified.
+Workflow planning artifacts, including `docs/workflow/workflow.md`, arc42 workflow-impact sections, slice definitions and write-capable agent assignments, must only be created after the workflow branch is verified.
+
+2026-05-17 amendment: workflow creation now follows the three-strand process
+model. `workflow create` is a planning and documentation strand and must end
+with two checked outputs:
+
+1. checked `docs/workflow/workflow.md`
+2. checked or updated `docs/arc42/**` documentation
+
+Supporting sidecar files under `docs/workflow/**` may exist as historical or
+auxiliary material, but they are not completion criteria for new workflow
+creation and they do not replace checked `docs/workflow/workflow.md`.
 
 Detached or unclear branch state stops workflow creation. Local and remote branch-name collisions must be checked before branch creation; if a collision exists, the next clear unique suffix must be chosen.
 
@@ -40,7 +51,10 @@ Subagents must verify the active workflow branch before modifying files and must
 - Workflow creation starts from an isolated Git context.
 - Shared branches remain free from in-progress workflow artifacts.
 - Subagent and role handoffs can require branch evidence before mutating work.
-- Existing workflow regeneration remains valid, but it must happen only after branch verification.
+- Existing sidecar workflow material may be preserved until a task explicitly
+  archives or migrates it.
+- `workflow execute` can require checked `docs/workflow/workflow.md` plus checked
+  or updated arc42 documentation as its only start input.
 - If the branch cannot be created, checked out or verified, workflow creation stops without creating workflow files.
 
 ## Alternatives Considered

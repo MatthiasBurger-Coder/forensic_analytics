@@ -26,7 +26,23 @@
 | ADR-0018 | Author initial logical service contracts before implementation | Accepted | Allows planned REST, gRPC and event contracts before implementation while keeping planned design distinct from verified runtime evidence |
 | ADR-0019 | Allow Spring Boot at service bootstrap boundaries | Accepted | Permits independent service Spring Boot entrypoints while preserving framework-free service domain and application code |
 
-## 9.2 Open Decisions
+## 9.2 Workflow And Agent Governance Decision Set
+
+The active workflow and agent governance backbone is:
+
+- ADR-0011: Three Amigos before workflow authoring.
+- ADR-0012: Quality gates before commit and push.
+- ADR-0014: Explicit agent handoff protocol.
+- ADR-0015: Skill registry and conflict auditing.
+- ADR-0016: Branch-first workflow creation, amended by the three-strand model so
+  `workflow create` ends with checked `docs/workflow/workflow.md` and checked or
+  updated arc42 documentation.
+
+`push auto` is treated as operational release governance under ADR-0012 and the
+git-commit-preparation workflow, not as a Forensics Platform product runtime
+capability.
+
+## 9.3 Open Decisions
 
 | ID | Open Decision | Notes |
 |---|---|---|

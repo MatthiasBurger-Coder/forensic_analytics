@@ -9,6 +9,11 @@
 | Large graphs | UI may become overloaded for large codebases | Layering, filtering, slicing, lazy loading |
 | Unsafe automatic fixes | Patches may have unexpected side effects | Regression tests, risk classifier, human review |
 | Toolchain complexity | Joern, Byteman, Graph DB, Vector DB and LLM increase complexity | Hexagonal ports, modular adapters, MVP slicing |
+| Governance drift | Skills, roles, prompts and workflow rules can diverge over time | `skills-agents` integrity checks, registry maintenance and documentation governance |
+| Stale workflow artifacts | Historical workflow sidecars can be mistaken for checked execution inputs | `workflow execute` starts only from checked `docs/workflow/workflow.md` and checked arc42 documentation |
+| Unsafe push automation | `push auto` could publish unrelated or product implementation changes if not guarded | `push auto` is restricted to `skills-agents` and blocks product implementation files |
+| Portable `.codex` leakage | Project-specific rules can accidentally enter reusable `.codex` templates | Keep project-specific governance in root `AGENTS.md`, `.agents/**` and `docs/**`; document exceptions |
+| Governance-only task touches product code | Process changes could accidentally modify backend, frontend, Docker/runtime or analytics implementation | Changed-file guards and final diff review block product implementation files |
 
 ## 11.1 Technical Debt Candidates
 

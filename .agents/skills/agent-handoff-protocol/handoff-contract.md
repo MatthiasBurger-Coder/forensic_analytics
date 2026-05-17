@@ -19,7 +19,7 @@
 
 - All file paths must be repository-relative unless an absolute path is needed for tool output.
 - Assumptions must include acceptance source or be treated as blockers.
-- Blockers must use the status model in `workflow.md`.
+- Blockers must use the status model in the active checked `docs/workflow/workflow.md`.
 - Validation status must name exact commands when commands were run.
 - Handoffs involving changed files must include write ownership and merge order.
 

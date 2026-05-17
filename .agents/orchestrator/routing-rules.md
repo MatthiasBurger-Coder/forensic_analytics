@@ -15,9 +15,13 @@ Use these rules to select roles for a slice. Prefer the smallest set that covers
 - Microservice runtime independence, healthcheck, observability or container-readiness evidence routes to `skills/microservice-runtime-readiness-expert/SKILL.md`.
 - Test strategy, regression coverage, ArchUnit, coverage gates or quality failures route to `roles/senior-tester.md`.
 - Gradle, Docker, Kubernetes, CI, observability or deployment work routes to `roles/senior-devops.md`.
-- New workflow creation, full `docs/workflow` regeneration, slice dependency planning or planning-risk review routes to `roles/senior-workflow-architect/SKILL.md`.
+- New workflow creation, checked `docs/workflow/workflow.md`, arc42 review, slice dependency planning or planning-risk review routes to `roles/senior-workflow-architect/SKILL.md`.
 - EPIC consistency, requirement drift, requirement classification, assumption tracking or requirement-to-architecture synchronization routes to `roles/senior-requirement-engineer/SKILL.md`.
 - Incoming requirement gatekeeping before workflow authoring, Three Amigos review, acceptance-criteria validation, dependency/deadlock checks or `READY_FOR_WORKFLOW` versus `REQUIRES_REFINEMENT` decisions route to `skills/three-amigos-requirement-gatekeeper/SKILL.md`.
+- Skills, roles, prompts, Codex agent definitions, organigramm, skill registry, process documentation or `push auto` guard changes route to `skills/skill-registry-conflict-auditor/SKILL.md` and `roles/senior-documentation-engineer.md`.
+- `workflow create` must route backend impact to `roles/senior-java-backend.md`, frontend impact to `roles/senior-react-frontend.md`, architecture and arc42 impact to `roles/senior-system-architect.md`, and test strategy to `roles/senior-tester.md`.
+- `workflow execute` backend slices must include Senior Java Backend Developer, Microservice Senior Expert when service boundaries are affected, hexagonal architecture review, Spring review when Spring wiring is affected, JUnit 6 testing review and Docker/container review when container readiness is affected.
+- `workflow execute` frontend slices must include Senior React Frontend Developer, Senior UX Designer and Docker/container review when container readiness is affected.
 - Multi-role coordination, conflict resolution or slice planning routes to `roles/senior-swarm-orchestrator.md`.
 - Protobuf contracts, streaming RPC design, request validation or gRPC compatibility route to `roles/senior-grpc-proto-specialist.md`.
 - Repository checkout, workspace lifecycle, source-root preparation or large Git repositories route to `roles/senior-git-workspace-specialist.md`.

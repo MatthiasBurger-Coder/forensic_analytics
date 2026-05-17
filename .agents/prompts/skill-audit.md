@@ -6,13 +6,15 @@ Use for auditing skill compatibility before workflow authoring or execution.
 
 - `AGENTS.md`
 - `QUALITY.md`
-- active `docs/workflow/**`
+- checked `docs/workflow/workflow.md` when workflow work is relevant
 - `.agents/skills/**`
 - `.agents/roles/**`
 - `.agents/orchestrator/**`
 - `.codex/skills/**`
 - `.codex/agents/**`
 - `docs/adr/**`
+- `docs/agents/**`
+- `docs/process/**`
 - `docs/skill-audit/**`
 
 ## Required Output
@@ -20,6 +22,7 @@ Use for auditing skill compatibility before workflow authoring or execution.
 - skill inventory
 - missing skills
 - overlapping responsibilities
+- strand assignment gaps
 - conflict classification
 - required specialist reviews
 - blockers

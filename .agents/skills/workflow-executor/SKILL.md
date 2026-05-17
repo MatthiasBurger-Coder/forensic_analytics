@@ -25,21 +25,22 @@ Read these files before implementation:
 
 1. Root `AGENTS.md`.
 2. Root `QUALITY.md`.
-3. Active workflow under `docs/workflow`.
-4. `.agents/orchestrator/routing-rules.md`.
-5. `.agents/orchestrator/swarm-orchestrator.md`.
-6. Relevant `.agents/roles` files for the slice.
-7. Relevant `.agents/skills` files for the slice.
+3. Checked `docs/workflow/workflow.md`.
+4. Checked or updated `docs/arc42/**` documentation.
+5. `.agents/orchestrator/routing-rules.md`.
+6. `.agents/orchestrator/swarm-orchestrator.md`.
+7. Relevant `.agents/roles` files for the slice.
+8. Relevant `.agents/skills` files for the slice.
 
 ## Active Workflow Discovery
 
-Locate the active workflow in this order:
+Locate the active workflow only at:
 
-1. `docs/workflow/workflow.md`, when present.
-2. The active workflow described by `docs/workflow/README.md`, when present.
-3. The most recent `docs/workflow/*.md`.
+```text
+docs/workflow/workflow.md
+```
 
-Stop if multiple workflows appear active and the execution target cannot be verified.
+Stop if `docs/workflow/workflow.md` is missing, unchecked, or does not record a checked arc42 review or update. Do not fall back to `docs/workflow/README.md` or the newest `docs/workflow/*.md`.
 
 ## Branch Verification
 
@@ -66,6 +67,8 @@ Never implement a workflow slice directly before the relevant subagent or role h
 
 The `workflow execute` command authorizes the configured subagent workflow for that workflow only. Keep unrelated tasks under the normal repository subagent authorization rules.
 
+`workflow execute` may not expand scope. If the requested work is outside the checked `docs/workflow/workflow.md`, stop and return to `workflow create`.
+
 ## Required Default Roles
 
 Use at least these roles when relevant to the slice:
@@ -79,18 +82,30 @@ Use at least these roles when relevant to the slice:
 
 Route additional specialist concerns through `.agents/orchestrator/routing-rules.md`.
 
+Backend slices require Senior Java Backend Developer, Microservice Senior Expert
+when service boundaries are affected, `architecture-hexagonal`, `spring-core`
+when Spring wiring is affected, `testing-junit6`, and Senior DevOps with
+`devops-docker` when container readiness is affected.
+
+Frontend slices require Senior React Frontend Developer, Senior UX Designer, and
+Senior DevOps with `devops-docker` when container readiness is affected.
+
+Documentation slices must update the execution report, arc42 consistency notes,
+testing documentation and deviations from `docs/workflow/workflow.md`.
+
 ## Execution Protocol
 
 For each slice:
 
 1. Understand scope, prerequisites, dependencies, and allowed write scope.
-2. Route the slice to the suitable subagent or role for implementation or review.
-3. Apply only the changes authorized by the slice.
-4. Run targeted tests first.
-5. Run the required quality checks from `QUALITY.md` or the workflow.
-6. Inspect `git diff` and `git diff --check`.
-7. Document the result in the workflow quality log or the workflow-designated location.
-8. Continue with the next slice only when the current slice is clean or the workflow explicitly permits carrying a documented blocker.
+2. Classify the slice as backend, frontend, Docker/runtime, documentation or a documented combination with separated write scopes.
+3. Route the slice to the suitable subagent or role for implementation or review.
+4. Apply only the changes authorized by the slice.
+5. Run targeted tests first.
+6. Run the required quality checks from `QUALITY.md` or the workflow.
+7. Inspect `git diff` and `git diff --check`.
+8. Document the result in the workflow quality log or the workflow-designated location.
+9. Continue with the next slice only when the current slice is clean or the workflow explicitly permits carrying a documented blocker.
 
 Use one write-capable implementation worker at a time unless the active workflow explicitly defines disjoint write scopes and the orchestrator confirms that parallel edits are safe.
 
@@ -99,11 +114,14 @@ Use one write-capable implementation worker at a time unless the active workflow
 Stop and report if:
 
 - architecture is unclear
+- `docs/workflow/workflow.md` is missing, unchecked or lacks arc42 check status
+- checked arc42 documentation is missing
 - a class, module, API, Gradle task, schema, or command assumption is uncertain
 - tests fail and cannot be fixed safely inside the slice
 - the workflow conflicts with `AGENTS.md` or `QUALITY.md`
 - multiple active workflows conflict
 - the workflow branch is missing, inactive, or cannot be verified as a local ref
+- the requested work expands scope beyond checked `docs/workflow/workflow.md`
 - a change would introduce shared Java code modules between microservices
 - subagent or role execution is required but unavailable
 - commit or push is requested but not explicitly allowed by the workflow

@@ -39,3 +39,31 @@
 - Automated repair must be gated by tests, quality gates and human review.
 - Spring Boot wiring must stay outside the forensic core and must not weaken the observability boundary from ADR-0005.
 - Future microservices must not share Java code modules, domain models, event classes or test fixtures.
+
+## 2.5 Agent And Workflow Governance Constraints
+
+Repository automation follows exactly three process strands:
+
+1. `skills-agents`
+2. `workflow create`
+3. `workflow execute`
+
+These process strands are repository governance, not Forensics Platform runtime
+capabilities. They must not weaken the product constraints that exclude
+autonomous code changes, automatic pull request creation and production
+deployment automation from the MVP.
+
+`skills-agents` is limited to skill, role, prompt, Codex agent, registry,
+organigramm, process and governance documentation changes. `push auto` is
+restricted to this strand and must block backend, frontend, Docker/runtime and
+analytics implementation changes.
+
+`workflow create` is limited to requirement, architecture, planning and
+documentation work. It requires a dedicated branch before mutating workflow
+planning artifacts and must end with checked `docs/workflow/workflow.md` plus
+checked or updated arc42 documentation.
+
+`workflow execute` may start only from checked `docs/workflow/workflow.md` and
+checked or updated arc42 documentation. It must execute slices through the
+configured role/subagent workflow and must return to `workflow create` when
+scope, architecture boundaries or testability change.

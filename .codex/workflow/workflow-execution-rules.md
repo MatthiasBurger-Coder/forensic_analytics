@@ -38,14 +38,17 @@ When the active command is `workflow execute`, use `.codex/skills/workflow-execu
 
 Execution order:
 
-1. Locate the active workflow.
-2. Read the complete workflow.
-3. Identify all slices and dependencies.
-4. Assign roles or subagents.
-5. Execute one slice at a time.
-6. Run required tests and quality checks after each slice.
-7. Inspect diffs after each slice.
-8. Stop on unverifiable assumptions, architecture conflicts, missing commands, quality failures, or ambiguity that could change behavior.
+1. Locate the active workflow only at `docs/workflow/workflow.md` when project rules require that path.
+2. Verify that the workflow is checked and records checked or updated arc42 documentation.
+3. Load the checked or updated arc42 documentation.
+4. Read the complete workflow.
+5. Identify all slices and dependencies.
+6. Classify slices into backend, frontend, Docker/runtime and documentation strands when project rules define those strands.
+7. Assign roles or subagents.
+8. Execute one slice at a time.
+9. Run required tests and quality checks after each slice.
+10. Inspect diffs after each slice.
+11. Stop on unverifiable assumptions, architecture conflicts, missing commands, quality failures, scope expansion, missing arc42 evidence, or ambiguity that could change behavior.
 
 ## Stop Conditions
 

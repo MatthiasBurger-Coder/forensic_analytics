@@ -29,3 +29,31 @@ This documentation is based on the EPIC:
 ## Documentation Principle
 
 The EPIC remains the product and requirement baseline. The arc42 documentation transforms this baseline into an architectural structure.
+
+## Governance Check Status
+
+The three-strand agent and workflow governance model was checked on branch
+`architecture/workflow-align-agent-workflow-strands-20260517` on 2026-05-17.
+
+Checked sections:
+
+- 1. Introduction and Goals: no product goal change required.
+- 2. Architecture Constraints: updated with agent and workflow governance
+  constraints.
+- 3. System Scope and Context: no runtime system boundary change required.
+- 4. Solution Strategy: updated with repository governance strategy.
+- 5. Building Block View: updated with repository governance building blocks.
+- 6. Runtime View: updated with repository governance runtime flows.
+- 7. Deployment View: no deployment topology change required.
+- 8. Crosscutting Concepts: updated with engineering governance and
+  documentation synchronization.
+- 9. Architecture Decisions: updated with the active workflow and agent
+  governance decision set.
+- 10. Quality Requirements: updated with governance quality scenarios.
+- 11. Risks and Technical Debt: updated with governance drift and push
+  automation risks.
+- 12. Glossary: updated with governance terms.
+
+Reviewer role: Senior System Architect / arc42 Architecture Governance.
+Unresolved drift: existing `docs/workflow/**` sidecars remain historical
+supporting material until a later workflow explicitly migrates or archives them.

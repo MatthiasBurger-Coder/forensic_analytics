@@ -65,13 +65,14 @@ workflow execute
 
 Codex must:
 
-1. Locate the active workflow.
-2. Read all slices.
-3. Assign subagents or role reviews.
-4. Execute slice by slice.
-5. Run tests and quality checks after each slice.
-6. Review `git diff` and `git diff --check`.
-7. Continue only when the slice is clean or a documented blocker is explicitly allowed by the workflow.
+1. Locate the active workflow using the project-required checked workflow path.
+2. Verify any project-required architecture-documentation check before implementation.
+3. Read all slices.
+4. Assign subagents or role reviews.
+5. Execute slice by slice.
+6. Run tests and quality checks after each slice.
+7. Review `git diff` and `git diff --check`.
+8. Continue only when the slice is clean or a documented blocker is explicitly allowed by the workflow.
 
 If a project-specific workflow-executor skill exists, use it after reading this reusable workflow.
 

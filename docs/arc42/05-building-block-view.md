@@ -153,3 +153,18 @@ its own domain, application, gRPC adapter, in-memory repository, Spring Boot
 bootstrap, tests and Dockerfile. It does not depend on monolith domain,
 application or persistence modules and does not yet implement durable normalized
 facts, incident records, correlation indexes or database migrations.
+
+## 5.10 Repository Governance Building Blocks
+
+These building blocks are repository governance assets. They are not runtime
+building blocks of the Forensics Platform and must not be treated as domain,
+application or adapter code.
+
+| Building Block | Responsibility | Repository Anchor |
+|---|---|---|
+| Skill Registry / Conflict Auditor | Inventories skills, roles and agents; blocks hidden responsibility conflicts | `.agents/skills/skill-registry-conflict-auditor/SKILL.md`, `docs/agents/skill-registry.md` |
+| Agent Workflow Orchestrator | Coordinates strand-aware routing, slice ownership and stop conditions | `.agents/orchestrator/swarm-orchestrator.md`, `.agents/orchestrator/routing-rules.md` |
+| Workflow Authoring | Creates checked `docs/workflow/workflow.md` and arc42 review output for `workflow create` | `.agents/skills/workflow-authoring/SKILL.md` |
+| Workflow Executor | Executes only checked workflows through role/subagent review and slice quality gates | `.agents/skills/workflow-executor/SKILL.md` |
+| Documentation Sync | Keeps AGENTS, process docs, registry, organigramm, workflow and arc42 documentation aligned | `.agents/skills/documentation-sync/SKILL.md` |
+| Git Commit And Push Governance | Reviews commit, push and `push auto` readiness without mixing unrelated changes | `.agents/skills/git-commit-preparation/SKILL.md`, `docs/process/push-auto.md` |
