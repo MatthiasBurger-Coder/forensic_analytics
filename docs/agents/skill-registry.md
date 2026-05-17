@@ -64,4 +64,5 @@ Must not change:
 | arc42 Architecture Documentation Maintainer | `workflow create` | arc42 Architecture Governance | keep architecture docs checked or updated |
 | S3D Execution Orchestrator | `workflow execute` | Senior Swarm Orchestrator | build dependency graph, run topological sort and enforce file, contract, module and architecture-boundary locks |
 | Testing Documentation Maintainer | `workflow execute` | Senior Tester | keep test strategy and quality-gate evidence |
-| Execution Report Maintainer | `workflow execute` | Workflow Executor | record slice commit SHA, push result and blockers |
+| Execution Report Maintainer | `workflow execute` | Workflow Executor | record workflow version, slice ID, responsible agent, changed files, quality gates, commit SHA, rollback reference, documentation update status, push result and blockers |
+| Commit Traceability Maintainer | `workflow execute` | Senior Documentation Engineer / Workflow Executor | keep `CP_RECORD` fields, one-slice-one-commit evidence and workflow history synchronized |

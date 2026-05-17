@@ -190,10 +190,19 @@ For each slice:
 10. Run `git diff --cached --check`.
 11. Create the slice-scoped checkpoint commit.
 12. Push the current workflow branch to `origin`.
-13. Record the commit SHA and push result in the execution report.
+13. Record the workflow version, slice ID, slice title, responsible agent,
+    changed files, quality-gate commands, quality-gate result, commit SHA,
+    rollback reference, arc42 update status, ADR update status and push result
+    in the execution report.
 14. Continue with the next slice only when the current slice is clean, the checkpoint push succeeded, or the workflow explicitly permits carrying a documented blocker without a commit.
 
 Slice checkpoint push is not `push auto`. It must not create or merge a PR, run branch cleanup, force-push or push to `main`.
+
+Each workflow-execute checkpoint commit must represent exactly one slice. Do
+not combine multiple slice IDs, opportunistic documentation edits or unrelated
+fixes in one checkpoint commit. If the slice record cannot identify the active
+workflow version or rollback reference, stop and route the blocker through
+Documentation Governance or Root Architect escalation.
 
 Use one write-capable implementation worker at a time unless the active workflow explicitly defines disjoint write scopes and the orchestrator confirms that parallel edits are safe.
 

@@ -63,6 +63,20 @@ Resolution: the user request defines these as target Governance Flowchart V2 sem
 | 06 | Completed | Mapped S3D as the workflow-execute Execution Orchestrator with explicit slice metadata, dependency graph source of truth, topological ordering, parallelization groups, conflict locks and `LOCK_CONFLICT` routing. |
 | 07 | Completed | Cleaned publication outcomes: no `PUB_PUSH` self-reference, normal `push` ends in `PUB_PR_RESULT`, successful completion uses `PUB_DONE`, failures use `PUB_PUSH_FAILED`, and governance rejections use `PUB_REJECTED`. |
 | 08 | Completed | Added commit/checkpoint/rollback governance: `QG_STOP` and failed `CP_PUSH` route to `CP_ROLLBACK`, `CP_FINAL` has `CMD_PUSH`, `RELEASE` and `Q11` outgoing paths, and rollback forbids blind `git reset --hard`. |
+| 09 | Completed | Added workflow-version and commit-traceability governance: `CP_RECORD` fields, one-slice-one-commit enforcement, workflow history artifact and commit-message requirements now align across process docs, prompts and commit-governance skills. |
+
+## Active Workflow Version
+
+| Field | Value |
+|---|---|
+| workflowVersion | `governance-flowchart-v2-20260517` |
+| source workflow | `docs/workflow/workflow.md` |
+| history artifact | `docs/workflow/workflow.history.md` |
+| execution branch | `architecture/workflow-governance-flowchart-v2-20260517` |
+
+`CP_RECORD` uses the fields defined in `docs/process/workflow-execute.md`. The
+commit hash is completed after `CP_COMMIT` because a commit cannot contain a
+stable reference to its own hash.
 
 ## Slice 01 Branch Governance Evidence
 

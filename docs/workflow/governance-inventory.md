@@ -115,7 +115,9 @@ These labels are introduced by the Governance Flowchart V2 workflow and must be 
 | `PUB_PUSH_FAILED` | Push failure terminal | Mapped by Slice 07 to `CP_ROLLBACK` handoff or Root Architect escalation |
 | `PUB_REJECTED` | Publication rejected terminal | Mapped by Slice 07 as governance, scope, branch or guard rejection |
 | R10 | No automatic backward jump from S3 to S2 | Introduced by workflow, not yet implemented outside `docs/workflow` |
-| R11 | One slice, one commit | Introduced by workflow, not yet implemented outside `docs/workflow` |
+| R11 | One slice, one commit | Mapped by Slice 09 in process, prompt and commit-governance rules |
+| `CP_RECORD` | Slice traceability record | Mapped by Slice 09 with workflow version, changed files, quality evidence, commit hash, rollback reference and documentation update status fields |
+| workflow history | Workflow-version and slice-history artifact | Mapped by Slice 09 in `docs/workflow/workflow.history.md` |
 | `S1_PUSH_ELIGIBILITY_GUARD` | Skills-agents push eligibility guard | Introduced by workflow, not yet implemented outside `docs/workflow` |
 | `PUB_PR_MERGE_GUARD` | Publication PR merge guard | Introduced by workflow, not yet implemented outside `docs/workflow` |
 | DOCROOT | Global documentation governance | Introduced by workflow, not yet implemented outside `docs/workflow` |

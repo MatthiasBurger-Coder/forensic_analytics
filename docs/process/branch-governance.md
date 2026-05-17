@@ -75,6 +75,27 @@ revert, a new fix slice, branch discard with explicit approval, manual workflow
 recut or Root Architect escalation. It is not blind `git reset --hard`, a
 force-push, branch cleanup or hidden history rewrite.
 
+Each checkpoint commit must map to exactly one slice and one active workflow
+version. `CP_RECORD` must capture:
+
+```text
+workflowVersion
+sliceId
+sliceTitle
+responsibleAgent
+changedFiles
+qualityGateCommands
+qualityGateResult
+commitHash
+rollbackReference
+arc42Updated
+adrUpdated
+```
+
+`commitHash` is filled after `CP_COMMIT` succeeds. Until then it is recorded as
+`pending`; the post-commit checkpoint report must replace or supplement it with
+the actual hash and push result.
+
 It must not:
 
 - create or merge a PR

@@ -32,9 +32,15 @@ git status --short --branch
 16. Assign subagents or role reviews.
 17. Use Agent Handoff Protocol for owner changes and parallel work.
 18. Run required quality gates.
-19. After each successful slice, run the slice checkpoint push defined by `docs/process/workflow-execute.md`.
-20. Produce a summary with exact validation evidence.
-21. Commit or push only when the workflow explicitly allows it and required gates are clean.
+19. After each successful slice, create the `CP_RECORD` defined by
+   `docs/process/workflow-execute.md` with workflow version, slice ID, slice
+   title, responsible agent, changed files, quality-gate commands,
+   quality-gate result, rollback reference, arc42 update status and ADR update
+   status.
+20. Run the slice checkpoint push defined by `docs/process/workflow-execute.md`.
+21. After `CP_COMMIT` succeeds, record the actual commit hash and push result.
+22. Produce a summary with exact validation evidence.
+23. Commit or push only when the workflow explicitly allows it and required gates are clean.
 
 ## Stop Conditions
 
@@ -53,3 +59,4 @@ Stop when:
 - commit or push is requested without workflow permission.
 - slice checkpoint push would include files outside the current slice;
 - slice checkpoint push would push to `main`, create or merge a PR, run `push auto`, run branch cleanup or force-push.
+- a slice checkpoint commit would contain multiple slice IDs or no active workflow version.

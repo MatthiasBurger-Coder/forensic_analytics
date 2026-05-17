@@ -216,6 +216,42 @@ execution report path when those paths are authorized.
 force-push, hidden history rewrite, branch cleanup or automatic `workflow
 create` rerun.
 
+## Workflow Versioning And CP_RECORD Traceability
+
+The active workflow version for a `workflow execute` run is the checked workflow
+version recorded in `docs/workflow/workflow.history.md`. The version remains
+stable for all slices in that workflow execution. If the workflow scope,
+dependencies or required governance rules are changed, the change must create a
+new workflow version through an explicit workflow-governance update instead of
+silently continuing under the old version.
+
+Every slice checkpoint must create one `CP_RECORD` entry tied to the active
+workflow version. The minimum fields are:
+
+```text
+workflowVersion
+sliceId
+sliceTitle
+responsibleAgent
+changedFiles
+qualityGateCommands
+qualityGateResult
+commitHash
+rollbackReference
+arc42Updated
+adrUpdated
+```
+
+`CP_RECORD` is completed in two phases because the final commit hash exists only
+after `CP_COMMIT` succeeds:
+
+1. Before `CP_COMMIT`, record all known fields and set `commitHash` to `pending`.
+2. After `CP_COMMIT` and `CP_PUSH`, record the actual commit hash and push
+   result in the execution report or workflow history artifact.
+
+The rollback reference must point to the exact slice commit or explicitly state
+why only file-level rollback or Root Architect escalation is available.
+
 Not allowed:
 
 - no commit when the slice quality gate failed
@@ -231,6 +267,20 @@ Commit messages use:
 
 ```text
 <type>(slice-<nn>): <short description>
+```
+
+The commit body for a `workflow execute` slice must include or reference the
+slice record fields above. It must identify exactly one `sliceId`, the active
+`workflowVersion`, changed files, executed quality-gate commands, documentation
+updates, rollback reference and any limitation. Multi-slice commits and
+unrelated changes are not allowed.
+
+Required rule:
+
+```text
+One slice, one commit.
+No multi-slice commits.
+No unrelated changes.
 ```
 
 Examples:

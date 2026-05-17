@@ -293,6 +293,16 @@ It does not create or merge a PR, does not clean up branches and must not force-
 
 Do not create a pull request, merge a pull request, delete remote branches, delete local branches, run git-clean, push to `main`, run `push auto`, or force-push.
 
+For workflow-execute checkpoint commits:
+
+- commit exactly one slice;
+- include exactly one `sliceId` and the active `workflowVersion`;
+- require a `CP_RECORD` with changed files, quality-gate commands,
+  quality-gate result, rollback reference, arc42 update status and ADR update
+  status;
+- record the actual commit hash after `CP_COMMIT` succeeds;
+- stop when staged files or the commit message would mix multiple slices.
+
 ### Phase 12: Push Command And GitHub Pull Request
 
 When the user enters exactly `push`, treat it as explicit permission to:

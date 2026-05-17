@@ -131,6 +131,21 @@ The body must:
 
 Use `None` only when the diff and verification evidence support it.
 
+For `workflow execute` slice checkpoint commits, the body must also include:
+
+- exactly one `Slice-ID`,
+- active `workflowVersion`,
+- slice title,
+- responsible agent or reviewed role,
+- changed files,
+- quality-gate commands and result,
+- rollback reference,
+- `arc42Updated`,
+- `adrUpdated`.
+
+Do not draft a checkpoint commit message that combines multiple slice IDs or
+omits the workflow version.
+
 ## Output Format
 
 Return:
