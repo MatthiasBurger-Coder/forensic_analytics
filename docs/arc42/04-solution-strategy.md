@@ -58,3 +58,17 @@ Repository agent governance follows three process strands:
 `workflow execute` executes the checked workflow slice by slice. Each successful slice must run its quality gate, create a slice-scoped checkpoint commit and push the current workflow branch to `origin`.
 
 Publication modes stay separate: slice checkpoint push, `push` and `push auto` are different processes. `push auto` belongs only to `skills-agents`.
+
+## 4.6 Agent-Governed Engineering Strategy
+
+The repository uses agent-governed engineering to prevent uncontrolled changes, mixed responsibilities and architecture drift.
+
+The strategy separates:
+
+- `skills update` for maintaining the virtual development team,
+- `workflow create` for requirement clarification and architecture-aware workflow planning,
+- `workflow execute` for controlled slice implementation.
+
+This separation ensures that requirements are clarified before implementation, workflow artifacts are checked before execution and every implementation slice is validated, documented, committed and pushed as a recoverable checkpoint.
+
+The Senior System Architect owns the top-level governance boundary. Documentation Governance is mandatory in every strand but does not create a separate fourth strand.
