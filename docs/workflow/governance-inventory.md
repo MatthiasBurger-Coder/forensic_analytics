@@ -122,10 +122,10 @@ These labels are introduced by the Governance Flowchart V2 workflow and must be 
 | Q11 | Async execution report path | Mapped by Slice 10 as non-blocking by default after `CP_FINAL`, except explicitly declared regulatory reporting gates |
 | `S1_PUSH_ELIGIBILITY_GUARD` | Skills-agents push eligibility guard | Mapped by Slice 11 as the active guard for skills-agents push eligibility |
 | `PUB_PR_MERGE_GUARD` | Publication PR merge guard | Mapped by Slice 11 as the active guard for PR merge, open, blocked or rejected decisions |
-| DOCROOT | Global documentation governance | Introduced by workflow, not yet implemented outside `docs/workflow` |
-| `S1_DOC` | Local skills-agents documentation step | Introduced by workflow, not yet implemented outside `docs/workflow` |
-| `S2_DOC` | Local workflow-create documentation step | Introduced by workflow, not yet implemented outside `docs/workflow` |
-| `S3_DOC` | Local workflow-execute documentation step | Introduced by workflow, not yet implemented outside `docs/workflow` |
+| DOCROOT | Global documentation governance | Mapped by Slice 12 as the global consistency check, not a local docs step |
+| `S1_DOC` | Local skills-agents documentation step | Mapped by Slice 12 as the local skills-agents documentation node |
+| `S2_DOC` | Local workflow-create documentation step | Mapped by Slice 12 as the local workflow-create documentation node |
+| `S3_DOC` | Local workflow-execute documentation step | Mapped by Slice 12 as the local workflow-execute documentation node |
 | Level 1 diagram | Governance overview diagram | Introduced by workflow, not yet implemented outside `docs/workflow` |
 | Level 2 diagrams | Detailed subgraph diagrams | Introduced by workflow, not yet implemented outside `docs/workflow` |
 

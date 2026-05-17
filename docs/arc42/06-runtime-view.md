@@ -168,7 +168,7 @@ flowchart TD
   Arc42["arc42 Architecture Documentation Maintainer"]
   WorkflowCheck["workflow.md Validation"]
   Arc42Check["arc42 Validation"]
-  Docs["Documentation Governance"]
+  Docs["S2_DOC: Documentation Governance"]
   Final["Final Gate"]
   Release["Release for workflow execute"]
 
@@ -201,7 +201,7 @@ flowchart TD
   Backend["Backend Strand"]
   Frontend["Frontend Strand"]
   Runtime["Docker / Runtime Strand"]
-  Docs["Documentation Strand"]
+  Docs["S3_DOC: Documentation Strand"]
   Gate["Slice Quality Gate"]
   Router["Typed Error Router"]
   ArchFailure["ARCH_VIOLATION"]

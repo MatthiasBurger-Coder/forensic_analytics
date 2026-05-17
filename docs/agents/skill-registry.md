@@ -52,7 +52,10 @@ Must not change:
 | Entry | Strand | Owner | Responsibility |
 |---|---|---|---|
 | Senior System Architect | all strands | Senior System Architect | architecture and governance authority |
-| Documentation Governance | all strands | Senior Documentation Engineer | docs consistency and source-of-truth alignment |
+| `DOCROOT` | all strands | Senior Documentation Engineer | global docs consistency for process docs, role model, organigramm, arc42 structure, governance rules, workflow conventions and hard boundaries |
+| `S1_DOC` | `skills-agents` | Senior Documentation Engineer | update concrete skills, agents, roles, prompts, routing, organigramm, skill registry and process docs |
+| `S2_DOC` | `workflow create` | Senior Documentation Engineer | update concrete requirement-gate, workflow authoring, workflow handoff and arc42-impact docs |
+| `S3_DOC` | `workflow execute` | Senior Documentation Engineer / Workflow Executor | update concrete slice execution, quality gate, rollback, commit result and execution report docs |
 | Skill / Agent Creator | `skills-agents` | Skill Registry Maintainer | create or update skills, roles, prompts and agent definitions |
 | Skill Integrity Reviewer | `skills-agents` | Skill Registry Conflict Auditor | check dead references, ownership and duplicate authority |
 | Skill Registry Maintainer | `skills-agents` | Senior System Architect | maintain this registry |

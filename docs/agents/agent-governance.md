@@ -18,7 +18,9 @@ There are exactly three process strands:
 
 These strands must not be mixed.
 
-Documentation Governance is not a fourth strand. Documentation Governance runs inside the active strand and applies that strand's file scope, quality gate and publication rules.
+Documentation Governance is not a fourth strand. Local documentation nodes run
+inside the active strand and apply that strand's file scope, quality gate and
+publication rules. `DOCROOT` is the global documentation-governance check.
 
 ## Command Mapping
 
@@ -42,7 +44,10 @@ Senior System Architect
 |-- skills-agents
 |-- workflow create
 |-- workflow execute
-`-- Documentation Governance inside all active strands
+`-- DOCROOT global documentation governance
+    |-- S1_DOC inside skills-agents
+    |-- S2_DOC inside workflow create
+    `-- S3_DOC inside workflow execute
 ```
 
 ```mermaid
@@ -51,7 +56,7 @@ flowchart TD
   Skills["Strand 1: skills-agents"]
   Create["Strand 2: workflow create"]
   Execute["Strand 3: workflow execute"]
-  Docs["Documentation Governance"]
+  Docs["DOCROOT: Global Documentation Governance"]
   Registry["Skill Registry Maintainer"]
   Org["Organigramm Maintainer"]
   Process["Process Governance Maintainer"]
@@ -60,6 +65,9 @@ flowchart TD
   Architect --> Create
   Architect --> Execute
   Architect --> Docs
+  Docs --> Skills
+  Docs --> Create
+  Docs --> Execute
   Skills --> Registry
   Skills --> Org
   Skills --> Process
@@ -130,7 +138,7 @@ flowchart TD
   Arc42["arc42 Architecture Documentation Maintainer"]
   WorkflowCheck["workflow.md Validation"]
   Arc42Check["arc42 Validation"]
-  Docs["Documentation Governance"]
+  Docs["S2_DOC: Documentation Governance"]
   Final["Final Gate"]
   Release["Release for workflow execute"]
 
@@ -176,7 +184,7 @@ flowchart TD
   Backend["Backend Strand"]
   Frontend["Frontend Strand"]
   Runtime["Docker / Runtime Strand"]
-  Docs["Documentation Strand"]
+  Docs["S3_DOC: Documentation Strand"]
   Gate["D8: Blocking Slice Quality Gate"]
   QG_STOP["QG_STOP: Stop execution"]
   CP_RECORD["CP_RECORD: Record slice result"]
@@ -316,5 +324,9 @@ The agent governance model is architecture governance because it protects:
 `S1_PUSH_ELIGIBILITY_GUARD` checks whether skill, agent and governance changes
 are pushable through `push auto`. `PUB_PR_MERGE_GUARD` decides whether a PR may
 merge, stay open, be blocked or be rejected.
+
+`S1_DOC`, `S2_DOC` and `S3_DOC` update concrete strand artifacts. `DOCROOT`
+checks global consistency for process documentation, role model, organigramm,
+arc42 structure, governance rules, workflow conventions and hard boundaries.
 
 The Senior System Architect owns the top-level governance boundary. Shared roles such as Documentation Governance, Skill Registry Maintainer, Organigramm Maintainer, Process Governance Maintainer and `S1_PUSH_ELIGIBILITY_GUARD` run inside the active strand rather than creating a fourth strand.

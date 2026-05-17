@@ -66,6 +66,7 @@ Resolution: the user request defines these as target Governance Flowchart V2 sem
 | 09 | Completed | Added workflow-version and commit-traceability governance: `CP_RECORD` fields, one-slice-one-commit enforcement, workflow history artifact and commit-message requirements now align across process docs, prompts and commit-governance skills. |
 | 10 | Completed | Separated D8 and Q11: D8 is the synchronous blocking gate for build, tests, architecture, required docs, workflow version and required quality gates; Q11 is asynchronous and non-blocking by default unless regulatory reporting is explicitly promoted to D8. |
 | 11 | Completed | Sharpened guard names: `S1_PUSH_ELIGIBILITY_GUARD` owns skills-agents push eligibility and `PUB_PR_MERGE_GUARD` owns PR merge/open/blocked/rejected decisions. |
+| 12 | Completed | Separated documentation governance: `DOCROOT` is the global consistency check, while `S1_DOC`, `S2_DOC` and `S3_DOC` update concrete artifacts inside their active strands. |
 
 ## Active Workflow Version
 

@@ -107,6 +107,12 @@ Repository governance uses three process strands:
 
 The strands must not be mixed. Shared roles such as Senior System Architect, Documentation Governance, Skill Registry Maintainer, Organigramm Maintainer, Process Governance Maintainer and `S1_PUSH_ELIGIBILITY_GUARD` execute inside the active strand and apply that strand's file scope, quality gate and documentation duty.
 
+Documentation Governance is split into global and local nodes. `S1_DOC`,
+`S2_DOC` and `S3_DOC` update concrete artifacts inside `skills-agents`,
+`workflow create` and `workflow execute`. `DOCROOT` checks global consistency
+for process documentation, role model, organigramm, arc42 structure, governance
+rules, workflow conventions and hard boundaries.
+
 `skills update` is the explicit entrypoint for `skills-agents`.
 
 `workflow create` requires the Requirement Clarification Loop, the five-role Three Amigos Requirement Gate, checked `docs/workflow/workflow.md`, checked or updated arc42 documentation and explicit release for `workflow execute`.

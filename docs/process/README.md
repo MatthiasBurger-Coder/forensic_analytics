@@ -14,6 +14,25 @@ Repository agent work is organized into three process strands:
 
 The strands must not be mixed. Shared governance roles execute inside the active strand and apply that strand's file scope, review duties and publication rules.
 
+## Documentation Governance
+
+`DOCROOT` is the global documentation-governance check. It verifies process
+documentation, role model, organigramm, arc42 structure, governance rules,
+workflow conventions and hard boundaries across the repository.
+
+Local documentation nodes update concrete artifacts inside the active strand:
+
+- `S1_DOC`: skills-agents documentation for skills, agents, roles, prompts,
+  routing, organigramm, skill registry and related process docs.
+- `S2_DOC`: workflow-create documentation for requirement gates,
+  `docs/workflow/workflow.md`, workflow handoff and checked arc42 impact.
+- `S3_DOC`: workflow-execute documentation for slice execution, quality gates,
+  rollback, commit results and execution reports.
+
+`DOCROOT` is not a fourth process strand and must not replace local
+documentation updates. Local nodes write concrete artifacts; `DOCROOT` checks
+global consistency.
+
 ## Process Documents
 
 - [Skills Update Command](skills-update.md) defines the exact `skills update` entrypoint and the `skills-agents` strand.

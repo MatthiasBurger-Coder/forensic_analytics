@@ -70,3 +70,21 @@ Guarded publication mode restricted to the `skills-agents` strand.
 ### Documentation Governance
 
 Mandatory documentation synchronization inside every active process strand.
+
+### DOCROOT
+
+Global documentation-governance check for process documentation, role model,
+organigramm, arc42 structure, governance rules, workflow conventions and hard
+boundaries.
+
+### S1_DOC
+
+Local documentation node for `skills-agents`.
+
+### S2_DOC
+
+Local documentation node for `workflow create`.
+
+### S3_DOC
+
+Local documentation node for `workflow execute`.

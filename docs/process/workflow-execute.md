@@ -4,6 +4,12 @@
 
 It executes a checked `docs/workflow/workflow.md` slice by slice through the configured subagent workflow, required role reviews, tests, documentation updates, quality gates and slice checkpoint pushes.
 
+The local documentation node for this strand is `S3_DOC`. `S3_DOC` updates
+concrete workflow-execute artifacts such as slice execution notes, quality-gate
+evidence, rollback decisions, commit results and execution reports. `DOCROOT`
+separately checks global documentation consistency and is not a local slice
+documentation step.
+
 ## Start Conditions
 
 `workflow execute` may start only when both are present and checked:
@@ -35,7 +41,7 @@ flowchart TD
   S3D -->|backend graph and locks valid| BE_Q["BE_Q: Backend slice"]
   S3D -->|frontend graph and locks valid| FE_Q["FE_Q: Frontend slice"]
   S3D -->|runtime graph and locks valid| RT_Q["RT_Q: Runtime slice"]
-  S3D -->|documentation graph and locks valid| DOC_Q["DOC_Q: Documentation slice"]
+  S3D -->|documentation graph and locks valid| DOC_Q["S3_DOC / DOC_Q: Documentation slice"]
   S3D -->|lock conflict| S3D_LOCK_CONFLICT["LOCK_CONFLICT: Route to Typed Error Router"]
   S3D -->|cycle, missing metadata or unknown dependency| S3D_STOP["STOP: Orchestration blocker - escalate"]
 ```

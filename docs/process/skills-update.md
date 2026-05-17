@@ -16,6 +16,10 @@ It is used to create, update, audit, reconnect or refactor:
 - AGENTS.md governance sections
 - arc42 or ADR notes when they document agent-governance consequences
 
+The local documentation node for this strand is `S1_DOC`. `S1_DOC` updates
+concrete skills-agents artifacts. `DOCROOT` separately checks global
+documentation consistency and is not a local replacement for `S1_DOC`.
+
 ## Required Flow
 
 ```mermaid
@@ -29,7 +33,7 @@ flowchart TD
   Org["Organigramm Review"]
   Registry["Skill Registry Review"]
   Agents["AGENTS.md Impact Review"]
-  Docs["Process Documentation Review"]
+  Docs["S1_DOC: Process Documentation Review"]
   Gate["Final skills-agents gate"]
   Ready["Ready for optional push auto"]
   Stop["STOP and report"]

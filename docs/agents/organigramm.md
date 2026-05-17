@@ -11,7 +11,10 @@ Senior System Architect
 |-- skills-agents
 |-- workflow create
 |-- workflow execute
-`-- Documentation Governance inside all active strands
+`-- DOCROOT global documentation governance
+    |-- S1_DOC inside skills-agents
+    |-- S2_DOC inside workflow create
+    `-- S3_DOC inside workflow execute
 ```
 
 ```mermaid
@@ -20,7 +23,7 @@ flowchart TD
   Skills["Strand 1: skills-agents"]
   Create["Strand 2: workflow create"]
   Execute["Strand 3: workflow execute"]
-  Docs["Documentation Governance"]
+  Docs["DOCROOT: Global Documentation Governance"]
   Registry["Skill Registry Maintainer"]
   Org["Organigramm Maintainer"]
   Process["Process Governance Maintainer"]
@@ -29,6 +32,9 @@ flowchart TD
   Architect --> Create
   Architect --> Execute
   Architect --> Docs
+  Docs --> Skills
+  Docs --> Create
+  Docs --> Execute
   Skills --> Registry
   Skills --> Org
   Skills --> Process
@@ -82,7 +88,7 @@ flowchart TD
   Arc42["arc42 Architecture Documentation Maintainer"]
   WorkflowCheck["workflow.md Validation"]
   Arc42Check["arc42 Validation"]
-  Docs["Documentation Governance"]
+  Docs["S2_DOC: Documentation Governance"]
   Final["Final Gate"]
   Release["Release for workflow execute"]
 
@@ -116,7 +122,7 @@ flowchart TD
   Backend["Backend Strand"]
   Frontend["Frontend Strand"]
   Runtime["Docker / Runtime Strand"]
-  Docs["Documentation Strand"]
+  Docs["S3_DOC: Documentation Strand"]
   Gate["D8: Blocking Slice Quality Gate"]
   QG_STOP["QG_STOP: Stop execution"]
   CP_RECORD["CP_RECORD: Record slice result"]

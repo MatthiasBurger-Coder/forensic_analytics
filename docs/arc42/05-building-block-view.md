@@ -168,7 +168,7 @@ flowchart TD
   Skills["Strand 1: skills-agents"]
   Create["Strand 2: workflow create"]
   Execute["Strand 3: workflow execute"]
-  Docs["Documentation Governance"]
+  Docs["DOCROOT: Global Documentation Governance"]
   Registry["Skill Registry Maintainer"]
   Org["Organigramm Maintainer"]
   Process["Process Governance Maintainer"]
@@ -177,6 +177,9 @@ flowchart TD
   Architect --> Create
   Architect --> Execute
   Architect --> Docs
+  Docs --> Skills
+  Docs --> Create
+  Docs --> Execute
   Skills --> Registry
   Skills --> Org
   Skills --> Process
@@ -187,7 +190,10 @@ flowchart TD
 | Building Block | Responsibility |
 |---|---|
 | Senior System Architect | Owns architecture and process-strand governance. |
-| Documentation Governance | Keeps AGENTS.md, process docs, workflow docs, arc42, ADRs and skill-audit material synchronized. |
+| `DOCROOT` | Checks global consistency for process documentation, role model, organigramm, arc42 structure, governance rules, workflow conventions and hard boundaries. |
+| `S1_DOC` | Updates concrete skills-agents documentation artifacts. |
+| `S2_DOC` | Updates concrete workflow-create documentation artifacts. |
+| `S3_DOC` | Updates concrete workflow-execute documentation artifacts. |
 | Skill Registry Maintainer | Maintains the skills-agents registry and ownership map. |
 | Organigramm Maintainer | Maintains agent role hierarchy and process-strand diagrams. |
 | Process Governance Maintainer | Maintains command and publication-mode documentation. |
@@ -244,7 +250,13 @@ Responsibilities:
 
 ### Documentation Governance
 
-Runs inside every active strand. It is mandatory but not a fourth strand.
+Local documentation nodes update concrete artifacts in the active strand:
+`S1_DOC` for skills-agents, `S2_DOC` for workflow create and `S3_DOC` for
+workflow execute.
+
+`DOCROOT` checks that workflow, process, agent, arc42 and ADR artifacts remain
+synchronized with the global governance model. `DOCROOT` is not a fourth
+process strand and does not replace local documentation nodes.
 
 ### Publication Modes
 
