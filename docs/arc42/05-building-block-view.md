@@ -168,3 +168,45 @@ facts, incident records, correlation indexes or database migrations.
 | arc42 Architecture Documentation Maintainer | Checks or updates arc42 before workflow execute is released. |
 | Testing Documentation Maintainer | Maintains workflow test strategy and quality-gate evidence. |
 | Execution Report Maintainer | Records slice checkpoint commit SHA, push result and blockers during `workflow execute`. |
+
+### Senior System Architect
+
+Top-level architecture and process governance authority.
+
+### skills-agents Strand
+
+Maintains skills, agents, roles, prompts, routing rules, organigramm, skill registry and process documentation.
+
+Triggered by:
+
+```text
+skills update
+```
+
+### workflow create Strand
+
+Turns a user request into a clarified, checked and executable workflow.
+
+Produces:
+
+1. checked `docs/workflow/workflow.md`
+2. checked or updated arc42 documentation
+
+### workflow execute Strand
+
+Executes checked workflow slices through the agent workflow.
+
+Responsibilities:
+
+- load checked workflow
+- load checked arc42 documentation
+- classify backend, frontend, runtime and documentation work
+- route to roles or subagents
+- run Slice Quality Gates
+- create Slice Checkpoint Commit
+- push workflow branch to origin
+- update execution report and arc42 consistency
+
+### Documentation Governance
+
+Runs inside every active strand. It is mandatory but not a fourth strand.
