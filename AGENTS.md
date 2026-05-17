@@ -95,6 +95,71 @@ The Workflow Executor executes approved slices. It must not be the sole authorit
 
 The Senior System Architect owns architecture governance and may block architecture-sensitive workflows. The Three Amigos Requirement Gatekeeper is the intake gate for new or changed requirements. The Skill Registry & Conflict Auditor is the governance control for skill overlap, conflicting ownership and incompatible workflow rules.
 
+## Mandatory Process Strands
+
+Repository agent work is organized into exactly three process strands:
+
+1. `skills-agents`
+2. `workflow create`
+3. `workflow execute`
+
+The strands must not be mixed.
+
+Shared governance roles such as Senior System Architect, Documentation Governance, Skill Registry Maintainer, Organigramm Maintainer, Process Governance Maintainer and Push Auto Guard execute inside the active strand and must apply that strand's file scope, quality gate and documentation duty.
+
+The `skills-agents` strand is the only strand that may use `push auto`. `push auto` must not publish backend, frontend, Docker/runtime, gRPC, REST, persistence, analysis-engine, Joern, JavaParser, BTM generator or product implementation changes.
+
+## Mandatory Skills Update Command
+
+When the user writes exactly:
+
+```text
+skills update
+```
+
+Codex must activate the `skills-agents` process strand.
+
+This command is used for creating, updating, refactoring, auditing or reconnecting skills, agents, roles, prompts, Codex agent definitions, routing rules, organigramm, skill registry and related process documentation.
+
+`skills update` must not implement product backend, frontend, Docker/runtime, contracts, persistence, analysis engine, Joern, JavaParser, BTM generator or analytics behavior.
+
+`skills update` must run:
+
+1. Skill / agent intake
+2. Integrity review
+3. Linkage and owner review
+4. Conflict and duplicate review
+5. Organigramm review
+6. Skill registry review
+7. AGENTS.md impact review
+8. Process documentation review
+9. Final skills-agents gate
+
+The command may prepare changes for `push auto`, but it must not run `push auto` unless the user explicitly requests `push auto`.
+
+`skills update` is not `workflow create`.
+`skills update` is not `workflow execute`.
+`skills update` is not `push auto`.
+
+## Publication Modes
+
+Publication modes are separate:
+
+1. Slice checkpoint push:
+   - belongs to `workflow execute`;
+   - runs after a successful slice quality gate;
+   - commits only the current slice and pushes the current workflow branch to `origin`;
+   - does not create or merge a PR;
+   - does not run branch cleanup;
+   - is not `push auto`.
+2. `push`:
+   - normal push and PR process after explicit user approval;
+   - does not automatically merge.
+3. `push auto`:
+   - belongs only to `skills-agents`;
+   - may create, verify and merge a PR only after guard checks pass;
+   - must never publish backend, frontend, Docker/runtime or analytics implementation changes.
+
 ## Mandatory Workflow Creation Command
 
 When the user writes exactly:
