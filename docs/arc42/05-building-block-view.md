@@ -156,6 +156,34 @@ facts, incident records, correlation indexes or database migrations.
 
 ## 5.10 Agent Governance Building Blocks
 
+The complete agent governance diagrams are maintained in
+`docs/agents/organigramm.md` and explained in
+`docs/agents/agent-governance.md`. The arc42 building-block view embeds the
+architecture-relevant governance overview and publication-mode separation
+directly because they define ownership boundaries for repository changes.
+
+```mermaid
+flowchart TD
+  Architect["Senior System Architect"]
+  Skills["Strand 1: skills-agents"]
+  Create["Strand 2: workflow create"]
+  Execute["Strand 3: workflow execute"]
+  Docs["Documentation Governance"]
+  Registry["Skill Registry Maintainer"]
+  Org["Organigramm Maintainer"]
+  Process["Process Governance Maintainer"]
+
+  Architect --> Skills
+  Architect --> Create
+  Architect --> Execute
+  Architect --> Docs
+  Skills --> Registry
+  Skills --> Org
+  Skills --> Process
+  Create --> Docs
+  Execute --> Docs
+```
+
 | Building Block | Responsibility |
 |---|---|
 | Senior System Architect | Owns architecture and process-strand governance. |
@@ -210,3 +238,24 @@ Responsibilities:
 ### Documentation Governance
 
 Runs inside every active strand. It is mandatory but not a fourth strand.
+
+### Publication Modes
+
+```mermaid
+flowchart TD
+  Checkpoint["Slice checkpoint push"]
+  Push["push"]
+  Auto["push auto"]
+  Execute["workflow execute"]
+  Pr["PR without automatic merge"]
+  Skills["skills-agents"]
+  Guard["Guarded PR lifecycle"]
+
+  Execute --> Checkpoint
+  Push --> Pr
+  Skills --> Auto --> Guard
+```
+
+Slice checkpoint push, `push` and `push auto` are separate publication
+mechanisms. `push auto` is restricted to `skills-agents`; slice checkpoint push
+belongs to `workflow execute`.
