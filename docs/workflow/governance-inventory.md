@@ -94,7 +94,7 @@ These labels are introduced by the Governance Flowchart V2 workflow and must be 
 | S1 | Existing `skills-agents` strand | Introduced by workflow, mapped to existing strand |
 | S2 | Existing `workflow create` strand | Introduced by workflow, mapped to existing strand |
 | S3 | Existing `workflow execute` strand | Introduced by workflow, mapped to existing strand |
-| S3D | Execution-orchestration node inside S3 | Introduced by workflow, not yet implemented outside `docs/workflow` |
+| S3D | Execution-orchestration node inside S3 | Mapped by Slice 06 to workflow-execute, Senior Swarm Orchestrator, dependency graph and conflict-lock governance |
 | `S3_STATUS` | Working-tree preflight node | Introduced by workflow, not yet implemented outside `docs/workflow` |
 | `S3_BRANCH` | Execution-branch preflight node | Introduced by workflow, not yet implemented outside `docs/workflow` |
 | `S3_SCOPE` | Workflow-scope preflight node | Introduced by workflow, not yet implemented outside `docs/workflow` |
@@ -144,6 +144,6 @@ These labels are introduced by the Governance Flowchart V2 workflow and must be 
 - Dedicated Root Architect role file is not present.
 - Dedicated Flowchart Integrity Audit skill is not present.
 - Typed Error Router is mapped into workflow-execute and quality-gate governance; a dedicated standalone skill remains a Slice 14 linkage decision.
-- Conflict Locking is present as orchestration intent, but not yet as a named governance node.
+- Conflict Locking is mapped into S3D orchestration; a dedicated standalone skill remains a Slice 14 linkage decision.
 
 These gaps are documented and are not blockers for workflow creation because the user request defines the target semantics and Slice 14 owns the linkage decision.

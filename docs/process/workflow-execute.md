@@ -26,12 +26,18 @@ flowchart TD
   S3_BRANCH -->|wrong branch| S3_STOP_BRANCH["STOP: Wrong branch - report only"]
   S3_SCOPE -->|scope valid| S3_CLASSIFY["S3_CLASSIFY: Classify slice"]
   S3_SCOPE -->|scope conflict| S3_STOP_SCOPE["STOP: Scope conflict - escalate"]
-  S3_CLASSIFY -->|backend| BE_Q["BE_Q: Backend slice"]
-  S3_CLASSIFY -->|frontend| FE_Q["FE_Q: Frontend slice"]
-  S3_CLASSIFY -->|runtime / devops / contracts| RT_Q["RT_Q: Runtime slice"]
-  S3_CLASSIFY -->|documentation / governance / metadata declared by workflow| DOC_Q["DOC_Q: Documentation slice"]
+  S3_CLASSIFY -->|backend| S3D["S3D: Execution Orchestrator"]
+  S3_CLASSIFY -->|frontend| S3D
+  S3_CLASSIFY -->|runtime / devops / contracts| S3D
+  S3_CLASSIFY -->|documentation / governance / metadata declared by workflow| S3D
   S3_CLASSIFY -->|none of the above| S3_UNCLASSIFIED["S3_UNCLASSIFIED: Stop and escalate"]
   S3_UNCLASSIFIED --> ROOT_ARCHITECT["Root Architect decision"]
+  S3D -->|backend graph and locks valid| BE_Q["BE_Q: Backend slice"]
+  S3D -->|frontend graph and locks valid| FE_Q["FE_Q: Frontend slice"]
+  S3D -->|runtime graph and locks valid| RT_Q["RT_Q: Runtime slice"]
+  S3D -->|documentation graph and locks valid| DOC_Q["DOC_Q: Documentation slice"]
+  S3D -->|lock conflict| S3D_LOCK_CONFLICT["LOCK_CONFLICT: Route to Typed Error Router"]
+  S3D -->|cycle, missing metadata or unknown dependency| S3D_STOP["STOP: Orchestration blocker - escalate"]
 ```
 
 S3 STOP paths report the blocker and do not jump back to `workflow create`.
@@ -41,6 +47,38 @@ Unclassifiable slices must not execute automatically.
 Explicitly declared governance, metadata and documentation-only slices may route
 through the Documentation Strand only when the active workflow declares that
 scope. Otherwise they are unclassified and must escalate.
+
+## S3D Execution Orchestrator
+
+S3D runs after `S3_CLASSIFY` and before write-capable slice execution. It is the
+Execution Orchestrator for `workflow execute`, not a fourth process strand.
+
+S3D reads the checked `docs/workflow/workflow.md` and extracts:
+
+- slice ID
+- slice goal
+- affected files
+- affected modules
+- affected contracts
+- responsible subagents or roles
+- dependencies
+- quality gates
+- documentation duties
+
+S3D then builds a directed dependency graph, runs topological sort, forms
+independent parallelization groups and checks file, contract, module and
+architecture-boundary locks before any write-capable agent starts.
+
+Parallel execution is allowed only when all active slices have disjoint write
+scopes, no shared contract or architecture boundary is edited by more than one
+active slice, quality gates can be attributed independently and documentation
+ownership is explicit.
+
+S3D must stop and report when metadata is missing, dependency references are
+unknown, dependency ranges are not expanded to concrete slice IDs, the graph has
+a cycle, or a lock overlaps. Lock overlaps route as `LOCK_CONFLICT` through the
+Typed Error Router. S3D must not call `workflow create`, rewrite the active
+workflow during execution or expand scope automatically.
 
 ## Typed Error Router
 

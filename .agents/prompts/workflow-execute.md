@@ -28,12 +28,13 @@ git status --short --branch
 12. Run Requirement Gate when the request introduces or changes a requirement.
 13. Run Skill Conflict Audit before implementation slices.
 14. Build or verify the slice plan.
-15. Assign subagents or role reviews.
-16. Use Agent Handoff Protocol for owner changes and parallel work.
-17. Run required quality gates.
-18. After each successful slice, run the slice checkpoint push defined by `docs/process/workflow-execute.md`.
-19. Produce a summary with exact validation evidence.
-20. Commit or push only when the workflow explicitly allows it and required gates are clean.
+15. Run S3D orchestration: dependency graph, topological sort and file, contract, module and architecture-boundary lock checks.
+16. Assign subagents or role reviews.
+17. Use Agent Handoff Protocol for owner changes and parallel work.
+18. Run required quality gates.
+19. After each successful slice, run the slice checkpoint push defined by `docs/process/workflow-execute.md`.
+20. Produce a summary with exact validation evidence.
+21. Commit or push only when the workflow explicitly allows it and required gates are clean.
 
 ## Stop Conditions
 
@@ -46,6 +47,7 @@ Stop when:
 - skill registry was skipped;
 - requirement gate was required but skipped;
 - subagent or role ownership is missing;
+- S3D cannot verify slice metadata, dependency order or conflict locks;
 - handoff rules are missing for parallel work;
 - required quality gates fail or cannot be verified;
 - commit or push is requested without workflow permission.

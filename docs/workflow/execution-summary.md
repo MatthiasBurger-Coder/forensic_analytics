@@ -60,6 +60,7 @@ Resolution: the user request defines these as target Governance Flowchart V2 sem
 | 03 | Completed | Added S3 safety preflight with explicit STOP paths for dirty working tree, wrong branch and scope conflict before slice classification. |
 | 04 | Completed | Added `S3_CLASSIFY` default path: unclassifiable slices route to `S3_UNCLASSIFIED` and Root Architect escalation; declared governance, metadata and documentation-only slices route through Documentation only when the active workflow declares that scope. |
 | 05 | Completed | Added Typed Error Router mapping for quality-gate and validation failures, owner routing, `maxRetries = 3` retry cap, Root Architect escalation for unknown or exhausted failures and S3-only targeted fix loops. |
+| 06 | Completed | Mapped S3D as the workflow-execute Execution Orchestrator with explicit slice metadata, dependency graph source of truth, topological ordering, parallelization groups, conflict locks and `LOCK_CONFLICT` routing. |
 
 ## Slice 01 Branch Governance Evidence
 
@@ -89,7 +90,7 @@ Workflow-create validation:
 ```bash
 git status --short --branch
 git diff --check
-rg -n "Governance Flowchart V2|S3_STATUS|S3_BRANCH|S3_SCOPE|S3_CLASSIFY|Typed Error Router|maxRetries|CP_ROLLBACK|PUB_PR_RESULT|R10|R11|DOCROOT|Level 1|Level 2" docs/workflow docs/arc42
+rg -n "Governance Flowchart V2|S3D|S3_STATUS|S3_BRANCH|S3_SCOPE|S3_CLASSIFY|Typed Error Router|maxRetries|CP_ROLLBACK|PUB_PR_RESULT|R10|R11|DOCROOT|Level 1|Level 2" docs/workflow docs/arc42
 git diff --name-only | rg "^(src/|services/|contracts/|docker/|gradle/|proto/|forensic-ui/|build.gradle|settings.gradle)"
 ```
 

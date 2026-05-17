@@ -62,5 +62,6 @@ Must not change:
 | Push Auto Guard | `skills-agents` | Git Commit Reviewer / Git Commit Operator | block `push auto` outside skills-agents |
 | docs/workflow/workflow.md Maintainer | `workflow create` | Senior Workflow Architect | maintain active workflow specification |
 | arc42 Architecture Documentation Maintainer | `workflow create` | arc42 Architecture Governance | keep architecture docs checked or updated |
+| S3D Execution Orchestrator | `workflow execute` | Senior Swarm Orchestrator | build dependency graph, run topological sort and enforce file, contract, module and architecture-boundary locks |
 | Testing Documentation Maintainer | `workflow execute` | Senior Tester | keep test strategy and quality-gate evidence |
 | Execution Report Maintainer | `workflow execute` | Workflow Executor | record slice commit SHA, push result and blockers |

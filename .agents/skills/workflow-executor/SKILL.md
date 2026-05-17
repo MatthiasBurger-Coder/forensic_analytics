@@ -87,6 +87,38 @@ continuing.
 Do not rely on workflow notes or execution summaries as proof that the branch
 exists.
 
+## S3D Execution Orchestrator
+
+After `S3_CLASSIFY` and before write-capable slice execution, run S3D as the
+workflow-execute Execution Orchestrator. S3D is not a fourth strand.
+
+S3D must extract these fields from the checked active workflow:
+
+- slice ID
+- slice goal
+- affected files
+- affected modules
+- affected contracts
+- responsible subagents or roles
+- dependencies
+- quality gates
+- documentation duties
+
+Use explicit `none` or `not applicable` values when a field has no content.
+Missing fields, ambiguous dependency ranges, unknown slice IDs and dependency
+cycles stop execution before implementation.
+
+S3D builds a directed dependency graph, runs topological sort, forms
+independent parallelization groups and acquires file, contract, module and
+architecture-boundary locks before any write-capable worker starts. Parallel
+execution is allowed only when locks are disjoint and quality gates can be
+attributed independently.
+
+Route lock conflicts as `LOCK_CONFLICT` through the Typed Error Router. S3D may
+stop, report, escalate or recommend manual workflow refinement, but it must not
+call `workflow create`, rewrite the active workflow from S3 or expand scope
+automatically.
+
 ## Core Rule
 
 Never implement a workflow slice directly before the relevant subagent or role has reviewed the slice.
@@ -147,18 +179,19 @@ slices or commit unresolved failures.
 For each slice:
 
 1. Understand scope, prerequisites, dependencies, and allowed write scope.
-2. Route the slice to the suitable subagent or role for implementation or review.
-3. Apply only the changes authorized by the slice.
-4. Run targeted tests first.
-5. Run the required quality checks from `QUALITY.md` or the workflow.
-6. Inspect `git diff` and `git diff --check`.
-7. Document the result in the workflow quality log or the workflow-designated location.
-8. When the slice quality gate passed, stage only files changed by the current slice.
-9. Run `git diff --cached --check`.
-10. Create the slice-scoped checkpoint commit.
-11. Push the current workflow branch to `origin`.
-12. Record the commit SHA and push result in the execution report.
-13. Continue with the next slice only when the current slice is clean, the checkpoint push succeeded, or the workflow explicitly permits carrying a documented blocker without a commit.
+2. Run S3D dependency, topological-order and conflict-lock checks.
+3. Route the slice to the suitable subagent or role for implementation or review.
+4. Apply only the changes authorized by the slice.
+5. Run targeted tests first.
+6. Run the required quality checks from `QUALITY.md` or the workflow.
+7. Inspect `git diff` and `git diff --check`.
+8. Document the result in the workflow quality log or the workflow-designated location.
+9. When the slice quality gate passed, stage only files changed by the current slice.
+10. Run `git diff --cached --check`.
+11. Create the slice-scoped checkpoint commit.
+12. Push the current workflow branch to `origin`.
+13. Record the commit SHA and push result in the execution report.
+14. Continue with the next slice only when the current slice is clean, the checkpoint push succeeded, or the workflow explicitly permits carrying a documented blocker without a commit.
 
 Slice checkpoint push is not `push auto`. It must not create or merge a PR, run branch cleanup, force-push or push to `main`.
 
@@ -177,6 +210,8 @@ Stop and report if:
 - `S3_BRANCH` finds the wrong branch or a missing local branch ref
 - `S3_SCOPE` finds that the requested work is outside the checked active workflow
 - `S3_CLASSIFY` cannot classify the slice and routes to `S3_UNCLASSIFIED`
+- S3D cannot verify required slice metadata, a dependency graph, topological order or disjoint locks
+- S3D detects a file, contract, module or architecture-boundary lock conflict
 - a quality or validation failure cannot be classified except as `UNKNOWN_FAILURE`
 - the typed error owner cannot be mapped to a verified role, skill or documented interim owner
 - typed-router retries exceed `maxRetries = 3`

@@ -12,7 +12,7 @@ Guides coordinated multi-agent planning for the current project while keeping ed
 ## Instructions
 
 1. Verify the user explicitly requested delegated or parallel agent work before spawning subagents.
-2. Build a dependency graph of slices, shared contracts, ownership boundaries, and review responsibilities.
+2. Build a dependency graph of slices, shared files, shared contracts, module or architecture-boundary locks, ownership boundaries, and review responsibilities.
 3. Keep common interfaces fixed before parallel implementation begins.
 4. Assign non-overlapping file ownership to write-capable workers.
 5. Coordinate artifact handoff, review pipelines, conflict resolution, merge coordination, and autonomous execution planning.
@@ -32,6 +32,7 @@ Guides coordinated multi-agent planning for the current project while keeping ed
 
 - slice dependency graph
 - parallel worker coordination plan
+- file, contract, module and architecture-boundary lock map
 - owner and reviewer map
 - handoff artifacts
 - conflict and merge-risk notes

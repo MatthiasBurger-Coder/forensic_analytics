@@ -110,6 +110,7 @@ flowchart TD
   StopStatus["STOP: Dirty working tree - report only"]
   StopBranch["STOP: Wrong branch - report only"]
   StopScope["STOP: Scope conflict - escalate"]
+  S3D["S3D: Execution Orchestrator"]
   Executor["workflow-executor"]
   Swarm["Agent Swarm Orchestrator"]
   Backend["Backend Strand"]
@@ -137,11 +138,14 @@ flowchart TD
   Branch -->|wrong branch| StopBranch
   Scope -->|scope valid| Classify
   Scope -->|scope conflict| StopScope
-  Classify -->|backend| BE_Q --> Executor
-  Classify -->|frontend| FE_Q --> Executor
-  Classify -->|runtime / devops / contracts| RT_Q --> Executor
-  Classify -->|documentation / governance / metadata declared by workflow| DOC_Q --> Executor
+  Classify -->|backend| BE_Q --> S3D
+  Classify -->|frontend| FE_Q --> S3D
+  Classify -->|runtime / devops / contracts| RT_Q --> S3D
+  Classify -->|documentation / governance / metadata declared by workflow| DOC_Q --> S3D
   Classify -->|none of the above| Unclassified --> RootArchitect
+  S3D -->|dependency graph and locks valid| Executor
+  S3D -->|lock conflict| Router
+  S3D -->|cycle, missing metadata or unknown dependency| Escalate
   Executor --> Swarm
   Swarm --> Backend
   Swarm --> Frontend

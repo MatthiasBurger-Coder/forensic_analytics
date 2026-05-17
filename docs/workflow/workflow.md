@@ -245,8 +245,50 @@ No Docker, deployment, runtime, gRPC or REST implementation change is in scope. 
 | 12 | Separate global and local documentation governance | Senior Documentation Engineer | 11 |
 | 13 | Introduce two-level flowchart structure | Senior Documentation Engineer / Senior System Architect | 03, 04, 05, 06, 07, 08, 12 |
 | 14 | Check agent and skill linkage | Skill Registry Conflict Auditor | 13 |
-| 15 | Update arc42, ADR and governance documentation | Senior System Architect / Senior Documentation Engineer | 02-14 |
+| 15 | Update arc42, ADR and governance documentation | Senior System Architect / Senior Documentation Engineer | 02, 03, 04, 05, 06, 07, 08, 09, 10, 11, 12, 13, 14 |
 | 16 | Final integrity check | Senior Tester / Senior System Architect | 15 |
+
+## S3D Execution Metadata
+
+S3D is the execution-orchestration node inside `workflow execute`, not a fourth
+process strand. It uses the following metadata as the deterministic source of
+truth for dependency ordering, parallelization and lock decisions. Mermaid
+diagrams are visual projections and must not override this metadata.
+
+The default documentation gate for governance-only slices is:
+
+```text
+git status --short --branch
+git diff --check
+required-label search for the active slice
+forbidden product-path scope check
+git diff --cached --check
+staged diff review
+```
+
+| Slice | Files / locks | Modules | Contracts | Roles | Dependencies | Quality gates | Documentation duties |
+|---|---|---|---|---|---|---|---|
+| 00 | `docs/workflow/governance-inventory.md`, `docs/workflow/execution-summary.md` | not applicable | none | Senior Workflow Architect | none | documentation gate | inventory and execution summary |
+| 01 | `docs/workflow/execution-summary.md` | not applicable | none | Senior Git Workspace Specialist | 00 | documentation gate | branch evidence |
+| 02 | `AGENTS.md`, `.agents/prompts/**`, `.agents/skills/workflow-authoring/**`, `.agents/skills/three-amigos-requirement-gatekeeper/**`, `docs/process/**`, `docs/agents/**`, `docs/arc42/**`, `docs/workflow/execution-summary.md` | governance documentation | none | Senior System Architect | 00, 01 | documentation gate | retry governance and arc42 consistency |
+| 03 | `docs/process/workflow-execute.md`, `docs/agents/**`, `.agents/skills/workflow-executor/**`, `.codex/skills/workflow-executor/**`, `docs/arc42/**`, `docs/workflow/execution-summary.md` | workflow execute governance | none | Workflow Executor, Senior System Architect | 02 | documentation gate | S3 STOP paths |
+| 04 | `docs/process/workflow-execute.md`, `docs/agents/**`, `.agents/skills/workflow-executor/**`, `.codex/skills/workflow-executor/**`, `docs/arc42/**`, `docs/workflow/execution-summary.md` | workflow execute governance | none | Senior Swarm Orchestrator | 03 | documentation gate | S3 classification default |
+| 05 | `docs/process/workflow-execute.md`, `.agents/orchestrator/routing-rules.md`, `.agents/skills/workflow-executor/**`, `.agents/skills/quality-gate-orchestrator/**`, `docs/agents/**`, `docs/arc42/**`, `docs/workflow/**` | workflow execute governance | none | Senior Tester, Senior System Architect | 02, 03 | documentation gate | typed error routing |
+| 06 | `docs/workflow/workflow.md`, `docs/workflow/slice-dependency-map.md`, `docs/process/workflow-execute.md`, `.agents/orchestrator/**`, `.agents/roles/senior-swarm-orchestrator.md`, `.agents/skills/workflow-executor/**`, `docs/agents/**`, `docs/workflow/execution-summary.md` | workflow execute orchestration | none | Senior Swarm Orchestrator | 04, 05 | documentation gate | S3D metadata, dependency graph and locks |
+| 07 | publication-mode docs under `docs/process/**`, `docs/agents/**`, `docs/workflow/**` | publication governance | none | Senior DevOps Engineer | 05 | documentation gate | publication terminals |
+| 08 | checkpoint and rollback docs under `docs/process/**`, `docs/agents/**`, `docs/workflow/**` | checkpoint governance | none | Senior DevOps Engineer | 05, 07 | documentation gate | rollback decisions |
+| 09 | `docs/workflow/execution-summary.md`, `workflow.history.md` or verified history artifact, commit-message governance docs | traceability governance | none | Senior Documentation Engineer | 08 | documentation gate | slice records and versioning |
+| 10 | workflow-execute and quality/reporting docs under `docs/process/**`, `.agents/skills/**`, `docs/workflow/**` | quality reporting governance | none | Senior Tester | 05, 08 | documentation gate | D8 and Q11 separation |
+| 11 | guard-name references under `AGENTS.md`, `.agents/**`, `docs/**` | governance naming | none | Senior Documentation Engineer | 02, 07 | documentation gate | guard rename or mapping |
+| 12 | `DOCROOT`, `S1_DOC`, `S2_DOC`, `S3_DOC` references under `docs/**`, `.agents/**` | documentation governance | none | Senior Documentation Engineer | 11 | documentation gate | global/local docs separation |
+| 13 | Level-1 and Level-2 diagram artifacts under `docs/**` | flowchart governance | none | Senior Documentation Engineer, Senior System Architect | 03, 04, 05, 06, 07, 08, 12 | documentation gate | two-level flowcharts |
+| 14 | `.agents/**`, `.codex/agents/**`, `docs/agents/**`, skill-audit docs | agent and skill governance | none | Skill Registry Conflict Auditor | 13 | documentation gate | skill linkage and gaps |
+| 15 | `docs/arc42/**`, `docs/adr/**`, governance docs | architecture documentation | none | Senior System Architect, Senior Documentation Engineer | 02, 03, 04, 05, 06, 07, 08, 09, 10, 11, 12, 13, 14 | documentation gate | arc42 and ADR synchronization |
+| 16 | all changed governance artifacts for read-only review; `docs/workflow/execution-summary.md` for results | final governance integrity | none | Senior Tester, Senior System Architect | 15 | full workflow integrity commands from this workflow | final evidence and blockers |
+
+Every row must keep all fields explicit. If a future workflow cannot provide a
+field, it must write `none` or `not applicable`; missing fields are S3D STOP
+conditions.
 
 ## Slice Details
 
@@ -398,6 +440,16 @@ S3D then:
 3. forms independent parallelization groups
 4. checks file, contract and module locks
 5. starts only conflict-free slices
+
+S3D stops and reports before write-capable execution when metadata fields are
+missing, dependency references are unknown, ranges are not expanded to concrete
+slice IDs, the graph contains a cycle, or a file, contract, module or
+architecture-boundary lock overlaps with another active slice. Lock conflicts
+route as `LOCK_CONFLICT` through the Typed Error Router.
+
+S3D may stop, report, escalate or recommend manual workflow refinement, but it
+must not call `workflow create`, rewrite `docs/workflow/workflow.md` during
+execution, or jump from S3 back to S2 automatically.
 
 Conflict-lock rule:
 
@@ -641,6 +693,7 @@ flowchart TD
   S00 --> S01 --> S02
   S02 --> S03 --> S04 --> S06
   S02 --> S05 --> S06
+  S03 --> S05
   S05 --> S07 --> S08 --> S09
   S05 --> S10
   S02 --> S11 --> S12
@@ -690,7 +743,7 @@ For final workflow validation:
 git status --short --branch
 git diff --check
 git diff --name-only main...HEAD
-rg -n "S3_STATUS|S3_BRANCH|S3_SCOPE|S3_CLASSIFY|S3_UNCLASSIFIED|Typed Error Router|ARCH_VIOLATION|BUILD_FAILURE|TEST_FAILURE|DOC_GOVERNANCE_FAILURE|LOCK_CONFLICT|UNKNOWN_FAILURE|maxRetries|CP_ROLLBACK|CP_FINAL|PUB_PR_RESULT|R10|R11|S1_PUSH_ELIGIBILITY_GUARD|PUB_PR_MERGE_GUARD|DOCROOT|S1_DOC|S2_DOC|S3_DOC|Level 1|Level 2" AGENTS.md .agents .codex docs
+rg -n "S3D|S3_STATUS|S3_BRANCH|S3_SCOPE|S3_CLASSIFY|S3_UNCLASSIFIED|Typed Error Router|ARCH_VIOLATION|BUILD_FAILURE|TEST_FAILURE|DOC_GOVERNANCE_FAILURE|LOCK_CONFLICT|UNKNOWN_FAILURE|maxRetries|CP_ROLLBACK|CP_FINAL|PUB_PR_RESULT|R10|R11|S1_PUSH_ELIGIBILITY_GUARD|PUB_PR_MERGE_GUARD|DOCROOT|S1_DOC|S2_DOC|S3_DOC|Level 1|Level 2" AGENTS.md .agents .codex docs
 git diff --name-only main...HEAD | rg "^(src/|services/|contracts/|docker/|gradle/|proto/|forensic-ui/|build.gradle|settings.gradle)"
 ```
 

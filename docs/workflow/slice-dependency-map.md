@@ -43,6 +43,10 @@ flowchart TD
 
 ## Execution Rule
 
+S3D uses the metadata matrix in `docs/workflow/workflow.md` as the source of
+truth. This diagram is a projection for human review and must stay consistent
+with the explicit dependency list.
+
 Each slice must complete its role review, diff review and quality gate before it can be committed.
 
 Each slice checkpoint commit must represent exactly one slice.
@@ -64,6 +68,11 @@ Slice checkpoint push must not:
 ## Parallelization Candidates
 
 Parallel execution is allowed only when S3D proves file, contract and architecture-boundary locks are disjoint.
+
+S3D must stop before parallel write-capable work when dependencies are missing,
+referenced slice IDs are unknown, a dependency cycle exists, a dependency range
+is not expanded to explicit slice IDs, or file, contract, module or
+architecture-boundary locks overlap. Overlapping locks route as `LOCK_CONFLICT`.
 
 Candidate groups:
 
