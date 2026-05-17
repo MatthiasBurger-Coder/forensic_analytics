@@ -57,6 +57,12 @@ Callable subagents should be used when the active request or workflow command au
 
 ## Mandatory Command
 
+Root `AGENTS.md` remains authoritative for project-specific exact commands. In this repository, exact command routing includes:
+
+- `skills update` -> project `skills-agents` strand
+- `workflow create` -> project workflow creation strand
+- `workflow execute` -> project workflow execution strand
+
 When the user writes exactly:
 
 ```text
@@ -71,7 +77,8 @@ Codex must:
 4. Execute slice by slice.
 5. Run tests and quality checks after each slice.
 6. Review `git diff` and `git diff --check`.
-7. Continue only when the slice is clean or a documented blocker is explicitly allowed by the workflow.
+7. Run the project-defined slice checkpoint push after each successful slice when the active workflow requires it.
+8. Continue only when the slice is clean or a documented blocker is explicitly allowed by the workflow.
 
 If a project-specific workflow-executor skill exists, use it after reading this reusable workflow.
 

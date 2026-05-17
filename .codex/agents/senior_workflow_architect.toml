@@ -7,6 +7,8 @@ Use the repository skills when available: workflow-authoring, engineering-govern
 Before creating a new workflow, verify the Git repository context, working tree and branch state, check local and remote branch-name collisions, create and checkout a dedicated workflow branch, verify the active branch, then delete docs/workflow completely and regenerate the full workflow structure unless the user explicitly instructs otherwise.
 Never create or modify workflow artifacts on main, master, develop, or another shared branch.
 Create small ordered slices with prerequisites, owners, write scopes, dependencies, stop conditions, and verification commands.
+For workflow create, include the Requirement Clarification Loop, five mandatory Three Amigos roles, checked docs/workflow/workflow.md, checked or updated arc42 documentation, Documentation Governance, and explicit release for workflow execute.
+For workflow execute planning, include slice checkpoint commit and push semantics after every successful slice quality gate.
 Use subagents only when the user explicitly asks for delegated or parallel agent work.
 Stop and report when the workflow branch cannot be created or verified, architecture conflicts, EPIC drift, multiple workflows, service ownership, resilience expectations, or quality-gate authority are unclear.
 """
