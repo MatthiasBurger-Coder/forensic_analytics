@@ -5,10 +5,10 @@
 Slice 01 target architecture baseline for the microservices ecosystem
 conversion workflow.
 
-This document defines the planned service landscape. It does not claim that
-the services are implemented, independently deployable, health-checkable,
-containerized or production-ready. Slice 00 verified that the current
-repository is still a modular monolith.
+This document defines the target service landscape. Six service slices are now
+registered Gradle projects with service-local documentation, tests and
+Dockerfiles. This does not claim that the full landscape is independently
+deployable, health-checkable, containerized for production or complete.
 
 ## Architecture Decision
 
@@ -42,14 +42,20 @@ The current platform has:
 - a separate `forensic-ui` frontend;
 - Boot, Joern and frontend Docker material.
 
-The current platform does not have:
+The current platform has six implemented service slices:
 
-- `services/**` roots;
-- external `contracts/**` roots;
+- `forensic-ingestion-service`;
+- `repository-analysis-service`;
+- `analysis-store-service`;
+- `java-ast-analysis-service`;
+- `joern-cpg-analysis-service`;
+- `btm-generation-service`.
+
+The current platform still does not have:
+
+- implemented gateway, graph-replay or report-generation services;
 - service-private databases;
-- service-local health checks;
-- service-local Dockerfiles under `services/**`;
-- service-local READMEs;
+- fully verified service-local health checks;
 - Docker Compose service landscape;
 - Docker Swarm or Kubernetes manifests.
 
@@ -117,8 +123,9 @@ deployment/
   kubernetes/
 ```
 
-Creating these roots is Slice 02 or later work. This Slice 01 document only
-defines the target boundaries.
+Most target roots now exist. Gateway, graph-replay, report-generation,
+frontend migration and deployment roots still require later implementation
+slices before they can be treated as executable runtime paths.
 
 ## Target Service Responsibilities
 

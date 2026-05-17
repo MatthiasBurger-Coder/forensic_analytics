@@ -5,8 +5,10 @@
 Slice 01 service-boundary baseline for the microservices ecosystem conversion
 workflow.
 
-These are planned target boundaries. They are not current implemented
-microservices.
+These are target boundaries. Six service slices have initial implementations;
+gateway, graph-replay and report-generation remain planned roots. No service
+may be called production-ready without independent build, start, test,
+configuration, healthcheck, container and deployment evidence.
 
 ## Boundary Rules
 
@@ -100,10 +102,10 @@ Outbound communication:
 
 Current evidence:
 
-- `forensic-analytics-ingestion-grpc`;
-- `forensic_ingestion.proto`;
-- `ForensicIngestionGrpcService`;
-- current module is not contract-only and depends on application code.
+- `services/forensic-ingestion-service`;
+- `contracts/grpc/forensic-ingestion.proto`;
+- service-local tests, README and Dockerfile;
+- legacy monolith adapter evidence remains in `forensic-analytics-ingestion-grpc`.
 
 Stop conditions:
 
@@ -161,9 +163,11 @@ Security boundary:
 
 Current evidence:
 
-- `forensic-analytics-adapter-repository-source`;
-- application ingestion workspace services;
-- no independent repository-analysis service exists yet.
+- `services/repository-analysis-service`;
+- `contracts/grpc/repository-analysis.proto`;
+- service-local tests, README and Dockerfile;
+- legacy monolith adapter evidence remains in
+  `forensic-analytics-adapter-repository-source`.
 
 Stop conditions:
 
@@ -204,8 +208,10 @@ Outbound communication:
 
 Current evidence:
 
-- `forensic-analytics-adapter-javaparser`;
-- `JavaParserSourceScanner`.
+- `services/java-ast-analysis-service`;
+- `contracts/grpc/java-ast-analysis.proto`;
+- service-local tests, README and Dockerfile;
+- legacy adapter evidence remains in `forensic-analytics-adapter-javaparser`.
 
 Stop conditions:
 
@@ -242,8 +248,11 @@ Outbound communication:
 
 Current evidence:
 
-- `forensic-analytics-adapter-joern-docker`;
-- `docker/joern/**`.
+- `services/joern-cpg-analysis-service`;
+- `contracts/grpc/joern-cpg-analysis.proto`;
+- service-local tests, README and Dockerfile;
+- legacy adapter evidence remains in `forensic-analytics-adapter-joern-docker`
+  and `docker/joern/**`.
 
 Stop conditions:
 
@@ -281,10 +290,11 @@ Outbound communication:
 
 Current evidence:
 
-- `RuleGenerationPort`;
-- `RuleGenerationRequest`;
-- `RuleGenerationResult`;
-- `.btm` tests and arc42 concepts.
+- `services/btm-generation-service`;
+- `contracts/grpc/btm-generation.proto`;
+- service-local tests, README and Dockerfile;
+- legacy application evidence remains in `RuleGenerationPort`,
+  `RuleGenerationRequest`, `RuleGenerationResult` and `.btm` tests.
 
 Stop conditions:
 
@@ -327,9 +337,11 @@ Outbound communication:
 
 Current evidence:
 
-- `forensic-analytics-persistence` in-memory stores;
-- application ports;
-- domain analysis/session/artifact models.
+- `services/analysis-store-service`;
+- `contracts/grpc/analysis-job.proto`;
+- service-local tests, README and Dockerfile;
+- legacy monolith evidence remains in `forensic-analytics-persistence`,
+  application ports and domain analysis/session/artifact models.
 
 Stop conditions:
 

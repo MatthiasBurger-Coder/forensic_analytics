@@ -45,8 +45,16 @@ Verified from `settings.gradle.kts`:
 - `forensic-analytics-rest`
 - `forensic-analytics-bootstrap`
 - `forensic-analytics-boot-app`
+- `services:btm-generation-service`
+- `services:joern-cpg-analysis-service`
+- `services:java-ast-analysis-service`
+- `services:repository-analysis-service`
+- `services:analysis-store-service`
+- `services:forensic-ingestion-service`
 
-No service-specific Gradle projects under `services/**` exist yet.
+Six service-specific Gradle projects under `services/**` are now registered.
+Gateway, graph-replay and report-generation remain README-only planned service
+roots.
 
 ## Quality Commands
 
@@ -154,8 +162,8 @@ Missing deployment material:
 - `deployment/docker-swarm/stack.yml`
 - `deployment/kubernetes/**`
 - Helm or chart roots
-- service-local Dockerfiles under `services/**`
-- service healthcheck definitions
+- service-local Dockerfiles for README-only planned services
+- verified service healthcheck definitions
 
 ## Slice 00 Verification Rule
 
@@ -172,14 +180,17 @@ deployment behavior, run the minimum `QUALITY.md` command before continuing:
 ./gradlew test --dependency-verification strict --console=plain --stacktrace
 ```
 
-No current service-specific test command exists because no service projects
-exist yet.
+Service-specific test commands exist for the six registered service projects.
+Gateway, graph-replay and report-generation still have no service-local Gradle
+test task because they remain README-only planned service roots.
 
 ## Residual Risks
 
 - CI workflow evidence is absent.
-- Service-specific test tasks do not exist yet.
-- Contract tests do not exist yet.
+- Service-specific test tasks exist only for the six registered service
+  projects.
+- Contract tests exist for implemented service contracts, but coverage is not
+  complete for every planned service interaction.
 - Frontend coverage and end-to-end test gates are not configured.
 - Boot container healthcheck evidence is absent.
 - Swarm and Kubernetes readiness is absent.

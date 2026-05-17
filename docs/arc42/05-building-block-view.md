@@ -108,8 +108,10 @@ Automatic logging records operation name, phase, duration, correlation ID and ex
 
 ## 5.9 Target Microservices Ecosystem
 
-ADR-0017 defines the active target service landscape for future service-split
-work. The target landscape is planned, not implemented:
+ADR-0017 defines the active target service landscape for service-split work.
+The landscape is partially implemented: ingestion, repository-analysis,
+analysis-store, Java AST, Joern CPG and BTM generation have service slices.
+Gateway, graph-replay, report-generation and frontend migration remain planned:
 
 ```text
 frontend-web-app
@@ -137,10 +139,11 @@ report-generation-service
   -> graph-replay-service
 ```
 
-Every future service owns its internal domain, application, adapters,
-configuration, tests, health checks and Dockerfile. Service communication is
-limited to REST/OpenAPI, gRPC/protobuf or approved event contracts. Shared Java
-implementation modules between independently deployable services are forbidden.
+Every service must own its internal domain, application, adapters,
+configuration, tests, health checks and Dockerfile before production readiness
+is claimed. Service communication is limited to REST/OpenAPI, gRPC/protobuf or
+approved event contracts. Shared Java implementation modules between
+independently deployable services are forbidden.
 
 ADR-0018 accepts initial logical contracts for target service communication.
 Contracts marked as planned are design artifacts only; they do not prove that a

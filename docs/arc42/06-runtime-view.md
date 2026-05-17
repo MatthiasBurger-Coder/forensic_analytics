@@ -85,8 +85,9 @@ Operational correlation IDs help connect adapter logs for diagnostics. They are 
 
 ## 6.8 Target Microservice Runtime Flow
 
-The target runtime flow for service-split work is planned by ADR-0017. It is
-not implemented yet:
+The target runtime flow for service-split work is defined by ADR-0017 and is
+partially implemented. The full end-to-end flow remains planned until Gateway,
+graph-replay and report-generation runtime paths are implemented and verified:
 
 ```text
 Frontend / CLI / external client
@@ -108,9 +109,9 @@ Graph, replay, reports and LLM packages are projections or generated artifacts
 that must remain traceable to owner evidence APIs.
 
 ADR-0018 allows the initial runtime communication contracts to describe planned
-Gateway, worker, replay, report and event flows before the services exist.
-Those flows remain contract design until a later slice implements and verifies
-the corresponding runtime behavior.
+Gateway, worker, replay, report and event flows before each runtime path exists.
+Those flows remain contract design until a slice implements and verifies the
+corresponding runtime behavior.
 
 Slice 05 verifies a narrow Analysis Store runtime path:
 

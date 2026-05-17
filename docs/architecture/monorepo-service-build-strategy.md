@@ -2,11 +2,11 @@
 
 ## Status
 
-Slice 02 build strategy for planned service roots.
+Build strategy for service roots.
 
-No build files are changed in Slice 02. The existing root Gradle build remains
-the only executable repository build until service build files are created and
-registered in later slices.
+Six service build files are now registered in the root Gradle build. Gateway,
+graph-replay and report-generation remain README-only planned roots until their
+service build files are created and registered.
 
 ## Decision
 
@@ -76,7 +76,7 @@ Generated code must be local to the consuming service build. Generated Java
 classes must not be committed as a shared module or published as a shared DTO
 library between services.
 
-## Planned Command Status
+## Service Command Status
 
 Commands such as:
 
@@ -84,8 +84,10 @@ Commands such as:
 ./gradlew :services:forensic-ingestion-service:test
 ```
 
-are planned only. They must not be documented as executable until the relevant
-service project is registered and the command has been run successfully.
+are executable for registered service projects. Planned README-only service
+roots must not document service-specific Gradle commands as executable until
+their service projects are registered and the command has been run
+successfully.
 
 ## Quality Gate Impact
 
@@ -113,7 +115,7 @@ For commit readiness after production, build, contract or test changes:
   created.
 - Define service-local Spring Boot dependency rules when the first backend
   service is created.
-- Define frontend build integration only after the `frontend-web-app` migration
-  slice verifies the relationship with current `forensic-ui`.
+- Define frontend build integration only after the frontend migration slice
+  verifies the relationship with current `forensic-ui`.
 - Define Docker and deployment checks only after service Dockerfiles and
   healthchecks exist.
