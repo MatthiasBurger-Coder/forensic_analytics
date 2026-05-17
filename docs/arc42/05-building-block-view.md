@@ -232,6 +232,8 @@ Responsibilities:
 - check `S3_BRANCH` execution branch safety before routing slices
 - check `S3_SCOPE` workflow scope safety before classifying slices
 - classify backend, frontend, runtime and documentation work
+- route explicitly declared governance, metadata and documentation-only slices through the Documentation Strand only when the checked workflow declares that scope
+- stop and escalate unclassifiable slices through `S3_UNCLASSIFIED` instead of executing them automatically
 - route to roles or subagents
 - run Slice Quality Gates
 - create Slice Checkpoint Commit

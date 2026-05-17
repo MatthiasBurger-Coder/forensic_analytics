@@ -22,7 +22,7 @@ Read, when present:
 1. Locate the active workflow using project instructions when they exist.
 2. Read the full workflow before implementation.
 3. Verify required start artifacts from project instructions, such as a checked workflow file and architecture documentation.
-4. Run the S3 safety preflight when project governance defines it: check working tree status, active execution branch, local branch ref and active workflow scope before classifying a slice.
+4. Run the S3 safety preflight when project governance defines it: check working tree status, active execution branch, local branch ref and active workflow scope before classifying a slice. Project-defined S3 classification must include a default unclassified STOP and escalation path; unclassifiable slices must not execute automatically.
 5. Identify slices, dependencies, write scopes, and verification commands.
 6. Route each slice to the smallest suitable set of subagents or role reviews.
 7. Execute one slice at a time.
@@ -35,4 +35,4 @@ Slice checkpoint push is separate from `push` and `push auto`; it does not creat
 
 ## Stop Conditions
 
-Stop when a slice, symbol, module, API, build task, schema, command, architecture rule, quality gate, start artifact, checkpoint target, service boundary, active branch, working-tree status, local branch ref, or workflow scope cannot be verified exactly.
+Stop when a slice, symbol, module, API, build task, schema, command, architecture rule, quality gate, start artifact, checkpoint target, service boundary, active branch, working-tree status, local branch ref, workflow scope, or slice classification cannot be verified exactly.

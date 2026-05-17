@@ -101,6 +101,12 @@ flowchart TD
   Branch["S3_BRANCH: Check execution branch"]
   Scope["S3_SCOPE: Check workflow scope"]
   Classify["S3_CLASSIFY: Classify slice"]
+  BE_Q["BE_Q: Backend slice"]
+  FE_Q["FE_Q: Frontend slice"]
+  RT_Q["RT_Q: Runtime slice"]
+  DOC_Q["DOC_Q: Documentation / governance slice"]
+  Unclassified["S3_UNCLASSIFIED: Stop and escalate"]
+  RootArchitect["Root Architect decision"]
   StopStatus["STOP: Dirty working tree - report only"]
   StopBranch["STOP: Wrong branch - report only"]
   StopScope["STOP: Scope conflict - escalate"]
@@ -121,7 +127,11 @@ flowchart TD
   Branch -->|wrong branch| StopBranch
   Scope -->|scope valid| Classify
   Scope -->|scope conflict| StopScope
-  Classify --> Executor
+  Classify -->|backend| BE_Q --> Executor
+  Classify -->|frontend| FE_Q --> Executor
+  Classify -->|runtime / devops / contracts| RT_Q --> Executor
+  Classify -->|documentation / governance / metadata declared by workflow| DOC_Q --> Executor
+  Classify -->|none of the above| Unclassified --> RootArchitect
   Executor --> Swarm
   Swarm --> Backend
   Swarm --> Frontend

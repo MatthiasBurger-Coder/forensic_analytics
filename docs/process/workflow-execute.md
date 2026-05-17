@@ -26,10 +26,21 @@ flowchart TD
   S3_BRANCH -->|wrong branch| S3_STOP_BRANCH["STOP: Wrong branch - report only"]
   S3_SCOPE -->|scope valid| S3_CLASSIFY["S3_CLASSIFY: Classify slice"]
   S3_SCOPE -->|scope conflict| S3_STOP_SCOPE["STOP: Scope conflict - escalate"]
+  S3_CLASSIFY -->|backend| BE_Q["BE_Q: Backend slice"]
+  S3_CLASSIFY -->|frontend| FE_Q["FE_Q: Frontend slice"]
+  S3_CLASSIFY -->|runtime / devops / contracts| RT_Q["RT_Q: Runtime slice"]
+  S3_CLASSIFY -->|documentation / governance / metadata declared by workflow| DOC_Q["DOC_Q: Documentation slice"]
+  S3_CLASSIFY -->|none of the above| S3_UNCLASSIFIED["S3_UNCLASSIFIED: Stop and escalate"]
+  S3_UNCLASSIFIED --> ROOT_ARCHITECT["Root Architect decision"]
 ```
 
 S3 STOP paths report the blocker and do not jump back to `workflow create`.
 Scope conflicts escalate to the Root Architect for a decision.
+Unclassifiable slices must not execute automatically.
+
+Explicitly declared governance, metadata and documentation-only slices may route
+through the Documentation Strand only when the active workflow declares that
+scope. Otherwise they are unclassified and must escalate.
 
 ## Execution Strands
 

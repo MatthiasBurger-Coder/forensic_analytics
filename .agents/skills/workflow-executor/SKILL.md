@@ -59,6 +59,17 @@ Before implementation, run the S3 safety preflight:
 3. `S3_SCOPE`: verify that the requested slice belongs to the checked active workflow scope. Scope conflict stops and escalates.
 4. `S3_CLASSIFY`: classify the slice only after status, branch and scope are valid.
 
+`S3_CLASSIFY` must route only verified slice classes:
+
+- backend
+- frontend
+- runtime, DevOps or contract governance
+- documentation, governance or metadata when the active workflow explicitly declares that scope
+
+When none of those classes matches, route to `S3_UNCLASSIFIED`, stop execution
+and escalate to the Root Architect. An unclassifiable slice must not execute
+automatically.
+
 Verify the workflow branch from the active workflow with:
 
 ```bash
@@ -142,6 +153,7 @@ Stop and report if:
 - `S3_STATUS` finds a dirty or unclear working tree
 - `S3_BRANCH` finds the wrong branch or a missing local branch ref
 - `S3_SCOPE` finds that the requested work is outside the checked active workflow
+- `S3_CLASSIFY` cannot classify the slice and routes to `S3_UNCLASSIFIED`
 - checked `docs/workflow/workflow.md` is missing
 - checked or updated arc42 documentation is missing
 - the workflow branch is missing, inactive, or cannot be verified as a local ref

@@ -58,6 +58,7 @@ Resolution: the user request defines these as target Governance Flowchart V2 sem
 | 01 | Completed | Branch governance confirmed for `architecture/workflow-governance-flowchart-v2-20260517`; active branch, local ref, upstream, remote-tracking ref and clean pre-slice status verified. |
 | 02 | Completed | Bounded governance feedback loops with `maxRetries = 3`, Root Architect escalation, synchronized workflow-create loop diagrams and S1 guard notes. |
 | 03 | Completed | Added S3 safety preflight with explicit STOP paths for dirty working tree, wrong branch and scope conflict before slice classification. |
+| 04 | Completed | Added `S3_CLASSIFY` default path: unclassifiable slices route to `S3_UNCLASSIFIED` and Root Architect escalation; declared governance, metadata and documentation-only slices route through Documentation only when the active workflow declares that scope. |
 
 ## Slice 01 Branch Governance Evidence
 
