@@ -36,7 +36,8 @@ Created artifacts:
 ## Open Execution Preconditions
 
 - Run `workflow execute` before implementation starts.
-- Confirm that final commit and push remain desired before Slice 20 executes.
+- Confirm that each successful slice has a checkpoint commit and branch push
+  before the next slice executes.
 - Verify local Docker and Kubernetes tooling before requiring Docker or
   Kubernetes commands.
 - Verify service-specific Gradle or service-local build commands after each

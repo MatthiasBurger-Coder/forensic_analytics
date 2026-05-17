@@ -18,7 +18,11 @@ git show-ref --verify --quiet refs/heads/<workflow-branch>
 6. Run targeted checks first.
 7. Run required quality gates from `QUALITY.md` or the workflow.
 8. Inspect `git diff` and `git diff --check`.
-9. Record result, blockers and handoff state.
+9. Stage only files changed by this slice.
+10. Run `git diff --cached --check`.
+11. Create a slice-scoped checkpoint commit.
+12. Push the current workflow branch to `origin`.
+13. Record the commit SHA, push result, blockers and handoff state.
 
 ## Stop Conditions
 
@@ -29,4 +33,6 @@ Stop when:
 - required role review is missing;
 - exact repository artifact cannot be verified;
 - tests or required gates fail;
+- staged files include changes from another slice;
+- checkpoint push fails;
 - continuing would require guessing.

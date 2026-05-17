@@ -60,8 +60,9 @@ Slice 16 -> Slice 17 -> Slice 18 -> Slice 19 -> Slice 20
 - Slice 17 removes obsolete monolith paths only after replacement evidence.
 - Slice 18 performs the microservice readiness review.
 - Slice 19 finalizes documentation.
-- Slice 20 performs final diff, quality gate, commit and push if still
-  authorized.
+- Slice 20 performs final diff, quality gate and checkpoint summary after all
+  successful slices have already created slice-scoped checkpoint commits and
+  pushed the workflow branch.
 
 ## Parallelization Limits
 

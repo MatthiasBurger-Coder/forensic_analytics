@@ -31,9 +31,15 @@ git status --short --branch
 15. Classify slices into backend, frontend, Docker/runtime and documentation strands.
 16. Assign subagents or role reviews.
 17. Use Agent Handoff Protocol for owner changes and parallel work.
-18. Run slice quality gates and the final workflow execute gate.
-19. Produce a summary with exact validation evidence.
-20. Commit or push only when the workflow explicitly allows it and required gates are clean.
+18. Run the slice quality gate after each slice.
+19. Inspect the slice diff, stage only files changed by this slice, and run
+    `git diff --cached --check`.
+20. Create a slice-scoped checkpoint commit and push the current workflow branch
+    to `origin`.
+21. Record the commit SHA and push result in the execution report.
+22. Continue with the next slice only after the checkpoint push succeeded.
+23. Run the final workflow execute gate after all slice checkpoints are pushed.
+24. Produce a summary with exact validation evidence.
 
 ## Required Strand Checks
 
@@ -60,4 +66,6 @@ Stop when:
 - subagent or role ownership is missing;
 - handoff rules are missing for parallel work;
 - required quality gates fail or cannot be verified;
-- commit or push is requested without workflow permission.
+- the slice diff is unclear or contains files from another slice;
+- checkpoint push fails;
+- a checkpoint tries to use `push auto`, merge a PR, clean up a branch, push to `main` or force-push.

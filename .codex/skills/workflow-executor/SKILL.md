@@ -30,8 +30,17 @@ Read, when present:
 8. Execute one slice at a time.
 9. Run required targeted checks and quality gates after each slice.
 10. Inspect `git diff` and `git diff --check`.
-11. Continue only when the slice is clean or the workflow explicitly permits carrying a documented blocker.
+11. Stage only files changed by the current slice.
+12. Run `git diff --cached --check`.
+13. Create a slice-scoped checkpoint commit.
+14. Push the current workflow branch to `origin`.
+15. Record the commit SHA and push result in the execution report.
+16. Continue only after the checkpoint push succeeded.
+
+Checkpoint pushes are normal branch pushes to the current workflow branch. They
+are not `push auto`, do not merge pull requests, do not delete or clean up
+branches, do not push to `main`, and must not force-push.
 
 ## Stop Conditions
 
-Stop when `docs/workflow/workflow.md`, checked arc42 documentation, a slice, symbol, module, API, build task, schema, command, architecture rule, quality gate, service boundary, or scope boundary cannot be verified exactly.
+Stop when `docs/workflow/workflow.md`, checked arc42 documentation, a slice, symbol, module, API, build task, schema, command, architecture rule, quality gate, service boundary, scope boundary, staged slice diff, checkpoint commit or checkpoint push cannot be verified exactly.

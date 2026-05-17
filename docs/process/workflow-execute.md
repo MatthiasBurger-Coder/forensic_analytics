@@ -24,8 +24,9 @@ flowchart TD
   Runtime["Docker/runtime strand"]
   Docs["Documentation strand"]
   SliceGate["Slice Quality Gate"]
+  CheckpointCommit["Slice checkpoint commit"]
+  CheckpointPush["Push current workflow branch to origin"]
   FinalGate["Final Workflow Execute Gate"]
-  Release["Commit or push only when workflow allows it"]
   Stop["STOP and return to workflow create"]
 
   Start --> Workflow --> Arc42 --> Branch --> Status --> Scope --> Slices --> Orchestrator
@@ -33,7 +34,7 @@ flowchart TD
   Orchestrator --> Frontend --> SliceGate
   Orchestrator --> Runtime --> SliceGate
   Orchestrator --> Docs --> SliceGate
-  SliceGate --> FinalGate --> Release
+  SliceGate --> CheckpointCommit --> CheckpointPush --> FinalGate
   Workflow --> Stop
   Arc42 --> Stop
   Scope --> Stop
@@ -115,3 +116,46 @@ The Final Workflow Execute Gate must verify the applicable subset of:
 - Execution Report Check
 
 Failed required gates block commit and push.
+
+## Slice Checkpoint Commit And Push
+
+After each successfully completed slice:
+
+1. Run the slice quality gate.
+2. Inspect the slice diff.
+3. Stage only files changed by this slice.
+4. Run `git diff --cached --check`.
+5. Create a slice-scoped checkpoint commit.
+6. Push the current workflow branch to `origin`.
+7. Record the commit SHA and push result in the execution report.
+8. Continue with the next slice only after the checkpoint push succeeded.
+
+Not allowed:
+
+- no commit when the slice quality gate failed;
+- no commit when the diff is unclear;
+- no commit with files from other slices;
+- no push to `main`;
+- no PR merge;
+- no `push auto`;
+- no branch cleanup;
+- no force-push.
+
+Commit message convention:
+
+```text
+<type>(slice-<nn>): <short description>
+```
+
+Examples:
+
+```text
+docs(slice-01): refine workflow create clarification loop
+agent(slice-02): align three amigos gate roles
+test(slice-03): add backend regression coverage
+feat(slice-04): implement ingestion service boundary
+```
+
+If the machine crashes or the local worktree is lost, restore the last
+successful state from `origin/<workflow-branch>`. The execution report must show
+the latest completed slice, commit SHA and pushed branch state.

@@ -70,6 +70,8 @@ synchronization task for Slice 01 and later arc42 updates.
 
 ## Commit And Push
 
-The user draft includes final commit and push steps. Workflow creation does not
-commit or push. Commit and push are reserved for the final execution slice after
-quality gates and commit-preparation review pass.
+Workflow creation does not commit or push product implementation slices.
+`workflow execute` uses slice-scoped checkpoint commits and branch pushes after
+each successful slice quality gate. The checkpoint push goes only to the current
+workflow branch, does not merge a PR, does not clean up branches and is not
+`push auto`.

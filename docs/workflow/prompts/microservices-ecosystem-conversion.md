@@ -56,7 +56,8 @@ docs/workflow/quality-gate-plan.md
 - Do not introduce shared Java implementation modules between services.
 - Do not claim service independence without build, start, test, healthcheck,
   configuration, container and deployment evidence.
-- Do not commit or push before Slice 20 and required quality evidence.
+- After each successful slice, create a slice-scoped checkpoint commit and push
+  the current workflow branch after required quality evidence.
 
 ## First Slice
 

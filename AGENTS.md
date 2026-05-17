@@ -230,10 +230,30 @@ Execution order:
     - run required quality checks
     - inspect git diff
     - document the result
+    - stage only files changed by the slice
+    - run `git diff --cached --check`
+    - create a slice-scoped checkpoint commit
+    - push the current workflow branch to `origin`
+    - record the commit SHA and push result in the execution report
+    - continue with the next slice only after the checkpoint push succeeded
 12. If a slice requires specialist review, spawn or route to the matching subagent or role.
 13. Never bypass configured architecture, testing, DevOps, security, or microservice review for decisions in those areas.
 14. Stop if assumptions about classes, modules, APIs, quality commands, or architecture are uncertain.
-15. Commit or push only when the workflow explicitly allows commit or push.
+15. Do not use `push auto`, PR merge, branch cleanup or force-push for slice checkpoint pushes.
+
+Slice checkpoint commit messages use:
+
+```text
+<type>(slice-<nn>): <short description>
+```
+
+Use `docs(slice-<nn>): ...` or `agent(slice-<nn>): ...` for governance and
+documentation slices. Use `feat(slice-<nn>): ...`, `fix(slice-<nn>): ...` or
+`test(slice-<nn>): ...` for implementation slices in later workflows.
+
+If the machine crashes or the local worktree is lost, restore the last
+successful state from `origin/<workflow-branch>`. The execution report must
+show the latest completed slice, commit SHA and pushed branch state.
 
 For `workflow execute`, no direct implementation of a slice is allowed before the relevant subagent or role has reviewed the slice, except read-only verification needed to route the slice.
 

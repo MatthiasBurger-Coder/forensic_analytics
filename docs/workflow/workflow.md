@@ -59,8 +59,10 @@ After `workflow execute` completes this workflow:
   ecosystem.
 - Documentation, tests and quality-gate evidence describe the new runtime
   model.
-- Commit and push happen only in the final slice after required quality gates
-  and commit-readiness review pass.
+- Each successfully completed slice creates a slice-scoped checkpoint commit
+  and pushes the current workflow branch after required quality gates and
+  commit-readiness review pass. The final slice performs closure review rather
+  than collecting all commits into one final publication step.
 
 ## Non-Goals
 
@@ -950,9 +952,10 @@ git diff --check
 
 Run repository quality gates when docs change build, code or tests.
 
-## Slice 20 - Final Review, Commit And Push
+## Slice 20 - Final Review And Closure
 
-Purpose: close the workflow with review, quality evidence, commit and push.
+Purpose: close the workflow with review, quality evidence and confirmation that
+all successful slice checkpoints were committed and pushed.
 
 Owner: Senior Swarm Orchestrator.
 
@@ -961,7 +964,8 @@ Reviews: Senior System Architect, Senior Tester, Git Commit Reviewer.
 Allowed write scope:
 
 - final workflow execution notes
-- commit preparation artifacts when required by repository governance
+- final workflow execution notes
+- checkpoint summary with slice commit SHAs and pushed branch state
 
 Tasks:
 
@@ -969,8 +973,9 @@ Tasks:
 - Run final architecture and microservice rule checks.
 - Run final tests and quality gate.
 - Verify documentation consistency.
-- Prepare the commit message.
-- Commit and push only after quality and commit-readiness review pass.
+- Verify every completed slice has a checkpoint commit and successful push to
+  the workflow branch.
+- Record the final checkpoint summary.
 
 Required final commands:
 
@@ -992,24 +997,24 @@ docker compose -f deployment/docker-compose/docker-compose.yml config
 docker compose -f deployment/docker-compose/docker-compose.yml build
 ```
 
-Commit subject:
+Final checkpoint subject pattern:
 
 ```text
-architecture: convert forensic analytics to microservices ecosystem
+<type>(slice-20): close workflow execution evidence
 ```
 
-Push branch:
+Checkpoint push branch:
 
 ```bash
-git push -u origin architecture/microservices-ecosystem-conversion-20260516
+git push origin HEAD:architecture/microservices-ecosystem-conversion-20260516
 ```
 
 Done criteria:
 
 - Final diff is reviewed.
 - Required quality gates pass or blockers are documented.
-- Commit is created only from reviewed files.
-- Branch is pushed only after commit-readiness approval.
+- Every completed slice has a reviewed checkpoint commit.
+- Branch checkpoint pushes succeeded before later slices continued.
 
 ## Global Stop Rules
 

@@ -104,10 +104,30 @@ For each slice:
 5. Run targeted tests first.
 6. Run the required quality checks from `QUALITY.md` or the workflow.
 7. Inspect `git diff` and `git diff --check`.
-8. Document the result in the workflow quality log or the workflow-designated location.
-9. Continue with the next slice only when the current slice is clean or the workflow explicitly permits carrying a documented blocker.
+8. Stage only files changed by this slice.
+9. Run `git diff --cached --check`.
+10. Create a slice-scoped checkpoint commit.
+11. Push the current workflow branch to `origin`.
+12. Record the commit SHA and push result in the workflow quality log, execution report or workflow-designated location.
+13. Continue with the next slice only after the checkpoint push succeeded.
 
 Use one write-capable implementation worker at a time unless the active workflow explicitly defines disjoint write scopes and the orchestrator confirms that parallel edits are safe.
+
+Checkpoint commit messages use:
+
+```text
+<type>(slice-<nn>): <short description>
+```
+
+Use `docs` or `agent` for governance and documentation slices, and `feat`,
+`fix` or `test` for implementation slices. A checkpoint push is a normal push
+to the current workflow branch. It is not `push auto`, does not merge a PR, does
+not clean up branches and must not force-push.
+
+If the machine crashes or the local worktree is lost, restore the last
+successful state from `origin/<workflow-branch>` and continue only after the
+execution report shows the latest completed slice, commit SHA and pushed branch
+state.
 
 ## Stop Conditions
 
@@ -118,10 +138,13 @@ Stop and report if:
 - checked arc42 documentation is missing
 - a class, module, API, Gradle task, schema, or command assumption is uncertain
 - tests fail and cannot be fixed safely inside the slice
+- the slice quality gate fails
+- the slice diff is unclear or includes files from another slice
+- checkpoint push fails
 - the workflow conflicts with `AGENTS.md` or `QUALITY.md`
 - multiple active workflows conflict
 - the workflow branch is missing, inactive, or cannot be verified as a local ref
 - the requested work expands scope beyond checked `docs/workflow/workflow.md`
 - a change would introduce shared Java code modules between microservices
 - subagent or role execution is required but unavailable
-- commit or push is requested but not explicitly allowed by the workflow
+- a checkpoint attempts `push auto`, PR merge, branch cleanup, push to `main` or force-push

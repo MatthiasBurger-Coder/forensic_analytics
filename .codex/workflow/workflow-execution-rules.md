@@ -48,7 +48,17 @@ Execution order:
 8. Execute one slice at a time.
 9. Run required tests and quality checks after each slice.
 10. Inspect diffs after each slice.
-11. Stop on unverifiable assumptions, architecture conflicts, missing commands, quality failures, scope expansion, missing arc42 evidence, or ambiguity that could change behavior.
+11. Stage only files changed by the current slice.
+12. Run `git diff --cached --check`.
+13. Create a slice-scoped checkpoint commit.
+14. Push the current workflow branch to `origin`.
+15. Record the commit SHA and push result in the execution report.
+16. Continue with the next slice only after the checkpoint push succeeded.
+17. Stop on unverifiable assumptions, architecture conflicts, missing commands, quality failures, unclear staged diffs, failed checkpoint pushes, scope expansion, missing arc42 evidence, or ambiguity that could change behavior.
+
+Slice checkpoint pushes are normal pushes to the current workflow branch. They
+are not `push auto`, do not merge pull requests, do not clean up branches, do
+not push to `main`, and must not force-push.
 
 ## Stop Conditions
 

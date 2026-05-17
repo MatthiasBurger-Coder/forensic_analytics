@@ -119,6 +119,8 @@ flowchart TD
   Runtime["Docker / Runtime Strand"]
   Docs["Documentation Strand"]
   SliceGate["Slice Quality Gate"]
+  CheckpointCommit["Slice Checkpoint Commit"]
+  CheckpointPush["Push Workflow Branch"]
   FinalGate["Final Workflow Execute Gate"]
 
   WE --> Executor --> Orchestrator
@@ -126,8 +128,13 @@ flowchart TD
   Orchestrator --> Frontend --> SliceGate
   Orchestrator --> Runtime --> SliceGate
   Orchestrator --> Docs --> SliceGate
-  SliceGate --> FinalGate
+  SliceGate --> CheckpointCommit --> CheckpointPush --> FinalGate
 ```
+
+After each successful slice quality gate, `workflow execute` creates a
+slice-scoped checkpoint commit and pushes the current workflow branch to
+`origin`. This checkpoint is not `push auto`, does not merge a PR and does not
+clean up branches.
 
 Backend strand roles:
 
