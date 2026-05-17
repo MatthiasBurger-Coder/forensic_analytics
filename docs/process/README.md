@@ -29,6 +29,13 @@ Publication modes are separate:
 - `push` is the normal branch push and pull-request process after explicit user approval.
 - `push auto` belongs only to `skills-agents` and may merge a PR only after guard checks pass.
 
+Publication outcomes are explicit:
+
+- `PUB_DONE`: publication completed and verified.
+- `PUB_PR_RESULT`: PR open or updated without automatic merge.
+- `PUB_PUSH_FAILED`: push failed and routes to rollback or escalation.
+- `PUB_REJECTED`: governance, scope, branch or guard rejection.
+
 Slice checkpoint push is not `push auto`.
 `push` is not `push auto`.
 `skills update` is not `push auto`.

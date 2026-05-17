@@ -18,17 +18,47 @@ Slice checkpoint push is not `push auto`.
    - belongs to `workflow execute`
    - runs after a successful slice quality gate
    - commits and pushes the current workflow branch to `origin`
+   - ends in `PUB_DONE` when the branch push succeeds
+   - ends in `PUB_PUSH_FAILED` when the branch push fails
    - does not create or merge a PR
    - does not run branch cleanup
    - is not `push auto`
 2. `push`
    - normal publication after explicit user approval
    - pushes the branch and creates or updates a PR
+   - ends in `PUB_PR_RESULT`
    - does not automatically merge
 3. `push auto`
    - belongs only to `skills-agents`
    - uses a guarded PR lifecycle
+   - may be rejected as `PUB_REJECTED` when guard checks fail
    - may merge and clean up only after guard checks pass
+
+## Publication Outcomes
+
+```mermaid
+flowchart TD
+  PUB_PUSH["PUB_PUSH: Publish branch / PR"] -->|slice checkpoint push succeeds| PUB_DONE["PUB_DONE"]
+  PUB_PUSH -->|normal push creates or updates PR| PUB_PR_RESULT["PUB_PR_RESULT: PR open - no auto merge"]
+  PUB_PUSH -->|push rejected| PUB_PUSH_FAILED["PUB_PUSH_FAILED"]
+  PUB_PUSH -->|governance, scope, branch or guard rejected| PUB_REJECTED["PUB_REJECTED"]
+  PUB_PUSH -->|push auto allowed| PUB_MERGE["PUB_MERGE"]
+  PUB_MERGE -->|merge verified| PUB_DONE
+  PUB_MERGE -->|merge blocked or rejected| PUB_REJECTED
+  PUB_PUSH_FAILED -->|rollback point exists| CP_ROLLBACK["CP_ROLLBACK"]
+  PUB_PUSH_FAILED -->|no rollback point| RA["Root Architect Escalation"]
+  PUB_REJECTED -->|requires governance decision| RA
+```
+
+Outcome meanings:
+
+- `PUB_DONE`: publication completed and verified.
+- `PUB_PR_RESULT`: normal `push` left a PR open or updated; no automatic merge happened.
+- `PUB_PUSH_FAILED`: a branch push failed after a checkpoint or publication action.
+- `PUB_REJECTED`: governance, scope, branch or guard rules blocked publication.
+
+`PUB_PUSH` must not point to itself. `PUB_PUSH_FAILED` is a controlled
+publication outcome with a rollback or escalation handoff.
 
 ## Allowed Review Scope
 

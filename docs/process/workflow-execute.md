@@ -173,6 +173,11 @@ After each successfully completed slice:
 7. Record the commit SHA and push result in the execution report.
 8. Continue with the next slice only after the checkpoint push succeeded.
 
+If the branch push fails, record the outcome as `PUB_PUSH_FAILED`. Route to
+`CP_ROLLBACK` when a rollback point exists; otherwise stop, report and escalate
+to the Root Architect. Do not retry indefinitely, force-push, create a PR, run
+`push auto` or jump back to `workflow create`.
+
 Not allowed:
 
 - no commit when the slice quality gate failed
@@ -210,3 +215,7 @@ Slice checkpoint push is not `push auto`.
 Slice checkpoint push does not create or merge a PR.
 
 Slice checkpoint push does not run branch cleanup.
+
+Slice checkpoint push succeeds as `PUB_DONE` and fails as `PUB_PUSH_FAILED`.
+`PUB_PUSH_FAILED` hands off to `CP_ROLLBACK` when available, otherwise to Root
+Architect escalation.

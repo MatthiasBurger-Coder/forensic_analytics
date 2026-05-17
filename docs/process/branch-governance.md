@@ -48,6 +48,10 @@ It must:
 6. push the current workflow branch to `origin`
 7. record the commit SHA and push result in the execution report
 
+A successful checkpoint branch push is `PUB_DONE`. A failed checkpoint branch
+push is `PUB_PUSH_FAILED` and must route to `CP_ROLLBACK` when a rollback point
+exists, otherwise to Root Architect escalation.
+
 It must not:
 
 - create or merge a PR
@@ -55,3 +59,14 @@ It must not:
 - run `push auto`
 - force-push
 - push to `main`
+
+## Publication Outcomes
+
+`push` and `push auto` use the same outcome names without sharing authority:
+
+- `PUB_PR_RESULT`: normal `push` opened or updated a PR and performed no automatic merge.
+- `PUB_DONE`: publication completed and was verified.
+- `PUB_PUSH_FAILED`: push failed and requires rollback or escalation.
+- `PUB_REJECTED`: governance, scope, branch or guard rules blocked publication.
+
+`PUB_PUSH` must not point to itself.

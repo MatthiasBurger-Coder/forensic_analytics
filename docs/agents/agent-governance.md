@@ -242,13 +242,28 @@ flowchart TD
   Push["push"]
   Auto["push auto"]
   Execute["workflow execute"]
-  Pr["PR without automatic merge"]
+  PUB_PUSH["PUB_PUSH"]
+  PUB_DONE["PUB_DONE"]
+  PUB_PR_RESULT["PUB_PR_RESULT: PR open - no auto merge"]
+  PUB_PUSH_FAILED["PUB_PUSH_FAILED"]
+  PUB_REJECTED["PUB_REJECTED"]
+  PUB_MERGE["PUB_MERGE"]
+  CP_ROLLBACK["CP_ROLLBACK"]
+  RA["Root Architect Escalation"]
   Skills["skills-agents"]
   Guard["Guarded PR lifecycle"]
 
-  Execute --> Checkpoint
-  Push --> Pr
-  Skills --> Auto --> Guard
+  Execute --> Checkpoint --> PUB_PUSH
+  Push --> PUB_PUSH
+  Skills --> Auto --> Guard --> PUB_PUSH
+  PUB_PUSH -->|checkpoint success| PUB_DONE
+  PUB_PUSH -->|normal PR without auto merge| PUB_PR_RESULT
+  PUB_PUSH -->|push rejected| PUB_PUSH_FAILED
+  PUB_PUSH -->|governance, branch, scope or guard rejected| PUB_REJECTED
+  PUB_PUSH -->|auto merge allowed| PUB_MERGE --> PUB_DONE
+  PUB_PUSH_FAILED --> CP_ROLLBACK
+  PUB_PUSH_FAILED -->|no rollback point| RA
+  PUB_REJECTED -->|requires governance decision| RA
 ```
 
 Publication modes are deliberately separate:
@@ -257,7 +272,11 @@ Publication modes are deliberately separate:
 2. `push` is the normal branch push and pull-request process.
 3. `push auto` belongs only to `skills-agents`.
 
-This separation prevents a documentation, workflow or implementation slice from accidentally gaining guarded auto-merge authority.
+`PUB_PR_RESULT` is the normal `push` terminal for an open PR without automatic
+merge. `PUB_PUSH_FAILED` routes to rollback or escalation, and `PUB_REJECTED`
+stops publication when governance, branch, scope or guard rules block it. This
+separation prevents a documentation, workflow or implementation slice from
+accidentally gaining guarded auto-merge authority.
 
 ## Architecture-Governance Role
 

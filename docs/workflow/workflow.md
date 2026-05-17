@@ -466,9 +466,11 @@ flowchart TD
     PUB_PUSH["PUB_PUSH: Publish branch / PR"] -->|auto merge allowed| PUB_MERGE["PUB_MERGE"]
     PUB_PUSH -->|PR without automatic merge| PUB_PR_RESULT["PUB_PR_RESULT: PR open - no auto merge"]
     PUB_PUSH -->|push rejected| PUB_PUSH_FAILED["PUB_PUSH_FAILED"]
+    PUB_PUSH -->|governance or scope rejected| PUB_REJECTED["PUB_REJECTED"]
     PUB_MERGE --> PUB_DONE["PUB_DONE"]
-    PUB_PR_RESULT --> PUB_DONE
     PUB_PUSH_FAILED --> CP_ROLLBACK["CP_ROLLBACK"]
+    PUB_PUSH_FAILED -->|no rollback point| RA["Root Architect Escalation"]
+    PUB_REJECTED -->|requires governance decision| RA
 ```
 
 Required terminals or controlled outcomes:
@@ -477,6 +479,13 @@ Required terminals or controlled outcomes:
 - `PUB_PR_RESULT`
 - `PUB_PUSH_FAILED`
 - `PUB_REJECTED`
+
+`PUB_PUSH` must not contain a self-reference. `PUB_PR_RESULT` is the normal
+`push` outcome when a PR is open or updated without automatic merge.
+`PUB_DONE` is reserved for a verified automatic merge or explicitly completed
+publication path. `PUB_PUSH_FAILED` hands off to `CP_ROLLBACK` when a rollback
+point exists; otherwise it escalates. `PUB_REJECTED` stops and reports a
+governance, scope, branch or guard rejection.
 
 ### Slice 08: Commit, Checkpoint And Rollback
 

@@ -109,11 +109,11 @@ These labels are introduced by the Governance Flowchart V2 workflow and must be 
 | CP | Commit, checkpoint and rollback subgraph | Introduced by workflow, not yet implemented outside `docs/workflow` |
 | `CP_ROLLBACK` | Rollback and revert decision node | Introduced by workflow, not yet implemented outside `docs/workflow` |
 | `CP_FINAL` | Post-checkpoint continuation node | Introduced by workflow, not yet implemented outside `docs/workflow` |
-| PUB | Publication-mode subgraph | Introduced by workflow, not yet implemented outside `docs/workflow` |
-| `PUB_PR_RESULT` | PR-open terminal for normal push path | Introduced by workflow, not yet implemented outside `docs/workflow` |
-| `PUB_DONE` | Publication completed terminal | Introduced by workflow, not yet implemented outside `docs/workflow` |
-| `PUB_PUSH_FAILED` | Push failure terminal | Introduced by workflow, not yet implemented outside `docs/workflow` |
-| `PUB_REJECTED` | Publication rejected terminal | Introduced by workflow, not yet implemented outside `docs/workflow` |
+| PUB | Publication-mode subgraph | Mapped by Slice 07 in process and agent publication governance |
+| `PUB_PR_RESULT` | PR-open terminal for normal push path | Mapped by Slice 07 as normal `push` outcome without automatic merge |
+| `PUB_DONE` | Publication completed terminal | Mapped by Slice 07 as verified checkpoint or merge completion |
+| `PUB_PUSH_FAILED` | Push failure terminal | Mapped by Slice 07 to `CP_ROLLBACK` handoff or Root Architect escalation |
+| `PUB_REJECTED` | Publication rejected terminal | Mapped by Slice 07 as governance, scope, branch or guard rejection |
 | R10 | No automatic backward jump from S3 to S2 | Introduced by workflow, not yet implemented outside `docs/workflow` |
 | R11 | One slice, one commit | Introduced by workflow, not yet implemented outside `docs/workflow` |
 | `S1_PUSH_ELIGIBILITY_GUARD` | Skills-agents push eligibility guard | Introduced by workflow, not yet implemented outside `docs/workflow` |
