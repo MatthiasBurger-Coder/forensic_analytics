@@ -1,0 +1,112 @@
+syntax = "proto3";
+
+package de.burger.forensics.analytics.joerncpganalysis.v1;
+
+import "analysis-job.proto";
+
+option java_multiple_files = true;
+option java_package = "de.burger.forensics.analytics.joerncpganalysis.v1";
+option java_outer_classname = "JoernCpgAnalysisProto";
+
+// Provisional Slice 08 contract for Joern CPG/CFG/DFG semantic analysis.
+//
+// The service owns Joern execution and semantic artifact metadata only. It must
+// not claim runtime execution, observed branch flow, observed values, graph
+// persistence or confirmed findings. CPG/CFG/DFG output is static semantic
+// analysis evidence and incomplete mappings remain explicit diagnostics.
+service JoernCpgAnalysisService {
+  rpc AnalyzeSourceSnapshot(AnalyzeJoernCpgRequest)
+      returns (AnalyzeJoernCpgResponse);
+}
+
+message AnalyzeJoernCpgRequest {
+  string request_id = 1;
+  string idempotency_key = 2;
+  string schema_version = 3;
+  string correlation_id = 4;
+  de.burger.forensics.analytics.analysisjob.v1.AnalysisWorkerKind worker_kind = 5;
+  de.burger.forensics.analytics.analysisjob.v1.AnalysisRunId analysis_run_id = 6;
+  de.burger.forensics.analytics.analysisjob.v1.AnalysisJobId analysis_job_id = 7;
+  de.burger.forensics.analytics.analysisjob.v1.SourceSnapshotId source_snapshot_id = 8;
+  string worker_version = 9;
+  JoernCpgPolicy policy = 10;
+  SourceWorkspace workspace = 11;
+  map<string, string> safe_attributes = 12;
+}
+
+message AnalyzeJoernCpgResponse {
+  OperationStatus status = 1;
+  de.burger.forensics.analytics.analysisjob.v1.AnalysisRunId analysis_run_id = 2;
+  de.burger.forensics.analytics.analysisjob.v1.AnalysisJobId analysis_job_id = 3;
+  de.burger.forensics.analytics.analysisjob.v1.SourceSnapshotId source_snapshot_id = 4;
+  de.burger.forensics.analytics.analysisjob.v1.AnalysisCompleteness completeness = 5;
+  repeated de.burger.forensics.analytics.analysisjob.v1.AnalysisArtifactReference semantic_artifacts = 6;
+  JoernCpgSummary summary = 7;
+  repeated JoernCpgDiagnostic diagnostics = 8;
+  map<string, string> safe_attributes = 9;
+}
+
+message SourceWorkspace {
+  // Opaque service-local workspace identifier. Absolute paths, file URIs and
+  // parent traversal are forbidden on the public contract.
+  string workspace_id = 1;
+  repeated SourceRoot source_roots = 2;
+  repeated de.burger.forensics.analytics.analysisjob.v1.AnalysisArtifactReference input_artifacts = 3;
+}
+
+message SourceRoot {
+  // Relative path inside the immutable source snapshot workspace.
+  string relative_path = 1;
+  string language = 2;
+}
+
+message JoernCpgPolicy {
+  int32 max_source_roots = 1;
+  int64 max_workspace_bytes = 2;
+  int64 max_artifact_bytes = 3;
+  int64 timeout_seconds = 4;
+  // Expected service-owned Joern runtime image digest. The service records its
+  // configured runtime image as provenance and rejects requests that do not
+  // match that configured runtime.
+  string joern_image_reference = 5;
+  string query_bundle_version = 6;
+  bool require_callgraph = 7;
+  bool require_controlflow = 8;
+  bool require_dataflow = 9;
+}
+
+message JoernCpgSummary {
+  int32 source_root_count = 1;
+  int32 produced_artifact_count = 2;
+  int32 missing_artifact_count = 3;
+  string joern_version = 4;
+  string joern_image_reference = 5;
+  string query_bundle_version = 6;
+  string producer_service = 7;
+  string schema_version = 8;
+}
+
+message JoernCpgDiagnostic {
+  string code = 1;
+  string message = 2;
+  DiagnosticSeverity severity = 3;
+  string source_snapshot_id = 4;
+  string artifact_path = 5;
+  bool retryable = 6;
+  bool affects_completeness = 7;
+}
+
+message OperationStatus {
+  string code = 1;
+  string message = 2;
+  bool retryable = 3;
+  string correlation_id = 4;
+  repeated JoernCpgDiagnostic diagnostics = 5;
+}
+
+enum DiagnosticSeverity {
+  DIAGNOSTIC_SEVERITY_UNSPECIFIED = 0;
+  DIAGNOSTIC_SEVERITY_INFO = 1;
+  DIAGNOSTIC_SEVERITY_WARNING = 2;
+  DIAGNOSTIC_SEVERITY_ERROR = 3;
+}

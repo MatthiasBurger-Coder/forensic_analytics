@@ -8,6 +8,24 @@
 !forensic-analytics-boot-app/build/
 !forensic-analytics-boot-app/build/libs/
 !forensic-analytics-boot-app/build/libs/*.jar
+!services/forensic-ingestion-service/build/
+!services/forensic-ingestion-service/build/libs/
+!services/forensic-ingestion-service/build/libs/*.jar
+!services/analysis-store-service/build/
+!services/analysis-store-service/build/libs/
+!services/analysis-store-service/build/libs/*.jar
+!services/repository-analysis-service/build/
+!services/repository-analysis-service/build/libs/
+!services/repository-analysis-service/build/libs/*.jar
+!services/java-ast-analysis-service/build/
+!services/java-ast-analysis-service/build/libs/
+!services/java-ast-analysis-service/build/libs/*.jar
+!services/joern-cpg-analysis-service/build/
+!services/joern-cpg-analysis-service/build/libs/
+!services/joern-cpg-analysis-service/build/libs/*.jar
+!services/btm-generation-service/build/
+!services/btm-generation-service/build/libs/
+!services/btm-generation-service/build/libs/*.jar
 
 **/node_modules
 **/dist

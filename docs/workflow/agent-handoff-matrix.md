@@ -18,7 +18,7 @@ architecture/microservices-ecosystem-conversion-20260516
 | 03 | Senior gRPC/Proto Specialist | Contract Governance Expert, Senior System Architect, Microservice Senior Expert, Senior Tester |
 | 04 | Senior Java Backend Developer | Senior gRPC/Proto Specialist, Microservice Senior Expert, Senior DevOps Engineer, Senior Tester |
 | 05 | Senior Java Backend Developer | Data Ownership And Persistence Steward, Senior System Architect, Senior DevOps Engineer, Senior Tester |
-| 06 | Senior Java Backend Developer | Microservice Senior Expert, Senior DevOps Engineer, Senior Git Workspace Specialist, Senior Tester |
+| 06 | Senior Java Backend Developer | Microservice Senior Expert, Senior DevOps Engineer, Senior Git Workspace Specialist, Security Sandbox Specialist, Senior Tester |
 | 07 | Senior Java Backend Developer | Source Analysis Pipeline, Microservice Senior Expert, Senior Tester |
 | 08 | Senior Java Backend Developer | Senior Joern CPG Specialist, Senior DevOps Engineer, Microservice Senior Expert, Senior Tester |
 | 09 | Senior Java Backend Developer | Microservice Senior Expert, Senior Tester |

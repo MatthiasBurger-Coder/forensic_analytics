@@ -1,0 +1,247 @@
+syntax = "proto3";
+
+package de.burger.forensics.analytics.analysisjob.v1;
+
+option java_multiple_files = true;
+option java_package = "de.burger.forensics.analytics.analysisjob.v1";
+option java_outer_classname = "AnalysisJobProto";
+
+// Initial planned contract for worker handoff and analysis-job state.
+//
+// This file is a Slice 03 design artifact. It does not prove that a backend
+// endpoint exists yet. Service implementations must generate transport code
+// service-locally and map into service-owned domain models.
+service AnalysisJobService {
+  rpc SubmitAnalysisJob(SubmitAnalysisJobRequest)
+      returns (SubmitAnalysisJobResponse);
+
+  rpc GetAnalysisJob(GetAnalysisJobRequest)
+      returns (AnalysisJob);
+
+  rpc ListAnalysisJobs(ListAnalysisJobsRequest)
+      returns (ListAnalysisJobsResponse);
+
+  rpc LeaseAnalysisJob(LeaseAnalysisJobRequest)
+      returns (LeaseAnalysisJobResponse);
+
+  rpc ReportAnalysisJobProgress(ReportAnalysisJobProgressRequest)
+      returns (AnalysisJob);
+
+  rpc CompleteAnalysisJob(CompleteAnalysisJobRequest)
+      returns (AnalysisJob);
+
+  rpc FailAnalysisJob(FailAnalysisJobRequest)
+      returns (AnalysisJob);
+
+  rpc RegisterAnalysisArtifacts(RegisterAnalysisArtifactsRequest)
+      returns (RegisterAnalysisArtifactsResponse);
+}
+
+message SubmitAnalysisJobRequest {
+  string request_id = 1;
+  string idempotency_key = 2;
+  string schema_version = 3;
+  string correlation_id = 4;
+  AnalysisRunId analysis_run_id = 5;
+  AnalysisJobId job_id = 6;
+  AnalysisWorkerKind worker_kind = 7;
+  SourceSnapshotId source_snapshot_id = 8;
+  repeated AnalysisArtifactReference input_artifacts = 9;
+  AnalysisCompleteness input_completeness = 10;
+  map<string, string> attributes = 11;
+}
+
+message SubmitAnalysisJobResponse {
+  AnalysisJob job = 1;
+  OperationStatus status = 2;
+}
+
+message GetAnalysisJobRequest {
+  string request_id = 1;
+  string correlation_id = 2;
+  AnalysisJobId job_id = 3;
+}
+
+message ListAnalysisJobsRequest {
+  string request_id = 1;
+  string correlation_id = 2;
+  AnalysisRunId analysis_run_id = 3;
+  AnalysisWorkerKind worker_kind = 4;
+  AnalysisJobState state = 5;
+  int32 page_size = 6;
+  string page_token = 7;
+}
+
+message ListAnalysisJobsResponse {
+  repeated AnalysisJob jobs = 1;
+  string next_page_token = 2;
+}
+
+message LeaseAnalysisJobRequest {
+  string request_id = 1;
+  string idempotency_key = 2;
+  string correlation_id = 3;
+  string worker_id = 4;
+  AnalysisWorkerKind worker_kind = 5;
+  int32 lease_seconds = 6;
+  int32 max_jobs = 7;
+}
+
+message LeaseAnalysisJobResponse {
+  repeated AnalysisJob jobs = 1;
+  OperationStatus status = 2;
+}
+
+message ReportAnalysisJobProgressRequest {
+  string request_id = 1;
+  string idempotency_key = 2;
+  string correlation_id = 3;
+  AnalysisJobId job_id = 4;
+  int32 attempt = 5;
+  string worker_id = 6;
+  int32 percent_complete = 7;
+  repeated string diagnostics = 8;
+}
+
+message CompleteAnalysisJobRequest {
+  string request_id = 1;
+  string idempotency_key = 2;
+  string correlation_id = 3;
+  AnalysisJobId job_id = 4;
+  int32 attempt = 5;
+  string worker_id = 6;
+  repeated AnalysisArtifactReference output_artifacts = 7;
+  AnalysisCompleteness output_completeness = 8;
+  repeated string diagnostics = 9;
+}
+
+message FailAnalysisJobRequest {
+  string request_id = 1;
+  string idempotency_key = 2;
+  string correlation_id = 3;
+  AnalysisJobId job_id = 4;
+  int32 attempt = 5;
+  string worker_id = 6;
+  string reason = 7;
+  repeated string diagnostics = 8;
+  AnalysisCompleteness completeness = 9;
+  bool retryable = 10;
+}
+
+message RegisterAnalysisArtifactsRequest {
+  string request_id = 1;
+  string idempotency_key = 2;
+  string correlation_id = 3;
+  AnalysisRunId analysis_run_id = 4;
+  AnalysisJobId job_id = 5;
+  repeated AnalysisArtifactReference artifacts = 6;
+}
+
+message RegisterAnalysisArtifactsResponse {
+  repeated AnalysisArtifactReference artifacts = 1;
+  OperationStatus status = 2;
+}
+
+message AnalysisJob {
+  AnalysisRunId analysis_run_id = 1;
+  AnalysisJobId job_id = 2;
+  AnalysisWorkerKind worker_kind = 3;
+  SourceSnapshotId source_snapshot_id = 4;
+  repeated AnalysisArtifactReference input_artifacts = 5;
+  repeated AnalysisArtifactReference output_artifacts = 6;
+  AnalysisCompleteness completeness = 7;
+  AnalysisJobState state = 8;
+  int32 attempt = 9;
+  repeated AnalysisJobFailure failures = 10;
+  string lease_owner = 11;
+  string lease_expires_at = 12;
+  string created_at = 13;
+  string updated_at = 14;
+  repeated string diagnostics = 15;
+  string schema_version = 16;
+  string correlation_id = 17;
+  map<string, string> attributes = 18;
+  int32 percent_complete = 19;
+}
+
+message AnalysisRunId {
+  string value = 1;
+}
+
+message AnalysisJobId {
+  string value = 1;
+}
+
+message SourceSnapshotId {
+  string value = 1;
+}
+
+message AnalysisArtifactReference {
+  ArtifactReference artifact = 1;
+  AnalysisArtifactCategory category = 2;
+  string producer_service = 3;
+  string schema_version = 4;
+  AnalysisCompleteness completeness = 5;
+}
+
+message ArtifactReference {
+  string path = 1;
+  string type = 2;
+  string sha256 = 3;
+  int64 size_bytes = 4;
+}
+
+message AnalysisJobFailure {
+  AnalysisJobId job_id = 1;
+  AnalysisWorkerKind worker_kind = 2;
+  int32 attempt = 3;
+  string reason = 4;
+  repeated string diagnostics = 5;
+  AnalysisCompleteness completeness = 6;
+  bool retryable = 7;
+}
+
+message OperationStatus {
+  string code = 1;
+  string message = 2;
+  bool retryable = 3;
+  string correlation_id = 4;
+  repeated string diagnostics = 5;
+}
+
+enum AnalysisWorkerKind {
+  ANALYSIS_WORKER_KIND_UNSPECIFIED = 0;
+  ANALYSIS_WORKER_KIND_REPOSITORY_ANALYSIS = 1;
+  ANALYSIS_WORKER_KIND_AST_ANALYSIS = 2;
+  ANALYSIS_WORKER_KIND_JOERN_ANALYSIS = 3;
+  ANALYSIS_WORKER_KIND_BTM_GENERATION = 4;
+  ANALYSIS_WORKER_KIND_GRAPH_ANALYSIS = 5;
+  ANALYSIS_WORKER_KIND_REPORT = 6;
+  ANALYSIS_WORKER_KIND_LLM_PROJECTION = 7;
+}
+
+enum AnalysisJobState {
+  ANALYSIS_JOB_STATE_UNSPECIFIED = 0;
+  ANALYSIS_JOB_STATE_ACCEPTED = 1;
+  ANALYSIS_JOB_STATE_DISPATCHABLE = 2;
+  ANALYSIS_JOB_STATE_RUNNING = 3;
+  ANALYSIS_JOB_STATE_RETRYABLE = 4;
+  ANALYSIS_JOB_STATE_FAILED = 5;
+  ANALYSIS_JOB_STATE_DEAD_LETTERED = 6;
+  ANALYSIS_JOB_STATE_COMPLETED = 7;
+}
+
+enum AnalysisCompleteness {
+  ANALYSIS_COMPLETENESS_UNSPECIFIED = 0;
+  ANALYSIS_COMPLETENESS_COMPLETE = 1;
+  ANALYSIS_COMPLETENESS_INCOMPLETE = 2;
+  ANALYSIS_COMPLETENESS_UNKNOWN = 3;
+}
+
+enum AnalysisArtifactCategory {
+  ANALYSIS_ARTIFACT_CATEGORY_UNSPECIFIED = 0;
+  ANALYSIS_ARTIFACT_CATEGORY_STATIC = 1;
+  ANALYSIS_ARTIFACT_CATEGORY_RUNTIME = 2;
+  ANALYSIS_ARTIFACT_CATEGORY_PROJECTION = 3;
+  ANALYSIS_ARTIFACT_CATEGORY_GENERATED = 4;
+}

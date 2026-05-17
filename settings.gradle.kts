@@ -35,4 +35,10 @@ include(
     "forensic-analytics-rest",
     "forensic-analytics-bootstrap",
     "forensic-analytics-boot-app",
+    "services:btm-generation-service",
+    "services:joern-cpg-analysis-service",
+    "services:java-ast-analysis-service",
+    "services:repository-analysis-service",
+    "services:analysis-store-service",
+    "services:forensic-ingestion-service",
 )

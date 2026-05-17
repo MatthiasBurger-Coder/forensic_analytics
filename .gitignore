@@ -10,6 +10,10 @@
 .gradle/
 build/
 out/
+!services/*/src/main/java/**/adapter/out/
+!services/*/src/main/java/**/adapter/out/**
+!services/*/src/test/java/**/adapter/out/
+!services/*/src/test/java/**/adapter/out/**
 target/
 bin/
 *.class

@@ -82,3 +82,45 @@ REST / gRPC / CLI / Bootstrap boundary
 Operational logs record request, command and server lifecycle categories. They do not contain raw runtime payloads, source content, method arguments, method return values, LLM prompts or raw exception messages.
 
 Operational correlation IDs help connect adapter logs for diagnostics. They are not canonical evidence and must not be used as proof of runtime execution.
+
+## 6.8 Target Microservice Runtime Flow
+
+The target runtime flow for service-split work is planned by ADR-0017. It is
+not implemented yet:
+
+```text
+Frontend / CLI / external client
+  -> Gateway
+  -> Ingestion or analysis job APIs
+  -> Repository Analysis
+  -> Java AST Analysis
+  -> Joern CPG Analysis
+  -> Analysis Store
+  -> Graph Replay
+  -> Report Generation
+  -> Gateway
+  -> Frontend / client
+```
+
+Plugin, scanner and runtime evidence enters through the ingestion service.
+Canonical evidence and one-writer analysis state belong to the analysis store.
+Graph, replay, reports and LLM packages are projections or generated artifacts
+that must remain traceable to owner evidence APIs.
+
+ADR-0018 allows the initial runtime communication contracts to describe planned
+Gateway, worker, replay, report and event flows before the services exist.
+Those flows remain contract design until a later slice implements and verifies
+the corresponding runtime behavior.
+
+Slice 05 verifies a narrow Analysis Store runtime path:
+
+```text
+worker or future Gateway
+  -> AnalysisJobService gRPC
+  -> analysis-store-service application service
+  -> service-local analysis job repository
+```
+
+This path supports job submission, leasing, progress, completion, failure,
+listing and artifact metadata registration. It does not yet ingest normalized
+fact bodies, runtime trace facts, incidents or correlation indexes.
