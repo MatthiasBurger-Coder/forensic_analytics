@@ -31,17 +31,25 @@ Non-goals:
 
 ### Three Amigos Findings
 
-Requirement Analyst:
+Senior Requirement Engineer:
 
 - Acceptance criteria must state which trace fields are required, optional and explicitly unknown.
 
-System Architect:
+Senior System Architect:
 
 - Runtime import remains an adapter concern.
 - Replay orchestration belongs in application.
 - Domain models must not depend on parser, graph or LLM provider APIs.
 
-Quality Validator:
+Senior Java Backend Developer:
+
+- Importer-to-replay mapping must stay behind application ports and remain JUnit 6 testable.
+
+Senior React Frontend Developer:
+
+- No frontend flow is affected unless the workflow explicitly adds evidence-review UI changes.
+
+Senior Tester:
 
 - Tests must verify missing trace fields remain incomplete, not fabricated.
 - LLM prompt tests must use deterministic fake clients or captured prompt assertions.

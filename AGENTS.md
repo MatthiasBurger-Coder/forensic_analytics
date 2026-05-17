@@ -163,7 +163,12 @@ The required order is:
 3. Stop if the current branch is detached, unclear, or if unrelated or unclear uncommitted changes exist.
 4. Run Requirement Intake.
 5. Run the Requirement Clarification Loop until no blocking questions remain, or stop with `REQUIRES_REFINEMENT`.
-6. Run the Three Amigos Requirement Gate with Senior Requirement Engineer, Senior System Architect, Senior Java Backend Developer, Senior React Frontend Developer and Senior Tester perspectives.
+6. Run the Three Amigos Requirement Gate with these mandatory roles:
+   - Senior Requirement Engineer: goal, scope, non-goals, acceptance criteria, assumptions and open questions.
+   - Senior System Architect: architecture boundaries, arc42, service boundaries, plugin-vs-analytics boundary and risks.
+   - Senior Java Backend Developer: backend impact, ports, adapters, domain, JUnit 6 testability, Spring and microservice consequences.
+   - Senior React Frontend Developer: frontend impact, UX flows, React components, state, API adapters and build/test consequences.
+   - Senior Tester: testability, regression, quality gates, acceptance criteria and slice acceptance.
 7. Generate a dedicated workflow branch name unless the current branch is already a matching branch for this workflow.
 8. Check local and remote branch-name collisions, choosing the next clear unique suffix when needed.
 9. Create and checkout the workflow branch, or verify the existing matching workflow branch before mutating workflow files.

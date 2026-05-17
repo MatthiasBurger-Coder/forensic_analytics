@@ -66,26 +66,37 @@ Confidence decisions:
 
 Participants:
 
+- Senior Requirement Engineer
+- Senior System Architect
+- Senior Java Backend Developer
+- Senior React Frontend Developer
+- Senior Tester
+
+Optional additional lenses:
+
 - Requirement Analyst
-- System Architect
+- Architecture Validator
 - Quality Validator
 
 Validate:
 
-- business understanding
-- technical goal
-- architecture fit
+- goal, scope, non-goals, acceptance criteria, assumptions and open questions
+- architecture boundaries, arc42, service boundaries, plugin-vs-analytics boundary and risks
+- backend impact, ports, adapters, domain, JUnit 6 testability, Spring and microservice consequences
+- frontend impact, UX flows, React components, state, API adapters and build/test consequences
+- testability, regression, quality gates, acceptance criteria and slice acceptance
 - evidence semantics
-- testability
 - operational impact
 - rollback expectation
 - whether implementation still matches the EPIC
 
 Output:
 
-- requirement findings
-- architecture findings
-- quality findings
+- Senior Requirement Engineer findings
+- Senior System Architect findings
+- Senior Java Backend Developer findings
+- Senior React Frontend Developer findings
+- Senior Tester findings
 - EPIC drift findings
 
 ## Phase 4 - Dependency Analysis

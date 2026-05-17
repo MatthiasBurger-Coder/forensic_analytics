@@ -33,7 +33,7 @@ Required registry fields:
 | Process strand | Inputs | Outputs | May change | Must not change | Quality gate | Documentation duty |
 |---|---|---|---|---|---|---|
 | `skills-agents` | Root rules, existing skills, roles, prompts, Codex agents, registry, organigramm, process docs | Approved skill/agent governance change | `.agents/**`, `.codex/agents/**`, `.codex/skills/**`, `.codex/subagents/**`, `docs/agents/**`, `docs/process/**`, `docs/skill-audit/**`, governance-limited `AGENTS.md`, `docs/governance/**`, `docs/arc42/**`, `docs/adr/**` | Product backend, frontend, Docker/runtime, analytics engine, Gradle/build and contract implementation files unless explicitly scoped for governance tooling | Integrity review, registry review, organigramm review, documentation review, `git diff --check`, documented docs checks | Registry, organigramm, process docs and AGENTS impact must be updated or explicitly checked |
-| `workflow create` | User requirement, root rules, `QUALITY.md`, arc42, ADRs, EPIC, routing rules, existing workflows | Checked `docs/workflow/workflow.md`; checked or updated arc42 docs | Dedicated workflow planning artifacts and architecture/process documentation needed for planning | Product implementation, backend code, frontend code, Docker/runtime code, analytics implementation | Three Amigos gate, workflow validation, arc42 validation, docs consistency, `git diff --check` | `docs/workflow/workflow.md` and arc42 review are mandatory end artifacts |
+| `workflow create` | User requirement, Requirement Clarification Loop, root rules, `QUALITY.md`, arc42, ADRs, EPIC, routing rules, existing workflows | Checked `docs/workflow/workflow.md`; checked or updated arc42 docs | Dedicated workflow planning artifacts and architecture/process documentation needed for planning | Product implementation, backend code, frontend code, Docker/runtime code, analytics implementation | Five-role Three Amigos gate, workflow validation, arc42 validation, docs consistency, `git diff --check` | `docs/workflow/workflow.md` and arc42 review are mandatory end artifacts |
 | `workflow execute` | Checked `docs/workflow/workflow.md`, checked arc42 docs, workflow branch, slice plan, role assignments | Slice changes, quality evidence, execution report, synchronized docs | Only files explicitly allowed by the active workflow slice | Any out-of-scope files and any scope expansion not returned to `workflow create` | Slice quality gate, final workflow execute gate, `QUALITY.md` commands, diff checks | Execution report, arc42 consistency, testing docs and affected process docs |
 
 Shared governance roles are strand-scoped support roles. They may be invoked in
@@ -57,6 +57,16 @@ strand defaults above.
 | arc42 Architecture Documentation Maintainer | Checks and updates arc42 consequences | `workflow create`; `workflow execute` | Senior System Architect | `.agents/skills/arc42-architecture-governance/SKILL.md`, `docs/arc42/**` | active |
 | Testing Documentation Maintainer | Keeps test strategy and quality evidence traceable | `workflow create`; `workflow execute` | Senior Tester | `QUALITY.md`, workflow quality logs | active |
 | Execution Report Maintainer | Records execution evidence after slices | `workflow execute` | Workflow Executor | `docs/workflow/execution-summary.md` or active workflow report | active |
+
+## Mandatory Workflow Create Gate Roles
+
+| Role | Mandatory focus |
+|---|---|
+| Senior Requirement Engineer | Goal, scope, non-goals, acceptance criteria, assumptions and open questions |
+| Senior System Architect | Architecture boundaries, arc42, service boundaries, plugin-vs-analytics boundary and risks |
+| Senior Java Backend Developer | Backend impact, ports, adapters, domain, JUnit 6 testability, Spring and microservice consequences |
+| Senior React Frontend Developer | Frontend impact, UX flows, React components, state, API adapters and build/test consequences |
+| Senior Tester | Testability, regression, quality gates, acceptance criteria and slice acceptance |
 
 ## Discoverable Skill Assignments
 

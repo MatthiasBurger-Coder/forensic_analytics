@@ -87,6 +87,19 @@ roles:
 - Senior React Frontend Developer
 - Senior Tester
 
+Mandatory focus:
+
+- Senior Requirement Engineer: goal, scope, non-goals, acceptance criteria,
+  assumptions and open questions.
+- Senior System Architect: architecture boundaries, arc42, service boundaries,
+  plugin-vs-analytics boundary and risks.
+- Senior Java Backend Developer: backend impact, ports, adapters, domain,
+  JUnit 6 testability, Spring and microservice consequences.
+- Senior React Frontend Developer: frontend impact, UX flows, React components,
+  state, API adapters and build/test consequences.
+- Senior Tester: testability, regression, quality gates, acceptance criteria
+  and slice acceptance.
+
 The decision must be `READY_FOR_WORKFLOW` or
 `PROCEED_WITH_ACCEPTED_ASSUMPTIONS` before final checked workflow authoring.
 `REQUIRES_REFINEMENT` blocks final `docs/workflow/workflow.md` creation and

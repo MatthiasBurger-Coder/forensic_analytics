@@ -75,6 +75,19 @@ flowchart TD
   Gate --> Req --> Arch --> Back --> Front --> Test --> WF --> Arc --> Docs --> Ready
 ```
 
+Mandatory gate responsibilities:
+
+- Senior Requirement Engineer: goal, scope, non-goals, acceptance criteria,
+  assumptions and open questions.
+- Senior System Architect: architecture boundaries, arc42, service boundaries,
+  plugin-vs-analytics boundary and risks.
+- Senior Java Backend Developer: backend impact, ports, adapters, domain,
+  JUnit 6 testability, Spring and microservice consequences.
+- Senior React Frontend Developer: frontend impact, UX flows, React components,
+  state, API adapters and build/test consequences.
+- Senior Tester: testability, regression, quality gates, acceptance criteria
+  and slice acceptance.
+
 Required end artifacts:
 
 - Checked `docs/workflow/workflow.md`.

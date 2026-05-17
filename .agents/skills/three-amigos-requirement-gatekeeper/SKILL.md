@@ -1,6 +1,6 @@
 ---
 name: three-amigos-requirement-gatekeeper
-description: "Use before workflow authoring or execution to validate incoming requirements with a Three Amigos gate: requirement completeness, architecture fit, quality/testability, dependency cycles, deadlock risks, slice boundaries, required skills, subagent availability, and READY_FOR_WORKFLOW versus REQUIRES_REFINEMENT decisions."
+description: "Use before workflow authoring or execution to validate incoming requirements with a five-role Three Amigos gate: requirement completeness, architecture fit, backend impact, frontend impact, quality/testability, dependency cycles, deadlock risks, slice boundaries, required skills, subagent availability, and READY_FOR_WORKFLOW / PROCEED_WITH_ACCEPTED_ASSUMPTIONS / REQUIRES_REFINEMENT decisions."
 ---
 
 # Skill: Three Amigos Requirement Gatekeeper
@@ -97,11 +97,16 @@ Before the role review, run the Requirement Clarification Loop. Record:
 Blocking questions must remain visible and must block final checked
 `docs/workflow/workflow.md` creation and release for `workflow execute`.
 
-Run the review from three perspectives:
+Run the review with these mandatory roles:
 
-- Requirement Analyst: business goal, technical goal, scope, non-goals, assumptions, affected systems and acceptance criteria.
-- Architecture Validator: hexagonal boundaries, service ownership, API contracts, database ownership, evidence semantics, deployment impact and rollback strategy.
-- Quality Validator: testability, regression coverage, ArchUnit or coverage needs, deterministic outputs, quality commands and documentation impact.
+- Senior Requirement Engineer: goal, scope, non-goals, acceptance criteria, assumptions and open questions.
+- Senior System Architect: architecture boundaries, arc42, service boundaries, plugin-vs-analytics boundary and risks.
+- Senior Java Backend Developer: backend impact, ports, adapters, domain, JUnit 6 testability, Spring and microservice consequences.
+- Senior React Frontend Developer: frontend impact, UX flows, React components, state, API adapters and build/test consequences.
+- Senior Tester: testability, regression, quality gates, acceptance criteria and slice acceptance.
+
+Requirement Analyst, Architecture Validator and Quality Validator may be used
+only as additional perspectives. They do not replace the five mandatory roles.
 
 Add a Dependency / Deadlock Validator pass when the request contains multiple slices, services, subagents, shared files, shared APIs, orchestration steps, queues, workers or rollout dependencies.
 
@@ -233,7 +238,12 @@ Stop with `REQUIRES_REFINEMENT` when:
 Produce a concise gate report containing:
 
 - normalized requirement summary
-- Three Amigos findings
+- Three Amigos findings from all five mandatory roles
+- Senior Requirement Engineer findings
+- Senior System Architect findings
+- Senior Java Backend Developer findings
+- Senior React Frontend Developer findings
+- Senior Tester findings
 - architecture and evidence-integrity validation
 - quality and verification validation
 - dependency graph or dependency summary

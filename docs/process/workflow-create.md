@@ -90,11 +90,17 @@ Confidence decisions:
 
 ## Required Three Amigos Roles
 
-- Senior Requirement Engineer
-- Senior System Architect
-- Senior Java Backend Developer
-- Senior React Frontend Developer
-- Senior Tester
+| Role | Mandatory focus |
+|---|---|
+| Senior Requirement Engineer | Goal, scope, non-goals, acceptance criteria, assumptions and open questions |
+| Senior System Architect | Architecture boundaries, arc42, service boundaries, plugin-vs-analytics boundary and risks |
+| Senior Java Backend Developer | Backend impact, ports, adapters, domain, JUnit 6 testability, Spring and microservice consequences |
+| Senior React Frontend Developer | Frontend impact, UX flows, React components, state, API adapters and build/test consequences |
+| Senior Tester | Testability, regression, quality gates, acceptance criteria and slice acceptance |
+
+Classical labels such as Requirement Analyst, Architecture Validator and Quality
+Validator may appear only as additional review lenses. They do not replace the
+five mandatory roles above.
 
 ## Required End Artifacts
 

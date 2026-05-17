@@ -11,11 +11,14 @@ created or changed.
 
 | Role | Review focus |
 |---|---|
-| Senior Requirement Engineer | Business goal, technical goal, scope, non-goals, assumptions and acceptance criteria |
-| Senior System Architect | Architecture boundaries, service ownership, evidence semantics, API and data ownership impact |
-| Senior Java Backend Developer | Backend impact, hexagonal boundaries, ports, adapters and JUnit 6 testability |
-| Senior React Frontend Developer | Frontend impact, UX/API adapter boundaries and React build/test impact |
-| Senior Tester | Regression strategy, quality gates, deterministic fixtures and stop conditions |
+| Senior Requirement Engineer | Goal, scope, non-goals, acceptance criteria, assumptions and open questions |
+| Senior System Architect | Architecture boundaries, arc42, service boundaries, plugin-vs-analytics boundary and risks |
+| Senior Java Backend Developer | Backend impact, ports, adapters, domain, JUnit 6 testability, Spring and microservice consequences |
+| Senior React Frontend Developer | Frontend impact, UX flows, React components, state, API adapters and build/test consequences |
+| Senior Tester | Testability, regression, quality gates, acceptance criteria and slice acceptance |
+
+Requirement Analyst, Architecture Validator and Quality Validator may be used
+only as additional perspectives. They do not replace the five mandatory roles.
 
 ## Decision
 
@@ -84,6 +87,11 @@ The gate report must include:
 
 - Normalized requirement summary.
 - Scope and non-goals.
+- Senior Requirement Engineer findings.
+- Senior System Architect findings.
+- Senior Java Backend Developer findings.
+- Senior React Frontend Developer findings.
+- Senior Tester findings.
 - Backend impact.
 - Frontend impact.
 - Architecture and evidence-integrity validation.
