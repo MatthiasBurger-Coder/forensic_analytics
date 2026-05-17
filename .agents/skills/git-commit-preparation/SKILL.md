@@ -12,6 +12,12 @@ Prepare, review, repair, commit, push, and open a pull request for the current p
 `push auto` is restricted to the `skills-agents` process strand. It must not
 publish backend, frontend, Docker/runtime or analytics implementation changes.
 
+Slice checkpoint push is separate from `push` and `push auto`. It belongs to
+`workflow execute` and may run only after a slice quality gate passed, the
+staged diff contains only current-slice files, the commit is created on the
+workflow branch, and the push target is `origin/<workflow-branch>`. It does not
+create or merge a PR, does not clean up branches and must not force-push.
+
 This `SKILL.md` is the single source for the git-commit-preparation workflow. The previous standalone workflow content is consolidated here.
 
 This skill does not replace repository rules. This skill applies repository rules.
@@ -26,7 +32,7 @@ Use this skill with these Codex roles:
 
 - `git-commit-message-preparation`: reusable skill for drafting and validating the proposed commit message from diff and verification evidence.
 - `git_commit_reviewer`: read-only reviewer that classifies changes, checks scope, verifies evidence, and returns `READY`, `NOT READY`, or `BLOCKED`.
-- `git_commit_operator`: mutating operator that may stage explicit files, commit, push, and create or complete a GitHub pull request only when the contract allows it. On exact `push auto`, it may also merge the verified pull request, delete the merged pull request's remote head branch, and invoke the git-clean workflow.
+- `git_commit_operator`: mutating operator that may stage explicit files, commit, push, and create or complete a GitHub pull request only when the contract allows it. During `workflow execute`, it may perform slice checkpoint commits and pushes to the current workflow branch after the slice gate passes. On exact `push auto`, it may also merge the verified pull request, delete the merged pull request's remote head branch, and invoke the git-clean workflow.
 
 The reviewer must not modify files. The operator must not bypass the reviewer result, required verification, branch rules, or the `push` command requirement.
 
@@ -47,6 +53,12 @@ When commit, push, or pull-request execution is requested, also read:
 
 ```text
 .codex/agents/git_commit_operator.toml
+```
+
+When `workflow execute` requests a slice checkpoint push, also read:
+
+```text
+docs/process/workflow-execute.md
 ```
 
 When the user enters exactly `push auto`, also read:
@@ -82,9 +94,13 @@ Use this skill when:
 - documenting verification evidence before commit,
 - acting on exact `push`,
 - acting on exact `push auto`.
+- acting on a `workflow execute` slice checkpoint push.
 
 For exact `push auto`, use this skill only after the diff is verified as a
 `skills-agents` strand change.
+
+For a slice checkpoint push, use this skill only after the diff is verified as
+current-slice `workflow execute` work.
 
 When only drafting or validating the commit message, use `.agents/skills/git-commit-message-preparation/SKILL.md`.
 
@@ -282,7 +298,26 @@ Create a commit only when:
 - the commit message is traceable,
 - the user or active workflow permits committing.
 
-Do not push or create a pull request during this phase unless the user also entered exactly `push`, entered exactly `push auto`, or explicitly requested publication.
+Do not push or create a pull request during this phase unless the user also entered exactly `push`, entered exactly `push auto`, explicitly requested publication, or the active `workflow execute` slice requires a checkpoint push after a successful slice quality gate.
+
+### Phase 11.5: Workflow Execute Slice Checkpoint Push
+
+When `workflow execute` reaches a successful slice checkpoint, treat it as
+permission to:
+
+1. inspect the slice diff and staged diff,
+2. stage only files changed by the current slice,
+3. run `git diff --cached --check`,
+4. create the slice-scoped checkpoint commit,
+5. push `HEAD` only to `origin/<workflow-branch>`,
+6. record the commit SHA and push result in the execution report.
+
+Do not create a pull request, merge a pull request, delete remote branches,
+delete local branches, run git-clean, push to `main`, or force-push.
+
+Stop when the slice quality gate failed, the diff is unclear, files from another
+slice are staged, the active branch is not the workflow branch, or the push
+target is not `origin/<workflow-branch>`.
 
 ### Phase 12: Push Command And GitHub Pull Request
 
@@ -361,7 +396,7 @@ Execute this order:
 
 For `push auto`, the pull request body must include the same content as the `push` workflow plus an explicit note that the workflow intends to merge the PR, delete the merged PR head branch, and run clean after merge verification.
 
-Do not treat `push auto` as permission to force-push, push directly to `main`, retarget the pull request, bypass failed or pending checks, merge an unrelated pull request, delete `main`, delete a branch before the pull request is verified as merged, or enable GitHub auto-merge.
+Do not treat `push auto` as permission to force-push, push directly to `main`, retarget the pull request, bypass failed or pending checks, merge an unrelated pull request, delete `main`, delete a branch before the pull request is verified as merged, or enable GitHub auto-merge. Do not treat a slice checkpoint push as `push auto`.
 
 If GitHub mergeability, required-check status, merge result, remote branch deletion, or clean execution cannot be verified, stop and report the exact blocker.
 
@@ -378,6 +413,8 @@ git diff --cached
 ```
 
 For `push` and `push auto`, also verify the current branch and `origin/main`.
+For slice checkpoint push, verify the current workflow branch and
+`origin/<workflow-branch>`.
 
 For `push auto`, also verify the relevant GitHub pull request state and run the command required by the git-clean skill after the merge.
 
@@ -404,6 +441,7 @@ Use the minimum and full quality commands documented in `QUALITY.md` when verifi
 16. Use git_commit_operator to commit only if all required gates pass and user/task permits committing
 17. On `push`, use git_commit_operator to push the branch and create or complete a GitHub pull request against main
 18. On `push auto`, use git_commit_operator to push, create or reuse the PR, verify mergeability and checks, merge the PR, verify merged state, delete the remote head branch, and run clean
+19. On a workflow-execute slice checkpoint, use git_commit_operator only to create the slice checkpoint commit and push the current workflow branch to origin
 ```
 
 ## Commit Message Contract
@@ -469,6 +507,7 @@ Stop if:
 - the user requested `push auto` for a change set that is not fully within the `skills-agents` strand,
 - the user requested `push auto` and a backend, frontend, Docker/runtime or analytics implementation file is present,
 - the user requested `push auto` but mergeability, required-check status, merge result, remote branch deletion target, or clean execution cannot be verified.
+- a slice checkpoint push includes files outside the current slice, targets anything other than `origin/<workflow-branch>`, attempts PR merge, branch cleanup, `push auto` or force-push.
 
 ## Forbidden Actions
 
@@ -477,11 +516,12 @@ Do not:
 - modify files while acting as a commit reviewer,
 - stage files without explicit git-commit-preparation authority,
 - create commits unless the user or active workflow permits committing,
-- push or create pull requests unless the user enters `push`, enters `push auto`, or explicitly requests that action,
+- push or create pull requests unless the user enters `push`, enters `push auto`, explicitly requests that action, or `workflow execute` requires a slice checkpoint push,
 - push directly to `main`,
 - merge pull requests unless the user enters exactly `push auto`,
 - run `push auto` outside the `skills-agents` strand,
 - run `push auto` when backend, frontend, Docker/runtime or analytics implementation files are present,
+- treat a slice checkpoint push as `push auto`,
 - delete remote branches unless the user enters exactly `push auto` and the pull request was verified as merged,
 - delete local branches directly instead of using the git-clean workflow after push auto,
 - force-push,

@@ -5,6 +5,26 @@
 It must not act as a global publication command for backend, frontend,
 Docker/runtime or analytics implementation work.
 
+## Publication Modes
+
+The repository separates three publication modes:
+
+| Mode | Strand | Action | PR / merge / cleanup |
+|---|---|---|---|
+| Slice checkpoint push | `workflow execute` | Commit the completed slice and push the current workflow branch to `origin` after the slice quality gate passes | No PR, no merge, no branch cleanup |
+| `push` | Explicit user publication request | Normal branch push and PR process | PR may be created, no automatic merge |
+| `push auto` | `skills-agents` only | Guarded PR lifecycle for approved skill/agent governance changes | PR merge and cleanup only after guard checks pass |
+
+Slice checkpoint push is not `push auto`.
+
+Checkpoint push may run during `workflow execute` only when:
+
+- the slice is complete;
+- slice quality gates passed;
+- the diff contains only files from the current slice;
+- the commit happens on the workflow branch;
+- the push target is only `origin/<workflow-branch>`.
+
 ## Required Inputs
 
 Before `push auto` can proceed, the git-commit-preparation workflow must have

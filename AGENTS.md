@@ -107,6 +107,23 @@ The strands must not be mixed. Shared governance roles such as Senior System Arc
 
 The `skills-agents` strand is the only strand that may use `push auto`. `push auto` must not publish backend, frontend, Docker/runtime, gRPC, REST, persistence, analysis-engine, Joern, JavaParser, BTM generator or product implementation changes.
 
+Publication modes are separate:
+
+1. Slice checkpoint push:
+   - belongs to `workflow execute`;
+   - runs after a successful slice quality gate;
+   - commits only the current slice and pushes the current workflow branch to `origin`;
+   - does not create or merge a PR;
+   - does not run branch cleanup;
+   - is not `push auto`.
+2. `push`:
+   - normal push and PR process after explicit user approval;
+   - does not automatically merge.
+3. `push auto`:
+   - belongs only to `skills-agents`;
+   - may create, verify and merge a PR only after guard checks pass;
+   - must never publish backend, frontend, Docker/runtime or analytics implementation changes.
+
 The process model, organigramm and registry are documented in:
 
 1. `docs/process/README.md`

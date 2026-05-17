@@ -53,6 +53,7 @@ strand defaults above.
 | AGENTS.md Maintainer | Keeps root agent rules aligned with verified governance | `skills-agents` | Senior System Architect | `AGENTS.md` | active |
 | Process Governance Maintainer | Maintains process docs for the three strands | `skills-agents` | Senior System Architect | `docs/process/**`, `docs/governance/README.md` | active |
 | Push Auto Guard | Blocks `push auto` outside `skills-agents` | `skills-agents` | git-commit-preparation | `.agents/skills/git-commit-preparation/SKILL.md`, `.codex/agents/git_commit_reviewer.toml`, `.codex/agents/git_commit_operator.toml` | active |
+| Slice Checkpoint Push | Commits a completed `workflow execute` slice and pushes the current workflow branch to origin | `workflow execute` | Workflow Executor | `docs/process/workflow-execute.md`, `.agents/skills/workflow-executor/SKILL.md`, `.agents/skills/git-commit-preparation/SKILL.md` | active |
 | docs/workflow/workflow.md Maintainer | Owns checked workflow artifact completeness | `workflow create`; `workflow execute` | Senior Workflow Architect | `.agents/skills/workflow-authoring/SKILL.md`, `docs/workflow/workflow.md` | active |
 | arc42 Architecture Documentation Maintainer | Checks and updates arc42 consequences | `workflow create`; `workflow execute` | Senior System Architect | `.agents/skills/arc42-architecture-governance/SKILL.md`, `docs/arc42/**` | active |
 | Testing Documentation Maintainer | Keeps test strategy and quality evidence traceable | `workflow create`; `workflow execute` | Senior Tester | `QUALITY.md`, workflow quality logs | active |
@@ -99,7 +100,7 @@ strand defaults above.
 | git-branch-strategy | Branch isolation and line-ending checks | `workflow create`; `skills-agents` | Release Governance | `.agents/skills/git-branch-strategy/SKILL.md` | active |
 | git-clean | Post-merge cleanup | `skills-agents` | Push Auto Guard | `.agents/skills/git-clean/SKILL.md` | active |
 | git-commit-message-preparation | Commit message preparation | `skills-agents` | Push Auto Guard | `.agents/skills/git-commit-message-preparation/SKILL.md` | active |
-| git-commit-preparation | Commit, push and `push auto` readiness workflow | `skills-agents` | Push Auto Guard | `.agents/skills/git-commit-preparation/SKILL.md` | active |
+| git-commit-preparation | Commit, push, slice checkpoint push and `push auto` readiness workflow | `skills-agents`; `workflow execute` | Push Auto Guard / Workflow Executor | `.agents/skills/git-commit-preparation/SKILL.md` | active |
 | git-large-repository-specialist | Large repository checkout hardening | `workflow execute` | Senior Git Workspace Specialist | `.agents/skills/git-large-repository-specialist/SKILL.md` | active |
 | grpc-ingestion | gRPC ingestion adapter work and review | `workflow execute` | Senior Java Backend Developer | `.agents/skills/grpc-ingestion/SKILL.md` | active |
 | grpc-streaming-specialist | gRPC and Protobuf streaming governance | `workflow execute` | Senior gRPC Proto Specialist | `.agents/skills/grpc-streaming-specialist/SKILL.md` | active |
@@ -195,8 +196,8 @@ their linked role or skill instructions.
 | architecture_forensic_analytics_architect | Reviews Forensic Analytics architecture, replay, graph and LLM risks | `workflow execute` | Senior System Architect | `.codex/agents/architecture_forensic_analytics_architect.toml` | active |
 | architecture_reviewer | Reviews architecture boundaries and migration risks | `workflow execute` | Senior System Architect | `.codex/agents/architecture_reviewer.toml` | active |
 | documentation_reviewer | Reviews documentation consistency | `skills-agents`; `workflow create`; `workflow execute` | Senior Documentation Engineer | `.codex/agents/documentation_reviewer.toml` | active |
-| git_commit_operator | Performs staged commit, push, PR and guarded `push auto` operations | `skills-agents` | Push Auto Guard | `.codex/agents/git_commit_operator.toml` | active |
-| git_commit_reviewer | Reviews commit, push and `push auto` readiness | `skills-agents` | Push Auto Guard | `.codex/agents/git_commit_reviewer.toml` | active |
+| git_commit_operator | Performs staged commit, slice checkpoint push, push, PR and guarded `push auto` operations | `skills-agents`; `workflow execute` | Push Auto Guard / Workflow Executor | `.codex/agents/git_commit_operator.toml` | active |
+| git_commit_reviewer | Reviews commit, slice checkpoint push, push and `push auto` readiness | `skills-agents`; `workflow execute` | Push Auto Guard / Workflow Executor | `.codex/agents/git_commit_reviewer.toml` | active |
 | implementation_worker | Implements one approved workflow slice at a time | `workflow execute` | Workflow Executor | `.codex/agents/implementation_worker.toml` | active |
 | ingestion_handoff_reviewer | Reviews engine-request and gRPC handoff contracts | `workflow execute` | Senior gRPC/Proto Specialist | `.codex/agents/ingestion_handoff_reviewer.toml` | active |
 | joern_semantics_reviewer | Reviews Joern Docker and CPG semantic enrichment | `workflow execute` | Senior Joern/CPG Specialist | `.codex/agents/joern_semantics_reviewer.toml` | active |

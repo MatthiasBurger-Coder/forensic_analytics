@@ -164,3 +164,13 @@ Documentation strand roles:
 A role may participate in more than one strand only as a strand-scoped role.
 It must use the active strand's inputs, outputs, allowed files and quality gate.
 It must not move unfinished work or changed files between strands.
+
+## Publication Modes
+
+- Slice checkpoint push belongs to `workflow execute`: commit the completed
+  slice and push the current workflow branch to `origin` after the slice quality
+  gate passes. It is not `push auto`.
+- `push` is the normal user-approved branch push and PR process. It does not
+  automatically merge.
+- `push auto` belongs only to `skills-agents` and may merge and clean up only
+  after its guard checks pass.
