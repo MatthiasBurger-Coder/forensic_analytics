@@ -24,7 +24,45 @@ Output:
 - requirement classification
 - active workflow relationship, when relevant
 
-## Phase 2 - Three Amigos Review
+## Phase 2 - Requirement Clarification Loop
+
+Record:
+
+- Original Request
+- Interpreted Intent
+- Change Type
+- Affected Process Strand
+- Affected Architecture Area
+- Explicit Requirements
+- Implicit Requirements
+- Assumptions
+- Non-Goals
+- Risks
+- Open Questions
+- Blocking Questions
+- Confidence Level
+- Decision: `READY_FOR_WORKFLOW`, `PROCEED_WITH_ACCEPTED_ASSUMPTIONS` or
+  `REQUIRES_REFINEMENT`
+
+If blocking questions remain open:
+
+1. Do not authorize a final checked `docs/workflow/workflow.md`.
+2. Do not release the workflow for `workflow execute`.
+3. Ask focused clarification questions.
+4. Return `REQUIRES_REFINEMENT`.
+
+Non-blocking uncertainty may become an accepted assumption only when it does
+not affect architecture boundaries, testability, data ownership, service
+boundaries, APIs, contracts, runtime behavior or scope.
+
+Confidence decisions:
+
+- Confidence >= 90%: `READY_FOR_WORKFLOW` when no blocking questions remain.
+- Confidence 70-89%: `PROCEED_WITH_ACCEPTED_ASSUMPTIONS` only when the
+  assumptions are non-blocking and documented.
+- Confidence < 70%: `REQUIRES_REFINEMENT`.
+
+## Phase 3 - Three Amigos Review
 
 Participants:
 
@@ -50,7 +88,7 @@ Output:
 - quality findings
 - EPIC drift findings
 
-## Phase 3 - Dependency Analysis
+## Phase 4 - Dependency Analysis
 
 Check:
 
@@ -68,7 +106,7 @@ Generate:
 - deadlock risks
 - parallelization blockers
 
-## Phase 4 - Skill And Subagent Validation
+## Phase 5 - Skill And Subagent Validation
 
 Verify:
 
@@ -80,7 +118,7 @@ Verify:
 
 If callable subagents are unavailable, route to matching role files as explicit review checklists and report the limitation.
 
-## Phase 5 - Slice Planning
+## Phase 6 - Slice Planning
 
 Generate only a gate-level slice outline:
 
@@ -111,7 +149,7 @@ For broad cross-cutting requests, inspect enough repository evidence to verify e
 
 Stop with `REQUIRES_REFINEMENT` when the readiness decision depends on artifacts that cannot be inspected or found.
 
-## Phase 6 - Workflow Approval
+## Phase 7 - Workflow Approval
 
 Decision:
 
@@ -122,7 +160,17 @@ READY_FOR_WORKFLOW
 or
 
 ```text
+PROCEED_WITH_ACCEPTED_ASSUMPTIONS
+```
+
+or
+
+```text
 REQUIRES_REFINEMENT
 ```
 
-Use `REQUIRES_REFINEMENT` when continuing would require guessing requirements, APIs, ownership, quality commands, architecture decisions, service boundaries, runtime facts or evidence semantics.
+Use `PROCEED_WITH_ACCEPTED_ASSUMPTIONS` only when all remaining uncertainty is
+documented as accepted, non-blocking assumptions. Use `REQUIRES_REFINEMENT`
+when continuing would require guessing requirements, APIs, ownership, quality
+commands, architecture decisions, service boundaries, runtime facts or evidence
+semantics, or when any blocking question remains open.

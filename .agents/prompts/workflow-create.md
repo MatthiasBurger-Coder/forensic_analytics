@@ -2,7 +2,9 @@
 
 Use when the user writes `workflow create`.
 
-Read-only verification, requirement intake, routing-rule inspection and role selection may occur before branch creation. Mutating workflow creation must not.
+Read-only verification, requirement intake, requirement clarification,
+routing-rule inspection and role selection may occur before branch creation.
+Mutating workflow creation must not.
 
 `workflow create` is a planning and documentation strand. It must not implement
 backend, frontend, Docker/runtime or analytics product code. It is complete only
@@ -20,20 +22,30 @@ when both checked outputs exist:
 5. Load `.agents/skills/git-branch-strategy/SKILL.md`.
 6. Load `.agents/skills/workflow-conflict-resolution/SKILL.md`.
 7. Load `.agents/skills/release-branch-governance/branch-rules.md`.
-8. Verify the Git repository context:
+8. Run Requirement Intake and the Requirement Clarification Loop. Record:
+   original request, interpreted intent, change type, affected process strand,
+   affected architecture area, explicit requirements, implicit requirements,
+   assumptions, non-goals, risks, open questions, blocking questions,
+   confidence level and decision.
+9. Stop with focused clarification questions and `REQUIRES_REFINEMENT` when
+   blocking questions remain open.
+10. Run the Three Amigos decision with the required five roles before final
+    workflow authoring. `PROCEED_WITH_ACCEPTED_ASSUMPTIONS` is allowed only
+    for documented, non-blocking assumptions.
+11. Verify the Git repository context:
 
 ```bash
 git rev-parse --show-toplevel
 ```
 
-9. Check the working tree:
+12. Check the working tree:
 
 ```bash
 git status --short
 ```
 
-10. Stop if the current branch is detached, unclear, or if unrelated or unclear uncommitted changes exist.
-11. Generate a dedicated workflow branch name unless the current branch already exactly matches this workflow:
+13. Stop if the current branch is detached, unclear, or if unrelated or unclear uncommitted changes exist.
+14. Generate a dedicated workflow branch name unless the current branch already exactly matches this workflow:
 
 ```text
 feature/workflow-<short-topic>-<yyyyMMdd>
@@ -42,26 +54,29 @@ docs/workflow-<short-topic>-<yyyyMMdd>
 architecture/workflow-<short-topic>-<yyyyMMdd>
 ```
 
-12. Check local and remote branch-name collisions, choosing the next clear unique suffix when needed.
-13. Create and checkout the workflow branch when no matching workflow branch is active:
+15. Check local and remote branch-name collisions, choosing the next clear unique suffix when needed.
+16. Create and checkout the workflow branch when no matching workflow branch is active:
 
 ```bash
 git checkout -b <workflow-branch>
 ```
 
-14. Verify that the branch ref exists and that it is active:
+17. Verify that the branch ref exists and that it is active:
 
 ```bash
 git show-ref --verify --quiet refs/heads/<workflow-branch>
 git branch --show-current
 ```
 
-15. Continue only when the local branch ref exists and the active branch exactly
+18. Continue only when the local branch ref exists and the active branch exactly
     matches the workflow branch.
-16. Create or sharpen `docs/workflow/workflow.md` only after successful branch verification.
-17. Check and update arc42 documentation when the workflow affects architecture.
-18. Validate both checked outputs before release for `workflow execute`.
-19. Build slices, role ownership, quality gates and stop conditions through the workflow-authoring skill.
+19. Create or sharpen `docs/workflow/workflow.md` only after successful branch verification.
+20. Validate `docs/workflow/workflow.md`.
+21. Check and update arc42 documentation when the workflow affects architecture.
+22. Validate arc42 documentation.
+23. Run Documentation Governance.
+24. Validate both checked outputs before release for `workflow execute`.
+25. Build slices, role ownership, quality gates and stop conditions through the workflow-authoring skill.
 
 Before workflow authoring continues, record a Three Amigos decision with these
 roles:
@@ -71,6 +86,11 @@ roles:
 - Senior Java Backend Developer
 - Senior React Frontend Developer
 - Senior Tester
+
+The decision must be `READY_FOR_WORKFLOW` or
+`PROCEED_WITH_ACCEPTED_ASSUMPTIONS` before final checked workflow authoring.
+`REQUIRES_REFINEMENT` blocks final `docs/workflow/workflow.md` creation and
+release for `workflow execute`.
 
 For microservice migration workflows, the decision must include scope,
 non-scope, acceptance criteria, service boundary, contract impact, data
@@ -119,6 +139,7 @@ Stop when:
 - the workflow branch ref cannot be verified after creation or checkout;
 - the active branch after checkout does not match the expected workflow branch;
 - workflow rules conflict and cannot be resolved from repository sources;
+- blocking questions remain open after Requirement Clarification;
 - creating or modifying workflow planning artifacts would happen on `main`, `master`, `develop`, or another shared branch;
 - backend, frontend, Docker/runtime or analytics implementation would be required;
 - `docs/workflow/workflow.md` cannot be completed;

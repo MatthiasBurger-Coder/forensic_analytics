@@ -136,22 +136,44 @@ The required checked outputs are:
 
 Supporting sidecar files under `docs/workflow/**` are not completion criteria for new workflow creation. They may be archived or migrated only through an explicit workflow-governance task. The checked `docs/workflow/workflow.md` and checked arc42 review are mandatory.
 
-Read-only verification, requirement intake, routing-rule inspection, and role selection may occur before branch creation. Mutating workflow creation must not.
+Read-only verification, requirement intake, requirement clarification, routing-rule inspection, and role selection may occur before branch creation. Mutating workflow creation must not.
+
+`workflow create` must run an explicit Requirement Clarification Loop before final workflow authoring. The loop records the original request, interpreted intent, change type, affected process strand, affected architecture area, explicit requirements, implicit requirements, assumptions, non-goals, risks, open questions, blocking questions, confidence level, and one decision:
+
+```text
+READY_FOR_WORKFLOW
+PROCEED_WITH_ACCEPTED_ASSUMPTIONS
+REQUIRES_REFINEMENT
+```
+
+If blocking questions remain open, Codex must not create a final checked `docs/workflow/workflow.md`, must not release the workflow for `workflow execute`, must ask focused clarification questions, and must return `REQUIRES_REFINEMENT`.
+
+Non-blocking uncertainty may be documented as an accepted assumption only when it does not affect architecture boundaries, testability, data ownership, service boundaries, APIs, contracts, runtime behavior or scope.
+
+Confidence decisions are governed as follows:
+
+- Confidence >= 90%: `READY_FOR_WORKFLOW` when no blocking questions remain.
+- Confidence 70-89%: `PROCEED_WITH_ACCEPTED_ASSUMPTIONS` only when every assumption is non-blocking and documented.
+- Confidence < 70%: `REQUIRES_REFINEMENT`.
 
 The required order is:
 
 1. Verify the Git repository context with `git rev-parse --show-toplevel`.
 2. Check the current working tree with `git status --short`.
 3. Stop if the current branch is detached, unclear, or if unrelated or unclear uncommitted changes exist.
-4. Generate a dedicated workflow branch name unless the current branch is already a matching branch for this workflow.
-5. Check local and remote branch-name collisions, choosing the next clear unique suffix when needed.
-6. Create and checkout the workflow branch, or verify the existing matching workflow branch.
-7. Verify the active branch with `git branch --show-current`.
-8. Run the Three Amigos Requirement Gate with Senior Requirement Engineer, Senior System Architect, Senior Java Backend Developer, Senior React Frontend Developer and Senior Tester perspectives.
-9. Create or sharpen `docs/workflow/workflow.md` only after the branch exists and is active.
-10. Check and update arc42 documentation when affected.
-11. Validate both required outputs.
-12. Release the workflow for `workflow execute` only after both required outputs are checked.
+4. Run Requirement Intake.
+5. Run the Requirement Clarification Loop until no blocking questions remain, or stop with `REQUIRES_REFINEMENT`.
+6. Run the Three Amigos Requirement Gate with Senior Requirement Engineer, Senior System Architect, Senior Java Backend Developer, Senior React Frontend Developer and Senior Tester perspectives.
+7. Generate a dedicated workflow branch name unless the current branch is already a matching branch for this workflow.
+8. Check local and remote branch-name collisions, choosing the next clear unique suffix when needed.
+9. Create and checkout the workflow branch, or verify the existing matching workflow branch before mutating workflow files.
+10. Verify the active branch with `git branch --show-current`.
+11. Create or sharpen `docs/workflow/workflow.md` only after the branch exists and is active.
+12. Validate `docs/workflow/workflow.md`.
+13. Check and update arc42 documentation when affected.
+14. Validate arc42 documentation.
+15. Run Documentation Governance.
+16. Release the workflow for `workflow execute` only after both required outputs are checked and no blocking questions remain.
 
 Default workflow branch names use:
 

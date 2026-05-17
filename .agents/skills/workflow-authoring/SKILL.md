@@ -22,7 +22,19 @@ Every workflow creation must start by ensuring a dedicated Git branch for that w
 
 For a new workflow this means creating and checking out a workflow branch before mutating workflow planning artifacts. If the current branch already exactly matches the current workflow, verify it before continuing.
 
-Read-only verification, requirement intake, routing-rule inspection, and role selection may occur before branch creation. Mutating workflow creation must not.
+Read-only verification, requirement intake, requirement clarification,
+routing-rule inspection, and role selection may occur before branch creation.
+Mutating workflow creation must not.
+
+Before final workflow authoring, run the Requirement Clarification Loop and
+record original request, interpreted intent, change type, affected process
+strand, affected architecture area, explicit requirements, implicit
+requirements, assumptions, non-goals, risks, open questions, blocking
+questions, confidence level and decision.
+
+Blocking questions prevent a final checked `docs/workflow/workflow.md` and
+prevent release for `workflow execute`. Return `REQUIRES_REFINEMENT` with
+focused clarification questions instead.
 
 This rule applies before any workflow planning artifact is created or modified, including `docs/workflow/workflow.md`, arc42 workflow-impact sections, workflow-specific planning notes, slice definitions or write-capable agent assignments.
 
@@ -36,10 +48,14 @@ Required order:
 6. Checkout the workflow branch, or verify the existing matching workflow branch.
 7. Verify that the local branch ref exists.
 8. Verify the active branch.
-9. Run the Three Amigos Requirement Gate before authoring executable slices.
-10. Create or sharpen `docs/workflow/workflow.md` only after successful branch verification.
-11. Check and update arc42 documentation when affected.
-12. Validate both checked outputs before releasing the workflow for `workflow execute`.
+9. Run the Requirement Clarification Loop until no blocking questions remain, or stop with `REQUIRES_REFINEMENT`.
+10. Run the Three Amigos Requirement Gate before authoring executable slices.
+11. Create or sharpen `docs/workflow/workflow.md` only after successful branch verification.
+12. Validate `docs/workflow/workflow.md`.
+13. Check and update arc42 documentation when affected.
+14. Validate arc42 documentation.
+15. Run Documentation Governance.
+16. Validate both checked outputs before releasing the workflow for `workflow execute`.
 
 Default branch naming:
 
@@ -104,8 +120,12 @@ Every workflow should include:
 - Definition of Done
 - Handoff to `workflow execute`
 - arc42 Check Status
+- Requirement Clarification Decision
 
 The arc42 Check Status must record inspected sections, updated sections or `no update required`, reviewer or role, date, branch and unresolved drift.
+
+The Requirement Clarification Decision must record open questions, blocking
+questions, accepted non-blocking assumptions, confidence level and decision.
 
 ## Slice Rules
 
@@ -166,6 +186,7 @@ Stop and report if:
 - the dedicated workflow branch cannot be created, checked out, verified as a local ref, or verified as active
 - the active branch is `main`, `master`, `develop`, or another shared branch when workflow files would be created
 - `docs/workflow/workflow.md` cannot be completed
+- blocking questions remain open after Requirement Clarification
 - arc42 cannot be checked or updated from verified evidence
 - authoring would require backend, frontend, Docker/runtime or analytics implementation
 - architecture conflicts are unclear

@@ -15,10 +15,15 @@ later implement.
 ```mermaid
 flowchart TD
   Start["workflow create started"]
-  Branch["Create or verify dedicated workflow branch"]
+  Intake["Requirement Intake"]
+  Clarify["Requirement Clarification Loop"]
+  Questions{"Blocking Questions?"}
+  Ask["Ask focused clarification questions"]
+  Answers["Incorporate answers"]
+  Gate["Three Amigos Requirement Gate"]
+  Branch["Branch Governance / Branch Verification"]
   Type["Determine branch type"]
   Collision["Check local and remote branch collisions"]
-  Gate["Three Amigos Requirement Gate"]
   Req["Senior Requirement Engineer review"]
   Arch["Senior System Architect review"]
   Backend["Senior Java Backend Developer impact review"]
@@ -33,13 +38,55 @@ flowchart TD
   Ready["Approved for workflow execute"]
   Stop["STOP and return to gate"]
 
-  Start --> Branch --> Type --> Collision --> Gate
-  Gate --> Req --> Arch --> Backend --> Frontend --> Tester --> Workflow --> ValidateWorkflow --> Arc42 --> ValidateArc42 --> Docs --> Final --> Ready
+  Start --> Intake --> Clarify --> Questions
+  Questions -- "yes" --> Ask --> Answers --> Clarify
+  Questions -- "no" --> Gate --> Branch --> Type --> Collision
+  Collision --> Req --> Arch --> Backend --> Frontend --> Tester --> Workflow --> ValidateWorkflow --> Arc42 --> ValidateArc42 --> Docs --> Final --> Ready
   Gate --> Stop
   ValidateWorkflow --> Stop
   ValidateArc42 --> Stop
   Docs --> Stop
 ```
+
+Requirement intake, clarification, read-only routing inspection and role
+selection may happen before branch creation. Mutating workflow files requires a
+verified workflow branch.
+
+## Requirement Clarification Loop
+
+The loop must record:
+
+- Original Request
+- Interpreted Intent
+- Change Type
+- Affected Process Strand
+- Affected Architecture Area
+- Explicit Requirements
+- Implicit Requirements
+- Assumptions
+- Non-Goals
+- Risks
+- Open Questions
+- Blocking Questions
+- Confidence Level
+- Decision: `READY_FOR_WORKFLOW`, `PROCEED_WITH_ACCEPTED_ASSUMPTIONS` or
+  `REQUIRES_REFINEMENT`
+
+If blocking questions remain open, `workflow create` must not produce a final
+checked `docs/workflow/workflow.md`, must not release the workflow for
+`workflow execute`, and must return focused questions with
+`REQUIRES_REFINEMENT`.
+
+Non-blocking uncertainty may be documented as an accepted assumption only when
+it does not affect architecture boundaries, testability, data ownership,
+service boundaries, APIs, contracts, runtime behavior or scope.
+
+Confidence decisions:
+
+- Confidence >= 90%: `READY_FOR_WORKFLOW` when no blocking questions remain.
+- Confidence 70-89%: `PROCEED_WITH_ACCEPTED_ASSUMPTIONS` only when the
+  assumptions are non-blocking and documented.
+- Confidence < 70%: `REQUIRES_REFINEMENT`.
 
 ## Required Three Amigos Roles
 
@@ -98,4 +145,6 @@ sections. At minimum, the review records whether these sections are affected:
 - Do not change analytics implementation code.
 - Return to the Three Amigos gate when architecture boundaries or testability
   are unclear.
+- Do not create a final checked `docs/workflow/workflow.md` while blocking
+  questions remain open.
 - Do not mark `workflow create` complete without both required end artifacts.

@@ -77,6 +77,26 @@ Load these files only when needed:
 
 ## Three Amigos Review
 
+Before the role review, run the Requirement Clarification Loop. Record:
+
+- Original Request
+- Interpreted Intent
+- Change Type
+- Affected Process Strand
+- Affected Architecture Area
+- Explicit Requirements
+- Implicit Requirements
+- Assumptions
+- Non-Goals
+- Risks
+- Open Questions
+- Blocking Questions
+- Confidence Level
+- Decision
+
+Blocking questions must remain visible and must block final checked
+`docs/workflow/workflow.md` creation and release for `workflow execute`.
+
 Run the review from three perspectives:
 
 - Requirement Analyst: business goal, technical goal, scope, non-goals, assumptions, affected systems and acceptance criteria.
@@ -152,6 +172,12 @@ READY_FOR_WORKFLOW
 or
 
 ```text
+PROCEED_WITH_ACCEPTED_ASSUMPTIONS
+```
+
+or
+
+```text
 REQUIRES_REFINEMENT
 ```
 
@@ -168,7 +194,18 @@ Use `READY_FOR_WORKFLOW` only when:
 - quality commands are verified from `QUALITY.md` or repository build files
 - unresolved uncertainty is either absent or documented as a blocker-free assumption accepted by the user
 
+Use `PROCEED_WITH_ACCEPTED_ASSUMPTIONS` only when confidence is 70-89%, every
+assumption is documented, and no assumption affects architecture boundaries,
+testability, data ownership, service boundaries, APIs, contracts, runtime
+behavior or scope.
+
 Use `REQUIRES_REFINEMENT` when any requirement, ownership, API, quality command, architecture impact, evidence semantic, dependency edge or acceptance criterion would require guessing.
+
+Use the confidence rule:
+
+- Confidence >= 90%: `READY_FOR_WORKFLOW` when no blocking questions remain.
+- Confidence 70-89%: `PROCEED_WITH_ACCEPTED_ASSUMPTIONS` only when every assumption is non-blocking and documented.
+- Confidence < 70%: `REQUIRES_REFINEMENT`.
 
 Draft slices may be included with `REQUIRES_REFINEMENT` only when they are clearly labeled provisional and used to explain dependency or ownership questions. Do not present provisional slices as executable workflow slices.
 
@@ -183,6 +220,7 @@ Stop with `REQUIRES_REFINEMENT` when:
 - affected services, APIs, storage, data ownership or deployment impact are unclear;
 - microservice service boundary, contract impact, test impact, risk level or forbidden changes are unclear;
 - acceptance criteria are missing or not testable;
+- blocking questions remain open;
 - API contracts or message semantics are unclear;
 - rollback strategy is missing when the change affects deployable behavior or persisted state;
 - required skills, roles or callable subagents cannot be verified;
@@ -202,4 +240,5 @@ Produce a concise gate report containing:
 - required skills and subagents or role reviews
 - draft slice boundaries and parallelization groups, if ready
 - open questions and blockers
+- confidence level and accepted assumptions
 - final decision

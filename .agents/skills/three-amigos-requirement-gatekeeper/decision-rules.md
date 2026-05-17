@@ -15,6 +15,7 @@ Stop immediately and return `REQUIRES_REFINEMENT` if:
 - evidence categories are collapsed or uncertain facts are presented as confirmed
 - deployment impact or rollback expectations are relevant but missing
 - required skills, roles or subagents cannot be found
+- blocking questions remain open
 
 ## Refinement Rules
 
@@ -57,6 +58,28 @@ If the user accepts a blocker-free assumption, record:
 - the acceptance source
 - the decision or slice affected by the assumption
 - how the assumption will be verified or revisited
+
+## Requirement Clarification Loop
+
+Record:
+
+- Original Request
+- Interpreted Intent
+- Change Type
+- Affected Process Strand
+- Affected Architecture Area
+- Explicit Requirements
+- Implicit Requirements
+- Assumptions
+- Non-Goals
+- Risks
+- Open Questions
+- Blocking Questions
+- Confidence Level
+- Decision
+
+Blocking questions prevent final checked `docs/workflow/workflow.md` creation
+and release for `workflow execute`.
 
 ## Architecture Rules
 
@@ -113,7 +136,18 @@ A slice may run in parallel only if:
 
 Return `READY_FOR_WORKFLOW` only when the gate report contains no blockers and the next safe action is workflow authoring.
 
+Return `PROCEED_WITH_ACCEPTED_ASSUMPTIONS` only when confidence is 70-89%, all
+remaining assumptions are documented, accepted, non-blocking, and do not affect
+architecture boundaries, testability, data ownership, service boundaries, APIs,
+contracts, runtime behavior or scope.
+
 Return `REQUIRES_REFINEMENT` when any blocker remains. Include precise questions or missing artifacts needed to unblock the gate.
+
+Use the confidence rule:
+
+- Confidence >= 90%: `READY_FOR_WORKFLOW` when no blocking questions remain.
+- Confidence 70-89%: `PROCEED_WITH_ACCEPTED_ASSUMPTIONS` when every assumption is non-blocking and documented.
+- Confidence < 70%: `REQUIRES_REFINEMENT`.
 
 Do not approve workflow authoring when:
 
