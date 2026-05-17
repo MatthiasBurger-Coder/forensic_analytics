@@ -18,6 +18,8 @@ The governance system keeps these artifacts synchronized:
 
 Root `AGENTS.md` remains the authority for engineering rules. Root `QUALITY.md` remains the authority for verification commands.
 
+Process command semantics are documented in [../process/](../process/). Agent ownership, organigramm and skill registry material are documented in [../agents/](../agents/).
+
 ## Governance Flow
 
 Use this flow for requirement-sensitive or architecture-sensitive work:
@@ -38,6 +40,14 @@ User request
 
 New workflows must be generated through `.agents/skills/workflow-authoring/SKILL.md`.
 
+The repository uses three process strands:
+
+- `skills-agents`
+- `workflow create`
+- `workflow execute`
+
+`skills update` activates `skills-agents`. `workflow create` performs requirement clarification, workflow authoring and arc42 validation. `workflow execute` executes checked slices and performs slice checkpoint pushes after successful quality gates.
+
 Before creating a new workflow:
 
 1. Verify the Git repository context.
@@ -56,6 +66,8 @@ This prevents stale slices, obsolete workflows, conflicting plans and historical
 Read-only verification, requirement intake, routing-rule inspection and role selection may occur before branch creation. Mutating workflow creation must not.
 
 Never create or modify workflow artifacts, including `workflow.md`, `docs/workflow/**`, workplans, slice definitions, workflow-specific documentation changes, implementation tasks, or write-capable agent assignments, on `main`, `master`, `develop`, or any shared branch.
+
+Slice checkpoint push is not `push auto`. `push auto` belongs only to the `skills-agents` strand.
 
 ## Requirement Lifecycle
 

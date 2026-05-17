@@ -14,6 +14,11 @@
 | Microservice autonomy | Future service-split work must keep services independently buildable, runnable, testable, containerized and deployable without shared Java code modules. Service integration is limited to REST/OpenAPI, gRPC/protobuf and RabbitMQ/message contracts. |
 | Joern as adapter | Joern integration must be encapsulated behind a port. |
 | Byteman integration | BTM files are generated server-side from the analysis model and runtime planning, then bound by the plugin through the runtime agent when debugging requires instrumentation. |
+| Three process strands | Repository agent work is constrained to `skills-agents`, `workflow create` and `workflow execute`. The strands must not be mixed. |
+| skills update command | Exact `skills update` activates only the `skills-agents` strand for skills, agents, roles, prompts, routing rules, organigramm, skill registry and process documentation. |
+| workflow create end state | `workflow create` ends only after no blocking questions remain, `docs/workflow/workflow.md` is checked, arc42 is checked or updated, Documentation Governance passes and workflow execute is explicitly released. |
+| workflow execute checkpoints | `workflow execute` commits and pushes a slice-scoped checkpoint after each successful slice quality gate. |
+| push auto restriction | `push auto` is restricted to `skills-agents` and must not publish product implementation, services, contracts, Docker/runtime, build logic, frontend or analytics implementation files. |
 
 ## 2.2 Product Constraints
 
@@ -39,3 +44,5 @@
 - Automated repair must be gated by tests, quality gates and human review.
 - Spring Boot wiring must stay outside the forensic core and must not weaken the observability boundary from ADR-0005.
 - Future microservices must not share Java code modules, domain models, event classes or test fixtures.
+- Planned governance behavior must not be described as product runtime behavior.
+- Slice checkpoint push must not be confused with `push auto`.

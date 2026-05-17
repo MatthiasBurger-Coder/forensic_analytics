@@ -153,3 +153,18 @@ its own domain, application, gRPC adapter, in-memory repository, Spring Boot
 bootstrap, tests and Dockerfile. It does not depend on monolith domain,
 application or persistence modules and does not yet implement durable normalized
 facts, incident records, correlation indexes or database migrations.
+
+## 5.10 Agent Governance Building Blocks
+
+| Building Block | Responsibility |
+|---|---|
+| Senior System Architect | Owns architecture and process-strand governance. |
+| Documentation Governance | Keeps AGENTS.md, process docs, workflow docs, arc42, ADRs and skill-audit material synchronized. |
+| Skill Registry Maintainer | Maintains the skills-agents registry and ownership map. |
+| Organigramm Maintainer | Maintains agent role hierarchy and process-strand diagrams. |
+| Process Governance Maintainer | Maintains command and publication-mode documentation. |
+| Push Auto Guard | Blocks `push auto` outside `skills-agents` and blocks product implementation changes from `push auto`. |
+| docs/workflow/workflow.md Maintainer | Maintains the checked active workflow produced by `workflow create`. |
+| arc42 Architecture Documentation Maintainer | Checks or updates arc42 before workflow execute is released. |
+| Testing Documentation Maintainer | Maintains workflow test strategy and quality-gate evidence. |
+| Execution Report Maintainer | Records slice checkpoint commit SHA, push result and blockers during `workflow execute`. |

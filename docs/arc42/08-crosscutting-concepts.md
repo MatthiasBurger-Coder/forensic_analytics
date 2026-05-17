@@ -96,3 +96,21 @@ Automatic method logging records method operation names, phases, durations, corr
 Spring Boot is a server bootstrap and adapter wiring concern. It may configure outer modules and lifecycle adapters, but it must not become a domain or application dependency.
 
 The accepted Boot boundary preserves ADR-0005. Spring-specific method logging, MDC propagation, SLF4J bindings, AspectJ weaving and concrete logging providers require a separate architecture decision before they can be introduced. Boot-scoped REST behavior follows ADR-0007 and initially wraps the existing JDK REST adapter instead of adding Spring MVC or WebFlux.
+
+## 8.10 Engineering Governance and Documentation Synchronization
+
+Repository governance uses three process strands:
+
+- `skills-agents`
+- `workflow create`
+- `workflow execute`
+
+The strands must not be mixed. Shared roles such as Senior System Architect, Documentation Governance, Skill Registry Maintainer, Organigramm Maintainer, Process Governance Maintainer and Push Auto Guard execute inside the active strand and apply that strand's file scope, quality gate and documentation duty.
+
+`skills update` is the explicit entrypoint for `skills-agents`.
+
+`workflow create` requires the Requirement Clarification Loop, the five-role Three Amigos Requirement Gate, checked `docs/workflow/workflow.md`, checked or updated arc42 documentation and explicit release for `workflow execute`.
+
+`workflow execute` requires checked workflow and arc42 artifacts before implementation and performs slice checkpoint commits and pushes after successful slice quality gates.
+
+Documentation synchronization must keep `AGENTS.md`, `QUALITY.md`, process docs, workflow docs, skill-audit docs, arc42 and ADR references consistent. Planned behavior is not implemented behavior.

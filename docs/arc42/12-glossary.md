@@ -29,3 +29,12 @@
 | Vector Projection | Semantic vector representation derived from selected canonical facts |
 | Redaction | Removal or masking of sensitive runtime values |
 | Repair Orchestrator | Future component for gated fix, test and PR preparation |
+| Process Strand | One of the mutually exclusive repository governance flows: `skills-agents`, `workflow create` or `workflow execute` |
+| skills update | Exact command that activates the `skills-agents` process strand |
+| skills-agents | Process strand for skills, agents, roles, prompts, routing rules, organigramm, skill registry and process documentation |
+| workflow create | Process strand that clarifies requirements, creates or sharpens workflow.md, checks arc42 and releases workflow execute |
+| workflow execute | Process strand that executes checked workflow slices with tests, quality gates and slice checkpoint pushes |
+| Requirement Clarification Loop | Workflow-create loop for intent, requirements, assumptions, risks, questions, confidence and readiness decision |
+| Blocking Questions | Questions that affect architecture boundaries, testability, data ownership, service boundaries, APIs, contracts, runtime behavior or scope |
+| Slice checkpoint push | Workflow-execute publication step that commits only the completed slice and pushes the current workflow branch to origin |
+| push auto | skills-agents-only guarded PR lifecycle that may merge and clean up after guard checks pass |

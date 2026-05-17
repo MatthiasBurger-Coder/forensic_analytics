@@ -22,6 +22,7 @@
 | ADR-0014 | Use an explicit agent handoff protocol | Accepted | Keeps delegated workflow ownership, blockers and validation evidence explicit |
 | ADR-0015 | Use skill registry and conflict auditing | Accepted | Prevents hidden role, skill and governance conflicts during workflow work |
 | ADR-0016 | Create workflow branches before workflow artifacts | Accepted | Keeps workflow creation isolated from shared branches before mutating workflow files |
+| ADR-0016-A | Three-strand workflow and agent governance extension | Accepted | Extends branch-first workflow governance with `skills update`, `workflow create`, `workflow execute`, slice checkpoint push and `push auto` limited to `skills-agents` |
 | ADR-0017 | Use the target microservices service landscape | Accepted | Aligns the active workflow with the target Gateway, ingestion, analysis, storage, graph/replay, report and frontend service boundaries |
 | ADR-0018 | Author initial logical service contracts before implementation | Accepted | Allows planned REST, gRPC and event contracts before implementation while keeping planned design distinct from verified runtime evidence |
 | ADR-0019 | Allow Spring Boot at service bootstrap boundaries | Accepted | Permits independent service Spring Boot entrypoints while preserving framework-free service domain and application code |

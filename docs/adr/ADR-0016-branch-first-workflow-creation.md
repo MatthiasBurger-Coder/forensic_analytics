@@ -43,6 +43,20 @@ Subagents must verify the active workflow branch before modifying files and must
 - Existing workflow regeneration remains valid, but it must happen only after branch verification.
 - If the branch cannot be created, checked out or verified, workflow creation stops without creating workflow files.
 
+## Governance Extension
+
+The branch-first workflow decision is extended by the three-strand repository governance model:
+
+- `skills update` activates the `skills-agents` strand for skills, agents, roles, prompts, routing rules, organigramm, skill registry and process documentation.
+- `workflow create` remains the requirement, architecture, planning and documentation strand. It requires the Requirement Clarification Loop, the five-role Three Amigos Requirement Gate, checked `docs/workflow/workflow.md`, checked or updated arc42 documentation and explicit release for `workflow execute`.
+- `workflow execute` executes checked workflow slices with tests, documentation updates, quality gates, slice checkpoint commits and pushes to the current workflow branch.
+
+Publication modes are separate:
+
+- Slice checkpoint push belongs to `workflow execute` and does not create or merge a PR.
+- `push` performs normal branch publication and PR flow after explicit approval.
+- `push auto` belongs only to `skills-agents` and must not publish product implementation files.
+
 ## Alternatives Considered
 
 - Continue allowing workflow files to be created on the current branch. Rejected because it allows new workflows to start on shared or unrelated branches.
@@ -57,3 +71,5 @@ Subagents must verify the active workflow branch before modifying files and must
 - `.agents/skills/git-branch-strategy/SKILL.md`
 - `.agents/skills/release-branch-governance/branch-rules.md`
 - `docs/governance/README.md`
+- `docs/process/README.md`
+- `docs/agents/skill-registry.md`

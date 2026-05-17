@@ -42,3 +42,19 @@ The following items are explicitly postponed:
 - Full Vector DB integration
 - Production-ready multi-tenant architecture
 - Complete graph UI with all layers
+
+## 4.5 Repository Governance Strategy
+
+Repository agent governance follows three process strands:
+
+1. `skills-agents`
+2. `workflow create`
+3. `workflow execute`
+
+`skills update` is the explicit entrypoint for the `skills-agents` strand. It updates skills, agents, roles, prompts, Codex agent definitions, routing rules, organigramm, skill registry and process documentation. It does not implement product behavior.
+
+`workflow create` sharpens requirements through the Requirement Clarification Loop and the five-role Three Amigos Requirement Gate. It ends with checked `docs/workflow/workflow.md`, checked or updated arc42 documentation, Documentation Governance and explicit release for `workflow execute`.
+
+`workflow execute` executes the checked workflow slice by slice. Each successful slice must run its quality gate, create a slice-scoped checkpoint commit and push the current workflow branch to `origin`.
+
+Publication modes stay separate: slice checkpoint push, `push` and `push auto` are different processes. `push auto` belongs only to `skills-agents`.

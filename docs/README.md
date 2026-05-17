@@ -8,8 +8,9 @@ This directory contains the architecture and product documentation for the Foren
 - [epics/](epics/) - Versioned product and requirement epics
 - [adr/](adr/) - Architecture Decision Records, if present
 - [governance/](governance/) - Reusable engineering governance flow for EPIC, arc42, workflows, skills and roles
+- [process/](process/) - Command and publication governance for `skills update`, `workflow create`, `workflow execute`, slice checkpoint push, `push` and `push auto`
+- [agents/](agents/) - Agent organigramm and skill registry for process-strand ownership
 - [workflow/](workflow/) - Active governed workflow and execution slices for the engineering governance system
-- [workplan/](workplan/) - Existing historical or migration planning material that has not yet been moved to the workflow lifecycle
 
 ## Future Microservice Boundary Direction
 

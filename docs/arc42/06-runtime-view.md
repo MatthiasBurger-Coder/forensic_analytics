@@ -124,3 +124,47 @@ worker or future Gateway
 This path supports job submission, leasing, progress, completion, failure,
 listing and artifact metadata registration. It does not yet ingest normalized
 fact bodies, runtime trace facts, incidents or correlation indexes.
+
+## 6.9 Repository Governance Runtime Flows
+
+`skills update` flow:
+
+```text
+skills update
+  -> skills-agents strand
+  -> skill / agent intake
+  -> integrity, linkage and conflict review
+  -> organigramm and skill registry review
+  -> AGENTS.md and process documentation review
+  -> final skills-agents gate
+  -> optional push auto preparation
+```
+
+`workflow create` flow:
+
+```text
+workflow create
+  -> Requirement Clarification Loop
+  -> Blocking Questions?
+  -> five-role Three Amigos Requirement Gate
+  -> branch governance
+  -> docs/workflow/workflow.md validation
+  -> arc42 validation
+  -> Documentation Governance
+  -> release for workflow execute
+```
+
+`workflow execute` flow:
+
+```text
+workflow execute
+  -> checked docs/workflow/workflow.md
+  -> checked or updated arc42
+  -> slice execution
+  -> slice quality gate
+  -> slice checkpoint commit
+  -> push workflow branch to origin
+  -> execution report
+```
+
+These are repository governance flows, not product runtime flows.
