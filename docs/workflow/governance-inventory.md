@@ -81,7 +81,7 @@ task outputs or plugin implementation classes change.
 - Three process strands are documented: `skills-agents`, `workflow create`, `workflow execute`.
 - `workflow create` branch-first behavior is documented.
 - `workflow execute` slice checkpoint push is documented.
-- `push auto` is restricted to `skills-agents`.
+- `push auto` is governed by the `skills-agents` publication guard and may include governance-only `docs/workflow/**` documentation.
 - Documentation Governance is already inside active strands, not a fourth strand.
 - arc42 and ADR documentation already contain agent governance sections.
 
@@ -140,7 +140,7 @@ These labels are introduced by the Governance Flowchart V2 workflow and must be 
 | Parallel agents edit the same artifact | S3D conflict locks for files, contracts and architecture boundaries. |
 | Rollback is interpreted as destructive reset | `CP_ROLLBACK` is a decision node with safe options and escalation. |
 | Documentation nodes overlap | `DOCROOT` is separated from `S1_DOC`, `S2_DOC` and `S3_DOC`. |
-| Workflow-create artifacts collide with `push auto` | Branches containing `docs/workflow/**` use normal `push` or workflow-execute slice checkpoint push, not `push auto`. |
+| Workflow-create artifacts collide with `push auto` | `docs/workflow/**` is allowed only for governance-only workflow documentation after guard verification. |
 | Later slices infer target files from descriptive names | Slice 00 records concrete candidate target paths; later slices must stop if a target artifact cannot be verified. |
 
 ## Governance Gaps Resolved Or Classified By Slice 14

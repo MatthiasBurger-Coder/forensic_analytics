@@ -37,11 +37,12 @@ It is a governance and documentation workflow that prepares later `workflow exec
 
 ## Publication Compatibility
 
-This branch updates `docs/workflow/**`, so it is a `workflow create` branch and
-is not eligible for `push auto`.
+This branch updates `docs/workflow/**`, so it is a `workflow create` branch.
+The `push auto` guard now allows governance-only workflow documentation when no
+blocked implementation files changed.
 
-Use normal `push`/PR publication for this branch. Use `push auto` only on a
-separate `skills-agents` branch whose diff stays inside the allowlist in
+Use normal `push`/PR publication or `push auto` after the guard confirms that
+the branch remains governance-only and inside the allowlist in
 `docs/process/push-auto.md`.
 
 ## Review Resolution

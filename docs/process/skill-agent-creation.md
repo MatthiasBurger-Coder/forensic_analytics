@@ -88,7 +88,8 @@ The final skills-agents gate must confirm:
 - `QUALITY.md` remains authoritative
 - the change is documentation or governance only
 - no forbidden files changed
-- `push auto` is still limited to `skills-agents`
+- `push auto` is still limited to skills, agents, process governance and
+  governance-only workflow documentation scope
 - the branch is not `main`, `master`, `develop` or another shared branch
 - `git diff --check` passes before commit
 

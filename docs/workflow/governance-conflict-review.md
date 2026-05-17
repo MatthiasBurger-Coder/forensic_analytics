@@ -23,7 +23,7 @@ S3D is not a new strand. It is the execution-orchestration node inside `workflow
 | Automatic correction loops could run indefinitely | Add `maxRetries = 3` and Root Architect escalation. |
 | Rollback could imply destructive Git reset | Define `CP_ROLLBACK` as a governance decision node, not blind reset. |
 | Documentation Governance could become a fourth strand | Keep `DOCROOT` global and local docs nodes strand-scoped. |
-| Workflow-create files could be sent through `push auto` | Treat any branch containing `docs/workflow/**` as a `workflow create` or `workflow execute` publication and use normal `push` or slice checkpoint push instead. |
+| Workflow-create files could be sent through `push auto` | Allow `docs/workflow/**` only when the branch is governance-only workflow documentation and no blocked implementation files changed. |
 
 ## Remaining Gaps For workflow execute
 

@@ -1,8 +1,13 @@
 # Push Auto Governance
 
-`push auto` is restricted to the `skills-agents` process strand.
+`push auto` is governed by the `skills-agents` publication guard.
 
-It may create, verify and merge a pull request only after the skills-agents guard passes. It must never publish backend, frontend, Docker/runtime, contracts, persistence, analysis engine, Joern, JavaParser, BTM generator or analytics implementation changes.
+It may create, verify and merge a pull request only after the skills-agents
+guard passes. It may also publish governance-only workflow documentation under
+`docs/workflow/**` when the change remains process-governance documentation and
+does not execute workflow slices. It must never publish backend, frontend,
+Docker/runtime, contracts, persistence, analysis engine, Joern, JavaParser, BTM
+generator or analytics implementation changes.
 
 ## Publication Separation
 
@@ -29,7 +34,8 @@ Slice checkpoint push is not `push auto`.
    - ends in `PUB_PR_RESULT`
    - does not automatically merge
 3. `push auto`
-   - belongs only to `skills-agents`
+   - is owned by the `skills-agents` publication guard
+   - may include governance-only `docs/workflow/**` documentation
    - uses a guarded PR lifecycle
    - may be rejected as `PUB_REJECTED` when guard checks fail
    - may merge and clean up only after guard checks pass
@@ -85,6 +91,7 @@ blind `git reset --hard`.
 - `docs/README.md`
 - `docs/process/**`
 - `docs/governance/**`
+- `docs/workflow/**`
 - `docs/skill-audit/**`
 - `docs/arc42/**`
 - `docs/adr/**`
@@ -112,7 +119,8 @@ changes are eligible for `push auto`. Before `push auto`, confirm:
 
 1. The active branch is not `main`, `master`, `develop` or another shared branch.
 2. `AGENTS.md` and `QUALITY.md` were read.
-3. The change belongs to `skills-agents`.
+3. The change belongs to `skills-agents` or is governance-only workflow
+   documentation under `docs/workflow/**`.
 4. No blocked review-scope files changed.
 5. `git diff --check` passes.
 6. Required documentation references are consistent.

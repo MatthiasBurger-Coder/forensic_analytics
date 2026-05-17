@@ -77,17 +77,13 @@ Allowed target areas:
 ## Publication Compatibility
 
 This workflow is a `workflow create` artifact because it creates and updates
-`docs/workflow/**`. It is therefore intentionally outside the `push auto`
-publication path.
+`docs/workflow/**`. The `push auto` publication guard now allows
+governance-only workflow documentation under `docs/workflow/**` when the change
+does not execute workflow slices or include blocked implementation files.
 
-Publishing this workflow branch must use the normal `push` PR path. Automatic
-PR merge through `push auto` is reserved for `skills-agents` changes that stay
+Publishing this workflow branch may therefore use normal `push`/PR publication
+or `push auto` after the guard verifies the branch is governance-only and stays
 inside the allowlist in `docs/process/push-auto.md`.
-
-If a future change needs `push auto`, it must be split into a separate
-`skills-agents` branch that contains only allowed files. Workflow artifacts
-under `docs/workflow/**` must remain on the `workflow create` or
-`workflow execute` publication paths.
 
 ## Non-Goals
 
@@ -779,16 +775,17 @@ No command may be reported as passed unless it was executed.
 
 ## Commit And Push Plan
 
-This workflow-create branch is not eligible for `push auto` because it changes
-`docs/workflow/**`. Its final publication path is:
+This workflow-create branch is eligible for `push auto` only because the guard
+now allows governance-only workflow documentation under `docs/workflow/**`. Its
+normal publication path remains:
 
 ```text
 workflow create branch -> normal push -> PR against main -> manual merge decision
 ```
 
-Do not route this workflow-create branch through the `skills-agents` `push auto`
-path. If only `skills-agents` governance files need automatic publication,
-split them into a separate branch before requesting `push auto`.
+`push auto` may be used for this branch only after the guard verifies that no
+backend, frontend, Docker/runtime, contract, persistence, analysis-engine, Joern,
+JavaParser, BTM generator, build or product implementation files changed.
 
 During `workflow execute`, each successful slice must:
 

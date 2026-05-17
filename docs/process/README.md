@@ -37,7 +37,7 @@ global consistency.
 
 - [Skills Update Command](skills-update.md) defines the exact `skills update` entrypoint and the `skills-agents` strand.
 - [Skill and Agent Creation](skill-agent-creation.md) defines creation, update, audit and linkage rules for skills, agents, roles and prompts.
-- [Push Auto Governance](push-auto.md) defines the guarded `push auto` publication mode for the `skills-agents` strand.
+- [Push Auto Governance](push-auto.md) defines the guarded `push auto` publication mode for skills, agents, process governance and governance-only workflow documentation.
 - [Branch Governance](branch-governance.md) defines branch isolation and publication-mode boundaries.
 - [Governance Workflow Diagrams](../governance/workflow/) define the
   two-level Governance Flowchart V2 overview and detail diagrams.
@@ -48,7 +48,7 @@ Publication modes are separate:
 
 - Slice checkpoint push belongs to `workflow execute` and pushes only the current workflow branch after a successful slice quality gate.
 - `push` is the normal branch push and pull-request process after explicit user approval.
-- `push auto` belongs only to `skills-agents` and may merge a PR only after guard checks pass.
+- `push auto` is owned by the `skills-agents` publication guard and may merge a PR only after guard checks pass, including governance-only `docs/workflow/**` documentation when no blocked implementation files changed.
 
 Publication outcomes are explicit:
 

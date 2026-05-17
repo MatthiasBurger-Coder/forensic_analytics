@@ -35,7 +35,7 @@ publication rules. `DOCROOT` is the global documentation-governance check.
 | `workflow create` | `workflow create` | Activates requirement clarification, workflow authoring, workflow validation and arc42 synchronization. |
 | `workflow execute` | `workflow execute` | Activates checked slice execution, quality gates, documentation synchronization and slice checkpoint push. |
 | `push` | publication mode | Runs the normal branch push and pull-request process without automatic merge. |
-| `push auto` | `skills-agents` only | Runs the guarded skills-agents PR lifecycle after `S1_PUSH_ELIGIBILITY_GUARD` and `PUB_PR_MERGE_GUARD` pass. |
+| `push auto` | skills-agents publication guard | Runs the guarded PR lifecycle after `S1_PUSH_ELIGIBILITY_GUARD` and `PUB_PR_MERGE_GUARD` pass, including governance-only workflow documentation when allowed. |
 | Slice checkpoint push | `workflow execute` only | Commits and pushes a successfully completed workflow slice after the slice quality gate passes. |
 
 Slice checkpoint push is not `push auto`.
@@ -117,7 +117,11 @@ flowchart TD
   Guard --> Stop
 ```
 
-`push auto` belongs only to this strand. It must never publish backend, frontend, Docker/runtime, contracts, persistence, analysis-engine, Joern, JavaParser, BTM generator or product implementation changes.
+`push auto` is owned by this strand's publication guard. The guard may also
+accept governance-only workflow documentation under `docs/workflow/**`. It must
+never publish backend, frontend, Docker/runtime, contracts, persistence,
+analysis-engine, Joern, JavaParser, BTM generator or product implementation
+changes.
 
 ## Strand 2: workflow create
 
@@ -305,7 +309,7 @@ Publication modes are deliberately separate:
 
 1. Slice checkpoint push belongs to `workflow execute`.
 2. `push` is the normal branch push and pull-request process.
-3. `push auto` belongs only to `skills-agents`.
+3. `push auto` is owned by the `skills-agents` publication guard and may include governance-only workflow documentation.
 
 `PUB_PR_RESULT` is the normal `push` terminal for an open PR without automatic
 merge. `PUB_PUSH_FAILED` routes to rollback or escalation, and `PUB_REJECTED`

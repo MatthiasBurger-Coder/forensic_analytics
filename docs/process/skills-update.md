@@ -80,7 +80,9 @@ The current `skills-agents` flow stops and reports on review failures. If an aut
 
 `skills update` may prepare a change for publication, but it does not run `push auto`.
 
-`push auto` remains a separate explicit command and is allowed only after the skills-agents guard passed.
+`push auto` remains a separate explicit command and is allowed only after the
+skills-agents publication guard passed. The guard may also accept
+governance-only workflow documentation under `docs/workflow/**`.
 
 `skills update` is not `workflow create`.
 `skills update` is not `workflow execute`.

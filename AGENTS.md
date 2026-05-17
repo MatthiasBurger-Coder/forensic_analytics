@@ -107,7 +107,12 @@ The strands must not be mixed.
 
 Shared governance roles such as Senior System Architect, Documentation Governance, Skill Registry Maintainer, Organigramm Maintainer, Process Governance Maintainer and `S1_PUSH_ELIGIBILITY_GUARD` execute inside the active strand and must apply that strand's file scope, quality gate and documentation duty.
 
-The `skills-agents` strand is the only strand that may use `push auto`. `push auto` must not publish backend, frontend, Docker/runtime, gRPC, REST, persistence, analysis-engine, Joern, JavaParser, BTM generator or product implementation changes.
+`push auto` is owned by the `skills-agents` publication guard. It may also
+publish governance-only workflow documentation under `docs/workflow/**` when the
+change remains process-governance documentation and does not execute workflow
+slices. `push auto` must not publish backend, frontend, Docker/runtime, gRPC,
+REST, persistence, analysis-engine, Joern, JavaParser, BTM generator or product
+implementation changes.
 
 ## Bounded Governance Feedback Loops
 
@@ -168,7 +173,8 @@ Publication modes are separate:
    - normal push and PR process after explicit user approval;
    - does not automatically merge.
 3. `push auto`:
-   - belongs only to `skills-agents`;
+   - is owned by the `skills-agents` publication guard;
+   - may include governance-only `docs/workflow/**` documentation;
    - may create, verify and merge a PR only after guard checks pass;
    - must never publish backend, frontend, Docker/runtime or analytics implementation changes.
 
