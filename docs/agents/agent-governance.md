@@ -8,6 +8,11 @@ The model is part of architecture governance because repository agents can creat
 
 Root `AGENTS.md` remains authoritative for mandatory agent behavior. `QUALITY.md` remains authoritative for verification commands and quality-gate expectations.
 
+The canonical two-level Governance Flowchart V2 diagrams live in
+[`../governance/workflow/`](../governance/workflow/). The diagrams in this
+document remain local explanatory views and must stay consistent with that
+package.
+
 ## Process Strands
 
 There are exactly three process strands:

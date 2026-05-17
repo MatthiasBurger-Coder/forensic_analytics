@@ -39,6 +39,8 @@ global consistency.
 - [Skill and Agent Creation](skill-agent-creation.md) defines creation, update, audit and linkage rules for skills, agents, roles and prompts.
 - [Push Auto Governance](push-auto.md) defines the guarded `push auto` publication mode for the `skills-agents` strand.
 - [Branch Governance](branch-governance.md) defines branch isolation and publication-mode boundaries.
+- [Governance Workflow Diagrams](../governance/workflow/) define the
+  two-level Governance Flowchart V2 overview and detail diagrams.
 
 ## Publication Modes
 

@@ -19,6 +19,8 @@ The governance system keeps these artifacts synchronized:
 Root `AGENTS.md` remains the authority for engineering rules. Root `QUALITY.md` remains the authority for verification commands.
 
 Process command semantics are documented in [../process/](../process/). Agent ownership, organigramm and skill registry material are documented in [../agents/](../agents/).
+The canonical Governance Flowchart V2 diagram package is documented in
+[workflow/](workflow/).
 
 ## Documentation Governance
 

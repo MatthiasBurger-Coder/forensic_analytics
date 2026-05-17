@@ -587,6 +587,13 @@ DOCROOT verifies global documentation consistency.
 
 ### Slice 13: Two-Level Flowchart Structure
 
+Slice 13 maps the two-level diagram structure into
+`docs/governance/workflow/`:
+
+- `docs/governance/workflow/README.md`
+- `docs/governance/workflow/level-1-overview.md`
+- `docs/governance/workflow/level-2-subgraphs.md`
+
 Level 1 must show:
 
 - ROOT

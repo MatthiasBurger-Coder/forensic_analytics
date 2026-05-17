@@ -31,7 +31,7 @@ stop if the target cannot be found.
 | Active workflow | `docs/workflow/workflow.md`, `docs/workflow/execution-summary.md`, `docs/workflow/slice-dependency-map.md`, `docs/workflow/governance-conflict-review.md`, `docs/workflow/governance-inventory.md` |
 | Process governance | `docs/process/README.md`, `docs/process/workflow-create.md`, `docs/process/workflow-execute.md`, `docs/process/branch-governance.md`, `docs/process/push-auto.md`, `docs/process/skills-update.md`, `docs/process/skill-agent-creation.md`, `docs/process/three-amigos-requirement-gate.md` |
 | Agent governance | `docs/agents/README.md`, `docs/agents/agent-governance.md`, `docs/agents/organigramm.md`, `docs/agents/skill-registry.md` |
-| Governance docs | `docs/governance/README.md`, `docs/governance/contract-governance.md` |
+| Governance docs | `docs/governance/README.md`, `docs/governance/contract-governance.md`, `docs/governance/workflow/README.md`, `docs/governance/workflow/level-1-overview.md`, `docs/governance/workflow/level-2-subgraphs.md` |
 | Architecture docs | `docs/architecture/`, `docs/arc42/` |
 | ADR docs | `docs/adr/README.md`, `docs/adr/ADR-*.md` |
 | EPIC docs | `docs/epics/forensics-platform-runtime-replay-llm-analysis-v0.1.md` |
@@ -126,8 +126,8 @@ These labels are introduced by the Governance Flowchart V2 workflow and must be 
 | `S1_DOC` | Local skills-agents documentation step | Mapped by Slice 12 as the local skills-agents documentation node |
 | `S2_DOC` | Local workflow-create documentation step | Mapped by Slice 12 as the local workflow-create documentation node |
 | `S3_DOC` | Local workflow-execute documentation step | Mapped by Slice 12 as the local workflow-execute documentation node |
-| Level 1 diagram | Governance overview diagram | Introduced by workflow, not yet implemented outside `docs/workflow` |
-| Level 2 diagrams | Detailed subgraph diagrams | Introduced by workflow, not yet implemented outside `docs/workflow` |
+| Level 1 diagram | Governance overview diagram | Mapped by Slice 13 in `docs/governance/workflow/level-1-overview.md` |
+| Level 2 diagrams | Detailed subgraph diagrams | Mapped by Slice 13 in `docs/governance/workflow/level-2-subgraphs.md` |
 
 ## Risks
 
