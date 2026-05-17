@@ -32,6 +32,15 @@ Root `AGENTS.md` and `QUALITY.md`, when present, remain authoritative for projec
 6. Reporting
    - Report changed files, main changes, executed commands, failures, quality-gate result, known limitations, and blockers.
 
+7. Slice checkpoint push
+   - When the project workflow requires checkpoint pushes, run them only after the slice quality gate passed.
+   - Stage only current-slice files.
+   - Run `git diff --cached --check`.
+   - Commit with a slice-scoped message.
+   - Push only the current workflow branch to `origin`.
+   - Record commit SHA and push result.
+   - Do not create or merge a PR, run branch cleanup, run `push auto`, force-push or push to `main`.
+
 ## Workflow Execute Protocol
 
 When the active command is `workflow execute`, use `.codex/skills/workflow-executor/SKILL.md` first, then use any discovered project-specific workflow-executor skill.
@@ -45,7 +54,8 @@ Execution order:
 5. Execute one slice at a time.
 6. Run required tests and quality checks after each slice.
 7. Inspect diffs after each slice.
-8. Stop on unverifiable assumptions, architecture conflicts, missing commands, quality failures, or ambiguity that could change behavior.
+8. Run the project-defined slice checkpoint push after each successful slice when the active workflow requires it.
+9. Stop on unverifiable assumptions, architecture conflicts, missing commands, quality failures, failed checkpoint push, or ambiguity that could change behavior.
 
 ## Stop Conditions
 
