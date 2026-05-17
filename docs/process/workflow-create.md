@@ -30,9 +30,9 @@ flowchart TD
   Frontend["Senior React Frontend Developer impact review"]
   Tester["Senior Tester review"]
   Workflow["Create or sharpen docs/workflow/workflow.md"]
-  ValidateWorkflow["Validate docs/workflow/workflow.md"]
+  ValidateWorkflow["workflow.md Validation"]
   Arc42["Update or check arc42"]
-  ValidateArc42["Validate arc42"]
+  ValidateArc42["arc42 Validation"]
   Docs["Documentation Governance review"]
   Final["Final workflow-create gate"]
   Ready["Approved for workflow execute"]
@@ -139,6 +139,16 @@ sections. At minimum, the review records whether these sections are affected:
 - Architecture Decisions
 - Quality Requirements
 - Risks and Technical Debt
+
+## Final Gate
+
+`workflow create` is complete only when:
+
+- no blocking questions remain open;
+- `docs/workflow/workflow.md` is complete, executable and testable;
+- arc42 documentation was checked or updated;
+- Documentation Governance passed;
+- release for `workflow execute` is recorded.
 
 ## Hard Rules
 

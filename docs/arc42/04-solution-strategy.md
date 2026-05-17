@@ -53,12 +53,18 @@ The strategy is:
 
 1. Keep skill and agent lifecycle changes in the `skills-agents` strand with
    registry, organigramm, documentation and `push auto` guard checks.
-2. Keep `workflow create` as a branch-first planning strand that produces
-   checked `docs/workflow/workflow.md` and checked or updated arc42
-   documentation.
+2. Keep `workflow create` as a planning strand with Requirement Intake,
+   Requirement Clarification Loop, five-role Three Amigos gate, branch
+   verification before mutations, checked `docs/workflow/workflow.md` and
+   checked or updated arc42 documentation.
 3. Keep `workflow execute` as the only strand that implements a checked
    workflow, with backend, frontend, Docker/runtime and documentation work
    classified separately.
 4. Keep governance artifacts separate from forensic evidence. They may guide
    implementation work, but they do not create runtime facts, analysis evidence
    or product behavior by themselves.
+
+`workflow create` reaches its Final Gate only when no blocking questions remain,
+`docs/workflow/workflow.md` is complete, executable and testable, arc42 was
+checked or updated, Documentation Governance passed and release for
+`workflow execute` is recorded.

@@ -54,6 +54,14 @@ Checked sections:
   automation risks.
 - 12. Glossary: updated with governance terms.
 
+The checked `workflow create` end state is:
+
+1. no blocking requirement questions remain,
+2. complete checked `docs/workflow/workflow.md`,
+3. checked or updated arc42 documentation,
+4. Documentation Governance passed,
+5. explicit release for `workflow execute`.
+
 Reviewer role: Senior System Architect / arc42 Architecture Governance.
 Unresolved drift: existing `docs/workflow/**` sidecars remain historical
 supporting material until a later workflow explicitly migrates or archives them.

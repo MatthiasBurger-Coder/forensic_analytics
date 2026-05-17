@@ -30,13 +30,18 @@
 
 The active workflow and agent governance backbone is:
 
-- ADR-0011: Three Amigos before workflow authoring.
+- ADR-0011: Requirement Clarification and five-role Three Amigos before workflow authoring.
 - ADR-0012: Quality gates before commit and push.
 - ADR-0014: Explicit agent handoff protocol.
 - ADR-0015: Skill registry and conflict auditing.
 - ADR-0016: Branch-first workflow creation, amended by the three-strand model so
-  `workflow create` ends with checked `docs/workflow/workflow.md` and checked or
-  updated arc42 documentation.
+  `workflow create` runs read-only intake and clarification first, then mutates
+  files only on a verified workflow branch, and ends with checked
+  `docs/workflow/workflow.md` plus checked or updated arc42 documentation.
+
+The `workflow create` Final Gate requires no blocking questions, a complete,
+executable and testable `docs/workflow/workflow.md`, checked or updated arc42
+documentation, Documentation Governance and release for `workflow execute`.
 
 `push auto` is treated as operational release governance under ADR-0012 and the
 git-commit-preparation workflow, not as a Forensics Platform product runtime

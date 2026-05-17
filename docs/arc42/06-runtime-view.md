@@ -135,13 +135,26 @@ Forensics Platform runtime evidence flows.
 ```text
 User requirement
   -> read-only repository verification
+  -> Requirement Intake
+  -> Requirement Clarification Loop
+  -> Blocking Questions?
+  -> Ask focused clarification questions when blocked
+  -> Incorporate answers
+  -> Three Amigos Requirement Gate
   -> branch collision check
   -> dedicated workflow branch verification
-  -> Three Amigos Requirement Gate
   -> checked docs/workflow/workflow.md
+  -> workflow.md Validation
   -> checked or updated docs/arc42
+  -> arc42 Validation
+  -> Documentation Governance
+  -> Final Gate
   -> release for workflow execute
 ```
+
+The Final Gate blocks release while blocking questions remain open. The two
+checked end artifacts are `docs/workflow/workflow.md` and checked or updated
+arc42 documentation.
 
 ### workflow execute
 

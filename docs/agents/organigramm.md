@@ -59,6 +59,11 @@ Required checks:
 ```mermaid
 flowchart TD
   WC["workflow create"]
+  Intake["Requirement Intake"]
+  Clarify["Requirement Clarification Loop"]
+  Blocking{"Blocking Questions?"}
+  Ask["Ask focused clarification questions"]
+  Answers["Incorporate answers"]
   Branch["Branch Governance"]
   Gate["Three Amigos Requirement Gate"]
   Req["Senior Requirement Engineer"]
@@ -68,11 +73,16 @@ flowchart TD
   Test["Senior Tester"]
   WF["docs/workflow/workflow.md Maintainer"]
   Arc["arc42 Architecture Documentation Maintainer"]
+  WFVal["workflow.md Validation"]
+  ArcVal["arc42 Validation"]
   Docs["Documentation Governance"]
+  Final["Final Gate"]
   Ready["Release for workflow execute"]
 
-  WC --> Branch --> Gate
-  Gate --> Req --> Arch --> Back --> Front --> Test --> WF --> Arc --> Docs --> Ready
+  WC --> Intake --> Clarify --> Blocking
+  Blocking -- "yes" --> Ask --> Answers --> Clarify
+  Blocking -- "no" --> Gate --> Branch
+  Branch --> Req --> Arch --> Back --> Front --> Test --> WF --> WFVal --> Arc --> ArcVal --> Docs --> Final --> Ready
 ```
 
 Mandatory gate responsibilities:
@@ -92,6 +102,10 @@ Required end artifacts:
 
 - Checked `docs/workflow/workflow.md`.
 - Checked or updated arc42 documentation.
+
+Final Gate requires no blocking questions, complete executable and testable
+`docs/workflow/workflow.md`, checked or updated arc42 documentation,
+Documentation Governance and explicit release for `workflow execute`.
 
 ## Strand 3: workflow execute
 

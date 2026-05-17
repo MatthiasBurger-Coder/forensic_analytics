@@ -114,6 +114,11 @@ Documentation Governance participates in every strand. A strand is not complete
 until its registry, organigramm, process, workflow, arc42 or execution-report
 documentation duty is complete.
 
+`workflow create` includes a Requirement Clarification Loop before final
+workflow authoring. Blocking questions stop final checked `docs/workflow/workflow.md`
+creation and release for `workflow execute`; non-blocking assumptions must be
+documented with confidence and revisit points.
+
 Governance artifacts guide agent work but do not create forensic evidence. They
 must not invent runtime facts, analysis facts, service behavior or product
 capabilities. Planned behavior must remain distinct from implemented behavior,
