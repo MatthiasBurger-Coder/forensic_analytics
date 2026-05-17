@@ -59,7 +59,8 @@ Must not change:
 | Organigramm Maintainer | `skills-agents` | Senior Documentation Engineer | maintain role hierarchy diagrams |
 | AGENTS.md Maintainer | `skills-agents` | Senior System Architect | keep root agent governance authoritative |
 | Process Governance Maintainer | all strands | Senior Documentation Engineer | keep process documents synchronized |
-| Push Auto Guard | `skills-agents` | Git Commit Reviewer / Git Commit Operator | block `push auto` outside skills-agents |
+| `S1_PUSH_ELIGIBILITY_GUARD` | `skills-agents` | Git Commit Reviewer / Git Commit Operator | block `push auto` outside skills-agents and outside skill, agent or governance scope |
+| `PUB_PR_MERGE_GUARD` | publication mode | Git Commit Reviewer / Git Commit Operator | decide whether a PR may merge, stay open, be blocked or be rejected |
 | docs/workflow/workflow.md Maintainer | `workflow create` | Senior Workflow Architect | maintain active workflow specification |
 | arc42 Architecture Documentation Maintainer | `workflow create` | arc42 Architecture Governance | keep architecture docs checked or updated |
 | S3D Execution Orchestrator | `workflow execute` | Senior Swarm Orchestrator | build dependency graph, run topological sort and enforce file, contract, module and architecture-boundary locks |

@@ -11,7 +11,7 @@
 | Organigramm Maintainer | `skills-agents` | Senior Documentation Engineer | added |
 | AGENTS.md Maintainer | `skills-agents` | Senior System Architect | added |
 | Process Governance Maintainer | all strands | Senior Documentation Engineer | added |
-| Push Auto Guard | `skills-agents` | Git Commit Reviewer / Git Commit Operator | added |
+| `S1_PUSH_ELIGIBILITY_GUARD` | `skills-agents` | Git Commit Reviewer / Git Commit Operator | added |
 | docs/workflow/workflow.md Maintainer | `workflow create` | Senior Workflow Architect | added |
 | arc42 Architecture Documentation Maintainer | `workflow create` | arc42 Architecture Governance | added |
 | Testing Documentation Maintainer | `workflow execute` | Senior Tester | added |

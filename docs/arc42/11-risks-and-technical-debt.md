@@ -33,4 +33,4 @@
 | arc42 is not updated | Architecture drift | `workflow create` requires checked or updated arc42 |
 | Slice work is lost locally | Rework after machine failure | Slice checkpoint commit and push after every successful slice |
 | Quality failure has generic ownership | Wrong role fixes the wrong cause or retries indefinitely | Typed Error Router assigns `ARCH_VIOLATION`, `BUILD_FAILURE`, `TEST_FAILURE`, `DOC_GOVERNANCE_FAILURE`, `LOCK_CONFLICT` or `UNKNOWN_FAILURE` and caps retries at `maxRetries = 3` |
-| `push auto` used too broadly | Product implementation may be merged accidentally | Push Auto Guard restricts it to `skills-agents` |
+| `push auto` used too broadly | Product implementation may be merged accidentally | `S1_PUSH_ELIGIBILITY_GUARD` restricts it to `skills-agents` |

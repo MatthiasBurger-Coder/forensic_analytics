@@ -105,7 +105,7 @@ Repository agent work is organized into exactly three process strands:
 
 The strands must not be mixed.
 
-Shared governance roles such as Senior System Architect, Documentation Governance, Skill Registry Maintainer, Organigramm Maintainer, Process Governance Maintainer and Push Auto Guard execute inside the active strand and must apply that strand's file scope, quality gate and documentation duty.
+Shared governance roles such as Senior System Architect, Documentation Governance, Skill Registry Maintainer, Organigramm Maintainer, Process Governance Maintainer and `S1_PUSH_ELIGIBILITY_GUARD` execute inside the active strand and must apply that strand's file scope, quality gate and documentation duty.
 
 The `skills-agents` strand is the only strand that may use `push auto`. `push auto` must not publish backend, frontend, Docker/runtime, gRPC, REST, persistence, analysis-engine, Joern, JavaParser, BTM generator or product implementation changes.
 

@@ -49,7 +49,7 @@ Quality
 | `workflow create` completes | `docs/workflow/workflow.md` and arc42 are checked, Documentation Governance passes and release for `workflow execute` is explicit |
 | `workflow execute` completes a slice | The slice quality gate passes before a slice checkpoint commit and push |
 | Slice checkpoint push is requested | The push targets only `origin/<workflow-branch>` and does not create or merge a PR |
-| `push auto` is requested | Guard checks prove the change belongs to `skills-agents` and no product implementation files changed |
+| `push auto` is requested | `S1_PUSH_ELIGIBILITY_GUARD` proves the change belongs to `skills-agents` and no product implementation files changed |
 
 ## 10.3 Agent Governance Quality Scenarios
 

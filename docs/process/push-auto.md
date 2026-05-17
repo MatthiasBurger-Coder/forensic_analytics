@@ -105,9 +105,10 @@ blind `git reset --hard`.
 - `contracts/**`
 - `services/**`
 
-## Guard Checks
+## S1_PUSH_ELIGIBILITY_GUARD Checks
 
-Before `push auto`, confirm:
+`S1_PUSH_ELIGIBILITY_GUARD` checks whether skills, agents and governance
+changes are eligible for `push auto`. Before `push auto`, confirm:
 
 1. The active branch is not `main`, `master`, `develop` or another shared branch.
 2. `AGENTS.md` and `QUALITY.md` were read.
@@ -119,3 +120,6 @@ Before `push auto`, confirm:
 8. No push to `main`, force-push or GitHub auto-merge is used.
 
 The PR may be merged only after mergeability and required checks are verified.
+
+`PUB_PR_MERGE_GUARD` then decides whether the PR may merge, must remain open,
+is blocked or is rejected. It is distinct from `S1_PUSH_ELIGIBILITY_GUARD`.

@@ -105,7 +105,7 @@ Repository governance uses three process strands:
 - `workflow create`
 - `workflow execute`
 
-The strands must not be mixed. Shared roles such as Senior System Architect, Documentation Governance, Skill Registry Maintainer, Organigramm Maintainer, Process Governance Maintainer and Push Auto Guard execute inside the active strand and apply that strand's file scope, quality gate and documentation duty.
+The strands must not be mixed. Shared roles such as Senior System Architect, Documentation Governance, Skill Registry Maintainer, Organigramm Maintainer, Process Governance Maintainer and `S1_PUSH_ELIGIBILITY_GUARD` execute inside the active strand and apply that strand's file scope, quality gate and documentation duty.
 
 `skills update` is the explicit entrypoint for `skills-agents`.
 

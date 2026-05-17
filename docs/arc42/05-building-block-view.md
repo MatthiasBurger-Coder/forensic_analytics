@@ -191,7 +191,8 @@ flowchart TD
 | Skill Registry Maintainer | Maintains the skills-agents registry and ownership map. |
 | Organigramm Maintainer | Maintains agent role hierarchy and process-strand diagrams. |
 | Process Governance Maintainer | Maintains command and publication-mode documentation. |
-| Push Auto Guard | Blocks `push auto` outside `skills-agents` and blocks product implementation changes from `push auto`. |
+| `S1_PUSH_ELIGIBILITY_GUARD` | Blocks `push auto` outside `skills-agents` and blocks product implementation changes from `push auto`. |
+| `PUB_PR_MERGE_GUARD` | Decides whether a PR may merge, stay open, be blocked or be rejected. |
 | docs/workflow/workflow.md Maintainer | Maintains the checked active workflow produced by `workflow create`. |
 | arc42 Architecture Documentation Maintainer | Checks or updates arc42 before workflow execute is released. |
 | Testing Documentation Maintainer | Maintains workflow test strategy and quality-gate evidence. |
@@ -255,7 +256,7 @@ flowchart TD
   Execute["workflow execute"]
   Pr["PR without automatic merge"]
   Skills["skills-agents"]
-  Guard["Guarded PR lifecycle"]
+  Guard["PUB_PR_MERGE_GUARD"]
 
   Execute --> Checkpoint
   Push --> Pr

@@ -120,8 +120,8 @@ These labels are introduced by the Governance Flowchart V2 workflow and must be 
 | workflow history | Workflow-version and slice-history artifact | Mapped by Slice 09 in `docs/workflow/workflow.history.md` |
 | D8 | Blocking quality and release-readiness gate | Mapped by Slice 10 as the synchronous gate before commit, checkpoint push and release readiness |
 | Q11 | Async execution report path | Mapped by Slice 10 as non-blocking by default after `CP_FINAL`, except explicitly declared regulatory reporting gates |
-| `S1_PUSH_ELIGIBILITY_GUARD` | Skills-agents push eligibility guard | Introduced by workflow, not yet implemented outside `docs/workflow` |
-| `PUB_PR_MERGE_GUARD` | Publication PR merge guard | Introduced by workflow, not yet implemented outside `docs/workflow` |
+| `S1_PUSH_ELIGIBILITY_GUARD` | Skills-agents push eligibility guard | Mapped by Slice 11 as the active guard for skills-agents push eligibility |
+| `PUB_PR_MERGE_GUARD` | Publication PR merge guard | Mapped by Slice 11 as the active guard for PR merge, open, blocked or rejected decisions |
 | DOCROOT | Global documentation governance | Introduced by workflow, not yet implemented outside `docs/workflow` |
 | `S1_DOC` | Local skills-agents documentation step | Introduced by workflow, not yet implemented outside `docs/workflow` |
 | `S2_DOC` | Local workflow-create documentation step | Introduced by workflow, not yet implemented outside `docs/workflow` |

@@ -47,7 +47,7 @@ flowchart TD
   Org["Organigramm Maintainer"]
   Agents["AGENTS.md Maintainer"]
   Process["Process Governance Maintainer"]
-  Guard["Push Auto Guard"]
+  Guard["S1_PUSH_ELIGIBILITY_GUARD"]
   Ready["Ready for optional push auto"]
   Stop["STOP and report"]
 
@@ -206,7 +206,7 @@ flowchart TD
   CP_ROLLBACK["CP_ROLLBACK"]
   RA["Root Architect Escalation"]
   Skills["skills-agents"]
-  Guard["Guarded PR lifecycle"]
+  Guard["PUB_PR_MERGE_GUARD"]
 
   Execute --> Checkpoint --> PUB_PUSH
   Push --> PUB_PUSH

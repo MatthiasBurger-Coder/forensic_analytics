@@ -140,7 +140,7 @@ flowchart TD
   Org["Organigramm Maintainer"]
   Agents["AGENTS.md Maintainer"]
   Process["Process Governance Maintainer"]
-  Guard["Push Auto Guard"]
+  Guard["S1_PUSH_ELIGIBILITY_GUARD"]
   Ready["Ready for optional push auto"]
 
   Start --> Intake --> Integrity --> Registry --> Org --> Agents --> Process --> Guard --> Ready

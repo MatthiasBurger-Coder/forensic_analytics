@@ -28,7 +28,7 @@ Documentation Governance is not a fourth strand. Documentation Governance runs i
 | `workflow create` | `workflow create` | Activates requirement clarification, workflow authoring, workflow validation and arc42 synchronization. |
 | `workflow execute` | `workflow execute` | Activates checked slice execution, quality gates, documentation synchronization and slice checkpoint push. |
 | `push` | publication mode | Runs the normal branch push and pull-request process without automatic merge. |
-| `push auto` | `skills-agents` only | Runs the guarded skills-agents PR lifecycle after guard checks pass. |
+| `push auto` | `skills-agents` only | Runs the guarded skills-agents PR lifecycle after `S1_PUSH_ELIGIBILITY_GUARD` and `PUB_PR_MERGE_GUARD` pass. |
 | Slice checkpoint push | `workflow execute` only | Commits and pushes a successfully completed workflow slice after the slice quality gate passes. |
 
 Slice checkpoint push is not `push auto`.
@@ -91,7 +91,7 @@ flowchart TD
   Org["Organigramm Maintainer"]
   Agents["AGENTS.md Maintainer"]
   Process["Process Governance Maintainer"]
-  Guard["Push Auto Guard"]
+  Guard["S1_PUSH_ELIGIBILITY_GUARD"]
   Ready["Ready for optional push auto"]
   Stop["STOP and report"]
 
@@ -273,7 +273,7 @@ flowchart TD
   CP_ROLLBACK["CP_ROLLBACK"]
   RA["Root Architect Escalation"]
   Skills["skills-agents"]
-  Guard["Guarded PR lifecycle"]
+  Guard["PUB_PR_MERGE_GUARD"]
 
   Execute --> Checkpoint --> PUB_PUSH
   Push --> PUB_PUSH
@@ -313,4 +313,8 @@ The agent governance model is architecture governance because it protects:
 - controlled commit and push behavior,
 - separation between planned behavior and implemented behavior.
 
-The Senior System Architect owns the top-level governance boundary. Shared roles such as Documentation Governance, Skill Registry Maintainer, Organigramm Maintainer, Process Governance Maintainer and Push Auto Guard run inside the active strand rather than creating a fourth strand.
+`S1_PUSH_ELIGIBILITY_GUARD` checks whether skill, agent and governance changes
+are pushable through `push auto`. `PUB_PR_MERGE_GUARD` decides whether a PR may
+merge, stay open, be blocked or be rejected.
+
+The Senior System Architect owns the top-level governance boundary. Shared roles such as Documentation Governance, Skill Registry Maintainer, Organigramm Maintainer, Process Governance Maintainer and `S1_PUSH_ELIGIBILITY_GUARD` run inside the active strand rather than creating a fourth strand.

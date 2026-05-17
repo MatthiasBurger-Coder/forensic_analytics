@@ -173,7 +173,7 @@ The implementation slices must add or verify these rules:
 - Publication cleanup: `PUB_DONE`, `PUB_PR_RESULT`, `PUB_PUSH_FAILED` and `PUB_REJECTED` are explicit terminals or controlled outcomes.
 - Rollback: `CP_ROLLBACK` decides between file revert, slice-commit revert, fix slice, branch discard, workflow recut or Root Architect escalation.
 - D8 and Q11 separation: D8 is blocking; Q11 is non-blocking by default unless a regulatory reporting gate is explicitly declared.
-- Guard naming: `S1_GUARD` becomes or maps to `S1_PUSH_ELIGIBILITY_GUARD`; `PUB_GUARD` becomes or maps to `PUB_PR_MERGE_GUARD`.
+- Guard naming: skills-agents push eligibility uses `S1_PUSH_ELIGIBILITY_GUARD`; PR merge/open/block/reject decisions use `PUB_PR_MERGE_GUARD`.
 - Documentation governance: `DOCROOT` is global governance; `S1_DOC`, `S2_DOC` and `S3_DOC` are local strand documentation steps.
 - Flowchart structure: Level 1 overview plus Level 2 subgraphs for S1, S2, S3, BE, FE, RT, QG, CP, PUB and DOC.
 
@@ -666,8 +666,8 @@ Required checklist:
 [ ] PUB_PR_RESULT exists
 [ ] R10 documented
 [ ] R11 documented
-[ ] S1_GUARD renamed or mapped
-[ ] PUB_GUARD renamed or mapped
+[ ] `S1_PUSH_ELIGIBILITY_GUARD` is the active skills-agents push eligibility guard
+[ ] `PUB_PR_MERGE_GUARD` is the active PR merge/open/block/reject guard
 [ ] DOCROOT separated from S1_DOC/S2_DOC/S3_DOC
 [ ] Level-1 diagram exists or is updated
 [ ] Level-2 diagram structure exists or is updated
