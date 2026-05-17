@@ -25,10 +25,11 @@ The decisions are derived from the EPIC baseline and refined during implementati
 - [ADR-0017: Use the target microservices service landscape](ADR-0017-target-microservices-service-landscape.md)
 - [ADR-0018: Author initial logical service contracts before implementation](ADR-0018-initial-logical-contracts.md)
 - [ADR-0019: Allow Spring Boot at service bootstrap boundaries](ADR-0019-spring-boot-service-bootstrap-boundary.md)
+- [ADR-0020: Agent Governance Process Strands](ADR-0020-agent-governance-process-strands.md)
 
 ## Governance Notes
 
-ADR-0016 also records the three-strand workflow and agent governance extension:
+ADR-0020 records the three-strand workflow and agent governance extension:
 
 - `skills update` -> `skills-agents`
 - `workflow create` -> Requirement Clarification Loop, workflow.md and arc42 validation

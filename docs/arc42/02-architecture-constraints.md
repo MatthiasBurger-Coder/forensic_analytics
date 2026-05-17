@@ -46,3 +46,23 @@
 - Future microservices must not share Java code modules, domain models, event classes or test fixtures.
 - Planned governance behavior must not be described as product runtime behavior.
 - Slice checkpoint push must not be confused with `push auto`.
+
+## 2.5 Agent And Workflow Governance Constraints
+
+Forensic Analytics uses a governed agent workflow model with exactly three process strands:
+
+1. `skills-agents`
+2. `workflow create`
+3. `workflow execute`
+
+The strands must not be mixed.
+
+`skills update` activates the `skills-agents` strand.
+
+`workflow create` is responsible for requirement clarification, Three Amigos validation, checked workflow authoring and arc42 synchronization.
+
+`workflow execute` is responsible for executing checked workflow slices through role or subagent routing, quality gates, documentation synchronization and slice checkpoint commits.
+
+`push auto` is restricted to the `skills-agents` strand and must not publish backend, frontend, Docker/runtime, contract or analytics implementation changes.
+
+Slice checkpoint push is part of `workflow execute` and is not `push auto`.

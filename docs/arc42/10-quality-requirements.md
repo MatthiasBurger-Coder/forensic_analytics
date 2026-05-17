@@ -49,3 +49,14 @@ Quality
 | `workflow execute` completes a slice | The slice quality gate passes before a slice checkpoint commit and push |
 | Slice checkpoint push is requested | The push targets only `origin/<workflow-branch>` and does not create or merge a PR |
 | `push auto` is requested | Guard checks prove the change belongs to `skills-agents` and no product implementation files changed |
+
+## 10.3 Agent Governance Quality Scenarios
+
+| Scenario | Quality Goal | Expected Response |
+|---|---|---|
+| User requests `skills update` | Process correctness | Codex routes to `skills-agents` and does not change product code |
+| User requests `workflow create` | Requirement quality | Codex clarifies requirements before workflow authoring |
+| Blocking questions exist | Safety | Codex returns `REQUIRES_REFINEMENT` and does not create final workflow.md |
+| User requests `workflow execute` | Execution reliability | Codex executes checked slices only |
+| Slice completes | Recoverability | Codex commits and pushes the workflow branch as a checkpoint |
+| User requests `push auto` | Publication safety | Codex allows it only for `skills-agents` |

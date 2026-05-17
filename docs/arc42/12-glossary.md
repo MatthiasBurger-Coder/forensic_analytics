@@ -38,3 +38,33 @@
 | Blocking Questions | Questions that affect architecture boundaries, testability, data ownership, service boundaries, APIs, contracts, runtime behavior or scope |
 | Slice checkpoint push | Workflow-execute publication step that commits only the completed slice and pushes the current workflow branch to origin |
 | push auto | skills-agents-only guarded PR lifecycle that may merge and clean up after guard checks pass |
+
+## 12.1 Agent Governance Terms
+
+### skills update
+
+Explicit command that activates the `skills-agents` strand.
+
+### skills-agents
+
+Process strand for maintaining skills, agents, roles, prompts, registries, organigramm and process documentation.
+
+### workflow create
+
+Process strand for requirement clarification, workflow authoring and arc42 synchronization.
+
+### workflow execute
+
+Process strand for executing checked workflow slices.
+
+### Slice checkpoint push
+
+Commit and push of a successfully completed slice to the current workflow branch.
+
+### push auto
+
+Guarded publication mode restricted to the `skills-agents` strand.
+
+### Documentation Governance
+
+Mandatory documentation synchronization inside every active process strand.

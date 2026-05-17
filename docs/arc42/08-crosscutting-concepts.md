@@ -114,3 +114,28 @@ The strands must not be mixed. Shared roles such as Senior System Architect, Doc
 `workflow execute` requires checked workflow and arc42 artifacts before implementation and performs slice checkpoint commits and pushes after successful slice quality gates.
 
 Documentation synchronization must keep `AGENTS.md`, `QUALITY.md`, process docs, workflow docs, skill-audit docs, arc42 and ADR references consistent. Planned behavior is not implemented behavior.
+
+## 8.11 Agent Governance
+
+Agent Governance is a crosscutting engineering concept.
+
+It applies to every non-trivial repository change and controls:
+
+- command routing
+- process strand selection
+- requirement clarification
+- architecture validation
+- role and subagent assignment
+- documentation synchronization
+- quality gates
+- commit and push behavior
+
+The model prevents:
+
+- mixed workflow responsibilities
+- uncontrolled implementation by agents
+- missing arc42 updates
+- unverified requirements
+- broad speculative changes
+- accidental `push auto` on product implementation
+- loss of work after local machine failures

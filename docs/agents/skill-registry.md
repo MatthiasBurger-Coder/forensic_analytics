@@ -31,6 +31,7 @@ May change:
 - `AGENTS.md`
 - `.agents/**`
 - `.codex/**`
+- `docs/README.md`
 - `docs/agents/**`
 - `docs/process/**`
 - `docs/governance/**`

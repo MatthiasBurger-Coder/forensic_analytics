@@ -125,46 +125,79 @@ This path supports job submission, leasing, progress, completion, failure,
 listing and artifact metadata registration. It does not yet ingest normalized
 fact bodies, runtime trace facts, incidents or correlation indexes.
 
-## 6.9 Repository Governance Runtime Flows
-
-`skills update` flow:
-
-```text
-skills update
-  -> skills-agents strand
-  -> skill / agent intake
-  -> integrity, linkage and conflict review
-  -> organigramm and skill registry review
-  -> AGENTS.md and process documentation review
-  -> final skills-agents gate
-  -> optional push auto preparation
-```
-
-`workflow create` flow:
-
-```text
-workflow create
-  -> Requirement Clarification Loop
-  -> Blocking Questions?
-  -> five-role Three Amigos Requirement Gate
-  -> branch governance
-  -> docs/workflow/workflow.md validation
-  -> arc42 validation
-  -> Documentation Governance
-  -> release for workflow execute
-```
-
-`workflow execute` flow:
-
-```text
-workflow execute
-  -> checked docs/workflow/workflow.md
-  -> checked or updated arc42
-  -> slice execution
-  -> slice quality gate
-  -> slice checkpoint commit
-  -> push workflow branch to origin
-  -> execution report
-```
+## 6.9 Agent Governance Runtime Flows
 
 These are repository governance flows, not product runtime flows.
+
+### skills update Flow
+
+```mermaid
+flowchart TD
+  Start["skills update"]
+  Intake["Skill / Agent Intake"]
+  Integrity["Skill Integrity Reviewer"]
+  Registry["Skill Registry Maintainer"]
+  Org["Organigramm Maintainer"]
+  Agents["AGENTS.md Maintainer"]
+  Process["Process Governance Maintainer"]
+  Guard["Push Auto Guard"]
+  Ready["Ready for optional push auto"]
+
+  Start --> Intake --> Integrity --> Registry --> Org --> Agents --> Process --> Guard --> Ready
+```
+
+### workflow create Flow
+
+```mermaid
+flowchart TD
+  Intake["Requirement Intake"]
+  Clarify["Requirement Clarification Loop"]
+  Blocking["Blocking Questions?"]
+  Ask["Ask focused clarification questions"]
+  Incorporate["Incorporate answers"]
+  Gate["Three Amigos Requirement Gate"]
+  Branch["Branch Governance"]
+  Req["Senior Requirement Engineer"]
+  Architect["Senior System Architect"]
+  Java["Senior Java Backend Developer"]
+  React["Senior React Frontend Developer"]
+  Tester["Senior Tester"]
+  Workflow["workflow.md Maintainer"]
+  Arc42["arc42 Architecture Documentation Maintainer"]
+  WorkflowCheck["workflow.md Validation"]
+  Arc42Check["arc42 Validation"]
+  Docs["Documentation Governance"]
+  Final["Final Gate"]
+  Release["Release for workflow execute"]
+
+  Intake --> Clarify --> Blocking
+  Blocking -->|yes| Ask --> Incorporate --> Clarify
+  Blocking -->|no| Gate --> Branch --> Req --> Architect --> Java --> React --> Tester --> Workflow --> WorkflowCheck --> Arc42 --> Arc42Check --> Docs --> Final --> Release
+```
+
+### workflow execute Flow
+
+```mermaid
+flowchart TD
+  Executor["workflow-executor"]
+  Swarm["Agent Swarm Orchestrator"]
+  Backend["Backend Strand"]
+  Frontend["Frontend Strand"]
+  Runtime["Docker / Runtime Strand"]
+  Docs["Documentation Strand"]
+  Gate["Slice Quality Gate"]
+  Commit["Slice Checkpoint Commit"]
+  Push["Push Workflow Branch"]
+  Final["Final Workflow Execute Gate"]
+
+  Executor --> Swarm
+  Swarm --> Backend
+  Swarm --> Frontend
+  Swarm --> Runtime
+  Swarm --> Docs
+  Backend --> Gate
+  Frontend --> Gate
+  Runtime --> Gate
+  Docs --> Gate
+  Gate --> Commit --> Push --> Final
+```

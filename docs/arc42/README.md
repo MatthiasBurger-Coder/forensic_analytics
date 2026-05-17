@@ -58,3 +58,29 @@ The checked workflow create end state is:
 5. explicit release for workflow execute.
 
 Reviewer role: Senior System Architect / arc42 Architecture Governance.
+
+## Agent Governance Documentation Status
+
+The agent organigramm and process-strand model are documented in:
+
+- `docs/agents/organigramm.md`
+- `docs/agents/agent-governance.md`
+- `docs/agents/skill-registry.md`
+- `docs/process/skills-update.md`
+- `docs/process/workflow-create.md`
+- `docs/process/workflow-execute.md`
+- `docs/process/push-auto.md`
+
+arc42 sections updated for agent governance:
+
+- Architecture Constraints
+- Solution Strategy
+- Building Block View
+- Runtime View
+- Crosscutting Concepts
+- Architecture Decisions
+- Quality Requirements
+- Risks and Technical Debt
+- Glossary
+
+Current documentation branch: `docs/arc42-agent-organigramm-governance-20260517`.

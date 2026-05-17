@@ -41,6 +41,7 @@ Slice checkpoint push is not `push auto`.
 - `.codex/subagents/**`
 - `.codex/workflow/**`
 - `docs/agents/**`
+- `docs/README.md`
 - `docs/process/**`
 - `docs/governance/**`
 - `docs/skill-audit/**`
