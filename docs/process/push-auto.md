@@ -12,6 +12,24 @@ Slice checkpoint push is not `push auto`.
 
 `skills update` is not `push auto`.
 
+## Three Publication Modes
+
+1. Slice checkpoint push
+   - belongs to `workflow execute`
+   - runs after a successful slice quality gate
+   - commits and pushes the current workflow branch to `origin`
+   - does not create or merge a PR
+   - does not run branch cleanup
+   - is not `push auto`
+2. `push`
+   - normal publication after explicit user approval
+   - pushes the branch and creates or updates a PR
+   - does not automatically merge
+3. `push auto`
+   - belongs only to `skills-agents`
+   - uses a guarded PR lifecycle
+   - may merge and clean up only after guard checks pass
+
 ## Allowed Review Scope
 
 `push auto` may consider only these areas:

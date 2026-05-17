@@ -11,12 +11,36 @@ Push requires:
 - PR or release expectations known;
 - no secrets or sensitive data in diff.
 
+## Publication Modes
+
+There are three separate publication modes:
+
+1. Slice checkpoint push
+   - belongs to `workflow execute`;
+   - runs after a successful slice quality gate;
+   - creates a slice-scoped commit;
+   - pushes the current workflow branch to `origin`;
+   - does not create or merge a PR;
+   - does not run branch cleanup;
+   - is not `push auto`.
+2. `push`
+   - normal publication after explicit user approval;
+   - pushes the branch and creates or updates a PR;
+   - does not automatically merge.
+3. `push auto`
+   - belongs only to `skills-agents`;
+   - runs a guarded PR lifecycle;
+   - may merge the PR and clean up only after guard checks pass.
+
 ## Rules
 
 - Do not push when required gates failed.
 - Do not push when branch or remote target is unclear.
 - Do not push unrelated local changes.
 - Create PRs only when workflow or user request allows it.
+- For slice checkpoint push, stage only current-slice files and push only to `origin/<workflow-branch>`.
+- For `push auto`, stop unless the active process strand is `skills-agents`.
+- `push auto` must not publish product implementation, services, contracts, Docker/runtime, build logic, frontend or analytics files.
 
 ## STOP Rules
 
@@ -27,3 +51,7 @@ Stop when:
 - secret or sensitive-data risk is unresolved;
 - branch contains unrelated scope;
 - workflow does not allow push.
+- slice checkpoint push would include files outside the current slice;
+- slice checkpoint push would push to `main`, create or merge a PR, run `push auto`, run branch cleanup or force-push;
+- `push auto` is requested outside the `skills-agents` strand;
+- `push auto` would publish backend, frontend, Docker/runtime, contracts, persistence, analysis engine, Joern, JavaParser, BTM generator or analytics implementation changes.
