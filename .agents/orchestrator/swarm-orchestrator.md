@@ -26,6 +26,14 @@ Coordinate small implementation slices across roles while preserving architectur
 8. Run targeted checks first, then the applicable quality gate from `QUALITY.md`.
 9. Record blockers instead of guessing missing symbols, commands, contracts or evidence.
 
+## Process Strand Routing
+
+- Exact `skills update` activates the `skills-agents` strand and routes to Skill Registry Conflict Auditor, Senior Documentation Engineer, Organigramm Maintainer and Process Governance Maintainer.
+- Exact `workflow create` activates the `workflow create` strand and routes through requirement clarification, five-role Three Amigos review, branch governance, workflow authoring and arc42 validation.
+- Exact `workflow execute` activates the `workflow execute` strand and routes through the workflow executor, slice role reviews, quality gates and slice checkpoint push.
+
+The strands must not be mixed. Slice checkpoint push is not `push auto`, and `push auto` belongs only to `skills-agents`.
+
 ## Output
 
 - Slice plan with scope, owners and verification commands.

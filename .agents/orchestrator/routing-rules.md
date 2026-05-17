@@ -4,6 +4,12 @@ Use these rules to select roles for a slice. Prefer the smallest set that covers
 
 ## Role Routing
 
+## Exact Command Routing
+
+- Exact `skills update` routes to the skills-agents strand, Skill Registry Conflict Auditor, Senior Documentation Engineer, Organigramm Maintainer and Process Governance Maintainer.
+- Exact `workflow create` routes to workflow create.
+- Exact `workflow execute` routes to workflow execute.
+
 - Backend domain, application, persistence, static analysis, runtime ingestion, gRPC or Protobuf work routes to `roles/senior-java-backend.md`.
 - React, frontend state, API client integration or UI component work routes to `roles/senior-react-frontend.md`.
 - Information architecture, accessibility, visualization UX or user-flow work routes to `roles/senior-ux-designer.md`.

@@ -1,5 +1,22 @@
 # Skill Inventory
 
+## Process Governance Entries
+
+| Entry | Process strand | Owner | Status |
+|---|---|---|---|
+| `skills update` command | `skills-agents` | Senior System Architect / Skill Registry Maintainer | added |
+| Skill / Agent Creator | `skills-agents` | Skill Registry Maintainer | added |
+| Skill Integrity Reviewer | `skills-agents` | Skill Registry Conflict Auditor | added |
+| Skill Registry Maintainer | `skills-agents` | Senior System Architect | added |
+| Organigramm Maintainer | `skills-agents` | Senior Documentation Engineer | added |
+| AGENTS.md Maintainer | `skills-agents` | Senior System Architect | added |
+| Process Governance Maintainer | all strands | Senior Documentation Engineer | added |
+| Push Auto Guard | `skills-agents` | Git Commit Reviewer / Git Commit Operator | added |
+| docs/workflow/workflow.md Maintainer | `workflow create` | Senior Workflow Architect | added |
+| arc42 Architecture Documentation Maintainer | `workflow create` | arc42 Architecture Governance | added |
+| Testing Documentation Maintainer | `workflow execute` | Senior Tester | added |
+| Execution Report Maintainer | `workflow execute` | Workflow Executor | added |
+
 | Skill name | File path | Purpose | Architecture zone | Slices/workflows | Possible overlaps | Status |
 |---|---|---|---|---|---|---|
 | agent-swarm-coordination-specialist | `.agents/skills/agent-swarm-coordination-specialist/SKILL.md` | Dependency graph planning and multi-agent coordination. | Orchestration | Subagent planning, review pipeline, merge coordination | swarm-coordination, swarm-orchestration | added |

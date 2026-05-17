@@ -60,3 +60,15 @@ The governance update added reusable workflow, requirement, arc42 and engineerin
 - [manual-review-required.md](manual-review-required.md)
 - [skill-inventory.md](skill-inventory.md)
 - [microservice-skill-sharpening-audit.md](microservice-skill-sharpening-audit.md)
+
+## Three-Strand Governance Addendum
+
+The reconstructed governance model adds three process strands:
+
+- `skills-agents`
+- `workflow create`
+- `workflow execute`
+
+`skills update` is the explicit command for the `skills-agents` strand. It may update skills, agents, roles, prompts, Codex agent definitions, routing rules, organigramm, the skill registry and related process documentation.
+
+`push auto` is restricted to `skills-agents`. Slice checkpoint push belongs to `workflow execute` and is not `push auto`.

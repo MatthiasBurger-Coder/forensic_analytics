@@ -1,0 +1,138 @@
+# Agent Organigramm
+
+This document maps repository governance roles to the three process strands.
+
+Root `AGENTS.md` remains authoritative. `QUALITY.md` remains authoritative for quality gates.
+
+## Overall Governance
+
+```text
+Senior System Architect
+|-- skills-agents
+|-- workflow create
+|-- workflow execute
+`-- Documentation Governance inside all active strands
+```
+
+```mermaid
+flowchart TD
+  Architect["Senior System Architect"]
+  Skills["Strand 1: skills-agents"]
+  Create["Strand 2: workflow create"]
+  Execute["Strand 3: workflow execute"]
+  Docs["Documentation Governance"]
+  Registry["Skill Registry Maintainer"]
+  Org["Organigramm Maintainer"]
+  Process["Process Governance Maintainer"]
+
+  Architect --> Skills
+  Architect --> Create
+  Architect --> Execute
+  Architect --> Docs
+  Skills --> Registry
+  Skills --> Org
+  Skills --> Process
+  Create --> Docs
+  Execute --> Docs
+```
+
+## Strand 1: skills-agents
+
+```mermaid
+flowchart TD
+  Start["skills update"]
+  Intake["Skill / Agent Intake"]
+  Integrity["Skill Integrity Reviewer"]
+  Registry["Skill Registry Maintainer"]
+  Org["Organigramm Maintainer"]
+  Agents["AGENTS.md Maintainer"]
+  Process["Process Governance Maintainer"]
+  Guard["Push Auto Guard"]
+  Ready["Ready for optional push auto"]
+  Stop["STOP and report"]
+
+  Start --> Intake --> Integrity --> Registry --> Org --> Agents --> Process --> Guard --> Ready
+  Integrity --> Stop
+  Registry --> Stop
+  Org --> Stop
+  Agents --> Stop
+  Process --> Stop
+  Guard --> Stop
+```
+
+## Strand 2: workflow create
+
+```mermaid
+flowchart TD
+  Intake["Requirement Intake"]
+  Clarify["Requirement Clarification Loop"]
+  Blocking["Blocking Questions?"]
+  Ask["Ask focused clarification questions"]
+  Incorporate["Incorporate answers"]
+  Gate["Three Amigos Requirement Gate"]
+  Branch["Branch Governance"]
+  Req["Senior Requirement Engineer"]
+  Architect["Senior System Architect"]
+  Java["Senior Java Backend Developer"]
+  React["Senior React Frontend Developer"]
+  Tester["Senior Tester"]
+  Workflow["workflow.md Maintainer"]
+  Arc42["arc42 Architecture Documentation Maintainer"]
+  WorkflowCheck["workflow.md Validation"]
+  Arc42Check["arc42 Validation"]
+  Docs["Documentation Governance"]
+  Final["Final Gate"]
+  Release["Release for workflow execute"]
+
+  Intake --> Clarify --> Blocking
+  Blocking -->|yes| Ask --> Incorporate --> Clarify
+  Blocking -->|no| Gate --> Branch --> Req --> Architect --> Java --> React --> Tester --> Workflow --> WorkflowCheck --> Arc42 --> Arc42Check --> Docs --> Final --> Release
+```
+
+## Strand 3: workflow execute
+
+```mermaid
+flowchart TD
+  Executor["workflow-executor"]
+  Swarm["Agent Swarm Orchestrator"]
+  Backend["Backend Strand"]
+  Frontend["Frontend Strand"]
+  Runtime["Docker / Runtime Strand"]
+  Docs["Documentation Strand"]
+  Gate["Slice Quality Gate"]
+  Commit["Slice Checkpoint Commit"]
+  Push["Push Workflow Branch"]
+  Final["Final Workflow Execute Gate"]
+
+  Executor --> Swarm
+  Swarm --> Backend
+  Swarm --> Frontend
+  Swarm --> Runtime
+  Swarm --> Docs
+  Backend --> Gate
+  Frontend --> Gate
+  Runtime --> Gate
+  Docs --> Gate
+  Gate --> Commit --> Push --> Final
+```
+
+## Publication Modes
+
+```mermaid
+flowchart TD
+  Checkpoint["Slice checkpoint push"]
+  Push["push"]
+  Auto["push auto"]
+  Execute["workflow execute"]
+  Pr["PR without automatic merge"]
+  Skills["skills-agents"]
+  Guard["Guarded PR lifecycle"]
+
+  Execute --> Checkpoint
+  Push --> Pr
+  Skills --> Auto --> Guard
+```
+
+Slice checkpoint push is not `push auto`.
+`push` is not `push auto`.
+`skills update` is not `push auto`.
