@@ -1,81 +1,67 @@
 # Slice Dependency Map
 
-## Governance Flowchart V2 Dependencies
+## Workflow Version
+
+| Field | Value |
+|---|---|
+| workflowVersion | `forensics-tracing-analytics-epic-alignment-20260516` |
+| workflowTitle | Align Forensics Tracing Description With The Analytics EPIC |
+| executionBranch | `docs/workflow-forensics-tracing-analytics-epic-alignment-20260516` |
+| sourceWorkflow | `docs/workflow/workflow.md` |
+
+## Dependency Graph
 
 ```mermaid
 flowchart TD
-  S00["Slice 00: Repository and governance inventory"]
-  S01["Slice 01: Branch governance confirmation"]
-  S02["Slice 02: Feedback loop limits"]
-  S03["Slice 03: S3 STOP paths"]
-  S04["Slice 04: S3_CLASSIFY default path"]
-  S05["Slice 05: Typed Error Router"]
-  S06["Slice 06: S3D execution orchestration"]
-  S07["Slice 07: Publication modes cleanup"]
-  S08["Slice 08: Commit checkpoint rollback"]
-  S09["Slice 09: Commit traceability"]
-  S10["Slice 10: D8 and Q11 separation"]
-  S11["Slice 11: Guard name sharpening"]
-  S12["Slice 12: Documentation governance separation"]
-  S13["Slice 13: Two-level flowcharts"]
-  S14["Slice 14: Agent and skill linkage"]
-  S15["Slice 15: arc42 ADR governance docs"]
-  S16["Slice 16: Final integrity check"]
+  S00["Slice 00: Repository, branch and identity preflight"]
+  S01["Slice 01: Producer fact extraction"]
+  S02["Slice 02: Analytics EPIC gap analysis"]
+  S03["Slice 03: Three Amigos requirement review"]
+  S04["Slice 04: Contract and boundary comparison"]
+  S05["Slice 05: Draft EPIC v0.2"]
+  S06["Slice 06: Producer-neutral contracts"]
+  S07["Slice 07: Documentation sync"]
+  S08["Slice 08: Leakage and sensitive-data audit"]
+  S09["Slice 09: Requirement acceptance gate"]
+  S10["Slice 10: Quality, commit and optional push"]
 
-  S00 --> S01 --> S02
-  S02 --> S03 --> S04 --> S06
-  S02 --> S05 --> S06
+  S00 --> S01
+  S00 --> S02
+  S01 --> S03
+  S02 --> S03
+  S01 --> S04
+  S02 --> S04
   S03 --> S05
-  S05 --> S07 --> S08 --> S09
-  S05 --> S10
-  S02 --> S11 --> S12
-  S03 --> S13
-  S04 --> S13
-  S05 --> S13
-  S06 --> S13
-  S07 --> S13
-  S08 --> S13
-  S12 --> S13
-  S13 --> S14 --> S15 --> S16
-  S09 --> S16
-  S10 --> S16
+  S04 --> S05
+  S05 --> S06
+  S06 --> S07
+  S07 --> S08
+  S08 --> S09
+  S09 --> S10
 ```
 
 ## Execution Rule
 
-S3D uses the metadata matrix in `docs/workflow/workflow.md` as the source of
-truth. This diagram is a projection for human review and must stay consistent
-with the explicit dependency list.
+The slice table in `docs/workflow/workflow.md` is the source of truth. This
+diagram is a human-readable projection and must stay consistent with the slice
+metadata.
 
-Each slice must complete its role review, diff review and quality gate before it can be committed.
+## Parallelization
 
-Each slice checkpoint commit must represent exactly one slice.
+Read-only work may be parallelized:
 
-The checkpoint push target is:
+- Slice 01 and Slice 02 after Slice 00.
+- Contract file reading for Slice 04 may begin during Slice 02.
 
-```text
-origin/architecture/workflow-governance-flowchart-v2-20260517
-```
+Write-capable work is serial because EPIC, arc42, ADR and README files can
+overlap during requirement alignment.
 
-Slice checkpoint push must not:
+## Lock Rules
 
-- push to `main`
-- create or merge a PR
-- run `push auto`
-- clean up branches
-- force-push
-
-## Parallelization Candidates
-
-Parallel execution is allowed only when S3D proves file, contract and architecture-boundary locks are disjoint.
-
-S3D must stop before parallel write-capable work when dependencies are missing,
-referenced slice IDs are unknown, a dependency cycle exists, a dependency range
-is not expanded to explicit slice IDs, or file, contract, module or
-architecture-boundary locks overlap. Overlapping locks route as `LOCK_CONFLICT`.
-
-Candidate groups:
-
-- Slice 07 and Slice 11 after Slice 05, if publication and guard-name files are disjoint.
-- Slice 09 and Slice 10 after Slice 08, if traceability and reporting files are disjoint.
-- Slice 14 read-only inventory may start during Slice 13, but write activity must wait until Slice 13 is complete.
+- `docs/epics/**` is locked by Slice 05 and Slice 06.
+- `docs/README.md`, `docs/arc42/**`, `docs/adr/**` and `docs/architecture/**`
+  are locked by Slice 07.
+- Leakage fixes after Slice 08 must touch only files already changed by prior
+  slices unless a reviewer approves the additional documentation path.
+- Product code, frontend code, services, contracts, deployment files, examples,
+  data and build logic are blocked paths.
