@@ -20,11 +20,12 @@ Coordinate small implementation slices across roles while preserving architectur
 2. Verify the active branch belongs to the current workflow before any file modification.
 3. Identify affected modules, documentation and quality checks.
 4. Apply engineering governance when EPIC, arc42, requirements, resilience, quality expectations or workflows may drift.
-5. Select the smallest set of roles needed for the slice.
-6. Assign non-overlapping file ownership when multiple workers are explicitly requested.
-7. Keep implementation slices small enough to test and review independently.
-8. Run targeted checks first, then the applicable quality gate from `QUALITY.md`.
-9. Record blockers instead of guessing missing symbols, commands, contracts or evidence.
+5. For `workflow execute`, run S3D orchestration: extract slice metadata, build the dependency graph, run topological sort and verify file, contract, module and architecture-boundary locks.
+6. Select the smallest set of roles needed for the slice.
+7. Assign non-overlapping file ownership when multiple workers are explicitly requested.
+8. Keep implementation slices small enough to test and review independently.
+9. Run targeted checks first, then the applicable quality gate from `QUALITY.md`.
+10. Record blockers instead of guessing missing symbols, commands, contracts or evidence.
 
 ## Process Strand Routing
 
@@ -33,6 +34,19 @@ Coordinate small implementation slices across roles while preserving architectur
 - Exact `workflow execute` activates the `workflow execute` strand and routes through the workflow executor, slice role reviews, quality gates and slice checkpoint push.
 
 The strands must not be mixed. Slice checkpoint push is not `push auto`, and `push auto` belongs only to `skills-agents`.
+
+## S3D Execution Orchestration
+
+S3D belongs to the `workflow execute` strand. It reads the checked workflow
+metadata, validates dependencies, rejects cycles, forms topological execution
+groups and allows parallel write-capable work only when file, contract, module
+and architecture-boundary locks are disjoint.
+
+If S3D finds missing metadata, ambiguous dependency ranges, unknown slice IDs,
+cycles or overlapping locks, it stops before implementation. Lock conflicts
+route as `LOCK_CONFLICT`; dependency or metadata blockers escalate through the
+Workflow Executor or Root Architect path. S3D must not call `workflow create` or
+rewrite the active workflow during execution.
 
 ## Output
 

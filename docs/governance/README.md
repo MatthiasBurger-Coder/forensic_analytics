@@ -19,6 +19,23 @@ The governance system keeps these artifacts synchronized:
 Root `AGENTS.md` remains the authority for engineering rules. Root `QUALITY.md` remains the authority for verification commands.
 
 Process command semantics are documented in [../process/](../process/). Agent ownership, organigramm and skill registry material are documented in [../agents/](../agents/).
+The canonical Governance Flowchart V2 diagram package is documented in
+[workflow/](workflow/).
+
+## Documentation Governance
+
+`DOCROOT` is the global documentation-governance check. It verifies process
+documentation, role model, organigramm, arc42 structure, governance rules,
+workflow conventions and hard boundaries. It is not a local documentation task.
+
+Local documentation nodes update concrete artifacts:
+
+- `S1_DOC` updates skills-agents artifacts.
+- `S2_DOC` updates workflow-create artifacts.
+- `S3_DOC` updates workflow-execute artifacts.
+
+Local documentation nodes write the concrete changes. `DOCROOT` checks that the
+global documentation model remains consistent.
 
 ## Governance Flow
 

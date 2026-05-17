@@ -16,6 +16,10 @@ It is used to create, update, audit, reconnect or refactor:
 - AGENTS.md governance sections
 - arc42 or ADR notes when they document agent-governance consequences
 
+The local documentation node for this strand is `S1_DOC`. `S1_DOC` updates
+concrete skills-agents artifacts. `DOCROOT` separately checks global
+documentation consistency and is not a local replacement for `S1_DOC`.
+
 ## Required Flow
 
 ```mermaid
@@ -29,7 +33,7 @@ flowchart TD
   Org["Organigramm Review"]
   Registry["Skill Registry Review"]
   Agents["AGENTS.md Impact Review"]
-  Docs["Process Documentation Review"]
+  Docs["S1_DOC: Process Documentation Review"]
   Gate["Final skills-agents gate"]
   Ready["Ready for optional push auto"]
   Stop["STOP and report"]
@@ -43,6 +47,10 @@ flowchart TD
   Agents --> Stop
   Docs --> Stop
 ```
+
+## Bounded Automatic Corrections
+
+The current `skills-agents` flow stops and reports on review failures. If an automatic skills-agents correction loop is explicitly authorized in a future workflow, it is capped at `maxRetries = 3` and then escalates to the Root Architect.
 
 ## Allowed Files
 
@@ -72,7 +80,9 @@ flowchart TD
 
 `skills update` may prepare a change for publication, but it does not run `push auto`.
 
-`push auto` remains a separate explicit command and is allowed only after the skills-agents guard passed.
+`push auto` remains a separate explicit command and is allowed only after the
+skills-agents publication guard passed. The guard may also accept
+governance-only workflow documentation under `docs/workflow/**`.
 
 `skills update` is not `workflow create`.
 `skills update` is not `workflow execute`.

@@ -6,6 +6,12 @@ This strand sharpens requirements, validates architecture impact, creates or upd
 
 `workflow create` must not implement backend code, frontend code, Docker/runtime code, analytics implementation code, contracts implementation or database implementation.
 
+The local documentation node for this strand is `S2_DOC`. `S2_DOC` updates
+concrete workflow-create artifacts such as the requirement gate result,
+`docs/workflow/workflow.md`, workflow handoff and checked arc42 impact.
+`DOCROOT` separately checks global documentation consistency and is not a
+workflow-create editing step.
+
 ## Required Flow
 
 ```mermaid
@@ -14,8 +20,10 @@ flowchart TD
   Intake["Requirement Intake"]
   Clarify["Requirement Clarification Loop"]
   Blocking["Blocking Questions?"]
+  Retry{"Clarification attempts <= 3?"}
   Ask["Ask focused clarification questions"]
   Incorporate["Incorporate answers"]
+  Escalate["STOP: Root Architect escalation"]
   Gate["Three Amigos Requirement Gate"]
   Branch["Branch Governance / Branch Verification"]
   Req["Senior Requirement Engineer review"]
@@ -27,13 +35,15 @@ flowchart TD
   WorkflowCheck["workflow.md Validation"]
   Arc42["Update or check arc42"]
   Arc42Check["arc42 Validation"]
-  Docs["Documentation Governance review"]
+  Docs["S2_DOC: Documentation Governance review"]
   Final["Final workflow-create gate"]
   Approved["Approved for workflow execute"]
   Stop["STOP and return to gate"]
 
   Start --> Intake --> Clarify --> Blocking
-  Blocking -->|yes| Ask --> Incorporate --> Clarify
+  Blocking -->|yes| Retry
+  Retry -->|yes| Ask --> Incorporate --> Clarify
+  Retry -->|no| Escalate
   Blocking -->|no| Gate --> Branch --> Req --> Arch --> Java --> React --> Tester --> Workflow --> WorkflowCheck --> Arc42 --> Arc42Check --> Docs --> Final --> Approved
   Gate --> Stop
   WorkflowCheck --> Stop
@@ -42,6 +52,14 @@ flowchart TD
 ```
 
 ## Requirement Clarification Loop
+
+Automatic clarification attempts are capped at:
+
+```text
+maxRetries = 3
+```
+
+After three unresolved attempts, `workflow create` must STOP and escalate to the Root Architect. Validation correction loops use the same cap and must not silently continue.
 
 The loop must record:
 

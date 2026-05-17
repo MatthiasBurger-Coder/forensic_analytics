@@ -25,6 +25,18 @@ This skill orchestrates quality evidence. It does not weaken tests, lower covera
 
 The Quality Gate Orchestrator may block slice continuation, commit readiness or push readiness when required gates fail, are missing or cannot be verified.
 
+## D8 And Q11 Boundary
+
+`D8` is the synchronous blocking quality decision for workflow-execute commit,
+checkpoint push and release readiness. It blocks on failed build, failed tests,
+architecture violation, missing required documentation, missing workflow
+version or failed required quality gate.
+
+`Q11` is asynchronous reporting after the checkpoint path reaches `CP_FINAL`.
+It is non-blocking by default for commit, checkpoint push, normal PR creation
+and release preparation. Regulatory or compliance reporting blocks only when
+the active workflow explicitly declares that report as a `D8` requirement.
+
 ## Forbidden
 
 - Do not invent Gradle tasks, scripts or CI jobs.
@@ -49,6 +61,7 @@ The Quality Gate Orchestrator may block slice continuation, commit readiness or 
 - slice quality plan
 - quality result report
 - failure-handling report
+- typed error-router classification, owner, retry count, next action and rerun command
 - required gate classification
 - commit-readiness quality summary
 
@@ -69,4 +82,6 @@ Stop and report when:
 - build, tests, coverage, dependency verification or architecture checks fail;
 - a workflow plans commit or push despite failed required gates;
 - a failure has no summary, owner or next action;
+- a workflow-execute failure has no Typed Error Router category;
+- automatic targeted-fix retries would exceed `maxRetries = 3`;
 - continuing would require guessing task names or quality authority.

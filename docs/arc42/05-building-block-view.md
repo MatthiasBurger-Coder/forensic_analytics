@@ -156,9 +156,11 @@ facts, incident records, correlation indexes or database migrations.
 
 ## 5.10 Agent Governance Building Blocks
 
-The complete agent governance diagrams are maintained in
-`docs/agents/organigramm.md` and explained in
-`docs/agents/agent-governance.md`. The arc42 building-block view embeds the
+ADR-0021 accepts Governance Flowchart V2 as the active repository governance
+model. The canonical Governance Flowchart V2 diagrams are maintained in
+`docs/governance/workflow/`. Agent governance explanations remain in
+`docs/agents/agent-governance.md`, and the role organigramm remains in
+`docs/agents/organigramm.md`. The arc42 building-block view embeds the
 architecture-relevant governance overview and publication-mode separation
 directly because they define ownership boundaries for repository changes.
 
@@ -168,7 +170,7 @@ flowchart TD
   Skills["Strand 1: skills-agents"]
   Create["Strand 2: workflow create"]
   Execute["Strand 3: workflow execute"]
-  Docs["Documentation Governance"]
+  Docs["DOCROOT: Global Documentation Governance"]
   Registry["Skill Registry Maintainer"]
   Org["Organigramm Maintainer"]
   Process["Process Governance Maintainer"]
@@ -177,6 +179,9 @@ flowchart TD
   Architect --> Create
   Architect --> Execute
   Architect --> Docs
+  Docs --> Skills
+  Docs --> Create
+  Docs --> Execute
   Skills --> Registry
   Skills --> Org
   Skills --> Process
@@ -187,15 +192,23 @@ flowchart TD
 | Building Block | Responsibility |
 |---|---|
 | Senior System Architect | Owns architecture and process-strand governance. |
-| Documentation Governance | Keeps AGENTS.md, process docs, workflow docs, arc42, ADRs and skill-audit material synchronized. |
+| `DOCROOT` | Checks global consistency for process documentation, role model, organigramm, arc42 structure, governance rules, workflow conventions and hard boundaries. |
+| `S1_DOC` | Updates concrete skills-agents documentation artifacts. |
+| `S2_DOC` | Updates concrete workflow-create documentation artifacts. |
+| `S3_DOC` | Updates concrete workflow-execute documentation artifacts. |
 | Skill Registry Maintainer | Maintains the skills-agents registry and ownership map. |
 | Organigramm Maintainer | Maintains agent role hierarchy and process-strand diagrams. |
 | Process Governance Maintainer | Maintains command and publication-mode documentation. |
-| Push Auto Guard | Blocks `push auto` outside `skills-agents` and blocks product implementation changes from `push auto`. |
+| `S1_PUSH_ELIGIBILITY_GUARD` | Blocks `push auto` outside `skills-agents` and blocks product implementation changes from `push auto`. |
+| `PUB_PR_MERGE_GUARD` | Decides whether a PR may merge, stay open, be blocked or be rejected. |
 | docs/workflow/workflow.md Maintainer | Maintains the checked active workflow produced by `workflow create`. |
 | arc42 Architecture Documentation Maintainer | Checks or updates arc42 before workflow execute is released. |
+| S3D Execution Orchestrator | Extracts slice metadata, builds the dependency graph, runs topological sort and enforces file, contract, module and architecture-boundary locks. |
+| Typed Error Router | Classifies workflow-execute validation failures before retry, targeted fix or escalation. |
+| `CP_ROLLBACK` | Decides between file revert, slice-commit revert, fix slice, branch discard, workflow recut or Root Architect escalation. |
 | Testing Documentation Maintainer | Maintains workflow test strategy and quality-gate evidence. |
 | Execution Report Maintainer | Records slice checkpoint commit SHA, push result and blockers during `workflow execute`. |
+| Governance Flowchart V2 diagram package | Maintains the Level 1 overview and Level 2 subgraphs used for flowchart integrity review. |
 
 ### Senior System Architect
 
@@ -228,16 +241,29 @@ Responsibilities:
 
 - load checked workflow
 - load checked arc42 documentation
+- check `S3_STATUS` working-tree safety before routing slices
+- check `S3_BRANCH` execution branch safety before routing slices
+- check `S3_SCOPE` workflow scope safety before classifying slices
 - classify backend, frontend, runtime and documentation work
+- run S3D dependency, topological-order and lock checks
+- route explicitly declared governance, metadata and documentation-only slices through `S3_DOC` only when the checked workflow declares that scope
+- stop and escalate unclassifiable slices through `S3_UNCLASSIFIED` instead of executing them automatically
 - route to roles or subagents
 - run Slice Quality Gates
-- create Slice Checkpoint Commit
+- route quality-gate or validation failures through the Typed Error Router
+- create a one-slice Slice Checkpoint Commit
 - push workflow branch to origin
 - update execution report and arc42 consistency
 
 ### Documentation Governance
 
-Runs inside every active strand. It is mandatory but not a fourth strand.
+Local documentation nodes update concrete artifacts in the active strand:
+`S1_DOC` for skills-agents, `S2_DOC` for workflow create and `S3_DOC` for
+workflow execute.
+
+`DOCROOT` checks that workflow, process, agent, arc42 and ADR artifacts remain
+synchronized with the global governance model. `DOCROOT` is not a fourth
+process strand and does not replace local documentation nodes.
 
 ### Publication Modes
 
@@ -249,7 +275,7 @@ flowchart TD
   Execute["workflow execute"]
   Pr["PR without automatic merge"]
   Skills["skills-agents"]
-  Guard["Guarded PR lifecycle"]
+  Guard["PUB_PR_MERGE_GUARD"]
 
   Execute --> Checkpoint
   Push --> Pr

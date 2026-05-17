@@ -34,7 +34,20 @@
 | skills-agents | Process strand for skills, agents, roles, prompts, routing rules, organigramm, skill registry and process documentation |
 | workflow create | Process strand that clarifies requirements, creates or sharpens workflow.md, checks arc42 and releases workflow execute |
 | workflow execute | Process strand that executes checked workflow slices with tests, quality gates and slice checkpoint pushes |
+| S3D | Workflow-execute Execution Orchestrator that extracts slice metadata, builds the dependency graph, runs topological sort and checks file, contract, module and architecture-boundary locks |
+| S3_CLASSIFY | Workflow-execute slice classification node for backend, frontend, runtime/DevOps/contracts and declared documentation/governance/metadata slices |
+| S3_UNCLASSIFIED | STOP node for slices that cannot be classified from the checked workflow |
+| D8 | Synchronous blocking quality and release-readiness gate before commit, checkpoint push and release readiness |
+| Q11 | Asynchronous execution report path after `CP_FINAL`; non-blocking by default unless explicitly promoted to D8 |
+| CP_RECORD | Slice traceability record containing workflow version, slice ID, responsible agent, changed files, quality gates, result, commit hash, rollback reference and documentation update status |
+| CP_ROLLBACK | Rollback and revert decision node for failed quality gates, failed checkpoint push or publication failure |
+| PUB_PR_RESULT | Publication outcome for a PR that remains open without automatic merge |
+| PUB_DONE | Publication completion terminal |
+| PUB_PUSH_FAILED | Publication failure terminal that routes to rollback or escalation |
+| PUB_REJECTED | Publication rejection terminal for scope, branch, governance or guard failures |
 | Requirement Clarification Loop | Workflow-create loop for intent, requirements, assumptions, risks, questions, confidence and readiness decision |
+| maxRetries | Maximum number of automatic governance clarification, feedback or correction attempts before STOP and Root Architect escalation; currently `maxRetries = 3` |
+| Typed Error Router | Workflow-execute quality and validation failure router that classifies failures as `ARCH_VIOLATION`, `BUILD_FAILURE`, `TEST_FAILURE`, `DOC_GOVERNANCE_FAILURE`, `LOCK_CONFLICT` or `UNKNOWN_FAILURE` before retry or escalation |
 | Blocking Questions | Questions that affect architecture boundaries, testability, data ownership, service boundaries, APIs, contracts, runtime behavior or scope |
 | Slice checkpoint push | Workflow-execute publication step that commits only the completed slice and pushes the current workflow branch to origin |
 | push auto | skills-agents-only guarded PR lifecycle that may merge and clean up after guard checks pass |
@@ -68,3 +81,28 @@ Guarded publication mode restricted to the `skills-agents` strand.
 ### Documentation Governance
 
 Mandatory documentation synchronization inside every active process strand.
+
+### DOCROOT
+
+Global documentation-governance check for process documentation, role model,
+organigramm, arc42 structure, governance rules, workflow conventions and hard
+boundaries.
+
+### S1_DOC
+
+Local documentation node for `skills-agents`.
+
+### S2_DOC
+
+Local documentation node for `workflow create`.
+
+### S3_DOC
+
+Local documentation node for `workflow execute`.
+
+### Governance Flowchart V2
+
+Repository governance model accepted by ADR-0021. It adds S3 safety preflight,
+Typed Error Router ownership, S3D orchestration, `CP_ROLLBACK`, explicit
+publication terminals, one-slice-one-commit traceability and two-level
+flowcharts.

@@ -8,6 +8,21 @@ description: Keeps project documentation, examples, workflow files, ADRs, archit
 ## Description
 Keeps project documentation, examples, workflow files, ADRs, architecture docs, and process instructions consistent with the current implementation.
 
+## Documentation Governance Nodes
+
+`DOCROOT` checks global documentation consistency for process documentation,
+role model, organigramm, arc42 structure, governance rules, workflow
+conventions and hard boundaries.
+
+Local documentation nodes update concrete artifacts:
+
+- `S1_DOC`: skills-agents documentation.
+- `S2_DOC`: workflow-create documentation.
+- `S3_DOC`: workflow-execute documentation.
+
+Do not treat `DOCROOT` as a local documentation step or a fourth process
+strand.
+
 ## Instructions
 1. Inspect README files.
 2. Inspect AGENTS.md.

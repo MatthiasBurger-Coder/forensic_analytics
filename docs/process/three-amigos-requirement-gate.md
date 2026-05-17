@@ -50,3 +50,5 @@ Questions are blocking when they affect:
 - scope
 
 When blocking questions remain, the gate must ask focused clarification questions and must not release `workflow execute`.
+
+Automatic clarification attempts are capped at `maxRetries = 3`. After the third unresolved attempt, the gate must STOP, return `REQUIRES_REFINEMENT` and escalate to the Root Architect instead of continuing the loop.

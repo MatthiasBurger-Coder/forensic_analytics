@@ -19,12 +19,20 @@ Use these rules to select roles for a slice. Prefer the smallest set that covers
 - Cross-service REST/OpenAPI, gRPC/protobuf or event contract governance routes to `skills/contract-governance-expert/SKILL.md`.
 - Production microservice migration safety, rollback, strangler strategy or multi-service risk gates route to `skills/microservice-migration-safety-gate/SKILL.md`.
 - Microservice runtime independence, healthcheck, observability or container-readiness evidence routes to `skills/microservice-runtime-readiness-expert/SKILL.md`.
-- Test strategy, regression coverage, ArchUnit, coverage gates or quality failures route to `roles/senior-tester.md`.
+- Test strategy, regression coverage, ArchUnit or coverage-gate design routes to `roles/senior-tester.md`.
+- Quality or validation failures in `workflow execute` route through the Typed Error Router before any retry:
+  - `ARCH_VIOLATION` routes to Root Architect escalation, `roles/senior-system-architect.md` and `skills/architecture-hexagonal/SKILL.md`.
+  - `BUILD_FAILURE` routes to the responsible backend or frontend owner plus `roles/senior-devops.md`; Gradle-specific failures also route to `skills/build-gradle/SKILL.md`.
+  - `TEST_FAILURE` routes to `roles/senior-tester.md` and the responsible slice agent.
+  - `DOC_GOVERNANCE_FAILURE` routes to `roles/senior-documentation-engineer.md` and `roles/senior-requirement-engineer/SKILL.md`.
+  - `LOCK_CONFLICT` routes to `roles/senior-swarm-orchestrator.md` and Root Architect escalation.
+  - `UNKNOWN_FAILURE` routes to Root Architect escalation.
 - Gradle, Docker, Kubernetes, CI, observability or deployment work routes to `roles/senior-devops.md`.
 - New workflow creation, full `docs/workflow` regeneration, slice dependency planning or planning-risk review routes to `roles/senior-workflow-architect/SKILL.md`.
 - EPIC consistency, requirement drift, requirement classification, assumption tracking or requirement-to-architecture synchronization routes to `roles/senior-requirement-engineer/SKILL.md`.
 - Incoming requirement gatekeeping before workflow authoring, Three Amigos review, acceptance-criteria validation, dependency/deadlock checks or `READY_FOR_WORKFLOW` versus `REQUIRES_REFINEMENT` decisions route to `skills/three-amigos-requirement-gatekeeper/SKILL.md`.
 - Multi-role coordination, conflict resolution or slice planning routes to `roles/senior-swarm-orchestrator.md`.
+- S3D execution orchestration, dependency graph construction, topological sorting, parallelization grouping or file/contract/module/architecture-boundary conflict locks route to `roles/senior-swarm-orchestrator.md`.
 - Protobuf contracts, streaming RPC design, request validation or gRPC compatibility route to `roles/senior-grpc-proto-specialist.md`.
 - Repository checkout, workspace lifecycle, source-root preparation or large Git repositories route to `roles/senior-git-workspace-specialist.md`.
 - Plugin producer handoff, plugin-side request construction or plugin-to-server communication routes to `roles/senior-plugin-integration-developer.md`.
@@ -33,6 +41,17 @@ Use these rules to select roles for a slice. Prefer the smallest set that covers
 - Performance budgets, large repository metrics, timeouts, quotas or scalability testing route to `roles/senior-performance-engineer.md`.
 - Analysis-session storage, raw ingestion storage, artifact storage or projection boundaries route to `roles/senior-analysis-storage-architect.md`.
 - Joern, Code Property Graph, semantic artifact handling or CPG large-project planning route to `roles/senior-joern-cpg-specialist.md`.
+- Root Architect escalation routes through the documented Root Architect
+  decision path and `roles/senior-system-architect.md` until a dedicated
+  Root Architect role file exists.
+- Rollback governance routes to `skills/release-branch-governance/SKILL.md`,
+  `skills/git-commit-preparation/SKILL.md` and `roles/senior-devops.md`.
+- Quality gate classification routes to
+  `skills/quality-gate-orchestrator/SKILL.md`, `skills/quality-gate/SKILL.md`
+  and `roles/senior-tester.md`.
+- Flowchart integrity audit routes to `roles/senior-documentation-engineer.md`
+  and `roles/senior-system-architect.md` using the review rules in
+  `docs/governance/workflow/README.md` until a dedicated skill exists.
 
 ## Escalation
 

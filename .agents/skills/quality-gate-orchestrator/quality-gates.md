@@ -46,3 +46,14 @@ Documentation-only checks do not replace the minimum quality command when claimi
 - Missing required gate evidence blocks commit and push.
 - Optional external checks may be documented as skipped only when they are not required by `QUALITY.md`, workflow or CI policy.
 - `./gradlew clean check` is diagnostic unless the repository wires every required task into `check`.
+
+## D8 And Q11 Mapping
+
+`D8` is the blocking quality and release-readiness decision. It includes failed
+build, failed tests, architecture violation, missing required documentation,
+missing workflow version and failed required quality gates.
+
+`Q11` is asynchronous execution reporting after a successful checkpoint path.
+Q11 is non-blocking by default for commit, push, PR creation and release
+preparation. Regulatory or compliance reporting blocks only when the active
+workflow explicitly declares it as a D8 requirement.

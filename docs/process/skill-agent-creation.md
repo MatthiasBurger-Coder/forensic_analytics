@@ -59,6 +59,8 @@ STOP: This branch reconstruction must not change product implementation files.
 9. Final skills-agents gate
 10. Optional release preparation for `push auto`
 
+The skills-agents flow is intentionally linear: review failures STOP and report. If an automatic correction loop is explicitly authorized, it is capped at `maxRetries = 3` and then escalates to the Root Architect.
+
 ## Integrity Review
 
 Each changed skill, role, prompt or agent definition must have:
@@ -86,7 +88,8 @@ The final skills-agents gate must confirm:
 - `QUALITY.md` remains authoritative
 - the change is documentation or governance only
 - no forbidden files changed
-- `push auto` is still limited to `skills-agents`
+- `push auto` is still limited to skills, agents, process governance and
+  governance-only workflow documentation scope
 - the branch is not `main`, `master`, `develop` or another shared branch
 - `git diff --check` passes before commit
 

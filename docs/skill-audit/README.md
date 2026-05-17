@@ -36,7 +36,9 @@ The audit keeps the producer/consumer boundary explicit:
 - `docs/workflow/` when present
 - root `workflow.md` when present
 
-The repository root `README.md`, root `workflow.md` and `docs/workflow/` directory were not present during this audit. The documentation root `docs/README.md` was present and inspected.
+The repository root `README.md` and root `workflow.md` were not present during
+the original audit. `docs/workflow/` exists after Governance Flowchart V2 and
+is now an active workflow documentation package.
 
 ## Repository Baseline Verified
 
@@ -60,6 +62,7 @@ The governance update added reusable workflow, requirement, arc42 and engineerin
 - [manual-review-required.md](manual-review-required.md)
 - [skill-inventory.md](skill-inventory.md)
 - [microservice-skill-sharpening-audit.md](microservice-skill-sharpening-audit.md)
+- [governance-flowchart-v2-linkage.md](governance-flowchart-v2-linkage.md)
 
 ## Three-Strand Governance Addendum
 

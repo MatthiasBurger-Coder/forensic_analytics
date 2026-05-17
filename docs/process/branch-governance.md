@@ -48,6 +48,64 @@ It must:
 6. push the current workflow branch to `origin`
 7. record the commit SHA and push result in the execution report
 
+A successful checkpoint branch push is `PUB_DONE`. A failed checkpoint branch
+push is `PUB_PUSH_FAILED` and must route to `CP_ROLLBACK` when a rollback point
+exists, otherwise to Root Architect escalation.
+
+Checkpoint governance uses this control flow:
+
+```mermaid
+flowchart TD
+  QG_START["QG_START"] --> QG_PASS{"Quality Gate passed?"}
+  QG_PASS -->|yes| CP_RECORD["CP_RECORD"]
+  QG_PASS -->|no| QG_STOP["QG_STOP"]
+  QG_STOP --> CP_ROLLBACK["CP_ROLLBACK"]
+  CP_RECORD --> CP_COMMIT["CP_COMMIT: Commit exact slice"]
+  CP_COMMIT --> CP_PUSH["CP_PUSH"]
+  CP_PUSH -->|success| CP_FINAL["CP_FINAL"]
+  CP_PUSH -->|failed| CP_ROLLBACK
+  CP_FINAL --> CMD_PUSH["CMD_PUSH"]
+  CP_FINAL --> RELEASE["RELEASE"]
+  CP_FINAL --> Q11["Q11: Async Execution Report"]
+  CP_ROLLBACK --> RA["Root Architect Decision"]
+```
+
+`CP_ROLLBACK` chooses between current-slice file revert, one slice-commit
+revert, a new fix slice, branch discard with explicit approval, manual workflow
+recut or Root Architect escalation. It is not blind `git reset --hard`, a
+force-push, branch cleanup or hidden history rewrite.
+
+Each checkpoint commit must map to exactly one slice and one active workflow
+version. `CP_RECORD` must capture:
+
+```text
+workflowVersion
+sliceId
+sliceTitle
+responsibleAgent
+changedFiles
+qualityGateCommands
+qualityGateResult
+commitHash
+rollbackReference
+arc42Updated
+adrUpdated
+```
+
+`commitHash` is filled after `CP_COMMIT` succeeds. Until then it is recorded as
+`pending`; the post-commit checkpoint report must replace or supplement it with
+the actual hash and push result.
+
+`D8` is the blocking gate for checkpoint commit and release readiness. It blocks
+commit or release when build, tests, architecture validation, required
+documentation, workflow versioning or any required quality gate fails or is
+missing.
+
+`Q11` is the asynchronous execution report after `CP_FINAL`. It is
+non-blocking by default and must not block checkpoint push, normal PR creation
+or release preparation unless the active workflow explicitly promotes a
+regulatory or compliance report to a `D8` requirement.
+
 It must not:
 
 - create or merge a PR
@@ -55,3 +113,14 @@ It must not:
 - run `push auto`
 - force-push
 - push to `main`
+
+## Publication Outcomes
+
+`push` and `push auto` use the same outcome names without sharing authority:
+
+- `PUB_PR_RESULT`: normal `push` opened or updated a PR and performed no automatic merge.
+- `PUB_DONE`: publication completed and was verified.
+- `PUB_PUSH_FAILED`: push failed and requires rollback or escalation.
+- `PUB_REJECTED`: governance, scope, branch or guard rules blocked publication.
+
+`PUB_PUSH` must not point to itself.

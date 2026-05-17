@@ -26,6 +26,7 @@
 | ADR-0018 | Author initial logical service contracts before implementation | Accepted | Allows planned REST, gRPC and event contracts before implementation while keeping planned design distinct from verified runtime evidence |
 | ADR-0019 | Allow Spring Boot at service bootstrap boundaries | Accepted | Permits independent service Spring Boot entrypoints while preserving framework-free service domain and application code |
 | ADR-0020 | Agent Governance Process Strands | Accepted | Defines `skills-agents`, `workflow create`, `workflow execute`, slice checkpoint push, `push` and `push auto` publication separation |
+| ADR-0021 | Governance Flowchart V2 | Accepted | Adds S3 STOP paths, Typed Error Router, S3D orchestration, rollback, one-slice-one-commit traceability and two-level flowcharts |
 
 ## 9.2 Open Decisions
 

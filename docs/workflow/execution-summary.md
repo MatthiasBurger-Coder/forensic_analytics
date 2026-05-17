@@ -2,56 +2,129 @@
 
 ## Branch
 
-`architecture/workflow-align-agent-workflow-strands-20260517`
+`architecture/workflow-governance-flowchart-v2-20260517`
 
-## Restored Commands
+## Workflow Create Status
 
-- `skills update`
-- `workflow create`
-- `workflow execute`
-
-## Confirmed Process Strands
-
-- `skills-agents`
-- `workflow create`
-- `workflow execute`
-
-## Confirmed Publication Modes
-
-- Slice checkpoint push
-- `push`
-- `push auto`
-
-## Checkpoint Semantics
-
-Workflow creation itself does not commit or push product implementation changes. During workflow execute, each successfully completed slice must create a slice-scoped checkpoint commit and push the current workflow branch to origin after the slice quality gate passes.
-
-Slice checkpoint push is not `push auto`.
-
-`push auto` belongs only to `skills-agents`.
-
-## Current Completed Slices
-
-| Slice | Commit message | Status |
-|---|---|---|
-| 01 | `8a487e2 docs(agents): define process strands and skills update command` | pushed |
-| 02 | `21e11a3 docs(process): restore skills update and push auto governance` | pushed |
-| 03 | `6aadb1f docs(workflow): restore requirement clarification gate` | pushed |
-| 04 | `16b18d9 docs(workflow): restore slice checkpoint execution` | pushed |
-| 05 | `0af6ac4 docs(git): restore checkpoint push governance` | pushed |
-| 06 | `f9fd18f docs(agents): restore organigramm and skill registry` | pushed |
-| 07 | `5fac3dd docs(arc42): restore governance architecture records` | pushed |
-| 08 | `23d861b docs(workflow): restore active workflow checkpoint semantics` | pushed |
-| 09 | `4e802cd agent(codex): restore command prompts and operators` | pushed |
-| 10 | `docs(workflow): validate reconstructed governance branch` | recorded by final checkpoint |
-
-## Validation
-
-| Command | Result |
+| Item | Result |
 |---|---|
-| `git status --short --branch` | PASS |
-| `git diff main...HEAD --name-status` | PASS |
-| `git diff --check main...HEAD` | PASS |
-| Required governance term search with `rg` | PASS |
-| Forbidden path check with `git diff --name-only main...HEAD \| rg ...` | PASS, no forbidden file output |
-| `./gradlew test --dependency-verification strict --console=plain --stacktrace` | PASS |
+| Repository root verified | `/mnt/d/Projects/forensic_analytics` |
+| Dedicated branch created | `architecture/workflow-governance-flowchart-v2-20260517` |
+| Active branch verified | PASS |
+| Root `AGENTS.md` read | PASS |
+| `QUALITY.md` read | PASS |
+| Existing workflow package inspected | PASS |
+| Role reviews requested | PASS |
+| Product implementation touched | NO |
+
+## Active Workflow
+
+The active workflow is Governance Flowchart V2.
+
+It is a governance and documentation workflow that prepares later `workflow execute` slices for:
+
+- bounded feedback loops
+- S3 STOP-and-report paths
+- typed error routing
+- S3D execution orchestration
+- conflict locks
+- publication terminals
+- commit, checkpoint and rollback governance
+- one-slice-one-commit traceability
+- global versus local documentation governance
+- two-level flowchart documentation
+- arc42 and ADR synchronization
+
+## Publication Compatibility
+
+This branch updates `docs/workflow/**`, so it is a `workflow create` branch.
+The `push auto` guard now allows governance-only workflow documentation when no
+blocked implementation files changed.
+
+Use normal `push`/PR publication or `push auto` after the guard confirms that
+the branch remains governance-only and inside the allowlist in
+`docs/process/push-auto.md`.
+
+## Review Resolution
+
+Read-only role reviews found that terms such as `S3D`, `CP_ROLLBACK`, `DOCROOT`, `R10`, `R11` and Typed Error Router are not existing repository terms.
+
+Resolution: the user request defines these as target Governance Flowchart V2 semantics. The workflow treats them as introduced governance labels. Later execution slices must add or map them explicitly and must stop if a target artifact cannot be verified.
+
+## Slice Execution Status
+
+| Slice | Status | Notes |
+|---|---|---|
+| 00 | Completed | Inventory expanded with concrete target artifacts, quality commands from `QUALITY.md`, introduced V2 labels and target-file inference risk. Verification: `git status --short`, `git diff --check`, slice diff review. |
+| 01 | Completed | Branch governance confirmed for `architecture/workflow-governance-flowchart-v2-20260517`; active branch, local ref, upstream, remote-tracking ref and clean pre-slice status verified. |
+| 02 | Completed | Bounded governance feedback loops with `maxRetries = 3`, Root Architect escalation, synchronized workflow-create loop diagrams and S1 guard notes. |
+| 03 | Completed | Added S3 safety preflight with explicit STOP paths for dirty working tree, wrong branch and scope conflict before slice classification. |
+| 04 | Completed | Added `S3_CLASSIFY` default path: unclassifiable slices route to `S3_UNCLASSIFIED` and Root Architect escalation; declared governance, metadata and documentation-only slices route through Documentation only when the active workflow declares that scope. |
+| 05 | Completed | Added Typed Error Router mapping for quality-gate and validation failures, owner routing, `maxRetries = 3` retry cap, Root Architect escalation for unknown or exhausted failures and S3-only targeted fix loops. |
+| 06 | Completed | Mapped S3D as the workflow-execute Execution Orchestrator with explicit slice metadata, dependency graph source of truth, topological ordering, parallelization groups, conflict locks and `LOCK_CONFLICT` routing. |
+| 07 | Completed | Cleaned publication outcomes: no `PUB_PUSH` self-reference, normal `push` ends in `PUB_PR_RESULT`, successful completion uses `PUB_DONE`, failures use `PUB_PUSH_FAILED`, and governance rejections use `PUB_REJECTED`. |
+| 08 | Completed | Added commit/checkpoint/rollback governance: `QG_STOP` and failed `CP_PUSH` route to `CP_ROLLBACK`, `CP_FINAL` has `CMD_PUSH`, `RELEASE` and `Q11` outgoing paths, and rollback forbids blind `git reset --hard`. |
+| 09 | Completed | Added workflow-version and commit-traceability governance: `CP_RECORD` fields, one-slice-one-commit enforcement, workflow history artifact and commit-message requirements now align across process docs, prompts and commit-governance skills. |
+| 10 | Completed | Separated D8 and Q11: D8 is the synchronous blocking gate for build, tests, architecture, required docs, workflow version and required quality gates; Q11 is asynchronous and non-blocking by default unless regulatory reporting is explicitly promoted to D8. |
+| 11 | Completed | Sharpened guard names: `S1_PUSH_ELIGIBILITY_GUARD` owns skills-agents push eligibility and `PUB_PR_MERGE_GUARD` owns PR merge/open/blocked/rejected decisions. |
+| 12 | Completed | Separated documentation governance: `DOCROOT` is the global consistency check, while `S1_DOC`, `S2_DOC` and `S3_DOC` update concrete artifacts inside their active strands. |
+| 13 | Completed | Added a two-level governance flowchart package under `docs/governance/workflow/`: Level 1 covers ROOT, commands, S1/S2/S3, hard boundaries, publication modes and global governance; Level 2 separates S1, S2, S3, BE, FE, RT, QG, CP, PUB and DOC subgraphs with shared diagram review rules. Existing process and agent entry points link to the canonical package; detailed arc42 runtime alignment remains in Slice 15. |
+| 14 | Completed | Verified Governance Flowchart V2 agent and skill linkage. Typed error routing, execution orchestration, conflict locking, rollback governance, documentation governance and quality-gate classification are covered. Root Architect role file and dedicated flowchart-integrity skill remain non-blocking documented gaps with bootstrap owners and future `skills-agents` follow-up. |
+| 15 | Completed | Added ADR-0021 for Governance Flowchart V2 and synchronized arc42 constraints, building blocks, runtime flow, crosscutting concepts, architecture decisions, quality scenarios, risks and glossary terms with the executed governance model. |
+| 16 | Completed | Performed the final integrity check, normalized remaining V2 role and documentation labels, updated workflow traceability records, verified no `PUB_PUSH` self-reference remains, confirmed product implementation scope stayed untouched, and ran the `QUALITY.md` minimum Gradle test command successfully. |
+
+## Final Integrity Status
+
+Governance Flowchart V2 is complete for workflow version
+`governance-flowchart-v2-20260517`.
+
+Final verification is recorded in `docs/workflow/final-integrity-check.md`.
+No product backend, frontend, runtime, contract, persistence, analytics, Gradle
+or plugin implementation paths were changed by this workflow.
+
+## Active Workflow Version
+
+| Field | Value |
+|---|---|
+| workflowVersion | `governance-flowchart-v2-20260517` |
+| source workflow | `docs/workflow/workflow.md` |
+| history artifact | `docs/workflow/workflow.history.md` |
+| execution branch | `architecture/workflow-governance-flowchart-v2-20260517` |
+
+`CP_RECORD` uses the fields defined in `docs/process/workflow-execute.md`. The
+commit hash is completed after `CP_COMMIT` because a commit cannot contain a
+stable reference to its own hash.
+
+## Slice 01 Branch Governance Evidence
+
+| Fact | Value |
+|---|---|
+| Repository root | `/mnt/d/Projects/forensic_analytics` |
+| Origin URL | `git@github.com:MatthiasBurger-Coder/forensic_analytics.git` |
+| Active workflow | `Governance Flowchart V2` in `docs/workflow/workflow.md` |
+| Slice 01 write scope | `docs/workflow/execution-summary.md` |
+| Active branch | `architecture/workflow-governance-flowchart-v2-20260517` |
+| Symbolic HEAD | `refs/heads/architecture/workflow-governance-flowchart-v2-20260517` |
+| HEAD commit before Slice 01 mutation | `74dafa7c911db3c85b31efc737fdaaacc5b364ae` |
+| Local branch ref before Slice 01 mutation | `74dafa7c911db3c85b31efc737fdaaacc5b364ae` |
+| Upstream | `origin/architecture/workflow-governance-flowchart-v2-20260517` |
+| Remote-tracking ref before Slice 01 mutation | `74dafa7c911db3c85b31efc737fdaaacc5b364ae` |
+| Ahead / behind before Slice 01 mutation | `+0 -0` |
+| Working tree before Slice 01 mutation | clean |
+| Staged changes before Slice 01 mutation | none |
+| Unstaged changes before Slice 01 mutation | none |
+| Branch collision evidence | local, remote-tracking and remote pattern checks found only the exact workflow branch |
+| Tracked summary file | `docs/workflow/execution-summary.md` |
+
+## Validation Plan
+
+Workflow-create validation:
+
+```bash
+git status --short --branch
+git diff --check
+rg -n "Governance Flowchart V2|S3D|S3_STATUS|S3_BRANCH|S3_SCOPE|S3_CLASSIFY|Typed Error Router|maxRetries|CP_ROLLBACK|PUB_PR_RESULT|R10|R11|DOCROOT|Level 1|Level 2" docs/workflow docs/arc42
+git diff --name-only | rg "^(src/|services/|contracts/|docker/|gradle/|proto/|forensic-ui/|build.gradle|settings.gradle)"
+```
+
+No Gradle task is required for this workflow-create update because the current changes are documentation-only. If workflow execution later changes implementation, build logic, tests, contracts or plugin metadata, it must run the applicable `QUALITY.md` Gradle gates.

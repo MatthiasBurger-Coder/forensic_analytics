@@ -27,6 +27,8 @@ Record:
 
 Ask focused clarification questions when blocking questions remain. Do not create a final workflow and do not release `workflow execute` while blocking questions remain.
 
+Track clarification attempts. Automatic clarification loops are capped at `maxRetries = 3`; after the third unresolved attempt, stop and escalate to the Root Architect with the unresolved blockers and inspected files.
+
 `workflow create` must use five mandatory roles: Senior Requirement Engineer, Senior System Architect, Senior Java Backend Developer, Senior React Frontend Developer and Senior Tester.
 
 ## Required Branch-First Flow

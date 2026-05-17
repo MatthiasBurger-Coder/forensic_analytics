@@ -28,12 +28,26 @@ git status --short --branch
 12. Run Requirement Gate when the request introduces or changes a requirement.
 13. Run Skill Conflict Audit before implementation slices.
 14. Build or verify the slice plan.
-15. Assign subagents or role reviews.
-16. Use Agent Handoff Protocol for owner changes and parallel work.
-17. Run required quality gates.
-18. After each successful slice, run the slice checkpoint push defined by `docs/process/workflow-execute.md`.
-19. Produce a summary with exact validation evidence.
-20. Commit or push only when the workflow explicitly allows it and required gates are clean.
+15. Run S3D orchestration: dependency graph, topological sort and file, contract, module and architecture-boundary lock checks.
+16. Assign subagents or role reviews.
+17. Use Agent Handoff Protocol for owner changes and parallel work.
+18. Run required quality gates.
+19. Evaluate the required quality decision as `D8`; D8 blocks commit,
+   checkpoint push and release readiness on failed build, failed tests,
+   architecture violation, missing required documentation, missing workflow
+   version or failed required quality gate.
+20. After each successful slice, create the `CP_RECORD` defined by
+   `docs/process/workflow-execute.md` with workflow version, slice ID, slice
+   title, responsible agent, changed files, quality-gate commands,
+   quality-gate result, rollback reference, arc42 update status and ADR update
+   status.
+21. Run the slice checkpoint push defined by `docs/process/workflow-execute.md`.
+22. After `CP_COMMIT` succeeds, record the actual commit hash and push result.
+23. Route asynchronous execution-report findings through `Q11`; Q11 is
+   non-blocking by default unless the workflow explicitly declares a regulatory
+   or compliance reporting gate as part of D8.
+24. Produce a summary with exact validation evidence.
+25. Commit or push only when the workflow explicitly allows it and required gates are clean.
 
 ## Stop Conditions
 
@@ -46,8 +60,11 @@ Stop when:
 - skill registry was skipped;
 - requirement gate was required but skipped;
 - subagent or role ownership is missing;
+- S3D cannot verify slice metadata, dependency order or conflict locks;
 - handoff rules are missing for parallel work;
 - required quality gates fail or cannot be verified;
+- D8 fails or cannot be verified;
 - commit or push is requested without workflow permission.
 - slice checkpoint push would include files outside the current slice;
 - slice checkpoint push would push to `main`, create or merge a PR, run `push auto`, run branch cleanup or force-push.
+- a slice checkpoint commit would contain multiple slice IDs or no active workflow version.

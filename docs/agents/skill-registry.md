@@ -35,6 +35,7 @@ May change:
 - `docs/agents/**`
 - `docs/process/**`
 - `docs/governance/**`
+- governance-limited `docs/workflow/**`
 - `docs/skill-audit/**`
 - governance-limited `docs/arc42/**`
 - governance-limited `docs/adr/**`
@@ -52,15 +53,37 @@ Must not change:
 | Entry | Strand | Owner | Responsibility |
 |---|---|---|---|
 | Senior System Architect | all strands | Senior System Architect | architecture and governance authority |
-| Documentation Governance | all strands | Senior Documentation Engineer | docs consistency and source-of-truth alignment |
+| `DOCROOT` | all strands | Senior Documentation Engineer | global docs consistency for process docs, role model, organigramm, arc42 structure, governance rules, workflow conventions and hard boundaries |
+| `S1_DOC` | `skills-agents` | Senior Documentation Engineer | update concrete skills, agents, roles, prompts, routing, organigramm, skill registry and process docs |
+| `S2_DOC` | `workflow create` | Senior Documentation Engineer | update concrete requirement-gate, workflow authoring, workflow handoff and arc42-impact docs |
+| `S3_DOC` | `workflow execute` | Senior Documentation Engineer / Workflow Executor | update concrete slice execution, quality gate, rollback, commit result and execution report docs |
 | Skill / Agent Creator | `skills-agents` | Skill Registry Maintainer | create or update skills, roles, prompts and agent definitions |
 | Skill Integrity Reviewer | `skills-agents` | Skill Registry Conflict Auditor | check dead references, ownership and duplicate authority |
 | Skill Registry Maintainer | `skills-agents` | Senior System Architect | maintain this registry |
 | Organigramm Maintainer | `skills-agents` | Senior Documentation Engineer | maintain role hierarchy diagrams |
 | AGENTS.md Maintainer | `skills-agents` | Senior System Architect | keep root agent governance authoritative |
 | Process Governance Maintainer | all strands | Senior Documentation Engineer | keep process documents synchronized |
-| Push Auto Guard | `skills-agents` | Git Commit Reviewer / Git Commit Operator | block `push auto` outside skills-agents |
+| `S1_PUSH_ELIGIBILITY_GUARD` | `skills-agents` | Git Commit Reviewer / Git Commit Operator | block `push auto` outside skill, agent, process-governance and governance-only workflow documentation scope |
+| `PUB_PR_MERGE_GUARD` | publication mode | Git Commit Reviewer / Git Commit Operator | decide whether a PR may merge, stay open, be blocked or be rejected |
 | docs/workflow/workflow.md Maintainer | `workflow create` | Senior Workflow Architect | maintain active workflow specification |
 | arc42 Architecture Documentation Maintainer | `workflow create` | arc42 Architecture Governance | keep architecture docs checked or updated |
+| S3D Execution Orchestrator | `workflow execute` | Senior Swarm Orchestrator | build dependency graph, run topological sort and enforce file, contract, module and architecture-boundary locks |
 | Testing Documentation Maintainer | `workflow execute` | Senior Tester | keep test strategy and quality-gate evidence |
-| Execution Report Maintainer | `workflow execute` | Workflow Executor | record slice commit SHA, push result and blockers |
+| Execution Report Maintainer | `workflow execute` | Workflow Executor | record workflow version, slice ID, responsible agent, changed files, quality gates, commit SHA, rollback reference, documentation update status, push result and blockers |
+| Commit Traceability Maintainer | `workflow execute` | Senior Documentation Engineer / Workflow Executor | keep `CP_RECORD` fields, one-slice-one-commit evidence and workflow history synchronized |
+
+## Governance Flowchart V2 Capability Linkage
+
+| Capability | Owner or source | Status |
+|---|---|---|
+| Root Architect Escalation | Senior System Architect via Root Architect decision path | MAPPED_WITH_GAP: no dedicated `.agents/roles/root-architect.md` exists |
+| Typed Error Routing | Workflow Executor, Quality Gate Orchestrator, routing rules | VERIFIED |
+| Execution Orchestration | Senior Swarm Orchestrator, S3D, Agent Swarm Coordination Specialist | VERIFIED |
+| Conflict Locking | Senior Swarm Orchestrator, S3D, Workflow Executor | VERIFIED |
+| Rollback Governance | Release and Branch Governance, Git Commit Preparation, Senior DevOps | VERIFIED |
+| Documentation Governance | Senior Documentation Engineer, Documentation Sync, `DOCROOT` | VERIFIED |
+| Quality Gate Classification | Senior Tester, Quality Gate Orchestrator, Quality Gate skill | VERIFIED |
+| Flowchart Integrity Audit | Senior Documentation Engineer and Senior System Architect using `docs/governance/workflow/` rules | MAPPED_WITH_GAP: no dedicated flowchart-integrity skill exists |
+
+Detailed evidence is recorded in
+[`../skill-audit/governance-flowchart-v2-linkage.md`](../skill-audit/governance-flowchart-v2-linkage.md).

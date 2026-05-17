@@ -11,11 +11,12 @@
 | Organigramm Maintainer | `skills-agents` | Senior Documentation Engineer | added |
 | AGENTS.md Maintainer | `skills-agents` | Senior System Architect | added |
 | Process Governance Maintainer | all strands | Senior Documentation Engineer | added |
-| Push Auto Guard | `skills-agents` | Git Commit Reviewer / Git Commit Operator | added |
+| `S1_PUSH_ELIGIBILITY_GUARD` | `skills-agents` | Git Commit Reviewer / Git Commit Operator | added |
 | docs/workflow/workflow.md Maintainer | `workflow create` | Senior Workflow Architect | added |
 | arc42 Architecture Documentation Maintainer | `workflow create` | arc42 Architecture Governance | added |
 | Testing Documentation Maintainer | `workflow execute` | Senior Tester | added |
 | Execution Report Maintainer | `workflow execute` | Workflow Executor | added |
+| Governance Flowchart V2 capability linkage | `workflow execute` | Skill Registry Conflict Auditor / Senior Documentation Engineer | added |
 
 | Skill name | File path | Purpose | Architecture zone | Slices/workflows | Possible overlaps | Status |
 |---|---|---|---|---|---|---|
@@ -78,3 +79,19 @@
 | workflow-slice | `.agents/skills/workflow-slice/SKILL.md` | Creates ordered implementation slice plans. | Planning | Workflow creation | analytics-slice-workflow | kept |
 | workflow-authoring | `.agents/skills/workflow-authoring/SKILL.md` | Creates and regenerates executable workflows with slices, dependency ordering, ownership, resilience and quality gates. | Planning governance | New workflow lifecycle, docs/workflow regeneration, slice plans | workflow-slice, engineering-governance | added |
 | workspace-lifecycle-specialist | `.agents/skills/workspace-lifecycle-specialist/SKILL.md` | Workspace isolation, lifecycle, cleanup, caching and locking. | Workspace outbound adapter | Workspace domain and adapter slices | git-large-repository-specialist | added |
+
+## Governance Flowchart V2 Capability Linkage
+
+Detailed capability evidence is recorded in
+[governance-flowchart-v2-linkage.md](governance-flowchart-v2-linkage.md).
+
+| Capability | Status |
+|---|---|
+| Root Architect Escalation | MAPPED_WITH_GAP |
+| Typed Error Routing | VERIFIED |
+| Execution Orchestration | VERIFIED |
+| Conflict Locking | VERIFIED |
+| Rollback Governance | VERIFIED |
+| Documentation Governance | VERIFIED |
+| Quality Gate Classification | VERIFIED |
+| Flowchart Integrity Audit | MAPPED_WITH_GAP |

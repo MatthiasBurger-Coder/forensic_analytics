@@ -105,13 +105,38 @@ Repository governance uses three process strands:
 - `workflow create`
 - `workflow execute`
 
-The strands must not be mixed. Shared roles such as Senior System Architect, Documentation Governance, Skill Registry Maintainer, Organigramm Maintainer, Process Governance Maintainer and Push Auto Guard execute inside the active strand and apply that strand's file scope, quality gate and documentation duty.
+The strands must not be mixed. Shared roles such as Senior System Architect, Documentation Governance, Skill Registry Maintainer, Organigramm Maintainer, Process Governance Maintainer and `S1_PUSH_ELIGIBILITY_GUARD` execute inside the active strand and apply that strand's file scope, quality gate and documentation duty.
+
+Documentation Governance is split into global and local nodes. `S1_DOC`,
+`S2_DOC` and `S3_DOC` update concrete artifacts inside `skills-agents`,
+`workflow create` and `workflow execute`. `DOCROOT` checks global consistency
+for process documentation, role model, organigramm, arc42 structure, governance
+rules, workflow conventions and hard boundaries.
 
 `skills update` is the explicit entrypoint for `skills-agents`.
 
 `workflow create` requires the Requirement Clarification Loop, the five-role Three Amigos Requirement Gate, checked `docs/workflow/workflow.md`, checked or updated arc42 documentation and explicit release for `workflow execute`.
 
+Automatic governance feedback, correction and clarification loops are capped at `maxRetries = 3`; retry exhaustion stops the active strand and escalates to the Root Architect.
+
 `workflow execute` requires checked workflow and arc42 artifacts before implementation and performs slice checkpoint commits and pushes after successful slice quality gates.
+
+`workflow execute` quality-gate and validation failures are classified by the
+Typed Error Router before retry or escalation. The router categories are
+`ARCH_VIOLATION`, `BUILD_FAILURE`, `TEST_FAILURE`,
+`DOC_GOVERNANCE_FAILURE`, `LOCK_CONFLICT` and `UNKNOWN_FAILURE`; unknown or
+unowned failures escalate to the Root Architect instead of starting a generic
+retry loop.
+
+Governance Flowchart V2 extends ADR-0020 with S3 safety preflight, S3D
+execution orchestration, one-slice-one-commit traceability, `CP_ROLLBACK`
+rollback decisions, explicit publication terminals and two-level diagram
+governance. The canonical diagrams live in `docs/governance/workflow/`.
+
+`workflow execute` does not automatically jump backward to `workflow create`.
+When workflow scope, dependencies or governance assumptions are wrong, the
+allowed outcomes are STOP, report, Root Architect escalation and a manual
+recommendation to refine the workflow.
 
 Documentation synchronization must keep `AGENTS.md`, `QUALITY.md`, process docs, workflow docs, skill-audit docs, arc42 and ADR references consistent. Planned behavior is not implemented behavior.
 

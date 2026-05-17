@@ -1,6 +1,6 @@
 ---
 name: git-commit-preparation
-description: Use when preparing, reviewing, validating, repairing, committing, pushing, creating a PR, running workflow-execute slice checkpoint pushes, or running `push auto` for skills-agents changes. This skill is the commit-readiness workflow and enforces AGENTS.md, QUALITY.md, git diff inspection, task-scope validation, quality-gate verification, blocker routing, git-commit-message-preparation, PR creation on explicit `push`, and PR merge plus branch cleanup on explicit `push auto`.
+description: Use when preparing, reviewing, validating, repairing, committing, pushing, creating a PR, running workflow-execute slice checkpoint pushes, or running `push auto` for skills, agents, process-governance and governance-only workflow documentation changes. This skill is the commit-readiness workflow and enforces AGENTS.md, QUALITY.md, git diff inspection, task-scope validation, quality-gate verification, blocker routing, git-commit-message-preparation, PR creation on explicit `push`, and PR merge plus branch cleanup on explicit `push auto`.
 ---
 
 # Commit Preparation Skill
@@ -23,7 +23,7 @@ Use this skill with these Codex roles:
 
 - `git-commit-message-preparation`: reusable skill for drafting and validating the proposed commit message from diff and verification evidence.
 - `git_commit_reviewer`: read-only reviewer that classifies changes, checks scope, verifies evidence, and returns `READY`, `NOT READY`, or `BLOCKED`.
-- `git_commit_operator`: mutating operator that may stage explicit files, commit, push, create or complete a GitHub pull request, or run a workflow-execute slice checkpoint push only when the contract allows it. On exact `push auto` inside the `skills-agents` strand, it may also merge the verified pull request, delete the merged pull request's remote head branch, and invoke the git-clean workflow.
+- `git_commit_operator`: mutating operator that may stage explicit files, commit, push, create or complete a GitHub pull request, or run a workflow-execute slice checkpoint push only when the contract allows it. On exact `push auto` inside the allowed skills, agents, process-governance or governance-only workflow documentation scope, it may also merge the verified pull request, delete the merged pull request's remote head branch, and invoke the git-clean workflow.
 
 The reviewer must not modify files. The operator must not bypass the reviewer result, required verification, branch rules, or the `push` command requirement.
 
@@ -293,6 +293,22 @@ It does not create or merge a PR, does not clean up branches and must not force-
 
 Do not create a pull request, merge a pull request, delete remote branches, delete local branches, run git-clean, push to `main`, run `push auto`, or force-push.
 
+The required commit-readiness decision is `D8` for workflow-execute checkpoint
+commits. D8 blocks commit and push when build, tests, architecture validation,
+required documentation, workflow version or a required quality gate fails or is
+missing. Q11 execution-report notes are non-blocking by default and must not be
+used to approve a failed D8 result.
+
+For workflow-execute checkpoint commits:
+
+- commit exactly one slice;
+- include exactly one `sliceId` and the active `workflowVersion`;
+- require a `CP_RECORD` with changed files, quality-gate commands,
+  quality-gate result, rollback reference, arc42 update status and ADR update
+  status;
+- record the actual commit hash after `CP_COMMIT` succeeds;
+- stop when staged files or the commit message would mix multiple slices.
+
 ### Phase 12: Push Command And GitHub Pull Request
 
 When the user enters exactly `push`, treat it as explicit permission to:
@@ -335,7 +351,7 @@ If an open pull request already exists for the current branch against `main`, re
 
 ### Phase 13: Push Auto Merge, Branch Deletion, And Cleanup
 
-When the user enters exactly `push auto`, treat it as explicit permission to run the normal `push` workflow and then automatically finish the GitHub pull request lifecycle only when the active process strand is `skills-agents`.
+When the user enters exactly `push auto`, treat it as explicit permission to run the normal `push` workflow and then automatically finish the GitHub pull request lifecycle when the active change is within skills, agents, process-governance or governance-only workflow documentation scope.
 
 `push auto` must not publish backend, frontend, Docker/runtime, gRPC, REST, persistence, analysis-engine, Joern, JavaParser, BTM generator or product implementation changes.
 
@@ -358,7 +374,7 @@ For `push auto`, the pull request body must include the same content as the `pus
 
 Do not treat `push auto` as permission to force-push, push directly to `main`, retarget the pull request, bypass failed or pending checks, merge an unrelated pull request, delete `main`, delete a branch before the pull request is verified as merged, or enable GitHub auto-merge.
 
-If the active strand is not `skills-agents`, or if the diff contains blocked implementation, build, service, contract, Docker/runtime, frontend or analytics files, stop and report the exact blocker.
+If the diff is outside skills, agents, process-governance and governance-only workflow documentation scope, or if it contains blocked implementation, build, service, contract, Docker/runtime, frontend or analytics files, stop and report the exact blocker.
 
 If GitHub mergeability, required-check status, merge result, remote branch deletion, or clean execution cannot be verified, stop and report the exact blocker.
 
@@ -401,7 +417,7 @@ Use the minimum and full quality commands documented in `QUALITY.md` when verifi
 16. Use git_commit_operator to commit only if all required gates pass and user/task permits committing
 17. On a workflow-execute slice checkpoint, use git_commit_operator to stage only current-slice files, commit, push only to origin/<workflow-branch>, and record the SHA and push result
 18. On `push`, use git_commit_operator to push the branch and create or complete a GitHub pull request against main
-19. On `push auto`, use git_commit_operator only inside `skills-agents` to push, create or reuse the PR, verify mergeability and checks, merge the PR, verify merged state, delete the remote head branch, and run clean
+19. On `push auto`, use git_commit_operator only inside skills, agents, process-governance or governance-only workflow documentation scope to push, create or reuse the PR, verify mergeability and checks, merge the PR, verify merged state, delete the remote head branch, and run clean
 ```
 
 ## Commit Message Contract
@@ -464,7 +480,7 @@ Stop if:
 - the commit message would require guessing,
 - the user requested `push` but GitHub pull request creation is unavailable or would require guessing,
 - a workflow-execute slice checkpoint contains files outside the current slice or targets anything other than `origin/<workflow-branch>`,
-- `push auto` is requested outside the `skills-agents` strand,
+- `push auto` is requested outside skills, agents, process-governance or governance-only workflow documentation scope,
 - `push auto` would publish product implementation, build, service, contract, Docker/runtime, frontend or analytics files,
 - the user requested `push auto` but mergeability, required-check status, merge result, remote branch deletion target, or clean execution cannot be verified.
 
@@ -477,8 +493,8 @@ Do not:
 - create commits unless the user or active workflow permits committing,
 - push or create pull requests unless the user enters `push`, enters `push auto`, the active workflow reaches a workflow-execute slice checkpoint, or explicitly requests that action,
 - push directly to `main`,
-- merge pull requests unless the user enters exactly `push auto` inside the `skills-agents` strand,
-- delete remote branches unless the user enters exactly `push auto` inside the `skills-agents` strand and the pull request was verified as merged,
+- merge pull requests unless the user enters exactly `push auto` inside skills, agents, process-governance or governance-only workflow documentation scope,
+- delete remote branches unless the user enters exactly `push auto` inside skills, agents, process-governance or governance-only workflow documentation scope and the pull request was verified as merged,
 - delete local branches directly instead of using the git-clean workflow after push auto,
 - force-push,
 - enable GitHub auto-merge,
