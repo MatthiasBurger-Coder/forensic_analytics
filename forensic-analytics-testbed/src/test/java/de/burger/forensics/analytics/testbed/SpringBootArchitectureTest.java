@@ -15,7 +15,8 @@ class SpringBootArchitectureTest {
             .that()
             .resideOutsideOfPackages(
                 "de.burger.forensics.analytics.boot..",
-                "de.burger.forensics.analytics.logging.spring.."
+                "de.burger.forensics.analytics.logging.spring..",
+                "de.burger.forensics.analytics.services..bootstrap.."
             )
             .should()
             .dependOnClassesThat()

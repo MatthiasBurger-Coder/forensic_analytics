@@ -1,0 +1,221 @@
+syntax = "proto3";
+
+package de.burger.forensics.analytics.repositoryanalysis.v1;
+
+option java_multiple_files = true;
+option java_package = "de.burger.forensics.analytics.repositoryanalysis.v1";
+option java_outer_classname = "RepositoryAnalysisProto";
+
+// Provisional Slice 06 contract for repository checkout and source snapshot
+// preparation. The contract is intentionally strict for a networked service:
+// repository URLs must be clean HTTPS URLs without userinfo, credentials,
+// query secrets or fragments. Local paths, file URLs, SSH, SCP-style remotes,
+// submodules, build execution, parser execution and private workspace-path
+// handoff are out of scope for this service contract.
+//
+// Fields named safe_attributes are optional low-sensitivity metadata only.
+// Implementations must reject or redact secrets, credentials, tokens, local
+// paths, private workspace paths, raw repository content, environment values
+// and unvalidated echoed input.
+service RepositoryAnalysisService {
+  rpc PrepareRepository(PrepareRepositoryRequest)
+      returns (PrepareRepositoryResponse);
+
+  rpc GetRepositoryPreparation(GetRepositoryPreparationRequest)
+      returns (RepositoryPreparation);
+
+  rpc CleanupRepositoryWorkspace(CleanupRepositoryWorkspaceRequest)
+      returns (CleanupRepositoryWorkspaceResponse);
+}
+
+message PrepareRepositoryRequest {
+  // Required, non-blank.
+  string request_id = 1;
+  // Required, non-blank. Replays with the same key must use an identical
+  // request fingerprint.
+  string idempotency_key = 2;
+  // Required, non-blank.
+  string schema_version = 3;
+  // Required, non-blank.
+  string correlation_id = 4;
+  // Required, non-blank.
+  string analysis_run_id = 5;
+  // Required.
+  RepositoryReference repository = 6;
+  // Required. Exactly one of branch, commit, or branch+commit must be present.
+  RevisionSelector revision = 7;
+  // Required. Timeout and quota must be positive and bounded.
+  WorkspacePolicy workspace_policy = 8;
+  map<string, string> safe_attributes = 9;
+}
+
+message PrepareRepositoryResponse {
+  RepositoryPreparation preparation = 1;
+  OperationStatus status = 2;
+}
+
+message GetRepositoryPreparationRequest {
+  // Required, non-blank.
+  string request_id = 1;
+  // Required, non-blank.
+  string correlation_id = 2;
+  // Required, non-blank.
+  string analysis_run_id = 3;
+  // Required, non-blank.
+  string source_snapshot_id = 4;
+}
+
+message CleanupRepositoryWorkspaceRequest {
+  // Required, non-blank.
+  string request_id = 1;
+  // Required, non-blank.
+  string idempotency_key = 2;
+  // Required, non-blank.
+  string correlation_id = 3;
+  // Required, non-blank.
+  string analysis_run_id = 4;
+  // Required, non-blank. This is a service-generated opaque ID, not a path.
+  string workspace_id = 5;
+}
+
+message CleanupRepositoryWorkspaceResponse {
+  string workspace_id = 1;
+  RepositoryWorkspaceStatus workspace_status = 2;
+  OperationStatus status = 3;
+  repeated Diagnostic diagnostics = 4;
+}
+
+message RepositoryReference {
+  // Must be HTTPS without userinfo, credentials, query secrets or fragments.
+  // Required, non-blank.
+  string remote_url = 1;
+  // Optional provider label. When present, non-blank and non-sensitive.
+  string provider = 2;
+  map<string, string> safe_attributes = 3;
+}
+
+message RevisionSelector {
+  // Branch-only prepares the branch head. Commit-only checks out the exact
+  // commit. Branch+commit checks out the exact commit and verifies it is
+  // reachable from the requested branch before reporting success. At least one
+  // of branch or commit is required. If branch_required is true, branch must be
+  // present. If commit_required is true, commit must be present. Unsafe
+  // option-like refs are forbidden.
+  string branch = 1;
+  bool branch_required = 2;
+  string commit = 3;
+  bool commit_required = 4;
+}
+
+message WorkspacePolicy {
+  // Required policy. Implementations must reject missing-equivalent defaults
+  // where a bounded value is required. Slice 06 supports ephemeral workspaces,
+  // optional shallow clone, and rejects partial/sparse clone until later slices.
+  bool ephemeral = 1;
+  bool allow_shallow_clone = 2;
+  bool allow_partial_clone = 3;
+  bool allow_sparse_checkout = 4;
+  // Required positive bounded timeout. Zero is invalid for this service.
+  int64 timeout_seconds = 5;
+  // Required positive bounded byte quota. Zero is invalid for this service.
+  int64 max_workspace_bytes = 6;
+}
+
+message RepositoryPreparation {
+  // source_snapshot_id must equal source_snapshot.source_snapshot_id.
+  string analysis_run_id = 1;
+  string source_snapshot_id = 2;
+  string workspace_id = 3;
+  RepositoryReference repository = 4;
+  RevisionSelector requested_revision = 5;
+  CheckoutResult checkout = 6;
+  SourceSnapshot source_snapshot = 7;
+  RepositoryWorkspaceStatus workspace_status = 8;
+  string created_at = 9;
+  string updated_at = 10;
+  repeated Diagnostic diagnostics = 11;
+  map<string, string> safe_attributes = 12;
+}
+
+message CheckoutResult {
+  CheckoutStatus status = 1;
+  string resolved_remote_url = 2;
+  string resolved_commit = 3;
+  string requested_branch = 4;
+  string requested_commit = 5;
+  bool shallow_clone = 6;
+  int64 elapsed_millis = 7;
+  repeated Diagnostic diagnostics = 8;
+  bool partial_clone = 9;
+  bool sparse_checkout = 10;
+}
+
+message SourceSnapshot {
+  // Deterministic service-owned ID derived from sanitized repository URL,
+  // requested revision, resolved commit and manifest artifact checksum.
+  string source_snapshot_id = 1;
+  SourceSnapshotCompleteness completeness = 2;
+  repeated SourceRoot source_roots = 3;
+  ArtifactReference manifest_artifact = 4;
+  repeated string limitations = 5;
+}
+
+message SourceRoot {
+  // Relative path inside the immutable source snapshot. Absolute workspace paths
+  // are forbidden in this field.
+  string relative_path = 1;
+  string language = 2;
+}
+
+message ArtifactReference {
+  // Opaque artifact key or source-snapshot-relative path. Absolute paths,
+  // file: URIs, workspace roots and server-local paths are forbidden.
+  string reference = 1;
+  string type = 2;
+  string sha256 = 3;
+  int64 size_bytes = 4;
+}
+
+message Diagnostic {
+  string code = 1;
+  string message = 2;
+  DiagnosticSeverity severity = 3;
+}
+
+message OperationStatus {
+  string code = 1;
+  string message = 2;
+  bool retryable = 3;
+  string correlation_id = 4;
+  repeated Diagnostic diagnostics = 5;
+}
+
+enum CheckoutStatus {
+  CHECKOUT_STATUS_UNSPECIFIED = 0;
+  CHECKOUT_STATUS_ACCEPTED = 1;
+  CHECKOUT_STATUS_WORKSPACE_PREPARED = 2;
+  CHECKOUT_STATUS_CHECKED_OUT = 3;
+  CHECKOUT_STATUS_FAILED = 4;
+}
+
+enum RepositoryWorkspaceStatus {
+  REPOSITORY_WORKSPACE_STATUS_UNSPECIFIED = 0;
+  REPOSITORY_WORKSPACE_STATUS_READY = 1;
+  REPOSITORY_WORKSPACE_STATUS_CHECKED_OUT = 2;
+  REPOSITORY_WORKSPACE_STATUS_CLEANED = 3;
+  REPOSITORY_WORKSPACE_STATUS_FAILED = 4;
+}
+
+enum SourceSnapshotCompleteness {
+  SOURCE_SNAPSHOT_COMPLETENESS_UNSPECIFIED = 0;
+  SOURCE_SNAPSHOT_COMPLETENESS_COMPLETE = 1;
+  SOURCE_SNAPSHOT_COMPLETENESS_INCOMPLETE = 2;
+  SOURCE_SNAPSHOT_COMPLETENESS_UNKNOWN = 3;
+}
+
+enum DiagnosticSeverity {
+  DIAGNOSTIC_SEVERITY_UNSPECIFIED = 0;
+  DIAGNOSTIC_SEVERITY_INFO = 1;
+  DIAGNOSTIC_SEVERITY_WARNING = 2;
+  DIAGNOSTIC_SEVERITY_ERROR = 3;
+}

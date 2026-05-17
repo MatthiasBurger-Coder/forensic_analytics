@@ -77,16 +77,45 @@ The Docker baseline lives under `docker/boot-app/`. It copies only the generated
 
 ## 7.6 Future Microservice Deployment Boundaries
 
-Future microservice extraction must keep every service independently deployable. Each service must own its Spring Boot application, Dockerfile, health checks, configuration, tests and service-local domain model.
+ADR-0017 defines the active target service landscape. Future microservice
+extraction must keep every service independently deployable. Each service must
+own its Spring Boot application, Dockerfile, health checks, configuration,
+tests and service-local domain model.
 
 The planned service roots are:
 
 ```text
-services/forensic-server
-services/java-ast-scanner-worker
-services/joern-scanner-worker
-services/btm-generator-worker
-services/report-generator-worker
+services/forensic-gateway-service
+services/forensic-ingestion-service
+services/repository-analysis-service
+services/java-ast-analysis-service
+services/joern-cpg-analysis-service
+services/btm-generation-service
+services/analysis-store-service
+services/graph-replay-service
+services/report-generation-service
+frontend/frontend-web-app
 ```
 
-Shared Java implementation modules between these services are forbidden. Service-to-service integration is limited to REST/OpenAPI, gRPC/protobuf and RabbitMQ/message contracts. Deployment targets must cover local Spring Boot startup, Docker, Docker Swarm and Kubernetes through service-owned deployment material.
+Shared Java implementation modules between these services are forbidden.
+Service-to-service integration is limited to REST/OpenAPI, gRPC/protobuf and
+approved event contracts. Deployment targets must cover local Spring Boot
+startup, Docker, Docker Swarm and Kubernetes through service-owned deployment
+material before readiness is claimed.
+
+ADR-0018 keeps contract artifacts separate from deployment readiness. A
+contract file may exist before the service, container, healthcheck, manifest or
+broker topology exists. Deployment documentation must not claim readiness from
+contract presence alone.
+
+`services/analysis-store-service` is implemented as an independently buildable
+Spring Boot service in Slice 05. It exposes gRPC on port `9091`, a JDK HTTP
+health endpoint on port `8082`, and can be packaged with:
+
+```bash
+./gradlew --no-daemon :services:analysis-store-service:bootJar --dependency-verification strict --console=plain --stacktrace
+```
+
+Its Dockerfile builds a standalone runtime image for the service jar. Docker
+Compose, Docker Swarm and Kubernetes deployment descriptors are still future
+slice material.

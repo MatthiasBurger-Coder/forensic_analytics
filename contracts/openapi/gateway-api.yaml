@@ -1,0 +1,826 @@
+openapi: 3.1.0
+info:
+  title: Forensic Analytics Gateway API
+  version: 1.0.0
+  summary: Initial planned Gateway contract for the microservices ecosystem.
+  description: >
+    This Slice 03 contract defines the target Gateway API. Existing repository
+    analysis and workspace routes are verified from the current REST adapter.
+    Results, replay, reports and health/status routes are planned initial
+    contracts approved for logical service communication design on 2026-05-16.
+    This file does not claim that planned routes are implemented yet.
+x-contract-status: planned-initial
+servers:
+  - url: /api
+tags:
+  - name: RepositoryAnalyses
+  - name: Workspaces
+  - name: Jobs
+  - name: Results
+  - name: Replay
+  - name: Reports
+  - name: Status
+paths:
+  /repository-analyses:
+    get:
+      tags: [RepositoryAnalyses]
+      summary: List repository analysis runs.
+      operationId: listRepositoryAnalyses
+      x-implementation-status: current-verified
+      parameters:
+        - $ref: '#/components/parameters/CorrelationId'
+      responses:
+        '200':
+          description: Repository analysis runs.
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RepositoryAnalysisList'
+        default:
+          $ref: '#/components/responses/Error'
+    post:
+      tags: [RepositoryAnalyses]
+      summary: Start a repository analysis run.
+      operationId: startRepositoryAnalysis
+      x-implementation-status: current-verified
+      parameters:
+        - $ref: '#/components/parameters/CorrelationId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StartRepositoryAnalysisRequest'
+      responses:
+        '201':
+          description: Repository analysis run accepted.
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RepositoryAnalysis'
+        default:
+          $ref: '#/components/responses/Error'
+  /repository-analyses/{analysisRunId}:
+    get:
+      tags: [RepositoryAnalyses]
+      summary: Get a repository analysis run.
+      operationId: getRepositoryAnalysis
+      x-implementation-status: current-verified
+      parameters:
+        - $ref: '#/components/parameters/CorrelationId'
+        - $ref: '#/components/parameters/AnalysisRunId'
+      responses:
+        '200':
+          description: Repository analysis run.
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RepositoryAnalysis'
+        default:
+          $ref: '#/components/responses/Error'
+  /repository-analyses/{analysisRunId}/jobs:
+    get:
+      tags: [Jobs]
+      summary: List analysis jobs for a run.
+      operationId: listAnalysisJobs
+      x-implementation-status: planned-initial
+      parameters:
+        - $ref: '#/components/parameters/CorrelationId'
+        - $ref: '#/components/parameters/AnalysisRunId'
+        - name: workerKind
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/AnalysisWorkerKind'
+        - name: state
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/AnalysisJobState'
+      responses:
+        '200':
+          description: Analysis jobs.
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalysisJobList'
+        default:
+          $ref: '#/components/responses/Error'
+  /repository-analyses/{analysisRunId}/results:
+    get:
+      tags: [Results]
+      summary: Get the result summary for a run.
+      operationId: getAnalysisResults
+      x-implementation-status: planned-initial
+      parameters:
+        - $ref: '#/components/parameters/CorrelationId'
+        - $ref: '#/components/parameters/AnalysisRunId'
+      responses:
+        '200':
+          description: Analysis result summary.
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalysisResultSummary'
+        default:
+          $ref: '#/components/responses/Error'
+  /repository-analyses/{analysisRunId}/replay:
+    get:
+      tags: [Replay]
+      summary: Get exception-centered replay for a run.
+      operationId: getReplay
+      x-implementation-status: planned-initial
+      parameters:
+        - $ref: '#/components/parameters/CorrelationId'
+        - $ref: '#/components/parameters/AnalysisRunId'
+        - name: exceptionId
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Replay view.
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReplayView'
+        default:
+          $ref: '#/components/responses/Error'
+  /repository-analyses/{analysisRunId}/reports:
+    get:
+      tags: [Reports]
+      summary: List reports for a run.
+      operationId: listReports
+      x-implementation-status: planned-initial
+      parameters:
+        - $ref: '#/components/parameters/CorrelationId'
+        - $ref: '#/components/parameters/AnalysisRunId'
+      responses:
+        '200':
+          description: Report summaries.
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportList'
+        default:
+          $ref: '#/components/responses/Error'
+    post:
+      tags: [Reports]
+      summary: Request report generation for a run.
+      operationId: requestReport
+      x-implementation-status: planned-initial
+      parameters:
+        - $ref: '#/components/parameters/CorrelationId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/AnalysisRunId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReportRequest'
+      responses:
+        '202':
+          description: Report generation accepted.
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportSummary'
+        default:
+          $ref: '#/components/responses/Error'
+  /reports/{reportId}:
+    get:
+      tags: [Reports]
+      summary: Get a report.
+      operationId: getReport
+      x-implementation-status: planned-initial
+      parameters:
+        - $ref: '#/components/parameters/CorrelationId'
+        - name: reportId
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+      responses:
+        '200':
+          description: Report.
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Report'
+        default:
+          $ref: '#/components/responses/Error'
+  /workspaces:
+    get:
+      tags: [Workspaces]
+      summary: List workspaces.
+      operationId: listWorkspaces
+      x-implementation-status: current-verified
+      parameters:
+        - $ref: '#/components/parameters/CorrelationId'
+      responses:
+        '200':
+          description: Workspaces.
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkspaceList'
+        default:
+          $ref: '#/components/responses/Error'
+  /workspaces/{workspaceId}:
+    get:
+      tags: [Workspaces]
+      summary: Get a workspace.
+      operationId: getWorkspace
+      x-implementation-status: current-verified
+      parameters:
+        - $ref: '#/components/parameters/CorrelationId'
+        - name: workspaceId
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+      responses:
+        '200':
+          description: Workspace.
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Workspace'
+        default:
+          $ref: '#/components/responses/Error'
+  /status:
+    get:
+      tags: [Status]
+      summary: Get Gateway and downstream service status.
+      operationId: getStatus
+      x-implementation-status: planned-initial
+      parameters:
+        - $ref: '#/components/parameters/CorrelationId'
+      responses:
+        '200':
+          description: Service status.
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceStatus'
+        default:
+          $ref: '#/components/responses/Error'
+  /health:
+    get:
+      tags: [Status]
+      summary: Get Gateway health for platform routing.
+      operationId: getHealth
+      x-implementation-status: planned-initial
+      responses:
+        '200':
+          description: Gateway is healthy enough to receive traffic.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health'
+        '503':
+          description: Gateway is not ready.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health'
+components:
+  headers:
+    CorrelationId:
+      description: Correlation id accepted from the request or generated by the Gateway.
+      schema:
+        type: string
+  parameters:
+    CorrelationId:
+      name: X-Correlation-Id
+      in: header
+      required: false
+      schema:
+        type: string
+        minLength: 1
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: false
+      schema:
+        type: string
+        minLength: 1
+    AnalysisRunId:
+      name: analysisRunId
+      in: path
+      required: true
+      schema:
+        type: string
+        minLength: 1
+  responses:
+    Error:
+      description: Error envelope.
+      headers:
+        X-Correlation-Id:
+          $ref: '#/components/headers/CorrelationId'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+  schemas:
+    StartRepositoryAnalysisRequest:
+      type: object
+      required: [repositoryUrl, requestId, schemaVersion, buildContext, workspacePolicy]
+      properties:
+        requestId:
+          type: string
+          pattern: '.*\S.*'
+        schemaVersion:
+          type: string
+          pattern: '.*\S.*'
+        repositoryUrl:
+          type: string
+          format: uri
+          pattern: '^https://(?![^/?#]*@)(?!(?:[Ll][Oo][Cc][Aa][Ll][Hh][Oo][Ss][Tt]|[^/?#@]*\.[Ll][Oo][Cc][Aa][Ll][Hh][Oo][Ss][Tt])(?::[0-9]+)?(?:/|$))(?!(?:0|127|10)(?:\.[0-9]{1,3}){3}(?::[0-9]+)?(?:/|$))(?!(?:192\.168|169\.254)(?:\.[0-9]{1,3}){2}(?::[0-9]+)?(?:/|$))(?!172\.(?:1[6-9]|2[0-9]|3[0-1])(?:\.[0-9]{1,3}){2}(?::[0-9]+)?(?:/|$))(?!\[(?:(?:::)|(?:::1)|(?:0:0:0:0:0:0:0:[01])|(?:::[Ff][Ff][Ff][Ff]:[0-9.]+)|(?:0:0:0:0:0:[Ff][Ff][Ff][Ff]:[0-9.]+)|(?:[Ff][CcDd][0-9A-Fa-f:]*|[Ff][Ee]80:[0-9A-Fa-f:]*))\](?::[0-9]+)?(?:/|$))[^/?#\s]+(?:/[^?#\s]*)?$'
+        provider:
+          type: string
+        branch:
+          type: string
+        commit:
+          type: string
+        workspaceName:
+          type: [string, 'null']
+          pattern: '^\s*$'
+        buildContext:
+          $ref: '#/components/schemas/BuildContext'
+        workspacePolicy:
+          $ref: '#/components/schemas/WorkspacePolicy'
+      anyOf:
+        - required: [branch]
+          properties:
+            branch:
+              type: string
+              pattern: '.*\S.*'
+        - required: [commit]
+          properties:
+            commit:
+              type: string
+              pattern: '.*\S.*'
+    BuildContext:
+      type: object
+      required: [buildTool, buildId, declaredModules, attributes]
+      properties:
+        buildTool:
+          type: string
+          pattern: '.*\S.*'
+        buildId:
+          type: string
+          pattern: '.*\S.*'
+        rootProjectName:
+          type: [string, 'null']
+        declaredModules:
+          type: array
+          items:
+            type: string
+            pattern: '.*\S.*'
+        attributes:
+          type: object
+          propertyNames:
+            pattern: '.*\S.*'
+          additionalProperties:
+            type: string
+            pattern: '.*\S.*'
+    WorkspacePolicy:
+      type: object
+      required:
+        - ephemeral
+        - allowShallowClone
+        - allowPartialClone
+        - allowSparseCheckout
+        - timeoutSeconds
+        - maxWorkspaceBytes
+      properties:
+        ephemeral:
+          type: boolean
+          const: false
+        allowShallowClone:
+          type: boolean
+        allowPartialClone:
+          type: boolean
+          const: false
+        allowSparseCheckout:
+          type: boolean
+          const: false
+        timeoutSeconds:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 3600
+        maxWorkspaceBytes:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 107374182400
+    RepositoryAnalysisList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/RepositoryAnalysis'
+    RepositoryAnalysis:
+      type: object
+      required:
+        - analysisRunId
+        - repositoryUrl
+        - status
+        - diagnostics
+        - sourceRoots
+      properties:
+        analysisRunId:
+          type: string
+        workspaceId:
+          type: [string, 'null']
+        repositoryUrl:
+          type: string
+          format: uri
+          pattern: '^https://(?![^/?#]*@)(?!(?:[Ll][Oo][Cc][Aa][Ll][Hh][Oo][Ss][Tt]|[^/?#@]*\.[Ll][Oo][Cc][Aa][Ll][Hh][Oo][Ss][Tt])(?::[0-9]+)?(?:/|$))(?!(?:0|127|10)(?:\.[0-9]{1,3}){3}(?::[0-9]+)?(?:/|$))(?!(?:192\.168|169\.254)(?:\.[0-9]{1,3}){2}(?::[0-9]+)?(?:/|$))(?!172\.(?:1[6-9]|2[0-9]|3[0-1])(?:\.[0-9]{1,3}){2}(?::[0-9]+)?(?:/|$))(?!\[(?:(?:::)|(?:::1)|(?:0:0:0:0:0:0:0:[01])|(?:::[Ff][Ff][Ff][Ff]:[0-9.]+)|(?:0:0:0:0:0:[Ff][Ff][Ff][Ff]:[0-9.]+)|(?:[Ff][CcDd][0-9A-Fa-f:]*|[Ff][Ee]80:[0-9A-Fa-f:]*))\](?::[0-9]+)?(?:/|$))[^/?#\s]+(?:/[^?#\s]*)?$'
+        branch:
+          type: [string, 'null']
+        commit:
+          type: [string, 'null']
+        resolvedRemoteUrl:
+          type: [string, 'null']
+          pattern: '^https://(?![^/?#]*@)(?!(?:[Ll][Oo][Cc][Aa][Ll][Hh][Oo][Ss][Tt]|[^/?#@]*\.[Ll][Oo][Cc][Aa][Ll][Hh][Oo][Ss][Tt])(?::[0-9]+)?(?:/|$))(?!(?:0|127|10)(?:\.[0-9]{1,3}){3}(?::[0-9]+)?(?:/|$))(?!(?:192\.168|169\.254)(?:\.[0-9]{1,3}){2}(?::[0-9]+)?(?:/|$))(?!172\.(?:1[6-9]|2[0-9]|3[0-1])(?:\.[0-9]{1,3}){2}(?::[0-9]+)?(?:/|$))(?!\[(?:(?:::)|(?:::1)|(?:0:0:0:0:0:0:0:[01])|(?:::[Ff][Ff][Ff][Ff]:[0-9.]+)|(?:0:0:0:0:0:[Ff][Ff][Ff][Ff]:[0-9.]+)|(?:[Ff][CcDd][0-9A-Fa-f:]*|[Ff][Ee]80:[0-9A-Fa-f:]*))\](?::[0-9]+)?(?:/|$))[^/?#\s]+(?:/[^?#\s]*)?$'
+        resolvedCommit:
+          type: [string, 'null']
+        checkoutStatus:
+          type: [string, 'null']
+        status:
+          $ref: '#/components/schemas/RepositoryAnalysisStatus'
+        workflow:
+          type: [string, 'null']
+        createdAt:
+          type: [string, 'null']
+          format: date-time
+        sourceRoots:
+          type: array
+          items:
+            type: string
+        diagnostics:
+          type: array
+          items:
+            type: string
+    WorkspaceList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Workspace'
+    Workspace:
+      type: object
+      required: [workspaceId, repositoryAnalyses]
+      properties:
+        workspaceId:
+          type: string
+        name:
+          type: [string, 'null']
+        status:
+          type: [string, 'null']
+        createdAt:
+          type: [string, 'null']
+          format: date-time
+        updatedAt:
+          type: [string, 'null']
+          format: date-time
+        repositoryAnalyses:
+          type: array
+          items:
+            $ref: '#/components/schemas/RepositoryAnalysis'
+    AnalysisJobList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AnalysisJob'
+    AnalysisJob:
+      type: object
+      required: [analysisRunId, jobId, workerKind, state, attempt, diagnostics]
+      properties:
+        analysisRunId:
+          type: string
+        jobId:
+          type: string
+        workerKind:
+          $ref: '#/components/schemas/AnalysisWorkerKind'
+        state:
+          $ref: '#/components/schemas/AnalysisJobState'
+        sourceSnapshotId:
+          type: string
+        attempt:
+          type: integer
+          minimum: 0
+        completeness:
+          $ref: '#/components/schemas/AnalysisCompleteness'
+        diagnostics:
+          type: array
+          items:
+            $ref: '#/components/schemas/Diagnostic'
+        artifacts:
+          type: array
+          items:
+            $ref: '#/components/schemas/ArtifactReference'
+    AnalysisResultSummary:
+      type: object
+      required: [analysisRunId, completeness, evidenceCounts, diagnostics]
+      properties:
+        analysisRunId:
+          type: string
+        completeness:
+          $ref: '#/components/schemas/AnalysisCompleteness'
+        evidenceCounts:
+          type: object
+          additionalProperties:
+            type: integer
+            minimum: 0
+        artifacts:
+          type: array
+          items:
+            $ref: '#/components/schemas/ArtifactReference'
+        diagnostics:
+          type: array
+          items:
+            $ref: '#/components/schemas/Diagnostic'
+    ReplayView:
+      type: object
+      required: [analysisRunId, completeness, steps, gaps]
+      properties:
+        analysisRunId:
+          type: string
+        exceptionId:
+          type: string
+        completeness:
+          $ref: '#/components/schemas/AnalysisCompleteness'
+        steps:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReplayStep'
+        gaps:
+          type: array
+          items:
+            $ref: '#/components/schemas/EvidenceGap'
+    ReplayStep:
+      type: object
+      required: [order, evidenceKind, description]
+      properties:
+        order:
+          type: integer
+          minimum: 0
+        evidenceKind:
+          type: string
+          enum: [STATIC_FACT, RUNTIME_TRACE, EXCEPTION_FACT, REPLAY_DERIVED]
+        description:
+          type: string
+        sourceLocation:
+          type: string
+        correlationId:
+          type: string
+    EvidenceGap:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        expectedEvidence:
+          type: string
+    ReportRequest:
+      type: object
+      required: [reportType, schemaVersion]
+      properties:
+        reportType:
+          type: string
+          enum: [SUMMARY, INCIDENT_CONTEXT, LLM_CONTEXT_PACKAGE]
+        schemaVersion:
+          type: string
+        includeGeneratedHypotheses:
+          type: boolean
+          default: false
+    ReportList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReportSummary'
+    ReportSummary:
+      type: object
+      required: [reportId, analysisRunId, reportType, status]
+      properties:
+        reportId:
+          type: string
+        analysisRunId:
+          type: string
+        reportType:
+          type: string
+        status:
+          $ref: '#/components/schemas/AnalysisJobState'
+        createdAt:
+          type: string
+          format: date-time
+    Report:
+      allOf:
+        - $ref: '#/components/schemas/ReportSummary'
+        - type: object
+          required: [sections]
+          properties:
+            sections:
+              type: array
+              items:
+                $ref: '#/components/schemas/ReportSection'
+    ReportSection:
+      type: object
+      required: [title, evidenceClass, content]
+      properties:
+        title:
+          type: string
+        evidenceClass:
+          type: string
+          enum: [CONFIRMED_EVIDENCE, DERIVED_ANALYSIS, GAP, HYPOTHESIS, GENERATED_TEXT]
+        content:
+          type: string
+        evidenceReferences:
+          type: array
+          items:
+            type: string
+    ServiceStatus:
+      type: object
+      required: [status, services]
+      properties:
+        status:
+          type: string
+          enum: [UP, DEGRADED, DOWN]
+        services:
+          type: array
+          items:
+            $ref: '#/components/schemas/DependencyStatus'
+    DependencyStatus:
+      type: object
+      required: [name, status]
+      properties:
+        name:
+          type: string
+        status:
+          type: string
+          enum: [UP, DEGRADED, DOWN, UNKNOWN]
+        diagnostics:
+          type: array
+          items:
+            type: string
+    Health:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [UP, DOWN]
+    ArtifactReference:
+      type: object
+      required: [reference, type, sha256, sizeBytes]
+      properties:
+        reference:
+          type: string
+          pattern: '^(?=\S)(?!/)(?!\\)(?![A-Za-z]:[\\/])(?!(?i:file:))(?!.*(?:^|[\\/])\.\.?(?:[\\/]|$)).*\S$'
+        type:
+          type: string
+        sha256:
+          type: string
+        sizeBytes:
+          type: integer
+          format: int64
+          minimum: 0
+    Diagnostic:
+      type: object
+      required: [message]
+      properties:
+        id:
+          type: string
+        severity:
+          type: string
+          enum: [INFO, WARNING, ERROR, UNKNOWN]
+        code:
+          type: string
+        message:
+          type: string
+        source:
+          type: string
+        observedAt:
+          type: string
+          format: date-time
+    ErrorEnvelope:
+      type: object
+      required: [code, message, retryable, correlationId, diagnostics]
+      properties:
+        code:
+          type: string
+          enum:
+            - VALIDATION_ERROR
+            - NOT_FOUND
+            - BACKEND_UNAVAILABLE
+            - CONFLICT
+            - TIMEOUT
+            - UNEXPECTED_ERROR
+        message:
+          type: string
+        retryable:
+          type: boolean
+        correlationId:
+          type: string
+        diagnostics:
+          type: array
+          items:
+            type: string
+    AnalysisWorkerKind:
+      type: string
+      enum:
+        - REPOSITORY_ANALYSIS
+        - AST_ANALYSIS
+        - JOERN_ANALYSIS
+        - BTM_GENERATION
+        - GRAPH_ANALYSIS
+        - REPORT
+        - LLM_PROJECTION
+    AnalysisJobState:
+      type: string
+      enum:
+        - ACCEPTED
+        - DISPATCHABLE
+        - RUNNING
+        - RETRYABLE
+        - FAILED
+        - DEAD_LETTERED
+        - COMPLETED
+        - UNKNOWN
+    RepositoryAnalysisStatus:
+      type: string
+      enum:
+        - REGISTERED
+        - ACCEPTED
+        - DISPATCHABLE
+        - RUNNING
+        - RETRYABLE
+        - FAILED
+        - DEAD_LETTERED
+        - COMPLETED
+        - CLEANED
+        - CANCELED
+        - UNKNOWN
+    AnalysisCompleteness:
+      type: string
+      enum:
+        - COMPLETE
+        - INCOMPLETE
+        - UNKNOWN

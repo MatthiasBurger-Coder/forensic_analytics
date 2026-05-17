@@ -22,3 +22,6 @@ The decisions are derived from the EPIC baseline and refined during implementati
 - [ADR-0014: Use an explicit agent handoff protocol](ADR-0014-agent-handoff-protocol.md)
 - [ADR-0015: Use skill registry and conflict auditing](ADR-0015-skill-registry-conflict-auditing.md)
 - [ADR-0016: Create workflow branches before workflow artifacts](ADR-0016-branch-first-workflow-creation.md)
+- [ADR-0017: Use the target microservices service landscape](ADR-0017-target-microservices-service-landscape.md)
+- [ADR-0018: Author initial logical service contracts before implementation](ADR-0018-initial-logical-contracts.md)
+- [ADR-0019: Allow Spring Boot at service bootstrap boundaries](ADR-0019-spring-boot-service-bootstrap-boundary.md)

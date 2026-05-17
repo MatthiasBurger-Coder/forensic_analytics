@@ -59,15 +59,25 @@ npm run build
 
 ## Service-Specific Verification
 
-Service-specific commands such as:
+The currently registered independent service builds include
+`forensic-ingestion-service`, `repository-analysis-service`,
+`analysis-store-service`, `java-ast-analysis-service` and
+`joern-cpg-analysis-service`, and `btm-generation-service`.
+
+Use service-targeted commands before the full local quality gate when working on
+one service:
 
 ```bash
-./gradlew :services:forensic-ingestion-service:test
+./gradlew --no-daemon :services:forensic-ingestion-service:test :services:forensic-ingestion-service:jacocoTestReport :services:forensic-ingestion-service:jacocoTestCoverageVerification --dependency-verification strict --console=plain --stacktrace
+./gradlew --no-daemon :services:repository-analysis-service:test :services:repository-analysis-service:jacocoTestReport :services:repository-analysis-service:jacocoTestCoverageVerification --dependency-verification strict --console=plain --stacktrace
+./gradlew --no-daemon :services:analysis-store-service:test :services:analysis-store-service:jacocoTestReport :services:analysis-store-service:jacocoTestCoverageVerification --dependency-verification strict --console=plain --stacktrace
+./gradlew --no-daemon :services:java-ast-analysis-service:test :services:java-ast-analysis-service:jacocoTestReport :services:java-ast-analysis-service:jacocoTestCoverageVerification --dependency-verification strict --console=plain --stacktrace
+./gradlew --no-daemon :services:joern-cpg-analysis-service:test :services:joern-cpg-analysis-service:jacocoTestReport :services:joern-cpg-analysis-service:jacocoTestCoverageVerification --dependency-verification strict --console=plain --stacktrace
+./gradlew --no-daemon :services:btm-generation-service:test :services:btm-generation-service:jacocoTestReport :services:btm-generation-service:jacocoTestCoverageVerification --dependency-verification strict --console=plain --stacktrace
 ```
 
-are planned targets only until the service exists in `settings.gradle.kts` or an
-independent service-local build is verified. Do not claim these commands pass
-before they are executable in the repository.
+Do not claim service commands pass before the service exists in
+`settings.gradle.kts` or an independent service-local build is verified.
 
 ## Docker Verification
 

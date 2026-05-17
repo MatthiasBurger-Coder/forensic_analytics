@@ -92,6 +92,12 @@ The existing `forensic-analytics-bootstrap` module remains available while parit
 
 ADR-0007 keeps the existing JDK REST adapter behind Boot lifecycle wiring. Spring MVC, WebFlux and Actuator endpoints are not part of the current Boot boundary.
 
+ADR-0019 extends the Spring Boot boundary to service-local bootstrap packages
+under `de.burger.forensics.analytics.services..bootstrap..`. Service domain and
+application packages remain framework-free; service-local bootstrap code may
+own the Spring Boot entrypoint, configuration and lifecycle wiring for an
+independent service.
+
 ## 5.8 Cross-cutting Logging Module
 
 ADR-0008 accepts `forensic-analytics-logging` as a cross-cutting infrastructure module. It provides `ForensicLoggerFactory` for explicit logger injection and optional Spring method interception in the Boot runtime.
@@ -99,3 +105,51 @@ ADR-0008 accepts `forensic-analytics-logging` as a cross-cutting infrastructure 
 The logging module may depend on `forensic-analytics-observability` for correlation context and on Spring AOP/Context for the accepted method-interception exception. It may publish Boot auto-configuration metadata. It must not depend on domain, application, adapters, persistence, REST, gRPC, generated Protobuf, AspectJ, SLF4J or concrete logging providers.
 
 Automatic logging records operation name, phase, duration, correlation ID and exception category only. It must not log method arguments, return values, raw exception messages, stack frames, payloads, source content, credentials or LLM prompt content.
+
+## 5.9 Target Microservices Ecosystem
+
+ADR-0017 defines the active target service landscape for future service-split
+work. The target landscape is planned, not implemented:
+
+```text
+frontend-web-app
+  -> forensic-gateway-service
+    -> forensic-ingestion-service
+    -> repository-analysis-service
+    -> analysis-store-service
+    -> graph-replay-service
+    -> report-generation-service
+
+repository-analysis-service
+  -> java-ast-analysis-service
+  -> joern-cpg-analysis-service
+
+analysis-store-service
+  <- java-ast-analysis-service
+  <- joern-cpg-analysis-service
+  <- btm-generation-service
+
+graph-replay-service
+  -> analysis-store-service
+
+report-generation-service
+  -> analysis-store-service
+  -> graph-replay-service
+```
+
+Every future service owns its internal domain, application, adapters,
+configuration, tests, health checks and Dockerfile. Service communication is
+limited to REST/OpenAPI, gRPC/protobuf or approved event contracts. Shared Java
+implementation modules between independently deployable services are forbidden.
+
+ADR-0018 accepts initial logical contracts for target service communication.
+Contracts marked as planned are design artifacts only; they do not prove that a
+Gateway endpoint, gRPC method, event publisher or event consumer is implemented.
+Generated transport classes must remain service-local implementation details.
+
+Slice 05 implements the first `analysis-store-service` boundary for the
+`AnalysisJobService` job lifecycle and artifact metadata subset. The service has
+its own domain, application, gRPC adapter, in-memory repository, Spring Boot
+bootstrap, tests and Dockerfile. It does not depend on monolith domain,
+application or persistence modules and does not yet implement durable normalized
+facts, incident records, correlation indexes or database migrations.

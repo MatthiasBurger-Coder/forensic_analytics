@@ -1,0 +1,134 @@
+syntax = "proto3";
+
+package de.burger.forensics.analytics.javaastanalysis.v1;
+
+import "analysis-job.proto";
+
+option java_multiple_files = true;
+option java_package = "de.burger.forensics.analytics.javaastanalysis.v1";
+option java_outer_classname = "JavaAstAnalysisProto";
+
+// Provisional Slice 07 contract for JavaParser-based AST analysis.
+//
+// The service owns static Java source scanning only. It must not claim runtime
+// execution, reachability, branch execution, observed values, graph edges, BTM
+// rules or canonical storage ownership. Source facts are written as a
+// deterministic artifact; this RPC returns artifact metadata and diagnostics so
+// large result sets do not become unbounded inline responses.
+service JavaAstAnalysisService {
+  rpc AnalyzeSourceSnapshot(AnalyzeSourceSnapshotRequest)
+      returns (AnalyzeSourceSnapshotResponse);
+}
+
+message AnalyzeSourceSnapshotRequest {
+  string request_id = 1;
+  string idempotency_key = 2;
+  string schema_version = 3;
+  string correlation_id = 4;
+  de.burger.forensics.analytics.analysisjob.v1.AnalysisWorkerKind worker_kind = 5;
+  de.burger.forensics.analytics.analysisjob.v1.AnalysisRunId analysis_run_id = 6;
+  de.burger.forensics.analytics.analysisjob.v1.AnalysisJobId analysis_job_id = 7;
+  de.burger.forensics.analytics.analysisjob.v1.SourceSnapshotId source_snapshot_id = 8;
+  string worker_version = 9;
+  ScanPolicy scan_policy = 10;
+  repeated SourceRoot source_roots = 11;
+  repeated JavaSourceFile source_files = 12;
+  map<string, string> safe_attributes = 13;
+}
+
+message AnalyzeSourceSnapshotResponse {
+  OperationStatus status = 1;
+  de.burger.forensics.analytics.analysisjob.v1.AnalysisRunId analysis_run_id = 2;
+  de.burger.forensics.analytics.analysisjob.v1.AnalysisJobId analysis_job_id = 3;
+  de.burger.forensics.analytics.analysisjob.v1.SourceSnapshotId source_snapshot_id = 4;
+  de.burger.forensics.analytics.analysisjob.v1.AnalysisCompleteness completeness = 5;
+  de.burger.forensics.analytics.analysisjob.v1.AnalysisArtifactReference source_fact_artifact = 6;
+  ScanSummary summary = 7;
+  repeated JavaAstDiagnostic diagnostics = 8;
+  map<string, string> safe_attributes = 9;
+}
+
+message SourceRoot {
+  // Relative path inside the immutable source snapshot. Absolute workspace
+  // paths, file URIs and parent traversal are forbidden.
+  string relative_path = 1;
+  string language = 2;
+}
+
+message JavaSourceFile {
+  // Relative source root declared in source_roots.
+  string source_root = 1;
+  // Relative path below source_root.
+  string relative_path = 2;
+  // UTF-8 source content supplied through the service boundary.
+  string content_utf8 = 3;
+  // Optional checksum of content_utf8; implementations must verify it when set.
+  string sha256 = 4;
+  int64 size_bytes = 5;
+}
+
+message ScanPolicy {
+  int32 max_files = 1;
+  int64 max_source_bytes = 2;
+  int64 timeout_seconds = 3;
+  bool emit_symbol_resolution_diagnostics = 4;
+}
+
+message ScanSummary {
+  int32 received_file_count = 1;
+  int32 parsed_file_count = 2;
+  int32 skipped_file_count = 3;
+  int32 parse_error_count = 4;
+  int32 source_fact_count = 5;
+  string parser = 6;
+  string parser_version = 7;
+}
+
+message JavaSourceFact {
+  string fact_id = 1;
+  string fact_type = 2;
+  SourceLocation location = 3;
+  string signature = 4;
+  string summary = 5;
+  EvidenceKind evidence_kind = 6;
+}
+
+message SourceLocation {
+  string source_path = 1;
+  string fully_qualified_class_name = 2;
+  string method_name = 3;
+  int32 line_number = 4;
+  int32 column_number = 5;
+}
+
+message JavaAstDiagnostic {
+  string code = 1;
+  string message = 2;
+  DiagnosticSeverity severity = 3;
+  string source_snapshot_id = 4;
+  string source_path = 5;
+  int32 line_number = 6;
+  int32 column_number = 7;
+  bool retryable = 8;
+  bool affects_completeness = 9;
+}
+
+message OperationStatus {
+  string code = 1;
+  string message = 2;
+  bool retryable = 3;
+  string correlation_id = 4;
+  repeated JavaAstDiagnostic diagnostics = 5;
+}
+
+enum DiagnosticSeverity {
+  DIAGNOSTIC_SEVERITY_UNSPECIFIED = 0;
+  DIAGNOSTIC_SEVERITY_INFO = 1;
+  DIAGNOSTIC_SEVERITY_WARNING = 2;
+  DIAGNOSTIC_SEVERITY_ERROR = 3;
+}
+
+enum EvidenceKind {
+  EVIDENCE_KIND_UNSPECIFIED = 0;
+  EVIDENCE_KIND_STATIC_SOURCE_FACT = 1;
+}

@@ -74,8 +74,11 @@ After `workflow execute` completes this workflow:
 - Do not treat current Gradle modules as deployed microservices without runtime
   evidence.
 - Do not directly access another service's database.
-- Do not invent missing contracts, event fields, graph labels, table names,
-  Gradle tasks or API routes.
+- Do not silently invent missing graph labels, table names, Gradle tasks or API
+  routes. The user clarification from 2026-05-16 permits plausible provisional
+  inter-service communication contracts when final details are not yet defined,
+  provided the contracts are logically consistent, documented as provisional and
+  kept out of shared Java implementation modules.
 - Do not claim Docker Swarm or Kubernetes readiness before manifests and
   validation evidence exist.
 
@@ -107,7 +110,7 @@ After `workflow execute` completes this workflow:
 | `java-ast-analysis-service` | JavaParser source scanning and stable source identifiers | `forensic-analytics-adapter-javaparser` | gRPC/event inbound and outbound |
 | `joern-cpg-analysis-service` | Joern CPG/CFG/DFG analysis and semantic artifact mapping | `forensic-analytics-adapter-joern-docker`, `docker/joern/**` | gRPC/event inbound and outbound |
 | `btm-generation-service` | Generate versioned BTM rule artifacts from delivered analysis facts | `RuleGenerationPort`, `.btm` tests and arc42 BTM decisions | REST/gRPC inbound, artifact outbound |
-| `analysis-store-service` | Own normalized analysis facts, sessions, incidents and correlations | `forensic-analytics-persistence`, analysis stores and ports | REST/gRPC inbound, database outbound |
+| `analysis-store-service` | Own analysis job lifecycle, artifact metadata and later normalized facts, incidents and correlations | `forensic-analytics-persistence`, analysis stores and ports | gRPC inbound for Slice 05 job lifecycle; later database outbound |
 | `graph-replay-service` | Build graph/runtime overlays and exception-centered replay | arc42 graph/replay concepts, semantic graph model | REST/gRPC inbound, graph DB outbound |
 | `report-generation-service` | Produce reports, incident context packages and LLM-ready packages | arc42 reporting/LLM concepts, artifact/report storage areas | REST/gRPC inbound, storage outbound |
 | `frontend-web-app` | React frontend communicating through Gateway or public APIs only | `forensic-ui` | REST through Gateway |
@@ -164,7 +167,9 @@ Each slice follows this sequence:
 
 Stop if any expected module, class, method, package, contract, task, endpoint,
 event field, graph label, table, deployment file or quality command cannot be
-verified exactly.
+verified exactly, unless the user has explicitly authorized provisional
+contract definition for that slice and the resulting communication remains
+documented, logical and reviewable.
 
 ## Slice 00 - Repository And Current-State Analysis
 
@@ -367,10 +372,10 @@ Verification:
   build path exists.
 - Run the applicable `QUALITY.md` gate for production/build changes.
 
-## Slice 05 - Build `analysis-store-service`
+## Slice 05 - Build Initial `analysis-store-service`
 
-Purpose: create the owned storage service for normalized analysis facts,
-sessions, incidents and correlations.
+Purpose: create the initial owned Analysis Store service boundary for analysis
+job lifecycle state and artifact metadata registration.
 
 Owner: Senior Java Backend Developer.
 
@@ -380,24 +385,31 @@ Senior DevOps Engineer, Senior Tester.
 Allowed write scope:
 
 - `services/analysis-store-service/**`
-- service-local database configuration and migrations
 - service README and Dockerfile
 - related ownership documentation
 
 Tasks:
 
 - Create an independent Spring Boot service.
-- Define service-owned persistence and migration structure.
-- Expose APIs for storing and querying normalized analysis facts.
-- Document data ownership and one-writer rules.
+- Implement the `AnalysisJobService` job lifecycle subset from the provisional
+  contract.
+- Preserve request schema version, correlation ID, attributes, progress and
+  artifact metadata in the service-owned model.
+- Use service-local in-memory persistence as a non-durable first boundary.
+- Document that durable database migrations, normalized facts, incidents and
+  correlation indexes remain later slices.
+- Document data ownership and one-writer rules for the implemented subset.
 - Prevent direct database access from other services.
 
 Done criteria:
 
-- Analysis store runs independently.
-- Database access is service-owned.
-- Analysis IDs can be stored and queried through APIs.
+- Analysis store builds, starts, exposes gRPC and health endpoints, and can be
+  containerized independently.
+- Job lifecycle and artifact metadata can be stored and queried through APIs.
+- Retryable jobs can be leased again and concurrent workers cannot lease the
+  same in-memory job twice.
 - No shared entity class is introduced.
+- Swarm/Kubernetes deployment evidence remains Slice 15 material.
 
 Verification:
 
@@ -412,11 +424,14 @@ behind a service boundary.
 Owner: Senior Java Backend Developer.
 
 Reviews: Microservice Senior Expert, Senior DevOps Engineer, Senior Git
-Workspace Specialist, Senior Tester.
+Workspace Specialist, Security Sandbox Specialist, Senior Tester.
 
 Allowed write scope:
 
 - `services/repository-analysis-service/**`
+- `contracts/grpc/repository-analysis.proto`
+- `settings.gradle.kts`
+- root `build.gradle.kts` only for generated protobuf coverage exclusion
 - service-local tests
 - service README and Dockerfile
 - contract adapters related to repository-analysis requests
@@ -425,10 +440,18 @@ Tasks:
 
 - Encapsulate Git and workspace functionality inside the service.
 - Define service-internal workspace models.
+- Define and implement the provisional repository-analysis gRPC contract.
 - Provide an API for analysis preparation.
 - Prepare handoff to AST and Joern services through contracts.
 - Document failure cases for missing repository, branch, checkout, workspace
   conflict and permissions.
+- Enforce network-service Git security constraints: HTTPS-only repository URLs,
+  no userinfo or credentials, no local paths, no SSH/SCP remotes, sanitized Git
+  environment, no hooks, no submodules, no build/script/parser execution and
+  redacted diagnostics.
+- Keep mutable workspace paths private to the service. Public responses use
+  opaque workspace IDs, source snapshot IDs, relative source roots, artifact
+  references, completeness and diagnostics.
 
 Done criteria:
 
@@ -436,6 +459,8 @@ Done criteria:
 - Other services do not access its workspace internals.
 - Failure cases are testable.
 - Docker image can be built.
+- Security Sandbox review approves the implemented URL, Git process, workspace
+  confinement, cleanup and diagnostics behavior.
 
 Verification: service-specific tests and applicable `QUALITY.md` gate.
 
@@ -450,9 +475,25 @@ Reviews: Source Analysis Pipeline, Microservice Senior Expert, Senior Tester.
 Allowed write scope:
 
 - `services/java-ast-analysis-service/**`
+- `contracts/grpc/java-ast-analysis.proto`
+- `settings.gradle.kts`
+- root `build.gradle.kts` only for generated protobuf coverage exclusion
+- `.dockerignore` only for the service JAR build-context exception
 - service-local tests
 - service README and Dockerfile
 - AST contract adapters
+
+Scope clarification:
+
+- Slice 07 is authorized to define a provisional `java-ast-analysis` gRPC
+  v1 contract because the existing job contract only carries worker lifecycle
+  and artifact metadata, not typed AST source facts or diagnostics.
+- The provisional contract must remain logical and contract-first while final
+  production schemas are still open. It must not use mutable workspace paths
+  or shared Java DTO/domain classes.
+- Current JavaParser behavior has no verified symbol solver. Slice 07 must
+  report symbol resolution as an explicit limitation or diagnostic instead of
+  claiming verified unresolved-symbol facts.
 
 Tasks:
 
@@ -486,6 +527,12 @@ Allowed write scope:
 - Joern service Dockerfile and runtime scripts
 - service-local tests
 - Joern contract adapters
+- `contracts/grpc/joern-cpg-analysis.proto`
+- `contracts/grpc/README.md`
+- `settings.gradle.kts`
+- root `build.gradle.kts` only for generated protobuf coverage exclusion
+- `.dockerignore`
+- workflow execution and quality documentation for Slice 08 evidence
 
 Tasks:
 
@@ -520,7 +567,11 @@ Allowed write scope:
 - `services/btm-generation-service/**`
 - service-local tests
 - service README and Dockerfile
-- BTM contract adapters
+- BTM contract adapters, including `contracts/grpc/btm-generation.proto` and
+  `contracts/grpc/README.md`
+- service registration in `settings.gradle.kts`
+- generated protobuf coverage exclusion in root `build.gradle.kts`
+- `.dockerignore` service-jar allowlist entries
 
 Tasks:
 
@@ -791,7 +842,7 @@ Done criteria:
 Verification:
 
 ```bash
-./gradlew clean test check --dependency-verification strict --console=plain --stacktrace
+./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace
 ```
 
 Use the full `QUALITY.md` gate when production or build changes require it.
@@ -964,9 +1015,10 @@ Done criteria:
 
 Stop and report when:
 
-- an expected module, class, method, task, package, build file, contract,
-  endpoint, schema field, event field, graph label or deployment file cannot be
-  verified exactly;
+- an expected module, class, method, task, package, build file, endpoint, schema
+  field, graph label or deployment file cannot be verified exactly;
+- a provisional contract or event field cannot be made logically consistent from
+  the documented service relationship and user-approved communication model;
 - a change would introduce shared Java runtime code between services;
 - service boundaries or data ownership are unclear;
 - a slice would directly access another service's database;

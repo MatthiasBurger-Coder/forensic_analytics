@@ -53,7 +53,12 @@ allprojects {
 }
 
 val coverageExcludes = listOf(
+    "de/burger/forensics/analytics/analysisjob/v1/**",
+    "de/burger/forensics/analytics/btmgeneration/v1/**",
     "de/burger/forensics/analytics/ingestion/v1/**",
+    "de/burger/forensics/analytics/javaastanalysis/v1/**",
+    "de/burger/forensics/analytics/joerncpganalysis/v1/**",
+    "de/burger/forensics/analytics/repositoryanalysis/v1/**",
 )
 val javaBaseline = 25
 val junitBom = libs.junit.bom
@@ -65,6 +70,13 @@ val jacocoVersion = libs.versions.jacoco
 subprojects {
     apply(plugin = "java")
     apply(plugin = "jacoco")
+
+    val cleanTask = tasks.named("clean")
+    tasks.configureEach {
+        if (name != "clean") {
+            mustRunAfter(cleanTask)
+        }
+    }
 
     val java25Launcher = extensions.getByType<JavaToolchainService>().launcherFor {
         languageVersion.set(JavaLanguageVersion.of(javaBaseline))

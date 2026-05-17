@@ -1,0 +1,204 @@
+syntax = "proto3";
+
+package de.burger.forensics.analytics.ingestion.v1;
+
+option java_multiple_files = true;
+option java_package = "de.burger.forensics.analytics.ingestion.v1";
+option java_outer_classname = "ForensicIngestionProto";
+
+// Initial contract extracted during Slice 03.
+//
+// Current implementation evidence exists in
+// forensic-analytics-ingestion-grpc/src/main/proto/forensic_ingestion.proto.
+// This contract preserves the current v1 package, service methods, field
+// numbers and enum numbers so existing generated clients can be migrated to a
+// contract-owned source without changing transport semantics.
+//
+// AnalyzeRepository is retained as current compatibility surface only. The
+// target microservice landscape assigns repository checkout and workspace
+// preparation to repository-analysis-service, so new service-to-service
+// interactions must use the analysis-job contracts instead of extending this
+// RPC.
+service ForensicIngestionService {
+  rpc AnalyzeRepository(AnalyzeRepositoryRequest)
+      returns (AnalyzeRepositoryResponse);
+
+  rpc StartAnalysisSession(StartAnalysisSessionRequest)
+      returns (StartAnalysisSessionResponse);
+
+  rpc UploadAnalysisData(stream AnalysisDataEnvelope)
+      returns (UploadAnalysisDataResponse);
+
+  rpc CompleteAnalysisSession(CompleteAnalysisSessionRequest)
+      returns (CompleteAnalysisSessionResponse);
+
+  rpc AbortAnalysisSession(AbortAnalysisSessionRequest)
+      returns (AbortAnalysisSessionResponse);
+}
+
+message StartAnalysisSessionRequest {
+  BuildIdentity build_identity = 1;
+  PluginIdentity plugin_identity = 2;
+  string schema_version = 3;
+}
+
+message StartAnalysisSessionResponse {
+  string session_id = 1;
+  IngestionStatus status = 2;
+  string message = 3;
+}
+
+message AnalyzeRepositoryRequest {
+  RepositoryReference repository = 1;
+  BranchReference branch = 2;
+  CommitReference commit = 3;
+  WorkspacePolicy workspace_policy = 4;
+  BuildContext build_context = 5;
+  string request_id = 6;
+  string schema_version = 7;
+}
+
+message RepositoryReference {
+  string remote_url = 1;
+  string provider = 2;
+  map<string, string> attributes = 3;
+}
+
+message BranchReference {
+  string name = 1;
+  bool required = 2;
+}
+
+message CommitReference {
+  string hash = 1;
+  bool required = 2;
+}
+
+message WorkspacePolicy {
+  bool ephemeral = 1;
+  bool allow_shallow_clone = 2;
+  bool allow_partial_clone = 3;
+  bool allow_sparse_checkout = 4;
+  int64 timeout_seconds = 5;
+  int64 max_workspace_bytes = 6;
+}
+
+message BuildContext {
+  string build_tool = 1;
+  string build_id = 2;
+  string root_project_name = 3;
+  repeated string declared_modules = 4;
+  map<string, string> attributes = 5;
+}
+
+message AnalyzeRepositoryResponse {
+  AnalysisSessionId analysis_session_id = 1;
+  WorkspaceId workspace_id = 2;
+  CheckoutResult checkout_result = 3;
+  string message = 4;
+}
+
+message AnalysisSessionId {
+  string value = 1;
+}
+
+message WorkspaceId {
+  string value = 1;
+}
+
+message CheckoutResult {
+  string resolved_remote_url = 1;
+  string requested_branch = 2;
+  string requested_commit = 3;
+  string resolved_commit = 4;
+  repeated string detected_source_roots = 5;
+  string checkout_status = 6;
+  repeated string diagnostics = 7;
+}
+
+message AnalysisDataEnvelope {
+  string session_id = 1;
+  BuildIdentity build_identity = 2;
+  ModuleIdentity module_identity = 3;
+  PluginIdentity plugin_identity = 4;
+  string schema_version = 5;
+
+  // Deprecated compatibility field from the current v1 contract.
+  // New producers must set payload_descriptor.kind instead. Field number 6 and
+  // name payload_type must not be reused while this v1 contract exists.
+  string payload_type = 6 [deprecated = true];
+
+  bytes payload = 7;
+  AnalysisPayloadDescriptor payload_descriptor = 8;
+}
+
+message UploadAnalysisDataResponse {
+  string session_id = 1;
+  IngestionStatus status = 2;
+  int64 received_items = 3;
+  string message = 4;
+}
+
+message CompleteAnalysisSessionRequest {
+  string session_id = 1;
+}
+
+message CompleteAnalysisSessionResponse {
+  string session_id = 1;
+  IngestionStatus status = 2;
+  string message = 3;
+}
+
+message AbortAnalysisSessionRequest {
+  string session_id = 1;
+  string reason = 2;
+}
+
+message AbortAnalysisSessionResponse {
+  string session_id = 1;
+  IngestionStatus status = 2;
+  string message = 3;
+}
+
+message BuildIdentity {
+  string project_id = 1;
+  string repository_url = 2;
+  string branch_name = 3;
+  string commit_hash = 4;
+  string build_id = 5;
+  string scan_timestamp = 6;
+}
+
+message ModuleIdentity {
+  string module_name = 1;
+  string module_path = 2;
+}
+
+message PluginIdentity {
+  string plugin_name = 1;
+  string plugin_version = 2;
+}
+
+message AnalysisPayloadDescriptor {
+  string payload_id = 1;
+  AnalysisPayloadKind kind = 2;
+  string content_type = 3;
+  map<string, string> attributes = 4;
+}
+
+enum AnalysisPayloadKind {
+  ANALYSIS_PAYLOAD_KIND_UNSPECIFIED = 0;
+  ANALYSIS_PAYLOAD_KIND_SOURCE_FACTS = 1;
+  ANALYSIS_PAYLOAD_KIND_SEMANTIC_ARTIFACTS = 2;
+  ANALYSIS_PAYLOAD_KIND_RULE_ARTIFACTS = 3;
+  ANALYSIS_PAYLOAD_KIND_RUNTIME_TRACE = 4;
+  ANALYSIS_PAYLOAD_KIND_DIAGNOSTIC_REPORT = 5;
+}
+
+enum IngestionStatus {
+  INGESTION_STATUS_UNSPECIFIED = 0;
+  INGESTION_STATUS_ACCEPTED = 1;
+  INGESTION_STATUS_COMPLETED = 2;
+  INGESTION_STATUS_ABORTED = 3;
+  INGESTION_STATUS_REJECTED = 4;
+}
