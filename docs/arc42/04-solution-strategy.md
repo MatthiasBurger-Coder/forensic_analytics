@@ -55,6 +55,8 @@ Repository agent governance follows three process strands:
 
 `workflow create` sharpens requirements through the Requirement Clarification Loop and the five-role Three Amigos Requirement Gate. It ends with checked `docs/workflow/workflow.md`, checked or updated arc42 documentation, Documentation Governance and explicit release for `workflow execute`.
 
+Automatic governance feedback, correction and clarification loops are bounded by `maxRetries = 3`. After retry exhaustion, the active strand stops and escalates to the Root Architect.
+
 `workflow execute` executes the checked workflow slice by slice. Each successful slice must run its quality gate, create a slice-scoped checkpoint commit and push the current workflow branch to `origin`.
 
 Publication modes stay separate: slice checkpoint push, `push` and `push auto` are different processes. `push auto` belongs only to `skills-agents`.

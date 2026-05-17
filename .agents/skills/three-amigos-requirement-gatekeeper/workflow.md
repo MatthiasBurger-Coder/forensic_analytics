@@ -45,6 +45,8 @@ Record:
 
 Ask focused clarification questions when blocking questions remain. Do not create a final `docs/workflow/workflow.md` and do not release `workflow execute` while blocking questions remain.
 
+Automatic clarification attempts are capped at `maxRetries = 3`. After the third unresolved attempt, return `REQUIRES_REFINEMENT`, stop the loop and escalate to the Root Architect.
+
 ## Phase 3 - Five-Role Three Amigos Review
 
 Participants:

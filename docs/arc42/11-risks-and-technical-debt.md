@@ -12,6 +12,7 @@
 | Governance drift | AGENTS.md, process docs, workflow docs, arc42, ADRs and skill registry may diverge | Documentation Governance and explicit process-strand ownership |
 | push auto too broad | `push auto` might be interpreted as permission to publish implementation changes | Restrict `push auto` to `skills-agents` and block product implementation scopes |
 | checkpoint push confused with push auto | Slice checkpoint push might be mistaken for PR merge and cleanup authority | Document slice checkpoint push as workflow-execute-only branch push with no PR merge or cleanup |
+| unbounded governance loop | Automatic clarification or correction loops may keep cycling without a decision | Cap automatic governance loops at `maxRetries = 3` and escalate to Root Architect |
 
 ## 11.1 Technical Debt Candidates
 
@@ -28,6 +29,7 @@
 |---|---|---|
 | Agent mixes process strands | Wrong files changed or unsafe publication | Explicit command routing and strand-scoped file permissions |
 | Requirement is ambiguous | Wrong workflow or implementation | Requirement Clarification Loop and blocking questions |
+| Clarification loop is exhausted | Workflow create may remain unresolved | Stop after `maxRetries = 3` and escalate to Root Architect |
 | arc42 is not updated | Architecture drift | `workflow create` requires checked or updated arc42 |
 | Slice work is lost locally | Rework after machine failure | Slice checkpoint commit and push after every successful slice |
 | `push auto` used too broadly | Product implementation may be merged accidentally | Push Auto Guard restricts it to `skills-agents` |

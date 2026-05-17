@@ -44,6 +44,10 @@ flowchart TD
   Docs --> Stop
 ```
 
+## Bounded Automatic Corrections
+
+The current `skills-agents` flow stops and reports on review failures. If an automatic skills-agents correction loop is explicitly authorized in a future workflow, it is capped at `maxRetries = 3` and then escalates to the Root Architect.
+
 ## Allowed Files
 
 - `AGENTS.md`

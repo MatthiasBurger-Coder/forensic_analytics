@@ -109,6 +109,18 @@ Shared governance roles such as Senior System Architect, Documentation Governanc
 
 The `skills-agents` strand is the only strand that may use `push auto`. `push auto` must not publish backend, frontend, Docker/runtime, gRPC, REST, persistence, analysis-engine, Joern, JavaParser, BTM generator or product implementation changes.
 
+## Bounded Governance Feedback Loops
+
+Every automatic governance feedback, correction or clarification loop is capped at:
+
+```text
+maxRetries = 3
+```
+
+After the third failed or unresolved attempt, the process must STOP and escalate to the Root Architect. The escalation must report the attempted loop, the unresolved blocker, the files or decisions involved and the reason why continuing automatically would be unsafe.
+
+The current `skills-agents` flow is linear and stops on review failures. If a future skills-agents correction loop is explicitly authorized, it is also capped by `maxRetries = 3` and then escalates.
+
 ## Mandatory Skills Update Command
 
 When the user writes exactly:

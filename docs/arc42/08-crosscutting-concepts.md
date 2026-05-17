@@ -111,6 +111,8 @@ The strands must not be mixed. Shared roles such as Senior System Architect, Doc
 
 `workflow create` requires the Requirement Clarification Loop, the five-role Three Amigos Requirement Gate, checked `docs/workflow/workflow.md`, checked or updated arc42 documentation and explicit release for `workflow execute`.
 
+Automatic governance feedback, correction and clarification loops are capped at `maxRetries = 3`; retry exhaustion stops the active strand and escalates to the Root Architect.
+
 `workflow execute` requires checked workflow and arc42 artifacts before implementation and performs slice checkpoint commits and pushes after successful slice quality gates.
 
 Documentation synchronization must keep `AGENTS.md`, `QUALITY.md`, process docs, workflow docs, skill-audit docs, arc42 and ADR references consistent. Planned behavior is not implemented behavior.

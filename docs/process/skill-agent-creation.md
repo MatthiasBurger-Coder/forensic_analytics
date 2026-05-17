@@ -59,6 +59,8 @@ STOP: This branch reconstruction must not change product implementation files.
 9. Final skills-agents gate
 10. Optional release preparation for `push auto`
 
+The skills-agents flow is intentionally linear: review failures STOP and report. If an automatic correction loop is explicitly authorized, it is capped at `maxRetries = 3` and then escalates to the Root Architect.
+
 ## Integrity Review
 
 Each changed skill, role, prompt or agent definition must have:

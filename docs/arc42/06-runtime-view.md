@@ -153,8 +153,10 @@ flowchart TD
   Intake["Requirement Intake"]
   Clarify["Requirement Clarification Loop"]
   Blocking["Blocking Questions?"]
+  Retry{"Clarification attempts <= 3?"}
   Ask["Ask focused clarification questions"]
   Incorporate["Incorporate answers"]
+  Escalate["STOP: Root Architect escalation"]
   Gate["Three Amigos Requirement Gate"]
   Branch["Branch Governance"]
   Req["Senior Requirement Engineer"]
@@ -171,7 +173,9 @@ flowchart TD
   Release["Release for workflow execute"]
 
   Intake --> Clarify --> Blocking
-  Blocking -->|yes| Ask --> Incorporate --> Clarify
+  Blocking -->|yes| Retry
+  Retry -->|yes| Ask --> Incorporate --> Clarify
+  Retry -->|no| Escalate
   Blocking -->|no| Gate --> Branch --> Req --> Architect --> Java --> React --> Tester --> Workflow --> WorkflowCheck --> Arc42 --> Arc42Check --> Docs --> Final --> Release
 ```
 

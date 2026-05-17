@@ -36,6 +36,8 @@ Confidence greater than or equal to 90 percent may be `READY_FOR_WORKFLOW` when 
 
 Blocking questions prevent final workflow authoring and release for `workflow execute`.
 
+Automatic clarification loops are capped at `maxRetries = 3`. After the third unresolved attempt, stop workflow authoring, keep the decision at `REQUIRES_REFINEMENT`, and escalate to the Root Architect with the unresolved blockers.
+
 `workflow create` must use five mandatory roles:
 
 - Senior Requirement Engineer

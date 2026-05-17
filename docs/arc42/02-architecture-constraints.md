@@ -17,6 +17,7 @@
 | Three process strands | Repository agent work is constrained to `skills-agents`, `workflow create` and `workflow execute`. The strands must not be mixed. |
 | skills update command | Exact `skills update` activates only the `skills-agents` strand for skills, agents, roles, prompts, routing rules, organigramm, skill registry and process documentation. |
 | workflow create end state | `workflow create` ends only after no blocking questions remain, `docs/workflow/workflow.md` is checked, arc42 is checked or updated, Documentation Governance passes and workflow execute is explicitly released. |
+| bounded governance loops | Automatic governance feedback, correction and clarification loops are capped at `maxRetries = 3`; retry exhaustion stops and escalates to the Root Architect. |
 | workflow execute checkpoints | `workflow execute` commits and pushes a slice-scoped checkpoint after each successful slice quality gate. |
 | push auto restriction | `push auto` is restricted to `skills-agents` and must not publish product implementation, services, contracts, Docker/runtime, build logic, frontend or analytics implementation files. |
 
@@ -60,6 +61,8 @@ The strands must not be mixed.
 `skills update` activates the `skills-agents` strand.
 
 `workflow create` is responsible for requirement clarification, Three Amigos validation, checked workflow authoring and arc42 synchronization.
+
+Automatic governance feedback, correction and clarification loops are capped at `maxRetries = 3`. Retry exhaustion stops the active strand and escalates to the Root Architect.
 
 `workflow execute` is responsible for executing checked workflow slices through role or subagent routing, quality gates, documentation synchronization and slice checkpoint commits.
 

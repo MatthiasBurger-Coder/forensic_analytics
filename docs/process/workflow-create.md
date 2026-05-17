@@ -14,8 +14,10 @@ flowchart TD
   Intake["Requirement Intake"]
   Clarify["Requirement Clarification Loop"]
   Blocking["Blocking Questions?"]
+  Retry{"Clarification attempts <= 3?"}
   Ask["Ask focused clarification questions"]
   Incorporate["Incorporate answers"]
+  Escalate["STOP: Root Architect escalation"]
   Gate["Three Amigos Requirement Gate"]
   Branch["Branch Governance / Branch Verification"]
   Req["Senior Requirement Engineer review"]
@@ -33,7 +35,9 @@ flowchart TD
   Stop["STOP and return to gate"]
 
   Start --> Intake --> Clarify --> Blocking
-  Blocking -->|yes| Ask --> Incorporate --> Clarify
+  Blocking -->|yes| Retry
+  Retry -->|yes| Ask --> Incorporate --> Clarify
+  Retry -->|no| Escalate
   Blocking -->|no| Gate --> Branch --> Req --> Arch --> Java --> React --> Tester --> Workflow --> WorkflowCheck --> Arc42 --> Arc42Check --> Docs --> Final --> Approved
   Gate --> Stop
   WorkflowCheck --> Stop
@@ -42,6 +46,14 @@ flowchart TD
 ```
 
 ## Requirement Clarification Loop
+
+Automatic clarification attempts are capped at:
+
+```text
+maxRetries = 3
+```
+
+After three unresolved attempts, `workflow create` must STOP and escalate to the Root Architect. Validation correction loops use the same cap and must not silently continue.
 
 The loop must record:
 

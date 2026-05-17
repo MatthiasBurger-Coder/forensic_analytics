@@ -35,6 +35,7 @@
 | workflow create | Process strand that clarifies requirements, creates or sharpens workflow.md, checks arc42 and releases workflow execute |
 | workflow execute | Process strand that executes checked workflow slices with tests, quality gates and slice checkpoint pushes |
 | Requirement Clarification Loop | Workflow-create loop for intent, requirements, assumptions, risks, questions, confidence and readiness decision |
+| maxRetries | Maximum number of automatic governance clarification, feedback or correction attempts before STOP and Root Architect escalation; currently `maxRetries = 3` |
 | Blocking Questions | Questions that affect architecture boundaries, testability, data ownership, service boundaries, APIs, contracts, runtime behavior or scope |
 | Slice checkpoint push | Workflow-execute publication step that commits only the completed slice and pushes the current workflow branch to origin |
 | push auto | skills-agents-only guarded PR lifecycle that may merge and clean up after guard checks pass |

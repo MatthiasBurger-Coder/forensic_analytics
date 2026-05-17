@@ -8,6 +8,8 @@ It may create, update, audit or reconnect skills, agents, roles, prompts, Codex 
 
 It must not implement backend, frontend, Docker/runtime, contracts, persistence, analysis-engine, Joern, JavaParser, BTM generator or analytics behavior.
 
+The skills-agents flow stops on review failures by default. If a workflow explicitly authorizes automatic correction attempts, cap them at `maxRetries = 3` and then escalate to the Root Architect.
+
 Required flow:
 
 1. Load AGENTS.md.

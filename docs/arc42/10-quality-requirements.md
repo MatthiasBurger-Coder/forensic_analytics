@@ -45,6 +45,7 @@ Quality
 | LLM lacks evidence | Diagnosis reports insufficient evidence |
 | Tests fail after generated fix | No PR is created |
 | `workflow create` has blocking questions | No final `docs/workflow/workflow.md` is created and `workflow execute` is not released |
+| `workflow create` clarification retries are exhausted | The loop stops after `maxRetries = 3` and escalates to the Root Architect |
 | `workflow create` completes | `docs/workflow/workflow.md` and arc42 are checked, Documentation Governance passes and release for `workflow execute` is explicit |
 | `workflow execute` completes a slice | The slice quality gate passes before a slice checkpoint commit and push |
 | Slice checkpoint push is requested | The push targets only `origin/<workflow-branch>` and does not create or merge a PR |
@@ -57,6 +58,7 @@ Quality
 | User requests `skills update` | Process correctness | Codex routes to `skills-agents` and does not change product code |
 | User requests `workflow create` | Requirement quality | Codex clarifies requirements before workflow authoring |
 | Blocking questions exist | Safety | Codex returns `REQUIRES_REFINEMENT` and does not create final workflow.md |
+| Clarification attempts exceed `maxRetries = 3` | Safety | Codex stops the loop and escalates to the Root Architect |
 | User requests `workflow execute` | Execution reliability | Codex executes checked slices only |
 | Slice completes | Recoverability | Codex commits and pushes the workflow branch as a checkpoint |
 | User requests `push auto` | Publication safety | Codex allows it only for `skills-agents` |
