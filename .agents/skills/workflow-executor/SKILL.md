@@ -119,6 +119,29 @@ Backend work routes through Senior Java Backend Developer, Microservice Senior E
 
 Frontend work routes through Senior React Frontend Developer, Senior UX Designer, and Senior DevOps with `devops-docker` when container readiness is affected.
 
+## Typed Error Router
+
+When a slice quality gate or validation step fails, classify the failure before
+starting any retry or targeted fix:
+
+| Error type | Route to |
+|---|---|
+| `ARCH_VIOLATION` | Root Architect, Senior System Architect, `architecture-hexagonal` or Hexagonal Architecture Expert |
+| `BUILD_FAILURE` | responsible Backend or Frontend Agent, Senior DevOps, Build Owner mapping |
+| `TEST_FAILURE` | Senior Tester and responsible Slice Agent |
+| `DOC_GOVERNANCE_FAILURE` | Documentation Governance Agent or Senior Documentation Engineer, Requirement Engineer |
+| `LOCK_CONFLICT` | Senior Swarm Orchestrator or Workflow Executor, Root Architect |
+| `UNKNOWN_FAILURE` | Root Architect escalation |
+
+Every failure report must include the error type, owner, retry count, next
+action and rerun command. Automatic retry or targeted-fix attempts are capped at
+`maxRetries = 3`; after retry exhaustion, stop and escalate to the Root
+Architect.
+
+Targeted fixes remain inside `workflow execute` and inside the current workflow
+scope. The router must not call `workflow create`, expand the workflow, merge
+slices or commit unresolved failures.
+
 ## Execution Protocol
 
 For each slice:
@@ -154,6 +177,9 @@ Stop and report if:
 - `S3_BRANCH` finds the wrong branch or a missing local branch ref
 - `S3_SCOPE` finds that the requested work is outside the checked active workflow
 - `S3_CLASSIFY` cannot classify the slice and routes to `S3_UNCLASSIFIED`
+- a quality or validation failure cannot be classified except as `UNKNOWN_FAILURE`
+- the typed error owner cannot be mapped to a verified role, skill or documented interim owner
+- typed-router retries exceed `maxRetries = 3`
 - checked `docs/workflow/workflow.md` is missing
 - checked or updated arc42 documentation is missing
 - the workflow branch is missing, inactive, or cannot be verified as a local ref

@@ -42,6 +42,48 @@ Explicitly declared governance, metadata and documentation-only slices may route
 through the Documentation Strand only when the active workflow declares that
 scope. Otherwise they are unclassified and must escalate.
 
+## Typed Error Router
+
+Quality-gate and validation failures in `workflow execute` must route through
+typed ownership before any retry or fix attempt starts:
+
+```mermaid
+flowchart TD
+  Q10["Q10: Quality Gate / Validation Failure"] --> R["Typed Error Router"]
+  R -->|ARCH_VIOLATION| A["Root Architect / Senior System Architect / Hexagonal Architecture Expert"]
+  R -->|BUILD_FAILURE| B["Responsible Backend or Frontend Agent / DevOps / Build Owner"]
+  R -->|TEST_FAILURE| T["Senior Tester / Responsible Slice Agent"]
+  R -->|DOC_GOVERNANCE_FAILURE| D["Documentation Governance Agent / Requirement Engineer"]
+  R -->|LOCK_CONFLICT| L["Execution Orchestrator Specialist / Root Architect"]
+  R -->|UNKNOWN_FAILURE| X["Root Architect Escalation"]
+  A --> RC{"Retry <= 3?"}
+  B --> RC
+  T --> RC
+  D --> RC
+  L --> RC
+  X --> ESC["Escalate to Root Architect"]
+  RC -->|yes| FIX["Targeted Fix Slice inside S3"]
+  RC -->|no| ESC
+  FIX --> Q10
+```
+
+The router categories are:
+
+| Error type | Target role |
+|---|---|
+| `ARCH_VIOLATION` | Root Architect, Senior System Architect, Hexagonal Architecture Expert |
+| `BUILD_FAILURE` | responsible Backend or Frontend Agent, DevOps, Build Owner |
+| `TEST_FAILURE` | Senior Tester, responsible Slice Agent |
+| `DOC_GOVERNANCE_FAILURE` | Documentation Governance Agent, Requirement Engineer |
+| `LOCK_CONFLICT` | Execution Orchestrator Specialist, Root Architect |
+| `UNKNOWN_FAILURE` | Root Architect |
+
+Automatic fix attempts are capped at `maxRetries = 3`. Retry exhaustion,
+`UNKNOWN_FAILURE`, missing ownership or unclear classification stops execution
+and escalates to the Root Architect. Targeted fix slices remain inside
+`workflow execute`; the router must not jump back to `workflow create` or expand
+the workflow scope automatically.
+
 ## Execution Strands
 
 Workflow execution must keep these implementation and documentation strands separate:

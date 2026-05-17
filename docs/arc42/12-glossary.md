@@ -36,6 +36,7 @@
 | workflow execute | Process strand that executes checked workflow slices with tests, quality gates and slice checkpoint pushes |
 | Requirement Clarification Loop | Workflow-create loop for intent, requirements, assumptions, risks, questions, confidence and readiness decision |
 | maxRetries | Maximum number of automatic governance clarification, feedback or correction attempts before STOP and Root Architect escalation; currently `maxRetries = 3` |
+| Typed Error Router | Workflow-execute quality and validation failure router that classifies failures as `ARCH_VIOLATION`, `BUILD_FAILURE`, `TEST_FAILURE`, `DOC_GOVERNANCE_FAILURE`, `LOCK_CONFLICT` or `UNKNOWN_FAILURE` before retry or escalation |
 | Blocking Questions | Questions that affect architecture boundaries, testability, data ownership, service boundaries, APIs, contracts, runtime behavior or scope |
 | Slice checkpoint push | Workflow-execute publication step that commits only the completed slice and pushes the current workflow branch to origin |
 | push auto | skills-agents-only guarded PR lifecycle that may merge and clean up after guard checks pass |

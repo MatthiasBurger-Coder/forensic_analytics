@@ -203,6 +203,16 @@ flowchart TD
   Runtime["Docker / Runtime Strand"]
   Docs["Documentation Strand"]
   Gate["Slice Quality Gate"]
+  Router["Typed Error Router"]
+  ArchFailure["ARCH_VIOLATION"]
+  BuildFailure["BUILD_FAILURE"]
+  TestFailure["TEST_FAILURE"]
+  DocFailure["DOC_GOVERNANCE_FAILURE"]
+  LockFailure["LOCK_CONFLICT"]
+  UnknownFailure["UNKNOWN_FAILURE"]
+  Retry{"Retry <= 3?"}
+  Fix["Targeted Fix Slice"]
+  Escalate["Root Architect Escalation"]
   Commit["Slice Checkpoint Commit"]
   Push["Push Workflow Branch"]
   Final["Final Workflow Execute Gate"]
@@ -227,5 +237,14 @@ flowchart TD
   Frontend --> Gate
   Runtime --> Gate
   Docs --> Gate
-  Gate --> Commit --> Push --> Final
+  Gate -->|passed| Commit --> Push --> Final
+  Gate -->|failed| Router
+  Router --> ArchFailure --> Retry
+  Router --> BuildFailure --> Retry
+  Router --> TestFailure --> Retry
+  Router --> DocFailure --> Retry
+  Router --> LockFailure --> Retry
+  Router --> UnknownFailure --> Escalate
+  Retry -->|yes| Fix --> Gate
+  Retry -->|no| Escalate
 ```

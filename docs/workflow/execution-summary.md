@@ -59,6 +59,7 @@ Resolution: the user request defines these as target Governance Flowchart V2 sem
 | 02 | Completed | Bounded governance feedback loops with `maxRetries = 3`, Root Architect escalation, synchronized workflow-create loop diagrams and S1 guard notes. |
 | 03 | Completed | Added S3 safety preflight with explicit STOP paths for dirty working tree, wrong branch and scope conflict before slice classification. |
 | 04 | Completed | Added `S3_CLASSIFY` default path: unclassifiable slices route to `S3_UNCLASSIFIED` and Root Architect escalation; declared governance, metadata and documentation-only slices route through Documentation only when the active workflow declares that scope. |
+| 05 | Completed | Added Typed Error Router mapping for quality-gate and validation failures, owner routing, `maxRetries = 3` retry cap, Root Architect escalation for unknown or exhausted failures and S3-only targeted fix loops. |
 
 ## Slice 01 Branch Governance Evidence
 

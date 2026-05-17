@@ -115,6 +115,13 @@ Automatic governance feedback, correction and clarification loops are capped at 
 
 `workflow execute` requires checked workflow and arc42 artifacts before implementation and performs slice checkpoint commits and pushes after successful slice quality gates.
 
+`workflow execute` quality-gate and validation failures are classified by the
+Typed Error Router before retry or escalation. The router categories are
+`ARCH_VIOLATION`, `BUILD_FAILURE`, `TEST_FAILURE`,
+`DOC_GOVERNANCE_FAILURE`, `LOCK_CONFLICT` and `UNKNOWN_FAILURE`; unknown or
+unowned failures escalate to the Root Architect instead of starting a generic
+retry loop.
+
 Documentation synchronization must keep `AGENTS.md`, `QUALITY.md`, process docs, workflow docs, skill-audit docs, arc42 and ADR references consistent. Planned behavior is not implemented behavior.
 
 ## 8.11 Agent Governance

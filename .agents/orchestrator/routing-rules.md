@@ -19,7 +19,14 @@ Use these rules to select roles for a slice. Prefer the smallest set that covers
 - Cross-service REST/OpenAPI, gRPC/protobuf or event contract governance routes to `skills/contract-governance-expert/SKILL.md`.
 - Production microservice migration safety, rollback, strangler strategy or multi-service risk gates route to `skills/microservice-migration-safety-gate/SKILL.md`.
 - Microservice runtime independence, healthcheck, observability or container-readiness evidence routes to `skills/microservice-runtime-readiness-expert/SKILL.md`.
-- Test strategy, regression coverage, ArchUnit, coverage gates or quality failures route to `roles/senior-tester.md`.
+- Test strategy, regression coverage, ArchUnit or coverage-gate design routes to `roles/senior-tester.md`.
+- Quality or validation failures in `workflow execute` route through the Typed Error Router before any retry:
+  - `ARCH_VIOLATION` routes to Root Architect escalation, `roles/senior-system-architect.md` and `skills/architecture-hexagonal/SKILL.md`.
+  - `BUILD_FAILURE` routes to the responsible backend or frontend owner plus `roles/senior-devops.md`; Gradle-specific failures also route to `skills/build-gradle/SKILL.md`.
+  - `TEST_FAILURE` routes to `roles/senior-tester.md` and the responsible slice agent.
+  - `DOC_GOVERNANCE_FAILURE` routes to `roles/senior-documentation-engineer.md` and `roles/senior-requirement-engineer/SKILL.md`.
+  - `LOCK_CONFLICT` routes to `roles/senior-swarm-orchestrator.md` and Root Architect escalation.
+  - `UNKNOWN_FAILURE` routes to Root Architect escalation.
 - Gradle, Docker, Kubernetes, CI, observability or deployment work routes to `roles/senior-devops.md`.
 - New workflow creation, full `docs/workflow` regeneration, slice dependency planning or planning-risk review routes to `roles/senior-workflow-architect/SKILL.md`.
 - EPIC consistency, requirement drift, requirement classification, assumption tracking or requirement-to-architecture synchronization routes to `roles/senior-requirement-engineer/SKILL.md`.

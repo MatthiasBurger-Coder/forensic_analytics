@@ -100,12 +100,12 @@ These labels are introduced by the Governance Flowchart V2 workflow and must be 
 | `S3_SCOPE` | Workflow-scope preflight node | Introduced by workflow, not yet implemented outside `docs/workflow` |
 | `S3_CLASSIFY` | Slice classification node | Introduced by workflow, not yet implemented outside `docs/workflow` |
 | `S3_UNCLASSIFIED` | Unclassifiable-slice stop and escalation node | Introduced by workflow, not yet implemented outside `docs/workflow` |
-| `ARCH_VIOLATION` | Typed Error Router category | Introduced by workflow, not yet implemented outside `docs/workflow` |
-| `BUILD_FAILURE` | Typed Error Router category | Introduced by workflow, not yet implemented outside `docs/workflow` |
-| `TEST_FAILURE` | Typed Error Router category | Introduced by workflow, not yet implemented outside `docs/workflow` |
-| `DOC_GOVERNANCE_FAILURE` | Typed Error Router category | Introduced by workflow, not yet implemented outside `docs/workflow` |
-| `LOCK_CONFLICT` | Typed Error Router category | Introduced by workflow, not yet implemented outside `docs/workflow` |
-| `UNKNOWN_FAILURE` | Typed Error Router category | Introduced by workflow, not yet implemented outside `docs/workflow` |
+| `ARCH_VIOLATION` | Typed Error Router category | Mapped by Slice 05 in workflow-execute, routing rules and quality-gate governance |
+| `BUILD_FAILURE` | Typed Error Router category | Mapped by Slice 05 in workflow-execute, routing rules and quality-gate governance |
+| `TEST_FAILURE` | Typed Error Router category | Mapped by Slice 05 in workflow-execute, routing rules and quality-gate governance |
+| `DOC_GOVERNANCE_FAILURE` | Typed Error Router category | Mapped by Slice 05 in workflow-execute, routing rules and quality-gate governance |
+| `LOCK_CONFLICT` | Typed Error Router category | Mapped by Slice 05 in workflow-execute, routing rules and quality-gate governance |
+| `UNKNOWN_FAILURE` | Typed Error Router category | Mapped by Slice 05 in workflow-execute, routing rules and quality-gate governance |
 | CP | Commit, checkpoint and rollback subgraph | Introduced by workflow, not yet implemented outside `docs/workflow` |
 | `CP_ROLLBACK` | Rollback and revert decision node | Introduced by workflow, not yet implemented outside `docs/workflow` |
 | `CP_FINAL` | Post-checkpoint continuation node | Introduced by workflow, not yet implemented outside `docs/workflow` |
@@ -143,7 +143,7 @@ These labels are introduced by the Governance Flowchart V2 workflow and must be 
 
 - Dedicated Root Architect role file is not present.
 - Dedicated Flowchart Integrity Audit skill is not present.
-- Typed Error Router is not yet represented by a dedicated skill or process document.
+- Typed Error Router is mapped into workflow-execute and quality-gate governance; a dedicated standalone skill remains a Slice 14 linkage decision.
 - Conflict Locking is present as orchestration intent, but not yet as a named governance node.
 
 These gaps are documented and are not blockers for workflow creation because the user request defines the target semantics and Slice 14 owns the linkage decision.

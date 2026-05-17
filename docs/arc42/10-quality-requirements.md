@@ -61,4 +61,6 @@ Quality
 | Clarification attempts exceed `maxRetries = 3` | Safety | Codex stops the loop and escalates to the Root Architect |
 | User requests `workflow execute` | Execution reliability | Codex executes checked slices only |
 | Slice completes | Recoverability | Codex commits and pushes the workflow branch as a checkpoint |
+| Slice quality gate fails | Ownership clarity | Codex classifies the failure with the Typed Error Router before retry or escalation |
+| Quality failure cannot be classified | Safety | Codex routes `UNKNOWN_FAILURE` to Root Architect escalation |
 | User requests `push auto` | Publication safety | Codex allows it only for `skills-agents` |

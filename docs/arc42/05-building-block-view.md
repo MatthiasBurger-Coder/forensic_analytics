@@ -236,6 +236,7 @@ Responsibilities:
 - stop and escalate unclassifiable slices through `S3_UNCLASSIFIED` instead of executing them automatically
 - route to roles or subagents
 - run Slice Quality Gates
+- route quality-gate or validation failures through the Typed Error Router
 - create Slice Checkpoint Commit
 - push workflow branch to origin
 - update execution report and arc42 consistency
