@@ -62,10 +62,13 @@ not be presented as runtime execution evidence.
 
 `btm-generation.proto` is intentionally limited to generated instrumentation
 artifacts. It accepts accepted fact artifact references and bounded inline
-instrumentation targets through the service boundary. It must not expose
-repository URLs, workspace paths, source content or runtime trace claims. Stable
-rule IDs are derived from source snapshot, target, probe kind and rule schema
-version so identical inputs produce reproducible rules.
+instrumentation targets through the service boundary. Slice 03 records Analysis
+Store as the target-selection metadata owner and BTM Generation as a bounded
+target snapshot consumer. The contract also carries artifact byte-access
+metadata so registered artifact metadata does not imply byte-custody transfer.
+It must not expose repository URLs, workspace paths, source content or runtime
+trace claims. Stable rule IDs are derived from source snapshot, target, probe
+kind and rule schema version so identical inputs produce reproducible rules.
 
 The public BTM artifact delivery RPC is additive. It streams a manifest and
 bounded file chunks after Analysis Store metadata identifies accepted generated

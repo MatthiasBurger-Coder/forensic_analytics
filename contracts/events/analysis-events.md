@@ -187,8 +187,15 @@ Payload:
 | Field | Type | Required | Meaning |
 |---|---|---:|---|
 | `artifacts` | array | yes | Artifact references with path, type, checksum and size. |
-| `producerService` | string | yes | Service that owns artifact bytes until accepted. |
+| `producerService` | string | yes | Service that produced the artifact metadata. |
+| `byteOwnerService` | string | yes | Service that owns artifact bytes. |
+| `metadataOwnerService` | string | yes | Service that owns accepted artifact metadata after registration. |
+| `byteCustody` | enum | yes | `PRODUCER_RETAINED`, `SCOPED_OBJECT_ACCESS` or `EXPLICIT_HANDOFF`. |
 | `completeness` | enum | yes | Completeness of artifact set. |
+
+Analysis Store acceptance registers canonical artifact metadata only. It does
+not transfer byte custody unless a later explicit handoff or object-access
+contract records that transfer.
 
 ### `analysis.report.requested`
 

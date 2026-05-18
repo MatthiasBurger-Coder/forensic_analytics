@@ -182,13 +182,23 @@ message AnalysisArtifactReference {
   string producer_service = 3;
   string schema_version = 4;
   AnalysisCompleteness completeness = 5;
+  ArtifactByteAccess byte_access = 6;
 }
 
 message ArtifactReference {
+  // Opaque artifact key or owner-relative artifact path. Private filesystem
+  // paths, file URIs and shared object-store prefixes are forbidden.
   string path = 1;
   string type = 2;
   string sha256 = 3;
   int64 size_bytes = 4;
+}
+
+message ArtifactByteAccess {
+  string owner_service = 1;
+  string retrieval_contract = 2;
+  string retrieval_reference = 3;
+  ArtifactByteCustody byte_custody = 4;
 }
 
 message AnalysisJobFailure {
@@ -244,4 +254,11 @@ enum AnalysisArtifactCategory {
   ANALYSIS_ARTIFACT_CATEGORY_RUNTIME = 2;
   ANALYSIS_ARTIFACT_CATEGORY_PROJECTION = 3;
   ANALYSIS_ARTIFACT_CATEGORY_GENERATED = 4;
+}
+
+enum ArtifactByteCustody {
+  ARTIFACT_BYTE_CUSTODY_UNSPECIFIED = 0;
+  ARTIFACT_BYTE_CUSTODY_PRODUCER_RETAINED = 1;
+  ARTIFACT_BYTE_CUSTODY_SCOPED_OBJECT_ACCESS = 2;
+  ARTIFACT_BYTE_CUSTODY_EXPLICIT_HANDOFF = 3;
 }

@@ -58,6 +58,7 @@ message GenerateBtmRulesResponse {
   ReproducibilityMetadata reproducibility = 9;
   repeated BtmDiagnostic diagnostics = 10;
   map<string, string> safe_attributes = 11;
+  InstrumentationTargetSelection target_selection = 12;
 }
 
 message DownloadBtmArtifactsRequest {
@@ -73,6 +74,7 @@ message DownloadBtmArtifactsRequest {
   int64 max_total_bytes = 8;
   repeated string artifact_references = 9;
   map<string, string> safe_attributes = 10;
+  repeated de.burger.forensics.analytics.analysisjob.v1.AnalysisArtifactReference accepted_generated_artifacts = 11;
 }
 
 message BtmArtifactDeliveryMessage {
@@ -93,6 +95,8 @@ message BtmArtifactManifest {
   int64 total_size_bytes = 7;
   string manifest_sha256 = 8;
   string delivery_order = 9;
+  ReproducibilityMetadata reproducibility = 10;
+  InstrumentationTargetSelection target_selection = 11;
 }
 
 message BtmArtifactDescriptor {
@@ -121,9 +125,22 @@ message DeliveredAnalysisFacts {
   repeated de.burger.forensics.analytics.analysisjob.v1.AnalysisArtifactReference source_fact_artifacts = 1;
   // Accepted semantic artifacts, such as Joern CPG/CFG/DFG outputs.
   repeated de.burger.forensics.analytics.analysisjob.v1.AnalysisArtifactReference semantic_artifacts = 2;
-  // Bounded inline targets selected from accepted facts.
+  // Bounded inline targets selected by analysis-store-service from accepted
+  // facts. BTM Generation must not infer runtime execution from these targets.
   repeated InstrumentationTarget targets = 3;
   de.burger.forensics.analytics.analysisjob.v1.AnalysisCompleteness input_completeness = 4;
+  InstrumentationTargetSelection target_selection = 5;
+}
+
+message InstrumentationTargetSelection {
+  string selection_id = 1;
+  string owner_service = 2;
+  string policy_version = 3;
+  string selection_fingerprint = 4;
+  de.burger.forensics.analytics.analysisjob.v1.AnalysisCompleteness completeness = 5;
+  string deterministic_order = 6;
+  string correlation_id = 7;
+  int32 target_count = 8;
 }
 
 message InstrumentationTarget {
@@ -138,6 +155,11 @@ message InstrumentationTarget {
   string signature = 7;
   int32 line_number = 8;
   ProbeKind probe_kind = 9;
+  string source_fact_artifact_reference = 10;
+  string semantic_artifact_reference = 11;
+  int32 order_index = 12;
+  de.burger.forensics.analytics.analysisjob.v1.AnalysisCompleteness completeness = 13;
+  string sensitivity = 14;
 }
 
 message BtmGenerationPolicy {

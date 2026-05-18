@@ -2,9 +2,9 @@
 
 ## Status
 
-`workflow execute` started. Slice 00 and Slice 01 checkpoints completed and
-pushed. Slice 02 Gateway HTTP and gRPC BTM delivery contract verification has
-passed and is pending checkpoint commit and push.
+`workflow execute` started. Slices 00, 01 and 02 checkpoints completed and
+pushed. Slice 03 artifact and instrumentation target ownership contract work is
+in progress.
 
 ## Branch
 
@@ -160,20 +160,67 @@ responsibleAgent=Workflow Executor with Senior gRPC Proto Specialist, Senior Jav
 changedFiles=docs/workflow/execution-report.md; docs/workflow/workflow.history.md; contracts/README.md; contracts/grpc/README.md; contracts/grpc/btm-generation.proto; contracts/openapi/README.md; contracts/openapi/gateway-api.yaml; docs/architecture/contract-versioning.md; docs/contracts/contract-test-plan.md; forensic-analytics-rest/src/test/java/de/burger/forensics/analytics/rest/GatewayOpenApiContractTest.java; services/btm-generation-service/src/test/java/de/burger/forensics/analytics/services/btmgeneration/adapter/in/grpc/BtmGenerationContractTest.java
 qualityGateCommands=git diff --check; ./gradlew :forensic-analytics-rest:test --tests '*GatewayOpenApiContractTest' --dependency-verification strict --console=plain --stacktrace; ./gradlew :services:btm-generation-service:generateProto --dependency-verification strict --console=plain --stacktrace; ./gradlew :services:btm-generation-service:test --tests '*BtmGenerationContractTest' --dependency-verification strict --console=plain --stacktrace; ./gradlew test --dependency-verification strict --console=plain --stacktrace
 qualityGateResult=PASS
-commitHash=pending
-pushResult=pending
+commitHash=1b65e12c4a51421a73c60935ceb8d4973df331c7
+pushResult=PUB_DONE to origin/feature/workflow-microservices-btm-pipeline-20260517
 rollbackReference=516fbd23869850866dba846724e87e68827ac958
 arc42Updated=not required for Slice 02; contract-versioning updated
 adrUpdated=not required for Slice 02
 ```
 
+## Slice 03 - Artifact And Instrumentation Target Ownership Contract
+
+### Review Evidence
+
+Read-only Slice 03 reviews completed before ownership contract files were
+changed:
+
+- Senior Analysis Storage Architect: confirmed Analysis Store owns canonical
+  facts and accepted artifact metadata, not artifact bytes; requested explicit
+  byte-custody metadata, target-selection ownership and event wording that
+  metadata acceptance does not transfer byte custody.
+- Senior gRPC Proto Specialist: required additive fields only, no existing
+  field renumbering or RPC renaming, with byte-access metadata on
+  `AnalysisArtifactReference` and target-selection provenance on BTM
+  generation/delivery messages.
+- Senior Tester: required focused Protobuf generation and contract tests,
+  a focused executable event contract test when `analysis-events.md` changes,
+  and the repository minimum `./gradlew test` gate before checkpoint.
+
+### Verification
+
+```text
+git diff --check -> PASS
+./gradlew :services:analysis-store-service:generateProto :services:btm-generation-service:generateProto :services:java-ast-analysis-service:generateProto :services:joern-cpg-analysis-service:generateProto --dependency-verification strict --console=plain --stacktrace -> PASS
+./gradlew :services:analysis-store-service:test --tests '*AnalysisJobContractTest' --dependency-verification strict --console=plain --stacktrace -> PASS
+./gradlew :services:btm-generation-service:test --tests '*BtmGenerationContractTest' --dependency-verification strict --console=plain --stacktrace -> PASS
+./gradlew :forensic-analytics-rest:test --tests '*AnalysisEventsContractTest' --dependency-verification strict --console=plain --stacktrace -> PASS after whitespace-normalized Markdown assertion fix
+./gradlew test --dependency-verification strict --console=plain --stacktrace -> PASS
+```
+
+### CP_RECORD
+
+```text
+workflowVersion=microservices-btm-pipeline-20260517-v1
+sliceId=03
+sliceTitle=Artifact and instrumentation target ownership contract
+responsibleAgent=Workflow Executor with Senior Analysis Storage Architect, Senior gRPC Proto Specialist and Senior Tester reviews
+changedFiles=docs/workflow/execution-report.md; docs/workflow/workflow.history.md; contracts/grpc/README.md; contracts/grpc/analysis-job.proto; contracts/grpc/btm-generation.proto; contracts/events/analysis-events.md; docs/architecture/data-ownership.md; docs/architecture/service-communication-matrix.md; forensic-analytics-rest/src/test/java/de/burger/forensics/analytics/contracts/AnalysisEventsContractTest.java; services/analysis-store-service/src/test/java/de/burger/forensics/analytics/services/analysisstore/adapter/in/grpc/AnalysisJobContractTest.java; services/btm-generation-service/src/test/java/de/burger/forensics/analytics/services/btmgeneration/adapter/in/grpc/BtmGenerationContractTest.java
+qualityGateCommands=git diff --check; ./gradlew :services:analysis-store-service:generateProto :services:btm-generation-service:generateProto :services:java-ast-analysis-service:generateProto :services:joern-cpg-analysis-service:generateProto --dependency-verification strict --console=plain --stacktrace; ./gradlew :services:analysis-store-service:test --tests '*AnalysisJobContractTest' --dependency-verification strict --console=plain --stacktrace; ./gradlew :services:btm-generation-service:test --tests '*BtmGenerationContractTest' --dependency-verification strict --console=plain --stacktrace; ./gradlew :forensic-analytics-rest:test --tests '*AnalysisEventsContractTest' --dependency-verification strict --console=plain --stacktrace; ./gradlew test --dependency-verification strict --console=plain --stacktrace
+qualityGateResult=PASS
+commitHash=pending
+pushResult=pending
+rollbackReference=1b65e12c4a51421a73c60935ceb8d4973df331c7
+arc42Updated=not required for Slice 03; data-ownership and service-communication matrix updated
+adrUpdated=not required for Slice 03
+```
+
 ## Implementation Status
 
-Slice 02 changed contract definitions and focused contract tests only. No
-runtime implementation, Gradle registration, frontend code, Docker files or
-deployment material was changed.
+Slice 03 changes contract definitions, architecture ownership notes and
+focused contract tests only. No runtime implementation, Gradle registration,
+frontend code, Docker files or deployment material was changed.
 
 ## Next Action
 
-After the Slice 02 checkpoint commit and push succeed, continue with Slice 03
+After the Slice 03 checkpoint commit and push succeed, continue with Slice 04
 from `docs/workflow/workflow.md`.
