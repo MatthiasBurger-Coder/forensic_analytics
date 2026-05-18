@@ -22,3 +22,15 @@ Repository checkout runs in a service-owned workspace. Public responses expose
 opaque workspace IDs, source snapshot IDs, relative source roots and artifact
 references only. Git command output and filesystem paths are not returned in
 public error descriptions.
+
+## Java AST Handoff
+
+Slice 06 adds the producer-pushed Java AST handoff path. Repository Analysis
+collects bounded UTF-8 Java source files only from verified relative Java source
+roots inside its private workspace, computes checksums, and sends relative
+source-root paths plus inline source content to `java-ast-analysis-service` over
+that service's gRPC contract.
+
+The handoff never exposes private workspace paths, does not add a Java AST pull
+API, and does not transfer source-package artifact byte custody. Artifact-byte
+or source-package retrieval remains a later contract-governance decision.

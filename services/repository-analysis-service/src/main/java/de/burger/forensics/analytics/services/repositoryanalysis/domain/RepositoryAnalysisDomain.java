@@ -5,6 +5,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -35,6 +36,12 @@ public final class RepositoryAnalysisDomain {
     public record AnalysisRunId(String value) {
         public AnalysisRunId {
             value = requireText(value, "analysis run id");
+        }
+    }
+
+    public record AnalysisJobId(String value) {
+        public AnalysisJobId {
+            value = requireText(value, "analysis job id");
         }
     }
 
@@ -205,6 +212,123 @@ public final class RepositoryAnalysisDomain {
             }
             Objects.requireNonNull(manifestArtifact, "manifest artifact must not be null");
             limitations = List.copyOf(Objects.requireNonNullElse(limitations, List.of()));
+        }
+    }
+
+    public record SourceSnapshotHandoffPolicy(
+        int maxFiles,
+        long maxSourceBytes,
+        long timeoutSeconds
+    ) {
+        public SourceSnapshotHandoffPolicy {
+            if (maxFiles < 1 || maxFiles > 100_000) {
+                throw new IllegalArgumentException("max files must be between 1 and 100000");
+            }
+            if (maxSourceBytes < 1 || maxSourceBytes > 1_073_741_824L) {
+                throw new IllegalArgumentException("max source bytes must be between 1 and 1073741824");
+            }
+            if (timeoutSeconds < 1 || timeoutSeconds > 86_400) {
+                throw new IllegalArgumentException("timeout seconds must be between 1 and 86400");
+            }
+        }
+    }
+
+    public record SourceSnapshotSourceFile(
+        String sourceRoot,
+        String relativePath,
+        String contentUtf8,
+        String sha256,
+        long sizeBytes
+    ) {
+        public SourceSnapshotSourceFile {
+            sourceRoot = requireRelativeReference(sourceRoot, "source root");
+            relativePath = requireRelativeReference(relativePath, "source file path");
+            contentUtf8 = Objects.requireNonNull(contentUtf8, "source content must not be null");
+            sha256 = requireSha256(sha256, "source file sha256");
+            if (sizeBytes < 0) {
+                throw new IllegalArgumentException("source file size must not be negative");
+            }
+        }
+
+        public String sourcePath() {
+            return ".".equals(sourceRoot) ? relativePath : sourceRoot + "/" + relativePath;
+        }
+    }
+
+    public record JavaAstScanSummary(
+        int receivedFileCount,
+        int parsedFileCount,
+        int skippedFileCount,
+        int parseErrorCount,
+        int sourceFactCount,
+        String parser,
+        String parserVersion
+    ) {
+        public JavaAstScanSummary {
+            if (receivedFileCount < 0 || parsedFileCount < 0 || skippedFileCount < 0
+                || parseErrorCount < 0 || sourceFactCount < 0) {
+                throw new IllegalArgumentException("scan counts must not be negative");
+            }
+            parser = requireText(parser, "parser");
+            parserVersion = requireText(parserVersion, "parser version");
+        }
+    }
+
+    public record JavaAstAnalysisHandoffCommand(
+        String requestId,
+        String idempotencyKey,
+        String schemaVersion,
+        String correlationId,
+        AnalysisRunId analysisRunId,
+        AnalysisJobId analysisJobId,
+        SourceSnapshotId sourceSnapshotId,
+        String workerVersion,
+        SourceSnapshotHandoffPolicy policy,
+        List<SourceRoot> sourceRoots,
+        List<SourceSnapshotSourceFile> sourceFiles,
+        Map<String, String> safeAttributes
+    ) {
+        public JavaAstAnalysisHandoffCommand {
+            requestId = requireText(requestId, "request id");
+            idempotencyKey = requireText(idempotencyKey, "idempotency key");
+            schemaVersion = requireText(schemaVersion, "schema version");
+            correlationId = requireText(correlationId, "correlation id");
+            Objects.requireNonNull(analysisRunId, "analysis run id must not be null");
+            Objects.requireNonNull(analysisJobId, "analysis job id must not be null");
+            Objects.requireNonNull(sourceSnapshotId, "source snapshot id must not be null");
+            workerVersion = requireText(workerVersion, "worker version");
+            Objects.requireNonNull(policy, "handoff policy must not be null");
+            sourceRoots = List.copyOf(Objects.requireNonNull(sourceRoots, "source roots must not be null"));
+            sourceFiles = List.copyOf(Objects.requireNonNull(sourceFiles, "source files must not be null"));
+            if (sourceRoots.isEmpty()) {
+                throw new IllegalArgumentException("source roots must not be empty");
+            }
+            if (sourceFiles.isEmpty()) {
+                throw new IllegalArgumentException("source files must not be empty");
+            }
+            safeAttributes = RepositoryAnalysisDomain.safeAttributes(safeAttributes);
+        }
+    }
+
+    public record JavaAstAnalysisHandoffResult(
+        AnalysisRunId analysisRunId,
+        AnalysisJobId analysisJobId,
+        SourceSnapshotId sourceSnapshotId,
+        SourceSnapshotCompleteness completeness,
+        ArtifactReference sourceFactArtifact,
+        JavaAstScanSummary summary,
+        List<Diagnostic> diagnostics,
+        Map<String, String> safeAttributes
+    ) {
+        public JavaAstAnalysisHandoffResult {
+            Objects.requireNonNull(analysisRunId, "analysis run id must not be null");
+            Objects.requireNonNull(analysisJobId, "analysis job id must not be null");
+            Objects.requireNonNull(sourceSnapshotId, "source snapshot id must not be null");
+            completeness = Objects.requireNonNullElse(completeness, SourceSnapshotCompleteness.UNKNOWN);
+            Objects.requireNonNull(sourceFactArtifact, "source fact artifact must not be null");
+            Objects.requireNonNull(summary, "scan summary must not be null");
+            diagnostics = List.copyOf(Objects.requireNonNullElse(diagnostics, List.of()));
+            safeAttributes = RepositoryAnalysisDomain.safeAttributes(safeAttributes);
         }
     }
 
@@ -387,7 +511,7 @@ public final class RepositoryAnalysisDomain {
         var lower = reference.toLowerCase(Locale.ROOT);
         if (reference.startsWith("/") || reference.startsWith("\\") || reference.contains("\\")
             || lower.startsWith("file:") || reference.matches("^[A-Za-z]:.*")
-            || reference.contains("../") || reference.contains("/..") || "..".equals(reference)
+            || Arrays.asList(reference.split("/")).contains("..")
             || reference.contains("\n") || reference.contains("\r")) {
             throw new IllegalArgumentException(name + " must be relative and service-owned");
         }

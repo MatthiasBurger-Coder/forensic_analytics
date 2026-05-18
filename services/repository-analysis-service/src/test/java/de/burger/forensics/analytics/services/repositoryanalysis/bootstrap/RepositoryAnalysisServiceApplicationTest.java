@@ -61,7 +61,8 @@ class RepositoryAnalysisServiceApplicationTest {
         var properties = new RepositoryAnalysisServiceProperties(
             new RepositoryAnalysisServiceProperties.Grpc(false, "127.0.0.1", 0),
             new RepositoryAnalysisServiceProperties.Health(false, "127.0.0.1", 0),
-            new RepositoryAnalysisServiceProperties.Workspace(Path.of("build/test-workspaces"))
+            new RepositoryAnalysisServiceProperties.Workspace(Path.of("build/test-workspaces")),
+            javaAstAnalysis()
         );
         var grpc = new GrpcServerLifecycle(properties, null);
         var health = new HealthHttpServerLifecycle(properties, grpc);
@@ -90,16 +91,25 @@ class RepositoryAnalysisServiceApplicationTest {
         assertThrows(NullPointerException.class, () -> new RepositoryAnalysisServiceProperties(
             null,
             new RepositoryAnalysisServiceProperties.Health(true, "127.0.0.1", 0),
-            new RepositoryAnalysisServiceProperties.Workspace(Path.of("build/test-workspaces"))
+            new RepositoryAnalysisServiceProperties.Workspace(Path.of("build/test-workspaces")),
+            javaAstAnalysis()
         ));
         assertThrows(NullPointerException.class, () -> new RepositoryAnalysisServiceProperties(
             new RepositoryAnalysisServiceProperties.Grpc(true, "127.0.0.1", 0),
             null,
-            new RepositoryAnalysisServiceProperties.Workspace(Path.of("build/test-workspaces"))
+            new RepositoryAnalysisServiceProperties.Workspace(Path.of("build/test-workspaces")),
+            javaAstAnalysis()
         ));
         assertThrows(NullPointerException.class, () -> new RepositoryAnalysisServiceProperties(
             new RepositoryAnalysisServiceProperties.Grpc(true, "127.0.0.1", 0),
             new RepositoryAnalysisServiceProperties.Health(true, "127.0.0.1", 0),
+            null,
+            javaAstAnalysis()
+        ));
+        assertThrows(NullPointerException.class, () -> new RepositoryAnalysisServiceProperties(
+            new RepositoryAnalysisServiceProperties.Grpc(true, "127.0.0.1", 0),
+            new RepositoryAnalysisServiceProperties.Health(true, "127.0.0.1", 0),
+            new RepositoryAnalysisServiceProperties.Workspace(Path.of("build/test-workspaces")),
             null
         ));
         assertThrows(IllegalArgumentException.class, () -> new RepositoryAnalysisServiceProperties.Grpc(true, " ", 0));
@@ -108,11 +118,16 @@ class RepositoryAnalysisServiceApplicationTest {
         assertThrows(IllegalArgumentException.class, () -> new RepositoryAnalysisServiceProperties.Health(true, "127.0.0.1", 65_536));
         assertThrows(IllegalArgumentException.class, () -> new RepositoryAnalysisServiceProperties.Health(true, null, 0));
         assertThrows(NullPointerException.class, () -> new RepositoryAnalysisServiceProperties.Workspace(null));
+        assertThrows(NullPointerException.class, () -> new RepositoryAnalysisServiceProperties.JavaAstAnalysis(null));
+        assertThrows(IllegalArgumentException.class, () -> new RepositoryAnalysisServiceProperties.ClientGrpc(" ", 9093, 5));
+        assertThrows(IllegalArgumentException.class, () -> new RepositoryAnalysisServiceProperties.ClientGrpc("127.0.0.1", -1, 5));
+        assertThrows(IllegalArgumentException.class, () -> new RepositoryAnalysisServiceProperties.ClientGrpc("127.0.0.1", 9093, 0));
 
         var properties = new RepositoryAnalysisServiceProperties(
             new RepositoryAnalysisServiceProperties.Grpc(true, "127.0.0.1", 0),
             new RepositoryAnalysisServiceProperties.Health(true, "127.0.0.1", 0),
-            new RepositoryAnalysisServiceProperties.Workspace(Path.of("build/test-workspaces"))
+            new RepositoryAnalysisServiceProperties.Workspace(Path.of("build/test-workspaces")),
+            javaAstAnalysis()
         );
         var grpc = new GrpcServerLifecycle(properties, null);
         var health = new HealthHttpServerLifecycle(properties, grpc);
@@ -128,5 +143,11 @@ class RepositoryAnalysisServiceApplicationTest {
     private static int healthResponseCode(int port) throws Exception {
         var connection = URI.create("http://127.0.0.1:" + port + "/health").toURL().openConnection();
         return ((java.net.HttpURLConnection) connection).getResponseCode();
+    }
+
+    private static RepositoryAnalysisServiceProperties.JavaAstAnalysis javaAstAnalysis() {
+        return new RepositoryAnalysisServiceProperties.JavaAstAnalysis(
+            new RepositoryAnalysisServiceProperties.ClientGrpc("127.0.0.1", 9093, 5)
+        );
     }
 }

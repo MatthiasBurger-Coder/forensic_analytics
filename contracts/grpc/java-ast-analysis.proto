@@ -8,7 +8,7 @@ option java_multiple_files = true;
 option java_package = "de.burger.forensics.analytics.javaastanalysis.v1";
 option java_outer_classname = "JavaAstAnalysisProto";
 
-// Provisional Slice 07 contract for JavaParser-based AST analysis.
+// Provisional Slice 06 contract for JavaParser-based AST analysis.
 //
 // The service owns static Java source scanning only. It must not claim runtime
 // execution, reachability, branch execution, observed values, graph edges, BTM

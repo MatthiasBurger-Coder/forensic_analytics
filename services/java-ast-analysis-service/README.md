@@ -10,7 +10,7 @@ its own Gradle project and maps them into service-owned models.
 
 ## Contract
 
-The provisional inbound API is `JavaAstAnalysisService.AnalyzeSourceSnapshot`
+The provisional Slice 06 inbound API is `JavaAstAnalysisService.AnalyzeSourceSnapshot`
 from `contracts/grpc/java-ast-analysis.proto`.
 
 Inputs are immutable source snapshot identifiers, declared Java source roots,

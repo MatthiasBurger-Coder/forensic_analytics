@@ -2,9 +2,10 @@
 
 ## Status
 
-`workflow execute` started. Slices 00, 01, 02, 03 and 04 checkpoints completed
-and pushed. Slice 05 External Git Repository Workspace Flow implementation and
-verification are complete; checkpoint commit and push are pending.
+`workflow execute` started. Slices 00, 01, 02, 03, 04 and 05 checkpoints
+completed and pushed. Slice 06 Java AST Worker Handoff implementation and
+Security Sandbox blocker fix are implemented; post-fix full local quality gate
+passed; checkpoint commit and push are pending.
 
 ## Branch
 
@@ -349,8 +350,8 @@ responsibleAgent=Workflow Executor with Senior Tester, Senior Java Backend, Micr
 changedFiles=docs/workflow/execution-report.md; docs/workflow/workflow.history.md; contracts/openapi/README.md; contracts/openapi/gateway-api.yaml; forensic-analytics-rest/src/test/java/de/burger/forensics/analytics/rest/GatewayOpenApiContractTest.java; services/forensic-gateway-service/README.md; services/forensic-gateway-service/build.gradle.kts; services/forensic-gateway-service/src/main/java/de/burger/forensics/analytics/services/gateway/adapter/in/http/GatewayHttpHandler.java; services/forensic-gateway-service/src/main/java/de/burger/forensics/analytics/services/gateway/adapter/out/grpc/RepositoryAnalysisGrpcClient.java; services/forensic-gateway-service/src/main/java/de/burger/forensics/analytics/services/gateway/application/GatewayIdempotencyConflictException.java; services/forensic-gateway-service/src/main/java/de/burger/forensics/analytics/services/gateway/application/GatewayRepositoryAnalysisException.java; services/forensic-gateway-service/src/main/java/de/burger/forensics/analytics/services/gateway/application/GatewayRepositoryAnalysisSubmissionService.java; services/forensic-gateway-service/src/main/java/de/burger/forensics/analytics/services/gateway/application/port/RepositoryAnalysisPreparationPort.java; services/forensic-gateway-service/src/main/java/de/burger/forensics/analytics/services/gateway/bootstrap/ForensicGatewayServiceConfiguration.java; services/forensic-gateway-service/src/main/java/de/burger/forensics/analytics/services/gateway/bootstrap/ForensicGatewayServiceProperties.java; services/forensic-gateway-service/src/main/java/de/burger/forensics/analytics/services/gateway/bootstrap/ForensicGatewayServicePropertiesConfiguration.java; services/forensic-gateway-service/src/main/java/de/burger/forensics/analytics/services/gateway/domain/GatewayRepositoryAnalysis.java; services/forensic-gateway-service/src/main/resources/application.properties; services/forensic-gateway-service/src/main/resources/application-test.properties; services/forensic-gateway-service/src/main/resources/application-docker.properties; services/forensic-gateway-service/src/test/java/de/burger/forensics/analytics/services/gateway/adapter/in/http/ForensicGatewayHttpAdapterTest.java; services/forensic-gateway-service/src/test/java/de/burger/forensics/analytics/services/gateway/adapter/out/grpc/RepositoryAnalysisGrpcClientTest.java; services/forensic-gateway-service/src/test/java/de/burger/forensics/analytics/services/gateway/application/GatewayRepositoryAnalysisSubmissionServiceTest.java; services/forensic-gateway-service/src/test/java/de/burger/forensics/analytics/services/gateway/bootstrap/ForensicGatewayServiceApplicationTest.java; services/forensic-gateway-service/src/test/java/de/burger/forensics/analytics/services/gateway/quality/ForensicGatewayServiceArchitectureTest.java; services/repository-analysis-service/src/main/java/de/burger/forensics/analytics/services/repositoryanalysis/adapter/out/git/GitRepositoryCheckoutAdapter.java; services/repository-analysis-service/src/main/java/de/burger/forensics/analytics/services/repositoryanalysis/adapter/out/git/RemoteHostResolver.java; services/repository-analysis-service/src/main/java/de/burger/forensics/analytics/services/repositoryanalysis/adapter/out/git/RemoteHostValidator.java; services/repository-analysis-service/src/main/java/de/burger/forensics/analytics/services/repositoryanalysis/adapter/out/git/SafeGitCommandRunner.java; services/repository-analysis-service/src/main/java/de/burger/forensics/analytics/services/repositoryanalysis/adapter/out/git/SourceRootDetector.java; services/repository-analysis-service/src/test/java/de/burger/forensics/analytics/services/repositoryanalysis/adapter/out/git/GitRepositoryCheckoutAdapterTest.java; services/repository-analysis-service/src/test/java/de/burger/forensics/analytics/services/repositoryanalysis/adapter/out/git/SafeGitCommandRunnerTest.java
 qualityGateCommands=./gradlew :services:forensic-gateway-service:generateProto --dependency-verification strict --console=plain --stacktrace; ./gradlew :services:forensic-gateway-service:test --tests '*ForensicGatewayHttpAdapterTest' --tests '*GatewayRepositoryAnalysisSubmissionServiceTest' --tests '*RepositoryAnalysisGrpcClientTest' --tests '*ForensicGatewayServiceArchitectureTest' --dependency-verification strict --console=plain --stacktrace; ./gradlew :services:repository-analysis-service:test --tests '*RepositoryAnalysisDomainTest' --tests '*GitRepositoryCheckoutAdapterTest' --tests '*FileSystemRepositoryWorkspaceAdapterTest' --tests '*SafeGitCommandRunnerTest' --tests '*RepositoryAnalysisGrpcEndpointTest' --dependency-verification strict --console=plain --stacktrace; ./gradlew :services:repository-analysis-service:test --tests '*SafeGitCommandRunnerTest' --tests '*GitRepositoryCheckoutAdapterTest' --dependency-verification strict --console=plain --stacktrace; ./gradlew :services:forensic-gateway-service:test --tests '*ForensicGatewayHttpAdapterTest' :services:repository-analysis-service:test --tests '*GitRepositoryCheckoutAdapterTest' --tests '*SafeGitCommandRunnerTest' --dependency-verification strict --console=plain --stacktrace; ./gradlew :forensic-analytics-rest:test --tests '*GatewayOpenApiContractTest' --dependency-verification strict --console=plain --stacktrace; ./gradlew :services:forensic-gateway-service:test :services:forensic-gateway-service:jacocoTestReport :services:forensic-gateway-service:jacocoTestCoverageVerification :services:forensic-gateway-service:bootJar --dependency-verification strict --console=plain --stacktrace; rg leakage gates; ./gradlew test --dependency-verification strict --console=plain --stacktrace; ./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace
 qualityGateResult=PASS
-commitHash=pending
-pushResult=pending
+commitHash=c4b2888b923b88ff1aad6713e0c52452030771e1
+pushResult=PUB_DONE to origin/feature/workflow-microservices-btm-pipeline-20260517
 rollbackReference=6b33f6378afd14e5f747904cf87a9c0c9d2fbdd8
 arc42Updated=not required for Slice 05; OpenAPI and service README updated
 adrUpdated=not required for Slice 05
@@ -374,7 +375,86 @@ checkout elapsed time with a monotonic clock. Gateway mutation headers now
 reject unsupported characters before they are echoed in response headers or JSON
 error envelopes.
 
+## Slice 06 - Java AST Worker Handoff
+
+### Review Evidence
+
+Read-only Slice 06 reviews completed before Repository Analysis and Java AST
+handoff files were changed:
+
+- Senior gRPC Proto Specialist initially blocked production code because the
+  producer-side Repository Analysis to Java AST transfer was not explicit in
+  Slice 02 or Slice 03. A second gRPC contract review and Senior System
+  Architect conflict review resolved the conflict: Slice 06 may proceed only
+  with producer-pushed bounded inline source-file transfer using
+  `repository-analysis.proto`, `java-ast-analysis.proto`, `analysis-job.proto`
+  and the service communication matrix. Artifact-reference or source-package
+  transfer remains out of scope.
+- Senior Java Backend approved the bounded inline handoff path and required
+  service-local generated gRPC code, relative source roots, bounded source
+  files, checksum preservation, idempotency/correlation mapping and explicit
+  unresolved-symbol diagnostics.
+- Senior Analysis Storage Architect marked Analysis Store changes NOT_READY
+  unless `byte_access` metadata preservation is fixed. Slice 06 therefore does
+  not register Java AST output with Analysis Store and keeps artifact byte
+  custody out of scope.
+- Senior Tester required a deterministic Repository Analysis to Java AST
+  handoff regression test, Java AST tests, Repository Analysis source-transfer
+  tests, coverage/bootJar checks and the full `QUALITY.md` gate before
+  checkpoint readiness.
+- Final Senior Security Sandbox review blocked checkpoint readiness until the
+  source-file collector enforced handoff resource limits before expensive work.
+  The collector now streams `Files.walk` results without materializing every
+  Java file path and checks `Files.size` before reading UTF-8 content.
+
+### Verification
+
+```text
+./gradlew :services:repository-analysis-service:generateProto :services:repository-analysis-service:test --tests '*FileSystemSourceSnapshotFileCollectorTest' --tests '*RepositorySourceSnapshotHandoffServiceTest' --tests '*JavaAstAnalysisGrpcClientTest' --tests '*RepositoryAnalysisServiceApplicationTest' --tests '*RepositoryAnalysisServiceArchitectureTest' --dependency-verification strict --console=plain --stacktrace -> PASS after increasing the in-process Java AST client test deadline
+./gradlew :services:repository-analysis-service:test :services:java-ast-analysis-service:test --tests '*JavaAstAnalysisContractTest' --tests '*JavaAstAnalysisGrpcEndpointTest' --tests '*JavaAstAnalysisApplicationServiceTest' --dependency-verification strict --console=plain --stacktrace -> PASS
+./gradlew :services:repository-analysis-service:jacocoTestReport :services:repository-analysis-service:jacocoTestCoverageVerification :services:repository-analysis-service:bootJar :services:java-ast-analysis-service:jacocoTestReport :services:java-ast-analysis-service:jacocoTestCoverageVerification :services:java-ast-analysis-service:bootJar --dependency-verification strict --console=plain --stacktrace -> PASS
+rg leakage gate for workspace paths in Repository Analysis handoff sources -> PASS; hits are existing path-validation code/tests and private adapter records, not public handoff output
+./gradlew :services:repository-analysis-service:test --tests '*FileSystemSourceSnapshotFileCollectorTest' --tests '*JavaAstAnalysisGrpcClientTest' --dependency-verification strict --console=plain --stacktrace -> PASS after adding missing branch coverage for handoff adapter limits and worker response mapping
+./gradlew :services:repository-analysis-service:jacocoTestReport :services:repository-analysis-service:jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace -> PASS after branch-coverage regression tests
+./gradlew test --dependency-verification strict --console=plain --stacktrace -> PASS
+./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace -> PASS after stopping a stale Gradle daemon lock from an earlier timed-out tool invocation
+./gradlew :services:repository-analysis-service:test --tests '*FileSystemSourceSnapshotFileCollectorTest' --tests '*RepositorySourceSnapshotHandoffServiceTest' --tests '*JavaAstAnalysisGrpcClientTest' --dependency-verification strict --console=plain --stacktrace -> PASS after Security Sandbox blocker fix
+./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --no-daemon --max-workers=1 --dependency-verification strict --console=plain --stacktrace -> PASS after Security Sandbox blocker fix
+git diff --check -> PASS
+```
+
+### CP_RECORD
+
+```text
+workflowVersion=microservices-btm-pipeline-20260517-v1
+sliceId=06
+sliceTitle=Java AST Worker Handoff
+responsibleAgent=Workflow Executor with Senior gRPC Proto Specialist, Senior System Architect, Senior Java Backend, Senior Analysis Storage Architect and Senior Tester reviews
+changedFiles=docs/workflow/execution-report.md; docs/workflow/workflow.history.md; contracts/grpc/README.md; contracts/grpc/java-ast-analysis.proto; services/java-ast-analysis-service/README.md; services/repository-analysis-service/README.md; services/repository-analysis-service/build.gradle.kts; services/repository-analysis-service/src/main/java/de/burger/forensics/analytics/services/repositoryanalysis/adapter/out/filesystem/FileSystemSourceSnapshotFileCollector.java; services/repository-analysis-service/src/main/java/de/burger/forensics/analytics/services/repositoryanalysis/adapter/out/grpc/JavaAstAnalysisGrpcClient.java; services/repository-analysis-service/src/main/java/de/burger/forensics/analytics/services/repositoryanalysis/application/RepositorySourceSnapshotHandoffService.java; services/repository-analysis-service/src/main/java/de/burger/forensics/analytics/services/repositoryanalysis/application/port/JavaAstAnalysisPort.java; services/repository-analysis-service/src/main/java/de/burger/forensics/analytics/services/repositoryanalysis/application/port/SourceSnapshotFileCollectorPort.java; services/repository-analysis-service/src/main/java/de/burger/forensics/analytics/services/repositoryanalysis/bootstrap/RepositoryAnalysisServiceConfiguration.java; services/repository-analysis-service/src/main/java/de/burger/forensics/analytics/services/repositoryanalysis/bootstrap/RepositoryAnalysisServiceProperties.java; services/repository-analysis-service/src/main/java/de/burger/forensics/analytics/services/repositoryanalysis/bootstrap/RepositoryAnalysisServicePropertiesConfiguration.java; services/repository-analysis-service/src/main/java/de/burger/forensics/analytics/services/repositoryanalysis/domain/RepositoryAnalysisDomain.java; services/repository-analysis-service/src/main/resources/application.properties; services/repository-analysis-service/src/main/resources/application-test.properties; services/repository-analysis-service/src/main/resources/application-docker.properties; services/repository-analysis-service/src/test/java/de/burger/forensics/analytics/services/repositoryanalysis/adapter/out/filesystem/FileSystemSourceSnapshotFileCollectorTest.java; services/repository-analysis-service/src/test/java/de/burger/forensics/analytics/services/repositoryanalysis/adapter/out/grpc/JavaAstAnalysisGrpcClientTest.java; services/repository-analysis-service/src/test/java/de/burger/forensics/analytics/services/repositoryanalysis/application/RepositorySourceSnapshotHandoffServiceTest.java; services/repository-analysis-service/src/test/java/de/burger/forensics/analytics/services/repositoryanalysis/bootstrap/RepositoryAnalysisServiceApplicationTest.java; services/repository-analysis-service/src/test/java/de/burger/forensics/analytics/services/repositoryanalysis/quality/RepositoryAnalysisServiceArchitectureTest.java
+qualityGateCommands=./gradlew :services:repository-analysis-service:generateProto :services:repository-analysis-service:test --tests '*FileSystemSourceSnapshotFileCollectorTest' --tests '*RepositorySourceSnapshotHandoffServiceTest' --tests '*JavaAstAnalysisGrpcClientTest' --tests '*RepositoryAnalysisServiceApplicationTest' --tests '*RepositoryAnalysisServiceArchitectureTest' --dependency-verification strict --console=plain --stacktrace; ./gradlew :services:repository-analysis-service:test :services:java-ast-analysis-service:test --tests '*JavaAstAnalysisContractTest' --tests '*JavaAstAnalysisGrpcEndpointTest' --tests '*JavaAstAnalysisApplicationServiceTest' --dependency-verification strict --console=plain --stacktrace; ./gradlew :services:repository-analysis-service:jacocoTestReport :services:repository-analysis-service:jacocoTestCoverageVerification :services:repository-analysis-service:bootJar :services:java-ast-analysis-service:jacocoTestReport :services:java-ast-analysis-service:jacocoTestCoverageVerification :services:java-ast-analysis-service:bootJar --dependency-verification strict --console=plain --stacktrace; rg leakage gate; ./gradlew :services:repository-analysis-service:test --tests '*FileSystemSourceSnapshotFileCollectorTest' --tests '*JavaAstAnalysisGrpcClientTest' --dependency-verification strict --console=plain --stacktrace; ./gradlew :services:repository-analysis-service:jacocoTestReport :services:repository-analysis-service:jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace; ./gradlew test --dependency-verification strict --console=plain --stacktrace; ./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace; ./gradlew :services:repository-analysis-service:test --tests '*FileSystemSourceSnapshotFileCollectorTest' --tests '*RepositorySourceSnapshotHandoffServiceTest' --tests '*JavaAstAnalysisGrpcClientTest' --dependency-verification strict --console=plain --stacktrace; ./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --no-daemon --max-workers=1 --dependency-verification strict --console=plain --stacktrace; git diff --check
+qualityGateResult=PASS
+commitHash=pending
+pushResult=pending
+rollbackReference=c4b2888b923b88ff1aad6713e0c52452030771e1
+arc42Updated=not required for Slice 06; service communication matrix already defines bounded inline source-file handoff
+adrUpdated=not required for Slice 06
+```
+
+## Implementation Status
+
+Slice 06 adds a producer-pushed Java AST handoff path inside Repository
+Analysis. Repository Analysis now collects bounded Java source files from
+verified relative source roots inside its private workspace, maps only relative
+source-root and source-file paths plus UTF-8 content, checksum and byte size to
+`java-ast-analysis-service`, and uses service-local generated gRPC classes.
+
+The handoff does not expose workspace paths, does not add a Java AST pull API,
+does not register Analysis Store metadata and does not use artifact-reference
+source-package transfer. Unresolved Java symbol handling remains an explicit
+Java AST diagnostic by forcing symbol-resolution diagnostics in the handoff
+request.
+
 ## Next Action
 
-After the Slice 05 checkpoint commit and push succeed, continue with Slice 06
-from `docs/workflow/workflow.md`.
+Run final role reviews, checkpoint commit and push before continuing with Slice
+07.

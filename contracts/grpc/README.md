@@ -13,7 +13,7 @@ boundary plan:
   contract.
 - `repository-analysis.proto`: provisional Slice 06 repository checkout,
   workspace preparation and source-snapshot handoff contract.
-- `java-ast-analysis.proto`: provisional Slice 07 JavaParser source-scanning
+- `java-ast-analysis.proto`: provisional Slice 06 JavaParser source-scanning
   contract for bounded source snapshot input, deterministic source-fact
   artifacts, counts and diagnostics.
 - `joern-cpg-analysis.proto`: provisional Slice 08 Joern CPG/CFG/DFG
@@ -47,8 +47,10 @@ enables them. Source snapshot IDs are deterministic for the sanitized repository
 URL, requested revision, resolved commit and manifest artifact checksum.
 
 `java-ast-analysis.proto` is intentionally limited to static Java source
-analysis. It accepts bounded source files through the service boundary and
-returns source-fact artifact metadata instead of unbounded inline facts.
+analysis. Slice 06 uses it for producer-pushed, bounded inline source-file
+handoff from Repository Analysis to Java AST Analysis. It accepts bounded source
+files through the service boundary and returns source-fact artifact metadata
+instead of unbounded inline facts.
 Diagnostics distinguish parse errors, skipped or unsupported source roots and
 the current `SYMBOL_RESOLUTION_NOT_CONFIGURED` limitation. Static AST output
 must not be presented as runtime execution evidence.

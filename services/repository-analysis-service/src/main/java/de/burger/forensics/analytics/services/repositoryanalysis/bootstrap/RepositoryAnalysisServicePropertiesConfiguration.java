@@ -27,6 +27,13 @@ public class RepositoryAnalysisServicePropertiesConfiguration {
                     "forensics.repository-analysis.service.workspace.root",
                     "build/repository-analysis-workspaces"
                 ))
+            ),
+            new RepositoryAnalysisServiceProperties.JavaAstAnalysis(
+                new RepositoryAnalysisServiceProperties.ClientGrpc(
+                    text(environment, "forensics.repository-analysis.service.java-ast-analysis.grpc.host", "127.0.0.1"),
+                    integer(environment, "forensics.repository-analysis.service.java-ast-analysis.grpc.port", 9093),
+                    longValue(environment, "forensics.repository-analysis.service.java-ast-analysis.grpc.deadline-seconds", 5)
+                )
             )
         );
     }
@@ -37,6 +44,10 @@ public class RepositoryAnalysisServicePropertiesConfiguration {
 
     private static int integer(Environment environment, String key, int defaultValue) {
         return environment.getProperty(key, Integer.class, defaultValue);
+    }
+
+    private static long longValue(Environment environment, String key, long defaultValue) {
+        return environment.getProperty(key, Long.class, defaultValue);
     }
 
     private static String text(Environment environment, String key, String defaultValue) {
