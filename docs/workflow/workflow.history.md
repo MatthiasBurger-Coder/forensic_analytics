@@ -7,7 +7,7 @@
 | Created | 2026-05-17 |
 | Branch | `feature/workflow-microservices-btm-pipeline-20260517` |
 | Strand | `workflow create` |
-| Status | Workflow-create package committed; `workflow execute` active with Slice 00 checkpoint pushed and Slice 01 in progress. |
+| Status | Workflow-create package committed; `workflow execute` active with Slice 00 and Slice 01 checkpoints pushed; Slice 02 contract verification passed and checkpoint is pending. |
 | Source request | Complete the microservice migration so service collaboration happens through service contracts only; distribute existing implementation into service-owned boundaries; create BTM rules; create workspaces from external Git repositories; accept Git repository requests over HTTP; return completed BTM files over gRPC. |
 
 This workflow replaced the previous active `docs/workflow/**` package during
@@ -16,5 +16,5 @@ kept in the active workflow directory because workflow creation regenerates the
 full package unless preservation is explicitly requested.
 
 Execution CP_RECORD entries must be written to
-`docs/workflow/execution-report.md` after `workflow execute` starts. Slice 00
-has run for this workflow version and is recorded there.
+`docs/workflow/execution-report.md` after `workflow execute` starts. Slices 00,
+01 and 02 have run for this workflow version and are recorded there.

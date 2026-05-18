@@ -10,11 +10,16 @@ implementation code, generated Java classes, shared DTOs, shared domain
 models, mappers, Spring configuration, fixtures, jars or shared runtime
 libraries.
 
-Slice 03 owns the first concrete contracts:
+The active workflow owns Gateway HTTP and public gRPC BTM delivery contract
+updates in Slice 02, then artifact-byte and instrumentation-target ownership
+contracts in Slice 03. Existing contract files include:
 
 - `grpc/forensic-ingestion.proto`
 - `grpc/analysis-job.proto`
 - `grpc/repository-analysis.proto`
+- `grpc/java-ast-analysis.proto`
+- `grpc/joern-cpg-analysis.proto`
+- `grpc/btm-generation.proto`
 - `openapi/gateway-api.yaml`
 - `events/analysis-events.md`
 

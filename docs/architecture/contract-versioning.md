@@ -21,8 +21,8 @@ does not turn planned contracts into implemented runtime evidence.
 | `contracts/grpc/repository-analysis.proto` | Repository checkout and source-snapshot preparation contract | Planned initial contract |
 | `contracts/grpc/java-ast-analysis.proto` | Java AST source-fact worker contract | Planned initial contract |
 | `contracts/grpc/joern-cpg-analysis.proto` | Joern CPG/CFG/DFG semantic artifact worker contract | Planned initial contract |
-| `contracts/grpc/btm-generation.proto` | BTM generation, generated artifact metadata and future owner API contract | Planned initial contract |
-| `contracts/openapi/gateway-api.yaml` | Public Gateway REST contract | Mixed current verified and planned initial operations |
+| `contracts/grpc/btm-generation.proto` | BTM generation, generated artifact metadata and public BTM artifact delivery contract | Planned initial contract |
+| `contracts/openapi/gateway-api.yaml` | Public Gateway REST contract | Mixed current verified and planned initial operations; repository-to-BTM submission is planned initial |
 | `contracts/events/analysis-events.md` | Analysis event contract | Planned initial contract |
 
 Contracts in `contracts/` are interface descriptions only. They must not contain
@@ -78,7 +78,7 @@ or delayed events must be visible as incomplete, unknown or unavailable state.
 
 ## Retry, Deadline And Idempotency Rules
 
-- REST mutation operations accept `Idempotency-Key`.
+- REST mutation operations require `Idempotency-Key`.
 - gRPC mutation requests include `idempotency_key`.
 - Client-streaming ingestion retries are tied to stable `session_id` and
   `AnalysisPayloadDescriptor.payload_id`.

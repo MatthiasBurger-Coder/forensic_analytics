@@ -2,9 +2,9 @@
 
 ## Status
 
-`workflow execute` started. Slice 00 checkpoint completed and pushed. Slice 01
-boundary-freeze documentation is in progress and pending its checkpoint commit
-and push.
+`workflow execute` started. Slice 00 and Slice 01 checkpoints completed and
+pushed. Slice 02 Gateway HTTP and gRPC BTM delivery contract verification has
+passed and is pending checkpoint commit and push.
 
 ## Branch
 
@@ -111,19 +111,69 @@ responsibleAgent=Workflow Executor with Senior System Architect, Microservice Se
 changedFiles=docs/workflow/execution-report.md; docs/workflow/workflow.history.md; docs/workflow/workflow.md; docs/workflow/three-amigos-decision-record.md; docs/architecture/service-boundaries.md; docs/architecture/data-ownership.md; docs/architecture/service-communication-matrix.md; docs/architecture/service-migration-map.md; docs/architecture/current-state.md; docs/architecture/contract-versioning.md; docs/architecture/target-microservices-architecture.md; docs/architecture/current-build-and-test-map.md; docs/architecture/monorepo-service-build-strategy.md
 qualityGateCommands=git status --short --branch; git diff --stat; git diff --name-status; git diff --check
 qualityGateResult=PASS
-commitHash=pending
-pushResult=pending
+commitHash=516fbd23869850866dba846724e87e68827ac958
+pushResult=PUB_DONE to origin/feature/workflow-microservices-btm-pipeline-20260517
 rollbackReference=28f0f6ba34b1d35501334ac1a18d6f55f50b2a20
 arc42Updated=not required for Slice 01; supporting architecture docs updated
 adrUpdated=not required for Slice 01
 ```
 
+## Slice 02 - Gateway HTTP And gRPC BTM Delivery Contracts
+
+### Review Evidence
+
+Read-only Slice 02 reviews completed before contract files were changed:
+
+- Senior gRPC Proto Specialist: required an additive public BTM artifact
+  delivery RPC without renumbering existing `btm-generation.proto` fields, with
+  request identity, idempotency, correlation, size limits, manifest-first
+  streaming and deterministic chunk metadata.
+- Senior Java Backend: required explicit Gateway async submission semantics,
+  public delivery contract coverage, service-local generated Protobuf
+  verification and reconciliation of prior workflow bookkeeping.
+- Senior Tester: blocked the slice until an executable OpenAPI contract check
+  existed for `contracts/openapi/gateway-api.yaml`, then required focused
+  OpenAPI, Protobuf generation and BTM contract tests plus the repository
+  minimum `./gradlew test` gate.
+
+### Verification
+
+```text
+git diff --check -> PASS
+./gradlew :forensic-analytics-rest:test --tests '*GatewayOpenApiContractTest' --dependency-verification strict --console=plain --stacktrace -> PASS
+./gradlew :services:btm-generation-service:generateProto --dependency-verification strict --console=plain --stacktrace -> PASS
+./gradlew :services:btm-generation-service:test --tests '*BtmGenerationContractTest' --dependency-verification strict --console=plain --stacktrace -> PASS
+./gradlew test --dependency-verification strict --console=plain --stacktrace -> PASS
+```
+
+The full local quality gate remains deferred to later implementation or final
+acceptance slices because Slice 02 changed contracts, documentation and focused
+contract tests only.
+
+### CP_RECORD
+
+```text
+workflowVersion=microservices-btm-pipeline-20260517-v1
+sliceId=02
+sliceTitle=Gateway HTTP and gRPC BTM delivery contracts
+responsibleAgent=Workflow Executor with Senior gRPC Proto Specialist, Senior Java Backend and Senior Tester reviews
+changedFiles=docs/workflow/execution-report.md; docs/workflow/workflow.history.md; contracts/README.md; contracts/grpc/README.md; contracts/grpc/btm-generation.proto; contracts/openapi/README.md; contracts/openapi/gateway-api.yaml; docs/architecture/contract-versioning.md; docs/contracts/contract-test-plan.md; forensic-analytics-rest/src/test/java/de/burger/forensics/analytics/rest/GatewayOpenApiContractTest.java; services/btm-generation-service/src/test/java/de/burger/forensics/analytics/services/btmgeneration/adapter/in/grpc/BtmGenerationContractTest.java
+qualityGateCommands=git diff --check; ./gradlew :forensic-analytics-rest:test --tests '*GatewayOpenApiContractTest' --dependency-verification strict --console=plain --stacktrace; ./gradlew :services:btm-generation-service:generateProto --dependency-verification strict --console=plain --stacktrace; ./gradlew :services:btm-generation-service:test --tests '*BtmGenerationContractTest' --dependency-verification strict --console=plain --stacktrace; ./gradlew test --dependency-verification strict --console=plain --stacktrace
+qualityGateResult=PASS
+commitHash=pending
+pushResult=pending
+rollbackReference=516fbd23869850866dba846724e87e68827ac958
+arc42Updated=not required for Slice 02; contract-versioning updated
+adrUpdated=not required for Slice 02
+```
+
 ## Implementation Status
 
-No product code, contracts, Gradle files, service code, frontend code, Docker
-files or runtime files were changed by Slice 00 or Slice 01.
+Slice 02 changed contract definitions and focused contract tests only. No
+runtime implementation, Gradle registration, frontend code, Docker files or
+deployment material was changed.
 
 ## Next Action
 
-After the Slice 01 checkpoint commit and push succeed, continue with Slice 02
+After the Slice 02 checkpoint commit and push succeed, continue with Slice 03
 from `docs/workflow/workflow.md`.

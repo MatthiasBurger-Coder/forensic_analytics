@@ -4,7 +4,8 @@
 
 Planned gRPC contract root.
 
-Slice 03 introduces:
+The active workflow uses these gRPC contract files for the microservice
+boundary plan:
 
 - `forensic-ingestion.proto`: extracted v1 ingestion compatibility contract,
   preserving current package, service methods, field numbers and enum numbers.
@@ -17,8 +18,9 @@ Slice 03 introduces:
   artifacts, counts and diagnostics.
 - `joern-cpg-analysis.proto`: provisional Slice 08 Joern CPG/CFG/DFG
   semantic artifact worker contract.
-- `btm-generation.proto`: provisional Slice 09 server-side Byteman/BTM
-  generation contract for deterministic rules from delivered analysis facts.
+- `btm-generation.proto`: provisional server-side Byteman/BTM generation and
+  public BTM artifact delivery contract for deterministic rules from delivered
+  analysis facts and completed `.btm` file retrieval.
 
 Generated Java classes from these contracts must be service-local build output.
 They must not become shared Java DTO or domain modules.
@@ -64,3 +66,7 @@ instrumentation targets through the service boundary. It must not expose
 repository URLs, workspace paths, source content or runtime trace claims. Stable
 rule IDs are derived from source snapshot, target, probe kind and rule schema
 version so identical inputs produce reproducible rules.
+
+The public BTM artifact delivery RPC is additive. It streams a manifest and
+bounded file chunks after Analysis Store metadata identifies accepted generated
+artifacts. Gateway is a public facade and must not store canonical BTM bytes.
