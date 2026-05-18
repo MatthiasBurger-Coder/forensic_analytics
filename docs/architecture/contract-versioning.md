@@ -2,14 +2,15 @@
 
 ## Status
 
-Slice 03 initial contract versioning rules for the microservices ecosystem
-conversion workflow.
+Contract versioning rules for the microservices ecosystem conversion workflow.
 
-The contracts introduced in Slice 03 are design artifacts unless their
-operation explicitly says `current-verified`. The user approved logical initial
-contracts for not-yet-implemented service communication on 2026-05-16. That
-approval allows planned endpoint, RPC and event design, but it does not turn
-planned contracts into implemented runtime evidence.
+The active workflow assigns Gateway HTTP and public gRPC BTM delivery contract
+work to Slice 02, then artifact-byte and instrumentation-target ownership
+contracts to Slice 03. Existing planned contracts remain design artifacts
+unless their operation explicitly says `current-verified`. The user approved
+logical initial contracts for not-yet-implemented service communication on
+2026-05-16. That approval allows planned endpoint, RPC and event design, but it
+does not turn planned contracts into implemented runtime evidence.
 
 ## Contract Authorities
 
@@ -17,6 +18,10 @@ planned contracts into implemented runtime evidence.
 |---|---|---|
 | `contracts/grpc/forensic-ingestion.proto` | gRPC ingestion compatibility contract | Current v1 shape extracted from implementation evidence |
 | `contracts/grpc/analysis-job.proto` | Worker handoff and analysis-job state contract | Planned initial contract |
+| `contracts/grpc/repository-analysis.proto` | Repository checkout and source-snapshot preparation contract | Planned initial contract |
+| `contracts/grpc/java-ast-analysis.proto` | Java AST source-fact worker contract | Planned initial contract |
+| `contracts/grpc/joern-cpg-analysis.proto` | Joern CPG/CFG/DFG semantic artifact worker contract | Planned initial contract |
+| `contracts/grpc/btm-generation.proto` | BTM generation, generated artifact metadata and future owner API contract | Planned initial contract |
 | `contracts/openapi/gateway-api.yaml` | Public Gateway REST contract | Mixed current verified and planned initial operations |
 | `contracts/events/analysis-events.md` | Analysis event contract | Planned initial contract |
 

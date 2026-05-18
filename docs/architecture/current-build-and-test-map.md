@@ -132,7 +132,7 @@ npm run test:watch
 Frontend tests use Vitest with jsdom and Testing Library. No frontend lint,
 coverage, Playwright or Cypress command was verified.
 
-The planned `frontend/frontend-web-app` root exists only as a Slice 02
+The planned `frontend/frontend-web-app` root exists only as a
 placeholder. It has no frontend implementation, package metadata, build
 configuration or tests.
 
@@ -194,5 +194,6 @@ test task because they remain README-only planned service roots.
 - Frontend coverage and end-to-end test gates are not configured.
 - Boot container healthcheck evidence is absent.
 - Swarm and Kubernetes readiness is absent.
-- Full local quality gate has not been run for Slice 00 because this slice is
-  documentation-only and requires `git diff --check`.
+- Full local quality gate was not required for the baseline documentation
+  review because the baseline was documentation-only and required
+  `git diff --check`.

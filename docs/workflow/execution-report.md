@@ -2,8 +2,9 @@
 
 ## Status
 
-`workflow execute` started. Slice 00 preflight completed and is pending its
-slice checkpoint commit and push.
+`workflow execute` started. Slice 00 checkpoint completed and pushed. Slice 01
+boundary-freeze documentation is in progress and pending its checkpoint commit
+and push.
 
 ## Branch
 
@@ -71,19 +72,58 @@ responsibleAgent=Workflow Executor with Senior Workflow Architect, Senior Git Wo
 changedFiles=docs/workflow/execution-report.md
 qualityGateCommands=git rev-parse --show-toplevel; git branch --show-current; git show-ref --verify --quiet refs/heads/feature/workflow-microservices-btm-pipeline-20260517; git status --short --branch; git diff --stat; git diff --name-status; git diff --check
 qualityGateResult=PASS
-commitHash=pending
-pushResult=pending
+commitHash=28f0f6ba34b1d35501334ac1a18d6f55f50b2a20
+pushResult=PUB_DONE to origin/feature/workflow-microservices-btm-pipeline-20260517
 rollbackReference=491ba762f877eb5e7c44c112898011ba421c99f7
 arc42Updated=not required for Slice 00
 adrUpdated=not required for Slice 00
 ```
 
+## Slice 01 - Contract Gap And Service Boundary Freeze
+
+### Review Evidence
+
+Read-only Slice 01 reviews completed before boundary documentation was
+changed:
+
+- Senior System Architect: core owners are mostly documented, but Gateway to
+  Repository Analysis, BTM byte delivery, remaining monolith owner mapping and
+  stale workflow evidence needed correction.
+- Microservice Senior Expert: no shared service Java implementation-module
+  dependency was found, but target service inventory, slice-number references,
+  communication alternatives and contract-test wording needed correction.
+- Senior Analysis Storage Architect: Analysis Store, Repository Analysis and
+  BTM Generation ownership are clear at a high level, but BTM byte ownership
+  and Joern source handoff needed explicit freezing before contract slices.
+
+Scope note: direct edits under `contracts/**` and `services/**` are deferred
+to later slices with matching write scope. Slice 01 freezes the active boundary
+decisions in `docs/architecture/**` and records stale contract-root or service
+README wording as documentation drift to resolve when those paths enter scope.
+
+### CP_RECORD
+
+```text
+workflowVersion=microservices-btm-pipeline-20260517-v1
+sliceId=01
+sliceTitle=Contract gap and service-boundary freeze for the BTM pipeline
+responsibleAgent=Workflow Executor with Senior System Architect, Microservice Senior Expert and Senior Analysis Storage Architect reviews
+changedFiles=docs/workflow/execution-report.md; docs/workflow/workflow.history.md; docs/workflow/workflow.md; docs/workflow/three-amigos-decision-record.md; docs/architecture/service-boundaries.md; docs/architecture/data-ownership.md; docs/architecture/service-communication-matrix.md; docs/architecture/service-migration-map.md; docs/architecture/current-state.md; docs/architecture/contract-versioning.md; docs/architecture/target-microservices-architecture.md; docs/architecture/current-build-and-test-map.md; docs/architecture/monorepo-service-build-strategy.md
+qualityGateCommands=git status --short --branch; git diff --stat; git diff --name-status; git diff --check
+qualityGateResult=PASS
+commitHash=pending
+pushResult=pending
+rollbackReference=28f0f6ba34b1d35501334ac1a18d6f55f50b2a20
+arc42Updated=not required for Slice 01; supporting architecture docs updated
+adrUpdated=not required for Slice 01
+```
+
 ## Implementation Status
 
 No product code, contracts, Gradle files, service code, frontend code, Docker
-files or runtime files were changed by Slice 00.
+files or runtime files were changed by Slice 00 or Slice 01.
 
 ## Next Action
 
-After the Slice 00 checkpoint commit and push succeed, continue with Slice 01
+After the Slice 01 checkpoint commit and push succeed, continue with Slice 02
 from `docs/workflow/workflow.md`.

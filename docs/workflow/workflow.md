@@ -222,8 +222,9 @@ This workflow must not:
 - Repository Analysis owns workspaces and source snapshot preparation.
 - Java AST and Joern services own worker outputs until accepted by Analysis
   Store.
-- BTM Generation owns generated BTM bytes until they are registered or
-  delivered through an owner-approved artifact path.
+- BTM Generation owns generated BTM bytes until an explicit byte-handoff,
+  object-store ownership or delivery contract transfers byte custody.
+  Analysis Store registration transfers accepted artifact metadata only.
 - Frontend owns UI state only and must use Gateway/public APIs.
 - Graph/replay and report services are projections or generated artifact
   owners, not primary evidence stores.
@@ -288,7 +289,7 @@ similarly named Java classes.
 | Java static source-fact worker output | `java-ast-analysis-service` until accepted |
 | Joern semantic artifacts | `joern-cpg-analysis-service` until accepted |
 | Canonical jobs, accepted artifact metadata and normalized facts | `analysis-store-service` |
-| Generated BTM bytes before registration or delivery | `btm-generation-service` |
+| Generated BTM bytes until explicit byte handoff or delivery through an approved owner API | `btm-generation-service` |
 | Graph and replay projections | `graph-replay-service` |
 | Reports and LLM-ready packages | `report-generation-service` |
 | Browser state | `frontend-web-app` |

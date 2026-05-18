@@ -27,9 +27,9 @@ Rationale:
 This strategy does not allow shared Java runtime implementation modules between
 services.
 
-## Slice 02 Build Rule
+## Contract-Only Slice Build Rule
 
-Slice 02 must not edit:
+Contract-only workflow slices must not edit:
 
 - `settings.gradle.kts`;
 - root `build.gradle.kts`;
@@ -91,7 +91,7 @@ successfully.
 
 ## Quality Gate Impact
 
-For Slice 02 documentation and placeholder scaffolding:
+For documentation and placeholder scaffolding:
 
 ```bash
 git diff --check

@@ -18,7 +18,7 @@ Verified from:
 - root and module `build.gradle.kts` files
 - `QUALITY.md`
 - `docs/workflow/workflow.md`
-- `docs/workflow/current-state-baseline.md`
+- `docs/workflow/execution-report.md`
 - `docs/architecture/microservice-governance.md`
 - `docs/arc42/**`
 - `docs/adr/**`
@@ -118,7 +118,7 @@ Verified scripts from `forensic-ui/package.json`:
 
 `forensic-ui/Dockerfile` builds the frontend with `npm ci` and
 `npm run build`, then serves the built assets with nginx. The planned
-`frontend/frontend-web-app` root exists only as a Slice 02 placeholder. It has
+`frontend/frontend-web-app` root exists only as a planned placeholder. It has
 no frontend implementation, package metadata, build configuration or tests.
 
 ## Current Deployment Material

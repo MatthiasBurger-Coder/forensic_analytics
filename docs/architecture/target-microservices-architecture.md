@@ -131,7 +131,7 @@ slices before they can be treated as executable runtime paths.
 
 | Service | Planned Responsibility | Primary Ownership |
 |---|---|---|
-| `forensic-gateway-service` | External API and UI/CLI facade; analysis-job orchestration facade | Public API surface and orchestration state, not analysis facts |
+| `forensic-gateway-service` | External API, UI/CLI facade, public request/status facade and public BTM delivery facade | Public facade state only, not worker orchestration state, analysis facts or artifact bytes |
 | `forensic-ingestion-service` | gRPC intake and validation of plugin, scanner and runtime evidence packages | Raw ingestion intake and upload-session lifecycle |
 | `repository-analysis-service` | Repository checkout, branch resolution, workspace preparation and source snapshot preparation | Repository workspaces, leases and checkout diagnostics |
 | `java-ast-analysis-service` | JavaParser source scanning, stable source identifiers and unresolved-symbol diagnostics | AST execution output until accepted by Analysis Store |

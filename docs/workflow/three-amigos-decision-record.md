@@ -37,7 +37,7 @@ Plugin / external client
 |---|---|
 | Senior Requirement Engineer | EPIC v0.2 supports the requested direction. Producers are request and runtime-binding adapters; Analytics owns server-side analysis and BTM generation. |
 | Senior System Architect | ADR-0017 defines the service landscape. ADR-0009 and ADR-0010 block shared Java service modules and require contract-first service communication. |
-| Senior Java Backend Developer | Service-local implementations exist for repository analysis and BTM generation, but Gateway orchestration, artifact delivery and worker-chain integration are missing. |
+| Senior Java Backend Developer | Service-local implementations exist for repository analysis and BTM generation, but Gateway facade integration, artifact delivery and worker-chain integration are missing. |
 | Senior React Frontend Developer | Frontend impact waits for Gateway readiness. The UI must not call internal worker services directly. |
 | Senior Tester | Acceptance requires incremental tests: contract tests first, then service-local tests, then end-to-end repository-to-BTM verification and full quality gate. |
 
@@ -78,9 +78,10 @@ in `docs/architecture/contract-versioning.md`.
 
 Analysis Store owns canonical job state and accepted artifact metadata.
 Repository Analysis owns workspaces and source snapshots. BTM Generation owns
-generated BTM bytes until registration or delivery through an approved owner
-path. No service may read another service's private database, private
-filesystem paths or generated classes.
+generated BTM bytes until an explicit byte-handoff, object-store ownership or
+delivery contract transfers byte custody. Analysis Store registration transfers
+accepted artifact metadata only. No service may read another service's private
+database, private filesystem paths or generated classes.
 
 ## Test Impact
 
