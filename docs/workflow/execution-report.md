@@ -2,9 +2,9 @@
 
 ## Status
 
-`workflow execute` started. Slices 00, 01 and 02 checkpoints completed and
-pushed. Slice 03 artifact and instrumentation target ownership contract work is
-in progress.
+`workflow execute` started. Slices 00, 01, 02 and 03 checkpoints completed and
+pushed. Slice 04 Gateway service bootstrap implementation and verification are
+complete; checkpoint commit and push are pending.
 
 ## Branch
 
@@ -207,20 +207,82 @@ responsibleAgent=Workflow Executor with Senior Analysis Storage Architect, Senio
 changedFiles=docs/workflow/execution-report.md; docs/workflow/workflow.history.md; contracts/grpc/README.md; contracts/grpc/analysis-job.proto; contracts/grpc/btm-generation.proto; contracts/events/analysis-events.md; docs/architecture/data-ownership.md; docs/architecture/service-communication-matrix.md; forensic-analytics-rest/src/test/java/de/burger/forensics/analytics/contracts/AnalysisEventsContractTest.java; services/analysis-store-service/src/test/java/de/burger/forensics/analytics/services/analysisstore/adapter/in/grpc/AnalysisJobContractTest.java; services/btm-generation-service/src/test/java/de/burger/forensics/analytics/services/btmgeneration/adapter/in/grpc/BtmGenerationContractTest.java
 qualityGateCommands=git diff --check; ./gradlew :services:analysis-store-service:generateProto :services:btm-generation-service:generateProto :services:java-ast-analysis-service:generateProto :services:joern-cpg-analysis-service:generateProto --dependency-verification strict --console=plain --stacktrace; ./gradlew :services:analysis-store-service:test --tests '*AnalysisJobContractTest' --dependency-verification strict --console=plain --stacktrace; ./gradlew :services:btm-generation-service:test --tests '*BtmGenerationContractTest' --dependency-verification strict --console=plain --stacktrace; ./gradlew :forensic-analytics-rest:test --tests '*AnalysisEventsContractTest' --dependency-verification strict --console=plain --stacktrace; ./gradlew test --dependency-verification strict --console=plain --stacktrace
 qualityGateResult=PASS
-commitHash=pending
-pushResult=pending
+commitHash=acccc6cd1f14b0535e5d923d5a64731c88a3c461
+pushResult=PUB_DONE to origin/feature/workflow-microservices-btm-pipeline-20260517
 rollbackReference=1b65e12c4a51421a73c60935ceb8d4973df331c7
 arc42Updated=not required for Slice 03; data-ownership and service-communication matrix updated
 adrUpdated=not required for Slice 03
 ```
 
+## Slice 04 - Gateway Service Bootstrap
+
+### Review Evidence
+
+Read-only Slice 04 reviews completed before service bootstrap files were
+changed:
+
+- Microservice Senior Expert: approved a strict service-owned Gateway runtime
+  shell with no worker service Java dependencies, no shared DTO/test-fixture
+  modules, no database access and no worker orchestration logic.
+- Senior Java Backend: approved a minimal service-local Spring Boot shell with
+  `bootstrap`, `adapter.in.http`, `application` and `domain` packages, JDK HTTP
+  endpoints only and service-local architecture tests.
+- Senior DevOps: approved Gradle registration, service-local Dockerfile,
+  profile-specific properties and healthcheck behavior without Actuator or
+  Protobuf plugin work in this slice.
+- Senior Tester: required focused Gateway tests, architecture leakage checks,
+  service coverage, bootJar, OpenAPI contract smoke coverage, the repository
+  minimum test gate and the full local quality gate.
+
+Post-change reviews completed after implementation and verification:
+
+- Microservice Senior Expert: READY; no service-autonomy blocker found.
+- Senior Java Backend: READY; no Java/backend blocker found.
+- Senior DevOps: READY; no build/runtime-shell blocker found.
+- Senior Tester: READY; no test/quality blocker found.
+
+### Verification
+
+```text
+git diff --check -> PASS
+./gradlew :services:forensic-gateway-service:test --tests '*ForensicGatewayServiceApplicationTest' --tests '*ForensicGatewayHttpAdapterTest' --tests '*ForensicGatewayServiceArchitectureTest' --dependency-verification strict --console=plain --stacktrace -> PASS
+./gradlew :services:forensic-gateway-service:test --dependency-verification strict --console=plain --stacktrace -> PASS
+./gradlew :services:forensic-gateway-service:jacocoTestReport :services:forensic-gateway-service:jacocoTestCoverageVerification --dependency-verification strict --console=plain --stacktrace -> PASS
+./gradlew :services:forensic-gateway-service:bootJar --dependency-verification strict --console=plain --stacktrace -> PASS
+java -jar services/forensic-gateway-service/build/libs/forensic-gateway-service-0.1.0-SNAPSHOT.jar --spring.profiles.active=test --forensics.gateway.service.http.port=18080 plus curl /api/health and --healthcheck -> PASS
+rg leakage gate for project(...) in services/*/build.gradle.kts -> PASS
+rg leakage gate for forbidden worker service imports in forensic-gateway-service -> PASS
+./gradlew :forensic-analytics-rest:test --tests '*GatewayOpenApiContractTest' --dependency-verification strict --console=plain --stacktrace -> PASS
+./gradlew test --dependency-verification strict --console=plain --stacktrace -> PASS
+./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace -> PASS after adding service-local domain model branch coverage
+```
+
+### CP_RECORD
+
+```text
+workflowVersion=microservices-btm-pipeline-20260517-v1
+sliceId=04
+sliceTitle=Gateway service bootstrap
+responsibleAgent=Workflow Executor with Microservice Senior Expert, Senior Java Backend, Senior DevOps and Senior Tester reviews
+changedFiles=docs/workflow/execution-report.md; docs/workflow/workflow.history.md; settings.gradle.kts; services/forensic-gateway-service/README.md; services/forensic-gateway-service/Dockerfile; services/forensic-gateway-service/build.gradle.kts; services/forensic-gateway-service/src/main/java/de/burger/forensics/analytics/services/gateway/domain/DownstreamServiceStatus.java; services/forensic-gateway-service/src/main/java/de/burger/forensics/analytics/services/gateway/domain/GatewayStatusSnapshot.java; services/forensic-gateway-service/src/main/java/de/burger/forensics/analytics/services/gateway/application/GatewayStatusService.java; services/forensic-gateway-service/src/main/java/de/burger/forensics/analytics/services/gateway/adapter/in/http/GatewayHttpHandler.java; services/forensic-gateway-service/src/main/java/de/burger/forensics/analytics/services/gateway/bootstrap/ForensicGatewayServiceApplication.java; services/forensic-gateway-service/src/main/java/de/burger/forensics/analytics/services/gateway/bootstrap/ForensicGatewayServiceConfiguration.java; services/forensic-gateway-service/src/main/java/de/burger/forensics/analytics/services/gateway/bootstrap/ForensicGatewayServiceProperties.java; services/forensic-gateway-service/src/main/java/de/burger/forensics/analytics/services/gateway/bootstrap/ForensicGatewayServicePropertiesConfiguration.java; services/forensic-gateway-service/src/main/java/de/burger/forensics/analytics/services/gateway/bootstrap/GatewayHttpServerLifecycle.java; services/forensic-gateway-service/src/main/java/de/burger/forensics/analytics/services/gateway/bootstrap/HealthProbe.java; services/forensic-gateway-service/src/main/resources/application.properties; services/forensic-gateway-service/src/main/resources/application-test.properties; services/forensic-gateway-service/src/main/resources/application-docker.properties; services/forensic-gateway-service/src/test/java/de/burger/forensics/analytics/services/gateway/bootstrap/ForensicGatewayServiceApplicationTest.java; services/forensic-gateway-service/src/test/java/de/burger/forensics/analytics/services/gateway/adapter/in/http/ForensicGatewayHttpAdapterTest.java; services/forensic-gateway-service/src/test/java/de/burger/forensics/analytics/services/gateway/quality/ForensicGatewayServiceArchitectureTest.java
+qualityGateCommands=git diff --check; ./gradlew :services:forensic-gateway-service:test --tests '*ForensicGatewayServiceApplicationTest' --tests '*ForensicGatewayHttpAdapterTest' --tests '*ForensicGatewayServiceArchitectureTest' --dependency-verification strict --console=plain --stacktrace; ./gradlew :services:forensic-gateway-service:test --dependency-verification strict --console=plain --stacktrace; ./gradlew :services:forensic-gateway-service:jacocoTestReport :services:forensic-gateway-service:jacocoTestCoverageVerification --dependency-verification strict --console=plain --stacktrace; ./gradlew :services:forensic-gateway-service:bootJar --dependency-verification strict --console=plain --stacktrace; java -jar services/forensic-gateway-service/build/libs/forensic-gateway-service-0.1.0-SNAPSHOT.jar --spring.profiles.active=test --forensics.gateway.service.http.port=18080 plus curl /api/health and --healthcheck; rg leakage gate for project(...) in services/*/build.gradle.kts; rg leakage gate for forbidden worker service imports in forensic-gateway-service; ./gradlew :forensic-analytics-rest:test --tests '*GatewayOpenApiContractTest' --dependency-verification strict --console=plain --stacktrace; ./gradlew test --dependency-verification strict --console=plain --stacktrace; ./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace
+qualityGateResult=PASS
+commitHash=pending
+pushResult=pending
+rollbackReference=acccc6cd1f14b0535e5d923d5a64731c88a3c461
+arc42Updated=not required for Slice 04; runtime shell documented in service README
+adrUpdated=not required for Slice 04
+```
+
 ## Implementation Status
 
-Slice 03 changes contract definitions, architecture ownership notes and
-focused contract tests only. No runtime implementation, Gradle registration,
-frontend code, Docker files or deployment material was changed.
+Slice 04 adds an independently registered Gateway service shell with
+service-owned HTTP health/status endpoints, configuration, Dockerfile,
+architecture checks and tests. It intentionally does not implement repository
+submission, orchestration, worker calls, BTM delivery, persistence, frontend code
+or deployment orchestration.
 
 ## Next Action
 
-After the Slice 03 checkpoint commit and push succeed, continue with Slice 04
+After the Slice 04 checkpoint commit and push succeed, continue with Slice 05
 from `docs/workflow/workflow.md`.
