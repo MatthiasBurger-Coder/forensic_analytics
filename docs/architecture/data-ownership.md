@@ -37,13 +37,13 @@ Forbidden:
 |---|---|---|---|
 | Raw ingestion payload intake | `forensic-ingestion-service` | Analysis Store reads through ingestion API or event handoff | Preserve schema version, provenance and correlation |
 | Upload session state | `forensic-ingestion-service` | Gateway reads through ingestion or Analysis Store views after contracts exist | Transport lifecycle is separate from canonical analysis state |
-| Canonical normalized analysis facts | `analysis-store-service` | Owner APIs, query interfaces or events | Planned owner; durable fact schemas are not implemented in Slice 05 |
-| Analysis sessions and jobs | `analysis-store-service` for canonical job lifecycle state; `forensic-ingestion-service` for upload-session lifecycle | Gateway and frontend read via Gateway and owner APIs | Slice 05 implements the service-local gRPC analysis job lifecycle subset |
+| Canonical normalized analysis facts | `analysis-store-service` | Owner APIs, query interfaces or events | Planned owner; durable fact schemas are not implemented yet |
+| Analysis sessions and jobs | `analysis-store-service` for canonical job lifecycle state; `forensic-ingestion-service` for upload-session lifecycle | Gateway and frontend read via Gateway and owner APIs | The current service-local gRPC implementation covers the analysis job lifecycle subset |
 | Workspace/project metadata | `analysis-store-service` unless a later slice records a narrower owner | Gateway reads through owner APIs | Current code stores these in monolith in-memory repositories |
 | Audit and retention metadata | `analysis-store-service` unless a later slice records a narrower owner | Gateway or admin APIs through owner | Runtime values remain sensitive |
-| Incident records | `analysis-store-service` | Graph/replay/report query owner APIs | Planned owner; not implemented by Slice 05 |
+| Incident records | `analysis-store-service` | Graph/replay/report query owner APIs | Planned owner; not implemented yet |
 | Correlation indexes | `analysis-store-service` | Graph/replay/report query owner APIs | Planned owner; operational `CorrelationContext` logs are diagnostics, not evidence |
-| Artifact catalog metadata | `analysis-store-service` | Owner APIs | Slice 05 registers path/reference, category, checksum, size, producer, schema version and completeness metadata |
+| Artifact catalog metadata | `analysis-store-service` | Owner APIs | The current service implementation registers path/reference, category, checksum, size, producer, schema version and completeness metadata |
 | Raw evidence artifact bytes | Producing service until registered; owner decided by artifact source | Scoped owner APIs or signed object access after design | No shared filesystem or bucket-prefix coupling |
 | Repository workspaces | `repository-analysis-service` | Immutable source snapshot or artifact references | Other services must not use workspace internals directly |
 | Source snapshots | `repository-analysis-service` for workspace/source package; `analysis-store-service` for accepted snapshot metadata | AST and Joern receive references through contracts | Snapshot identity must be deterministic |
@@ -69,7 +69,7 @@ Forbidden:
 | Vector store | Projection only; owner depends on a later LLM/context decision |
 | Operational logs | Diagnostics only; not canonical forensic evidence |
 
-## Slice 05 Implementation Status
+## Analysis Store Implementation Status
 
 `analysis-store-service` now has an independent Spring Boot service boundary and
 service-local `AnalysisJobService` gRPC adapter. Its current write authority is

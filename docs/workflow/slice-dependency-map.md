@@ -1,67 +1,64 @@
 # Slice Dependency Map
 
-## Workflow Version
-
-| Field | Value |
-|---|---|
-| workflowVersion | `forensics-tracing-analytics-epic-alignment-20260516` |
-| workflowTitle | Align Forensics Tracing Description With The Analytics EPIC |
-| executionBranch | `docs/workflow-forensics-tracing-analytics-epic-alignment-20260516` |
-| sourceWorkflow | `docs/workflow/workflow.md` |
-
-## Dependency Graph
-
 ```mermaid
 flowchart TD
-  S00["Slice 00: Repository, branch and identity preflight"]
-  S01["Slice 01: Producer fact extraction"]
-  S02["Slice 02: Analytics EPIC gap analysis"]
-  S03["Slice 03: Three Amigos requirement review"]
-  S04["Slice 04: Contract and boundary comparison"]
-  S05["Slice 05: Draft EPIC v0.2"]
-  S06["Slice 06: Producer-neutral contracts"]
-  S07["Slice 07: Documentation sync"]
-  S08["Slice 08: Leakage and sensitive-data audit"]
-  S09["Slice 09: Requirement acceptance gate"]
-  S10["Slice 10: Quality, commit and optional push"]
+  S00["Slice 00: execution preflight"]
+  S01["Slice 01: boundary and contract gap freeze"]
+  S02["Slice 02: Gateway HTTP and gRPC BTM contracts"]
+  S03["Slice 03: artifact and target ownership"]
+  S04["Slice 04: Gateway service bootstrap"]
+  S05["Slice 05: external Git repository workspace flow"]
+  S06["Slice 06: Java AST worker handoff"]
+  S07["Slice 07: Joern worker handoff"]
+  S08["Slice 08: instrumentation target planning"]
+  S09["Slice 09: BTM gRPC file delivery"]
+  S10["Slice 10: end-to-end repository-to-BTM orchestration"]
+  S11["Slice 11: runtime readiness and local service landscape"]
+  S12["Slice 12: graph replay and report service decision"]
+  S13["Slice 13: frontend and CLI Gateway integration"]
+  S14["Slice 14: retire or isolate replaced monolith paths"]
+  S15["Slice 15: remove obsolete shared implementation modules"]
+  S16["Slice 16: full quality gate and migration acceptance"]
 
-  S00 --> S01
-  S00 --> S02
-  S01 --> S03
+  S00 --> S01 --> S02
   S02 --> S03
-  S01 --> S04
   S02 --> S04
-  S03 --> S05
   S04 --> S05
   S05 --> S06
-  S06 --> S07
+  S05 --> S07
+  S06 --> S08
   S07 --> S08
+  S03 --> S09
   S08 --> S09
+  S04 --> S10
+  S05 --> S10
+  S06 --> S10
+  S07 --> S10
+  S08 --> S10
   S09 --> S10
+  S10 --> S11
+  S10 --> S12
+  S10 --> S13
+  S11 --> S14
+  S12 --> S14
+  S13 --> S14
+  S14 --> S15 --> S16
 ```
 
-## Execution Rule
+## Parallelization Notes
 
-The slice table in `docs/workflow/workflow.md` is the source of truth. This
-diagram is a human-readable projection and must stay consistent with the slice
-metadata.
-
-## Parallelization
-
-Read-only work may be parallelized:
-
-- Slice 01 and Slice 02 after Slice 00.
-- Contract file reading for Slice 04 may begin during Slice 02.
-
-Write-capable work is serial because EPIC, arc42, ADR and README files can
-overlap during requirement alignment.
-
-## Lock Rules
-
-- `docs/epics/**` is locked by Slice 05 and Slice 06.
-- `docs/README.md`, `docs/arc42/**`, `docs/adr/**` and `docs/architecture/**`
-  are locked by Slice 07.
-- Leakage fixes after Slice 08 must touch only files already changed by prior
-  slices unless a reviewer approves the additional documentation path.
-- Product code, frontend code, services, contracts, deployment files, examples,
-  data and build logic are blocked paths.
+- Slices 00 through 03 are serial because they stabilize contracts and
+  ownership.
+- Slice 04 can proceed after Slice 02.
+- Slices 06 and 07 can run in parallel after Slice 05 if they have disjoint
+  write scopes and stable contracts.
+- Slice 09 waits for artifact ownership and target planning.
+- Slice 11 waits for Gateway behavior from Slice 10 and proves local runtime
+  evidence for the implemented service path.
+- Slice 12 waits for Slice 10 and either creates graph/report roots or records
+  explicit deferral.
+- Slice 13 waits for Slice 10 and verifies frontend/CLI calls through
+  Gateway/public APIs only.
+- Module retirement and removal are serial and late by design.
+- Checkpoint commits and pushes are not a separate terminal slice. They run
+  after every successful `workflow execute` slice.

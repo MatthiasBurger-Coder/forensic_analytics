@@ -1,984 +1,854 @@
-# Workflow: Align Forensics Tracing Description With The Analytics EPIC
+# Workflow: Microservices BTM Pipeline
+
+## Workflow Version
+
+| Field | Value |
+|---|---|
+| Workflow version | `microservices-btm-pipeline-20260517-v1` |
+| Workflow branch | `feature/workflow-microservices-btm-pipeline-20260517` |
+| Creation status | Created by `workflow create`; execution requires a clean committed workflow package. |
 
 ## Executive Summary
 
-This workflow updates the active Forensic Analytics requirement baseline by
-comparing the current `forensics_tracing` producer description with the
-existing Analytics EPIC. The workflow creates a new versioned Analytics EPIC
-that strengthens analysis-platform responsibilities without importing
-producer-specific implementation details.
+This workflow converts the Forensic Analytics runtime toward the accepted
+target microservices landscape and delivers the first end-to-end BTM pipeline:
+a plugin or external client submits a Git repository through the public Gateway
+HTTP API, the platform prepares a service-owned workspace from an external Git
+repository, worker services produce accepted analysis artifacts, and the
+server returns generated BTM files through a gRPC contract.
 
-The target result is an EPIC v0.2 that states, in producer-neutral language,
-that `forensic_analytics` owns normalization, correlation, persistence
-boundaries, replay construction, graph projection rules, reporting context and
-LLM evidence packaging. Build-tool plugins and other external tools remain
-producers, context submitters, runtime binders or adapters.
-
-This workflow is documentation and requirement alignment only. It does not
-execute production implementation slices and does not change backend,
-frontend, runtime, build, contract or persistence code.
+The workflow is intentionally slice-based. It must not perform a big-bang
+module migration. Existing `forensic-analytics-*` modules remain the current
+modular-monolith baseline until a replacement service path has verified
+contract, runtime, test, healthcheck and rollback evidence. Only after that
+evidence exists may obsolete modules be removed from `settings.gradle.kts`.
 
 ## Requirement Clarification Decision
 
 | Field | Decision |
 |---|---|
-| Original request | Create a workflow for aligning the `forensics_tracing` description with the `forensic_analytics` EPIC. |
-| Interpreted intent | Regenerate the active `docs/workflow/**` package so `workflow execute` can later compare producer documentation with the Analytics EPIC and create an EPIC v0.2 in producer-neutral language. |
-| Change type | Requirement, EPIC and architecture-documentation alignment. |
-| Affected process strand | `workflow create` now; `workflow execute` later for the checked slices. |
-| Affected architecture area | Analysis-platform boundary, producer/adapter boundary, ingestion contracts, data ownership, runtime evidence sensitivity, replay, graph and LLM evidence packaging. |
-| EPIC source | `docs/epics/forensics-platform-runtime-replay-llm-analysis-v0.1.md` is the current archived baseline and must remain historical. |
-| Target EPIC | `docs/epics/forensics-platform-runtime-replay-llm-analysis-v0.2.md`. |
-| Source producer description | Local checkout `/mnt/d/Projects/forensics_tracing/README.md`, repository `MatthiasBurger-Coder/forensics_tracing`. |
-| Confidence | 94 percent. |
+| Original request | Convert the project to microservices so collaboration happens only through services, distribute existing implementation modules into service-owned business boundaries, create BTM rules, create workspaces from external Git repositories, accept a plugin-submitted Git repository over HTTP and return completed BTM files over gRPC. |
+| Interpreted intent | Create an executable workflow for completing the microservice migration, distributing existing implementation into service-owned boundaries, and implementing the Git repository to BTM artifact pipeline through HTTP plus gRPC. |
+| Change type | Product architecture, backend, contracts, migration, DevOps and frontend integration workflow. |
+| Affected process strand | `workflow create` now; later `workflow execute` for implementation slices. |
+| Affected architecture area | Microservice autonomy, Gateway API, gRPC contracts, repository workspaces, static and semantic analysis workers, Analysis Store ownership, BTM generation, deployment and frontend/API adapters. |
+| EPIC source | `docs/epics/forensics-platform-runtime-replay-llm-analysis-v0.2.md`. |
+| Active branch | `feature/workflow-microservices-btm-pipeline-20260517`. |
+| Confidence | 92 percent. |
 | Decision | `READY_FOR_WORKFLOW`. |
 
-No blocking requirement question remains for workflow creation. Execution must
-still stop if the source producer checkout, Analytics EPIC, contract files, or
-classification evidence cannot be inspected.
+No blocking requirement question remains for workflow creation. Contract and
+runtime details that would otherwise require guessing are assigned to early
+contract-first and architecture slices before implementation.
 
-### Three Amigos Findings
+Execution release is conditional on committing this regenerated workflow
+package so `workflow execute` can pass its clean-worktree preflight and read the
+stable workflow version from `docs/workflow/workflow.history.md`.
+
+## Three Amigos Findings
 
 | Perspective | Finding |
 |---|---|
-| Product / Requirement | Analytics needs a clearer EPIC v0.2 that describes platform-owned analysis capabilities and artifact-package ingestion without treating plugins as the analysis platform. |
-| Development / Architecture | ADR-0001, ADR-0002 and arc42 already state the server-owned boundary, but the EPIC v0.1 wording is weaker and still uses phrases that can imply plugin-owned facts. |
-| Testing / Quality | Each slice needs executable acceptance criteria, leakage searches, diff checks and planned-vs-implemented wording checks before commit or push. |
+| Senior Requirement Engineer | The request matches EPIC v0.2: producers trigger server-side analysis, Analytics owns canonical semantics, instrumentation planning and generated rule artifacts. |
+| Senior System Architect | The accepted target landscape is already documented in ADR-0017. The workflow must preserve no shared Java implementation modules and must retire monolith modules only after service parity evidence. |
+| Senior Java Backend Developer | Six service slices already exist. The missing behavior is orchestration, Gateway HTTP, artifact-byte ownership, BTM file delivery, and migration of remaining monolith implementation. |
+| Senior React Frontend Developer | Frontend work is downstream of Gateway contract stabilization. The UI must call Gateway/public APIs only and must not call worker services directly. |
+| Senior Tester | This is high-risk migration work. Every slice needs targeted service tests, contract tests, architecture tests and the applicable `QUALITY.md` gate before checkpoint commit or push. |
 
 Question: Does the implementation still match the EPIC?
 
-Current answer: partially. Existing ADR, README and arc42 documents mostly
-state server-owned analysis responsibilities, but EPIC v0.1 is an archived
-baseline and does not yet capture the current producer-neutral boundary in
-enough detail.
+Current answer: partially. EPIC v0.2 and ADR-0001 require plugins to trigger
+server-side analysis and receive server-generated BTM files when runtime
+debugging requires instrumentation. The repository already has service slices
+for repository analysis and BTM generation, but the end-to-end HTTP Gateway to
+gRPC BTM artifact path is not implemented yet.
 
 ## Verified Baseline
 
-Read-only verification before authoring found:
+Read-only verification before workflow authoring found:
 
-- Repository root: `/mnt/d/Projects/forensic_analytics`
-- Active branch: `docs/workflow-forensics-tracing-analytics-epic-alignment-20260516`
+- Repository root: verified with `git rev-parse --show-toplevel`
+- Branch created and verified: `feature/workflow-microservices-btm-pipeline-20260517`
 - Working tree before workflow regeneration: clean
-- Branch local ref: verified
-- Source producer checkout: `/mnt/d/Projects/forensics_tracing`
-- Source producer README: present
-- Analytics EPIC v0.1: `docs/epics/forensics-platform-runtime-replay-llm-analysis-v0.1.md`
 - Quality contract: `QUALITY.md`
-- Architecture docs: `docs/arc42/**`
-- ADRs: `docs/adr/**`
-- Contract reference: `contracts/grpc/forensic-ingestion.proto`
-- Current module list: `settings.gradle.kts`
-- Current service baseline: `services/README.md`
+- Java baseline: Java 25 through Gradle wrapper
+- Full quality gate: `./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace`
+- Current build shape: one Gradle multi-project build in `settings.gradle.kts`
+- Existing service slices: `forensic-ingestion-service`, `repository-analysis-service`, `analysis-store-service`, `java-ast-analysis-service`, `joern-cpg-analysis-service`, `btm-generation-service`
+- Planned service roots: `forensic-gateway-service`, `graph-replay-service`, `report-generation-service`
+- Existing contract roots: `contracts/grpc`, `contracts/openapi`, `contracts/events`
+- Current frontend: `forensic-ui`
 
-The previous active `docs/workflow/**` package described Governance Flowchart
-V2 and referenced branch `architecture/workflow-governance-flowchart-v2-20260517`.
-This workflow replaces that active plan for the current branch.
+Verified service evidence:
+
+- `repository-analysis-service` owns clean HTTPS repository checkout,
+  workspace preparation, source snapshot IDs and gRPC port `9092`.
+- `btm-generation-service` owns deterministic BTM generation, produces LF-only
+  `.btm` files and exposes gRPC port `9095`.
+- `analysis-store-service` owns the current service-local analysis job and
+  artifact metadata subset.
+- Service projects do not declare `project(...)` dependencies on other Java
+  modules.
+
+Verified gaps:
+
+- No implemented `forensic-gateway-service` exists.
+- No public HTTP Gateway endpoint exists for the new plugin repository request
+  path as an implemented service.
+- The current `btm-generation.proto` returns generated artifact references,
+  not BTM file bytes.
+- The worker chain from repository checkout to AST facts, Joern artifacts,
+  instrumentation targets and BTM files is not implemented as an end-to-end
+  service workflow.
+- Graph replay and report generation remain planned service roots.
+- Docker Compose, Docker Swarm and Kubernetes material for the full service
+  landscape is not verified.
+- Existing `forensic-analytics-*` modules still implement the current
+  modular-monolith runtime and cannot be removed until service parity exists.
 
 ## Target Picture
 
-After `workflow execute` completes this workflow:
+The target repository shape for executable runtime behavior is:
 
-- EPIC v0.2 exists as the current Analytics EPIC.
-- EPIC v0.1 remains a historical baseline.
-- Analytics accepts two equivalent input paths:
-  - server-side repository analysis,
-  - producer-supplied artifact package ingestion.
-- Both input paths normalize into the same canonical analysis model.
-- Downstream graph, replay, reporting and LLM components do not depend on
-  whether evidence came from a server-side scanner, uploaded artifact package,
-  build-tool producer, runtime import or semantic analysis adapter.
-- Producer metadata is stored as provenance only.
-- Plugin task names, Maven goals, helper class names, local paths, local stores
-  and producer-specific schemas are explicitly excluded from Analytics core.
-- Related docs point to v0.2 only where they describe the current requirement
-  baseline.
-- Historical ADRs remain recognizable as historical records.
+```text
+services/
+  forensic-gateway-service/
+  forensic-ingestion-service/
+  repository-analysis-service/
+  java-ast-analysis-service/
+  joern-cpg-analysis-service/
+  btm-generation-service/
+  analysis-store-service/
+  graph-replay-service/
+  report-generation-service/
+frontend/
+  frontend-web-app/
+contracts/
+  grpc/
+  openapi/
+  events/
+deployment/
+  docker-compose/
+  docker-swarm/
+  kubernetes/
+```
+
+`contracts/` remains contract-only. It may contain OpenAPI, `.proto` and event
+documents, but it must not become a shared Java runtime module, DTO module,
+domain module, mapper module, test fixture module or generated-code dependency
+between services.
+
+The target BTM pipeline is:
+
+```text
+Plugin / external client
+  -> Gateway HTTP API
+  -> Repository Analysis Service
+  -> Java AST Analysis Service
+  -> Joern CPG Analysis Service
+  -> Analysis Store Service
+  -> BTM Generation Service
+  -> Gateway public gRPC BTM delivery facade
+  -> Plugin receives generated BTM files
+```
+
+Every step must preserve provenance, correlation IDs, schema versions,
+completeness and diagnostics. Static and semantic facts are not runtime
+execution evidence. BTM files are generated instrumentation, not observed
+runtime facts.
 
 ## Scope
 
-Allowed write scope during `workflow execute`:
+Allowed write scope during later `workflow execute` slices:
 
 - `docs/workflow/**`
-- `docs/epics/**`
-- `docs/README.md`
+- `docs/architecture/**`
 - `docs/arc42/**`
 - `docs/adr/**`
-- `docs/architecture/**` only for stale documentation claims discovered during
-  this workflow
+- `contracts/**`
+- `services/**`
+- `frontend/**`
+- `forensic-ui/**` when the frontend is migrated or adapted to Gateway APIs
+- `forensic-analytics-*` modules only when the slice explicitly migrates,
+  isolates or retires verified behavior
+- `settings.gradle.kts` and module `build.gradle.kts` files only when the
+  slice changes verified service/module registration
+- `deployment/**` when service runtime material is added
+- focused tests for every changed slice
 
 Read-only comparison scope:
 
-- `/mnt/d/Projects/forensics_tracing/README.md`
-- Optional `/mnt/d/Projects/forensics_tracing/docs/**`
-- Optional `/mnt/d/Projects/forensics_tracing/examples/**`
-- Optional `/mnt/d/Projects/forensics_tracing/src/main/**`
-- Optional `/mnt/d/Projects/forensics_tracing/src/test/**`
-- `contracts/grpc/forensic-ingestion.proto`
-- `settings.gradle.kts`
-- `services/README.md`
+- `AGENTS.md`
+- `QUALITY.md`
+- `docs/epics/**`
+- `docs/architecture/**`
+- `docs/arc42/**`
+- `docs/adr/**`
+- existing services, contracts, frontend and Gradle files
 
 ## Non-Goals
 
 This workflow must not:
 
-- change Java, TypeScript, protobuf, Gradle, Maven, Docker, CI or runtime code,
-- change REST, gRPC, protobuf or event contracts,
-- change plugin behavior,
-- select a database, graph database, vector database, runtime collector or LLM provider,
-- adopt producer-local H2 schemas, local paths, cleanup behavior or cache behavior,
-- introduce compatibility wrappers or aliases,
-- claim planned replay, graph, report or LLM behavior as implemented unless
-  verified from source and tests,
-- modify `forensic-ui/**`, `frontend/**`, `services/**`, `forensic-analytics-*`,
-  `contracts/**`, `deployment/**`, `examples/**`, `data/**`, build logic or source code.
+- implement all services in one slice;
+- remove legacy modules before service parity evidence exists;
+- introduce shared Java implementation modules between services;
+- create DTO, domain, mapper, repository, fixture or error-model modules shared
+  by services;
+- let Gateway own AST, Joern, BTM, graph, replay, report or persistence
+  business logic;
+- let worker services read another service's private database, private
+  filesystem paths or generated classes;
+- expose repository workspace paths outside `repository-analysis-service`;
+- let BTM generation scan repositories directly;
+- treat static analysis, Joern output, generated rules or LLM output as
+  observed runtime evidence;
+- select a production database, graph database, vector database, LLM provider
+  or broker without a dedicated slice and ADR review;
+- claim Docker Swarm or Kubernetes readiness before manifests and verification
+  commands exist.
 
-## Architecture Constraints
+## Architecture Boundaries
 
-- Hexagonal direction remains adapters and infrastructure toward application,
-  application toward domain.
-- Analytics owns canonical analysis semantics; producers submit requests,
-  context, facts, artifacts or runtime evidence through explicit contracts.
-- Joern, JavaParser, Byteman/BTM, graph stores, vector stores, LLM providers and
-  persistence technologies remain replaceable adapters or projections.
-- Runtime values are sensitive by default.
-- Missing, ambiguous or incomplete evidence must be represented explicitly.
-- LLM output remains a hypothesis, explanation or recommendation, never
-  verified evidence.
-- Any contract wording must remain compatible with ADR-0010 and
-  `contracts/grpc/forensic-ingestion.proto`.
-- Any data ownership wording must preserve one owner for canonical evidence,
-  artifact metadata and projections.
+- Dependency direction remains adapter/infrastructure to application to domain.
+- Service domain and application code must not import generated transport
+  classes, Spring, gRPC, persistence clients, JavaParser, Joern, Docker APIs or
+  other service implementation packages.
+- Service-to-service communication is limited to REST/OpenAPI,
+  gRPC/protobuf or approved message contracts.
+- Generated Protobuf and OpenAPI code must be service-local build output.
+- Analysis Store is the owner of canonical analysis state and accepted artifact
+  metadata.
+- Repository Analysis owns workspaces and source snapshot preparation.
+- Java AST and Joern services own worker outputs until accepted by Analysis
+  Store.
+- BTM Generation owns generated BTM bytes until they are registered or
+  delivered through an owner-approved artifact path.
+- Frontend owns UI state only and must use Gateway/public APIs.
+- Graph/replay and report services are projections or generated artifact
+  owners, not primary evidence stores.
 
 ## Backend Assessment
 
-Backend source changes are out of scope. Backend review is required only to
-ensure the EPIC does not authorize product implementation work, plugin class
-adoption, producer-local storage adoption or concrete technology selection.
+Backend migration is high risk because current modules still share domain,
+application, observability and persistence code. Each implementation slice must
+either create service-owned behavior or retire an already-replaced monolith path.
 
-If a future slice discovers that implementation code contradicts the planned
-EPIC wording, the slice must stop and report the mismatch instead of editing
-code in this workflow.
+Backend execution must preserve:
+
+- Java 25;
+- JUnit 6;
+- service-local generated transport code;
+- service-local domain models;
+- explicit request validation;
+- deterministic artifact generation;
+- evidence completeness and diagnostics;
+- ArchUnit checks for service boundaries.
 
 ## Frontend Assessment
 
-Frontend source changes are out of scope. Frontend review is impact-only.
-The current `forensic-ui` app must not be changed by this workflow.
+Frontend implementation is not first in the dependency chain. It waits until
+Slice 10 proves the Gateway/public API path. The existing `forensic-ui` API
+adapter currently targets `/api`; later slices may either adapt it to the new
+Gateway contract or migrate it into `frontend/frontend-web-app` after package
+tooling exists in that target root.
 
-EPIC and arc42 wording must avoid claiming graph UI, replay UI, LLM diagnosis
-UI, graph/replay runtime readiness or provider-backed LLM integration as
-implemented unless the implementation is verified from source, tests and
-quality evidence.
+Frontend views must distinguish accepted evidence, generated artifacts,
+diagnostics, derived analysis, unresolved gaps, missing evidence, hypotheses
+and suggested fixes. The UI must not call repository-analysis, AST, Joern, BTM,
+analysis-store, graph or report worker services directly.
+
+## Contract Strategy
+
+Early slices must close the verified contract gaps before implementation:
+
+- HTTP Gateway request for plugin/external Git repository submission;
+- job/status model for repository-to-BTM generation;
+- Gateway public gRPC delivery facade for completed BTM file bytes or chunks;
+- owner API between Gateway and BTM Generation for byte retrieval without
+  Gateway owning generated artifacts;
+- artifact metadata and byte ownership between BTM Generation and Analysis
+  Store;
+- error/status model, idempotency, retries, deadlines and cancellation;
+- required `Idempotency-Key` behavior for every Gateway mutation;
+- compatibility of existing `forensic-ingestion.proto` and
+  `btm-generation.proto` field numbers;
+- contract tests for every implemented public operation.
+
+No slice may implement a public route, RPC or event by guessing fields from
+similarly named Java classes.
+
+## Data Ownership
+
+| Data area | Owner |
+|---|---|
+| Public request facade, status facade and public BTM delivery facade | `forensic-gateway-service` |
+| Raw producer upload sessions | `forensic-ingestion-service` |
+| Repository workspaces and source snapshots | `repository-analysis-service` |
+| Java static source-fact worker output | `java-ast-analysis-service` until accepted |
+| Joern semantic artifacts | `joern-cpg-analysis-service` until accepted |
+| Canonical jobs, accepted artifact metadata and normalized facts | `analysis-store-service` |
+| Generated BTM bytes before registration or delivery | `btm-generation-service` |
+| Graph and replay projections | `graph-replay-service` |
+| Reports and LLM-ready packages | `report-generation-service` |
+| Browser state | `frontend-web-app` |
+
+Direct cross-service database access, shared private filesystem paths and
+shared Java persistence entities are forbidden.
+
+Gateway is not the worker orchestrator. Job lifecycle, worker dispatch and
+accepted artifact metadata belong to `analysis-store-service` unless Slice 01
+records a stricter owner decision. Gateway may coordinate public request and
+status views only through documented owner APIs.
+
+## Resilience, Security And Evidence Requirements
+
+- External Git repositories must be clean HTTPS URLs without userinfo, query
+  secrets, fragments, local/private hosts, `file:` URLs, SSH or SCP-style
+  remotes.
+- Repository checkout must disable hooks, credentials, file protocol and
+  repository-supplied execution.
+- Workspace policies must keep timeout and byte quota bounds explicit.
+- Gateway mutations must require idempotency keys.
+- gRPC mutations must require request IDs, idempotency keys and correlation IDs.
+- Long-running work must be represented as jobs, not as unbounded synchronous
+  HTTP calls.
+- BTM artifact transfer must support bounded payload or streaming behavior with
+  explicit size limits.
+- Missing analysis facts, missing Joern artifacts, partial BTM generation or
+  incomplete runtime evidence must remain visible as incomplete, unknown,
+  rejected or unavailable.
+- Runtime values are sensitive by default. Logs and diagnostics must not expose
+  secrets, raw source content, raw runtime values, local paths or LLM prompts.
 
 ## Test Strategy
 
-Documentation and requirement changes must run the narrowest meaningful checks
-first:
-
-```bash
-git status --short --branch
-git diff --check
-git diff --cached --check
-```
-
-Documentation-specific checks:
-
-```bash
-rg -n "GenerateBtmTask|BtmGenMojo|btmGen|generateBtmRules|forensics:btmgen|forensics:analyze|RtTraceHelper|RtTrace|MethodLoggingAspect|AspectJ|cleanupPolicy|analysisStoreDirectory|joernExecutable|joernParseExecutable|joernSliceExecutable" docs/epics docs/arc42 docs/adr docs/README.md
-rg -n "\b(TO""DO|T""BD|FIX""ME|X""XX|PLACE""HOLDER|pend""ing)\b" docs/epics docs/README.md docs/arc42 docs/adr docs/architecture
-rg -n "secret|credential|token|password|raw runtime|raw trace|stack trace|LLM prompt|source payload" docs/epics docs/README.md docs/arc42 docs/adr docs/architecture
-```
-
-Minimum quality command from `QUALITY.md`:
-
-```bash
-./gradlew test --dependency-verification strict --console=plain --stacktrace
-```
-
-Full local quality gate from `QUALITY.md`, when feasible:
-
-```bash
-./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace
-```
-
-Run `validatePlugins` only if Gradle plugin metadata, task inputs, task outputs
-or plugin implementation classes are changed. That is not expected for this
-workflow:
-
-```bash
-./gradlew validatePlugins --dependency-verification strict --no-daemon --console=plain --stacktrace
-```
-
-Optional Sonar/SonarCloud checks must be reported as skipped unless documented
-credentials and repository commands are available.
-
-## Role Ownership
-
-| Responsibility | Owner |
-|---|---|
-| Workflow orchestration | Agent Workflow Orchestrator / Senior Workflow Architect |
-| Requirement gap analysis | Three Amigos Requirement Gatekeeper / Senior Requirement Engineer |
-| EPIC wording | Senior Requirement Engineer |
-| Platform boundaries | Senior System Architect |
-| Contract neutrality | Contract-First API Steward |
-| Data ownership | Data Ownership & Persistence Steward |
-| Runtime data sensitivity | Security & Threat Modeling |
-| Testability and quality | Senior Tester |
-| Documentation sync | Senior Documentation Engineer |
-| Backend boundary impact | Senior Java Backend Developer |
-| Frontend boundary impact | Senior React Frontend Developer |
-| Skill/governance conflicts | Skill Registry & Conflict Auditor |
-
-Callable subagents were available during workflow creation for read-only role
-reviews. During `workflow execute`, every write-capable role or subagent must
-verify the active branch before edits and must not switch branches.
-
-## Slice Structure
-
-| Slice | Purpose | Owner | Dependencies | Parallelization |
-|---|---|---|---|---|
-| 00 | Repository, branch and workflow identity preflight | Senior Workflow Architect | none | serial |
-| 01 | Extract producer analysis-relevant facts | Senior Requirement Engineer | 00 | serial |
-| 02 | Analyze Analytics EPIC and related docs | Senior Requirement Engineer / Senior Documentation Engineer | 00 | can run after 00; joins 01 before 03 |
-| 03 | Three Amigos requirement review | Three Amigos Requirement Gatekeeper | 01, 02 | serial |
-| 04 | Contract and producer boundary comparison | Contract-First API Steward / Senior System Architect | 01, 02 | serial |
-| 05 | Draft EPIC v0.2 | Senior Requirement Engineer | 03, 04 | serial |
-| 06 | Define producer-neutral analysis contracts in EPIC | Senior System Architect / Data Ownership & Persistence Steward | 05 | serial |
-| 07 | Synchronize related documentation | Senior Documentation Engineer / arc42 governance | 05, 06 | serial |
-| 08 | Producer leakage and sensitive-data audit | Senior Tester / Security & Threat Modeling | 05, 06, 07 | serial |
-| 09 | Requirement acceptance and planned-vs-implemented gate | Senior Tester / Senior System Architect | 08 | serial |
-| 10 | Quality gate, diff review, commit and optional push | Workflow Executor / git commit preparation | 09 | serial |
-
-## Slices
-
-### Slice 00 - Repository, Branch And Workflow Identity Preflight
-
-Purpose: prove that execution is running the checked EPIC-alignment workflow on
-the dedicated workflow branch.
-
-Affected files: read-only at first; later `docs/workflow/**` may be updated
-only with execution evidence.
-
-Allowed write scope: `docs/workflow/**` evidence files only.
-
-Verification commands:
-
-```bash
-git rev-parse --show-toplevel
-git status --short --branch
-git branch --show-current
-git show-ref --verify --quiet refs/heads/docs/workflow-forensics-tracing-analytics-epic-alignment-20260516
-rg -n "Align Forensics Tracing Description With The Analytics EPIC|forensics-tracing-analytics-epic-alignment-20260516" docs/workflow
-```
-
-Acceptance criteria:
-
-- Repository root is `/mnt/d/Projects/forensic_analytics`.
-- Active branch is `docs/workflow-forensics-tracing-analytics-epic-alignment-20260516`.
-- `docs/workflow/workflow.md` describes this EPIC-alignment workflow.
-- Working tree has no unrelated changes.
-
-Stop conditions:
-
-- Active branch is not the dedicated workflow branch.
-- Workflow identity, version, source EPIC or branch evidence does not match.
-- `git diff --name-only origin/main...HEAD` is empty after workflow creation.
-- Unrelated changes exist.
-
-### Slice 01 - Extract Analysis-Relevant Facts From forensics_tracing
-
-Purpose: build a classified fact matrix from the producer description.
-
-Affected files:
-
-- `docs/workflow/forensics-tracing-fact-matrix.md`
-
-Allowed write scope:
-
-- `docs/workflow/forensics-tracing-fact-matrix.md`
-
-Read sources:
-
-- `/mnt/d/Projects/forensics_tracing/README.md`
-- Optional producer docs, examples and implementation files only when needed to
-  understand concepts.
-
-Classifications:
-
-- `Platform requirement`
-- `Producer implementation`
-- `Example only`
-- `Open decision`
-
-Facts to classify include static source scanning, source files, classes,
-methods, entry/exit observations, return observations, throw observations,
-branch and switch observations, call-site information, generated rule artifacts,
-manifest metadata, checksums, analysis package metadata, local analysis-store
-facts, Joern artifacts, call graph facts, control-flow facts, data-flow facts,
-semantic slices, JSON/JSONL runtime events, timestamp, event type, thread
-identity, correlation ID, trace ID, span ID, parent span ID, runtime details,
-exception metadata and error metadata.
-
-Explicit exclusions from Analytics core:
-
-- Gradle task names,
-- Maven goal names,
-- plugin extension names,
-- plugin class names,
-- runner, renderer, writer and helper class names,
-- local output paths,
-- local target paths,
-- cleanup policies,
-- producer cache behavior,
-- AspectJ logging details,
-- producer-specific H2 schema as canonical Analytics schema,
-- producer default server port or Java baseline as Analytics domain requirements.
-
-Verification commands:
-
-```bash
-test -f /mnt/d/Projects/forensics_tracing/README.md
-rg -n "Current Boundary|server owns|StartAnalysisSession|UploadAnalysisData|CompleteAnalysisSession|AbortAnalysisSession|6565|forensics:btmgen|RtTraceHelper|MethodLoggingAspect|analysisStoreDirectory" /mnt/d/Projects/forensics_tracing/README.md /mnt/d/Projects/forensics_tracing/src/main /mnt/d/Projects/forensics_tracing/src/test
-```
-
-Acceptance criteria:
-
-- A fact matrix exists.
-- Every finding has one classification.
-- Analytics EPIC wording is proposed only for accepted platform requirements.
-- Rejected producer implementation details are documented.
-
-Stop conditions:
-
-- The producer README cannot be inspected.
-- A proposed fact cannot be classified.
-- A producer implementation detail would become Analytics core behavior.
-
-### Slice 02 - Analyze Current Analytics EPIC And Related Docs
-
-Purpose: identify what EPIC v0.1 already covers, what is missing and which
-related docs must be synchronized after EPIC v0.2.
-
-Affected files:
-
-- `docs/workflow/analytics-epic-gap-analysis.md`
-
-Allowed write scope:
-
-- `docs/workflow/analytics-epic-gap-analysis.md`
-
-Read sources:
-
-- `docs/epics/forensics-platform-runtime-replay-llm-analysis-v0.1.md`
-- `docs/README.md`
-- `docs/arc42/**`
-- `docs/adr/**`
-- `docs/architecture/**`
-- `contracts/grpc/forensic-ingestion.proto`
-- `settings.gradle.kts`
-- `services/README.md`
-
-Coverage to mark:
-
-- static fact import,
-- canonical model persistence,
-- Joern import or attachment,
-- rule generation,
-- runtime event import,
-- exception incident creation,
-- replay,
-- graph projection,
-- LLM root-cause explanation,
-- runtime data sensitivity,
-- canonical IDs.
-
-Gaps to evaluate:
-
-- artifact package ingestion,
-- manifest and checksum verification,
-- analysis input contract,
-- producer-neutral static fact model,
-- producer-neutral semantic fact model,
-- producer-neutral runtime event model,
-- runtime event families,
-- instrumentation planning,
-- rule-set artifact model,
-- provenance model,
-- correlation between static, semantic and runtime facts,
-- partial and invalid package handling,
-- producer metadata as provenance only,
-- explicit exclusion of plugin implementation details,
-- stale service/module baseline claims.
-
-Verification commands:
-
-```bash
-rg -n "Version: 0.1|Source Note|Plugins|canonical|Runtime data|Joern|Byteman|BTM|LLM|Graph|artifact|manifest|checksum" docs/epics/forensics-platform-runtime-replay-llm-analysis-v0.1.md docs/README.md docs/arc42 docs/adr docs/architecture
-rg -n "include\\(|services:" settings.gradle.kts services/README.md docs/architecture/current-build-and-test-map.md
-```
-
-Acceptance criteria:
-
-- A gap list exists.
-- Each gap maps to producer facts, Analytics docs or an open decision.
-- The analysis records whether v0.2 should add, reject or defer the topic.
-
-Stop conditions:
-
-- EPIC v0.1 cannot be inspected.
-- EPIC source authority is unclear after review.
-- Architecture docs conflict with implementation and cannot be safely classified.
-
-### Slice 03 - Three Amigos Requirement Review
-
-Purpose: approve or reject candidate EPIC changes before editing the EPIC.
-
-Affected files:
-
-- `docs/workflow/three-amigos-decision-record.md`
-
-Allowed write scope:
-
-- `docs/workflow/three-amigos-decision-record.md`
-
-Decision values:
-
-- `ACCEPTED_FOR_EPIC`
-- `REJECTED_AS_PLUGIN_SPECIFIC`
-- `DEFERRED_AS_OPEN_DECISION`
-- `MOVE_TO_ADR_OR_ARC42`
-
-Review questions:
-
-- Is this a platform responsibility?
-- Is this producer-neutral?
-- Does this improve analysis, replay, graph, reporting or LLM evidence quality?
-- Can this be tested or reviewed?
-- Does this require a new ADR instead of an EPIC addition?
-- Does this introduce a concrete tool choice that should remain open?
-
-Verification commands:
-
-```bash
-rg -n "ACCEPTED_FOR_EPIC|REJECTED_AS_PLUGIN_SPECIFIC|DEFERRED_AS_OPEN_DECISION|MOVE_TO_ADR_OR_ARC42" docs/workflow/three-amigos-decision-record.md
-```
-
-Acceptance criteria:
-
-- Every candidate has a decision.
-- Rejected plugin-specific details are documented.
-- Open decisions remain explicit.
-- The decision record says whether v0.2 can be drafted.
-
-Stop conditions:
-
-- Any candidate lacks a decision.
-- Product, architecture or quality perspectives disagree in a way that changes scope.
-- A candidate would require a concrete database, graph DB, vector DB, runtime
-  collector or LLM provider decision.
-
-### Slice 04 - Contract And Producer Boundary Comparison
-
-Purpose: compare the producer README/proto shape against Analytics contract and
-boundary docs without changing contracts.
-
-Affected files:
-
-- `docs/workflow/producer-boundary-comparison.md`
-
-Allowed write scope:
-
-- `docs/workflow/producer-boundary-comparison.md`
-
-Read sources:
-
-- `/mnt/d/Projects/forensics_tracing/README.md`
-- `/mnt/d/Projects/forensics_tracing/src/main/proto/forensic_ingestion.proto`
-- `contracts/grpc/forensic-ingestion.proto`
-- `docs/adr/ADR-0001-plugins-are-producers.md`
-- `docs/adr/ADR-0010-contract-first-rest-and-grpc.md`
-- `docs/arc42/**`
-
-Known comparison risks to classify:
-
-- producer default port `6565` versus Analytics documentation default `9090`,
-- producer session upload RPC set versus Analytics contract including
-  `AnalyzeRepository`,
-- producer-local legacy packages retained as migration-audit inventory,
-- plugin quickstart identifiers that must not become Analytics core wording.
-
-Verification commands:
-
-```bash
-rg -n "6565|9090|AnalyzeRepository|StartAnalysisSession|UploadAnalysisData|CompleteAnalysisSession|AbortAnalysisSession" /mnt/d/Projects/forensics_tracing/README.md /mnt/d/Projects/forensics_tracing/src/main/proto/forensic_ingestion.proto contracts/grpc/forensic-ingestion.proto docs/README.md
-```
-
-Acceptance criteria:
-
-- Contract differences are documented as comparison findings, not silently resolved.
-- EPIC v0.2 does not encode port defaults, RPC defaults, deadlines, retry
-  policies or compatibility claims unless verified.
-- Contract changes, if needed, are deferred to a future contract workflow.
-
-Stop conditions:
-
-- Producer README and Analytics contract cannot be reconciled at requirement level.
-- EPIC wording would imply an unverified RPC, field, port, timeout, retry or
-  compatibility behavior.
-- Generated DTOs or transport classes would leak into domain/application wording.
-
-### Slice 05 - Draft EPIC v0.2
-
-Purpose: create the versioned Analytics EPIC update.
-
-Affected files:
-
-- `docs/epics/forensics-platform-runtime-replay-llm-analysis-v0.2.md`
-
-Allowed write scope:
-
-- `docs/epics/forensics-platform-runtime-replay-llm-analysis-v0.2.md`
-- Minimal v0.1 supersession note only if needed and explicitly justified.
-
-Required sections:
-
-- Non-Negotiable Platform Boundary
-- Analysis Input Contract
-- Artifact Package Ingestion
-- Artifact Integrity And Provenance
-- Static Analysis Fact Model
-- Semantic Analysis Fact Model
-- Runtime Observation And Event Model
-- Instrumentation Planning Model
-- Rule-Set Artifact Model
-- Correlation And Replay Responsibilities
-- Explicitly Excluded From Analytics Core
-- Open Decisions
-- Risks
-- Acceptance Criteria
-
-Required producer-neutral capabilities:
-
-- repository analysis registration,
-- source acquisition,
-- static fact extraction,
-- static fact ingestion,
-- semantic fact analysis,
-- semantic fact ingestion,
-- artifact package ingestion,
-- manifest verification,
-- checksum verification,
-- canonical model normalization,
-- instrumentation planning,
-- rule-set generation through adapters,
-- runtime event collection/import,
-- runtime event normalization,
-- exception-centered incident creation,
-- replay timeline construction,
-- graph projection,
-- LLM incident context packaging.
-
-Verification commands:
-
-```bash
-test -f docs/epics/forensics-platform-runtime-replay-llm-analysis-v0.2.md
-rg -n "Non-Negotiable Platform Boundary|Analysis Input Contract|Artifact Package Ingestion|Artifact Integrity And Provenance|Static Analysis Fact Model|Semantic Analysis Fact Model|Runtime Observation And Event Model|Instrumentation Planning Model|Rule-Set Artifact Model|Correlation And Replay Responsibilities|Explicitly Excluded From Analytics Core|Open Decisions|Risks|Acceptance Criteria" docs/epics/forensics-platform-runtime-replay-llm-analysis-v0.2.md
-```
-
-Acceptance criteria:
-
-- EPIC v0.2 exists.
-- Every accepted Slice 03 gap is represented.
-- v0.1 remains historical.
-- No producer implementation detail appears as Analytics core behavior.
-
-Stop conditions:
-
-- Drafting requires guessing a canonical schema field, graph label, event type,
-  port, RPC, storage table or provider choice.
-- The EPIC would claim implementation readiness that cannot be verified.
-
-### Slice 06 - Define Producer-Neutral Analysis Contracts
-
-Purpose: ensure EPIC v0.2 describes stable requirement-level contracts, not
-producer internals.
-
-Affected files:
-
-- `docs/epics/forensics-platform-runtime-replay-llm-analysis-v0.2.md`
-
-Allowed write scope:
-
-- `docs/epics/forensics-platform-runtime-replay-llm-analysis-v0.2.md`
-
-Contract concepts to include:
-
-- Analysis Request
-- Artifact Package
-- Static Fact Payload
-- Semantic Fact Payload
-- Runtime Event Payload
-- Instrumentation Plan
-
-Required concept coverage:
-
-- project identity, repository identity, branch, commit, module scope,
-  analysis profile and requested capabilities,
-- package identity, analysis run identity, producer provenance, schema version,
-  payload list, payload kinds, payload checksums, content types, source metadata
-  and optional runtime evidence,
-- source files, packages, classes, methods, constructors, method signatures,
-  entry/exit points, returns, throws, branches, switch/case structures, call
-  sites and module/source-root ownership,
-- semantic analysis run, call graph nodes and edges, static call relations,
-  control-flow relations, data-flow paths, slices, semantic anchors, mapping
-  confidence and ambiguity markers,
-- timestamp, event type, thread identity, correlation ID, trace ID, span ID,
-  parent span ID, rule ID or observation point ID, class/method/branch/call-site
-  key, details object, redacted values, exception metadata and error metadata,
-- selected observation points, selected classes/methods/branches/exception
-  points, rule IDs, rule-set version, sampling profile, redaction policy,
-  expected event families and runtime overhead expectation.
-
-Verification commands:
-
-```bash
-rg -n "Analysis Request|Artifact Package|Static Fact Payload|Semantic Fact Payload|Runtime Event Payload|Instrumentation Plan" docs/epics/forensics-platform-runtime-replay-llm-analysis-v0.2.md
-```
-
-Acceptance criteria:
-
-- Contracts are producer-neutral.
-- Contracts are stable for Gradle, Maven, CLI, REST, gRPC and future producers.
-- Contracts support replay and LLM evidence packaging.
-
-Stop conditions:
-
-- The EPIC would mention plugin class names, task names, goal names or local paths
-  as contract requirements.
-- Contract wording would imply a transport schema change without contract review.
-
-### Slice 07 - Synchronize Related Documentation
-
-Purpose: update only documentation that must remain consistent with EPIC v0.2.
-
-Affected files:
-
-- `docs/README.md`
-- `docs/arc42/**`
-- `docs/adr/**`
-- `docs/architecture/**` only when stale current-state claims are verified
-
-Allowed write scope:
-
-- Minimal reference updates and consistency notes in the affected docs.
-- New ADR only if EPIC v0.2 creates a real architecture decision.
-
-Required checks:
-
-- `docs/README.md` current EPIC reference.
-- `docs/arc42/README.md` current EPIC reference.
-- `docs/arc42/09-architecture-decisions.md` if an ADR is added.
-- `docs/architecture/current-build-and-test-map.md` service-module baseline
-  against `settings.gradle.kts` and `services/README.md`.
-
-Verification commands:
-
-```bash
-rg -n "v0.1|v0.2|EPIC|No service-specific Gradle projects|services:" docs/README.md docs/arc42 docs/adr docs/architecture/current-build-and-test-map.md settings.gradle.kts services/README.md
-```
-
-Acceptance criteria:
-
-- Documentation points to the current EPIC version where needed.
-- arc42 and ADR content remain consistent.
-- Historical ADRs are not rewritten.
-- Stale baseline claims are either fixed or documented as deferred with a reason.
-
-Stop conditions:
-
-- A new architecture decision is needed but ADR scope is unclear.
-- Historical ADRs would need rewriting.
-- Related docs contradict source and cannot be safely updated in this workflow.
-
-### Slice 08 - Producer Leakage And Sensitive-Data Audit
-
-Purpose: verify that Analytics documentation did not absorb plugin-specific
-implementation details or sensitive-data handling mistakes.
-
-Affected files:
-
-- `docs/workflow/producer-leakage-audit.md`
-
-Allowed write scope:
-
-- `docs/workflow/producer-leakage-audit.md`
-- Fixes to docs changed by earlier slices.
-
-Required searches:
-
-```bash
-rg -n "GenerateBtmTask|BtmGenMojo|btmGen|generateBtmRules|forensics:btmgen|forensics:analyze|RtTraceHelper|RtTrace|MethodLoggingAspect|AspectJ|cleanupPolicy|analysisStoreDirectory|joernExecutable|joernParseExecutable|joernSliceExecutable" docs/epics docs/arc42 docs/adr docs/README.md
-rg -n "forensic-ui/|frontend/|services/|forensic-analytics-|contracts/|deployment/|examples/|data/" docs/epics docs/README.md docs/arc42 docs/adr docs/architecture
-rg -n "secret|credential|token|password|raw runtime|raw trace|stack trace|LLM prompt|source payload" docs/epics docs/README.md docs/arc42 docs/adr docs/architecture
-```
-
-Allowed producer-specific matches:
-
-- historical reference,
-- external producer example,
-- explicit exclusion,
-- source comparison notes.
-
-Not allowed:
-
-- Analytics core behavior,
-- Analytics domain model,
-- Analytics application service,
-- Analytics canonical schema,
-- Analytics mandatory runtime implementation.
-
-Acceptance criteria:
-
-- No producer implementation detail is described as Analytics core behavior.
-- Any unavoidable reference is marked external, historical or excluded.
-- Sensitive data wording says runtime values are sensitive by default.
-
-Stop conditions:
-
-- Leakage hits cannot be classified.
-- Sensitive runtime/source/LLM data is normalized as safe by default.
-- A changed doc introduces secrets, credentials or raw payload examples.
-
-### Slice 09 - Requirement Acceptance And Planned-Vs-Implemented Gate
-
-Purpose: add and verify final EPIC acceptance criteria and implementation-status
-discipline.
-
-Affected files:
-
-- `docs/epics/forensics-platform-runtime-replay-llm-analysis-v0.2.md`
-- `docs/workflow/requirement-acceptance-review.md`
-
-Allowed write scope:
-
-- `docs/epics/**`
-- `docs/workflow/requirement-acceptance-review.md`
-
-Required EPIC acceptance criteria:
-
-1. Analytics owns the canonical analysis model.
-2. Analytics owns normalization of static, semantic and runtime facts.
-3. Analytics owns correlation between source facts, semantic facts, rule sets
-   and runtime events.
-4. Analytics owns replay construction.
-5. Analytics owns graph projection rules.
-6. Analytics owns LLM evidence package construction.
-7. Producer packages are verified before import.
-8. Manifest and checksum verification are required for artifact package ingestion.
-9. Producer metadata is stored as provenance only.
-10. Plugin-specific classes, tasks, goals and helper names are excluded from
-    Analytics core.
-11. Semantic facts are imported through a semantic analysis port.
-12. Rule generation is described through instrumentation plans and rule-set
-    adapters.
-13. Runtime values are sensitive by default.
-14. Missing or ambiguous evidence is represented explicitly instead of invented.
-
-Verification commands:
-
-```bash
-rg -n "Analytics owns the canonical analysis model|producer metadata|sensitive by default|ambiguous evidence|instrumentation plans|semantic analysis port" docs/epics/forensics-platform-runtime-replay-llm-analysis-v0.2.md
-rg -n "implemented|current|planned|conceptual|future|target" docs/epics/forensics-platform-runtime-replay-llm-analysis-v0.2.md docs/README.md docs/arc42
-```
-
-Acceptance criteria:
-
-- Required EPIC acceptance criteria are present.
-- Planned behavior is labeled as planned, target or conceptual unless verified.
-- Implemented claims cite source, tests or accepted docs.
-
-Stop conditions:
-
-- The EPIC claims runtime replay, graph/replay service, report generation,
-  durable persistence or LLM provider integration is implemented without
-  evidence.
-
-### Slice 10 - Quality Gate, Diff Review, Commit And Optional Push
-
-Purpose: verify and publish the completed workflow result only if allowed.
-
-Affected files:
-
-- All changed docs from previous slices.
-
-Allowed write scope:
-
-- Commit metadata only after review.
-
-Verification commands:
+Documentation-only workflow creation must run:
 
 ```bash
 git status --short --branch
 git diff --stat
+git diff --name-status
 git diff --check
-git diff --cached --check
-git diff --name-only origin/main...HEAD
-rg -n "GenerateBtmTask|BtmGenMojo|btmGen|generateBtmRules|forensics:btmgen|forensics:analyze|RtTraceHelper|RtTrace|MethodLoggingAspect|AspectJ|cleanupPolicy|analysisStoreDirectory|joernExecutable|joernParseExecutable|joernSliceExecutable" docs/epics docs/arc42 docs/adr docs/README.md
-rg -n "\b(TO""DO|T""BD|FIX""ME|X""XX|PLACE""HOLDER|pend""ing)\b" docs/epics docs/README.md docs/arc42 docs/adr docs/architecture
-./gradlew test --dependency-verification strict --console=plain --stacktrace
 ```
 
-Full gate if feasible:
+Each implementation slice must run the narrowest meaningful checks first.
+Expected slice gates include:
+
+```bash
+./gradlew :services:<service-name>:test --dependency-verification strict --console=plain --stacktrace
+./gradlew :services:<service-name>:jacocoTestReport :services:<service-name>:jacocoTestCoverageVerification --dependency-verification strict --console=plain --stacktrace
+./gradlew :services:<service-name>:bootJar --dependency-verification strict --console=plain --stacktrace
+```
+
+When shared contracts, Gradle registration or service interaction changes, run
+the affected service tests and contract tests together. If no executable
+contract-test command exists for a changed contract, the slice must add one or
+stop before implementation. Before commit or push readiness, run the full local
+gate from `QUALITY.md` when feasible:
 
 ```bash
 ./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace
 ```
 
-Commit message:
+Docker, Swarm and Kubernetes commands may be documented or run only after the
+corresponding files exist and are verified in the slice.
+
+Every successful `workflow execute` slice must create a CP_RECORD entry, stage
+only current-slice files, run `git diff --cached --check`, create a
+slice-scoped checkpoint commit and push the workflow branch to `origin` before
+the next slice starts. This workflow does not use a final optional catch-all
+commit slice.
+
+## Slice Structure
+
+| Slice | Purpose | Owner | Dependencies |
+|---|---|---|---|
+| 00 | Execution preflight, branch verification and baseline refresh | Senior Workflow Architect | none |
+| 01 | Contract gap and service-boundary freeze for the BTM pipeline | Senior System Architect / Contract-First API Steward | 00 |
+| 02 | Gateway HTTP and gRPC BTM delivery contracts | Senior gRPC Proto Specialist / Senior Java Backend | 01 |
+| 03 | Analysis Store artifact-byte and instrumentation-target ownership contract | Senior Analysis Storage Architect | 02 |
+| 04 | Gateway service bootstrap and public HTTP shell | Senior Java Backend / Senior DevOps | 02 |
+| 05 | Gateway to Repository Analysis integration for external Git repos | Senior Git Workspace Specialist / Senior Java Backend | 04 |
+| 06 | Source snapshot handoff to Java AST Analysis | Senior Java Backend | 05 |
+| 07 | Joern CPG analysis handoff and artifact registration | Senior Joern CPG Specialist | 05 |
+| 08 | Instrumentation target planning from accepted facts | Senior System Architect / Senior Java Backend | 06, 07 |
+| 09 | BTM generation gRPC file delivery and artifact metadata registration | Senior gRPC Proto Specialist / Senior Java Backend | 03, 08 |
+| 10 | End-to-end repository-to-BTM orchestration | Senior Java Backend / Senior Swarm Orchestrator | 04, 05, 06, 07, 08, 09 |
+| 11 | Runtime readiness and local service landscape | Senior DevOps | 10 |
+| 12 | Graph replay and report-generation service roots or explicit deferral | Senior System Architect | 10 |
+| 13 | Frontend and CLI Gateway integration | Senior React Frontend / Senior Java Backend | 10 |
+| 14 | Retire or isolate replaced monolith runtime paths | Senior System Architect / Senior Java Backend | 10, 11, 12, 13 |
+| 15 | Remove obsolete shared implementation modules from Gradle registration | Senior System Architect / Senior DevOps | 14 |
+| 16 | Full quality gate, evidence review and migration acceptance | Senior Tester / Quality Gate Orchestrator | 15 |
+
+## Slice Execution Matrix
+
+| Slice | Affected files/modules/contracts | Required quality gate | Documentation duty |
+|---|---|---|---|
+| 00 | `docs/workflow/**` execution report | Git status, diff stat, diff name-status, diff check | Record CP_RECORD baseline and workflow version |
+| 01 | `docs/workflow/**`, `docs/architecture/**`, `docs/arc42/**`, `docs/adr/**` | Git diff checks and architecture review | Update service-boundary and ownership docs if decisions change |
+| 02 | `contracts/openapi/**`, `contracts/grpc/**`, `contracts/events/**`, contract tests | Protobuf generation for changed `.proto`; Gateway OpenAPI contract tests or stop until added | Update contract-versioning and contract-test plan |
+| 03 | `contracts/**`, `docs/architecture/data-ownership.md`, Analysis Store/BTM contract tests | Affected contract tests, Analysis Store/BTM service tests where code changes | Update data ownership and communication matrix |
+| 04 | `services/forensic-gateway-service/**`, Gradle registration | Gateway service tests, ArchUnit boundary tests, `bootJar` | Add Gateway README and runtime notes |
+| 05 | Gateway and Repository Analysis integration files | Gateway tests, Repository Analysis tests, safe Git workspace tests | Update workspace security notes if behavior changes |
+| 06 | Java AST handoff service files after contract precondition | Java AST tests, Repository Analysis source-transfer tests, contract tests | Document source transfer ownership |
+| 07 | Joern handoff service files after contract precondition | Joern tests, workspace/artifact transfer tests, timeout/unavailable tests | Document Joern artifact transfer boundaries |
+| 08 | Instrumentation target owner service and tests | Target-planning tests and evidence-integrity tests | Record target owner and non-evidence rule |
+| 09 | BTM delivery contracts and service files | BTM generation tests, gRPC delivery tests, artifact determinism tests | Document BTM byte owner and delivery path |
+| 10 | Gateway facade, Analysis Store job orchestration, worker clients/adapters | Deterministic end-to-end repository-to-BTM test command added and executed by this slice | Update runtime view and execution report |
+| 11 | `deployment/**`, service config, Docker material | Service `bootJar`, healthcheck, Docker config checks that exist | Update deployment view |
+| 12 | Graph/replay and report docs or service roots | Gate depends on deferral or implementation decision | Update arc42 runtime/deployment notes |
+| 13 | `forensic-ui/**`, `frontend/**`, CLI files if migrated | `cd forensic-ui && npm ci && npm test && npm run build`; stop if `frontend/frontend-web-app` lacks package tooling | Update frontend README/API notes |
+| 14 | Replaced `forensic-analytics-*` paths | Parity tests, caller-verification searches, rollback documentation | Document deprecation or isolation |
+| 15 | `settings.gradle.kts`, obsolete modules | Full affected Gradle tests, dependency verification, architecture tests | Update current-state and migration map |
+| 16 | Whole repository | Full `QUALITY.md` gate, leakage gates, diff checks | Final acceptance report and arc42/ADR sync |
+
+## Slice Details
+
+### Slice 00 - Execution Preflight
+
+Purpose: prove that `workflow execute` is running this workflow on
+`feature/workflow-microservices-btm-pipeline-20260517` with a clean or
+understood worktree.
+
+Allowed write scope: `docs/workflow/**` execution evidence only.
+
+Verification:
+
+```bash
+git rev-parse --show-toplevel
+git branch --show-current
+git status --short --branch
+git diff --stat
+git diff --name-status
+```
+
+Stop if the branch is not the workflow branch, if unrelated changes exist or
+if `QUALITY.md` cannot be read. During workflow creation handoff, dirty
+`docs/workflow/**` changes are understood only until they are committed as the
+workflow-create package. `workflow execute` must start from a clean status.
+
+### Slice 01 - Contract Gap And Service Boundary Freeze
+
+Purpose: freeze the exact service owners, communication paths and non-goals for
+the BTM pipeline before any production code is changed.
+
+Allowed write scope:
+
+- `docs/workflow/**`
+- `docs/architecture/**`
+- `docs/arc42/**`
+- `docs/adr/**` if a new decision is required
+
+Done criteria:
+
+- Gateway, Repository Analysis, Java AST, Joern, Analysis Store and BTM
+  Generation responsibilities are confirmed.
+- Remaining monolith modules are mapped to target service owners.
+- All implementation blockers are converted into later contract or migration
+  slices.
+
+### Slice 02 - Gateway HTTP And gRPC BTM Delivery Contracts
+
+Purpose: define public HTTP submission and gRPC BTM file delivery before
+implementation.
+
+Allowed write scope:
+
+- `contracts/openapi/**`
+- `contracts/grpc/**`
+- `contracts/events/**`
+- contract tests or fixtures when the repository pattern exists
+- documentation explaining compatibility and field numbering
+
+Required decisions:
+
+- HTTP operation for plugin/external repository submission.
+- Job/status response for asynchronous BTM generation.
+- gRPC method for completed BTM file transfer, including chunking or size
+  limits.
+- Error envelope, gRPC statuses, idempotency, timeout and cancellation behavior.
+- Required `Idempotency-Key` semantics for every Gateway mutation, replacing
+  optional mutation idempotency in the current OpenAPI component.
+
+Stop if field numbers, response semantics or consumers are unclear.
+Stop if no executable OpenAPI or protobuf contract verification exists for the
+changed contract and the slice does not add one before implementation.
+
+### Slice 03 - Artifact And Instrumentation Target Ownership Contract
+
+Purpose: define how accepted fact artifacts become bounded instrumentation
+targets and how BTM artifact bytes are registered or retrieved.
+
+Allowed write scope:
+
+- `contracts/grpc/**`
+- `contracts/events/**`
+- `docs/architecture/data-ownership.md`
+- `docs/architecture/service-communication-matrix.md`
+- focused contract tests
+
+Stop if artifact byte ownership, canonical fact ownership or target-selection
+ownership is unclear.
+
+### Slice 04 - Gateway Service Bootstrap
+
+Purpose: create the independent `forensic-gateway-service` runtime shell with
+service-owned configuration, tests, health check and HTTP adapter boundary.
+
+Allowed write scope:
+
+- `services/forensic-gateway-service/**`
+- `settings.gradle.kts`
+- root/module Gradle files required for the new service
+- service-local tests
+
+Forbidden:
+
+- worker logic in Gateway;
+- direct Java dependencies on worker services;
+- direct database access.
+
+### Slice 05 - External Git Repository Workspace Flow
+
+Purpose: implement Gateway HTTP request mapping to
+`repository-analysis-service` so an external Git repository can create a
+service-owned source snapshot.
+
+Allowed write scope:
+
+- `services/forensic-gateway-service/**`
+- `services/repository-analysis-service/**` only for verified contract or
+  validation gaps
+- contract tests and integration tests
+
+Stop if the flow exposes workspace paths, accepts unsafe remotes or requires
+repository-supplied code execution.
+
+### Slice 06 - Java AST Worker Handoff
+
+Purpose: connect source snapshot output to Java AST analysis through bounded
+source files or artifact references without sharing workspace internals.
+
+Allowed write scope:
+
+- `services/java-ast-analysis-service/**`
+- `services/repository-analysis-service/**`
+- `services/analysis-store-service/**`
+- tests
+
+Contract precondition: Repository to Java AST source transfer must already be
+defined by Slice 02 or Slice 03. If a contract gap is discovered, stop and route
+back to a contract-governance slice before production code changes.
+
+Stop if static facts are treated as runtime execution or unresolved symbols are
+silently dropped.
+
+### Slice 07 - Joern Worker Handoff
+
+Purpose: connect source snapshot output to Joern semantic analysis and register
+semantic artifacts with explicit incompleteness when Joern is unavailable or
+mapping is partial.
+
+Allowed write scope:
+
+- `services/joern-cpg-analysis-service/**`
+- `services/repository-analysis-service/**`
+- `services/analysis-store-service/**`
+- `docker/joern/**` only when verified as service-contained runtime material
+- tests
+
+Contract precondition: Repository to Joern transfer must use artifact transfer,
+source package transfer or another explicit owner API. Passing Repository
+Analysis private workspace IDs into Joern is forbidden.
+
+Stop if Joern artifacts become shared filesystem coupling.
+
+### Slice 08 - Instrumentation Target Planning
+
+Purpose: create deterministic instrumentation targets from accepted static and
+semantic facts through an explicitly owned service path.
+
+Allowed write scope:
+
+- service selected by Slice 03 ownership decision
+- affected contracts and tests
+- architecture docs if the owner decision changes
+
+Stop if target selection would infer runtime execution or fabricate missing
+facts.
+
+### Slice 09 - BTM gRPC File Delivery
+
+Purpose: extend or implement BTM delivery so completed `.btm` bytes and
+manifest bytes can be received over gRPC with bounded transfer semantics.
+
+Allowed write scope:
+
+- `contracts/grpc/**`
+- `services/btm-generation-service/**`
+- `services/analysis-store-service/**` when artifact metadata registration is
+  changed
+- focused gRPC and artifact determinism tests
+
+Stop if BTM bytes cannot be traced to rule IDs, source fact references,
+semantic artifact references and generation policy.
+
+### Slice 10 - End-To-End Repository To BTM Orchestration
+
+Purpose: connect the public Gateway facade, Analysis Store job lifecycle,
+Repository Analysis, Java AST, Joern and BTM Generation into a tested local
+end-to-end flow through owner APIs.
+
+Allowed write scope:
+
+- `services/forensic-gateway-service/**`
+- `services/analysis-store-service/**` when job orchestration or worker dispatch
+  is implemented there
+- affected service-local clients/adapters
+- integration tests
+
+Done criteria:
+
+- HTTP request accepts a clean HTTPS repository URL.
+- Repository workspace and source snapshot are created.
+- Static and semantic worker outputs are accepted or explicit incomplete
+  diagnostics are returned.
+- BTM files are generated deterministically.
+- gRPC BTM file delivery returns the completed files or explicit unavailable
+  state.
+- Gateway remains a facade and does not own worker business logic.
+- The slice adds and executes an exact deterministic local end-to-end test
+  command. External network services are forbidden in the default test path;
+  any optional external-service test must be separately named and skipped by
+  default unless credentials and environment are documented.
+
+### Slice 11 - Runtime Readiness And Local Service Landscape
+
+Purpose: add verified local runtime material for the implemented service path.
+
+Allowed write scope:
+
+- `deployment/**`
+- service Dockerfiles and READMEs
+- service-local configuration
+- DevOps docs and tests
+
+Stop if Docker, Swarm or Kubernetes readiness is claimed without files and
+commands.
+
+### Slice 12 - Graph Replay And Report Service Decision
+
+Purpose: decide whether graph-replay and report-generation services are
+required for the BTM pipeline acceptance or remain explicitly deferred.
+
+Allowed write scope:
+
+- `docs/architecture/**`
+- `docs/arc42/**`
+- `services/graph-replay-service/**` and `services/report-generation-service/**`
+  only if implementation is approved in this slice
+
+Stop if projections become source of truth.
+
+### Slice 13 - Frontend And CLI Gateway Integration
+
+Purpose: route UI and CLI behavior through the Gateway/public API after Slice
+10 proves the Gateway/public API path.
+
+Allowed write scope:
+
+- `forensic-ui/**`
+- `frontend/**`
+- `forensic-analytics-cli/**` only if CLI migration remains in repo scope
+- tests and README updates
+
+Verification:
+
+```bash
+cd forensic-ui && npm ci && npm test && npm run build
+```
+
+Stop if frontend or CLI calls internal worker services directly. Stop before
+migrating into `frontend/frontend-web-app` unless that root has package tooling
+and verified test/build commands.
+
+Done criteria:
+
+- Gateway requests include required idempotency and correlation metadata.
+- UI states distinguish confirmed evidence, derived analysis, generated BTM
+  artifacts, diagnostics, unresolved gaps, hypotheses and suggested fixes.
+- Tests cover missing idempotency/correlation behavior in the frontend API
+  adapter when the Gateway contract requires those headers.
+
+### Slice 14 - Retire Or Isolate Replaced Monolith Runtime Paths
+
+Purpose: disable, isolate or retire old in-process paths only after replacement
+service evidence exists.
+
+Allowed write scope:
+
+- affected `forensic-analytics-*` modules
+- tests proving parity or explicit deprecation
+- documentation explaining rollback
+
+Stop if removing a module would break a still-used behavior.
+
+### Slice 15 - Remove Obsolete Shared Implementation Modules
+
+Purpose: remove Gradle registrations and source roots for implementation
+modules that have verified service-owned replacements.
+
+Allowed write scope:
+
+- `settings.gradle.kts`
+- obsolete module directories only when proven unused
+- dependency and architecture tests
+
+Stop if any caller cannot be verified.
+
+### Slice 16 - Full Quality Gate And Migration Acceptance
+
+Purpose: run final repository validation and verify that the target path is
+accurately documented.
+
+Verification:
+
+```bash
+./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace
+git status --short --branch
+git diff --stat
+git diff --name-status
+git diff --check
+```
+
+Optional external checks are reported as skipped unless credentials and
+commands are documented.
+
+## Parallelization
+
+Default execution is serial until Slice 03 stabilizes contracts. After that:
+
+- Gateway shell, BTM delivery tests and Analysis Store artifact metadata may be
+  parallel only when contracts are frozen and write scopes are disjoint.
+- Frontend work waits for Gateway API implementation.
+- Deployment work waits for service bootJar and healthcheck evidence.
+- Module removal waits for end-to-end parity evidence.
+
+## Checkpoint And CP_RECORD Rules
+
+Every successful implementation slice must perform the repository checkpoint
+process from `docs/process/workflow-execute.md`.
+
+Before `CP_COMMIT`, record a CP_RECORD entry in `docs/workflow/execution-report.md`
+with:
 
 ```text
-docs(epic): align analytics analysis boundary with tracing producer description
+workflowVersion
+sliceId
+sliceTitle
+responsibleAgent
+changedFiles
+qualityGateCommands
+qualityGateResult
+commitHash=pending
+rollbackReference
+arc42Updated
+adrUpdated
 ```
 
-Commit body must include Why, What, How, Verification and Limitations sections
-from the user-provided template, adjusted only for commands actually executed.
+After `CP_COMMIT` and `CP_PUSH`, update the CP_RECORD with the actual commit
+hash and push result. If push fails, stop and route to `CP_ROLLBACK`; do not
+force-push, run `push auto`, merge a PR or continue to the next slice.
 
-Acceptance criteria:
+## Subagent Assignment
 
-- Diff checks pass.
-- Leakage audit passes.
-- Marker scan passes or documented historical matches are justified.
-- Minimum Gradle test passes or a concrete environment blocker is documented.
-- Commit contains only relevant documentation/workflow changes.
-- Push happens only if repository workflow allows it and the user explicitly
-  requests it or the active workflow authorizes it.
+`workflow execute` should route each slice through the configured subagent
+workflow or matching role review:
 
-Stop conditions:
+- Workflow orchestration: Senior Workflow Architect / Workflow Executor
+- Service boundaries: Senior System Architect / Microservice Senior Expert
+- Contracts: Contract-First API Steward / Senior gRPC Proto Specialist
+- Repository workspaces: Senior Git Workspace Specialist / Security Sandbox
+  Engineer
+- Java backend implementation: Senior Java Backend Developer
+- Joern: Senior Joern CPG Specialist
+- Persistence and artifacts: Senior Analysis Storage Architect
+- Frontend: Senior React Frontend Developer / Senior UX Designer
+- Runtime and deployment: Senior DevOps / Microservice Runtime Readiness Expert
+- Testing and quality: Senior Tester / Quality Gate Orchestrator
 
-- Quality checks fail due to unrelated issues.
-- Product code, contract, runtime, frontend, build or source files changed.
-- A command is claimed as passed without execution.
-
-## Dependency Graph
-
-```mermaid
-flowchart TD
-  S00["Slice 00: identity preflight"]
-  S01["Slice 01: producer facts"]
-  S02["Slice 02: EPIC gap analysis"]
-  S03["Slice 03: Three Amigos review"]
-  S04["Slice 04: contract and boundary comparison"]
-  S05["Slice 05: draft EPIC v0.2"]
-  S06["Slice 06: producer-neutral contracts"]
-  S07["Slice 07: docs sync"]
-  S08["Slice 08: leakage audit"]
-  S09["Slice 09: acceptance gate"]
-  S10["Slice 10: quality and publication"]
-
-  S00 --> S01
-  S00 --> S02
-  S01 --> S03
-  S02 --> S03
-  S01 --> S04
-  S02 --> S04
-  S03 --> S05
-  S04 --> S05
-  S05 --> S06
-  S06 --> S07
-  S07 --> S08
-  S08 --> S09
-  S09 --> S10
-```
-
-## Parallelization Opportunities
-
-Only read-only exploration may run in parallel:
-
-- Slice 01 producer fact extraction and Slice 02 Analytics EPIC gap analysis may
-  run in parallel after Slice 00.
-- Contract boundary read-only checks may begin during Slice 02, but Slice 04
-  cannot decide until Slice 01 and Slice 02 are complete.
-- No write-capable slices may run in parallel because EPIC v0.2, docs sync and
-  leakage fixes share documentation files.
-
-## Documentation Synchronization Points
-
-- EPIC v0.2 creation: Slice 05.
-- EPIC v0.2 contract sharpening: Slice 06.
-- `docs/README.md` and arc42 current-baseline references: Slice 07.
-- ADR update or new ADR decision: Slice 07 only if a real architecture decision
-  is introduced.
-- Service/module stale-baseline docs: Slice 07.
-- Workflow execution evidence: `docs/workflow/**` after each slice.
+Callable subagents may be used during `workflow execute` only when the runtime
+and current user instruction authorize delegation. Otherwise use the matching
+role files as explicit review checklists.
 
 ## Stop Conditions
 
-Stop immediately if:
+Stop workflow execution when:
 
-- the active branch is not `docs/workflow-forensics-tracing-analytics-epic-alignment-20260516`,
-- unrelated uncommitted changes exist,
-- `docs/workflow/workflow.md` does not describe this workflow,
-- the target EPIC cannot be inspected,
-- `forensics_tracing` cannot be inspected,
-- a proposed requirement cannot be classified,
-- a plugin implementation detail would become Analytics core behavior,
-- a contract difference would require changing REST, gRPC, protobuf or event
-  contracts in this workflow,
-- an architecture decision would require choosing a concrete database, graph DB,
-  vector DB, LLM provider or runtime collector,
-- a changed doc claims planned behavior as implemented without source evidence,
-- quality checks fail for unrelated reasons,
-- sensitive data, secrets, raw runtime traces, source payloads or LLM prompt
-  content would be exposed.
-
-## Uncertainty Escalation
-
-Governance loops are capped at `maxRetries = 3`. After the third unresolved
-attempt, stop and escalate to the Root Architect with:
-
-- attempted loop,
-- unresolved blocker,
-- files and decisions involved,
-- why continuing automatically would be unsafe.
-
-## Commit And Push Plan
-
-Workflow execution may commit only after Slice 10 quality and diff review.
-Normal `push` requires explicit user approval unless the active workflow is
-later updated to authorize it. `push auto` is not part of this workflow.
-
-Slice checkpoint pushes are not required by this workflow unless `workflow
-execute` explicitly records successful per-slice quality gates and the
-repository governance permits checkpoint publication.
+- the active branch is not `feature/workflow-microservices-btm-pipeline-20260517`;
+- a required file, contract, Gradle task, class, method or field cannot be
+  verified exactly;
+- a slice would introduce shared Java implementation between services;
+- a service would import another service's implementation classes;
+- Gateway would own worker logic or read private service databases;
+- repository workspace paths would cross service boundaries;
+- BTM generation would scan repositories directly;
+- static or semantic facts would be reported as runtime execution;
+- generated BTM files would be untraceable to accepted facts and policy;
+- quality commands cannot be verified from `QUALITY.md`;
+- Docker, Swarm or Kubernetes readiness would be claimed without verified
+  files and commands;
+- continuing would require guessing ownership, API fields, schema fields,
+  event names, deployment commands or rollback behavior.
 
 ## Definition Of Done
 
-This workflow is complete when:
+The workflow is done only when:
 
-- `forensics_tracing` has been reviewed as producer/source description,
-- the Analytics EPIC has been compared against it,
-- all missing analysis-related requirements have been identified,
-- accepted requirements have been added in producer-neutral language,
-- plugin-specific implementation details have been excluded from Analytics core,
-- related documentation has been synchronized only where necessary,
-- quality checks have been run and documented,
-- the result is committed on the dedicated workflow branch.
+- public HTTP submission of an external Git repository is implemented through
+  Gateway;
+- service-owned repository workspace preparation is verified;
+- static and semantic worker outputs are accepted or explicitly incomplete;
+- deterministic BTM files are generated from accepted analysis facts or
+  explicit target input;
+- completed BTM files are retrievable through the approved gRPC contract;
+- old modular-monolith implementation modules are removed or retained only as
+  documented non-runtime compatibility paths with tests;
+- no service depends on another service's Java implementation;
+- frontend and CLI use Gateway/public APIs only where migrated;
+- service runtime readiness evidence exists for implemented services;
+- `QUALITY.md` gates have passed or blockers are reported with exact failures;
+- arc42, ADRs, architecture docs and workflow docs match the implemented state.
 
-## Handoff To workflow execute
+## Handoff To Workflow Execute
 
-`workflow execute` may start only after:
+This workflow is ready for release to `workflow execute` after the
+workflow-create package is committed.
 
-- this workflow file exists on the dedicated branch,
-- `git diff --check` passes for workflow creation,
-- role reviews are recorded,
-- no unrelated changes exist.
-
-Execution must start at Slice 00 and proceed in dependency order. Direct EPIC
-editing before Slice 03 and Slice 04 have completed is forbidden.
+`workflow execute` must start at Slice 00, execute one slice at a time and
+run a slice-scoped checkpoint commit and push after every successful slice.
+No direct implementation may start before the relevant service-boundary,
+contract, data ownership and quality review for that slice has completed.
+Because `workflow execute` requires a clean preflight, do not run it on the
+dirty workflow-create worktree; first commit the regenerated workflow package.
 
 ## arc42 Check Status
 
-Relevant arc42 files were inspected during workflow creation. No arc42 file is
-changed by workflow creation itself because the EPIC v0.2 content does not exist
-yet. Slice 07 owns any required arc42 synchronization after the EPIC v0.2 draft
-is available.
+arc42 was checked during workflow creation:
+
+- `docs/arc42/03-system-scope-and-context.md`
+- `docs/arc42/04-solution-strategy.md`
+- `docs/arc42/05-building-block-view.md`
+- `docs/arc42/06-runtime-view.md`
+- `docs/arc42/07-deployment-view.md`
+- `docs/arc42/08-crosscutting-concepts.md`
+- `docs/arc42/09-architecture-decisions.md`
+
+Current arc42 already records plugin producer boundaries, server-side BTM
+generation, target microservice runtime flow and governance process rules.
+No arc42 production-claim correction is required during workflow creation.
+Stale slice-number wording in arc42 and supporting architecture documents was
+aligned where it described current or future migration sequencing.
+Later implementation slices must update arc42 when verified behavior changes.

@@ -150,12 +150,13 @@ Contracts marked as planned are design artifacts only; they do not prove that a
 Gateway endpoint, gRPC method, event publisher or event consumer is implemented.
 Generated transport classes must remain service-local implementation details.
 
-Slice 05 implements the first `analysis-store-service` boundary for the
-`AnalysisJobService` job lifecycle and artifact metadata subset. The service has
-its own domain, application, gRPC adapter, in-memory repository, Spring Boot
-bootstrap, tests and Dockerfile. It does not depend on monolith domain,
-application or persistence modules and does not yet implement durable normalized
-facts, incident records, correlation indexes or database migrations.
+The current `analysis-store-service` implementation provides the first
+boundary for the `AnalysisJobService` job lifecycle and artifact metadata
+subset. The service has its own domain, application, gRPC adapter, in-memory
+repository, Spring Boot bootstrap, tests and Dockerfile. It does not depend on
+monolith domain, application or persistence modules and does not yet implement
+durable normalized facts, incident records, correlation indexes or database
+migrations.
 
 ## 5.10 Agent Governance Building Blocks
 
