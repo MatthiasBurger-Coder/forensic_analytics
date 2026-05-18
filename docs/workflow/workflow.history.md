@@ -1,37 +1,20 @@
 # Workflow History
 
-## Active Version
+## microservices-btm-pipeline-20260517-v1
 
 | Field | Value |
 |---|---|
-| workflowVersion | `forensics-tracing-analytics-epic-alignment-20260516` |
-| workflowTitle | Align Forensics Tracing Description With The Analytics EPIC |
-| sourceWorkflow | `docs/workflow/workflow.md` |
-| workflowCreateBranch | `docs/workflow-forensics-tracing-analytics-epic-alignment-20260516` |
-| workflowCreateStatus | created |
+| Created | 2026-05-17 |
+| Branch | `feature/workflow-microservices-btm-pipeline-20260517` |
+| Strand | `workflow create` |
+| Status | Created, pending workflow-create commit before `workflow execute`. |
+| Source request | Complete the microservice migration so service collaboration happens through service contracts only; distribute existing implementation into service-owned boundaries; create BTM rules; create workspaces from external Git repositories; accept Git repository requests over HTTP; return completed BTM files over gRPC. |
 
-## Previous Active Workflow
+This workflow replaced the previous active `docs/workflow/**` package during
+the branch-first workflow regeneration. Historical workflow files were not
+kept in the active workflow directory because workflow creation regenerates the
+full package unless preservation is explicitly requested.
 
-The previous `docs/workflow/**` package described Governance Flowchart V2. It
-was replaced by this workflow during `workflow create` on the dedicated branch.
-Historical content remains available through Git history.
-
-## Checkpoint Record Template
-
-When `workflow execute` records slice checkpoints, each record must include:
-
-```text
-workflowVersion
-sliceId
-sliceTitle
-responsibleAgent
-changedFiles
-qualityGateCommands
-qualityGateResult
-commitHash
-rollbackReference
-arc42Updated
-adrUpdated
-```
-
-Do not add a slice checkpoint record until the slice has actually executed.
+Execution CP_RECORD entries must be written to
+`docs/workflow/execution-report.md` after `workflow execute` starts. No
+implementation slice has run for this workflow version yet.

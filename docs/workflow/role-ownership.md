@@ -1,41 +1,53 @@
 # Role Ownership
 
-## Workflow Create Reviews
+| Area | Primary owner | Supporting roles |
+|---|---|---|
+| Workflow execution | Workflow Executor | Senior Workflow Architect |
+| Requirement integrity | Senior Requirement Engineer | Three Amigos Requirement Gatekeeper |
+| Service boundaries | Senior System Architect | Microservice Senior Expert |
+| Contract governance | Contract-First API Steward | Senior gRPC Proto Specialist, Contract Governance Expert |
+| Repository checkout and workspaces | Senior Git Workspace Specialist | Security Sandbox Engineer |
+| Backend service implementation | Senior Java Backend Developer | Architecture and ArchUnit reviewers |
+| Analysis Store and artifact ownership | Senior Analysis Storage Architect | Data Ownership and Persistence Steward |
+| Joern CPG analysis | Senior Joern CPG Specialist | Joern Semantic Analysis reviewer |
+| BTM generation | Senior Java Backend Developer | gRPC Proto Specialist, Quality reviewer |
+| Gateway and orchestration | Senior Java Backend Developer | Senior System Architect |
+| Frontend/API integration | Senior React Frontend Developer | Senior UX Designer |
+| Docker and deployment | Senior DevOps Engineer | Microservice Runtime Readiness Expert |
+| Testing and quality gates | Senior Tester | Quality Gate Orchestrator |
+| Documentation synchronization | Senior Documentation Engineer | arc42 Architecture Governance, ADR Steward |
+| Slice checkpoint commit and push | git commit preparation | git commit message preparation |
 
-Callable subagents were used for read-only workflow-create review because the
-request explicitly required subagents or roles.
+## Role Rules
 
-| Role | Workflow-create finding |
+- Every write-capable role must verify the active branch before editing.
+- No role may implement on `main`, `master`, `develop` or another shared
+  branch.
+- No role may introduce shared Java implementation modules between services.
+- Contract-owning roles must complete contract review before implementation.
+- Quality-owning roles must report exact commands, failures and residual risk.
+- Every successful `workflow execute` slice must stage only current-slice
+  files, run `git diff --cached --check`, create a slice-scoped checkpoint
+  commit and push the active workflow branch before the next slice starts.
+
+## Required Reviews By Slice
+
+| Slice | Required reviews |
 |---|---|
-| Senior Requirement Engineer | Regenerate the stale Governance Flowchart V2 workflow and create EPIC v0.2 instead of editing v0.1 in place. |
-| Senior System Architect | Preserve the plugin-as-producer boundary, do not encode producer port or RPC defaults, and add a contract-governance checkpoint. |
-| Senior Java Backend Developer | Keep backend work out of scope and stop if product paths appear. |
-| Senior React Frontend Developer | Keep frontend work out of scope and avoid implemented UI claims for graph, replay or LLM behavior. |
-| Senior Tester | Add executable per-slice acceptance criteria, expanded leakage searches, marker scans and quality-command reporting. |
-| Senior Documentation Engineer | Update docs references after EPIC v0.2 and preserve historical ADRs. |
-
-## Required Execution Roles
-
-| Responsibility | Role or skill |
-|---|---|
-| Workflow orchestration | Agent Workflow Orchestrator / Senior Workflow Architect |
-| Requirement gap analysis | Three Amigos Requirement Gatekeeper |
-| EPIC wording | Senior Requirement Engineer |
-| Platform boundaries | Senior System Architect |
-| Contract neutrality | Contract-First API Steward |
-| Data ownership | Data Ownership & Persistence Steward |
-| Runtime data sensitivity | Security & Threat Modeling |
-| Testability and quality | Senior Tester |
-| Skill/governance conflicts | Skill Registry & Conflict Auditor |
-| Documentation consistency | Senior Documentation Engineer |
-| Backend impact | Senior Java Backend Developer |
-| Frontend impact | Senior React Frontend Developer |
-
-## Execution Rules
-
-- Subagents must verify the active branch before edits.
-- Subagents must not switch branches.
-- Write ownership must be explicit per slice.
-- Read-only comparison work may run in parallel only when no write locks overlap.
-- If callable subagents are unavailable during execution, the matching role or
-  skill file must be used as a checklist and the limitation must be reported.
+| 00 | Workflow Architect, git branch strategy |
+| 01 | Senior System Architect, Microservice Senior Expert, Data Ownership Steward |
+| 02 | Contract-First API Steward, Senior gRPC Proto Specialist, Senior Tester |
+| 03 | Senior Analysis Storage Architect, Data Ownership Steward, Contract Governance |
+| 04 | Senior Java Backend, Senior DevOps, Microservice Runtime Readiness |
+| 05 | Senior Git Workspace Specialist, Security Sandbox Engineer, Senior Tester |
+| 06 | Contract-First API Steward, Senior gRPC Proto Specialist, Senior Java Backend, Source Analysis reviewer, Quality ArchUnit reviewer |
+| 07 | Contract-First API Steward, Senior gRPC Proto Specialist, Senior Joern CPG Specialist, Joern Semantics reviewer, Senior Tester |
+| 08 | Senior System Architect, Senior Java Backend, Evidence integrity review |
+| 09 | Senior gRPC Proto Specialist, Senior Java Backend, BTM determinism tests |
+| 10 | Senior Swarm Orchestrator, Senior Java Backend, Senior Tester |
+| 11 | Senior DevOps, Microservice Runtime Readiness, Security review |
+| 12 | Senior System Architect, Replay/Graph/LLM reviewer |
+| 13 | Senior React Frontend, Senior UX Designer, frontend test owner |
+| 14 | Senior System Architect, Senior Java Backend, Release governance |
+| 15 | Senior DevOps, Build Gradle, Architecture validation |
+| 16 | Senior Tester, Quality Gate Orchestrator, Documentation reviewer |

@@ -1,82 +1,122 @@
 # Quality And Leakage Gates
 
-## Minimum Commands
+## Workflow Creation Gate
 
-Run from `/mnt/d/Projects/forensic_analytics` in WSL:
+Run after regenerating `docs/workflow`:
 
 ```bash
 git status --short --branch
+git diff --stat
+git diff --name-status
 git diff --check
-git diff --cached --check
+```
+
+## Minimum Repository Gate
+
+From `QUALITY.md`:
+
+```bash
 ./gradlew test --dependency-verification strict --console=plain --stacktrace
 ```
 
 ## Full Local Gate
 
-Run when feasible:
+From `QUALITY.md`:
 
 ```bash
 ./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace
 ```
 
-## validatePlugins Trigger
+## Service-Local Gate Template
 
-Run only if Gradle plugin metadata, task inputs, task outputs or plugin
-implementation classes changed:
-
-```bash
-./gradlew validatePlugins --dependency-verification strict --no-daemon --console=plain --stacktrace
-```
-
-This workflow is not expected to change plugin code or Gradle plugin metadata.
-
-## Producer Leakage Audit
+Use after service-local implementation changes:
 
 ```bash
-rg -n "GenerateBtmTask|BtmGenMojo|btmGen|generateBtmRules|forensics:btmgen|forensics:analyze|RtTraceHelper|RtTrace|MethodLoggingAspect|AspectJ|cleanupPolicy|analysisStoreDirectory|joernExecutable|joernParseExecutable|joernSliceExecutable" docs/epics docs/arc42 docs/adr docs/README.md
+./gradlew :services:<service-name>:test --dependency-verification strict --console=plain --stacktrace
+./gradlew :services:<service-name>:jacocoTestReport :services:<service-name>:jacocoTestCoverageVerification --dependency-verification strict --console=plain --stacktrace
+./gradlew :services:<service-name>:bootJar --dependency-verification strict --console=plain --stacktrace
 ```
 
-Allowed matches must be marked as historical reference, external producer
-example, explicit exclusion or source comparison notes.
+## Contract Leakage Checks
 
-## Product-Scope Audit
+Use after contract or service-boundary changes:
 
 ```bash
-git diff --name-only origin/main...HEAD
+rg -n "project\\(" services/*/build.gradle.kts
+for service in services/*-service; do
+    package_root=$(find "$service/src/main/java/de/burger/forensics/analytics/services" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' 2>/dev/null | head -n 1)
+    [ -n "$package_root" ] || continue
+    rg -n "import de\\.burger\\.forensics\\.analytics\\.services\\." "$service/src/main/java" "$service/src/test/java" 2>/dev/null | rg -v "services\\.$package_root\\." || true
+done
+rg -n "[f]ile:/|/(mnt|home)/|(^|[^A-Za-z])[A-Za-z]:[\\/]" contracts docs/workflow docs/architecture --glob "!docs/workflow/quality-and-leakage-gates.md"
+rg -n "(?i)(api[_-]?key|private[_-]?key|bearer [A-Za-z0-9]|password\\s*[:=]|token\\s*[:=]|secret\\s*[:=])" docs/workflow docs/architecture --glob "!docs/workflow/quality-and-leakage-gates.md"
 ```
 
-Blocked changed paths for this workflow:
+The first command should remain empty for service build files. The second
+command must be reviewed for direct cross-service implementation imports and
+must not report imports from another service package root.
+The third command must remain empty for forbidden local path leakage. The
+fourth command must remain empty for obvious inline secret assignments.
 
-- `forensic-analytics-*/`
-- `services/`
-- `forensic-ui/`
-- `frontend/`
-- `contracts/`
-- `deployment/`
-- `examples/`
-- `data/`
-- `build.gradle.kts`
-- `settings.gradle.kts`
-- `gradle/`
-- `src/`
+## Contract-Test Stop Rule
 
-## Sensitive-Data Audit
+If a slice changes `contracts/**` and the repository still has no executable
+service-level contract-test task for that contract type, the slice must add the
+contract-test command and execute it before claiming readiness.
+`docs/contracts/contract-test-plan.md` records that service-level contract test
+tasks are not yet generally available.
+
+## Frontend Gate
+
+After frontend API-adapter changes in `forensic-ui`, run:
 
 ```bash
-rg -n "secret|credential|token|password|raw runtime|raw trace|stack trace|LLM prompt|source payload" docs/epics docs/README.md docs/arc42 docs/adr docs/architecture
+cd forensic-ui && npm ci && npm test && npm run build
 ```
 
-Any match must be reviewed to ensure the documentation protects sensitive
-runtime values, source content, stack traces and LLM prompt material.
+Stop before moving work into `frontend/frontend-web-app` unless that root has
+package tooling and verified test/build commands.
 
-## Marker Audit
+## Slice Checkpoint Gate
 
-Use a marker scan against changed documentation. The search expression is kept
-split here so this file does not create a self-match during simple text scans.
+Before every `workflow execute` slice checkpoint commit:
 
 ```bash
-rg -n '\b(TO''DO|T''BD|FIX''ME|X''XX|PLACE''HOLDER|pend''ing)\b' docs/epics docs/README.md docs/arc42 docs/adr docs/architecture
+git status --short --branch
+git diff --stat
+git diff --name-status
+git diff --cached --check
+git diff --cached
 ```
 
-Matches are allowed only when they are historical quoted material or explicitly
-documented open decisions.
+Review untracked files explicitly. `git diff --check` does not inspect new
+untracked files until they are staged, so staging must be deliberate and
+slice-scoped.
+
+## Evidence Integrity Checks
+
+Review affected output for these forbidden claims:
+
+- static facts presented as runtime execution;
+- Joern semantic edges presented as observed runtime calls;
+- generated BTM files presented as observed evidence;
+- LLM output presented as confirmed facts;
+- missing facts silently converted into complete results;
+- workspace paths exposed outside Repository Analysis;
+- artifact references without checksums or provenance.
+
+## Docker And Deployment Gates
+
+Only run Docker, Swarm or Kubernetes checks after the corresponding files
+exist in the slice. Do not claim deployment readiness from contract files or
+README text alone.
+
+## Failure Reporting
+
+Every failed gate must report:
+
+- command executed;
+- failing task or test;
+- concise failure summary;
+- whether the failure is caused by the current slice;
+- remaining blocker and responsible owner.

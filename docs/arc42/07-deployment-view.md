@@ -109,8 +109,8 @@ broker topology exists. Deployment documentation must not claim readiness from
 contract presence alone.
 
 `services/analysis-store-service` is implemented as an independently buildable
-Spring Boot service in Slice 05. It exposes gRPC on port `9091`, a JDK HTTP
-health endpoint on port `8082`, and can be packaged with:
+Spring Boot service. It exposes gRPC on port `9091`, a JDK HTTP health endpoint
+on port `8082`, and can be packaged with:
 
 ```bash
 ./gradlew --no-daemon :services:analysis-store-service:bootJar --dependency-verification strict --console=plain --stacktrace

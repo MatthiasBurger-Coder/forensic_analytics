@@ -113,7 +113,7 @@ Gateway, worker, replay, report and event flows before each runtime path exists.
 Those flows remain contract design until a slice implements and verifies the
 corresponding runtime behavior.
 
-Slice 05 verifies a narrow Analysis Store runtime path:
+The current implementation verifies a narrow Analysis Store runtime path:
 
 ```text
 worker or future Gateway

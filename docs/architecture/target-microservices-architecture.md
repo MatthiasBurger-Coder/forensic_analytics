@@ -207,7 +207,8 @@ The migration strategy is strangler-first:
    and runtime-start evidence exist.
 6. Keep the old in-process path until the replacement path has verified
    contract, integration and quality evidence.
-7. Remove obsolete monolith paths only in Slice 17 after replacement evidence.
+7. Remove obsolete monolith paths only after replacement evidence exists and
+   the active workflow's monolith-retirement milestone approves the change.
 
 Rollback for behavior-changing slices must keep the previous in-process path
 available until the service path is proven and documented.
