@@ -2,9 +2,9 @@
 
 ## Status
 
-`workflow execute` started. Slices 00, 01, 02 and 03 checkpoints completed and
-pushed. Slice 04 Gateway service bootstrap implementation and verification are
-complete; checkpoint commit and push are pending.
+`workflow execute` started. Slices 00, 01, 02, 03 and 04 checkpoints completed
+and pushed. Slice 05 External Git Repository Workspace Flow implementation and
+verification are complete; checkpoint commit and push are pending.
 
 ## Branch
 
@@ -267,8 +267,8 @@ responsibleAgent=Workflow Executor with Microservice Senior Expert, Senior Java 
 changedFiles=docs/workflow/execution-report.md; docs/workflow/workflow.history.md; settings.gradle.kts; services/forensic-gateway-service/README.md; services/forensic-gateway-service/Dockerfile; services/forensic-gateway-service/build.gradle.kts; services/forensic-gateway-service/src/main/java/de/burger/forensics/analytics/services/gateway/domain/DownstreamServiceStatus.java; services/forensic-gateway-service/src/main/java/de/burger/forensics/analytics/services/gateway/domain/GatewayStatusSnapshot.java; services/forensic-gateway-service/src/main/java/de/burger/forensics/analytics/services/gateway/application/GatewayStatusService.java; services/forensic-gateway-service/src/main/java/de/burger/forensics/analytics/services/gateway/adapter/in/http/GatewayHttpHandler.java; services/forensic-gateway-service/src/main/java/de/burger/forensics/analytics/services/gateway/bootstrap/ForensicGatewayServiceApplication.java; services/forensic-gateway-service/src/main/java/de/burger/forensics/analytics/services/gateway/bootstrap/ForensicGatewayServiceConfiguration.java; services/forensic-gateway-service/src/main/java/de/burger/forensics/analytics/services/gateway/bootstrap/ForensicGatewayServiceProperties.java; services/forensic-gateway-service/src/main/java/de/burger/forensics/analytics/services/gateway/bootstrap/ForensicGatewayServicePropertiesConfiguration.java; services/forensic-gateway-service/src/main/java/de/burger/forensics/analytics/services/gateway/bootstrap/GatewayHttpServerLifecycle.java; services/forensic-gateway-service/src/main/java/de/burger/forensics/analytics/services/gateway/bootstrap/HealthProbe.java; services/forensic-gateway-service/src/main/resources/application.properties; services/forensic-gateway-service/src/main/resources/application-test.properties; services/forensic-gateway-service/src/main/resources/application-docker.properties; services/forensic-gateway-service/src/test/java/de/burger/forensics/analytics/services/gateway/bootstrap/ForensicGatewayServiceApplicationTest.java; services/forensic-gateway-service/src/test/java/de/burger/forensics/analytics/services/gateway/adapter/in/http/ForensicGatewayHttpAdapterTest.java; services/forensic-gateway-service/src/test/java/de/burger/forensics/analytics/services/gateway/quality/ForensicGatewayServiceArchitectureTest.java
 qualityGateCommands=git diff --check; ./gradlew :services:forensic-gateway-service:test --tests '*ForensicGatewayServiceApplicationTest' --tests '*ForensicGatewayHttpAdapterTest' --tests '*ForensicGatewayServiceArchitectureTest' --dependency-verification strict --console=plain --stacktrace; ./gradlew :services:forensic-gateway-service:test --dependency-verification strict --console=plain --stacktrace; ./gradlew :services:forensic-gateway-service:jacocoTestReport :services:forensic-gateway-service:jacocoTestCoverageVerification --dependency-verification strict --console=plain --stacktrace; ./gradlew :services:forensic-gateway-service:bootJar --dependency-verification strict --console=plain --stacktrace; java -jar services/forensic-gateway-service/build/libs/forensic-gateway-service-0.1.0-SNAPSHOT.jar --spring.profiles.active=test --forensics.gateway.service.http.port=18080 plus curl /api/health and --healthcheck; rg leakage gate for project(...) in services/*/build.gradle.kts; rg leakage gate for forbidden worker service imports in forensic-gateway-service; ./gradlew :forensic-analytics-rest:test --tests '*GatewayOpenApiContractTest' --dependency-verification strict --console=plain --stacktrace; ./gradlew test --dependency-verification strict --console=plain --stacktrace; ./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace
 qualityGateResult=PASS
-commitHash=pending
-pushResult=pending
+commitHash=6b33f6378afd14e5f747904cf87a9c0c9d2fbdd8
+pushResult=PUB_DONE to origin/feature/workflow-microservices-btm-pipeline-20260517
 rollbackReference=acccc6cd1f14b0535e5d923d5a64731c88a3c461
 arc42Updated=not required for Slice 04; runtime shell documented in service README
 adrUpdated=not required for Slice 04
@@ -282,7 +282,99 @@ architecture checks and tests. It intentionally does not implement repository
 submission, orchestration, worker calls, BTM delivery, persistence, frontend code
 or deployment orchestration.
 
+## Slice 05 - External Git Repository Workspace Flow
+
+### Review Evidence
+
+Read-only Slice 05 reviews completed before Gateway and Repository Analysis
+files were changed:
+
+- Senior Tester: approved implementation after requiring Gateway HTTP tests,
+  idempotency/conflict tests, unsafe remote rejection, gRPC fake endpoint tests,
+  architecture tests, OpenAPI contract coverage, leakage checks and the full
+  `QUALITY.md` gate.
+- Senior Java Backend: approved a Gateway facade that validates and maps HTTP
+  requests to the existing `repository-analysis.proto` contract without worker
+  logic or shared service implementation dependencies.
+- Microservice Senior Expert: approved service-local generated gRPC use,
+  Gateway-owned request models and explicit Repository Analysis client
+  configuration.
+- Senior Git Workspace Specialist: approved after Slice 04 bookkeeping was
+  reconciled in this report.
+- Senior Security Sandbox Engineer: blocked initial readiness until Repository
+  Analysis rejected DNS-resolved private addresses before `git clone` and source
+  root detection ignored symlinked Java roots; both blockers are fixed in this
+  slice.
+- Senior Java Backend post-change review blocked redirect handling until Git
+  network commands disabled HTTP(S) redirects after pre-clone host validation;
+  `SafeGitCommandRunner` now pins `http.followRedirects=false`.
+- Senior Security Sandbox Engineer post-change review blocked DNS rebinding and
+  unsafe correlation-id echo risks; Git clone commands now pin validated
+  addresses through `http.curloptResolve`, and Gateway mutation headers are
+  syntax-validated before response-header or JSON echo use.
+
+### Verification
+
+```text
+./gradlew :services:forensic-gateway-service:generateProto --dependency-verification strict --console=plain --stacktrace -> PASS
+./gradlew :services:forensic-gateway-service:test --tests '*ForensicGatewayHttpAdapterTest' --tests '*GatewayRepositoryAnalysisSubmissionServiceTest' --tests '*RepositoryAnalysisGrpcClientTest' --tests '*ForensicGatewayServiceArchitectureTest' --dependency-verification strict --console=plain --stacktrace -> PASS
+./gradlew :services:repository-analysis-service:test --tests '*RepositoryAnalysisDomainTest' --tests '*GitRepositoryCheckoutAdapterTest' --tests '*FileSystemRepositoryWorkspaceAdapterTest' --tests '*SafeGitCommandRunnerTest' --tests '*RepositoryAnalysisGrpcEndpointTest' --dependency-verification strict --console=plain --stacktrace -> PASS
+./gradlew :services:repository-analysis-service:test --tests '*SafeGitCommandRunnerTest' --tests '*GitRepositoryCheckoutAdapterTest' --dependency-verification strict --console=plain --stacktrace -> PASS after redirect blocking fix
+./gradlew :services:forensic-gateway-service:test --tests '*ForensicGatewayHttpAdapterTest' :services:repository-analysis-service:test --tests '*GitRepositoryCheckoutAdapterTest' --tests '*SafeGitCommandRunnerTest' --dependency-verification strict --console=plain --stacktrace -> PASS after DNS pinning and header validation fixes
+./gradlew :forensic-analytics-rest:test --tests '*GatewayOpenApiContractTest' --dependency-verification strict --console=plain --stacktrace -> PASS
+./gradlew :services:forensic-gateway-service:test :services:forensic-gateway-service:jacocoTestReport :services:forensic-gateway-service:jacocoTestCoverageVerification :services:forensic-gateway-service:bootJar --dependency-verification strict --console=plain --stacktrace -> PASS
+rg leakage gate for absolute workspace paths and local file references in Gateway main sources and OpenAPI contract -> PASS; only path-rejection validation patterns are present
+rg leakage gate for workspace identifiers in Gateway responses -> PASS; only negative test assertions are present
+./gradlew test --dependency-verification strict --console=plain --stacktrace -> PASS
+./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace -> PASS after targeted branch-coverage regression tests and monotonic checkout timing fix
+```
+
+Initial full local quality execution reached `checkPackageCoverage` and failed
+only on package branch coverage for the new Gateway and Repository Analysis
+security paths. The failure was routed as a test/coverage blocker and fixed with
+targeted regression tests for HTTP error mapping, Gateway validation, gRPC
+status mapping and remote-address rejection. During the coverage rerun,
+Repository Analysis also exposed a verified checkout timing defect: wall-clock
+duration measurement could produce negative elapsed milliseconds. The adapter now
+uses monotonic `System.nanoTime()` measurement before constructing domain
+evidence.
+
+### CP_RECORD
+
+```text
+workflowVersion=microservices-btm-pipeline-20260517-v1
+sliceId=05
+sliceTitle=External Git Repository Workspace Flow
+responsibleAgent=Workflow Executor with Senior Tester, Senior Java Backend, Microservice Senior Expert, Senior Git Workspace Specialist and Senior Security Sandbox Engineer reviews
+changedFiles=docs/workflow/execution-report.md; docs/workflow/workflow.history.md; contracts/openapi/README.md; contracts/openapi/gateway-api.yaml; forensic-analytics-rest/src/test/java/de/burger/forensics/analytics/rest/GatewayOpenApiContractTest.java; services/forensic-gateway-service/README.md; services/forensic-gateway-service/build.gradle.kts; services/forensic-gateway-service/src/main/java/de/burger/forensics/analytics/services/gateway/adapter/in/http/GatewayHttpHandler.java; services/forensic-gateway-service/src/main/java/de/burger/forensics/analytics/services/gateway/adapter/out/grpc/RepositoryAnalysisGrpcClient.java; services/forensic-gateway-service/src/main/java/de/burger/forensics/analytics/services/gateway/application/GatewayIdempotencyConflictException.java; services/forensic-gateway-service/src/main/java/de/burger/forensics/analytics/services/gateway/application/GatewayRepositoryAnalysisException.java; services/forensic-gateway-service/src/main/java/de/burger/forensics/analytics/services/gateway/application/GatewayRepositoryAnalysisSubmissionService.java; services/forensic-gateway-service/src/main/java/de/burger/forensics/analytics/services/gateway/application/port/RepositoryAnalysisPreparationPort.java; services/forensic-gateway-service/src/main/java/de/burger/forensics/analytics/services/gateway/bootstrap/ForensicGatewayServiceConfiguration.java; services/forensic-gateway-service/src/main/java/de/burger/forensics/analytics/services/gateway/bootstrap/ForensicGatewayServiceProperties.java; services/forensic-gateway-service/src/main/java/de/burger/forensics/analytics/services/gateway/bootstrap/ForensicGatewayServicePropertiesConfiguration.java; services/forensic-gateway-service/src/main/java/de/burger/forensics/analytics/services/gateway/domain/GatewayRepositoryAnalysis.java; services/forensic-gateway-service/src/main/resources/application.properties; services/forensic-gateway-service/src/main/resources/application-test.properties; services/forensic-gateway-service/src/main/resources/application-docker.properties; services/forensic-gateway-service/src/test/java/de/burger/forensics/analytics/services/gateway/adapter/in/http/ForensicGatewayHttpAdapterTest.java; services/forensic-gateway-service/src/test/java/de/burger/forensics/analytics/services/gateway/adapter/out/grpc/RepositoryAnalysisGrpcClientTest.java; services/forensic-gateway-service/src/test/java/de/burger/forensics/analytics/services/gateway/application/GatewayRepositoryAnalysisSubmissionServiceTest.java; services/forensic-gateway-service/src/test/java/de/burger/forensics/analytics/services/gateway/bootstrap/ForensicGatewayServiceApplicationTest.java; services/forensic-gateway-service/src/test/java/de/burger/forensics/analytics/services/gateway/quality/ForensicGatewayServiceArchitectureTest.java; services/repository-analysis-service/src/main/java/de/burger/forensics/analytics/services/repositoryanalysis/adapter/out/git/GitRepositoryCheckoutAdapter.java; services/repository-analysis-service/src/main/java/de/burger/forensics/analytics/services/repositoryanalysis/adapter/out/git/RemoteHostResolver.java; services/repository-analysis-service/src/main/java/de/burger/forensics/analytics/services/repositoryanalysis/adapter/out/git/RemoteHostValidator.java; services/repository-analysis-service/src/main/java/de/burger/forensics/analytics/services/repositoryanalysis/adapter/out/git/SafeGitCommandRunner.java; services/repository-analysis-service/src/main/java/de/burger/forensics/analytics/services/repositoryanalysis/adapter/out/git/SourceRootDetector.java; services/repository-analysis-service/src/test/java/de/burger/forensics/analytics/services/repositoryanalysis/adapter/out/git/GitRepositoryCheckoutAdapterTest.java; services/repository-analysis-service/src/test/java/de/burger/forensics/analytics/services/repositoryanalysis/adapter/out/git/SafeGitCommandRunnerTest.java
+qualityGateCommands=./gradlew :services:forensic-gateway-service:generateProto --dependency-verification strict --console=plain --stacktrace; ./gradlew :services:forensic-gateway-service:test --tests '*ForensicGatewayHttpAdapterTest' --tests '*GatewayRepositoryAnalysisSubmissionServiceTest' --tests '*RepositoryAnalysisGrpcClientTest' --tests '*ForensicGatewayServiceArchitectureTest' --dependency-verification strict --console=plain --stacktrace; ./gradlew :services:repository-analysis-service:test --tests '*RepositoryAnalysisDomainTest' --tests '*GitRepositoryCheckoutAdapterTest' --tests '*FileSystemRepositoryWorkspaceAdapterTest' --tests '*SafeGitCommandRunnerTest' --tests '*RepositoryAnalysisGrpcEndpointTest' --dependency-verification strict --console=plain --stacktrace; ./gradlew :services:repository-analysis-service:test --tests '*SafeGitCommandRunnerTest' --tests '*GitRepositoryCheckoutAdapterTest' --dependency-verification strict --console=plain --stacktrace; ./gradlew :services:forensic-gateway-service:test --tests '*ForensicGatewayHttpAdapterTest' :services:repository-analysis-service:test --tests '*GitRepositoryCheckoutAdapterTest' --tests '*SafeGitCommandRunnerTest' --dependency-verification strict --console=plain --stacktrace; ./gradlew :forensic-analytics-rest:test --tests '*GatewayOpenApiContractTest' --dependency-verification strict --console=plain --stacktrace; ./gradlew :services:forensic-gateway-service:test :services:forensic-gateway-service:jacocoTestReport :services:forensic-gateway-service:jacocoTestCoverageVerification :services:forensic-gateway-service:bootJar --dependency-verification strict --console=plain --stacktrace; rg leakage gates; ./gradlew test --dependency-verification strict --console=plain --stacktrace; ./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace
+qualityGateResult=PASS
+commitHash=pending
+pushResult=pending
+rollbackReference=6b33f6378afd14e5f747904cf87a9c0c9d2fbdd8
+arc42Updated=not required for Slice 05; OpenAPI and service README updated
+adrUpdated=not required for Slice 05
+```
+
+## Implementation Status
+
+Slice 05 implements the Gateway HTTP repository-analysis submission facade for
+external HTTPS Git repositories. The Gateway validates request headers,
+idempotency keys, repository references, requested outputs, build context and
+workspace policy, maps accepted requests to the Repository Analysis gRPC
+`PrepareRepository` contract, preserves correlation IDs and returns an accepted
+repository-to-BTM submission envelope without exposing service-local workspace
+paths.
+
+Repository Analysis now rejects DNS-resolved loopback, link-local, site-local,
+multicast, carrier-grade NAT and unique-local IPv6 addresses before executing
+`git clone`, pins Git clone DNS resolution to the validated addresses, disables
+Git HTTP(S) redirects, ignores symlinked Java source roots, and measures
+checkout elapsed time with a monotonic clock. Gateway mutation headers now
+reject unsupported characters before they are echoed in response headers or JSON
+error envelopes.
+
 ## Next Action
 
-After the Slice 04 checkpoint commit and push succeed, continue with Slice 05
+After the Slice 05 checkpoint commit and push succeed, continue with Slice 06
 from `docs/workflow/workflow.md`.

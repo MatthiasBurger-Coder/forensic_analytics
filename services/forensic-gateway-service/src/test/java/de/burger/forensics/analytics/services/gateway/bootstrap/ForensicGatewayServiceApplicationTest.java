@@ -1,8 +1,13 @@
 package de.burger.forensics.analytics.services.gateway.bootstrap;
 
 import de.burger.forensics.analytics.services.gateway.adapter.in.http.GatewayHttpHandler;
+import de.burger.forensics.analytics.services.gateway.application.GatewayRepositoryAnalysisSubmissionService;
 import de.burger.forensics.analytics.services.gateway.application.GatewayStatusService;
+import de.burger.forensics.analytics.services.gateway.application.port.RepositoryAnalysisPreparationPort;
 import de.burger.forensics.analytics.services.gateway.domain.DownstreamServiceStatus;
+import de.burger.forensics.analytics.services.gateway.domain.GatewayRepositoryAnalysis.Diagnostic;
+import de.burger.forensics.analytics.services.gateway.domain.GatewayRepositoryAnalysis.RepositoryPreparationCommand;
+import de.burger.forensics.analytics.services.gateway.domain.GatewayRepositoryAnalysis.RepositoryPreparationResult;
 import de.burger.forensics.analytics.services.gateway.domain.GatewayStatusSnapshot;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.WebApplicationType;
@@ -67,18 +72,37 @@ class ForensicGatewayServiceApplicationTest {
 
     @Test
     void rejectsInvalidPropertiesAndKeepsDisabledLifecycleStopped() {
-        assertThrows(NullPointerException.class, () -> new ForensicGatewayServiceProperties(null));
+        assertThrows(NullPointerException.class, () -> new ForensicGatewayServiceProperties(
+            null,
+            new ForensicGatewayServiceProperties.RepositoryAnalysis(
+                new ForensicGatewayServiceProperties.Grpc("127.0.0.1", 0, 1)
+            )
+        ));
+        assertThrows(NullPointerException.class, () -> new ForensicGatewayServiceProperties(
+            new ForensicGatewayServiceProperties.Http(true, "127.0.0.1", 0),
+            null
+        ));
         assertThrows(IllegalArgumentException.class, () -> new ForensicGatewayServiceProperties.Http(true, " ", 0));
         assertThrows(IllegalArgumentException.class, () -> new ForensicGatewayServiceProperties.Http(true, null, 0));
         assertThrows(IllegalArgumentException.class, () -> new ForensicGatewayServiceProperties.Http(true, "127.0.0.1", -1));
         assertThrows(IllegalArgumentException.class, () -> new ForensicGatewayServiceProperties.Http(true, "127.0.0.1", 65_536));
+        assertThrows(NullPointerException.class, () -> new ForensicGatewayServiceProperties.RepositoryAnalysis(null));
+        assertThrows(IllegalArgumentException.class, () -> new ForensicGatewayServiceProperties.Grpc(" ", 9092, 5));
+        assertThrows(IllegalArgumentException.class, () -> new ForensicGatewayServiceProperties.Grpc("127.0.0.1", 65_536, 5));
+        assertThrows(IllegalArgumentException.class, () -> new ForensicGatewayServiceProperties.Grpc("127.0.0.1", 9092, 0));
         assertThrows(IllegalArgumentException.class, () -> new DownstreamServiceStatus(" ", "UP"));
         assertThrows(IllegalArgumentException.class, () -> new GatewayStatusSnapshot(" ", List.of()));
 
         var properties = new ForensicGatewayServiceProperties(
-            new ForensicGatewayServiceProperties.Http(false, "127.0.0.1", 0)
+            new ForensicGatewayServiceProperties.Http(false, "127.0.0.1", 0),
+            new ForensicGatewayServiceProperties.RepositoryAnalysis(
+                new ForensicGatewayServiceProperties.Grpc("127.0.0.1", 0, 1)
+            )
         );
-        var lifecycle = new GatewayHttpServerLifecycle(properties, new GatewayHttpHandler(new GatewayStatusService()));
+        var lifecycle = new GatewayHttpServerLifecycle(properties, new GatewayHttpHandler(
+            new GatewayStatusService(),
+            new GatewayRepositoryAnalysisSubmissionService(new FakePreparationPort())
+        ));
 
         lifecycle.start();
         lifecycle.stop();
@@ -114,5 +138,17 @@ class ForensicGatewayServiceApplicationTest {
     private static int responseCode(int port, String path) throws Exception {
         var connection = URI.create("http://127.0.0.1:" + port + path).toURL().openConnection();
         return ((java.net.HttpURLConnection) connection).getResponseCode();
+    }
+
+    private static final class FakePreparationPort implements RepositoryAnalysisPreparationPort {
+        @Override
+        public RepositoryPreparationResult prepare(RepositoryPreparationCommand command) {
+            return new RepositoryPreparationResult(
+                command.analysisRunId(),
+                "source-snapshot-1",
+                "CHECKED_OUT",
+                List.of(Diagnostic.info("OK", "prepared"))
+            );
+        }
     }
 }

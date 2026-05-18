@@ -13,18 +13,28 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 
 public final class GitRepositoryCheckoutAdapter implements RepositoryCheckoutPort {
     private final GitCommandRunner runner;
     private final SourceRootDetector sourceRootDetector;
+    private final RemoteHostValidator remoteHostValidator;
 
     public GitRepositoryCheckoutAdapter(GitCommandRunner runner, SourceRootDetector sourceRootDetector) {
+        this(runner, sourceRootDetector, RemoteHostValidator.system());
+    }
+
+    GitRepositoryCheckoutAdapter(
+        GitCommandRunner runner,
+        SourceRootDetector sourceRootDetector,
+        RemoteHostValidator remoteHostValidator
+    ) {
         this.runner = Objects.requireNonNull(runner, "runner must not be null");
         this.sourceRootDetector = Objects.requireNonNull(sourceRootDetector, "source root detector must not be null");
+        this.remoteHostValidator = Objects.requireNonNull(remoteHostValidator, "remote host validator must not be null");
     }
 
     @Override
@@ -34,10 +44,11 @@ public final class GitRepositoryCheckoutAdapter implements RepositoryCheckoutPor
         RevisionSelector revision,
         WorkspacePolicy policy
     ) {
-        var started = Instant.now();
+        var startedNanos = System.nanoTime();
         var repoPath = workspace.workspacePath().resolve("repository").toAbsolutePath().normalize();
         var timeout = Duration.ofSeconds(policy.timeoutSeconds());
-        var cloneArguments = cloneArguments(repository, revision, policy, repoPath);
+        var remoteHost = remoteHostValidator.requirePubliclyRoutable(repository);
+        var cloneArguments = cloneArguments(repository, revision, policy, repoPath, remoteHost);
         runOrThrow(workspace.workspacePath(), timeout, cloneArguments);
         if (revision.hasBranch() && !policy.allowShallowClone()) {
             runOrThrow(repoPath, timeout, List.of("checkout", "--quiet", revision.branch()));
@@ -64,7 +75,7 @@ public final class GitRepositoryCheckoutAdapter implements RepositoryCheckoutPor
             revision.branch(),
             revision.commit(),
             policy.allowShallowClone() && revision.hasBranch() && !revision.hasCommit(),
-            Duration.between(started, Instant.now()).toMillis(),
+            TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedNanos),
             List.of(Diagnostic.info("GIT_CHECKOUT_COMPLETED", "Repository checkout completed")),
             false,
             false,
@@ -109,9 +120,14 @@ public final class GitRepositoryCheckoutAdapter implements RepositoryCheckoutPor
         RepositoryReference repository,
         RevisionSelector revision,
         WorkspacePolicy policy,
-        Path repoPath
+        Path repoPath,
+        RemoteHostValidator.ValidatedRemoteHost remoteHost
     ) {
         var arguments = new ArrayList<String>();
+        remoteHost.curlResolveOptions().forEach(resolveOption -> {
+            arguments.add("-c");
+            arguments.add("http.curloptResolve=" + resolveOption);
+        });
         arguments.add("clone");
         arguments.add("--quiet");
         arguments.add("--no-tags");

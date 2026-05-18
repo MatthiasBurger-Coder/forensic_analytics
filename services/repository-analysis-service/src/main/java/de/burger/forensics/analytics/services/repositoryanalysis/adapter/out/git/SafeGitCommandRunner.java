@@ -37,6 +37,8 @@ public final class SafeGitCommandRunner implements GitCommandRunner {
             arguments.add("-c");
             arguments.add("protocol.ext.allow=never");
             arguments.add("-c");
+            arguments.add("http.followRedirects=false");
+            arguments.add("-c");
             arguments.add("filter.lfs.required=false");
             arguments.add("-c");
             arguments.add("filter.lfs.smudge=");

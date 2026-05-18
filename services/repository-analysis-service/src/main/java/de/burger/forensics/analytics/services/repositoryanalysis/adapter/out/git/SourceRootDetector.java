@@ -4,6 +4,7 @@ import de.burger.forensics.analytics.services.repositoryanalysis.domain.Reposito
 
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -13,7 +14,7 @@ public final class SourceRootDetector {
     public List<SourceRoot> detect(Path repositoryRoot) {
         try (var stream = Files.walk(repositoryRoot, 6)) {
             var roots = stream
-                .filter(Files::isDirectory)
+                .filter(path -> Files.isDirectory(path, LinkOption.NOFOLLOW_LINKS))
                 .filter(path -> path.endsWith(Path.of("src", "main", "java")))
                 .map(repositoryRoot::relativize)
                 .map(Path::toString)

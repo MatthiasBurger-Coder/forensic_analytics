@@ -16,7 +16,7 @@ class GatewayOpenApiContractTest {
         var idempotencyParameter = section(contract, "    IdempotencyKey:", "    AnalysisRunId:");
 
         assertContains(repositoryPost, "operationId: startRepositoryToBtmAnalysis");
-        assertContains(repositoryPost, "x-implementation-status: planned-initial");
+        assertContains(repositoryPost, "x-implementation-status: current-verified");
         assertContains(repositoryPost, "- $ref: '#/components/parameters/MutationCorrelationId'");
         assertContains(repositoryPost, "- $ref: '#/components/parameters/IdempotencyKey'");
         assertContains(repositoryPost, "'202':");

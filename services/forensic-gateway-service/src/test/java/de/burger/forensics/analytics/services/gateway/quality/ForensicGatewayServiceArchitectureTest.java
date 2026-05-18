@@ -32,7 +32,8 @@ class ForensicGatewayServiceArchitectureTest {
                 "org.springframework..",
                 "com.sun.net.httpserver..",
                 "io.grpc..",
-                "com.google.protobuf.."
+                "com.google.protobuf..",
+                "de.burger.forensics.analytics.repositoryanalysis.v1.."
             );
 
     @ArchTest

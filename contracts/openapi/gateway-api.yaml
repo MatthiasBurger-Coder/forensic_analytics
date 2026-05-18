@@ -45,7 +45,7 @@ paths:
       tags: [RepositoryAnalyses]
       summary: Start an asynchronous repository-to-BTM analysis run.
       operationId: startRepositoryToBtmAnalysis
-      x-implementation-status: planned-initial
+      x-implementation-status: current-verified
       parameters:
         - $ref: '#/components/parameters/MutationCorrelationId'
         - $ref: '#/components/parameters/IdempotencyKey'
