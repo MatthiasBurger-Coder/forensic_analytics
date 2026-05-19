@@ -2,10 +2,11 @@
 
 ## Status
 
-`workflow execute` started. Slices 00, 01, 02, 03, 04 and 05 checkpoints
-completed and pushed. Slice 06 Java AST Worker Handoff implementation and
-Security Sandbox blocker fix are implemented; post-fix full local quality gate
-passed; checkpoint commit and push are pending.
+`workflow execute` started. Slices 00, 01, 02, 03, 04, 05 and 06 checkpoints
+completed and pushed. Slice 07 Joern Worker Handoff is stopped before
+implementation because the required Repository Analysis to Joern transfer and
+materialization contract is not verified, and artifact byte-access metadata is
+not preserved by the involved service mappings.
 
 ## Branch
 
@@ -433,8 +434,8 @@ responsibleAgent=Workflow Executor with Senior gRPC Proto Specialist, Senior Sys
 changedFiles=docs/workflow/execution-report.md; docs/workflow/workflow.history.md; contracts/grpc/README.md; contracts/grpc/java-ast-analysis.proto; services/java-ast-analysis-service/README.md; services/repository-analysis-service/README.md; services/repository-analysis-service/build.gradle.kts; services/repository-analysis-service/src/main/java/de/burger/forensics/analytics/services/repositoryanalysis/adapter/out/filesystem/FileSystemSourceSnapshotFileCollector.java; services/repository-analysis-service/src/main/java/de/burger/forensics/analytics/services/repositoryanalysis/adapter/out/grpc/JavaAstAnalysisGrpcClient.java; services/repository-analysis-service/src/main/java/de/burger/forensics/analytics/services/repositoryanalysis/application/RepositorySourceSnapshotHandoffService.java; services/repository-analysis-service/src/main/java/de/burger/forensics/analytics/services/repositoryanalysis/application/port/JavaAstAnalysisPort.java; services/repository-analysis-service/src/main/java/de/burger/forensics/analytics/services/repositoryanalysis/application/port/SourceSnapshotFileCollectorPort.java; services/repository-analysis-service/src/main/java/de/burger/forensics/analytics/services/repositoryanalysis/bootstrap/RepositoryAnalysisServiceConfiguration.java; services/repository-analysis-service/src/main/java/de/burger/forensics/analytics/services/repositoryanalysis/bootstrap/RepositoryAnalysisServiceProperties.java; services/repository-analysis-service/src/main/java/de/burger/forensics/analytics/services/repositoryanalysis/bootstrap/RepositoryAnalysisServicePropertiesConfiguration.java; services/repository-analysis-service/src/main/java/de/burger/forensics/analytics/services/repositoryanalysis/domain/RepositoryAnalysisDomain.java; services/repository-analysis-service/src/main/resources/application.properties; services/repository-analysis-service/src/main/resources/application-test.properties; services/repository-analysis-service/src/main/resources/application-docker.properties; services/repository-analysis-service/src/test/java/de/burger/forensics/analytics/services/repositoryanalysis/adapter/out/filesystem/FileSystemSourceSnapshotFileCollectorTest.java; services/repository-analysis-service/src/test/java/de/burger/forensics/analytics/services/repositoryanalysis/adapter/out/grpc/JavaAstAnalysisGrpcClientTest.java; services/repository-analysis-service/src/test/java/de/burger/forensics/analytics/services/repositoryanalysis/application/RepositorySourceSnapshotHandoffServiceTest.java; services/repository-analysis-service/src/test/java/de/burger/forensics/analytics/services/repositoryanalysis/bootstrap/RepositoryAnalysisServiceApplicationTest.java; services/repository-analysis-service/src/test/java/de/burger/forensics/analytics/services/repositoryanalysis/quality/RepositoryAnalysisServiceArchitectureTest.java
 qualityGateCommands=./gradlew :services:repository-analysis-service:generateProto :services:repository-analysis-service:test --tests '*FileSystemSourceSnapshotFileCollectorTest' --tests '*RepositorySourceSnapshotHandoffServiceTest' --tests '*JavaAstAnalysisGrpcClientTest' --tests '*RepositoryAnalysisServiceApplicationTest' --tests '*RepositoryAnalysisServiceArchitectureTest' --dependency-verification strict --console=plain --stacktrace; ./gradlew :services:repository-analysis-service:test :services:java-ast-analysis-service:test --tests '*JavaAstAnalysisContractTest' --tests '*JavaAstAnalysisGrpcEndpointTest' --tests '*JavaAstAnalysisApplicationServiceTest' --dependency-verification strict --console=plain --stacktrace; ./gradlew :services:repository-analysis-service:jacocoTestReport :services:repository-analysis-service:jacocoTestCoverageVerification :services:repository-analysis-service:bootJar :services:java-ast-analysis-service:jacocoTestReport :services:java-ast-analysis-service:jacocoTestCoverageVerification :services:java-ast-analysis-service:bootJar --dependency-verification strict --console=plain --stacktrace; rg leakage gate; ./gradlew :services:repository-analysis-service:test --tests '*FileSystemSourceSnapshotFileCollectorTest' --tests '*JavaAstAnalysisGrpcClientTest' --dependency-verification strict --console=plain --stacktrace; ./gradlew :services:repository-analysis-service:jacocoTestReport :services:repository-analysis-service:jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace; ./gradlew test --dependency-verification strict --console=plain --stacktrace; ./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace; ./gradlew :services:repository-analysis-service:test --tests '*FileSystemSourceSnapshotFileCollectorTest' --tests '*RepositorySourceSnapshotHandoffServiceTest' --tests '*JavaAstAnalysisGrpcClientTest' --dependency-verification strict --console=plain --stacktrace; ./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --no-daemon --max-workers=1 --dependency-verification strict --console=plain --stacktrace; git diff --check
 qualityGateResult=PASS
-commitHash=pending
-pushResult=pending
+commitHash=adce9d721956d0a8172623ae36987e3d064e1971
+pushResult=PUB_DONE to origin/feature/workflow-microservices-btm-pipeline-20260517
 rollbackReference=c4b2888b923b88ff1aad6713e0c52452030771e1
 arc42Updated=not required for Slice 06; service communication matrix already defines bounded inline source-file handoff
 adrUpdated=not required for Slice 06
@@ -454,7 +455,43 @@ source-package transfer. Unresolved Java symbol handling remains an explicit
 Java AST diagnostic by forcing symbol-resolution diagnostics in the handoff
 request.
 
-## Next Action
+## Slice 07 - Joern Worker Handoff
 
-Run final role reviews, checkpoint commit and push before continuing with Slice
-07.
+### Read-Only Review Evidence
+
+Read-only Slice 07 reviews completed before any production file changes:
+
+- Senior Swarm Orchestrator: dependency order selects Slice 07 after the pushed
+  Slice 06 checkpoint, but implementation must not proceed until the execution
+  report records the completed Slice 06 commit and push.
+- Senior gRPC Proto Specialist: blocked Repository Analysis to Joern handoff
+  because `joern-cpg-analysis.proto` exposes `SourceWorkspace.workspace_id` but
+  does not define source-package transfer, artifact-byte retrieval,
+  materialization RPC or another explicit owner API.
+- Senior Joern CPG Specialist: blocked Joern execution because the current
+  workspace adapter resolves a Joern-local filesystem workspace by
+  `workspace_id`, while Repository Analysis only implements Java AST handoff and
+  no Joern-safe materialization path.
+- Senior Analysis Storage Architect: blocked semantic artifact registration
+  because `AnalysisArtifactReference.byte_access` exists in the gRPC contract
+  but is dropped by Analysis Store and Joern domain models and gRPC mappers.
+- Senior Security Sandbox Engineer: blocked execution because proceeding would
+  require either shared filesystem coupling or passing Repository Analysis
+  private workspace identifiers into Joern.
+
+### Stop Decision
+
+Slice 07 is `BLOCKED` before implementation. Required unblock work:
+
+- define a Repository Analysis to Joern source transfer path using bounded
+  source-package transfer, artifact-byte retrieval or another explicit owner
+  API;
+- materialize transferred input into a Joern-owned workspace with a Joern-local
+  identifier;
+- preserve and validate `ArtifactByteAccess` across Repository Analysis,
+  Joern and Analysis Store paths when artifact references are used;
+- reject shared filesystem coupling, Repository Analysis private workspace IDs,
+  symlink escapes and path-bearing diagnostics.
+
+No Slice 07 files were modified, and no Slice 07 quality gate was run because
+the slice stopped during read-only precondition review.
