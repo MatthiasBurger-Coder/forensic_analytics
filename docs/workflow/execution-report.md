@@ -739,7 +739,7 @@ changedFiles=services/analysis-store-service/**; services/joern-cpg-analysis-ser
 qualityGateCommands=./gradlew --no-daemon --max-workers=1 :services:joern-cpg-analysis-service:test :services:analysis-store-service:test --dependency-verification strict --console=plain --stacktrace; ./gradlew --no-daemon --max-workers=1 :services:joern-cpg-analysis-service:jacocoTestReport :services:joern-cpg-analysis-service:jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace; ./gradlew --no-daemon --max-workers=1 :services:repository-analysis-service:test :services:analysis-store-service:test :services:joern-cpg-analysis-service:test --dependency-verification strict --console=plain --stacktrace; ./gradlew --no-daemon --max-workers=1 clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace; git diff --check; git diff --cached --check
 qualityGateResult=PASS
 commitHash=bc102d119389604ab75e18b884015049a1da0108
-pushResult=pending
+pushResult=PUB_DONE to origin/feature/workflow-microservices-btm-pipeline-20260517
 rollbackReference=7f7a7d5a9c14a83b0baa42c8a6a67a8373f2066a
 arc42Updated=not changed in this slice
 adrUpdated=not required in this slice
