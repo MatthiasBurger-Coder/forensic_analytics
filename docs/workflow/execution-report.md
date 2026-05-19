@@ -618,8 +618,8 @@ coverageRemediation=Added focused FileSystemJoernWorkspaceMaterializer branch co
 coveragePrecheck=./gradlew --no-daemon --max-workers=1 :services:joern-cpg-analysis-service:jacocoTestReport checkPackageCoverage --dependency-verification strict --console=plain --stacktrace
 coveragePrecheckResult=PASS
 fullGateAttempt5=PASS: ./gradlew --no-daemon --max-workers=1 clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace
-commitHash=pending checkpoint commit
-pushResult=pending checkpoint push
+commitHash=d501773e8d30d8838591ec779b218c9aa06f72d4
+pushResult=PUB_DONE to origin/feature/workflow-microservices-btm-pipeline-20260517
 rollbackReference=ae6348e38c57e0522d4f8ee36b61c9046bc1bb16
 arc42Updated=not changed in this attempt
 adrUpdated=not required in this attempt
