@@ -1,5 +1,6 @@
 package de.burger.forensics.analytics.services.btmgeneration.bootstrap;
 
+import de.burger.forensics.analytics.services.btmgeneration.adapter.in.grpc.BtmArtifactDeliveryGrpcEndpoint;
 import de.burger.forensics.analytics.services.btmgeneration.adapter.in.grpc.BtmGenerationGrpcEndpoint;
 import io.grpc.Server;
 import io.grpc.netty.shaded.io.grpc.netty.NettyServerBuilder;
@@ -11,13 +12,19 @@ import java.util.concurrent.TimeUnit;
 
 public final class GrpcServerLifecycle implements SmartLifecycle {
     private final BtmGenerationServiceProperties properties;
-    private final BtmGenerationGrpcEndpoint endpoint;
+    private final BtmGenerationGrpcEndpoint generationEndpoint;
+    private final BtmArtifactDeliveryGrpcEndpoint deliveryEndpoint;
     private Server server;
     private boolean running;
 
-    public GrpcServerLifecycle(BtmGenerationServiceProperties properties, BtmGenerationGrpcEndpoint endpoint) {
+    public GrpcServerLifecycle(
+        BtmGenerationServiceProperties properties,
+        BtmGenerationGrpcEndpoint generationEndpoint,
+        BtmArtifactDeliveryGrpcEndpoint deliveryEndpoint
+    ) {
         this.properties = properties;
-        this.endpoint = endpoint;
+        this.generationEndpoint = generationEndpoint;
+        this.deliveryEndpoint = deliveryEndpoint;
     }
 
     @Override
@@ -27,7 +34,8 @@ public final class GrpcServerLifecycle implements SmartLifecycle {
         }
         try {
             server = NettyServerBuilder.forAddress(new InetSocketAddress(properties.grpc().host(), properties.grpc().port()))
-                .addService(endpoint)
+                .addService(generationEndpoint)
+                .addService(deliveryEndpoint)
                 .build()
                 .start();
             running = true;

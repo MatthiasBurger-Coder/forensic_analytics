@@ -134,6 +134,52 @@ class AnalysisJobGrpcEndpointTest {
     }
 
     @Test
+    void registersBtmGeneratedArtifactsWithProducerRetainedByteAccess() {
+        stub.submitAnalysisJob(submitRequest("submit-btm", "job-btm", AnalysisWorkerKind.ANALYSIS_WORKER_KIND_BTM_GENERATION));
+
+        var registered = stub.registerAnalysisArtifacts(RegisterAnalysisArtifactsRequest.newBuilder()
+            .setRequestId("request-register-btm")
+            .setIdempotencyKey("register-btm")
+            .setCorrelationId("correlation-1")
+            .setAnalysisRunId(runId())
+            .setJobId(jobId("job-btm"))
+            .addArtifacts(btmGeneratedArtifact(
+                "btm/snapshot-1-job-btm-rules.btm",
+                "application/vnd.forensic-analytics.btm-rules.v1+btm"
+            ))
+            .addArtifacts(btmGeneratedArtifact(
+                "btm/snapshot-1-job-btm-rule-manifest.json",
+                "application/vnd.forensic-analytics.btm-rule-manifest.v1+json"
+            ))
+            .build());
+
+        assertEquals(2, registered.getArtifactsCount());
+        assertEquals("btm-generation-service", registered.getArtifacts(0).getProducerService());
+        assertEquals("btm-generation-service", registered.getArtifacts(0).getByteAccess().getOwnerService());
+        assertEquals(
+            "de.burger.forensics.analytics.btmgeneration.v1.BtmArtifactDeliveryService.DownloadBtmArtifacts",
+            registered.getArtifacts(0).getByteAccess().getRetrievalContract()
+        );
+        assertEquals("btm/snapshot-1-job-btm-rules.btm", registered.getArtifacts(0).getByteAccess().getRetrievalReference());
+        assertEquals(ArtifactByteCustody.ARTIFACT_BYTE_CUSTODY_PRODUCER_RETAINED, registered.getArtifacts(0).getByteAccess().getByteCustody());
+
+        var missingByteAccess = assertThrows(StatusRuntimeException.class, () -> stub.registerAnalysisArtifacts(
+            RegisterAnalysisArtifactsRequest.newBuilder()
+                .setRequestId("request-register-btm-invalid")
+                .setIdempotencyKey("register-btm-invalid")
+                .setCorrelationId("correlation-1")
+                .setAnalysisRunId(runId())
+                .setJobId(jobId("job-btm"))
+                .addArtifacts(btmGeneratedArtifact(
+                    "btm/missing-byte-access.btm",
+                    "application/vnd.forensic-analytics.btm-rules.v1+btm"
+                ).toBuilder().clearByteAccess())
+                .build()
+        ));
+        assertEquals(Status.Code.INVALID_ARGUMENT, missingByteAccess.getStatus().getCode());
+    }
+
+    @Test
     void listsGetsFailsAndMapsErrorStatuses() {
         stub.submitAnalysisJob(submitRequest("submit-1", "job-1", AnalysisWorkerKind.ANALYSIS_WORKER_KIND_JOERN_ANALYSIS));
         stub.leaseAnalysisJob(LeaseAnalysisJobRequest.newBuilder()
@@ -367,6 +413,27 @@ class AnalysisJobGrpcEndpointTest {
                 .setOwnerService("analysis-store-test")
                 .setRetrievalContract("analysis-job.v1.ArtifactBytes")
                 .setRetrievalReference("artifacts/" + path)
+                .setByteCustody(ArtifactByteCustody.ARTIFACT_BYTE_CUSTODY_PRODUCER_RETAINED))
+            .build();
+    }
+
+    static AnalysisArtifactReference btmGeneratedArtifact(String path, String type) {
+        return AnalysisArtifactReference.newBuilder()
+            .setArtifact(ArtifactReference.newBuilder()
+                .setPath(path)
+                .setType(type)
+                .setSha256("a".repeat(64))
+                .setSizeBytes(42))
+            .setCategory(AnalysisArtifactCategory.ANALYSIS_ARTIFACT_CATEGORY_GENERATED)
+            .setProducerService("btm-generation-service")
+            .setSchemaVersion("btm-rule-v1")
+            .setCompleteness(AnalysisCompleteness.ANALYSIS_COMPLETENESS_COMPLETE)
+            .setByteAccess(ArtifactByteAccess.newBuilder()
+                .setOwnerService("btm-generation-service")
+                .setRetrievalContract(
+                    "de.burger.forensics.analytics.btmgeneration.v1.BtmArtifactDeliveryService.DownloadBtmArtifacts"
+                )
+                .setRetrievalReference(path)
                 .setByteCustody(ArtifactByteCustody.ARTIFACT_BYTE_CUSTODY_PRODUCER_RETAINED))
             .build();
     }

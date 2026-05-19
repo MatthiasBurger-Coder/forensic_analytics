@@ -6,6 +6,8 @@ import de.burger.forensics.analytics.analysisjob.v1.AnalysisCompleteness;
 import de.burger.forensics.analytics.analysisjob.v1.AnalysisJobId;
 import de.burger.forensics.analytics.analysisjob.v1.AnalysisRunId;
 import de.burger.forensics.analytics.analysisjob.v1.AnalysisWorkerKind;
+import de.burger.forensics.analytics.analysisjob.v1.ArtifactByteAccess;
+import de.burger.forensics.analytics.analysisjob.v1.ArtifactByteCustody;
 import de.burger.forensics.analytics.analysisjob.v1.ArtifactReference;
 import de.burger.forensics.analytics.analysisjob.v1.SourceSnapshotId;
 import de.burger.forensics.analytics.btmgeneration.v1.BtmGenerationPolicy;
@@ -13,6 +15,7 @@ import de.burger.forensics.analytics.btmgeneration.v1.BtmGenerationServiceGrpc;
 import de.burger.forensics.analytics.btmgeneration.v1.DeliveredAnalysisFacts;
 import de.burger.forensics.analytics.btmgeneration.v1.GenerateBtmRulesRequest;
 import de.burger.forensics.analytics.btmgeneration.v1.InstrumentationTarget;
+import de.burger.forensics.analytics.btmgeneration.v1.InstrumentationTargetSelection;
 import de.burger.forensics.analytics.btmgeneration.v1.ProbeKind;
 import de.burger.forensics.analytics.services.btmgeneration.adapter.out.filesystem.FileSystemBtmArtifactWriter;
 import de.burger.forensics.analytics.services.btmgeneration.application.BtmArtifactException;
@@ -65,9 +68,12 @@ class BtmGenerationGrpcEndpointTest {
         assertEquals(2, response.getGeneratedArtifactsCount());
         assertEquals(AnalysisArtifactCategory.ANALYSIS_ARTIFACT_CATEGORY_GENERATED, response.getGeneratedArtifacts(0).getCategory());
         assertEquals("btm-generation-service", response.getGeneratedArtifacts(0).getProducerService());
+        assertEquals("btm-generation-service", response.getGeneratedArtifacts(0).getByteAccess().getOwnerService());
+        assertEquals(response.getGeneratedArtifacts(0).getArtifact().getPath(), response.getGeneratedArtifacts(0).getByteAccess().getRetrievalReference());
         assertEquals(1, response.getGeneratedRulesCount());
         assertEquals(ProbeKind.PROBE_KIND_METHOD_ENTRY, response.getGeneratedRules(0).getProbeKind());
         assertEquals("target-1", response.getGeneratedRules(0).getTargetId());
+        assertEquals("selection-1", response.getTargetSelection().getSelectionId());
         assertEquals("demo", response.getSafeAttributesOrThrow("tenant"));
     }
 
@@ -78,10 +84,16 @@ class BtmGenerationGrpcEndpointTest {
         var response = stub.generateBtmRules(request(AnalysisWorkerKind.ANALYSIS_WORKER_KIND_BTM_GENERATION).toBuilder()
             .setFacts(DeliveredAnalysisFacts.newBuilder()
                 .addSourceFactArtifacts(artifact("source-facts.json"))
+                .addSemanticArtifacts(artifact("joern-cpg/cpg.bin.zip"))
                 .setInputCompleteness(AnalysisCompleteness.ANALYSIS_COMPLETENESS_INCOMPLETE)
+                .setTargetSelection(selection())
                 .addTargets(InstrumentationTarget.newBuilder()
                     .setTargetId("target-missing")
                     .setSourceFactId("fact-missing")
+                    .setSourceFactArtifactReference("source-facts.json")
+                    .setSemanticArtifactReference("joern-cpg/cpg.bin.zip")
+                    .setCompleteness(AnalysisCompleteness.ANALYSIS_COMPLETENESS_INCOMPLETE)
+                    .setSensitivity("internal")
                     .setProbeKind(ProbeKind.PROBE_KIND_METHOD_ENTRY)))
             .build());
 
@@ -201,7 +213,8 @@ class BtmGenerationGrpcEndpointTest {
                 .addSourceFactArtifacts(artifact("source-facts.json"))
                 .addSemanticArtifacts(artifact("joern-cpg/cpg.bin.zip"))
                 .addTargets(target())
-                .setInputCompleteness(AnalysisCompleteness.ANALYSIS_COMPLETENESS_COMPLETE))
+                .setInputCompleteness(AnalysisCompleteness.ANALYSIS_COMPLETENESS_COMPLETE)
+                .setTargetSelection(selection()))
             .putSafeAttributes("tenant", "demo")
             .build();
     }
@@ -226,6 +239,11 @@ class BtmGenerationGrpcEndpointTest {
             .setSignature("a.A#run()")
             .setLineNumber(12)
             .setProbeKind(ProbeKind.PROBE_KIND_METHOD_ENTRY)
+            .setSourceFactArtifactReference("source-facts.json")
+            .setSemanticArtifactReference("joern-cpg/cpg.bin.zip")
+            .setOrderIndex(0)
+            .setCompleteness(AnalysisCompleteness.ANALYSIS_COMPLETENESS_COMPLETE)
+            .setSensitivity("internal")
             .build();
     }
 
@@ -240,6 +258,24 @@ class BtmGenerationGrpcEndpointTest {
             .setProducerService("analysis-store-service")
             .setSchemaVersion("source-facts-v1")
             .setCompleteness(AnalysisCompleteness.ANALYSIS_COMPLETENESS_COMPLETE)
+            .setByteAccess(ArtifactByteAccess.newBuilder()
+                .setOwnerService("analysis-store-service")
+                .setRetrievalContract("analysis-job.v1.ArtifactBytes")
+                .setRetrievalReference(path)
+                .setByteCustody(ArtifactByteCustody.ARTIFACT_BYTE_CUSTODY_PRODUCER_RETAINED))
+            .build();
+    }
+
+    private static InstrumentationTargetSelection selection() {
+        return InstrumentationTargetSelection.newBuilder()
+            .setSelectionId("selection-1")
+            .setOwnerService("analysis-store-service")
+            .setPolicyVersion("target-policy-v1")
+            .setSelectionFingerprint("selection-fingerprint")
+            .setCompleteness(AnalysisCompleteness.ANALYSIS_COMPLETENESS_COMPLETE)
+            .setDeterministicOrder("target_id_probe_kind_ascending")
+            .setCorrelationId("correlation-1")
+            .setTargetCount(1)
             .build();
     }
 }

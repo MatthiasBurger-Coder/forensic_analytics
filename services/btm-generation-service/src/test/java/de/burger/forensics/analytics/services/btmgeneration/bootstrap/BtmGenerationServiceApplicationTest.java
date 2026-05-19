@@ -63,7 +63,7 @@ class BtmGenerationServiceApplicationTest {
             new BtmGenerationServiceProperties.Health(false, "127.0.0.1", 0),
             new BtmGenerationServiceProperties.Artifacts(Path.of("build/test-artifacts"))
         );
-        var grpc = new GrpcServerLifecycle(properties, null);
+        var grpc = new GrpcServerLifecycle(properties, null, null);
         var health = new HealthHttpServerLifecycle(properties, grpc);
 
         grpc.start();
@@ -113,7 +113,7 @@ class BtmGenerationServiceApplicationTest {
             new BtmGenerationServiceProperties.Health(true, "127.0.0.1", 0),
             new BtmGenerationServiceProperties.Artifacts(Path.of("build/test-artifacts"))
         );
-        var grpc = new GrpcServerLifecycle(properties, null);
+        var grpc = new GrpcServerLifecycle(properties, null, null);
         var health = new HealthHttpServerLifecycle(properties, grpc);
 
         try {

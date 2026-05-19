@@ -809,3 +809,84 @@ Slice 09 is `D8_PASS`. Targeted Analysis Store tests, Analysis Store package
 coverage, BTM contract-consumer tests, cross-service implementation leakage
 checks, specialist reviews, `git diff --check` and the mandatory full local
 quality gate completed successfully.
+
+## Slice 10 Execution - BTM gRPC File Delivery
+
+Slice 10 implements bounded gRPC delivery of completed BTM rule and manifest
+bytes from the BTM Generation service. Delivery remains producer-owned: BTM
+Generation keeps byte custody until the `BtmArtifactDeliveryService` streams the
+accepted artifacts, and Analysis Store only records the generated artifact
+metadata and byte-access contract.
+
+Implemented behavior:
+
+- BTM Generation writes immutable producer-retained `.btm` rule artifacts and a
+  stored rule manifest with `ArtifactByteAccess` pointing to the verified BTM
+  delivery gRPC contract.
+- The stored manifest records generated rule artifact declarations so delivery
+  can bind accepted artifact metadata to the same generation run, job,
+  target-selection and reproducibility metadata.
+- `BtmArtifactDeliveryService.DownloadBtmArtifacts` streams a delivery manifest
+  first, then bounded artifact chunks, then a `DELIVERED` status only after all
+  selected artifact bytes have passed streamed size and SHA-256 verification.
+- Server-side streaming installs cancellation and readiness handlers before
+  delivery work starts on `ServerCallStreamObserver`, so cancelled or not-ready
+  observers do not trigger large artifact reads before backpressure gates apply.
+- Requested rule subsets still include and stream the selected stored manifest
+  artifact, so subset delivery cannot report `DELIVERED` from unverified
+  manifest bytes.
+- Delivery rejects incomplete accepted handoffs when the stored manifest
+  declares generated rule artifacts that are missing from
+  `accepted_generated_artifacts`.
+- Analysis Store accepts generated BTM artifact metadata with producer-retained
+  byte access and rejects generated artifacts without byte-access metadata.
+- BTM Generation preserves source fact artifact references, semantic artifact
+  references and target-selection metadata in generated rules, manifests and
+  responses.
+
+### Slice 10 Reviews
+
+- Senior gRPC Proto Specialist: initial review blocked on late
+  cancellation/readiness setup, incomplete handoff acceptance and an
+  imprecise delivery contract identifier. The blockers were remediated by
+  preparing server streaming only after readiness, enforcing manifest-declared
+  rule coverage and changing `BTM_DELIVERY_CONTRACT` to the verified
+  `de.burger.forensics.analytics.btmgeneration.v1.BtmArtifactDeliveryService.DownloadBtmArtifacts`
+  contract. Final re-review returned `PASS`.
+- Analytics Persistence / Evidence Reviewer: initial review blocked on a
+  stored-manifest subset-delivery gap where `DELIVERED` could be emitted after
+  streaming only rule bytes. The blocker was remediated by always retaining the
+  selected manifest artifact in delivery plans and streaming/verifying it before
+  `DELIVERED`. Final re-review returned `PASS`.
+- Quality / ArchUnit Reviewer: initial review blocked on forbidden service
+  package globs that missed the actual Gateway and Ingestion package names.
+  The blocker was remediated by using `services.gateway..` and
+  `services.ingestion..`, with focused ArchUnit and full-gate verification.
+  Final re-review returned `PASS`.
+
+### Slice 10 CP_RECORD
+
+```text
+workflowVersion=microservices-btm-pipeline-20260517-v2
+sliceId=10
+sliceTitle=BTM gRPC File Delivery
+responsibleAgent=Workflow Executor with Senior gRPC Proto Specialist, Analytics Persistence / Evidence Reviewer and Quality / ArchUnit Reviewer
+changedFiles=services/btm-generation-service/**; services/analysis-store-service/src/test/java/de/burger/forensics/analytics/services/analysisstore/adapter/in/grpc/AnalysisJobGrpcEndpointTest.java; docs/workflow/execution-report.md
+qualityGateCommands=./gradlew --no-daemon --max-workers=1 :services:btm-generation-service:test --tests "de.burger.forensics.analytics.services.btmgeneration.adapter.in.grpc.BtmArtifactDeliveryGrpcEndpointTest" --tests "de.burger.forensics.analytics.services.btmgeneration.application.BtmArtifactDeliveryApplicationServiceTest" --tests "de.burger.forensics.analytics.services.btmgeneration.adapter.out.filesystem.FileSystemBtmArtifactReaderTest" --tests "de.burger.forensics.analytics.services.btmgeneration.quality.BtmGenerationServiceArchitectureTest" --dependency-verification strict --console=plain --stacktrace; ./gradlew --no-daemon --max-workers=1 :services:btm-generation-service:test --tests "de.burger.forensics.analytics.services.btmgeneration.adapter.in.grpc.BtmGenerationGrpcEndpointTest" --tests "de.burger.forensics.analytics.services.btmgeneration.application.BtmGenerationApplicationServiceTest" --tests "de.burger.forensics.analytics.services.btmgeneration.domain.BtmGenerationDomainTest" --dependency-verification strict --console=plain --stacktrace; ./gradlew --no-daemon --max-workers=1 :services:analysis-store-service:test --tests "de.burger.forensics.analytics.services.analysisstore.adapter.in.grpc.AnalysisJobGrpcEndpointTest" --dependency-verification strict --console=plain --stacktrace; ./gradlew --no-daemon --max-workers=1 :services:btm-generation-service:test :services:analysis-store-service:test :services:btm-generation-service:jacocoTestReport :services:btm-generation-service:jacocoTestCoverageVerification :services:analysis-store-service:jacocoTestReport :services:analysis-store-service:jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace; ./gradlew --no-daemon --max-workers=1 clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace; git diff --check; git diff --cached --check
+qualityGateResult=PASS
+commitHash=pending
+pushResult=pending
+rollbackReference=d61e4c6644e379fba1567ae63d53032d380287ba
+arc42Updated=not changed in this slice
+adrUpdated=not required in this slice
+```
+
+### Slice 10 D8 Decision
+
+Slice 10 is `D8_PASS`. Targeted BTM delivery tests, BTM generation tests,
+Analysis Store artifact-registration tests, service coverage/package coverage,
+specialist reviews, `git diff --check` and the mandatory full local quality
+gate completed successfully on the final Slice 10 implementation state.
+
+After `CP_COMMIT` and `CP_PUSH`, this CP_RECORD must be updated with the actual
+checkpoint commit hash and push result.

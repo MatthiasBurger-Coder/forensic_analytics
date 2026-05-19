@@ -18,6 +18,12 @@ public final class BtmGenerationDomain {
     public static final String PRODUCER_SERVICE = "btm-generation-service";
     public static final String GENERATOR_VERSION = "btm-generation-service-0.1.0";
     public static final String DETERMINISTIC_SORT = "target_id_probe_kind_ascending";
+    public static final String BTM_RULE_ARTIFACT_TYPE = "application/vnd.forensic-analytics.btm-rules.v1+btm";
+    public static final String BTM_MANIFEST_ARTIFACT_TYPE = "application/vnd.forensic-analytics.btm-rule-manifest.v1+json";
+    public static final String BTM_DELIVERY_CONTRACT =
+        "de.burger.forensics.analytics.btmgeneration.v1.BtmArtifactDeliveryService.DownloadBtmArtifacts";
+    public static final int MAX_DELIVERY_CHUNK_BYTES = 1_048_576;
+    public static final long MAX_DELIVERY_TOTAL_BYTES = 1_073_741_824L;
     private static final Pattern WINDOWS_DRIVE_PATH = Pattern.compile("^[A-Za-z]:.*");
     private static final Set<String> SENSITIVE_ATTRIBUTE_NAMES = Set.of(
         "authorization",
@@ -59,8 +65,8 @@ public final class BtmGenerationDomain {
     }
 
     public static String requireArtifactPath(String value, String name) {
-        var text = requireText(value, name).replace('\\', '/');
-        if (isUnsafePath(text) || text.contains("://")) {
+        var text = requirePublicReference(value, name);
+        if (text.contains("://")) {
             throw new IllegalArgumentException(name + " must be an opaque artifact key or relative artifact path");
         }
         return text;
@@ -68,8 +74,17 @@ public final class BtmGenerationDomain {
 
     public static String optionalArtifactPath(String value, String name) {
         var text = optionalText(value).replace('\\', '/');
-        if (!text.isBlank() && (isUnsafePath(text) || text.contains("://"))) {
+        if (!text.isBlank() && (isUnsafePath(text) || text.contains("://") || hasUnsafePathSegment(text))) {
             throw new IllegalArgumentException(name + " must be an opaque artifact key or relative artifact path");
+        }
+        return text;
+    }
+
+    public static String requirePublicReference(String value, String name) {
+        var text = requireText(value, name).replace('\\', '/');
+        if (isUnsafePath(text) || hasUnsafePathSegment(text) || text.contains("://")
+            || text.contains("\n") || text.contains("\r")) {
+            throw new IllegalArgumentException(name + " must not be a private path, URI or unsafe public reference");
         }
         return text;
     }
@@ -103,6 +118,7 @@ public final class BtmGenerationDomain {
     public static String factsFingerprint(SourceSnapshotId sourceSnapshotId, DeliveredFacts facts) {
         return sha256("facts-v1\n"
             + sourceSnapshotId.value() + "\n"
+            + facts.targetSelection().canonical() + "\n"
             + artifactFingerprint(facts.sourceFactArtifacts()) + "\n"
             + artifactFingerprint(facts.semanticArtifacts()) + "\n"
             + facts.targets().stream().map(RuleTarget::canonical).collect(Collectors.joining("\n")));
@@ -137,6 +153,11 @@ public final class BtmGenerationDomain {
             || text.contains("//")
             || WINDOWS_DRIVE_PATH.matcher(text).matches()
             || Arrays.asList(text.split("/")).contains("..");
+    }
+
+    private static boolean hasUnsafePathSegment(String text) {
+        return Arrays.asList(text.split("/")).stream()
+            .anyMatch(part -> part.isBlank() || part.equals(".") || part.equals(".."));
     }
 
     private static void requireSafeAttribute(String key, String value) {
@@ -212,12 +233,41 @@ public final class BtmGenerationDomain {
         }
     }
 
+    public record ArtifactByteAccess(
+        String ownerService,
+        String retrievalContract,
+        String retrievalReference,
+        ArtifactByteCustody byteCustody
+    ) {
+        public ArtifactByteAccess {
+            ownerService = requireText(ownerService, "byte access owner service");
+            retrievalContract = requireText(retrievalContract, "byte access retrieval contract");
+            retrievalReference = requirePublicReference(retrievalReference, "byte access retrieval reference");
+            byteCustody = Objects.requireNonNull(byteCustody, "byte custody must not be null");
+            if (byteCustody == ArtifactByteCustody.UNKNOWN) {
+                throw new IllegalArgumentException("byte custody must be specified");
+            }
+        }
+
+        String canonical() {
+            return String.join("|", ownerService, retrievalContract, retrievalReference, byteCustody.name());
+        }
+    }
+
+    public enum ArtifactByteCustody {
+        PRODUCER_RETAINED,
+        SCOPED_OBJECT_ACCESS,
+        EXPLICIT_HANDOFF,
+        UNKNOWN
+    }
+
     public record AnalysisArtifactReference(
         ArtifactReference artifact,
         AnalysisArtifactCategory category,
         String producerService,
         String schemaVersion,
-        AnalysisCompleteness completeness
+        AnalysisCompleteness completeness,
+        ArtifactByteAccess byteAccess
     ) {
         public AnalysisArtifactReference {
             artifact = Objects.requireNonNull(artifact, "artifact must not be null");
@@ -225,10 +275,12 @@ public final class BtmGenerationDomain {
             producerService = requireText(producerService, "producer service");
             schemaVersion = requireText(schemaVersion, "artifact schema version");
             completeness = Objects.requireNonNull(completeness, "artifact completeness must not be null");
+            byteAccess = Objects.requireNonNull(byteAccess, "byte access must not be null");
         }
 
         String canonical() {
-            return artifact.canonical() + "|" + category + "|" + producerService + "|" + schemaVersion + "|" + completeness;
+            return artifact.canonical() + "|" + category + "|" + producerService + "|" + schemaVersion + "|" + completeness
+                + "|" + byteAccess.canonical();
         }
     }
 
@@ -284,13 +336,15 @@ public final class BtmGenerationDomain {
         List<AnalysisArtifactReference> sourceFactArtifacts,
         List<AnalysisArtifactReference> semanticArtifacts,
         List<RuleTarget> targets,
-        AnalysisCompleteness inputCompleteness
+        AnalysisCompleteness inputCompleteness,
+        TargetSelection targetSelection
     ) {
         public DeliveredFacts {
             sourceFactArtifacts = sortedArtifacts(sourceFactArtifacts);
             semanticArtifacts = sortedArtifacts(semanticArtifacts);
             targets = sortedTargets(targets);
             inputCompleteness = Objects.requireNonNull(inputCompleteness, "input completeness must not be null");
+            targetSelection = Objects.requireNonNull(targetSelection, "target selection must not be null");
         }
 
         private static List<AnalysisArtifactReference> sortedArtifacts(List<AnalysisArtifactReference> artifacts) {
@@ -306,6 +360,43 @@ public final class BtmGenerationDomain {
         }
     }
 
+    public record TargetSelection(
+        String selectionId,
+        String ownerService,
+        String policyVersion,
+        String selectionFingerprint,
+        AnalysisCompleteness completeness,
+        String deterministicOrder,
+        String correlationId,
+        int targetCount
+    ) {
+        public TargetSelection {
+            selectionId = requireText(selectionId, "selection id");
+            ownerService = requireText(ownerService, "selection owner service");
+            policyVersion = requireText(policyVersion, "selection policy version");
+            selectionFingerprint = requireText(selectionFingerprint, "selection fingerprint");
+            completeness = Objects.requireNonNull(completeness, "selection completeness must not be null");
+            deterministicOrder = requireText(deterministicOrder, "selection deterministic order");
+            correlationId = requireText(correlationId, "selection correlation id");
+            if (targetCount < 0) {
+                throw new IllegalArgumentException("selection target count must not be negative");
+            }
+        }
+
+        String canonical() {
+            return String.join("|",
+                selectionId,
+                ownerService,
+                policyVersion,
+                selectionFingerprint,
+                completeness.name(),
+                deterministicOrder,
+                correlationId,
+                Integer.toString(targetCount)
+            );
+        }
+    }
+
     public record RuleTarget(
         String targetId,
         String sourceFactId,
@@ -315,7 +406,12 @@ public final class BtmGenerationDomain {
         String methodName,
         String signature,
         int lineNumber,
-        ProbeKind probeKind
+        ProbeKind probeKind,
+        String sourceFactArtifactReference,
+        String semanticArtifactReference,
+        int orderIndex,
+        AnalysisCompleteness completeness,
+        String sensitivity
     ) {
         public RuleTarget {
             targetId = requireText(targetId, "target id");
@@ -326,6 +422,16 @@ public final class BtmGenerationDomain {
             methodName = optionalText(methodName);
             signature = optionalText(signature);
             probeKind = Objects.requireNonNull(probeKind, "probe kind must not be null");
+            sourceFactArtifactReference = requirePublicReference(sourceFactArtifactReference, "source fact artifact reference");
+            semanticArtifactReference = optionalText(semanticArtifactReference);
+            if (!semanticArtifactReference.isBlank()) {
+                semanticArtifactReference = requirePublicReference(semanticArtifactReference, "semantic artifact reference");
+            }
+            if (orderIndex < 0) {
+                throw new IllegalArgumentException("target order index must not be negative");
+            }
+            completeness = Objects.requireNonNull(completeness, "target completeness must not be null");
+            sensitivity = requireText(sensitivity, "target sensitivity");
         }
 
         public boolean canGenerateRule() {
@@ -347,7 +453,12 @@ public final class BtmGenerationDomain {
                 methodName,
                 signature,
                 Integer.toString(lineNumber),
-                probeKind.name()
+                probeKind.name(),
+                sourceFactArtifactReference,
+                semanticArtifactReference,
+                Integer.toString(orderIndex),
+                completeness.name(),
+                sensitivity
             );
         }
     }
@@ -454,7 +565,8 @@ public final class BtmGenerationDomain {
         List<BtmDiagnostic> diagnostics,
         BtmGenerationSummary summary,
         ReproducibilityMetadata reproducibility,
-        AnalysisCompleteness completeness
+        AnalysisCompleteness completeness,
+        TargetSelection targetSelection
     ) {
         public BtmArtifactWriteRequest {
             metadata = Objects.requireNonNull(metadata, "metadata must not be null");
@@ -464,6 +576,170 @@ public final class BtmGenerationDomain {
             summary = Objects.requireNonNull(summary, "summary must not be null");
             reproducibility = Objects.requireNonNull(reproducibility, "reproducibility metadata must not be null");
             completeness = Objects.requireNonNull(completeness, "completeness must not be null");
+            targetSelection = Objects.requireNonNull(targetSelection, "target selection must not be null");
+        }
+    }
+
+    public record BtmArtifactDeliveryMetadata(
+        String requestId,
+        String idempotencyKey,
+        String schemaVersion,
+        String correlationId,
+        AnalysisRunId analysisRunId,
+        AnalysisJobId analysisJobId,
+        Map<String, String> safeAttributes
+    ) {
+        public BtmArtifactDeliveryMetadata {
+            requestId = requireText(requestId, "request id");
+            idempotencyKey = requireText(idempotencyKey, "idempotency key");
+            schemaVersion = requireText(schemaVersion, "schema version");
+            correlationId = requireText(correlationId, "correlation id");
+            analysisRunId = Objects.requireNonNull(analysisRunId, "analysis run id must not be null");
+            analysisJobId = Objects.requireNonNull(analysisJobId, "analysis job id must not be null");
+            safeAttributes = BtmGenerationDomain.safeAttributes(safeAttributes);
+        }
+    }
+
+    public record BtmArtifactDeliveryCommand(
+        BtmArtifactDeliveryMetadata metadata,
+        int maxChunkBytes,
+        long maxTotalBytes,
+        List<String> artifactReferences,
+        List<AnalysisArtifactReference> acceptedGeneratedArtifacts
+    ) {
+        public BtmArtifactDeliveryCommand {
+            metadata = Objects.requireNonNull(metadata, "delivery metadata must not be null");
+            if (maxChunkBytes < 1 || maxChunkBytes > MAX_DELIVERY_CHUNK_BYTES) {
+                throw new IllegalArgumentException("max chunk bytes must be between 1 and " + MAX_DELIVERY_CHUNK_BYTES);
+            }
+            if (maxTotalBytes < 1 || maxTotalBytes > MAX_DELIVERY_TOTAL_BYTES) {
+                throw new IllegalArgumentException("max total bytes must be between 1 and " + MAX_DELIVERY_TOTAL_BYTES);
+            }
+            artifactReferences = List.copyOf(Objects.requireNonNull(artifactReferences, "artifact references must not be null")).stream()
+                .map(reference -> requirePublicReference(reference, "artifact reference"))
+                .toList();
+            acceptedGeneratedArtifacts = List.copyOf(Objects.requireNonNull(acceptedGeneratedArtifacts, "accepted generated artifacts must not be null"));
+            if (acceptedGeneratedArtifacts.isEmpty()) {
+                throw new IllegalArgumentException("accepted generated artifacts are required");
+            }
+        }
+    }
+
+    public enum BtmArtifactKind {
+        RULE_FILE,
+        MANIFEST
+    }
+
+    public record ReadableBtmArtifact(
+        AnalysisArtifactReference reference,
+        BtmArtifactKind kind
+    ) {
+        public ReadableBtmArtifact {
+            reference = Objects.requireNonNull(reference, "artifact reference must not be null");
+            kind = Objects.requireNonNull(kind, "artifact kind must not be null");
+        }
+    }
+
+    public record BtmArtifactDescriptor(
+        String artifactReference,
+        BtmArtifactKind artifactKind,
+        String relativePath,
+        String sha256,
+        long sizeBytes,
+        int chunkCount,
+        String contentType
+    ) {
+        public BtmArtifactDescriptor {
+            artifactReference = requirePublicReference(artifactReference, "artifact reference");
+            artifactKind = Objects.requireNonNull(artifactKind, "artifact kind must not be null");
+            relativePath = requireArtifactPath(relativePath, "artifact relative path");
+            sha256 = requireText(sha256, "artifact sha256").toLowerCase(Locale.ROOT);
+            if (!sha256.matches("[0-9a-f]{64}")) {
+                throw new IllegalArgumentException("artifact checksum must be a SHA-256 hex value");
+            }
+            if (sizeBytes < 0 || chunkCount < 0) {
+                throw new IllegalArgumentException("artifact descriptor counts must not be negative");
+            }
+            contentType = requireText(contentType, "artifact content type");
+        }
+
+        public String canonical() {
+            return String.join("|",
+                artifactReference,
+                artifactKind.name(),
+                relativePath,
+                sha256,
+                Long.toString(sizeBytes),
+                Integer.toString(chunkCount),
+                contentType
+            );
+        }
+    }
+
+    public record BtmDeliveryManifest(
+        String manifestId,
+        AnalysisRunId analysisRunId,
+        AnalysisJobId analysisJobId,
+        SourceSnapshotId sourceSnapshotId,
+        AnalysisCompleteness completeness,
+        List<BtmArtifactDescriptor> artifacts,
+        long totalSizeBytes,
+        String manifestSha256,
+        String deliveryOrder,
+        ReproducibilityMetadata reproducibility,
+        TargetSelection targetSelection
+    ) {
+        public BtmDeliveryManifest {
+            manifestId = requireText(manifestId, "delivery manifest id");
+            analysisRunId = Objects.requireNonNull(analysisRunId, "analysis run id must not be null");
+            analysisJobId = Objects.requireNonNull(analysisJobId, "analysis job id must not be null");
+            sourceSnapshotId = Objects.requireNonNull(sourceSnapshotId, "source snapshot id must not be null");
+            completeness = Objects.requireNonNull(completeness, "delivery completeness must not be null");
+            artifacts = List.copyOf(Objects.requireNonNull(artifacts, "delivery descriptors must not be null"));
+            if (totalSizeBytes < 0) {
+                throw new IllegalArgumentException("delivery total size must not be negative");
+            }
+            manifestSha256 = requireText(manifestSha256, "delivery manifest sha256").toLowerCase(Locale.ROOT);
+            if (!manifestSha256.matches("[0-9a-f]{64}")) {
+                throw new IllegalArgumentException("delivery manifest checksum must be a SHA-256 hex value");
+            }
+            deliveryOrder = requireText(deliveryOrder, "delivery order");
+            reproducibility = Objects.requireNonNull(reproducibility, "reproducibility metadata must not be null");
+            targetSelection = Objects.requireNonNull(targetSelection, "target selection must not be null");
+        }
+    }
+
+    public record StoredBtmArtifactManifest(
+        AnalysisRunId analysisRunId,
+        AnalysisJobId analysisJobId,
+        SourceSnapshotId sourceSnapshotId,
+        AnalysisCompleteness completeness,
+        List<ArtifactReference> generatedArtifacts,
+        ReproducibilityMetadata reproducibility,
+        TargetSelection targetSelection
+    ) {
+        public StoredBtmArtifactManifest {
+            analysisRunId = Objects.requireNonNull(analysisRunId, "analysis run id must not be null");
+            analysisJobId = Objects.requireNonNull(analysisJobId, "analysis job id must not be null");
+            sourceSnapshotId = Objects.requireNonNull(sourceSnapshotId, "source snapshot id must not be null");
+            completeness = Objects.requireNonNull(completeness, "stored manifest completeness must not be null");
+            generatedArtifacts = List.copyOf(Objects.requireNonNull(generatedArtifacts, "stored manifest artifacts must not be null"));
+            reproducibility = Objects.requireNonNull(reproducibility, "reproducibility metadata must not be null");
+            targetSelection = Objects.requireNonNull(targetSelection, "target selection must not be null");
+        }
+    }
+
+    public record BtmArtifactDeliveryPlan(
+        BtmDeliveryManifest manifest,
+        List<ReadableBtmArtifact> artifacts,
+        int chunkBytes
+    ) {
+        public BtmArtifactDeliveryPlan {
+            manifest = Objects.requireNonNull(manifest, "delivery manifest must not be null");
+            artifacts = List.copyOf(Objects.requireNonNull(artifacts, "delivery artifacts must not be null"));
+            if (chunkBytes < 1 || chunkBytes > MAX_DELIVERY_CHUNK_BYTES) {
+                throw new IllegalArgumentException("delivery chunk bytes are outside the supported range");
+            }
         }
     }
 
@@ -483,7 +759,8 @@ public final class BtmGenerationDomain {
         List<GeneratedRule> generatedRules,
         BtmGenerationSummary summary,
         ReproducibilityMetadata reproducibility,
-        List<BtmDiagnostic> diagnostics
+        List<BtmDiagnostic> diagnostics,
+        TargetSelection targetSelection
     ) {
         public GenerateBtmRulesResult {
             metadata = Objects.requireNonNull(metadata, "metadata must not be null");
@@ -493,6 +770,7 @@ public final class BtmGenerationDomain {
             summary = Objects.requireNonNull(summary, "summary must not be null");
             reproducibility = Objects.requireNonNull(reproducibility, "reproducibility metadata must not be null");
             diagnostics = List.copyOf(Objects.requireNonNull(diagnostics, "diagnostics must not be null"));
+            targetSelection = Objects.requireNonNull(targetSelection, "target selection must not be null");
         }
     }
 }
