@@ -55,7 +55,8 @@ Verified from `settings.gradle.kts`:
 
 Seven service-specific Gradle projects under `services/**` are now registered.
 Graph-replay and report-generation remain README-only planned service roots.
-The build-artifact worker is planned by workflow v2 and has no service root yet.
+The build-artifact worker is planned by workflow v2 and retained by workflow
+v3; it has no service root yet.
 
 ## Quality Commands
 

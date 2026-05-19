@@ -59,6 +59,7 @@ Forbidden:
 | LLM-generated output | `report-generation-service` if live generation is later approved | Gateway/report APIs | Label as generated analysis or hypothesis, never evidence |
 | Frontend state | `frontend-web-app` | Browser-local only | Frontend owns no forensic evidence |
 | Gateway request, status and delivery facade state | `forensic-gateway-service` only for public facade state | Gateway APIs | Gateway must not own canonical facts, worker orchestration state or artifact bytes |
+| Repository-to-BTM orchestration state | `analysis-store-service` unless Slice 11 records another reviewed owner | Gateway submits through the approved owner API; worker services receive explicit jobs or contracts | Gateway remains facade-only; orchestration state must preserve correlation, idempotency, completeness and retry provenance |
 
 ## Store Types
 

@@ -1,5 +1,25 @@
 # Workflow History
 
+## microservices-btm-pipeline-20260517-v3
+
+| Field | Value |
+|---|---|
+| Created | 2026-05-19 |
+| Branch | `feature/workflow-microservices-btm-pipeline-20260517` |
+| Strand | workflow-governance refinement inside `workflow execute` stop handling |
+| Status | Active. V3 inserts Slice 11 for the Repository-to-BTM orchestration contract and artifact-readiness bridge before the end-to-end orchestration slice can resume. |
+| Source request | Continue safely by inserting the prerequisite workflow-refinement slice identified after the blocked Slice 11 review. |
+
+V3 preserves completed v2 Slice 00 through Slice 10 checkpoints. Downstream
+slices are renumbered by one: v2 Slice 11 becomes v3 Slice 12, and the final
+quality gate becomes v3 Slice 18.
+
+The v3 prerequisite closes the Gateway public API security model, the
+orchestration owner API, Java AST artifact byte-access preservation, explicit
+Joern incomplete handling for unavailable package descriptors and deterministic
+local readiness gates before the repository-to-BTM end-to-end implementation
+continues.
+
 ## microservices-btm-pipeline-20260517-v2
 
 | Field | Value |

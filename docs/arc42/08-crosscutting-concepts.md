@@ -90,6 +90,14 @@ source/build packages. It rejects private Repository Analysis workspace IDs,
 absolute paths, `file:` URIs, traversal, symlinks, hardlinks, device files,
 duplicate normalized paths and quota overruns before Docker mounting.
 
+The v3 repository-to-BTM readiness bridge requires Java AST source-fact
+artifacts to carry valid `ArtifactByteAccess` before Analysis Store accepts
+them for target planning. If Repository Analysis cannot provide available and
+complete source/build package descriptors, Joern must be skipped with explicit
+incomplete diagnostics instead of receiving invalid package metadata. Public
+Gateway diagnostics must be allow-listed or redacted before downstream messages
+cross the external API boundary.
+
 ## 8.7 Replay Uncertainty
 
 The replay must explicitly show missing, incomplete or uncertain event chains.

@@ -92,7 +92,7 @@ graph-replay and report-generation runtime paths are implemented and verified:
 ```text
 Frontend / CLI / external client
   -> Gateway
-  -> Ingestion or analysis job APIs
+  -> Analysis Store orchestration owner API
   -> Repository Analysis
   -> Source Snapshot And Build Artifact Resolution
   -> Java AST Analysis
@@ -108,6 +108,25 @@ Plugin, scanner and runtime evidence enters through the ingestion service.
 Canonical evidence and one-writer analysis state belong to the analysis store.
 Graph, replay, reports and LLM packages are projections or generated artifacts
 that must remain traceable to owner evidence APIs.
+
+Gateway remains a public facade in this flow. Repository-to-BTM worker
+dispatch, retry and job-graph state must be owned by Analysis Store or another
+explicitly reviewed orchestration owner before the end-to-end slice resumes.
+Gateway must not sequence worker business logic directly.
+
+The repository-to-BTM delivery path must be verified as:
+
+```text
+Plugin / external client
+  -> Gateway HTTP repository-to-BTM request
+  -> Analysis Store orchestration owner API
+  -> Repository Analysis source snapshot
+  -> Java AST and optional Joern worker outputs
+  -> Analysis Store accepted metadata and target selection
+  -> BTM Generation
+  -> Gateway public BTM delivery facade
+  -> Plugin / external client receives completed BTM files or unavailable state
+```
 
 Repository Analysis resolves branch input to a concrete commit SHA before
 analysis handoff. The source snapshot may reference a complete build-output

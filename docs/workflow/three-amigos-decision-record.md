@@ -156,3 +156,20 @@ preflight starts clean.
 ## Final Decision
 
 `READY_FOR_WORKFLOW`
+
+## v3 Refinement Decision
+
+During `workflow execute`, the former v2 Slice 11 end-to-end
+repository-to-BTM orchestration review returned `REQUIRES_REFINEMENT`. The
+Root Architect escalation stopped implementation before product changes because
+Gateway would otherwise have to sequence worker business logic, public Gateway
+contracts still exposed workspace concepts, Java AST artifact byte access was
+not preserved and the orchestration owner API was not verified.
+
+Decision: insert v3 Slice 11,
+`Repository-to-BTM orchestration contract and artifact-readiness bridge`, before
+end-to-end orchestration resumes. The accepted direction remains EPIC-aligned:
+Gateway stays facade-only, Analysis Store is the preferred orchestration owner
+unless Slice 11 records another reviewed owner, incomplete Joern/build-artifact
+inputs remain explicit diagnostics, and deterministic local readiness tests
+must not require external services or credentials.

@@ -3,13 +3,14 @@
 ## Status
 
 `workflow execute` started. Slices 00, 01, 02, 03, 04, 05 and 06 checkpoints
-completed and pushed under `microservices-btm-pipeline-20260517-v1`. The v1
-Slice 07 Joern Worker Handoff stopped before implementation because the
-required Repository Analysis to Joern transfer and materialization contract was
-not verified, and artifact byte-access metadata was not preserved by the
-involved service mappings. `microservices-btm-pipeline-20260517-v2` is being
-introduced to add the missing Repository Snapshot and Build Artifact Worker
-Contract slice before Joern handoff execution resumes.
+completed and pushed under `microservices-btm-pipeline-20260517-v1`. Slices
+07, 08, 09 and 10 completed and pushed under
+`microservices-btm-pipeline-20260517-v2`. The former v2 Slice 11 end-to-end
+orchestration review stopped before implementation because the required
+orchestration owner API, Gateway public API security cleanup and artifact
+readiness bridge were not verified. `microservices-btm-pipeline-20260517-v3`
+is being introduced to add the missing Repository-to-BTM orchestration contract
+and artifact-readiness bridge before end-to-end orchestration resumes.
 
 ## Branch
 
@@ -888,3 +889,79 @@ Analysis Store artifact-registration tests, service coverage/package coverage,
 specialist reviews, `git diff --check`, `git diff --cached --check`, the
 mandatory full local quality gate and the slice checkpoint push completed
 successfully on the final Slice 10 implementation state.
+
+## Former v2 Slice 11 Read-Only Review - Repository To BTM Orchestration
+
+The former v2 Slice 11 execution was stopped before implementation. The configured
+read-only reviews found that the previous end-to-end orchestration slice could
+not proceed safely within its write scope without first refining contracts,
+ownership and artifact-readiness preconditions.
+
+Verified blockers:
+
+- Gateway public API and OpenAPI still expose workspace concepts that conflict
+  with the repository-to-BTM facade rule unless reclassified or removed from
+  the active public model.
+- Gateway currently calls Repository Analysis and returns
+  `BTM_DELIVERY_NOT_READY`; it does not have a verified public BTM delivery
+  facade or owner-API decision for delivery delegation.
+- Analysis Store owns job lifecycle and accepted metadata, but it does not yet
+  expose a repository-to-BTM orchestration owner API or worker-dispatch graph.
+- Java AST returns source-fact artifact metadata without the `ArtifactByteAccess`
+  needed by Analysis Store artifact registration.
+- Repository Analysis package descriptors may remain `PENDING`, while Joern
+  requires available and complete source/build package descriptors before
+  materialization.
+- Letting Gateway sequence worker services would violate the facade rule, and
+  using service implementation classes in cross-service tests would violate the
+  no shared Java implementation module rule.
+
+### Former v2 Slice 11 Reviews
+
+- Senior Swarm Orchestrator: S3D `READY` for branch, dependency and lock
+  metadata only; this did not override specialist blockers.
+- Security Reviewer: `BLOCK` on public diagnostic leakage and public Gateway
+  workspace exposure.
+- Senior gRPC Proto Specialist: `BLOCK` on missing Gateway BTM delivery facade
+  wiring, missing orchestration path, incomplete build-artifact-worker contract
+  and Java AST byte-access gap.
+- Senior Java Backend Reviewer: `BLOCK` because the safe path requires missing
+  owner contracts first; otherwise Gateway would have to orchestrate workers or
+  tests would import service implementations.
+- Senior System Architect / Root Architect escalation: `STOP`; Slice 11 cannot
+  proceed within the previous write scope without contract/workflow refinement.
+- Senior Requirement Engineer escalation: `REQUIRES_REFINEMENT`; insert a
+  prerequisite Repository-to-BTM orchestration contract and artifact-readiness
+  bridge before end-to-end implementation resumes.
+
+### Former v2 Slice 11 D8 Decision
+
+Slice 11 is `D8_BLOCKED_REQUIRES_REFINEMENT`. No product files were changed.
+The workflow package was regenerated as
+`microservices-btm-pipeline-20260517-v3` to insert the new prerequisite Slice
+11 and renumber the former end-to-end orchestration slice to Slice 12.
+
+## Workflow Governance Update v3
+
+The workflow package now inserts the new Slice 11
+Repository-to-BTM orchestration contract and artifact-readiness bridge. The
+completed v2 Slice 00 through Slice 10 checkpoints remain valid. The former
+end-to-end orchestration slice is now v3 Slice 12, and the final quality gate
+is now v3 Slice 18.
+
+### Workflow Governance Update v3 CP_RECORD
+
+```text
+workflowVersion=microservices-btm-pipeline-20260517-v3
+sliceId=workflow-governance-update-v3
+sliceTitle=Repository-to-BTM orchestration contract and artifact-readiness bridge workflow refinement
+responsibleAgent=Workflow Executor with Senior Workflow Architect and Documentation Reviewer
+changedFiles=docs/workflow/**; docs/architecture/**; docs/arc42/**
+qualityGateCommands=git status --short --branch; git diff --stat; git diff --name-status; git diff --check; rg -n "project\\(" services/*/build.gradle.kts; cross-service implementation import scan; rg -n "[f]ile:/|/(mnt|home)/|(^|[^A-Za-z])[A-Za-z]:[\\/]" contracts docs/workflow docs/architecture --glob "!docs/workflow/quality-and-leakage-gates.md"; rg -n "(?i)(api[_-]?key|private[_-]?key|bearer [A-Za-z0-9]|password\\s*[:=]|token\\s*[:=]|secret\\s*[:=])" docs/workflow docs/architecture --glob "!docs/workflow/quality-and-leakage-gates.md"
+qualityGateResult=PASS
+commitHash=pending
+pushResult=pending
+rollbackReference=02d06f7d484ff4ac79e0206f3f2bea31ab2e5fe5
+arc42Updated=docs/arc42/05-building-block-view.md; docs/arc42/06-runtime-view.md; docs/arc42/08-crosscutting-concepts.md
+adrUpdated=not required; ADR-0017 and ADR-0018 remain valid because Slice 11 keeps Analysis Store as preferred orchestration owner and Gateway facade-only
+```

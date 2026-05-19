@@ -13,13 +13,14 @@ flowchart TD
   S08["Slice 08: Joern worker handoff"]
   S09["Slice 09: instrumentation target planning"]
   S10["Slice 10: BTM gRPC file delivery"]
-  S11["Slice 11: end-to-end repository-to-BTM orchestration"]
-  S12["Slice 12: runtime readiness and local service landscape"]
-  S13["Slice 13: graph replay and report service decision"]
-  S14["Slice 14: frontend and CLI Gateway integration"]
-  S15["Slice 15: retire or isolate replaced monolith paths"]
-  S16["Slice 16: remove obsolete shared implementation modules"]
-  S17["Slice 17: full quality gate and migration acceptance"]
+  S11["Slice 11: orchestration contract and artifact-readiness bridge"]
+  S12["Slice 12: end-to-end repository-to-BTM orchestration"]
+  S13["Slice 13: runtime readiness and local service landscape"]
+  S14["Slice 14: graph replay and report service decision"]
+  S15["Slice 15: frontend and CLI Gateway integration"]
+  S16["Slice 16: retire or isolate replaced monolith paths"]
+  S17["Slice 17: remove obsolete shared implementation modules"]
+  S18["Slice 18: full quality gate and migration acceptance"]
 
   S00 --> S01 --> S02
   S02 --> S03
@@ -34,7 +35,8 @@ flowchart TD
   S08 --> S09
   S03 --> S10
   S09 --> S10
-  S04 --> S11
+  S02 --> S11
+  S03 --> S11
   S05 --> S11
   S06 --> S11
   S07 --> S11
@@ -42,12 +44,13 @@ flowchart TD
   S09 --> S11
   S10 --> S11
   S11 --> S12
-  S11 --> S13
-  S11 --> S14
+  S12 --> S13
+  S12 --> S14
   S12 --> S15
-  S13 --> S15
-  S14 --> S15
-  S15 --> S16 --> S17
+  S13 --> S16
+  S14 --> S16
+  S15 --> S16
+  S16 --> S17 --> S18
 ```
 
 ## Parallelization Notes
@@ -61,11 +64,16 @@ flowchart TD
 - Slice 08 waits for Slice 07 and must not receive Repository Analysis private
   workspace identifiers.
 - Slice 10 waits for artifact ownership and target planning.
-- Slice 12 waits for Gateway behavior from Slice 11 and proves local runtime
+- Slice 11 closes the orchestration owner, Gateway public API security,
+  Java AST byte-access and deterministic readiness preconditions found during
+  the blocked end-to-end review.
+- Slice 12 waits for Slice 11 and implements the end-to-end owner-API
+  orchestration path.
+- Slice 13 waits for Gateway behavior from Slice 12 and proves local runtime
   evidence for the implemented service path.
-- Slice 13 waits for Slice 11 and either creates graph/report roots or records
+- Slice 14 waits for Slice 12 and either creates graph/report roots or records
   explicit deferral.
-- Slice 14 waits for Slice 11 and verifies frontend/CLI calls through
+- Slice 15 waits for Slice 12 and verifies frontend/CLI calls through
   Gateway/public APIs only.
 - Module retirement and removal are serial and late by design.
 - Checkpoint commits and pushes are not a separate terminal slice. They run

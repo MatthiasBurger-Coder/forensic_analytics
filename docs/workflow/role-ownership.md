@@ -12,7 +12,7 @@
 | Analysis Store and artifact ownership | Senior Analysis Storage Architect | Data Ownership and Persistence Steward |
 | Joern CPG analysis | Senior Joern CPG Specialist | Joern Semantic Analysis reviewer |
 | BTM generation | Senior Java Backend Developer | gRPC Proto Specialist, Quality reviewer |
-| Gateway and orchestration | Senior Java Backend Developer | Senior System Architect |
+| Gateway facade and orchestration owner API | Senior System Architect | Contract-First API Steward, Senior Java Backend Developer |
 | Frontend/API integration | Senior React Frontend Developer | Senior UX Designer |
 | Docker and deployment | Senior DevOps Engineer | Microservice Runtime Readiness Expert |
 | Testing and quality gates | Senior Tester | Quality Gate Orchestrator |
@@ -46,10 +46,11 @@
 | 08 | Contract-First API Steward, Senior gRPC Proto Specialist, Senior Joern CPG Specialist, Joern Semantics reviewer, Senior Tester |
 | 09 | Senior System Architect, Senior Java Backend, Evidence integrity review |
 | 10 | Senior gRPC Proto Specialist, Senior Java Backend, BTM determinism tests |
-| 11 | Senior Swarm Orchestrator, Senior Java Backend, Senior Tester |
-| 12 | Senior DevOps, Microservice Runtime Readiness, Security review |
-| 13 | Senior System Architect, Replay/Graph/LLM reviewer |
-| 14 | Senior React Frontend, Senior UX Designer, frontend test owner |
-| 15 | Senior System Architect, Senior Java Backend, Release governance |
-| 16 | Senior DevOps, Build Gradle, Architecture validation |
-| 17 | Senior Tester, Quality Gate Orchestrator, Documentation reviewer |
+| 11 | Senior System Architect, Contract-First API Steward, Senior gRPC Proto Specialist, Security Sandbox Engineer, Senior Java Backend, Senior Tester |
+| 12 | Senior Swarm Orchestrator, Senior Java Backend, Senior Tester |
+| 13 | Senior DevOps, Microservice Runtime Readiness, Security review |
+| 14 | Senior System Architect, Replay/Graph/LLM reviewer |
+| 15 | Senior React Frontend, Senior UX Designer, frontend test owner |
+| 16 | Senior System Architect, Senior Java Backend, Release governance |
+| 17 | Senior DevOps, Build Gradle, Architecture validation |
+| 18 | Senior Tester, Quality Gate Orchestrator, Documentation reviewer |

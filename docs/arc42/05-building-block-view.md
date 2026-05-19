@@ -147,6 +147,10 @@ is claimed. Service communication is limited to REST/OpenAPI, gRPC/protobuf or
 approved event contracts. Shared Java implementation modules between
 independently deployable services are forbidden.
 
+Repository-to-BTM worker-dispatch and job-graph state is planned for Analysis
+Store unless the v3 Slice 11 contract/readiness bridge records another reviewed
+owner. Gateway remains a facade and must not own worker orchestration logic.
+
 The build-artifact worker is a planned byte-owner service for complete
 build-output packages. It does not own Repository Analysis workspaces,
 canonical Analysis Store facts or Joern execution. Artifactory and Jenkins are

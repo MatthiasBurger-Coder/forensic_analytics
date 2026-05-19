@@ -8,6 +8,13 @@ This document maps current modular-monolith evidence to target service
 ownership candidates. It does not move production code, create build projects,
 create service implementations or claim runtime readiness.
 
+Workflow v3 inserts a Repository-to-BTM orchestration contract and
+artifact-readiness bridge before end-to-end routing. That bridge must assign
+the orchestration owner API, keep Gateway facade-only, preserve Java AST
+`ArtifactByteAccess`, define public Gateway diagnostic redaction and represent
+unavailable Joern/build-artifact inputs as explicit incomplete diagnostics
+before any monolith runtime path can be retired on that basis.
+
 ## Mapping
 
 | Target Service | Current Source Evidence | Current Coupling | Planned Migration Path | Required Contract First | Data Owner | Forbidden Moves | Verification Needed |
@@ -35,13 +42,13 @@ logic or register service builds.
 
 | Current Module | Target Owner / Decision |
 |---|---|
-| `forensic-analytics-domain` | Split into service-owned domain models during Slice 15/16 only after caller parity is verified; no shared domain module in target services |
+| `forensic-analytics-domain` | Split into service-owned domain models during Slice 16/17 only after caller parity is verified; no shared domain module in target services |
 | `forensic-analytics-application` | Split by service use case owner during service migration; Analysis Store owns canonical jobs/facts, Repository Analysis owns checkout, AST/Joern/BTM services own worker behavior |
 | `forensic-analytics-engine` | Retire or isolate after Gateway, Analysis Store and worker-service orchestration parity exists |
 | `forensic-analytics-logging` | Replace with service-local logging/diagnostic configuration; no shared runtime logging module between services |
 | `forensic-analytics-observability` | Replace with service-local correlation and diagnostics contracts/configuration; no shared observability implementation module between services |
-| `forensic-analytics-cli` | Gateway/public API client adapter after Slice 14 if CLI remains in repository scope |
-| `forensic-analytics-testbed` | Retain as monolith test evidence until Slice 15/16 decides parity or retirement; do not share as service fixture module |
+| `forensic-analytics-cli` | Gateway/public API client adapter after Slice 15 if CLI remains in repository scope |
+| `forensic-analytics-testbed` | Retain as monolith test evidence until Slice 16/17 decides parity or retirement; do not share as service fixture module |
 | `forensic-analytics-ingestion-request` | Map request-import behavior to Gateway or Ingestion contract path after Slice 02 clarifies public submission semantics |
 | `forensic-analytics-bootstrap` | Retire after service runtime path and deployment readiness are verified |
 | `forensic-analytics-boot-app` | Retire after implemented services cover the accepted runtime path and rollback evidence exists |

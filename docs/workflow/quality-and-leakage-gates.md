@@ -99,6 +99,37 @@ contract-test command and execute it before claiming readiness.
 `docs/contracts/contract-test-plan.md` records that service-level contract test
 tasks are not yet generally available.
 
+## Repository-To-BTM Orchestration Readiness Gates
+
+Use for the Slice 11 orchestration contract and artifact-readiness bridge:
+
+```bash
+./gradlew :services:forensic-gateway-service:generateProto :services:analysis-store-service:generateProto :services:java-ast-analysis-service:generateProto --dependency-verification strict --console=plain --stacktrace
+./gradlew :services:forensic-gateway-service:test :services:analysis-store-service:test :services:java-ast-analysis-service:test --dependency-verification strict --console=plain --stacktrace
+./gradlew :forensic-analytics-rest:test --tests '*GatewayOpenApiContractTest' --dependency-verification strict --console=plain --stacktrace
+```
+
+When Slice 11 changes BTM delivery or Joern contract mappings, include the
+affected service tests in the same readiness gate before claiming the bridge is
+ready for end-to-end orchestration.
+
+Slice 11 readiness tests must cover:
+
+- Gateway public diagnostics redact or allow-list downstream messages so local
+  paths, workspace IDs, raw command output, secrets, token assignments and
+  `file:` references do not reach public HTTP or gRPC responses;
+- Gateway public OpenAPI no longer presents Repository Analysis private
+  workspace IDs or paths as the active repository-to-BTM API model;
+- Analysis Store or another explicitly approved owner owns repository-to-BTM
+  orchestration state and worker dispatch decisions;
+- Java AST source-fact artifacts preserve valid `ArtifactByteAccess` through
+  service-local gRPC mapping and Analysis Store registration;
+- Joern receives only available and complete source/build package descriptors,
+  or the readiness path returns explicit incomplete diagnostics and skips Joern;
+- the deterministic local readiness command uses fakes, in-process gRPC or
+  local fixtures and does not require external network services, Jenkins,
+  Artifactory, Docker or credentials by default.
+
 ## Frontend Gate
 
 After frontend API-adapter changes in `forensic-ui`, run:
