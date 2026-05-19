@@ -959,8 +959,8 @@ responsibleAgent=Workflow Executor with Senior Workflow Architect and Documentat
 changedFiles=docs/workflow/**; docs/architecture/**; docs/arc42/**
 qualityGateCommands=git status --short --branch; git diff --stat; git diff --name-status; git diff --check; rg -n "project\\(" services/*/build.gradle.kts; cross-service implementation import scan; rg -n "[f]ile:/|/(mnt|home)/|(^|[^A-Za-z])[A-Za-z]:[\\/]" contracts docs/workflow docs/architecture --glob "!docs/workflow/quality-and-leakage-gates.md"; rg -n "(?i)(api[_-]?key|private[_-]?key|bearer [A-Za-z0-9]|password\\s*[:=]|token\\s*[:=]|secret\\s*[:=])" docs/workflow docs/architecture --glob "!docs/workflow/quality-and-leakage-gates.md"
 qualityGateResult=PASS
-commitHash=pending
-pushResult=pending
+commitHash=a57d7eb60564c80329f7b0ecdf4113718431638d
+pushResult=PUB_DONE to origin/feature/workflow-microservices-btm-pipeline-20260517
 rollbackReference=02d06f7d484ff4ac79e0206f3f2bea31ab2e5fe5
 arc42Updated=docs/arc42/05-building-block-view.md; docs/arc42/06-runtime-view.md; docs/arc42/08-crosscutting-concepts.md
 adrUpdated=not required; ADR-0017 and ADR-0018 remain valid because Slice 11 keeps Analysis Store as preferred orchestration owner and Gateway facade-only
