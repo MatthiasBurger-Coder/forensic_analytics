@@ -874,8 +874,8 @@ responsibleAgent=Workflow Executor with Senior gRPC Proto Specialist, Analytics 
 changedFiles=services/btm-generation-service/**; services/analysis-store-service/src/test/java/de/burger/forensics/analytics/services/analysisstore/adapter/in/grpc/AnalysisJobGrpcEndpointTest.java; docs/workflow/execution-report.md
 qualityGateCommands=./gradlew --no-daemon --max-workers=1 :services:btm-generation-service:test --tests "de.burger.forensics.analytics.services.btmgeneration.adapter.in.grpc.BtmArtifactDeliveryGrpcEndpointTest" --tests "de.burger.forensics.analytics.services.btmgeneration.application.BtmArtifactDeliveryApplicationServiceTest" --tests "de.burger.forensics.analytics.services.btmgeneration.adapter.out.filesystem.FileSystemBtmArtifactReaderTest" --tests "de.burger.forensics.analytics.services.btmgeneration.quality.BtmGenerationServiceArchitectureTest" --dependency-verification strict --console=plain --stacktrace; ./gradlew --no-daemon --max-workers=1 :services:btm-generation-service:test --tests "de.burger.forensics.analytics.services.btmgeneration.adapter.in.grpc.BtmGenerationGrpcEndpointTest" --tests "de.burger.forensics.analytics.services.btmgeneration.application.BtmGenerationApplicationServiceTest" --tests "de.burger.forensics.analytics.services.btmgeneration.domain.BtmGenerationDomainTest" --dependency-verification strict --console=plain --stacktrace; ./gradlew --no-daemon --max-workers=1 :services:analysis-store-service:test --tests "de.burger.forensics.analytics.services.analysisstore.adapter.in.grpc.AnalysisJobGrpcEndpointTest" --dependency-verification strict --console=plain --stacktrace; ./gradlew --no-daemon --max-workers=1 :services:btm-generation-service:test :services:analysis-store-service:test :services:btm-generation-service:jacocoTestReport :services:btm-generation-service:jacocoTestCoverageVerification :services:analysis-store-service:jacocoTestReport :services:analysis-store-service:jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace; ./gradlew --no-daemon --max-workers=1 clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace; git diff --check; git diff --cached --check
 qualityGateResult=PASS
-commitHash=pending
-pushResult=pending
+commitHash=149374ecc784b7b14873fe4e1a8969f6d6ed1abe
+pushResult=PUB_DONE to origin/feature/workflow-microservices-btm-pipeline-20260517
 rollbackReference=d61e4c6644e379fba1567ae63d53032d380287ba
 arc42Updated=not changed in this slice
 adrUpdated=not required in this slice
@@ -885,8 +885,6 @@ adrUpdated=not required in this slice
 
 Slice 10 is `D8_PASS`. Targeted BTM delivery tests, BTM generation tests,
 Analysis Store artifact-registration tests, service coverage/package coverage,
-specialist reviews, `git diff --check` and the mandatory full local quality
-gate completed successfully on the final Slice 10 implementation state.
-
-After `CP_COMMIT` and `CP_PUSH`, this CP_RECORD must be updated with the actual
-checkpoint commit hash and push result.
+specialist reviews, `git diff --check`, `git diff --cached --check`, the
+mandatory full local quality gate and the slice checkpoint push completed
+successfully on the final Slice 10 implementation state.
