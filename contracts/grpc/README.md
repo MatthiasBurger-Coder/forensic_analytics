@@ -62,6 +62,14 @@ CPG/CFG/DFG artifact metadata, provenance and diagnostics; missing or partial
 artifact mappings remain explicit incompleteness. Static semantic output must
 not be presented as runtime execution evidence.
 
+`analysis-job.proto` also exposes Analysis Store-owned instrumentation target
+planning. The planning RPC accepts bounded accepted static source facts,
+accepted static artifact metadata and accepted semantic artifact references,
+then returns deterministic target snapshots with selection fingerprints,
+correlation, completeness and diagnostics. It must not fetch workspace paths,
+run JavaParser or Joern, infer runtime execution or invent semantic-node
+mappings when no verified semantic schema is available.
+
 `btm-generation.proto` is intentionally limited to generated instrumentation
 artifacts. It accepts accepted fact artifact references and bounded inline
 instrumentation targets through the service boundary. Slice 03 records Analysis

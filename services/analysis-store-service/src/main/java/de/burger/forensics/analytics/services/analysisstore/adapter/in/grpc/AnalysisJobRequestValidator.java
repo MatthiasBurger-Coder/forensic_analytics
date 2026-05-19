@@ -9,6 +9,7 @@ import de.burger.forensics.analytics.analysisjob.v1.FailAnalysisJobRequest;
 import de.burger.forensics.analytics.analysisjob.v1.GetAnalysisJobRequest;
 import de.burger.forensics.analytics.analysisjob.v1.LeaseAnalysisJobRequest;
 import de.burger.forensics.analytics.analysisjob.v1.ListAnalysisJobsRequest;
+import de.burger.forensics.analytics.analysisjob.v1.PlanInstrumentationTargetsRequest;
 import de.burger.forensics.analytics.analysisjob.v1.RegisterAnalysisArtifactsRequest;
 import de.burger.forensics.analytics.analysisjob.v1.ReportAnalysisJobProgressRequest;
 import de.burger.forensics.analytics.analysisjob.v1.SubmitAnalysisJobRequest;
@@ -97,6 +98,55 @@ final class AnalysisJobRequestValidator {
         RequiredFields.nonBlank(request.getAnalysisRunId().getValue(), "analysisRunId.value");
         RequiredFields.nonBlank(request.getJobId().getValue(), "jobId.value");
         request.getArtifactsList().forEach(this::artifact);
+    }
+
+    void validate(PlanInstrumentationTargetsRequest request) {
+        commonMutation(request.getRequestId(), request.getIdempotencyKey(), request.getCorrelationId());
+        RequiredFields.nonBlank(request.getSchemaVersion(), "schemaVersion");
+        RequiredFields.present(request.hasAnalysisRunId(), "analysisRunId");
+        RequiredFields.present(request.hasAnalysisJobId(), "analysisJobId");
+        RequiredFields.present(request.hasSourceSnapshotId(), "sourceSnapshotId");
+        RequiredFields.nonBlank(request.getAnalysisRunId().getValue(), "analysisRunId.value");
+        RequiredFields.nonBlank(request.getAnalysisJobId().getValue(), "analysisJobId.value");
+        RequiredFields.nonBlank(request.getSourceSnapshotId().getValue(), "sourceSnapshotId.value");
+        RequiredFields.nonBlank(request.getPolicyVersion(), "policyVersion");
+        RequiredFields.present(request.hasPolicy(), "policy");
+        RequiredFields.positive(request.getPolicy().getMaxTargets(), "policy.maxTargets");
+        if (request.getPolicy().getProbeKindsList().isEmpty()) {
+            throw new ValidationException("policy.probeKinds must not be empty");
+        }
+        request.getPolicy().getProbeKindsList().forEach(probeKind -> {
+            if (
+                probeKind == de.burger.forensics.analytics.analysisjob.v1.InstrumentationProbeKind.INSTRUMENTATION_PROBE_KIND_UNSPECIFIED
+                    || probeKind == de.burger.forensics.analytics.analysisjob.v1.InstrumentationProbeKind.UNRECOGNIZED
+            ) {
+                throw new ValidationException("policy.probeKinds must contain supported probe kinds");
+            }
+        });
+        RequiredFields.nonBlank(request.getPolicy().getSensitivity(), "policy.sensitivity");
+        request.getStaticFactsList().forEach(fact -> {
+            RequiredFields.nonBlank(fact.getFactId(), "staticFact.factId");
+            RequiredFields.nonBlank(fact.getFactType(), "staticFact.factType");
+            RequiredFields.present(fact.hasLocation(), "staticFact.location");
+            RequiredFields.nonBlank(fact.getLocation().getSourcePath(), "staticFact.location.sourcePath");
+            safeByteAccess(fact.getLocation().getSourcePath(), "staticFact.location.sourcePath");
+            RequiredFields.nonBlank(fact.getLocation().getFullyQualifiedClassName(), "staticFact.location.fullyQualifiedClassName");
+            RequiredFields.nonBlank(fact.getLocation().getMethodName(), "staticFact.location.methodName");
+            RequiredFields.positive(fact.getLocation().getLineNumber(), "staticFact.location.lineNumber");
+            if (fact.getLocation().getColumnNumber() < 0) {
+                throw new ValidationException("staticFact.location.columnNumber must not be negative");
+            }
+            RequiredFields.nonBlank(fact.getSignature(), "staticFact.signature");
+            RequiredFields.nonBlank(fact.getSourceFactArtifactReference(), "staticFact.sourceFactArtifactReference");
+            safeByteAccess(fact.getSourceFactArtifactReference(), "staticFact.sourceFactArtifactReference");
+            completeness(fact.getCompleteness(), "staticFact.completeness");
+        });
+        request.getSourceFactArtifactsList().forEach(this::artifact);
+        request.getSemanticArtifactsList().forEach(this::artifact);
+        request.getAttributesMap().forEach((key, value) -> {
+            RequiredFields.nonBlank(key, "attribute.key");
+            RequiredFields.nonBlank(value, "attribute.value");
+        });
     }
 
     private void commonMutation(String requestId, String idempotencyKey, String correlationId) {

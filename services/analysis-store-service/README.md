@@ -7,7 +7,8 @@ Slice 05 initial independent service implementation.
 This service currently implements the service-local `AnalysisJobService` gRPC
 contract from `contracts/grpc/analysis-job.proto`. It owns analysis job
 lifecycle state, worker leasing, progress persistence, completion/failure state
-and analysis artifact metadata registration.
+analysis artifact metadata registration and bounded instrumentation target
+selection metadata.
 
 The current persistence adapter is intentionally service-local and non-durable
 in-memory storage. Durable database selection, migrations, normalized fact
@@ -19,7 +20,7 @@ access.
 
 | Interface | Default Port | Notes |
 |---|---:|---|
-| gRPC `AnalysisJobService` | `9091` | Job submission, leasing, progress, completion, failure, listing and artifact registration |
+| gRPC `AnalysisJobService` | `9091` | Job submission, leasing, progress, completion, failure, listing, artifact registration and instrumentation target planning |
 | JDK HTTP health endpoint | `8082` | Returns readiness-style health without Spring Actuator |
 
 ## Service Boundary
@@ -41,6 +42,13 @@ attributes, progress percentage, diagnostics, failure metadata and artifact
 metadata. Concurrent in-memory lifecycle mutations are serialized by the
 application service so a dispatchable or retryable job is leased to only one
 worker at a time.
+
+Instrumentation target planning is Analysis Store-owned. It accepts bounded
+static source facts and accepted static semantic artifact references, produces
+stable target IDs, deterministic ordering, a selection fingerprint and explicit
+completeness diagnostics. Missing semantic-node mappings are reported as
+incomplete rather than invented, and generated targets are not runtime
+execution evidence.
 
 ## Verification
 

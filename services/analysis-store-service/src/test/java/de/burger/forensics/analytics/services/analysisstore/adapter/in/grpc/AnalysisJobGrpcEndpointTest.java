@@ -16,9 +16,14 @@ import de.burger.forensics.analytics.analysisjob.v1.FailAnalysisJobRequest;
 import de.burger.forensics.analytics.analysisjob.v1.GetAnalysisJobRequest;
 import de.burger.forensics.analytics.analysisjob.v1.LeaseAnalysisJobRequest;
 import de.burger.forensics.analytics.analysisjob.v1.ListAnalysisJobsRequest;
+import de.burger.forensics.analytics.analysisjob.v1.AcceptedStaticSourceFact;
+import de.burger.forensics.analytics.analysisjob.v1.InstrumentationProbeKind;
+import de.burger.forensics.analytics.analysisjob.v1.InstrumentationTargetPolicy;
+import de.burger.forensics.analytics.analysisjob.v1.PlanInstrumentationTargetsRequest;
 import de.burger.forensics.analytics.analysisjob.v1.RegisterAnalysisArtifactsRequest;
 import de.burger.forensics.analytics.analysisjob.v1.ReportAnalysisJobProgressRequest;
 import de.burger.forensics.analytics.analysisjob.v1.SourceSnapshotId;
+import de.burger.forensics.analytics.analysisjob.v1.StaticSourceLocation;
 import de.burger.forensics.analytics.analysisjob.v1.SubmitAnalysisJobRequest;
 import de.burger.forensics.analytics.services.analysisstore.adapter.out.memory.InMemoryAnalysisJobRepository;
 import de.burger.forensics.analytics.services.analysisstore.application.AnalysisJobApplicationService;
@@ -243,6 +248,86 @@ class AnalysisJobGrpcEndpointTest {
         assertEquals(0, empty.getJobsCount());
     }
 
+    @Test
+    void plansInstrumentationTargetsThroughGrpcBoundary() {
+        registerTargetPlanningArtifacts();
+
+        var response = stub.planInstrumentationTargets(targetPlanRequest().build());
+
+        assertEquals("TARGETS_PLANNED", response.getStatus().getCode());
+        assertEquals("analysis-store-service", response.getTargetSelection().getOwnerService());
+        assertEquals("target-policy-v1", response.getTargetSelection().getPolicyVersion());
+        assertEquals("correlation-1", response.getTargetSelection().getCorrelationId());
+        assertEquals(1, response.getTargetSelection().getTargetCount());
+        assertEquals(1, response.getTargetsCount());
+        assertEquals("fact-1", response.getTargets(0).getSourceFactId());
+        assertEquals("src/main/java/a/A.java", response.getTargets(0).getRelativePath());
+        assertEquals("java-ast/source-facts.json", response.getTargets(0).getSourceFactArtifactReference());
+        assertEquals(InstrumentationProbeKind.INSTRUMENTATION_PROBE_KIND_METHOD_ENTRY, response.getTargets(0).getProbeKind());
+        assertEquals("demo", response.getAttributesOrThrow("tenant"));
+    }
+
+    @Test
+    void mapsIncompleteTargetPlanningAndInvalidRequests() {
+        registerTargetPlanningArtifacts();
+
+        var incomplete = stub.planInstrumentationTargets(targetPlanRequest()
+            .setPolicy(InstrumentationTargetPolicy.newBuilder()
+                .setMaxTargets(10)
+                .addProbeKinds(InstrumentationProbeKind.INSTRUMENTATION_PROBE_KIND_METHOD_ENTRY)
+                .setRequireSemanticArtifacts(true)
+                .setSensitivity("source-code"))
+            .build());
+        var invalid = assertThrows(
+            StatusRuntimeException.class,
+            () -> stub.planInstrumentationTargets(targetPlanRequest()
+                .setPolicy(InstrumentationTargetPolicy.newBuilder()
+                    .setMaxTargets(10)
+                    .addProbeKinds(InstrumentationProbeKind.INSTRUMENTATION_PROBE_KIND_UNSPECIFIED)
+                    .setSensitivity("source-code"))
+                .build())
+        );
+        var unsafeAttributes = assertThrows(
+            StatusRuntimeException.class,
+            () -> stub.planInstrumentationTargets(targetPlanRequest()
+                .setIdempotencyKey("plan-unsafe")
+                .putAttributes("workspace", "/tmp/repository")
+                .build())
+        );
+
+        assertEquals("TARGETS_PLANNED_INCOMPLETE", incomplete.getStatus().getCode());
+        assertEquals(1, incomplete.getDiagnosticsCount());
+        assertEquals("SEMANTIC_NODE_MAPPING_UNAVAILABLE", incomplete.getDiagnostics(0).getCode());
+        assertEquals("", incomplete.getTargets(0).getSemanticNodeId());
+        assertEquals(Status.Code.INVALID_ARGUMENT, invalid.getStatus().getCode());
+        assertEquals(Status.Code.INVALID_ARGUMENT, unsafeAttributes.getStatus().getCode());
+    }
+
+    void registerTargetPlanningArtifacts() {
+        stub.submitAnalysisJob(submitRequest(
+            "submit-target-planning",
+            "job-1",
+            AnalysisWorkerKind.ANALYSIS_WORKER_KIND_BTM_GENERATION
+        ));
+        stub.registerAnalysisArtifacts(RegisterAnalysisArtifactsRequest.newBuilder()
+            .setRequestId("request-register-target-planning")
+            .setIdempotencyKey("register-target-planning")
+            .setCorrelationId("correlation-1")
+            .setAnalysisRunId(runId())
+            .setJobId(jobId("job-1"))
+            .addArtifacts(completeArtifact(
+                "java-ast/source-facts.json",
+                "source-sha",
+                AnalysisArtifactCategory.ANALYSIS_ARTIFACT_CATEGORY_STATIC
+            ))
+            .addArtifacts(completeArtifact(
+                "joern/semantic.json",
+                "semantic-sha",
+                AnalysisArtifactCategory.ANALYSIS_ARTIFACT_CATEGORY_STATIC
+            ))
+            .build());
+    }
+
     static SubmitAnalysisJobRequest submitRequest(String idempotencyKey, String jobId, AnalysisWorkerKind workerKind) {
         return SubmitAnalysisJobRequest.newBuilder()
             .setRequestId("request-" + jobId)
@@ -283,6 +368,51 @@ class AnalysisJobGrpcEndpointTest {
                 .setRetrievalContract("analysis-job.v1.ArtifactBytes")
                 .setRetrievalReference("artifacts/" + path)
                 .setByteCustody(ArtifactByteCustody.ARTIFACT_BYTE_CUSTODY_PRODUCER_RETAINED))
+            .build();
+    }
+
+    static PlanInstrumentationTargetsRequest.Builder targetPlanRequest() {
+        return PlanInstrumentationTargetsRequest.newBuilder()
+            .setRequestId("request-plan")
+            .setIdempotencyKey("plan-1")
+            .setSchemaVersion("schema-v1")
+            .setCorrelationId("correlation-1")
+            .setAnalysisRunId(runId())
+            .setAnalysisJobId(jobId("job-1"))
+            .setSourceSnapshotId(SourceSnapshotId.newBuilder().setValue("snapshot-1"))
+            .setPolicyVersion("target-policy-v1")
+            .setPolicy(InstrumentationTargetPolicy.newBuilder()
+                .setMaxTargets(10)
+                .addProbeKinds(InstrumentationProbeKind.INSTRUMENTATION_PROBE_KIND_METHOD_ENTRY)
+                .setSensitivity("source-code"))
+            .addStaticFacts(AcceptedStaticSourceFact.newBuilder()
+                .setFactId("fact-1")
+                .setFactType("java-method")
+                .setLocation(StaticSourceLocation.newBuilder()
+                    .setSourcePath("src/main/java/a/A.java")
+                    .setFullyQualifiedClassName("a.A")
+                    .setMethodName("run")
+                    .setLineNumber(12)
+                    .setColumnNumber(1))
+                .setSignature("a.A#run()")
+                .setSourceFactArtifactReference("java-ast/source-facts.json")
+                .setCompleteness(AnalysisCompleteness.ANALYSIS_COMPLETENESS_COMPLETE))
+            .addSourceFactArtifacts(completeArtifact(
+                "java-ast/source-facts.json",
+                "source-sha",
+                AnalysisArtifactCategory.ANALYSIS_ARTIFACT_CATEGORY_STATIC
+            ))
+            .addSemanticArtifacts(completeArtifact(
+                "joern/semantic.json",
+                "semantic-sha",
+                AnalysisArtifactCategory.ANALYSIS_ARTIFACT_CATEGORY_STATIC
+            ))
+            .putAttributes("tenant", "demo");
+    }
+
+    static AnalysisArtifactReference completeArtifact(String path, String sha256, AnalysisArtifactCategory category) {
+        return artifact(path, sha256, category).toBuilder()
+            .setCompleteness(AnalysisCompleteness.ANALYSIS_COMPLETENESS_COMPLETE)
             .build();
     }
 }

@@ -35,6 +35,9 @@ service AnalysisJobService {
 
   rpc RegisterAnalysisArtifacts(RegisterAnalysisArtifactsRequest)
       returns (RegisterAnalysisArtifactsResponse);
+
+  rpc PlanInstrumentationTargets(PlanInstrumentationTargetsRequest)
+      returns (PlanInstrumentationTargetsResponse);
 }
 
 message SubmitAnalysisJobRequest {
@@ -140,6 +143,97 @@ message RegisterAnalysisArtifactsRequest {
 message RegisterAnalysisArtifactsResponse {
   repeated AnalysisArtifactReference artifacts = 1;
   OperationStatus status = 2;
+}
+
+message PlanInstrumentationTargetsRequest {
+  string request_id = 1;
+  string idempotency_key = 2;
+  string schema_version = 3;
+  string correlation_id = 4;
+  AnalysisRunId analysis_run_id = 5;
+  AnalysisJobId analysis_job_id = 6;
+  SourceSnapshotId source_snapshot_id = 7;
+  string policy_version = 8;
+  InstrumentationTargetPolicy policy = 9;
+  repeated AcceptedStaticSourceFact static_facts = 10;
+  repeated AnalysisArtifactReference source_fact_artifacts = 11;
+  repeated AnalysisArtifactReference semantic_artifacts = 12;
+  map<string, string> attributes = 13;
+}
+
+message PlanInstrumentationTargetsResponse {
+  OperationStatus status = 1;
+  AnalysisRunId analysis_run_id = 2;
+  AnalysisJobId analysis_job_id = 3;
+  SourceSnapshotId source_snapshot_id = 4;
+  AnalysisCompleteness completeness = 5;
+  InstrumentationTargetSelection target_selection = 6;
+  repeated InstrumentationTarget targets = 7;
+  repeated TargetPlanningDiagnostic diagnostics = 8;
+  map<string, string> attributes = 9;
+}
+
+message InstrumentationTargetPolicy {
+  int32 max_targets = 1;
+  repeated InstrumentationProbeKind probe_kinds = 2;
+  bool require_semantic_artifacts = 3;
+  string sensitivity = 4;
+}
+
+message AcceptedStaticSourceFact {
+  string fact_id = 1;
+  string fact_type = 2;
+  StaticSourceLocation location = 3;
+  string signature = 4;
+  string source_fact_artifact_reference = 5;
+  AnalysisCompleteness completeness = 6;
+}
+
+message StaticSourceLocation {
+  string source_path = 1;
+  string fully_qualified_class_name = 2;
+  string method_name = 3;
+  int32 line_number = 4;
+  int32 column_number = 5;
+}
+
+message InstrumentationTargetSelection {
+  string selection_id = 1;
+  string owner_service = 2;
+  string policy_version = 3;
+  string selection_fingerprint = 4;
+  AnalysisCompleteness completeness = 5;
+  string deterministic_order = 6;
+  string correlation_id = 7;
+  int32 target_count = 8;
+}
+
+message InstrumentationTarget {
+  string target_id = 1;
+  string source_fact_id = 2;
+  string semantic_node_id = 3;
+  string relative_path = 4;
+  string fully_qualified_class_name = 5;
+  string method_name = 6;
+  string signature = 7;
+  int32 line_number = 8;
+  InstrumentationProbeKind probe_kind = 9;
+  string source_fact_artifact_reference = 10;
+  string semantic_artifact_reference = 11;
+  int32 order_index = 12;
+  AnalysisCompleteness completeness = 13;
+  string sensitivity = 14;
+}
+
+message TargetPlanningDiagnostic {
+  string code = 1;
+  string message = 2;
+  TargetPlanningDiagnosticSeverity severity = 3;
+  string source_snapshot_id = 4;
+  string source_fact_id = 5;
+  string artifact_path = 6;
+  bool retryable = 7;
+  bool affects_completeness = 8;
 }
 
 message AnalysisJob {
@@ -261,4 +355,18 @@ enum ArtifactByteCustody {
   ARTIFACT_BYTE_CUSTODY_PRODUCER_RETAINED = 1;
   ARTIFACT_BYTE_CUSTODY_SCOPED_OBJECT_ACCESS = 2;
   ARTIFACT_BYTE_CUSTODY_EXPLICIT_HANDOFF = 3;
+}
+
+enum InstrumentationProbeKind {
+  INSTRUMENTATION_PROBE_KIND_UNSPECIFIED = 0;
+  INSTRUMENTATION_PROBE_KIND_METHOD_ENTRY = 1;
+  INSTRUMENTATION_PROBE_KIND_METHOD_EXIT = 2;
+  INSTRUMENTATION_PROBE_KIND_THROW = 3;
+}
+
+enum TargetPlanningDiagnosticSeverity {
+  TARGET_PLANNING_DIAGNOSTIC_SEVERITY_UNSPECIFIED = 0;
+  TARGET_PLANNING_DIAGNOSTIC_SEVERITY_INFO = 1;
+  TARGET_PLANNING_DIAGNOSTIC_SEVERITY_WARNING = 2;
+  TARGET_PLANNING_DIAGNOSTIC_SEVERITY_ERROR = 3;
 }

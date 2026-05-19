@@ -754,3 +754,58 @@ passed, and the mandatory full local quality gate completed successfully.
 
 After `CP_COMMIT` and `CP_PUSH`, this CP_RECORD must be updated with the actual
 checkpoint commit hash and push result.
+
+## Slice 09 Execution - Instrumentation Target Planning
+
+Slice 09 implements Analysis Store-owned instrumentation target planning from
+accepted static source facts and registered static analysis artifacts. Target
+planning stays deterministic, rejects unregistered artifact metadata, keeps
+semantic-node mapping gaps explicit and returns target selections as planning
+metadata rather than evidence.
+
+Implemented behavior:
+
+- Analysis Store exposes `PlanInstrumentationTargets` on the analysis-job gRPC
+  contract.
+- Target planning verifies requested source and semantic artifact references
+  against the stored Analysis Store job before selecting targets.
+- Probe kinds are deduplicated and sorted before target creation so planning
+  output is stable for semantically identical policies.
+- Target-limit truncation, unsupported fact types, missing accepted artifacts,
+  incomplete artifacts and missing semantic mappings are reported as
+  completeness-affecting diagnostics.
+- Planning attributes reject secrets, URIs, traversal segments and local
+  filesystem paths before they can be echoed in responses.
+
+### Slice 09 Reviews
+
+- Senior System Architect: PASS; scope stays inside Analysis Store,
+  `contracts/grpc/**` and documentation, with no BTM production change and no
+  shared Java implementation coupling.
+- Senior Java Backend: PASS after idempotency and target-limit remediation.
+- Analytics Persistence / Evidence Reviewer: PASS after registered artifact
+  verification, probe normalization and path-safety remediation.
+
+### Slice 09 CP_RECORD
+
+```text
+workflowVersion=microservices-btm-pipeline-20260517-v2
+sliceId=09
+sliceTitle=Instrumentation Target Planning
+responsibleAgent=Workflow Executor with Senior System Architect, Senior Java Backend and Analytics Persistence / Evidence Reviewer
+changedFiles=contracts/grpc/**; services/analysis-store-service/**; docs/workflow/execution-report.md
+qualityGateCommands=./gradlew --no-daemon --max-workers=1 :services:analysis-store-service:generateProto --dependency-verification strict --console=plain --stacktrace; ./gradlew --no-daemon --max-workers=1 :services:analysis-store-service:test --dependency-verification strict --console=plain --stacktrace; ./gradlew --no-daemon --max-workers=1 :services:analysis-store-service:jacocoTestReport :services:analysis-store-service:jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace; ./gradlew --no-daemon --max-workers=1 :services:btm-generation-service:test --dependency-verification strict --console=plain --stacktrace; ./gradlew --no-daemon --max-workers=1 clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace; git diff --check; cross-service implementation import scan
+qualityGateResult=PASS
+commitHash=pending
+pushResult=pending
+rollbackReference=87eb5b939a52bb33849dcc1555551aab92af6d9f
+arc42Updated=not changed in this slice
+adrUpdated=not required in this slice
+```
+
+### Slice 09 D8 Decision
+
+Slice 09 is `D8_PASS`. Targeted Analysis Store tests, Analysis Store package
+coverage, BTM contract-consumer tests, cross-service implementation leakage
+checks, specialist reviews, `git diff --check` and the mandatory full local
+quality gate completed successfully.

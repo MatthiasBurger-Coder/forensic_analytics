@@ -9,6 +9,8 @@ import de.burger.forensics.analytics.analysisjob.v1.LeaseAnalysisJobResponse;
 import de.burger.forensics.analytics.analysisjob.v1.ListAnalysisJobsRequest;
 import de.burger.forensics.analytics.analysisjob.v1.ListAnalysisJobsResponse;
 import de.burger.forensics.analytics.analysisjob.v1.OperationStatus;
+import de.burger.forensics.analytics.analysisjob.v1.PlanInstrumentationTargetsRequest;
+import de.burger.forensics.analytics.analysisjob.v1.PlanInstrumentationTargetsResponse;
 import de.burger.forensics.analytics.analysisjob.v1.RegisterAnalysisArtifactsRequest;
 import de.burger.forensics.analytics.analysisjob.v1.RegisterAnalysisArtifactsResponse;
 import de.burger.forensics.analytics.analysisjob.v1.ReportAnalysisJobProgressRequest;
@@ -17,6 +19,7 @@ import de.burger.forensics.analytics.analysisjob.v1.SubmitAnalysisJobResponse;
 import de.burger.forensics.analytics.services.analysisstore.application.AnalysisJobApplicationService;
 import de.burger.forensics.analytics.services.analysisstore.application.AnalysisJobNotFoundException;
 import de.burger.forensics.analytics.services.analysisstore.application.IdempotencyConflictException;
+import de.burger.forensics.analytics.services.analysisstore.application.InstrumentationTargetPlanningApplicationService;
 import de.burger.forensics.analytics.services.analysisstore.domain.AnalysisArtifactReference;
 import de.burger.forensics.analytics.services.analysisstore.domain.AnalysisCompleteness;
 import de.burger.forensics.analytics.services.analysisstore.domain.AnalysisJob;
@@ -27,6 +30,7 @@ import de.burger.forensics.analytics.services.analysisstore.domain.AnalysisWorke
 import de.burger.forensics.analytics.services.analysisstore.domain.ArtifactByteAccess;
 import de.burger.forensics.analytics.services.analysisstore.domain.ArtifactByteCustody;
 import de.burger.forensics.analytics.services.analysisstore.domain.ArtifactReference;
+import de.burger.forensics.analytics.services.analysisstore.domain.InstrumentationTargetPlanningDomain;
 import de.burger.forensics.analytics.services.analysisstore.domain.SourceSnapshotId;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
@@ -152,16 +156,57 @@ public final class AnalysisJobGrpcEndpoint extends AnalysisJobServiceGrpc.Analys
         ArtifactByteCustody.EXPLICIT_HANDOFF,
         de.burger.forensics.analytics.analysisjob.v1.ArtifactByteCustody.ARTIFACT_BYTE_CUSTODY_EXPLICIT_HANDOFF
     );
+    private static final Map<de.burger.forensics.analytics.analysisjob.v1.InstrumentationProbeKind, InstrumentationTargetPlanningDomain.ProbeKind> PROBE_KINDS = Map.of(
+        de.burger.forensics.analytics.analysisjob.v1.InstrumentationProbeKind.INSTRUMENTATION_PROBE_KIND_METHOD_ENTRY,
+        InstrumentationTargetPlanningDomain.ProbeKind.METHOD_ENTRY,
+        de.burger.forensics.analytics.analysisjob.v1.InstrumentationProbeKind.INSTRUMENTATION_PROBE_KIND_METHOD_EXIT,
+        InstrumentationTargetPlanningDomain.ProbeKind.METHOD_EXIT,
+        de.burger.forensics.analytics.analysisjob.v1.InstrumentationProbeKind.INSTRUMENTATION_PROBE_KIND_THROW,
+        InstrumentationTargetPlanningDomain.ProbeKind.THROW
+    );
+    private static final Map<InstrumentationTargetPlanningDomain.ProbeKind, de.burger.forensics.analytics.analysisjob.v1.InstrumentationProbeKind> PROBE_KIND_PROTOS = Map.of(
+        InstrumentationTargetPlanningDomain.ProbeKind.METHOD_ENTRY,
+        de.burger.forensics.analytics.analysisjob.v1.InstrumentationProbeKind.INSTRUMENTATION_PROBE_KIND_METHOD_ENTRY,
+        InstrumentationTargetPlanningDomain.ProbeKind.METHOD_EXIT,
+        de.burger.forensics.analytics.analysisjob.v1.InstrumentationProbeKind.INSTRUMENTATION_PROBE_KIND_METHOD_EXIT,
+        InstrumentationTargetPlanningDomain.ProbeKind.THROW,
+        de.burger.forensics.analytics.analysisjob.v1.InstrumentationProbeKind.INSTRUMENTATION_PROBE_KIND_THROW
+    );
+    private static final Map<InstrumentationTargetPlanningDomain.DiagnosticSeverity, de.burger.forensics.analytics.analysisjob.v1.TargetPlanningDiagnosticSeverity> TARGET_DIAGNOSTIC_SEVERITIES = Map.of(
+        InstrumentationTargetPlanningDomain.DiagnosticSeverity.INFO,
+        de.burger.forensics.analytics.analysisjob.v1.TargetPlanningDiagnosticSeverity.TARGET_PLANNING_DIAGNOSTIC_SEVERITY_INFO,
+        InstrumentationTargetPlanningDomain.DiagnosticSeverity.WARNING,
+        de.burger.forensics.analytics.analysisjob.v1.TargetPlanningDiagnosticSeverity.TARGET_PLANNING_DIAGNOSTIC_SEVERITY_WARNING,
+        InstrumentationTargetPlanningDomain.DiagnosticSeverity.ERROR,
+        de.burger.forensics.analytics.analysisjob.v1.TargetPlanningDiagnosticSeverity.TARGET_PLANNING_DIAGNOSTIC_SEVERITY_ERROR
+    );
 
     private final AnalysisJobApplicationService applicationService;
+    private final InstrumentationTargetPlanningApplicationService targetPlanningService;
     private final AnalysisJobRequestValidator validator;
 
     public AnalysisJobGrpcEndpoint(AnalysisJobApplicationService applicationService) {
-        this(applicationService, new AnalysisJobRequestValidator());
+        this(
+            applicationService,
+            new InstrumentationTargetPlanningApplicationService(applicationService),
+            new AnalysisJobRequestValidator()
+        );
     }
 
-    AnalysisJobGrpcEndpoint(AnalysisJobApplicationService applicationService, AnalysisJobRequestValidator validator) {
+    public AnalysisJobGrpcEndpoint(
+        AnalysisJobApplicationService applicationService,
+        InstrumentationTargetPlanningApplicationService targetPlanningService
+    ) {
+        this(applicationService, targetPlanningService, new AnalysisJobRequestValidator());
+    }
+
+    AnalysisJobGrpcEndpoint(
+        AnalysisJobApplicationService applicationService,
+        InstrumentationTargetPlanningApplicationService targetPlanningService,
+        AnalysisJobRequestValidator validator
+    ) {
         this.applicationService = Objects.requireNonNull(applicationService, "applicationService must not be null");
+        this.targetPlanningService = Objects.requireNonNull(targetPlanningService, "targetPlanningService must not be null");
         this.validator = Objects.requireNonNull(validator, "validator must not be null");
     }
 
@@ -188,6 +233,24 @@ public final class AnalysisJobGrpcEndpoint extends AnalysisJobServiceGrpc.Analys
                 .setJob(toProto(result.job()))
                 .setStatus(status(result.status()))
                 .build());
+            responseObserver.onCompleted();
+        } catch (RuntimeException error) {
+            responseObserver.onError(toStatus(error).asRuntimeException());
+        }
+    }
+
+    @Override
+    public void planInstrumentationTargets(
+        PlanInstrumentationTargetsRequest request,
+        StreamObserver<PlanInstrumentationTargetsResponse> responseObserver
+    ) {
+        try {
+            validator.validate(request);
+            var result = targetPlanningService.plan(
+                request.getIdempotencyKey(),
+                targetPlanningCommand(request)
+            );
+            responseObserver.onNext(targetPlanningResponse(result));
             responseObserver.onCompleted();
         } catch (RuntimeException error) {
             responseObserver.onError(toStatus(error).asRuntimeException());
@@ -365,6 +428,61 @@ public final class AnalysisJobGrpcEndpoint extends AnalysisJobServiceGrpc.Analys
             .toList();
     }
 
+    private static InstrumentationTargetPlanningDomain.PlanInstrumentationTargetsCommand targetPlanningCommand(
+        PlanInstrumentationTargetsRequest request
+    ) {
+        return new InstrumentationTargetPlanningDomain.PlanInstrumentationTargetsCommand(
+            new InstrumentationTargetPlanningDomain.TargetPlanningMetadata(
+                request.getRequestId(),
+                request.getSchemaVersion(),
+                request.getCorrelationId(),
+                runId(request.getAnalysisRunId()),
+                jobId(request.getAnalysisJobId()),
+                snapshotId(request.getSourceSnapshotId()),
+                request.getAttributesMap()
+            ),
+            request.getPolicyVersion(),
+            targetPolicy(request.getPolicy()),
+            request.getStaticFactsList().stream()
+                .map(AnalysisJobGrpcEndpoint::staticFact)
+                .toList(),
+            artifacts(request.getSourceFactArtifactsList()),
+            artifacts(request.getSemanticArtifactsList())
+        );
+    }
+
+    private static InstrumentationTargetPlanningDomain.InstrumentationTargetPolicy targetPolicy(
+        de.burger.forensics.analytics.analysisjob.v1.InstrumentationTargetPolicy policy
+    ) {
+        return new InstrumentationTargetPlanningDomain.InstrumentationTargetPolicy(
+            policy.getMaxTargets(),
+            policy.getProbeKindsList().stream()
+                .map(AnalysisJobGrpcEndpoint::probeKind)
+                .toList(),
+            policy.getRequireSemanticArtifacts(),
+            policy.getSensitivity()
+        );
+    }
+
+    private static InstrumentationTargetPlanningDomain.AcceptedStaticSourceFact staticFact(
+        de.burger.forensics.analytics.analysisjob.v1.AcceptedStaticSourceFact fact
+    ) {
+        return new InstrumentationTargetPlanningDomain.AcceptedStaticSourceFact(
+            fact.getFactId(),
+            fact.getFactType(),
+            new InstrumentationTargetPlanningDomain.StaticSourceLocation(
+                fact.getLocation().getSourcePath(),
+                fact.getLocation().getFullyQualifiedClassName(),
+                fact.getLocation().getMethodName(),
+                fact.getLocation().getLineNumber(),
+                fact.getLocation().getColumnNumber()
+            ),
+            fact.getSignature(),
+            fact.getSourceFactArtifactReference(),
+            completeness(fact.getCompleteness())
+        );
+    }
+
     private static Page page(List<AnalysisJob> jobs, ListAnalysisJobsRequest request) {
         var offset = pageOffset(request.getPageToken());
         if (offset >= jobs.size()) {
@@ -443,6 +561,90 @@ public final class AnalysisJobGrpcEndpoint extends AnalysisJobServiceGrpc.Analys
         return builder.build();
     }
 
+    private static PlanInstrumentationTargetsResponse targetPlanningResponse(
+        InstrumentationTargetPlanningDomain.PlanInstrumentationTargetsResult result
+    ) {
+        var response = PlanInstrumentationTargetsResponse.newBuilder()
+            .setStatus(targetPlanningStatus(result))
+            .setAnalysisRunId(de.burger.forensics.analytics.analysisjob.v1.AnalysisRunId.newBuilder()
+                .setValue(result.metadata().analysisRunId().value()))
+            .setAnalysisJobId(de.burger.forensics.analytics.analysisjob.v1.AnalysisJobId.newBuilder()
+                .setValue(result.metadata().analysisJobId().value()))
+            .setSourceSnapshotId(de.burger.forensics.analytics.analysisjob.v1.SourceSnapshotId.newBuilder()
+                .setValue(result.metadata().sourceSnapshotId().value()))
+            .setCompleteness(toProto(result.completeness()))
+            .setTargetSelection(targetSelection(result.selection()))
+            .putAllAttributes(result.metadata().attributes());
+        result.targets().forEach(target -> response.addTargets(target(target)));
+        result.diagnostics().forEach(diagnostic -> response.addDiagnostics(diagnostic(diagnostic)));
+        return response.build();
+    }
+
+    private static OperationStatus targetPlanningStatus(
+        InstrumentationTargetPlanningDomain.PlanInstrumentationTargetsResult result
+    ) {
+        var status = OperationStatus.newBuilder()
+            .setCode(result.completeness() == AnalysisCompleteness.COMPLETE ? "TARGETS_PLANNED" : "TARGETS_PLANNED_INCOMPLETE")
+            .setMessage("Instrumentation target planning completed")
+            .setRetryable(false)
+            .setCorrelationId(result.metadata().correlationId());
+        result.diagnostics().stream()
+            .map(InstrumentationTargetPlanningDomain.TargetPlanningDiagnostic::code)
+            .forEach(status::addDiagnostics);
+        return status.build();
+    }
+
+    private static de.burger.forensics.analytics.analysisjob.v1.InstrumentationTargetSelection targetSelection(
+        InstrumentationTargetPlanningDomain.InstrumentationTargetSelection selection
+    ) {
+        return de.burger.forensics.analytics.analysisjob.v1.InstrumentationTargetSelection.newBuilder()
+            .setSelectionId(selection.selectionId())
+            .setOwnerService(selection.ownerService())
+            .setPolicyVersion(selection.policyVersion())
+            .setSelectionFingerprint(selection.selectionFingerprint())
+            .setCompleteness(toProto(selection.completeness()))
+            .setDeterministicOrder(selection.deterministicOrder())
+            .setCorrelationId(selection.correlationId())
+            .setTargetCount(selection.targetCount())
+            .build();
+    }
+
+    private static de.burger.forensics.analytics.analysisjob.v1.InstrumentationTarget target(
+        InstrumentationTargetPlanningDomain.InstrumentationTarget target
+    ) {
+        return de.burger.forensics.analytics.analysisjob.v1.InstrumentationTarget.newBuilder()
+            .setTargetId(target.targetId())
+            .setSourceFactId(target.sourceFactId())
+            .setSemanticNodeId(target.semanticNodeId())
+            .setRelativePath(target.relativePath())
+            .setFullyQualifiedClassName(target.fullyQualifiedClassName())
+            .setMethodName(target.methodName())
+            .setSignature(target.signature())
+            .setLineNumber(target.lineNumber())
+            .setProbeKind(PROBE_KIND_PROTOS.get(target.probeKind()))
+            .setSourceFactArtifactReference(target.sourceFactArtifactReference())
+            .setSemanticArtifactReference(target.semanticArtifactReference())
+            .setOrderIndex(target.orderIndex())
+            .setCompleteness(toProto(target.completeness()))
+            .setSensitivity(target.sensitivity())
+            .build();
+    }
+
+    private static de.burger.forensics.analytics.analysisjob.v1.TargetPlanningDiagnostic diagnostic(
+        InstrumentationTargetPlanningDomain.TargetPlanningDiagnostic diagnostic
+    ) {
+        return de.burger.forensics.analytics.analysisjob.v1.TargetPlanningDiagnostic.newBuilder()
+            .setCode(diagnostic.code())
+            .setMessage(diagnostic.message())
+            .setSeverity(TARGET_DIAGNOSTIC_SEVERITIES.get(diagnostic.severity()))
+            .setSourceSnapshotId(diagnostic.sourceSnapshotId().value())
+            .setSourceFactId(diagnostic.sourceFactId())
+            .setArtifactPath(diagnostic.artifactPath())
+            .setRetryable(diagnostic.retryable())
+            .setAffectsCompleteness(diagnostic.affectsCompleteness())
+            .build();
+    }
+
     private static de.burger.forensics.analytics.analysisjob.v1.AnalysisArtifactReference toProto(AnalysisArtifactReference reference) {
         return de.burger.forensics.analytics.analysisjob.v1.AnalysisArtifactReference.newBuilder()
             .setArtifact(de.burger.forensics.analytics.analysisjob.v1.ArtifactReference.newBuilder()
@@ -496,6 +698,12 @@ public final class AnalysisJobGrpcEndpoint extends AnalysisJobServiceGrpc.Analys
         de.burger.forensics.analytics.analysisjob.v1.AnalysisArtifactCategory category
     ) {
         return required(CATEGORIES.get(category), "artifact.category must be specified");
+    }
+
+    private static InstrumentationTargetPlanningDomain.ProbeKind probeKind(
+        de.burger.forensics.analytics.analysisjob.v1.InstrumentationProbeKind probeKind
+    ) {
+        return required(PROBE_KINDS.get(probeKind), "policy.probeKinds must contain supported probe kinds");
     }
 
     private static ArtifactByteAccess byteAccess(de.burger.forensics.analytics.analysisjob.v1.ArtifactByteAccess byteAccess) {
