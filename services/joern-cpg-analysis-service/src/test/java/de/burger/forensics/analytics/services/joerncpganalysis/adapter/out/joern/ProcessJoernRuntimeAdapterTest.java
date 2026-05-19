@@ -29,6 +29,7 @@ import static de.burger.forensics.analytics.services.joerncpganalysis.adapter.ou
 import static de.burger.forensics.analytics.services.joerncpganalysis.adapter.out.filesystem.FileSystemJoernArtifactCollector.CONTROLFLOW;
 import static de.burger.forensics.analytics.services.joerncpganalysis.adapter.out.filesystem.FileSystemJoernArtifactCollector.CPG;
 import static de.burger.forensics.analytics.services.joerncpganalysis.adapter.out.filesystem.FileSystemJoernArtifactCollector.DATAFLOW;
+import static de.burger.forensics.analytics.services.joerncpganalysis.adapter.out.filesystem.FileSystemJoernArtifactCollector.SLICES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -45,6 +46,7 @@ class ProcessJoernRuntimeAdapterTest {
         Files.writeString(queryRoot.resolve("callgraph.sc"), "// synthetic fixture");
         Files.writeString(queryRoot.resolve("controlflow.sc"), "// synthetic fixture");
         Files.writeString(queryRoot.resolve("dataflow.sc"), "// synthetic fixture");
+        Files.writeString(queryRoot.resolve("slices.sc"), "// synthetic fixture");
 
         var adapter = new ProcessJoernRuntimeAdapter(
             artifactRoot,
@@ -64,6 +66,7 @@ class ProcessJoernRuntimeAdapterTest {
         assertTrue(Files.isRegularFile(output.resolve(CALLGRAPH)));
         assertTrue(Files.isRegularFile(output.resolve(CONTROLFLOW)));
         assertTrue(Files.isRegularFile(output.resolve(DATAFLOW)));
+        assertTrue(Files.isRegularFile(output.resolve(SLICES)));
     }
 
     @Test
@@ -83,10 +86,39 @@ class ProcessJoernRuntimeAdapterTest {
 
         var result = adapter.analyze(command(true, true, true), workspace());
 
-        assertEquals(List.of(CALLGRAPH, CONTROLFLOW, DATAFLOW), result.diagnostics().stream()
+        assertEquals(List.of(CALLGRAPH, CONTROLFLOW, DATAFLOW, SLICES), result.diagnostics().stream()
             .map(diagnostic -> diagnostic.artifactPath())
             .toList());
         assertTrue(Files.isRegularFile(artifactRoot.resolve(result.artifactDirectory()).resolve(CPG)));
+    }
+
+    @Test
+    void clearsStaleArtifactsBeforeCurrentJoernRun() throws Exception {
+        var artifactRoot = tempDir.resolve("artifacts");
+        var queryRoot = tempDir.resolve("queries");
+        Files.createDirectories(queryRoot);
+        var staleDirectory = artifactRoot.resolve(artifactDirectory());
+        Files.createDirectories(staleDirectory);
+        Files.writeString(staleDirectory.resolve(DATAFLOW), "{\"stale\":true}");
+        Files.writeString(staleDirectory.resolve(SLICES), "{\"stale\":true}");
+
+        var adapter = new ProcessJoernRuntimeAdapter(
+            artifactRoot,
+            queryRoot,
+            executable("joern", fakeJoernScript()),
+            executable("joern-parse", fakeParseScript(0)),
+            "64m",
+            image()
+        );
+
+        var result = adapter.analyze(command(false, false, true), workspace());
+
+        assertEquals(List.of(DATAFLOW, SLICES), result.diagnostics().stream()
+            .map(diagnostic -> diagnostic.artifactPath())
+            .toList());
+        assertTrue(Files.isRegularFile(artifactRoot.resolve(result.artifactDirectory()).resolve(CPG)));
+        assertTrue(Files.notExists(artifactRoot.resolve(result.artifactDirectory()).resolve(DATAFLOW)));
+        assertTrue(Files.notExists(artifactRoot.resolve(result.artifactDirectory()).resolve(SLICES)));
     }
 
     @Test
@@ -95,7 +127,67 @@ class ProcessJoernRuntimeAdapterTest {
             tempDir.resolve("artifacts"),
             tempDir.resolve("queries"),
             executable("joern", fakeJoernScript()),
-            executable("joern-parse", fakeParseScript(7)),
+            executable("joern-parse", fakeParseScript(7, "/mnt/private/App.java token=secret")),
+            "64m",
+            image()
+        );
+
+        var error = assertThrows(JoernRuntimeUnavailableException.class, () -> adapter.analyze(command(false, false, false), workspace()));
+
+        assertTrue(error.getMessage().contains("diagnostic details redacted"));
+    }
+
+    @Test
+    void sanitizesUrisAndSourceSnippetsFromRuntimeFailures() throws Exception {
+        var uriFailure = parseFailureAdapter("uri", "see https://example.test/private/source");
+        var windowsFailure = parseFailureAdapter("windows", "C:\\private\\trace.log");
+        var sourceSnippetFailure = parseFailureAdapter("source", "public class App {}");
+        var packageSnippetFailure = parseFailureAdapter("package", "package demo;");
+        var importSnippetFailure = parseFailureAdapter("import", "import java.util.List;");
+        var longFailure = parseFailureAdapter("long", "a".repeat(320));
+
+        var uri = assertThrows(JoernRuntimeUnavailableException.class, () -> uriFailure.analyze(command(false, false, false), workspace()));
+        var windows = assertThrows(JoernRuntimeUnavailableException.class, () -> windowsFailure.analyze(command(false, false, false), workspace()));
+        var source = assertThrows(JoernRuntimeUnavailableException.class, () -> sourceSnippetFailure.analyze(command(false, false, false), workspace()));
+        var packageSnippet = assertThrows(JoernRuntimeUnavailableException.class, () -> packageSnippetFailure.analyze(command(false, false, false), workspace()));
+        var importSnippet = assertThrows(JoernRuntimeUnavailableException.class, () -> importSnippetFailure.analyze(command(false, false, false), workspace()));
+        var truncated = assertThrows(JoernRuntimeUnavailableException.class, () -> longFailure.analyze(command(false, false, false), workspace()));
+
+        assertTrue(uri.getMessage().contains("[redacted-uri]"));
+        assertTrue(windows.getMessage().contains("diagnostic details redacted"));
+        assertTrue(source.getMessage().contains("diagnostic details redacted"));
+        assertTrue(packageSnippet.getMessage().contains("diagnostic details redacted"));
+        assertTrue(importSnippet.getMessage().contains("diagnostic details redacted"));
+        assertTrue(truncated.getMessage().length() < 300);
+    }
+
+    @Test
+    void ignoresFailuresForOptionalAvailableScripts() throws Exception {
+        var queryRoot = tempDir.resolve("queries");
+        Files.createDirectories(queryRoot);
+        Files.writeString(queryRoot.resolve("callgraph.sc"), "// synthetic fixture");
+
+        var adapter = new ProcessJoernRuntimeAdapter(
+            tempDir.resolve("artifacts"),
+            queryRoot,
+            executable("joern", fakeFailingQueryJoernScript()),
+            executable("joern-parse", fakeParseScript(0)),
+            "64m",
+            image()
+        );
+
+        var result = adapter.analyze(command(false, false, false), workspace());
+
+        assertEquals(List.of(), result.diagnostics());
+    }
+
+    @Test
+    void mapsMissingJoernExecutableToUnavailableRuntime() throws Exception {
+        var adapter = new ProcessJoernRuntimeAdapter(
+            tempDir.resolve("artifacts"),
+            tempDir.resolve("queries"),
+            "missing-joern-executable",
+            executable("joern-parse", fakeParseScript(0)),
             "64m",
             image()
         );
@@ -164,6 +256,23 @@ class ProcessJoernRuntimeAdapterTest {
     }
 
     @Test
+    void redactsUnsafeJoernVersionOutput() throws Exception {
+        var privatePath = versionOutputAdapter("version-path", "/mnt/private/joern");
+        var windowsPath = versionOutputAdapter("version-windows", "C:\\private\\joern.exe");
+        var uri = versionOutputAdapter("version-uri", "https://example.test/joern");
+        var sourceSnippet = versionOutputAdapter("version-source", "public class App {}");
+        var packagePrivateSnippet = versionOutputAdapter("version-package-private-source", "class App {}");
+        var statementSnippet = versionOutputAdapter("version-statement-source", "return 1");
+
+        assertEquals("UNKNOWN", privatePath.analyze(command(false, false, false), workspace()).joernVersion());
+        assertEquals("UNKNOWN", windowsPath.analyze(command(false, false, false), workspace()).joernVersion());
+        assertEquals("UNKNOWN", uri.analyze(command(false, false, false), workspace()).joernVersion());
+        assertEquals("UNKNOWN", sourceSnippet.analyze(command(false, false, false), workspace()).joernVersion());
+        assertEquals("UNKNOWN", packagePrivateSnippet.analyze(command(false, false, false), workspace()).joernVersion());
+        assertEquals("UNKNOWN", statementSnippet.analyze(command(false, false, false), workspace()).joernVersion());
+    }
+
+    @Test
     void timesOutLongRunningJoernProcess() throws Exception {
         var adapter = new ProcessJoernRuntimeAdapter(
             tempDir.resolve("artifacts"),
@@ -223,6 +332,28 @@ class ProcessJoernRuntimeAdapterTest {
         Files.writeString(executable, content);
         executable.toFile().setExecutable(true);
         return executable.toString();
+    }
+
+    private ProcessJoernRuntimeAdapter parseFailureAdapter(String name, String stderr) throws Exception {
+        return new ProcessJoernRuntimeAdapter(
+            tempDir.resolve("artifacts-" + name),
+            tempDir.resolve("queries-" + name),
+            executable("joern-" + name, fakeJoernScript()),
+            executable("joern-parse-" + name, fakeParseScript(7, stderr)),
+            "64m",
+            image()
+        );
+    }
+
+    private ProcessJoernRuntimeAdapter versionOutputAdapter(String name, String output) throws Exception {
+        return new ProcessJoernRuntimeAdapter(
+            tempDir.resolve("artifacts-" + name),
+            tempDir.resolve("queries-" + name),
+            executable("joern-" + name, fakeVersionOutputJoernScript(output)),
+            executable("joern-parse-" + name, fakeParseScript(0)),
+            "64m",
+            image()
+        );
     }
 
     private static String fakeJoernScript() {
@@ -298,7 +429,22 @@ class ProcessJoernRuntimeAdapterTest {
             """;
     }
 
+    private static String fakeVersionOutputJoernScript(String output) {
+        return """
+            #!/bin/sh
+            if [ "$1" = "--version" ]; then
+              printf '%%s' '%s'
+              exit 0
+            fi
+            exit 0
+            """.formatted(output);
+    }
+
     private static String fakeParseScript(int exitCode) {
+        return fakeParseScript(exitCode, "");
+    }
+
+    private static String fakeParseScript(int exitCode, String stderr) {
         return """
             #!/bin/sh
             out=""
@@ -311,8 +457,9 @@ class ProcessJoernRuntimeAdapterTest {
             done
             mkdir -p "$(dirname "$out")"
             printf cpg > "$out"
+            printf '%%s' '%s' >&2
             exit %d
-            """.formatted(exitCode);
+            """.formatted(stderr, exitCode);
     }
 
     private static AnalyzeJoernCpgCommand command(boolean callgraph, boolean controlflow, boolean dataflow) {
@@ -348,7 +495,7 @@ class ProcessJoernRuntimeAdapterTest {
                 controlflow,
                 dataflow
             ),
-            new SourceWorkspace("joern-workspace-1", List.of(new SourceRoot("src/main/java", "java")), List.of(inputArtifact()))
+            new SourceWorkspace("joern-workspace-snapshot-1", List.of(new SourceRoot("src/main/java", "java")), List.of(inputArtifact()))
         );
     }
 
@@ -370,5 +517,11 @@ class ProcessJoernRuntimeAdapterTest {
 
     private static String image() {
         return "ghcr.io/joernio/joern@sha256:" + "a".repeat(64);
+    }
+
+    private static String artifactDirectory() {
+        return "joern-cpg/" + de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.sha256(
+            "run-1|job-1|snapshot-1"
+        ).substring(0, 24);
     }
 }

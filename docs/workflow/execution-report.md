@@ -689,3 +689,68 @@ The full local quality gate was rerun in a stable WSL/Gradle environment:
 
 The command completed successfully. Slice 07 is ready for checkpoint commit and
 branch push under the workflow-execute checkpoint rules.
+
+## Slice 08 Execution - Joern Worker Handoff
+
+Slice 08 implements the Joern CPG analysis handoff after the Slice 07
+workspace and build-artifact contract precondition. The implementation keeps
+Joern semantic artifacts inside the Joern CPG Analysis service until they are
+registered with Analysis Store through the gRPC artifact registration contract.
+
+Implemented behavior:
+
+- Joern CPG Analysis registers collected semantic artifacts with Analysis
+  Store through a service-owned outbound gRPC adapter.
+- Runtime unavailable and timeout outcomes produce explicit UNKNOWN Joern
+  provenance artifacts instead of fabricating missing CPG, data-flow or slice
+  evidence.
+- Required data-flow analysis expects both `dataflow.json` and `slices.json`,
+  and Joern clears its service-owned output directory before every execution so
+  stale artifacts cannot be registered as current evidence.
+- Joern provenance writing rejects final-file symlinks and writes with
+  create-new semantics so pre-existing symlinks cannot redirect provenance
+  output.
+- Joern runtime version output is accepted only for Joern-prefixed or
+  semver-like values; unsafe paths, URIs and source-like snippets are recorded
+  as UNKNOWN.
+- Analysis Store validates artifact paths and byte-access references as public
+  non-traversing references, including rejection of current-directory path
+  segments.
+
+### Slice 08 Reviews
+
+- Security Reviewer: READY after provenance symlink and strict version-output
+  remediation.
+- Senior Joern CPG Specialist: READY after stale artifact cleanup remediation.
+- Quality / ArchUnit Reviewer: READY; targeted gates pass and no threshold or
+  architecture-rule weakening was found.
+- Git Commit Reviewer: initial product-only staging was NOT READY because the
+  Slice 08 CP_RECORD documentation duty was not staged. This CP_RECORD entry is
+  staged before the product checkpoint commit as required by the workflow.
+
+### Slice 08 CP_RECORD
+
+```text
+workflowVersion=microservices-btm-pipeline-20260517-v2
+sliceId=08
+sliceTitle=Joern Worker Handoff
+responsibleAgent=Workflow Executor with Security Reviewer, Senior Joern CPG Specialist and Quality / ArchUnit Reviewer
+changedFiles=services/analysis-store-service/**; services/joern-cpg-analysis-service/**; docs/workflow/execution-report.md
+qualityGateCommands=./gradlew --no-daemon --max-workers=1 :services:joern-cpg-analysis-service:test :services:analysis-store-service:test --dependency-verification strict --console=plain --stacktrace; ./gradlew --no-daemon --max-workers=1 :services:joern-cpg-analysis-service:jacocoTestReport :services:joern-cpg-analysis-service:jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace; ./gradlew --no-daemon --max-workers=1 :services:repository-analysis-service:test :services:analysis-store-service:test :services:joern-cpg-analysis-service:test --dependency-verification strict --console=plain --stacktrace; ./gradlew --no-daemon --max-workers=1 clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace; git diff --check; git diff --cached --check
+qualityGateResult=PASS
+commitHash=pending
+pushResult=pending
+rollbackReference=7f7a7d5a9c14a83b0baa42c8a6a67a8373f2066a
+arc42Updated=not changed in this slice
+adrUpdated=not required in this slice
+```
+
+### Slice 08 D8 Decision
+
+Slice 08 is `D8_PASS`. Targeted Joern and Analysis Store tests passed, package
+coverage passed after focused branch-coverage remediation, Security / Joern /
+Quality reviews are READY, `git diff --check` and `git diff --cached --check`
+passed, and the mandatory full local quality gate completed successfully.
+
+After `CP_COMMIT` and `CP_PUSH`, this CP_RECORD must be updated with the actual
+checkpoint commit hash and push result.

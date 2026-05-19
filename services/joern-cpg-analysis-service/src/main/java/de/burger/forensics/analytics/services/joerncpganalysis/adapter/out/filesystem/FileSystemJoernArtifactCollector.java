@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import de.burger.forensics.analytics.services.joerncpganalysis.application.JoernCpgArtifactException;
 import de.burger.forensics.analytics.services.joerncpganalysis.application.port.JoernArtifactCollectorPort;
+import de.burger.forensics.analytics.services.joerncpganalysis.application.port.ResolvedJoernWorkspace;
 import de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.AnalysisArtifactCategory;
 import de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.AnalysisArtifactReference;
 import de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.AnalysisCompleteness;
@@ -16,10 +17,14 @@ import de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAn
 import de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.JoernRuntimeResult;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -60,8 +65,10 @@ public final class FileSystemJoernArtifactCollector implements JoernArtifactColl
 
         for (var fileName : expected) {
             var file = artifactDirectory.resolve(fileName);
-            if (Files.isRegularFile(file)) {
+            if (Files.isRegularFile(file, LinkOption.NOFOLLOW_LINKS)) {
                 artifacts.add(reference(command, file));
+            } else if (Files.exists(file, LinkOption.NOFOLLOW_LINKS)) {
+                throw new JoernCpgArtifactException("Joern artifact output is not a service-owned regular file");
             } else {
                 missing++;
                 diagnostics.add(JoernCpgDiagnostic.warning(
@@ -82,13 +89,29 @@ public final class FileSystemJoernArtifactCollector implements JoernArtifactColl
         return new JoernArtifactCollectionResult(artifacts, missing, diagnostics);
     }
 
+    @Override
+    public JoernArtifactCollectionResult collectUnavailable(
+        AnalyzeJoernCpgCommand command,
+        ResolvedJoernWorkspace workspace,
+        JoernCpgDiagnostic diagnostic
+    ) {
+        var artifactDirectory = artifactDirectory(artifactDirectory(command));
+        var diagnostics = List.of(diagnostic);
+        var artifact = unavailableProvenance(command, workspace, artifactDirectory, diagnostics);
+        return new JoernArtifactCollectionResult(List.of(artifact), expected(command).size(), diagnostics);
+    }
+
     private Path artifactDirectory(JoernRuntimeResult runtimeResult) {
-        var directory = artifactRoot.resolve(runtimeResult.artifactDirectory()).normalize();
+        return artifactDirectory(runtimeResult.artifactDirectory());
+    }
+
+    private Path artifactDirectory(String relativeDirectory) {
+        var directory = artifactRoot.resolve(relativeDirectory).normalize();
         if (!directory.startsWith(artifactRoot)) {
             throw new JoernCpgArtifactException("Joern artifact directory resolves outside service artifact root");
         }
         try {
-            Files.createDirectories(directory);
+            createServiceOwnedDirectory(artifactRoot, directory);
             return directory;
         } catch (IOException error) {
             throw new JoernCpgArtifactException("Failed to create Joern artifact directory.", error);
@@ -111,6 +134,34 @@ public final class FileSystemJoernArtifactCollector implements JoernArtifactColl
         return artifacts;
     }
 
+    private AnalysisArtifactReference unavailableProvenance(
+        AnalyzeJoernCpgCommand command,
+        ResolvedJoernWorkspace workspace,
+        Path artifactDirectory,
+        List<JoernCpgDiagnostic> diagnostics
+    ) {
+        var metadata = new java.util.LinkedHashMap<String, Object>();
+        metadata.put("analysisRunId", command.metadata().analysisRunId().value());
+        metadata.put("analysisJobId", command.metadata().analysisJobId().value());
+        metadata.put("sourceSnapshotId", command.metadata().sourceSnapshotId().value());
+        metadata.put("producerService", PRODUCER_SERVICE);
+        metadata.put("schemaVersion", SEMANTIC_ARTIFACT_SCHEMA_VERSION);
+        metadata.put("joernVersion", "unavailable");
+        metadata.put("joernImageReference", command.policy().joernImageReference());
+        metadata.put("queryBundleVersion", command.policy().queryBundleVersion());
+        metadata.put("sourceRootCount", workspace.sourceRootPaths().size());
+        metadata.put("completeness", AnalysisCompleteness.UNKNOWN.name());
+        metadata.put("artifactPaths", List.of());
+        metadata.put("diagnostics", diagnostics.stream().map(JoernCpgDiagnostic::code).sorted().toList());
+        var provenance = artifactDirectory.resolve(PROVENANCE);
+        try {
+            writeString(provenance, GSON.toJson(metadata));
+            return reference(command, provenance, AnalysisCompleteness.UNKNOWN);
+        } catch (IOException error) {
+            throw new JoernCpgArtifactException("Failed to write Joern unavailable provenance artifact.", error);
+        }
+    }
+
     private AnalysisArtifactReference reference(AnalyzeJoernCpgCommand command, Path file) {
         return reference(command, file, AnalysisCompleteness.COMPLETE);
     }
@@ -121,7 +172,8 @@ public final class FileSystemJoernArtifactCollector implements JoernArtifactColl
         AnalysisCompleteness artifactCompleteness
     ) {
         try {
-            var artifact = new ArtifactReference(relativePath(file), artifactType(file), sha256(file), Files.size(file));
+            var hash = sha256(file, command.policy().maxArtifactBytes());
+            var artifact = new ArtifactReference(relativePath(file), artifactType(file), hash.sha256(), hash.sizeBytes());
             return new AnalysisArtifactReference(
                 artifact,
                 AnalysisArtifactCategory.STATIC,
@@ -162,7 +214,7 @@ public final class FileSystemJoernArtifactCollector implements JoernArtifactColl
         metadata.put("diagnostics", diagnostics.stream().map(JoernCpgDiagnostic::code).sorted().toList());
         var provenance = artifactDirectory.resolve(PROVENANCE);
         try {
-            Files.writeString(provenance, GSON.toJson(metadata), StandardCharsets.UTF_8);
+            writeString(provenance, GSON.toJson(metadata));
             return reference(command, provenance, completeness);
         } catch (IOException error) {
             throw new JoernCpgArtifactException("Failed to write Joern provenance artifact.", error);
@@ -196,12 +248,106 @@ public final class FileSystemJoernArtifactCollector implements JoernArtifactColl
         };
     }
 
-    private static String sha256(Path file) throws IOException {
+    private static HashResult sha256(Path file, long maxBytes) throws IOException {
         try {
             var digest = MessageDigest.getInstance("SHA-256");
-            return HexFormat.of().formatHex(digest.digest(Files.readAllBytes(file)));
+            var before = regularFileAttributes(file);
+            try (InputStream input = Files.newInputStream(file, LinkOption.NOFOLLOW_LINKS)) {
+                var buffer = new byte[8192];
+                long size = 0L;
+                int read;
+                while ((read = input.read(buffer)) != -1) {
+                    if (read > 0) {
+                        size += read;
+                        if (size > maxBytes) {
+                            throw new JoernCpgArtifactException("Joern artifact byte size exceeds scan policy");
+                        }
+                        digest.update(buffer, 0, read);
+                    }
+                }
+                var after = regularFileAttributes(file);
+                if (!stableFile(before, after) || size != after.size()) {
+                    throw new JoernCpgArtifactException("Joern artifact changed while being inspected");
+                }
+                return new HashResult(size, HexFormat.of().formatHex(digest.digest()));
+            }
         } catch (NoSuchAlgorithmException error) {
             throw new IllegalStateException("SHA-256 is not available.", error);
         }
+    }
+
+    private static void writeString(Path file, String content) throws IOException {
+        var parent = file.getParent();
+        if (parent == null) {
+            throw new JoernCpgArtifactException("Joern artifact parent directory is not available");
+        }
+        requireDirectoryWithoutLinks(parent);
+        if (Files.exists(file, LinkOption.NOFOLLOW_LINKS)) {
+            regularFileAttributes(file);
+            Files.delete(file);
+        }
+        try (var writer = Files.newBufferedWriter(
+            file,
+            StandardCharsets.UTF_8,
+            StandardOpenOption.CREATE_NEW,
+            StandardOpenOption.WRITE
+        )) {
+            writer.write(content);
+        }
+        regularFileAttributes(file);
+    }
+
+    private static void createServiceOwnedDirectory(Path root, Path directory) throws IOException {
+        Files.createDirectories(root);
+        var normalizedRoot = root.toAbsolutePath().normalize();
+        var normalizedDirectory = directory.toAbsolutePath().normalize();
+        if (!normalizedDirectory.startsWith(normalizedRoot)) {
+            throw new JoernCpgArtifactException("Joern artifact directory resolves outside service artifact root");
+        }
+        requireDirectoryWithoutLinks(normalizedRoot);
+        var current = normalizedRoot;
+        for (var part : normalizedRoot.relativize(normalizedDirectory)) {
+            current = current.resolve(part);
+            if (Files.exists(current, LinkOption.NOFOLLOW_LINKS)) {
+                requireDirectoryWithoutLinks(current);
+            } else {
+                Files.createDirectory(current);
+            }
+        }
+    }
+
+    private static BasicFileAttributes regularFileAttributes(Path file) throws IOException {
+        var attributes = Files.readAttributes(file, BasicFileAttributes.class, LinkOption.NOFOLLOW_LINKS);
+        if (!attributes.isRegularFile()) {
+            throw new JoernCpgArtifactException("Joern artifact output is not a service-owned regular file");
+        }
+        return attributes;
+    }
+
+    private static void requireDirectoryWithoutLinks(Path directory) throws IOException {
+        var attributes = Files.readAttributes(directory, BasicFileAttributes.class, LinkOption.NOFOLLOW_LINKS);
+        if (!attributes.isDirectory()) {
+            throw new JoernCpgArtifactException("Joern artifact directory is not service-owned");
+        }
+    }
+
+    private static boolean stableFile(BasicFileAttributes before, BasicFileAttributes after) {
+        return before.size() == after.size()
+            && Objects.equals(before.fileKey(), after.fileKey())
+            && Objects.equals(before.lastModifiedTime(), after.lastModifiedTime());
+    }
+
+    private static String artifactDirectory(AnalyzeJoernCpgCommand command) {
+        var fingerprint = de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.sha256(
+            command.metadata().analysisRunId().value()
+                + "|"
+                + command.metadata().analysisJobId().value()
+                + "|"
+                + command.metadata().sourceSnapshotId().value()
+        ).substring(0, 24);
+        return "joern-cpg/" + fingerprint;
+    }
+
+    private record HashResult(long sizeBytes, String sha256) {
     }
 }

@@ -68,7 +68,8 @@ class JoernCpgAnalysisServiceApplicationTest {
             new JoernCpgAnalysisServiceProperties.Health(false, "127.0.0.1", 0),
             new JoernCpgAnalysisServiceProperties.Workspace(Path.of("build/test-workspaces")),
             new JoernCpgAnalysisServiceProperties.Artifacts(Path.of("build/test-artifacts")),
-            new JoernCpgAnalysisServiceProperties.Joern("joern", "joern-parse", "64m", Path.of("build/test-queries"), image())
+            new JoernCpgAnalysisServiceProperties.Joern("joern", "joern-parse", "64m", Path.of("build/test-queries"), image()),
+            new JoernCpgAnalysisServiceProperties.AnalysisStore("127.0.0.1", 1, 1)
         );
         var grpc = new GrpcServerLifecycle(properties, null);
         var health = new HealthHttpServerLifecycle(properties, grpc);
@@ -94,18 +95,20 @@ class JoernCpgAnalysisServiceApplicationTest {
 
     @Test
     void defaultPropertiesAndRepeatedLifecycleStartsAreDeterministic() throws Exception {
-        var defaults = new JoernCpgAnalysisServiceProperties(null, null, null, null, null);
+        var defaults = new JoernCpgAnalysisServiceProperties(null, null, null, null, null, null);
         assertEquals(9094, defaults.grpc().port());
         assertEquals(8085, defaults.health().port());
         assertEquals(Path.of("build/joern-cpg-workspaces"), defaults.workspace().root());
         assertEquals("joern", defaults.joern().executable());
+        assertEquals(9091, defaults.analysisStore().port());
 
         var properties = new JoernCpgAnalysisServiceProperties(
             new JoernCpgAnalysisServiceProperties.Grpc(true, "127.0.0.1", 0),
             new JoernCpgAnalysisServiceProperties.Health(true, "127.0.0.1", 0),
             new JoernCpgAnalysisServiceProperties.Workspace(Path.of("build/test-workspaces")),
             new JoernCpgAnalysisServiceProperties.Artifacts(Path.of("build/test-artifacts")),
-            new JoernCpgAnalysisServiceProperties.Joern("joern", "joern-parse", "64m", Path.of("build/test-queries"), image())
+            new JoernCpgAnalysisServiceProperties.Joern("joern", "joern-parse", "64m", Path.of("build/test-queries"), image()),
+            new JoernCpgAnalysisServiceProperties.AnalysisStore("127.0.0.1", 1, 1)
         );
         var grpc = new GrpcServerLifecycle(properties, endpoint());
         var health = new HealthHttpServerLifecycle(properties, grpc);
@@ -136,6 +139,9 @@ class JoernCpgAnalysisServiceApplicationTest {
         assertThrows(IllegalArgumentException.class, () -> new JoernCpgAnalysisServiceProperties.Health(true, "127.0.0.1", 65_536));
         assertThrows(IllegalArgumentException.class, () -> new JoernCpgAnalysisServiceProperties.Workspace(null));
         assertThrows(IllegalArgumentException.class, () -> new JoernCpgAnalysisServiceProperties.Artifacts(null));
+        assertThrows(IllegalArgumentException.class, () -> new JoernCpgAnalysisServiceProperties.AnalysisStore(" ", 9091, 5));
+        assertThrows(IllegalArgumentException.class, () -> new JoernCpgAnalysisServiceProperties.AnalysisStore("127.0.0.1", -1, 5));
+        assertThrows(IllegalArgumentException.class, () -> new JoernCpgAnalysisServiceProperties.AnalysisStore("127.0.0.1", 9091, 0));
         assertThrows(IllegalArgumentException.class, () -> new JoernCpgAnalysisServiceProperties.Joern("", "joern-parse", "64m", Path.of("queries"), image()));
         assertThrows(IllegalArgumentException.class, () -> new JoernCpgAnalysisServiceProperties.Joern("joern", " ", "64m", Path.of("queries"), image()));
         assertThrows(IllegalArgumentException.class, () -> new JoernCpgAnalysisServiceProperties.Joern("joern", "joern-parse", "", Path.of("queries"), image()));
@@ -147,7 +153,8 @@ class JoernCpgAnalysisServiceApplicationTest {
             new JoernCpgAnalysisServiceProperties.Health(true, "127.0.0.1", 0),
             new JoernCpgAnalysisServiceProperties.Workspace(Path.of("build/test-workspaces")),
             new JoernCpgAnalysisServiceProperties.Artifacts(Path.of("build/test-artifacts")),
-            new JoernCpgAnalysisServiceProperties.Joern("joern", "joern-parse", "64m", Path.of("build/test-queries"), image())
+            new JoernCpgAnalysisServiceProperties.Joern("joern", "joern-parse", "64m", Path.of("build/test-queries"), image()),
+            new JoernCpgAnalysisServiceProperties.AnalysisStore("127.0.0.1", 1, 1)
         );
         var grpc = new GrpcServerLifecycle(properties, null);
         var health = new HealthHttpServerLifecycle(properties, grpc);
@@ -174,7 +181,9 @@ class JoernCpgAnalysisServiceApplicationTest {
                 throw new UnsupportedOperationException("workspace not used by lifecycle test");
             },
             (command, workspace) -> new JoernRuntimeResult("joern-test", image(), "joern-cpg/run-1", List.of()),
-            (command, runtimeResult) -> new JoernArtifactCollectionResult(List.of(), 0, List.of())
+            (command, runtimeResult) -> new JoernArtifactCollectionResult(List.of(), 0, List.of()),
+            result -> {
+            }
         ));
     }
 

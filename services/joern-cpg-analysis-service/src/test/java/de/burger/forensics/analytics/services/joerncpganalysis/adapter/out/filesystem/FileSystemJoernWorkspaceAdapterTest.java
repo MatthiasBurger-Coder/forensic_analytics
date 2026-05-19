@@ -27,39 +27,56 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class FileSystemJoernWorkspaceAdapterTest {
+    private static final String WORKSPACE_ID = "joern-workspace-snapshot-1";
+
     @TempDir
     Path tempDir;
 
     @Test
     void resolvesOpaqueWorkspaceAndCountsWorkspaceBytes() throws Exception {
-        var sourceRoot = tempDir.resolve("joern-workspace-1/src/main/java");
+        var sourceRoot = tempDir.resolve(WORKSPACE_ID + "/src/main/java");
         Files.createDirectories(sourceRoot);
         Files.writeString(sourceRoot.resolve("App.java"), "class App {}\n");
 
-        var resolved = new FileSystemJoernWorkspaceAdapter(tempDir).resolve(command("joern-workspace-1", "src/main/java", "JAVA"));
+        var resolved = new FileSystemJoernWorkspaceAdapter(tempDir).resolve(command(WORKSPACE_ID, "src/main/java", "JAVA"));
 
         assertEquals(new SourceSnapshotId("snapshot-1"), resolved.sourceSnapshotId());
-        assertEquals("joern-workspace-1", resolved.workspaceId());
-        assertEquals(tempDir.resolve("joern-workspace-1").toAbsolutePath().normalize(), resolved.workspacePath());
+        assertEquals(WORKSPACE_ID, resolved.workspaceId());
+        assertEquals(tempDir.resolve(WORKSPACE_ID).toAbsolutePath().normalize(), resolved.workspacePath());
         assertEquals(List.of(sourceRoot.toAbsolutePath().normalize()), resolved.sourceRootPaths());
         assertTrue(resolved.workspaceBytes() > 0);
     }
 
     @Test
     void rejectsUnavailableWorkspaceUnsupportedLanguagesAndMissingRoots() throws Exception {
-        var sourceRoot = tempDir.resolve("joern-workspace-1/src/main/java");
+        var sourceRoot = tempDir.resolve(WORKSPACE_ID + "/src/main/java");
         Files.createDirectories(sourceRoot);
 
         var adapter = new FileSystemJoernWorkspaceAdapter(tempDir);
 
         assertThrows(IllegalArgumentException.class, () -> adapter.resolve(command("joern-workspace-missing", "src/main/java", "java")));
-        assertThrows(IllegalArgumentException.class, () -> adapter.resolve(command("joern-workspace-1", "src/test/java", "java")));
-        assertThrows(IllegalArgumentException.class, () -> adapter.resolve(command("joern-workspace-1", "src/main/java", "kotlin")));
+        assertThrows(IllegalArgumentException.class, () -> adapter.resolve(command(WORKSPACE_ID, "src/test/java", "java")));
+        assertThrows(IllegalArgumentException.class, () -> adapter.resolve(command(WORKSPACE_ID, "src/main/java", "kotlin")));
+    }
+
+    @Test
+    void rejectsSymlinkedWorkspaceDirectoriesBeforeJoernRuntime() throws Exception {
+        var outsideWorkspace = tempDir.resolve("outside-workspace");
+        Files.createDirectories(outsideWorkspace.resolve("src/main/java"));
+        try {
+            Files.createSymbolicLink(tempDir.resolve(WORKSPACE_ID), outsideWorkspace);
+        } catch (UnsupportedOperationException | java.io.IOException ignored) {
+            return;
+        }
+
+        var adapter = new FileSystemJoernWorkspaceAdapter(tempDir);
+
+        assertThrows(IllegalArgumentException.class, () -> adapter.resolve(command(WORKSPACE_ID, "src/main/java", "java")));
     }
 
     @Test
     void rejectsSymlinkedSourceRootsAndHardLinkedFilesBeforeJoernRuntime() throws Exception {
-        var workspace = tempDir.resolve("joern-workspace-1");
+        var workspace = tempDir.resolve(WORKSPACE_ID);
         var sourceRoot = workspace.resolve("src/main/java");
         Files.createDirectories(sourceRoot);
         Files.writeString(sourceRoot.resolve("App.java"), "class App {}\n");
@@ -69,9 +86,9 @@ class FileSystemJoernWorkspaceAdapterTest {
         var linkedRoot = workspace.resolve("linked");
         try {
             Files.createSymbolicLink(linkedRoot, sourceRoot);
-            assertThrows(IllegalArgumentException.class, () -> adapter.resolve(command("joern-workspace-1", "linked", "java")));
+            assertThrows(IllegalArgumentException.class, () -> adapter.resolve(command(WORKSPACE_ID, "linked", "java")));
             Files.createSymbolicLink(sourceRoot.resolve("AppLink.java"), sourceRoot.resolve("App.java"));
-            assertThrows(IllegalArgumentException.class, () -> adapter.resolve(command("joern-workspace-1", "src/main/java", "java")));
+            assertThrows(IllegalArgumentException.class, () -> adapter.resolve(command(WORKSPACE_ID, "src/main/java", "java")));
             Files.deleteIfExists(sourceRoot.resolve("AppLink.java"));
             Files.deleteIfExists(linkedRoot);
         } catch (UnsupportedOperationException ignored) {
@@ -81,7 +98,7 @@ class FileSystemJoernWorkspaceAdapterTest {
         var hardLink = sourceRoot.resolve("AppCopy.java");
         try {
             Files.createLink(hardLink, sourceRoot.resolve("App.java"));
-            assertThrows(IllegalArgumentException.class, () -> adapter.resolve(command("joern-workspace-1", "src/main/java", "java")));
+            assertThrows(IllegalArgumentException.class, () -> adapter.resolve(command(WORKSPACE_ID, "src/main/java", "java")));
         } catch (UnsupportedOperationException ignored) {
             // Some filesystems do not support hard links in the test workspace.
         }

@@ -12,7 +12,8 @@ public record JoernCpgAnalysisServiceProperties(
     Health health,
     Workspace workspace,
     Artifacts artifacts,
-    Joern joern
+    Joern joern,
+    AnalysisStore analysisStore
 ) {
     public static final String DEFAULT_JOERN_RUNTIME_IMAGE_REFERENCE =
         "ghcr.io/joernio/joern@sha256:7918dc450f185433fe6cfaf43e86f5daf5643fba2139406a41a1e6e1d6134295";
@@ -29,6 +30,7 @@ public record JoernCpgAnalysisServiceProperties(
             Path.of("/opt/forensic-analytics/joern-cpg-analysis/queries"),
             DEFAULT_JOERN_RUNTIME_IMAGE_REFERENCE
         ) : joern;
+        analysisStore = analysisStore == null ? new AnalysisStore("127.0.0.1", 9091, 5) : analysisStore;
     }
 
     public record Grpc(boolean enabled, String host, int port) {
@@ -80,6 +82,18 @@ public record JoernCpgAnalysisServiceProperties(
                 throw new IllegalArgumentException("query scripts root must not be null");
             }
             runtimeImageReference = requireSha256ImageReference(runtimeImageReference, "Joern runtime image reference");
+        }
+    }
+
+    public record AnalysisStore(String host, int port, long deadlineSeconds) {
+        public AnalysisStore {
+            host = text(host, "Analysis Store host");
+            if (port < 0 || port > 65_535) {
+                throw new IllegalArgumentException("Analysis Store port must be between 0 and 65535");
+            }
+            if (deadlineSeconds < 1 || deadlineSeconds > 86_400) {
+                throw new IllegalArgumentException("Analysis Store deadline seconds must be between 1 and 86400");
+            }
         }
     }
 

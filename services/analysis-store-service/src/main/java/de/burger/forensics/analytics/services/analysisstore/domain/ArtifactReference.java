@@ -7,7 +7,7 @@ public record ArtifactReference(
     long sizeBytes
 ) {
     public ArtifactReference {
-        path = RequiredText.require(path, "artifact.path");
+        path = ArtifactByteAccess.requirePublicReference(path, "artifact.path");
         type = RequiredText.require(type, "artifact.type");
         sha256 = RequiredText.require(sha256, "artifact.sha256");
         if (sizeBytes < 0) {

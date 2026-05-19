@@ -193,6 +193,28 @@ class FileSystemJoernWorkspaceMaterializerTest {
                 .materialize(command(
                     writePackageWithManifest(
                         cacheRoot,
+                        "source-snapshot/snapshot-1/source-dot-duplicate.zip",
+                        "source-snapshot/snapshot-1/source-dot-duplicate-manifest.json",
+                        "repository-analysis-service",
+                        "repository-analysis.v1.SourcePackage",
+                        """
+                            {"entries":[
+                              {"path":"src/main/java/App.java","kind":"file","sizeBytes":13,"sha256":"%s"},
+                              {"path":"src/main/java/./App.java","kind":"file","sizeBytes":13,"sha256":"%s"}
+                            ]}
+                            """.formatted(sha256("class App {}\n"), sha256("class App {}\n")),
+                        List.of(file("src/main/java/App.java", "class App {}\n"), file("src/main/java/./App.java", "class App {}\n"))
+                    ),
+                    buildPackage,
+                    10_000
+                ))
+        );
+        assertThrows(
+            JoernCpgArtifactException.class,
+            () -> new FileSystemJoernWorkspaceMaterializer(workspaceRoot, cacheRoot)
+                .materialize(command(
+                    writePackageWithManifest(
+                        cacheRoot,
                         "source-snapshot/snapshot-1/source-duplicate.zip",
                         "source-snapshot/snapshot-1/source-duplicate-manifest.json",
                         "repository-analysis-service",
@@ -363,6 +385,43 @@ class FileSystemJoernWorkspaceMaterializerTest {
                     10_000
                 ))
         );
+    }
+
+    @Test
+    void rejectsPackageCacheParentSymlinksBeforeReadingBytes() throws Exception {
+        var workspaceRoot = tempDir.resolve("workspaces");
+        var cacheRoot = tempDir.resolve("package-cache");
+        var outsideCacheRoot = tempDir.resolve("outside-cache");
+        Files.createDirectories(cacheRoot);
+        Files.createDirectories(outsideCacheRoot);
+        var sourcePackage = writePackage(
+            outsideCacheRoot,
+            "source-snapshot/snapshot-1/source.zip",
+            "source-snapshot/snapshot-1/source-manifest.json",
+            "repository-analysis-service",
+            "repository-analysis.v1.SourcePackage",
+            List.of(file("src/main/java/App.java", "class App {}\n"))
+        );
+        var buildPackage = writePackage(
+            cacheRoot,
+            "build-cache/snapshot-1/build-output.zip",
+            "build-cache/snapshot-1/build-output-manifest.json",
+            "build-artifact-worker-service",
+            "build-artifact-worker.v1.BuildOutputPackage",
+            List.of(file("build/classes/App.class", "compiled bytes"))
+        );
+        try {
+            Files.createSymbolicLink(cacheRoot.resolve("source-snapshot"), outsideCacheRoot.resolve("source-snapshot"));
+        } catch (UnsupportedOperationException | java.io.IOException ignored) {
+            return;
+        }
+
+        assertThrows(
+            JoernCpgArtifactException.class,
+            () -> new FileSystemJoernWorkspaceMaterializer(workspaceRoot, cacheRoot)
+                .materialize(command(sourcePackage, buildPackage, 10_000))
+        );
+        assertFalse(Files.exists(workspaceRoot.resolve("joern-workspace-snapshot-1")));
     }
 
     @Test

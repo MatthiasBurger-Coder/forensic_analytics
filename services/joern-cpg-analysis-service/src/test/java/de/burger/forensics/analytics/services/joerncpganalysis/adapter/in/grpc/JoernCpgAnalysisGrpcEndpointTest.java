@@ -19,6 +19,7 @@ import de.burger.forensics.analytics.services.joerncpganalysis.application.Joern
 import de.burger.forensics.analytics.services.joerncpganalysis.application.JoernCpgAnalysisTimeoutException;
 import de.burger.forensics.analytics.services.joerncpganalysis.application.JoernCpgArtifactException;
 import de.burger.forensics.analytics.services.joerncpganalysis.application.JoernRuntimeUnavailableException;
+import de.burger.forensics.analytics.services.joerncpganalysis.application.port.JoernArtifactCollectorPort;
 import de.burger.forensics.analytics.services.joerncpganalysis.application.port.ResolvedJoernWorkspace;
 import de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.AnalysisArtifactReference;
 import de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.ArtifactReference;
@@ -210,7 +211,7 @@ class JoernCpgAnalysisGrpcEndpointTest {
             StatusRuntimeException.class,
             () -> stub.analyzeSourceSnapshot(request(AnalysisWorkerKind.ANALYSIS_WORKER_KIND_JOERN_ANALYSIS).toBuilder()
                 .setWorkspace(SourceWorkspace.newBuilder()
-                    .setWorkspaceId("joern-workspace-1")
+                    .setWorkspaceId("joern-workspace-snapshot-1")
                     .addSourceRoots(SourceRoot.newBuilder().setRelativePath("src/main/java").setLanguage("java"))
                     .addInputArtifacts(inputArtifact("source-generated.json", AnalysisCompleteness.ANALYSIS_COMPLETENESS_COMPLETE).toBuilder()
                         .setCategory(AnalysisArtifactCategory.ANALYSIS_ARTIFACT_CATEGORY_GENERATED)))
@@ -218,25 +219,34 @@ class JoernCpgAnalysisGrpcEndpointTest {
         );
         assertEquals(Status.Code.INVALID_ARGUMENT, wrongArtifactCategory.getStatus().getCode());
 
-        stopServer();
-        startServer(applicationService(command -> {
-            throw new JoernRuntimeUnavailableException("Joern unavailable");
-        }));
-        var unavailable = assertThrows(
+        var mismatchedWorkspace = assertThrows(
             StatusRuntimeException.class,
-            () -> stub.analyzeSourceSnapshot(request(AnalysisWorkerKind.ANALYSIS_WORKER_KIND_JOERN_ANALYSIS))
+            () -> stub.analyzeSourceSnapshot(request(AnalysisWorkerKind.ANALYSIS_WORKER_KIND_JOERN_ANALYSIS).toBuilder()
+                .setWorkspace(request(AnalysisWorkerKind.ANALYSIS_WORKER_KIND_JOERN_ANALYSIS).getWorkspace().toBuilder()
+                    .setWorkspaceId("joern-workspace-other-snapshot"))
+                .build())
         );
-        assertEquals(Status.Code.UNAVAILABLE, unavailable.getStatus().getCode());
+        assertEquals(Status.Code.INVALID_ARGUMENT, mismatchedWorkspace.getStatus().getCode());
 
         stopServer();
-        startServer(applicationService(command -> {
-            throw new JoernCpgAnalysisTimeoutException("timeout");
-        }));
-        var timeout = assertThrows(
-            StatusRuntimeException.class,
-            () -> stub.analyzeSourceSnapshot(request(AnalysisWorkerKind.ANALYSIS_WORKER_KIND_JOERN_ANALYSIS))
-        );
-        assertEquals(Status.Code.DEADLINE_EXCEEDED, timeout.getStatus().getCode());
+        startServer(applicationServiceWithRuntimeFailure(new JoernRuntimeUnavailableException("Joern unavailable")));
+        var unavailable = stub.analyzeSourceSnapshot(request(AnalysisWorkerKind.ANALYSIS_WORKER_KIND_JOERN_ANALYSIS));
+        assertEquals("ANALYZED_INCOMPLETE", unavailable.getStatus().getCode());
+        assertEquals(AnalysisCompleteness.ANALYSIS_COMPLETENESS_UNKNOWN, unavailable.getCompleteness());
+        assertEquals(List.of("JOERN_RUNTIME_UNAVAILABLE"), unavailable.getDiagnosticsList().stream()
+            .map(diagnostic -> diagnostic.getCode())
+            .toList());
+        assertEquals("joern-cpg/run-1/joern-provenance.json", unavailable.getSemanticArtifacts(0).getArtifact().getPath());
+        assertEquals(AnalysisCompleteness.ANALYSIS_COMPLETENESS_UNKNOWN, unavailable.getSemanticArtifacts(0).getCompleteness());
+
+        stopServer();
+        startServer(applicationServiceWithRuntimeFailure(new JoernCpgAnalysisTimeoutException("timeout")));
+        var timeout = stub.analyzeSourceSnapshot(request(AnalysisWorkerKind.ANALYSIS_WORKER_KIND_JOERN_ANALYSIS));
+        assertEquals("ANALYZED_INCOMPLETE", timeout.getStatus().getCode());
+        assertEquals(AnalysisCompleteness.ANALYSIS_COMPLETENESS_UNKNOWN, timeout.getCompleteness());
+        assertEquals(List.of("JOERN_RUNTIME_TIMEOUT"), timeout.getDiagnosticsList().stream()
+            .map(diagnostic -> diagnostic.getCode())
+            .toList());
 
         stopServer();
         startServer(applicationService(command -> {
@@ -247,6 +257,26 @@ class JoernCpgAnalysisGrpcEndpointTest {
             () -> stub.analyzeSourceSnapshot(request(AnalysisWorkerKind.ANALYSIS_WORKER_KIND_JOERN_ANALYSIS))
         );
         assertEquals(Status.Code.FAILED_PRECONDITION, artifactFailure.getStatus().getCode());
+
+        stopServer();
+        startServer(applicationService(command -> {
+            throw new JoernRuntimeUnavailableException("Joern unavailable after runtime handoff");
+        }));
+        var unavailableTransport = assertThrows(
+            StatusRuntimeException.class,
+            () -> stub.analyzeSourceSnapshot(request(AnalysisWorkerKind.ANALYSIS_WORKER_KIND_JOERN_ANALYSIS))
+        );
+        assertEquals(Status.Code.UNAVAILABLE, unavailableTransport.getStatus().getCode());
+
+        stopServer();
+        startServer(applicationService(command -> {
+            throw new JoernCpgAnalysisTimeoutException("timeout after runtime handoff");
+        }));
+        var timeoutTransport = assertThrows(
+            StatusRuntimeException.class,
+            () -> stub.analyzeSourceSnapshot(request(AnalysisWorkerKind.ANALYSIS_WORKER_KIND_JOERN_ANALYSIS))
+        );
+        assertEquals(Status.Code.DEADLINE_EXCEEDED, timeoutTransport.getStatus().getCode());
 
         stopServer();
         startServer(applicationService(command -> {
@@ -269,6 +299,14 @@ class JoernCpgAnalysisGrpcEndpointTest {
         ).getStatus().getCode());
         assertEquals(Status.Code.INVALID_ARGUMENT, assertThrows(
             StatusRuntimeException.class,
+            () -> stub.materializeSourceSnapshot(materializeRequest().toBuilder().clearAnalysisJobId().build())
+        ).getStatus().getCode());
+        assertEquals(Status.Code.INVALID_ARGUMENT, assertThrows(
+            StatusRuntimeException.class,
+            () -> stub.materializeSourceSnapshot(materializeRequest().toBuilder().clearSourceSnapshotId().build())
+        ).getStatus().getCode());
+        assertEquals(Status.Code.INVALID_ARGUMENT, assertThrows(
+            StatusRuntimeException.class,
             () -> stub.materializeSourceSnapshot(materializeRequest().toBuilder().clearSourceRoots().build())
         ).getStatus().getCode());
         assertEquals(Status.Code.INVALID_ARGUMENT, assertThrows(
@@ -282,6 +320,16 @@ class JoernCpgAnalysisGrpcEndpointTest {
         assertEquals(Status.Code.INVALID_ARGUMENT, assertThrows(
             StatusRuntimeException.class,
             () -> stub.materializeSourceSnapshot(materializeRequest().toBuilder().clearPolicy().build())
+        ).getStatus().getCode());
+        assertEquals(Status.Code.INVALID_ARGUMENT, assertThrows(
+            StatusRuntimeException.class,
+            () -> stub.materializeSourceSnapshot(materializeRequest().toBuilder()
+                .setSourcePackage(sourcePackage(
+                    de.burger.forensics.analytics.repositoryanalysis.v1.PackageAvailability.PACKAGE_AVAILABILITY_PENDING,
+                    "source-snapshot/snapshot-1/source.zip"
+                ).toBuilder()
+                    .setAvailability(de.burger.forensics.analytics.repositoryanalysis.v1.PackageAvailability.PACKAGE_AVAILABILITY_UNSPECIFIED))
+                .build())
         ).getStatus().getCode());
         assertEquals(Status.Code.INVALID_ARGUMENT, assertThrows(
             StatusRuntimeException.class,
@@ -310,6 +358,42 @@ class JoernCpgAnalysisGrpcEndpointTest {
                 ))
                 .build())
         ).getStatus().getCode());
+        assertEquals(Status.Code.INVALID_ARGUMENT, assertThrows(
+            StatusRuntimeException.class,
+            () -> stub.materializeSourceSnapshot(materializeRequest().toBuilder()
+                .setBuildOutputPackage(buildOutputPackage(
+                    de.burger.forensics.analytics.repositoryanalysis.v1.PackageAvailability.PACKAGE_AVAILABILITY_AVAILABLE,
+                    "source-snapshot/snapshot-1/build-output.zip"
+                ).toBuilder()
+                    .setByteAccess(byteAccess(
+                        "build-artifact-worker-service",
+                        "build-artifact-worker.v1.BuildOutputPackage",
+                        "source-snapshot/snapshot-1/build-output.zip"
+                    ).toBuilder()
+                        .setByteCustody(ArtifactByteCustody.ARTIFACT_BYTE_CUSTODY_UNSPECIFIED)))
+                .build())
+        ).getStatus().getCode());
+
+        assertEquals(Status.Code.INVALID_ARGUMENT, assertThrows(
+            StatusRuntimeException.class,
+            () -> stub.materializeSourceSnapshot(materializeRequest().toBuilder()
+                .setSourcePackage(sourcePackage(
+                    de.burger.forensics.analytics.repositoryanalysis.v1.PackageAvailability.PACKAGE_AVAILABILITY_AVAILABLE,
+                    "source-snapshot/snapshot-1/source.zip"
+                ).toBuilder()
+                    .setCompleteness(de.burger.forensics.analytics.repositoryanalysis.v1.SourceSnapshotCompleteness.SOURCE_SNAPSHOT_COMPLETENESS_INCOMPLETE))
+                .build())
+        ).getStatus().getCode());
+        assertEquals(Status.Code.INVALID_ARGUMENT, assertThrows(
+            StatusRuntimeException.class,
+            () -> stub.materializeSourceSnapshot(materializeRequest().toBuilder()
+                .setBuildOutputPackage(buildOutputPackage(
+                    de.burger.forensics.analytics.repositoryanalysis.v1.PackageAvailability.PACKAGE_AVAILABILITY_AVAILABLE,
+                    "source-snapshot/snapshot-1/build-output.zip"
+                ).toBuilder()
+                    .setCompleteness(de.burger.forensics.analytics.repositoryanalysis.v1.SourceSnapshotCompleteness.SOURCE_SNAPSHOT_COMPLETENESS_UNKNOWN))
+                .build())
+        ).getStatus().getCode());
     }
 
     private void startServer(JoernCpgAnalysisApplicationService applicationService) throws Exception {
@@ -336,13 +420,62 @@ class JoernCpgAnalysisGrpcEndpointTest {
             ),
             command -> new ResolvedJoernWorkspace(
                 command.metadata().sourceSnapshotId(),
-                "joern-workspace-1",
+                "joern-workspace-" + command.metadata().sourceSnapshotId().value(),
                 Path.of("build/test-workspace"),
                 List.of(Path.of("build/test-workspace/src/main/java")),
                 100
             ),
             (command, workspace) -> new JoernRuntimeResult("joern-test-1", image(), "joern-cpg/run-1", List.of()),
-            (command, runtimeResult) -> collector.collect(command)
+            (command, runtimeResult) -> collector.collect(command),
+            result -> {
+            }
+        );
+    }
+
+    private static JoernCpgAnalysisApplicationService applicationServiceWithRuntimeFailure(RuntimeException failure) {
+        return new JoernCpgAnalysisApplicationService(
+            command -> new de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.SourceWorkspace(
+                "joern-workspace-" + command.metadata().sourceSnapshotId().value(),
+                command.sourceRoots(),
+                List.of(materializedInput(command.sourcePackage()), materializedInput(command.buildOutputPackage()))
+            ),
+            command -> new ResolvedJoernWorkspace(
+                command.metadata().sourceSnapshotId(),
+                "joern-workspace-" + command.metadata().sourceSnapshotId().value(),
+                Path.of("build/test-workspace"),
+                List.of(Path.of("build/test-workspace/src/main/java")),
+                100
+            ),
+            (command, workspace) -> {
+                throw failure;
+            },
+            new JoernArtifactCollectorPort() {
+                @Override
+                public JoernArtifactCollectionResult collect(
+                    de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.AnalyzeJoernCpgCommand command,
+                    JoernRuntimeResult runtimeResult
+                ) {
+                    return new JoernArtifactCollectionResult(List.of(reference("joern-cpg/run-1/cpg.bin.zip")), 0, List.of());
+                }
+
+                @Override
+                public JoernArtifactCollectionResult collectUnavailable(
+                    de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.AnalyzeJoernCpgCommand command,
+                    ResolvedJoernWorkspace workspace,
+                    JoernCpgDiagnostic diagnostic
+                ) {
+                    return new JoernArtifactCollectionResult(
+                        List.of(reference(
+                            "joern-cpg/run-1/joern-provenance.json",
+                            de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.AnalysisCompleteness.UNKNOWN
+                        )),
+                        5,
+                        List.of(diagnostic)
+                    );
+                }
+            },
+            result -> {
+            }
         );
     }
 
@@ -360,12 +493,22 @@ class JoernCpgAnalysisGrpcEndpointTest {
     }
 
     private static AnalysisArtifactReference reference(String path) {
+        return reference(
+            path,
+            de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.AnalysisCompleteness.COMPLETE
+        );
+    }
+
+    private static AnalysisArtifactReference reference(
+        String path,
+        de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.AnalysisCompleteness completeness
+    ) {
         return new AnalysisArtifactReference(
             new ArtifactReference(path, "application/vnd.forensic-analytics.joern-cpg.v1+binary", "a".repeat(64), 3),
             de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.AnalysisArtifactCategory.STATIC,
             PRODUCER_SERVICE,
             SEMANTIC_ARTIFACT_SCHEMA_VERSION,
-            de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.AnalysisCompleteness.COMPLETE,
+            completeness,
             new de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.ArtifactByteAccess(
                 PRODUCER_SERVICE,
                 "analysis-job.v1.ArtifactBytes",
@@ -397,7 +540,7 @@ class JoernCpgAnalysisGrpcEndpointTest {
                 .setRequireControlflow(true)
                 .setRequireDataflow(true))
             .setWorkspace(SourceWorkspace.newBuilder()
-                .setWorkspaceId("joern-workspace-1")
+                .setWorkspaceId("joern-workspace-snapshot-1")
                 .addSourceRoots(SourceRoot.newBuilder()
                     .setRelativePath("src/main/java")
                     .setLanguage("java"))

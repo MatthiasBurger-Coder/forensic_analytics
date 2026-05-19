@@ -28,8 +28,8 @@ public record ArtifactByteAccess(
             || reference.contains("\r")) {
             throw new IllegalArgumentException(fieldName + " must not be a private path or URI");
         }
-        if (Arrays.asList(reference.split("/")).stream().anyMatch(part -> part.isBlank() || part.equals(".."))) {
-            throw new IllegalArgumentException(fieldName + " must not contain traversal or blank path segments");
+        if (Arrays.asList(reference.split("/")).stream().anyMatch(part -> part.isBlank() || part.equals(".") || part.equals(".."))) {
+            throw new IllegalArgumentException(fieldName + " must not contain traversal, current-directory or blank path segments");
         }
         return reference;
     }

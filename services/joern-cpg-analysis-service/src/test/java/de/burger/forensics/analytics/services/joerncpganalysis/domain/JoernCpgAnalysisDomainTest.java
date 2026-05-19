@@ -44,9 +44,25 @@ class JoernCpgAnalysisDomainTest {
         assertThrows(IllegalArgumentException.class, () -> new SourceRoot("../src", "java"));
         assertThrows(IllegalArgumentException.class, () -> new SourceRoot("/workspace/src", "java"));
         assertThrows(IllegalArgumentException.class, () -> new SourceWorkspace("workspace/1", List.of(new SourceRoot("src", "java")), List.of()));
+        assertThrows(IllegalArgumentException.class, () -> new SourceWorkspace("workspace\\1", List.of(new SourceRoot("src", "java")), List.of()));
         assertThrows(IllegalArgumentException.class, () -> new SourceWorkspace("workspace-1", List.of(new SourceRoot("src", "java")), List.of()));
         assertThrows(IllegalArgumentException.class, () -> metadata(Map.of("api_token", "secret")));
         assertThrows(IllegalArgumentException.class, () -> metadata(Map.of("tenant", "file:/private/path")));
+        assertThrows(IllegalArgumentException.class, () -> metadata(Map.of("tenant", "https://example.test/workspace")));
+        assertThrows(IllegalArgumentException.class, () -> metadata(Map.of("tenant", "//server/share")));
+        assertThrows(IllegalArgumentException.class, () -> metadata(Map.of("tenant", "/mnt/private/workspace")));
+        assertThrows(IllegalArgumentException.class, () -> metadata(Map.of("tenant", "/home/user/workspace")));
+        assertThrows(IllegalArgumentException.class, () -> metadata(Map.of("tenant", "/var/tmp/workspace")));
+        assertThrows(IllegalArgumentException.class, () -> metadata(Map.of("tenant", "/tmp/workspace")));
+        assertThrows(IllegalArgumentException.class, () -> metadata(Map.of("tenant", "/root/workspace")));
+        assertThrows(IllegalArgumentException.class, () -> metadata(Map.of("tenant", "C:/tmp/workspace")));
+        assertThrows(IllegalArgumentException.class, () -> byteAccess("/private/artifact"));
+        assertThrows(IllegalArgumentException.class, () -> byteAccess("FILE:/tmp/artifact"));
+        assertThrows(IllegalArgumentException.class, () -> byteAccess("https://example.test/artifact"));
+        assertThrows(IllegalArgumentException.class, () -> byteAccess("C:/tmp/artifact"));
+        assertThrows(IllegalArgumentException.class, () -> byteAccess("artifacts/./cpg.bin.zip"));
+        assertThrows(IllegalArgumentException.class, () -> byteAccess("artifacts//cpg.bin.zip"));
+        assertThrows(IllegalArgumentException.class, () -> byteAccess("artifacts/../cpg.bin.zip"));
         assertThrows(IllegalArgumentException.class, () -> new JoernCpgPolicy(
             1,
             100,
@@ -89,6 +105,7 @@ class JoernCpgAnalysisDomainTest {
             List.of()
         ));
         assertThrows(IllegalArgumentException.class, () -> new SourceWorkspace(".", List.of(new SourceRoot("src", "java")), List.of()));
+        assertThrows(IllegalArgumentException.class, () -> new SourceWorkspace("..", List.of(new SourceRoot("src", "java")), List.of()));
         assertThrows(IllegalArgumentException.class, () -> new SourceWorkspace("workspace:1", List.of(new SourceRoot("src", "java")), List.of()));
         assertThrows(IllegalArgumentException.class, () -> new JoernCpgPolicy(0, 100, 100, 60, image(), "queries-v1", false, false, false));
         assertThrows(IllegalArgumentException.class, () -> new JoernCpgPolicy(1, 0, 100, 60, image(), "queries-v1", false, false, false));
@@ -105,8 +122,17 @@ class JoernCpgAnalysisDomainTest {
             metadata(Map.of("tenant", "demo")),
             policy(1),
             new SourceWorkspace(
-                "joern-workspace-1",
+                "joern-workspace-snapshot-1",
                 List.of(new SourceRoot("a", "java"), new SourceRoot("b", "java")),
+                List.of(reference("input.json"))
+            )
+        ));
+        assertThrows(IllegalArgumentException.class, () -> new AnalyzeJoernCpgCommand(
+            metadata(Map.of("tenant", "demo")),
+            policy(2),
+            new SourceWorkspace(
+                "joern-workspace-other-snapshot",
+                List.of(new SourceRoot("src", "java")),
                 List.of(reference("input.json"))
             )
         ));
@@ -136,6 +162,31 @@ class JoernCpgAnalysisDomainTest {
         assertEquals("diagnostic details redacted", result.diagnostics().get(1).message());
         assertEquals(DiagnosticSeverity.INFO, result.diagnostics().getFirst().severity());
         assertTrue(result.diagnostics().getFirst().message().contains("line one line two"));
+        assertEquals("diagnostic details redacted", JoernCpgDiagnostic.info(
+            new SourceSnapshotId("snapshot-1"),
+            "SOURCE_SNIPPET",
+            "public class App {}"
+        ).message());
+        assertEquals("diagnostic details redacted", JoernCpgDiagnostic.info(
+            new SourceSnapshotId("snapshot-1"),
+            "SOURCE_SNIPPET",
+            "private class App {}"
+        ).message());
+        assertEquals("diagnostic details redacted", JoernCpgDiagnostic.info(
+            new SourceSnapshotId("snapshot-1"),
+            "SOURCE_SNIPPET",
+            "protected class App {}"
+        ).message());
+        assertEquals("diagnostic details redacted", JoernCpgDiagnostic.info(
+            new SourceSnapshotId("snapshot-1"),
+            "SOURCE_SNIPPET",
+            "import java.util.List;"
+        ).message());
+        assertEquals("diagnostic details redacted", JoernCpgDiagnostic.info(
+            new SourceSnapshotId("snapshot-1"),
+            "SOURCE_SNIPPET",
+            "package demo;"
+        ).message());
     }
 
     @Test
@@ -148,8 +199,10 @@ class JoernCpgAnalysisDomainTest {
         assertThrows(IllegalArgumentException.class, () -> requireRelativePath("file:/tmp/source", "path"));
         assertThrows(IllegalArgumentException.class, () -> requireRelativePath("https://example.test/source", "path"));
         assertThrows(IllegalArgumentException.class, () -> requireRelativePath("C:/tmp/source", "path"));
+        assertThrows(IllegalArgumentException.class, () -> requireRelativePath("FILE:/tmp/source", "path"));
         assertThrows(IllegalArgumentException.class, () -> requireRelativePath("src//main", "path"));
         assertThrows(IllegalArgumentException.class, () -> requireRelativePath("src/../main", "path"));
+        assertThrows(IllegalArgumentException.class, () -> requireRelativePath("src/./main", "path"));
         assertThrows(IllegalArgumentException.class, () -> requireSha256("not-a-digest", "sha"));
         assertThrows(IllegalArgumentException.class, () -> requireText(" ", "text"));
     }
@@ -173,6 +226,9 @@ class JoernCpgAnalysisDomainTest {
         assertThrows(IllegalArgumentException.class, () -> new JoernMaterializationPolicy(1, 100, 0, 1, true, true, true, true));
         assertThrows(IllegalArgumentException.class, () -> new JoernMaterializationPolicy(1, 100, 100, 0, true, true, true, true));
         assertThrows(IllegalArgumentException.class, () -> new JoernMaterializationPolicy(1, 100, 100, 1, false, true, true, true));
+        assertThrows(IllegalArgumentException.class, () -> new JoernMaterializationPolicy(1, 100, 100, 1, true, false, true, true));
+        assertThrows(IllegalArgumentException.class, () -> new JoernMaterializationPolicy(1, 100, 100, 1, true, true, false, true));
+        assertThrows(IllegalArgumentException.class, () -> new JoernMaterializationPolicy(1, 100, 100, 1, true, true, true, false));
         assertThrows(IllegalArgumentException.class, () -> packageDescriptor("source package", PackageAvailability.PENDING, AnalysisCompleteness.COMPLETE, 10));
         assertThrows(IllegalArgumentException.class, () -> packageDescriptor("source package", PackageAvailability.AVAILABLE, AnalysisCompleteness.INCOMPLETE, 10));
         assertThrows(IllegalArgumentException.class, () -> packageDescriptor("source package", PackageAvailability.AVAILABLE, AnalysisCompleteness.COMPLETE, 0));
@@ -263,6 +319,15 @@ class JoernCpgAnalysisDomainTest {
                 "artifacts/" + path,
                 ArtifactByteCustody.PRODUCER_RETAINED
             )
+        );
+    }
+
+    private static ArtifactByteAccess byteAccess(String retrievalReference) {
+        return new ArtifactByteAccess(
+            "joern-cpg-analysis-service",
+            "analysis-job.v1.ArtifactBytes",
+            retrievalReference,
+            ArtifactByteCustody.PRODUCER_RETAINED
         );
     }
 

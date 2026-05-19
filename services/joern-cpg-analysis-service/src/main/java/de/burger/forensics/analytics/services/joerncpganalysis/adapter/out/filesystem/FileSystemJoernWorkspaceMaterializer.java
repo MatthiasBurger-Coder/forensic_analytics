@@ -18,8 +18,10 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -111,6 +113,7 @@ public final class FileSystemJoernWorkspaceMaterializer implements JoernWorkspac
         if (!path.startsWith(packageCacheRoot)) {
             throw new JoernCpgArtifactException("package cache reference resolves outside service cache");
         }
+        requireOwnedParentChain(packageCacheRoot, path);
         if (!Files.isRegularFile(path, LinkOption.NOFOLLOW_LINKS)) {
             throw new JoernCpgArtifactException("required package bytes are not available");
         }
@@ -119,7 +122,7 @@ public final class FileSystemJoernWorkspaceMaterializer implements JoernWorkspac
 
     private static void verifyArtifact(Path file, ArtifactReference artifact) {
         try {
-            var size = Files.size(file);
+            var size = regularFileAttributes(file).size();
             if (size != artifact.sizeBytes()) {
                 throw new JoernCpgArtifactException("artifact byte size mismatch");
             }
@@ -192,7 +195,7 @@ public final class FileSystemJoernWorkspaceMaterializer implements JoernWorkspac
         long maxWorkspaceBytes
     ) {
         var seen = new HashSet<String>();
-        try (var stream = new ZipInputStream(Files.newInputStream(packageFile))) {
+        try (var stream = new ZipInputStream(Files.newInputStream(packageFile, LinkOption.NOFOLLOW_LINKS))) {
             ZipEntry zipEntry;
             while ((zipEntry = stream.getNextEntry()) != null) {
                 var normalized = archivePath(zipEntry.getName());
@@ -211,12 +214,12 @@ public final class FileSystemJoernWorkspaceMaterializer implements JoernWorkspac
                     if (manifestEntry.kind() != EntryKind.DIRECTORY) {
                         throw new JoernCpgArtifactException("package archive entry kind does not match manifest");
                     }
-                    Files.createDirectories(target);
+                    createOwnedDirectories(workspacePath, target);
                 } else {
                     if (manifestEntry.kind() != EntryKind.FILE) {
                         throw new JoernCpgArtifactException("package archive entry kind does not match manifest");
                     }
-                    Files.createDirectories(target.getParent());
+                    createOwnedDirectories(workspacePath, target.getParent());
                     var extracted = writeFile(stream, target, manifestEntry.sizeBytes(), maxWorkspaceBytes - workspaceBytes[0]);
                     workspaceBytes[0] += extracted.sizeBytes();
                     if (extracted.sizeBytes() != manifestEntry.sizeBytes() || !extracted.sha256().equals(manifestEntry.sha256())) {
@@ -235,7 +238,7 @@ public final class FileSystemJoernWorkspaceMaterializer implements JoernWorkspac
     private static ExtractedFile writeFile(InputStream input, Path target, long expectedBytes, long remainingWorkspaceBytes) throws IOException {
         try {
             var digest = MessageDigest.getInstance("SHA-256");
-            try (var output = Files.newOutputStream(target)) {
+            try (var output = Files.newOutputStream(target, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)) {
                 var buffer = new byte[8192];
                 long size = 0L;
                 int read;
@@ -296,13 +299,20 @@ public final class FileSystemJoernWorkspaceMaterializer implements JoernWorkspac
     private static String sha256(Path file) throws IOException {
         try {
             var digest = MessageDigest.getInstance("SHA-256");
-            try (var input = Files.newInputStream(file)) {
+            var before = regularFileAttributes(file);
+            try (var input = Files.newInputStream(file, LinkOption.NOFOLLOW_LINKS)) {
                 var buffer = new byte[8192];
+                long size = 0L;
                 int read;
                 while ((read = input.read(buffer)) != -1) {
                     if (read > 0) {
+                        size += read;
                         digest.update(buffer, 0, read);
                     }
+                }
+                var after = regularFileAttributes(file);
+                if (!stableFile(before, after) || size != after.size()) {
+                    throw new JoernCpgArtifactException("package artifact changed while being verified");
                 }
             }
             return HexFormat.of().formatHex(digest.digest());
@@ -311,10 +321,66 @@ public final class FileSystemJoernWorkspaceMaterializer implements JoernWorkspac
         }
     }
 
+    private static void requireOwnedParentChain(Path root, Path path) {
+        try {
+            var normalizedRoot = root.toAbsolutePath().normalize();
+            var normalizedPath = path.toAbsolutePath().normalize();
+            requireDirectoryWithoutLinks(normalizedRoot);
+            var current = normalizedRoot;
+            var relativeParent = normalizedRoot.relativize(normalizedPath.getParent());
+            for (var part : relativeParent) {
+                current = current.resolve(part);
+                requireDirectoryWithoutLinks(current);
+            }
+        } catch (IOException error) {
+            throw new UncheckedIOException("Failed to inspect Joern service-owned path.", error);
+        }
+    }
+
+    private static void createOwnedDirectories(Path root, Path directory) throws IOException {
+        var normalizedRoot = root.toAbsolutePath().normalize();
+        var normalizedDirectory = directory.toAbsolutePath().normalize();
+        if (!normalizedDirectory.startsWith(normalizedRoot)) {
+            throw new JoernCpgArtifactException("package archive entry resolves outside Joern workspace");
+        }
+        requireDirectoryWithoutLinks(normalizedRoot);
+        var current = normalizedRoot;
+        for (var part : normalizedRoot.relativize(normalizedDirectory)) {
+            current = current.resolve(part);
+            if (Files.exists(current, LinkOption.NOFOLLOW_LINKS)) {
+                requireDirectoryWithoutLinks(current);
+            } else {
+                Files.createDirectory(current);
+            }
+        }
+    }
+
+    private static BasicFileAttributes regularFileAttributes(Path file) throws IOException {
+        var attributes = Files.readAttributes(file, BasicFileAttributes.class, LinkOption.NOFOLLOW_LINKS);
+        if (!attributes.isRegularFile()) {
+            throw new JoernCpgArtifactException("required package bytes are not a service-owned regular file");
+        }
+        return attributes;
+    }
+
+    private static void requireDirectoryWithoutLinks(Path directory) throws IOException {
+        var attributes = Files.readAttributes(directory, BasicFileAttributes.class, LinkOption.NOFOLLOW_LINKS);
+        if (!attributes.isDirectory()) {
+            throw new JoernCpgArtifactException("Joern service-owned directory is not available");
+        }
+    }
+
+    private static boolean stableFile(BasicFileAttributes before, BasicFileAttributes after) {
+        return before.size() == after.size()
+            && Objects.equals(before.fileKey(), after.fileKey())
+            && Objects.equals(before.lastModifiedTime(), after.lastModifiedTime());
+    }
+
     private static void recreateDirectory(Path directory) {
         deleteDirectory(directory);
         try {
             Files.createDirectories(directory);
+            requireDirectoryWithoutLinks(directory);
         } catch (IOException error) {
             throw new UncheckedIOException("Failed to create Joern workspace.", error);
         }

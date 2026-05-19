@@ -20,6 +20,9 @@ class AnalysisStoreDomainModelTest {
         assertThrows(IllegalArgumentException.class, () -> new AnalysisRunId(null));
         assertThrows(IllegalArgumentException.class, () -> new AnalysisRunId(" "));
         assertThrows(IllegalArgumentException.class, () -> new ArtifactReference(" ", "application/json", "sha", 1));
+        assertThrows(IllegalArgumentException.class, () -> new ArtifactReference("file:/tmp/private/artifact.json", "application/json", "sha", 1));
+        assertThrows(IllegalArgumentException.class, () -> new ArtifactReference("../private/artifact.json", "application/json", "sha", 1));
+        assertThrows(IllegalArgumentException.class, () -> new ArtifactReference("artifacts/./artifact.json", "application/json", "sha", 1));
         assertThrows(IllegalArgumentException.class, () -> new ArtifactReference("artifact.json", "application/json", "sha", -1));
         assertThrows(IllegalArgumentException.class, () -> new ArtifactByteAccess(
             "java-ast-analysis-service",
@@ -31,6 +34,12 @@ class AnalysisStoreDomainModelTest {
             "java-ast-analysis-service",
             "analysis-job.v1.ArtifactBytes",
             "../private/artifact",
+            ArtifactByteCustody.PRODUCER_RETAINED
+        ));
+        assertThrows(IllegalArgumentException.class, () -> new ArtifactByteAccess(
+            "java-ast-analysis-service",
+            "analysis-job.v1.ArtifactBytes",
+            "artifacts/./artifact",
             ArtifactByteCustody.PRODUCER_RETAINED
         ));
         assertThrows(IllegalArgumentException.class, () -> new ArtifactByteAccess(

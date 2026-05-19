@@ -253,6 +253,9 @@ public final class JoernCpgAnalysisDomain {
             metadata = Objects.requireNonNull(metadata, "metadata must not be null");
             policy = Objects.requireNonNull(policy, "policy must not be null");
             workspace = Objects.requireNonNull(workspace, "workspace must not be null");
+            if (!workspace.workspaceId().equals("joern-workspace-" + metadata.sourceSnapshotId().value())) {
+                throw new IllegalArgumentException("workspace id must match the requested source snapshot");
+            }
             if (workspace.sourceRoots().size() > policy.maxSourceRoots()) {
                 throw new IllegalArgumentException("source root count exceeds scan policy");
             }
@@ -475,15 +478,16 @@ public final class JoernCpgAnalysisDomain {
 
     public static String requireRelativePath(String value, String fieldName) {
         var text = requireText(value, fieldName).replace('\\', '/');
+        var lower = text.toLowerCase(Locale.ROOT);
         if (text.startsWith("/")
-            || text.startsWith("file:")
+            || lower.startsWith("file:")
             || WINDOWS_DRIVE_PATH.matcher(text).matches()
             || text.contains("://")) {
             throw new IllegalArgumentException(fieldName + " must be a relative path");
         }
         var parts = List.of(text.split("/"));
-        if (parts.stream().anyMatch(part -> part.equals("..") || part.isBlank())) {
-            throw new IllegalArgumentException(fieldName + " must not contain parent traversal or blank segments");
+        if (parts.stream().anyMatch(part -> part.equals(".") || part.equals("..") || part.isBlank())) {
+            throw new IllegalArgumentException(fieldName + " must not contain traversal, current-directory or blank segments");
         }
         return String.join("/", parts);
     }
@@ -552,15 +556,16 @@ public final class JoernCpgAnalysisDomain {
 
     private static String requirePublicReference(String value, String fieldName) {
         var text = requireText(value, fieldName).replace('\\', '/');
+        var lower = text.toLowerCase(Locale.ROOT);
         if (text.startsWith("/")
-            || text.startsWith("file:")
+            || lower.startsWith("file:")
             || WINDOWS_DRIVE_PATH.matcher(text).matches()
             || text.contains("://")) {
             throw new IllegalArgumentException(fieldName + " must not be a private path or URI");
         }
         var parts = List.of(text.split("/"));
-        if (parts.stream().anyMatch(part -> part.equals("..") || part.isBlank())) {
-            throw new IllegalArgumentException(fieldName + " must not contain parent traversal or blank segments");
+        if (parts.stream().anyMatch(part -> part.equals(".") || part.equals("..") || part.isBlank())) {
+            throw new IllegalArgumentException(fieldName + " must not contain traversal, current-directory or blank segments");
         }
         return String.join("/", parts);
     }
@@ -573,9 +578,7 @@ public final class JoernCpgAnalysisDomain {
                 throw new IllegalArgumentException("safe attributes must not contain sensitive keys");
             }
             var normalizedValue = requireText(value, "safe attribute value");
-            if (normalizedValue.startsWith("file:")
-                || normalizedValue.contains("://")
-                || WINDOWS_DRIVE_PATH.matcher(normalizedValue).matches()) {
+            if (looksLikePrivatePathOrUri(normalizedValue)) {
                 throw new IllegalArgumentException("safe attributes must not contain local paths or URIs");
             }
         });
@@ -587,9 +590,39 @@ public final class JoernCpgAnalysisDomain {
             .replace('\r', ' ')
             .replace('\n', ' ')
             .replace('\\', '/');
-        if (text.startsWith("file:") || WINDOWS_DRIVE_PATH.matcher(text).matches()) {
+        if (looksLikePrivatePathOrUri(text) || containsSensitiveToken(text) || looksLikeSourceSnippet(text)) {
             return "diagnostic details redacted";
         }
         return text;
+    }
+
+    private static boolean looksLikePrivatePathOrUri(String value) {
+        var text = value.strip().replace('\\', '/');
+        var lower = text.toLowerCase(Locale.ROOT);
+        return lower.startsWith("file:")
+            || lower.contains("://")
+            || text.startsWith("/")
+            || text.startsWith("//")
+            || WINDOWS_DRIVE_PATH.matcher(text).matches()
+            || lower.contains("/mnt/")
+            || lower.contains("/home/")
+            || lower.contains("/users/")
+            || lower.contains("/var/")
+            || lower.contains("/tmp/")
+            || lower.contains("/root/");
+    }
+
+    private static boolean containsSensitiveToken(String value) {
+        var normalized = value.toLowerCase(Locale.ROOT).replace("-", "").replace("_", "");
+        return SENSITIVE_KEYS.stream().anyMatch(normalized::contains);
+    }
+
+    private static boolean looksLikeSourceSnippet(String value) {
+        var text = value.toLowerCase(Locale.ROOT);
+        return text.contains("public class ")
+            || text.contains("private class ")
+            || text.contains("protected class ")
+            || text.contains("import ")
+            || text.contains("package ");
     }
 }

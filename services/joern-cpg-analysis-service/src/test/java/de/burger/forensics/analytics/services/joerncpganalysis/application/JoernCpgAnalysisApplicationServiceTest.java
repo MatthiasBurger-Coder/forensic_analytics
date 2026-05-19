@@ -1,5 +1,6 @@
 package de.burger.forensics.analytics.services.joerncpganalysis.application;
 
+import de.burger.forensics.analytics.services.joerncpganalysis.application.port.AnalysisStoreArtifactRegistryPort;
 import de.burger.forensics.analytics.services.joerncpganalysis.application.port.JoernArtifactCollectorPort;
 import de.burger.forensics.analytics.services.joerncpganalysis.application.port.JoernRuntimePort;
 import de.burger.forensics.analytics.services.joerncpganalysis.application.port.JoernWorkspaceMaterializerPort;
@@ -28,6 +29,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.PRODUCER_SERVICE;
 import static de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.SEMANTIC_ARTIFACT_SCHEMA_VERSION;
@@ -39,6 +41,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class JoernCpgAnalysisApplicationServiceTest {
     @Test
     void analyzesWithServiceOwnedPortsAndPreservesIncompleteDiagnostics() {
+        var registered = new AtomicReference<de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.AnalyzeJoernCpgResult>();
         var application = new JoernCpgAnalysisApplicationService(
             materializer(),
             workspace(100),
@@ -53,7 +56,8 @@ class JoernCpgAnalysisApplicationServiceTest {
                     "callgraph.json",
                     true
                 ))
-            )
+            ),
+            registered::set
         );
 
         var result = application.analyze(command());
@@ -62,6 +66,10 @@ class JoernCpgAnalysisApplicationServiceTest {
         assertEquals("joern 1.2.3", result.summary().joernVersion());
         assertEquals(1, result.summary().producedArtifactCount());
         assertEquals(List.of("JOERN_ARTIFACT_MISSING"), result.diagnostics().stream().map(JoernCpgDiagnostic::code).toList());
+        assertEquals(result, registered.get());
+        assertEquals(List.of("joern-cpg/run-1/cpg.bin.zip"), registered.get().semanticArtifacts().stream()
+            .map(reference -> reference.artifact().path())
+            .toList());
     }
 
     @Test
@@ -74,7 +82,8 @@ class JoernCpgAnalysisApplicationServiceTest {
                 runtimeInvoked.set(true);
                 return new JoernRuntimeResult("joern 1.2.3", image(), "joern-cpg/run-1", List.of());
             },
-            emptyCollector()
+            emptyCollector(),
+            registry()
         );
 
         assertThrows(IllegalArgumentException.class, () -> application.analyze(command()));
@@ -82,26 +91,43 @@ class JoernCpgAnalysisApplicationServiceTest {
     }
 
     @Test
-    void propagatesUnavailableJoernAndTimeouts() {
+    void returnsUnknownWhenJoernIsUnavailableAndPropagatesTimeouts() {
+        var registered = new AtomicReference<de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.AnalyzeJoernCpgResult>();
         var unavailable = new JoernCpgAnalysisApplicationService(
             materializer(),
             workspace(100),
             (command, workspace) -> {
                 throw new JoernRuntimeUnavailableException("Joern unavailable");
             },
-            emptyCollector()
+            unavailableCollector(),
+            registered::set
         );
+        var timeoutRegistered = new AtomicReference<de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.AnalyzeJoernCpgResult>();
         var timeout = new JoernCpgAnalysisApplicationService(
             materializer(),
             workspace(100),
             (command, workspace) -> {
                 throw new JoernCpgAnalysisTimeoutException("timeout");
             },
-            emptyCollector()
+            unavailableCollector(),
+            timeoutRegistered::set
         );
 
-        assertThrows(JoernRuntimeUnavailableException.class, () -> unavailable.analyze(command()));
-        assertThrows(JoernCpgAnalysisTimeoutException.class, () -> timeout.analyze(command()));
+        var unavailableResult = unavailable.analyze(command());
+        var minimalUnavailableResult = unavailable.analyze(command(false, false, false));
+
+        assertEquals(AnalysisCompleteness.UNKNOWN, unavailableResult.completeness());
+        assertEquals(5, unavailableResult.summary().missingArtifactCount());
+        assertEquals(List.of("JOERN_RUNTIME_UNAVAILABLE"), unavailableResult.diagnostics().stream().map(JoernCpgDiagnostic::code).toList());
+        assertEquals(List.of("joern-cpg/run-1/joern-provenance.json"), unavailableResult.semanticArtifacts().stream()
+            .map(reference -> reference.artifact().path())
+            .toList());
+        assertEquals(1, minimalUnavailableResult.summary().missingArtifactCount());
+        assertEquals(minimalUnavailableResult, registered.get());
+        var timeoutResult = timeout.analyze(command());
+        assertEquals(AnalysisCompleteness.UNKNOWN, timeoutResult.completeness());
+        assertEquals(List.of("JOERN_RUNTIME_TIMEOUT"), timeoutResult.diagnostics().stream().map(JoernCpgDiagnostic::code).toList());
+        assertEquals(timeoutResult, timeoutRegistered.get());
     }
 
     @Test
@@ -110,7 +136,8 @@ class JoernCpgAnalysisApplicationServiceTest {
             materializer(),
             workspace(100),
             (command, workspace) -> new JoernRuntimeResult("joern 1.2.3", image(), "joern-cpg/run-1", List.of()),
-            emptyCollector()
+            emptyCollector(),
+            registry()
         );
 
         var result = application.analyze(command());
@@ -130,7 +157,7 @@ class JoernCpgAnalysisApplicationServiceTest {
     private static JoernWorkspacePort workspace(long bytes) {
         return command -> new ResolvedJoernWorkspace(
             command.metadata().sourceSnapshotId(),
-            "joern-workspace-1",
+            "joern-workspace-" + command.metadata().sourceSnapshotId().value(),
             Path.of("build/test-workspace"),
             List.of(Path.of("build/test-workspace/src/main/java")),
             bytes
@@ -166,13 +193,44 @@ class JoernCpgAnalysisApplicationServiceTest {
         return (command, runtimeResult) -> new JoernArtifactCollectionResult(List.of(), 1, List.of());
     }
 
+    private static JoernArtifactCollectorPort unavailableCollector() {
+        return new JoernArtifactCollectorPort() {
+            @Override
+            public JoernArtifactCollectionResult collect(AnalyzeJoernCpgCommand command, JoernRuntimeResult runtimeResult) {
+                return new JoernArtifactCollectionResult(List.of(), 1, List.of());
+            }
+
+            @Override
+            public JoernArtifactCollectionResult collectUnavailable(
+                AnalyzeJoernCpgCommand command,
+                ResolvedJoernWorkspace workspace,
+                JoernCpgDiagnostic diagnostic
+            ) {
+                return new JoernArtifactCollectionResult(
+                    List.of(reference("joern-cpg/run-1/joern-provenance.json", AnalysisCompleteness.UNKNOWN)),
+                    1,
+                    List.of(diagnostic)
+                );
+            }
+        };
+    }
+
+    private static AnalysisStoreArtifactRegistryPort registry() {
+        return result -> {
+        };
+    }
+
     private static AnalysisArtifactReference reference(String path) {
+        return reference(path, AnalysisCompleteness.COMPLETE);
+    }
+
+    private static AnalysisArtifactReference reference(String path, AnalysisCompleteness completeness) {
         return new AnalysisArtifactReference(
             new ArtifactReference(path, "application/vnd.forensic-analytics.joern-cpg.v1+binary", "a".repeat(64), 3),
             AnalysisArtifactCategory.STATIC,
             PRODUCER_SERVICE,
             SEMANTIC_ARTIFACT_SCHEMA_VERSION,
-            AnalysisCompleteness.COMPLETE,
+            completeness,
             new ArtifactByteAccess(
                 PRODUCER_SERVICE,
                 "analysis-job.v1.ArtifactBytes",
@@ -183,6 +241,10 @@ class JoernCpgAnalysisApplicationServiceTest {
     }
 
     private static AnalyzeJoernCpgCommand command() {
+        return command(true, true, true);
+    }
+
+    private static AnalyzeJoernCpgCommand command(boolean requireCallgraph, boolean requireControlflow, boolean requireDataflow) {
         return new AnalyzeJoernCpgCommand(
             new RequestMetadata(
                 "request-1",
@@ -202,11 +264,11 @@ class JoernCpgAnalysisApplicationServiceTest {
                 60,
                 image(),
                 "queries-v1",
-                true,
-                true,
-                true
+                requireCallgraph,
+                requireControlflow,
+                requireDataflow
             ),
-            new SourceWorkspace("joern-workspace-1", List.of(new SourceRoot("src/main/java", "java")), List.of(reference("input.json")))
+            new SourceWorkspace("joern-workspace-snapshot-1", List.of(new SourceRoot("src/main/java", "java")), List.of(reference("input.json")))
         );
     }
 

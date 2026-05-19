@@ -4,8 +4,10 @@ import de.burger.forensics.analytics.services.joerncpganalysis.adapter.in.grpc.J
 import de.burger.forensics.analytics.services.joerncpganalysis.adapter.out.filesystem.FileSystemJoernArtifactCollector;
 import de.burger.forensics.analytics.services.joerncpganalysis.adapter.out.filesystem.FileSystemJoernWorkspaceAdapter;
 import de.burger.forensics.analytics.services.joerncpganalysis.adapter.out.filesystem.FileSystemJoernWorkspaceMaterializer;
+import de.burger.forensics.analytics.services.joerncpganalysis.adapter.out.grpc.AnalysisStoreArtifactRegistryGrpcClient;
 import de.burger.forensics.analytics.services.joerncpganalysis.adapter.out.joern.ProcessJoernRuntimeAdapter;
 import de.burger.forensics.analytics.services.joerncpganalysis.application.JoernCpgAnalysisApplicationService;
+import de.burger.forensics.analytics.services.joerncpganalysis.application.port.AnalysisStoreArtifactRegistryPort;
 import de.burger.forensics.analytics.services.joerncpganalysis.application.port.JoernArtifactCollectorPort;
 import de.burger.forensics.analytics.services.joerncpganalysis.application.port.JoernRuntimePort;
 import de.burger.forensics.analytics.services.joerncpganalysis.application.port.JoernWorkspaceMaterializerPort;
@@ -46,13 +48,29 @@ public class JoernCpgAnalysisServiceConfiguration {
     }
 
     @Bean
+    public AnalysisStoreArtifactRegistryPort analysisStoreArtifactRegistryPort(JoernCpgAnalysisServiceProperties properties) {
+        return new AnalysisStoreArtifactRegistryGrpcClient(
+            properties.analysisStore().host(),
+            properties.analysisStore().port(),
+            properties.analysisStore().deadlineSeconds()
+        );
+    }
+
+    @Bean
     public JoernCpgAnalysisApplicationService joernCpgAnalysisApplicationService(
         JoernWorkspaceMaterializerPort materializerPort,
         JoernWorkspacePort workspacePort,
         JoernRuntimePort runtimePort,
-        JoernArtifactCollectorPort artifactCollector
+        JoernArtifactCollectorPort artifactCollector,
+        AnalysisStoreArtifactRegistryPort artifactRegistryPort
     ) {
-        return new JoernCpgAnalysisApplicationService(materializerPort, workspacePort, runtimePort, artifactCollector);
+        return new JoernCpgAnalysisApplicationService(
+            materializerPort,
+            workspacePort,
+            runtimePort,
+            artifactCollector,
+            artifactRegistryPort
+        );
     }
 
     @Bean

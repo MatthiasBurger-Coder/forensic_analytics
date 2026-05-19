@@ -108,6 +108,7 @@ final class AnalysisJobRequestValidator {
     private void artifact(AnalysisArtifactReference reference) {
         RequiredFields.present(reference.hasArtifact(), "artifact");
         RequiredFields.nonBlank(reference.getArtifact().getPath(), "artifact.path");
+        safeByteAccess(reference.getArtifact().getPath(), "artifact.path");
         RequiredFields.nonBlank(reference.getArtifact().getType(), "artifact.type");
         RequiredFields.nonBlank(reference.getArtifact().getSha256(), "artifact.sha256");
         if (reference.getArtifact().getSizeBytes() < 0) {

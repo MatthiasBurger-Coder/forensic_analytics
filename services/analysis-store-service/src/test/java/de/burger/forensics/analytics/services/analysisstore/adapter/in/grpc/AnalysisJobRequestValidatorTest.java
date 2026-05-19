@@ -75,6 +75,30 @@ class AnalysisJobRequestValidatorTest {
 
         assertThrows(ValidationException.class, () -> validator.validate(invalidArtifact));
         assertThrows(ValidationException.class, () -> validator.validate(submitRequest(
+            "submit-private-artifact-path",
+            "job-private-artifact-path",
+            AnalysisWorkerKind.ANALYSIS_WORKER_KIND_AST_ANALYSIS
+        ).toBuilder()
+            .clearInputArtifacts()
+            .addInputArtifacts(artifact(
+                "file:/tmp/private/artifact.json",
+                "sha",
+                AnalysisArtifactCategory.ANALYSIS_ARTIFACT_CATEGORY_STATIC
+            ))
+            .build()));
+        assertThrows(ValidationException.class, () -> validator.validate(submitRequest(
+            "submit-current-directory-artifact-path",
+            "job-current-directory-artifact-path",
+            AnalysisWorkerKind.ANALYSIS_WORKER_KIND_AST_ANALYSIS
+        ).toBuilder()
+            .clearInputArtifacts()
+            .addInputArtifacts(artifact(
+                "artifact/./path.json",
+                "sha",
+                AnalysisArtifactCategory.ANALYSIS_ARTIFACT_CATEGORY_STATIC
+            ))
+            .build()));
+        assertThrows(ValidationException.class, () -> validator.validate(submitRequest(
             "submit-missing-byte-access",
             "job-missing-byte-access",
             AnalysisWorkerKind.ANALYSIS_WORKER_KIND_AST_ANALYSIS
@@ -121,6 +145,24 @@ class AnalysisJobRequestValidatorTest {
                     AnalysisArtifactCategory.ANALYSIS_ARTIFACT_CATEGORY_STATIC
                 ).getByteAccess().toBuilder()
                     .setRetrievalReference("file:/tmp/private/artifact")))
+            .build()));
+        assertThrows(ValidationException.class, () -> validator.validate(submitRequest(
+            "submit-current-directory-byte-reference",
+            "job-current-directory-byte-reference",
+            AnalysisWorkerKind.ANALYSIS_WORKER_KIND_AST_ANALYSIS
+        ).toBuilder()
+            .clearInputArtifacts()
+            .addInputArtifacts(artifact(
+                "artifact.json",
+                "sha",
+                AnalysisArtifactCategory.ANALYSIS_ARTIFACT_CATEGORY_STATIC
+            ).toBuilder()
+                .setByteAccess(artifact(
+                    "artifact.json",
+                    "sha",
+                    AnalysisArtifactCategory.ANALYSIS_ARTIFACT_CATEGORY_STATIC
+                ).getByteAccess().toBuilder()
+                    .setRetrievalReference("artifacts/./artifact")))
             .build()));
         assertThrows(ValidationException.class, () -> validator.validate(invalidProgress));
         assertThrows(ValidationException.class, () -> validator.validate(LeaseAnalysisJobRequest.newBuilder()
