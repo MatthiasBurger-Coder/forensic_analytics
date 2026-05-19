@@ -44,7 +44,7 @@ the current state.
 | REST API | `forensic-analytics-rest` | JDK HTTP server adapter |
 | Persistence | `forensic-analytics-persistence` | In-memory stores and repositories |
 | Docker | `docker/boot-app`, `docker/joern`, `forensic-ui/Dockerfile` | Existing container material, not a service ecosystem |
-| Service roots | `services/` | Six registered service projects and three README-only planned service roots |
+| Service roots | `services/` | Seven registered service projects, two README-only planned service roots and one planned build-artifact worker target without a root |
 | External contracts root | `contracts/` | Present with gRPC, OpenAPI and event contract documentation |
 | Deployment roots | `deployment/`, Kubernetes, Swarm, Helm roots | Not present |
 
@@ -160,11 +160,12 @@ The current repository does not have verified per-service:
 - Docker Compose service landscape;
 - Docker Swarm or Kubernetes deployment manifests.
 
-The six registered service projects have service-local READMEs, tests and
-Dockerfiles where verified in `services/**`. Gateway, graph-replay and
-report-generation remain README-only planned roots. Health check and production
-runtime readiness evidence remains incomplete unless a service-specific README
-states otherwise.
+Seven registered service projects have service-local READMEs, tests and
+Dockerfiles where verified in `services/**`, including the Gateway service.
+Graph-replay and report-generation remain README-only planned roots. The
+build-artifact worker is a planned target with no service root yet. Health
+check and production runtime readiness evidence remains incomplete unless a
+service-specific README states otherwise.
 
 Future slices must treat README-only service roots as planned targets. Registered
 service projects still need explicit start, healthcheck, orchestration and

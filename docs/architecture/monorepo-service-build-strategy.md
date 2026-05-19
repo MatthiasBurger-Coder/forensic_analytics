@@ -4,9 +4,10 @@
 
 Build strategy for service roots.
 
-Six service build files are now registered in the root Gradle build. Gateway,
-graph-replay and report-generation remain README-only planned roots until their
-service build files are created and registered.
+Seven service build files are now registered in the root Gradle build,
+including Gateway. Graph-replay and report-generation remain README-only
+planned roots, and the build-artifact worker remains a planned target without a
+service root until its service build file is created and registered.
 
 ## Decision
 

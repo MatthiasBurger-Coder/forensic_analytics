@@ -5,8 +5,8 @@
 Slice 01 target architecture baseline for the microservices ecosystem
 conversion workflow.
 
-This document defines the target service landscape. Six service slices are now
-registered Gradle projects with service-local documentation, tests and
+This document defines the target service landscape. Seven service slices are
+now registered Gradle projects with service-local documentation, tests and
 Dockerfiles. This does not claim that the full landscape is independently
 deployable, health-checkable, containerized for production or complete.
 
@@ -17,6 +17,7 @@ The target service landscape is the active workflow landscape:
 - `forensic-gateway-service`
 - `forensic-ingestion-service`
 - `repository-analysis-service`
+- `build-artifact-worker-service`
 - `java-ast-analysis-service`
 - `joern-cpg-analysis-service`
 - `btm-generation-service`
@@ -42,8 +43,9 @@ The current platform has:
 - a separate `forensic-ui` frontend;
 - Boot, Joern and frontend Docker material.
 
-The current platform has six implemented service slices:
+The current platform has seven implemented service slices:
 
+- `forensic-gateway-service`;
 - `forensic-ingestion-service`;
 - `repository-analysis-service`;
 - `analysis-store-service`;
@@ -53,7 +55,8 @@ The current platform has six implemented service slices:
 
 The current platform still does not have:
 
-- implemented gateway, graph-replay or report-generation services;
+- implemented graph-replay, report-generation or build-artifact-worker
+  executable services;
 - service-private databases;
 - fully verified service-local health checks;
 - Docker Compose service landscape;
@@ -105,6 +108,7 @@ services/
   forensic-gateway-service/
   forensic-ingestion-service/
   repository-analysis-service/
+  build-artifact-worker-service/
   java-ast-analysis-service/
   joern-cpg-analysis-service/
   btm-generation-service/
@@ -123,9 +127,10 @@ deployment/
   kubernetes/
 ```
 
-Most target roots now exist. Gateway, graph-replay, report-generation,
-frontend migration and deployment roots still require later implementation
-slices before they can be treated as executable runtime paths.
+Most target roots now exist. Graph-replay, report-generation,
+build-artifact-worker, frontend migration and deployment roots still require
+later implementation slices before they can be treated as executable runtime
+paths.
 
 ## Target Service Responsibilities
 
@@ -134,6 +139,7 @@ slices before they can be treated as executable runtime paths.
 | `forensic-gateway-service` | External API, UI/CLI facade, public request/status facade and public BTM delivery facade | Public facade state only, not worker orchestration state, analysis facts or artifact bytes |
 | `forensic-ingestion-service` | gRPC intake and validation of plugin, scanner and runtime evidence packages | Raw ingestion intake and upload-session lifecycle |
 | `repository-analysis-service` | Repository checkout, branch resolution, workspace preparation and source snapshot preparation | Repository workspaces, leases and checkout diagnostics |
+| `build-artifact-worker-service` | Optional sandboxed production of complete build-output packages for pinned source snapshots | Build-output package bytes, manifests, checksums and retrieval references when introduced |
 | `java-ast-analysis-service` | JavaParser source scanning, stable source identifiers and unresolved-symbol diagnostics | AST execution output until accepted by Analysis Store |
 | `joern-cpg-analysis-service` | Joern runtime, CPG/CFG/DFG analysis and semantic artifact mapping | Joern execution artifacts and semantic worker output |
 | `btm-generation-service` | Deterministic Byteman/BTM artifacts from delivered analysis facts | Generated BTM rule artifacts |
@@ -151,6 +157,7 @@ Frontend / CLI / external client
   -> Gateway
   -> Ingestion / analysis job APIs
   -> Repository Analysis
+  -> Build Artifact Worker or verified external artifact producer
   -> Java AST Analysis
   -> Joern CPG Analysis
   -> Analysis Store

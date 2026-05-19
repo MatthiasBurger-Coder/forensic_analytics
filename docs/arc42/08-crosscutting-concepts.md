@@ -75,6 +75,21 @@ Graph DB and Vector DB are projections from the canonical analysis model. They a
 
 Ambiguous mappings between JavaParser, Joern, Byteman rules and runtime events must be marked with confidence levels. Unclear mappings must not be silently accepted.
 
+Source snapshots for cross-service analysis are commit-pinned. A moving branch
+name is resolved once during Repository Analysis and later branch movement
+creates a new snapshot instead of mutating existing analysis input.
+
+Complete build-output packages are explicit artifacts, not inferred runtime
+facts. Artifact resolution tries a verified Artifact Store/Artifactory
+reference first, optional Jenkins second, and a sandboxed build-artifact worker
+fallback only when the earlier options are absent. Manifest or checksum
+mismatch is an integrity failure and must not trigger fallback.
+
+Joern materialization creates a Joern-owned workspace from validated
+source/build packages. It rejects private Repository Analysis workspace IDs,
+absolute paths, `file:` URIs, traversal, symlinks, hardlinks, device files,
+duplicate normalized paths and quota overruns before Docker mounting.
+
 ## 8.7 Replay Uncertainty
 
 The replay must explicitly show missing, incomplete or uncertain event chains.

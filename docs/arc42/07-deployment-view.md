@@ -88,6 +88,7 @@ The target service roots are:
 services/forensic-gateway-service
 services/forensic-ingestion-service
 services/repository-analysis-service
+services/build-artifact-worker-service
 services/java-ast-analysis-service
 services/joern-cpg-analysis-service
 services/btm-generation-service
@@ -107,6 +108,17 @@ ADR-0018 keeps contract artifacts separate from deployment readiness. A
 contract file may exist before the service, container, healthcheck, manifest or
 broker topology exists. Deployment documentation must not claim readiness from
 contract presence alone.
+
+`build-artifact-worker-service` is a planned service root only. Before it is
+called deployable, a slice must add its Spring Boot application, healthcheck,
+Dockerfile, sandbox configuration, resource quotas, network policy, tests and
+service-local contract generation. Jenkins and Artifactory integrations remain
+optional external integrations and are skipped by default in local quality
+gates.
+
+Joern Docker input must be a Joern-owned materialized workspace volume. A
+Repository Analysis private workspace volume must not be mounted into the Joern
+container.
 
 `services/analysis-store-service` is implemented as an independently buildable
 Spring Boot service. It exposes gRPC on port `9091`, a JDK HTTP health endpoint

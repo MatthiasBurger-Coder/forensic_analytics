@@ -51,10 +51,11 @@ Verified from `settings.gradle.kts`:
 - `services:repository-analysis-service`
 - `services:analysis-store-service`
 - `services:forensic-ingestion-service`
+- `services:forensic-gateway-service`
 
-Six service-specific Gradle projects under `services/**` are now registered.
-Gateway, graph-replay and report-generation remain README-only planned service
-roots.
+Seven service-specific Gradle projects under `services/**` are now registered.
+Graph-replay and report-generation remain README-only planned service roots.
+The build-artifact worker is planned by workflow v2 and has no service root yet.
 
 ## Quality Commands
 
@@ -180,14 +181,15 @@ deployment behavior, run the minimum `QUALITY.md` command before continuing:
 ./gradlew test --dependency-verification strict --console=plain --stacktrace
 ```
 
-Service-specific test commands exist for the six registered service projects.
-Gateway, graph-replay and report-generation still have no service-local Gradle
-test task because they remain README-only planned service roots.
+Service-specific test commands exist for the seven registered service projects.
+Graph-replay and report-generation still have no service-local Gradle test task
+because they remain README-only planned service roots. The build-artifact
+worker has no Gradle task until a later slice creates the service root.
 
 ## Residual Risks
 
 - CI workflow evidence is absent.
-- Service-specific test tasks exist only for the six registered service
+- Service-specific test tasks exist only for the seven registered service
   projects.
 - Contract tests exist for implemented service contracts, but coverage is not
   complete for every planned service interaction.

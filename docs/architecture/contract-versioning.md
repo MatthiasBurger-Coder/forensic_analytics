@@ -5,8 +5,9 @@
 Contract versioning rules for the microservices ecosystem conversion workflow.
 
 The active workflow assigns Gateway HTTP and public gRPC BTM delivery contract
-work to Slice 02, then artifact-byte and instrumentation-target ownership
-contracts to Slice 03. Existing planned contracts remain design artifacts
+work to Slice 02, artifact-byte and instrumentation-target ownership contracts
+to Slice 03, and source-package, complete build-output package and Joern
+materialization contracts to Slice 07. Existing planned contracts remain design artifacts
 unless their operation explicitly says `current-verified`. The user approved
 logical initial contracts for not-yet-implemented service communication on
 2026-05-16. That approval allows planned endpoint, RPC and event design, but it
@@ -19,6 +20,7 @@ does not turn planned contracts into implemented runtime evidence.
 | `contracts/grpc/forensic-ingestion.proto` | gRPC ingestion compatibility contract | Current v1 shape extracted from implementation evidence |
 | `contracts/grpc/analysis-job.proto` | Worker handoff and analysis-job state contract | Planned initial contract |
 | `contracts/grpc/repository-analysis.proto` | Repository checkout and source-snapshot preparation contract | Planned initial contract |
+| planned `contracts/grpc/build-artifact-worker.proto` or approved owner API | Complete build-output package production contract | Planned by workflow v2; no file exists until Slice 07 verifies the name and service boundary |
 | `contracts/grpc/java-ast-analysis.proto` | Java AST source-fact worker contract | Planned initial contract |
 | `contracts/grpc/joern-cpg-analysis.proto` | Joern CPG/CFG/DFG semantic artifact worker contract | Planned initial contract |
 | `contracts/grpc/btm-generation.proto` | BTM generation, generated artifact metadata and public BTM artifact delivery contract | Planned initial contract |

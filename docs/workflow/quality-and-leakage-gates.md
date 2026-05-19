@@ -58,6 +58,39 @@ must not report imports from another service package root.
 The third command must remain empty for forbidden local path leakage. The
 fourth command must remain empty for obvious inline secret assignments.
 
+## Source Package And Build Artifact Gates
+
+Use for the Slice 07 source snapshot, build-output package and Joern
+materialization contract:
+
+```bash
+./gradlew :services:repository-analysis-service:generateProto :services:analysis-store-service:generateProto :services:joern-cpg-analysis-service:generateProto --dependency-verification strict --console=plain --stacktrace
+./gradlew :services:repository-analysis-service:test :services:analysis-store-service:test :services:joern-cpg-analysis-service:test --dependency-verification strict --console=plain --stacktrace
+./gradlew test --dependency-verification strict --console=plain --stacktrace
+```
+
+When implementation code changes artifact validation or materialization, also
+run the full local gate from `QUALITY.md`.
+
+Default local tests must not require real Jenkins, Artifactory, external
+artifact repositories or Docker. Use fakes or deterministic fixtures for
+Jenkins and Artifactory behavior. Docker checks are opt-in unless the slice
+changes Docker files or the workflow explicitly verifies Docker availability.
+
+Slice 07 tests must cover:
+
+- deterministic commit-pinned source snapshot identity;
+- complete build-output package metadata and manifest checksums;
+- artifact resolution order: existing Artifact Store/Artifactory, optional
+  Jenkins, then build-artifact-worker fallback;
+- terminal failure on manifest or checksum mismatch;
+- `ArtifactByteAccess` validation and roundtrip through service mappings;
+- rejection of Repository Analysis private workspace IDs in Joern requests;
+- archive traversal, symlink, hardlink, device-file, duplicate-path and quota
+  rejection before materialization;
+- diagnostics without local paths, raw command arguments, URLs with secret
+  coordinates, source content or raw stderr.
+
 ## Contract-Test Stop Rule
 
 If a slice changes `contracts/**` and the repository still has no executable

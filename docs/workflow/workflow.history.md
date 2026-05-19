@@ -1,5 +1,23 @@
 # Workflow History
 
+## microservices-btm-pipeline-20260517-v2
+
+| Field | Value |
+|---|---|
+| Created | 2026-05-19 |
+| Branch | `feature/workflow-microservices-btm-pipeline-20260517` |
+| Strand | workflow-governance update inside `workflow execute` recovery |
+| Status | Active. V2 inserts Slice 07 for repository snapshot, complete build-output package, optional Artifactory/Jenkins producers, `build-artifact-worker-service` fallback contract, `ArtifactByteAccess` preservation and Joern-owned materialization before the Joern handoff can resume. |
+| Source request | Add the missing workspace/build-artifact slice and continue the workflow after the Slice 07 blocker. |
+
+V2 preserves completed v1 Slice 00 through Slice 06 checkpoints. Downstream
+slices are renumbered by one: v1 Slice 07 becomes v2 Slice 08, and the final
+quality gate becomes v2 Slice 17.
+
+Jenkins and Artifactory remain optional external producers. Local quality gates
+must use deterministic tests and fakes unless a later slice explicitly opts into
+external integration checks.
+
 ## microservices-btm-pipeline-20260517-v1
 
 | Field | Value |

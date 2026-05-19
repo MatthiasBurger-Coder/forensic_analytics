@@ -3,10 +3,13 @@
 ## Status
 
 `workflow execute` started. Slices 00, 01, 02, 03, 04, 05 and 06 checkpoints
-completed and pushed. Slice 07 Joern Worker Handoff is stopped before
-implementation because the required Repository Analysis to Joern transfer and
-materialization contract is not verified, and artifact byte-access metadata is
-not preserved by the involved service mappings.
+completed and pushed under `microservices-btm-pipeline-20260517-v1`. The v1
+Slice 07 Joern Worker Handoff stopped before implementation because the
+required Repository Analysis to Joern transfer and materialization contract was
+not verified, and artifact byte-access metadata was not preserved by the
+involved service mappings. `microservices-btm-pipeline-20260517-v2` is being
+introduced to add the missing Repository Snapshot and Build Artifact Worker
+Contract slice before Joern handoff execution resumes.
 
 ## Branch
 
@@ -495,3 +498,60 @@ Slice 07 is `BLOCKED` before implementation. Required unblock work:
 
 No Slice 07 files were modified, and no Slice 07 quality gate was run because
 the slice stopped during read-only precondition review.
+
+## Workflow Governance Update - v2
+
+### Review Evidence
+
+Read-only workflow-governance reviews completed before v2 documentation was
+changed:
+
+- Senior Workflow Architect: required a new workflow version because adding the
+  unblock work changes workflow scope and dependencies; recommended preserving
+  completed v1 Slice 00 through Slice 06 checkpoints and renumbering downstream
+  v2 slices.
+- Senior System Architect: required a dedicated source-package and Joern
+  materialization contract before Joern implementation; flagged
+  `build-artifact-worker-service` as a new service-boundary decision.
+- Senior gRPC Proto Specialist: required additive contract changes, source
+  snapshot and complete build-output package descriptors, byte-access
+  preservation and contract tests before service communication implementation.
+- Senior Analysis Storage Architect: required source package and build-output
+  package ownership, `ArtifactByteAccess` preservation and metadata-only
+  Analysis Store ownership.
+- Senior Security Sandbox Engineer: required sandboxed fallback builds,
+  manifest-first package validation, strict archive extraction rules, no
+  Repository Analysis workspace IDs in Joern and no path-bearing diagnostics.
+- Senior DevOps: required Jenkins and Artifactory to remain optional and
+  skipped by default in local quality gates; Joern Docker may mount only
+  Joern-owned materialized workspaces.
+
+### Decision
+
+Create workflow version `microservices-btm-pipeline-20260517-v2`.
+
+V2 inserts:
+
+```text
+Slice 07 - Repository Snapshot And Build Artifact Worker Contract
+```
+
+The former v1 Slice 07 Joern Worker Handoff becomes v2 Slice 08. Downstream
+slices are shifted by one through v2 Slice 17.
+
+### CP_RECORD
+
+```text
+workflowVersion=microservices-btm-pipeline-20260517-v2
+sliceId=workflow-governance-update-v2
+sliceTitle=Repository Snapshot And Build Artifact Worker Contract insertion
+responsibleAgent=Workflow Executor with Senior Workflow Architect, Senior System Architect, Senior gRPC Proto Specialist, Senior Analysis Storage Architect, Senior Security Sandbox Engineer and Senior DevOps reviews
+changedFiles=docs/workflow/execution-report.md; docs/workflow/workflow.history.md; docs/workflow/workflow.md; docs/workflow/slice-dependency-map.md; docs/workflow/role-ownership.md; docs/workflow/quality-and-leakage-gates.md; docs/architecture/service-communication-matrix.md; docs/architecture/data-ownership.md; docs/architecture/service-boundaries.md; docs/architecture/service-migration-map.md; docs/architecture/target-microservices-architecture.md; docs/architecture/current-state.md; docs/architecture/current-build-and-test-map.md; docs/architecture/current-coupling-map.md; docs/architecture/monorepo-service-build-strategy.md; docs/architecture/contract-versioning.md; docs/arc42/03-system-scope-and-context.md; docs/arc42/05-building-block-view.md; docs/arc42/06-runtime-view.md; docs/arc42/07-deployment-view.md; docs/arc42/08-crosscutting-concepts.md
+qualityGateCommands=git status --short --branch; git diff --stat; git diff --name-status; git diff --check; docs leakage checks; git diff --cached --check
+qualityGateResult=PASS
+commitHash=pending
+pushResult=pending
+rollbackReference=51954e322d4f29e17c607e66a929e5d174332e27
+arc42Updated=checked and updated for source/build package and Joern materialization flow
+adrUpdated=not required; ADR impact deferred unless build-artifact-worker-service is implemented as a service root
+```

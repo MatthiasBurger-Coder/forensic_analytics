@@ -5,10 +5,12 @@
 Slice 01 service-boundary baseline for the microservices ecosystem conversion
 workflow.
 
-These are target boundaries. Six service slices have initial implementations;
-gateway, graph-replay and report-generation remain planned roots. No service
-may be called production-ready without independent build, start, test,
-configuration, healthcheck, container and deployment evidence.
+These are target boundaries. Seven service slices have initial
+implementations, including Gateway. Graph-replay and report-generation remain
+README-only planned roots, and the build-artifact worker remains a planned
+target without a service root. No service may be called production-ready
+without independent build, start, test, configuration, healthcheck, container
+and deployment evidence.
 
 ## Boundary Rules
 
@@ -65,7 +67,8 @@ Current evidence:
 
 - current REST adapter exists in `forensic-analytics-rest`;
 - current frontend API adapter uses `/api`;
-- no gateway service exists yet.
+- `services/forensic-gateway-service` exists as an implemented Gateway service
+  shell and repository-analysis submission facade.
 
 Stop conditions:
 
@@ -130,6 +133,7 @@ Owns:
 - workspace leases;
 - workspace cleanup;
 - source snapshot preparation;
+- source package descriptors for commit-pinned analysis snapshots;
 - checkout diagnostics.
 
 Non-scope:
@@ -149,6 +153,8 @@ Outbound communication:
 
 - immutable source snapshot or artifact references to AST and Joern services
   through contracts.
+- complete build-output package requests to `build-artifact-worker-service`
+  only after a Slice 07 contract creates that service boundary.
 
 Security boundary:
 
@@ -161,6 +167,9 @@ Security boundary:
 - mutable workspace paths remain private to the service. Cross-service handoff
   uses source snapshot IDs, relative source roots, artifact references,
   completeness and diagnostics only.
+- branch names are resolved to concrete commit SHAs before analysis handoff;
+  later branch movement creates a new source snapshot instead of mutating the
+  existing one.
 - public artifact references must be opaque or source-snapshot-relative. Generic
   `safe_attributes` metadata must not contain secrets, credentials, tokens,
   local or private paths, raw repository content or unvalidated echoed input.
@@ -179,6 +188,59 @@ Stop conditions:
 - workspace paths are used as hidden cross-service coupling;
 - checkout failure cases are undocumented;
 - source snapshot identity is guessed.
+
+## `build-artifact-worker-service`
+
+Business capability: produce complete build-output packages for pinned source
+snapshots when no verified external artifact is available.
+
+Status: planned by workflow version
+`microservices-btm-pipeline-20260517-v2`; no service root is implemented yet.
+
+Owns:
+
+- sandboxed build-system detection;
+- sandboxed build execution for approved build systems;
+- complete build-output package bytes;
+- package manifests, checksums, byte sizes and retrieval references;
+- build diagnostics that do not expose local paths, secrets, command arguments
+  or raw source content.
+
+Non-scope:
+
+- repository checkout ownership;
+- Repository Analysis workspace access;
+- canonical Analysis Store facts;
+- Joern runtime execution;
+- BTM rule generation.
+
+Inbound communication:
+
+- future gRPC or owner API requests from Repository Analysis or Analysis Store
+  using commit-pinned source snapshot references and explicit build policy.
+
+Outbound communication:
+
+- artifact metadata and `ArtifactByteAccess` to Analysis Store or consumers
+  through approved contracts.
+
+Security boundary:
+
+- fallback builds run in a disposable sandbox with non-root execution, isolated
+  home and caches, no Docker socket, no privileged container, explicit quotas,
+  controlled network policy and no user-supplied shell commands;
+- dependency downloads, when allowed, are limited to approved artifact
+  repositories and are recorded as provenance;
+- Artifactory and Jenkins credentials are provided only through secret-governed
+  infrastructure and are never passed into untrusted builds.
+
+Stop conditions:
+
+- build-system detection is guessed;
+- fallback builds require unbounded network access or host secret mounts;
+- checksum or manifest mismatch triggers fallback instead of terminal
+  integrity failure;
+- the worker accesses Repository Analysis private workspace paths directly.
 
 ## `java-ast-analysis-service`
 
@@ -203,7 +265,9 @@ Non-scope:
 
 Inbound communication:
 
-- analysis-job or source-snapshot requests through contracts.
+- analysis-job or source-snapshot requests through contracts. The service may
+  receive only validated source/build package descriptors or Joern-local
+  materialization identifiers, never Repository Analysis private workspace IDs.
 
 Outbound communication:
 
@@ -262,7 +326,9 @@ Stop conditions:
 
 - Joern local installation is required outside service/container behavior;
 - incomplete semantic mappings are treated as confirmed facts;
-- CPG artifacts become shared filesystem coupling.
+- CPG artifacts become shared filesystem coupling;
+- Joern Docker mounts a Repository Analysis workspace instead of a Joern-owned
+  materialized workspace.
 
 ## `btm-generation-service`
 

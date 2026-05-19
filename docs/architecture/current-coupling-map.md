@@ -138,7 +138,8 @@ The following current couplings block microservice claims:
   implemented or tested;
 - no service-private persistence ownership exists;
 - no per-service health checks exist;
-- gateway, graph-replay and report-generation remain README-only planned roots;
+- graph-replay and report-generation remain README-only planned roots, and the
+  build-artifact worker is planned without a service root;
 - no Docker Swarm or Kubernetes manifests exist;
 - no service-specific CI workflow exists.
 

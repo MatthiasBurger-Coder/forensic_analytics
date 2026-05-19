@@ -46,7 +46,8 @@ Forbidden:
 | Artifact catalog metadata | `analysis-store-service` | Owner APIs | The current service implementation registers path/reference, category, checksum, size, producer, schema version and completeness metadata |
 | Raw evidence artifact bytes | Producing service until an explicit byte-handoff or object-store ownership contract transfers byte custody | Scoped owner APIs or signed object access after design | Analysis Store owns accepted artifact metadata only unless a later contract slice assigns byte custody; no shared filesystem or bucket-prefix coupling |
 | Repository workspaces | `repository-analysis-service` | Immutable source snapshot or artifact references | Other services must not use workspace internals directly |
-| Source snapshots | `repository-analysis-service` for workspace/source package; `analysis-store-service` for accepted snapshot metadata | AST and Joern receive references through contracts | Snapshot identity must be deterministic |
+| Source snapshots | `repository-analysis-service` for workspace/source package; `analysis-store-service` for accepted snapshot metadata | AST and Joern receive references through contracts | Snapshot identity must be deterministic and pinned to a resolved commit SHA |
+| Complete build-output packages | `build-artifact-worker-service` when introduced; otherwise the verified external artifact producer keeps byte custody | Analysis Store metadata with `ArtifactByteAccess`; Joern reads through owner API or validated artifact access | Artifactory and Jenkins are optional producers only; checksum or manifest mismatch is terminal |
 | AST worker output | `java-ast-analysis-service` until accepted; `analysis-store-service` for canonical facts | Downstream reads accepted facts from Analysis Store | Unresolved symbols remain explicit |
 | Joern CPG/CFG/DFG artifacts | `joern-cpg-analysis-service` for execution artifacts; `analysis-store-service` for accepted semantic facts and references | Graph/replay reads through owner APIs | Incomplete mappings remain explicit |
 | Instrumentation target selection | `analysis-store-service` | BTM Generation receives bounded target snapshots through `contracts/grpc/btm-generation.proto` | Targets are derived from accepted facts and semantic artifacts; they are not runtime execution evidence |
@@ -88,6 +89,18 @@ It does not yet implement durable database access, migrations, normalized static
 facts, runtime facts, incident records, correlation indexes, graph labels or
 private storage tables. Those remain later slices that require explicit
 contracts, storage decisions and migration evidence.
+
+## Build Artifact Worker Ownership Status
+
+`build-artifact-worker-service` is an approved planned owner for complete
+build-output package bytes only after a workflow slice creates its service
+boundary, contract and runtime evidence. Until then, Artifactory, Artifact
+Store or Jenkins references are optional external producer inputs and do not
+write canonical Analysis Store state directly.
+
+Analysis Store may register build-output package metadata, provenance,
+completeness and `ArtifactByteAccess`, but it must not take byte custody unless
+a later explicit byte-handoff contract assigns that ownership.
 
 ## Cross-Service Read Rules
 

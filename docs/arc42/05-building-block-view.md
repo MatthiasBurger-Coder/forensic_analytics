@@ -109,9 +109,10 @@ Automatic logging records operation name, phase, duration, correlation ID and ex
 ## 5.9 Target Microservices Ecosystem
 
 ADR-0017 defines the active target service landscape for service-split work.
-The landscape is partially implemented: ingestion, repository-analysis,
-analysis-store, Java AST, Joern CPG and BTM generation have service slices.
-Gateway, graph-replay, report-generation and frontend migration remain planned:
+The landscape is partially implemented: gateway, ingestion,
+repository-analysis, analysis-store, Java AST, Joern CPG and BTM generation
+have service slices. The build-artifact worker, graph-replay,
+report-generation and frontend migration remain planned:
 
 ```text
 frontend-web-app
@@ -123,6 +124,7 @@ frontend-web-app
     -> report-generation-service
 
 repository-analysis-service
+  -> build-artifact-worker-service
   -> java-ast-analysis-service
   -> joern-cpg-analysis-service
 
@@ -144,6 +146,12 @@ configuration, tests, health checks and Dockerfile before production readiness
 is claimed. Service communication is limited to REST/OpenAPI, gRPC/protobuf or
 approved event contracts. Shared Java implementation modules between
 independently deployable services are forbidden.
+
+The build-artifact worker is a planned byte-owner service for complete
+build-output packages. It does not own Repository Analysis workspaces,
+canonical Analysis Store facts or Joern execution. Artifactory and Jenkins are
+optional external producers and must be represented through verified artifact
+metadata, checksums and `ArtifactByteAccess`.
 
 ADR-0018 accepts initial logical contracts for target service communication.
 Contracts marked as planned are design artifacts only; they do not prove that a

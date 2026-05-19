@@ -4,7 +4,7 @@
 
 | Field | Value |
 |---|---|
-| Workflow version | `microservices-btm-pipeline-20260517-v1` |
+| Workflow version | `microservices-btm-pipeline-20260517-v2` |
 | Workflow branch | `feature/workflow-microservices-btm-pipeline-20260517` |
 | Creation status | Created by `workflow create`; execution requires a clean committed workflow package. |
 
@@ -41,6 +41,43 @@ No blocking requirement question remains for workflow creation. Contract and
 runtime details that would otherwise require guessing are assigned to early
 contract-first and architecture slices before implementation.
 
+## Workflow Governance Update v2
+
+`microservices-btm-pipeline-20260517-v2` inserts a new Slice 07 before the
+previous Joern handoff slice. The new slice defines the repository source
+snapshot, complete build-output package, artifact-byte access and Joern-owned
+materialization contract required to continue without leaking Repository
+Analysis private workspace identifiers or using shared filesystem coupling.
+
+The completed Slice 00 through Slice 06 checkpoints from v1 remain valid
+historical execution checkpoints. Downstream v2 slices are renumbered by one:
+the former Joern Worker Handoff becomes Slice 08, and the final quality gate
+becomes Slice 17.
+
+New v2 decisions:
+
+- Repository Analysis resolves branch or revision input to a concrete commit
+  SHA before creating the analysis snapshot.
+- The analysis snapshot includes a source package descriptor and an expected
+  complete build-output package descriptor.
+- Build-output package resolution is ordered:
+  1. use a versioned Artifactory or Artifact Store artifact when one is
+     configured and its manifest and checksums match;
+  2. otherwise, use an optional Jenkins pipeline for the pinned source snapshot
+     when configured;
+  3. otherwise, use a future `build-artifact-worker-service` fallback that
+     auto-detects the build system and produces the complete build-output
+     package in a sandbox.
+- Jenkins and Artifactory are optional external producers. They are not
+  mandatory local quality gates and they do not become canonical evidence
+  authorities.
+- Analysis Store owns accepted metadata and must preserve `ArtifactByteAccess`;
+  artifact byte custody remains with the producing service unless a later
+  explicit handoff contract transfers custody.
+- Joern materializes validated source/build package bytes into a Joern-owned
+  workspace and mounts only that Joern-owned workspace into the Joern Docker
+  runtime.
+
 Execution release is conditional on committing this regenerated workflow
 package so `workflow execute` can pass its clean-worktree preflight and read the
 stable workflow version from `docs/workflow/workflow.history.md`.
@@ -51,7 +88,7 @@ stable workflow version from `docs/workflow/workflow.history.md`.
 |---|---|
 | Senior Requirement Engineer | The request matches EPIC v0.2: producers trigger server-side analysis, Analytics owns canonical semantics, instrumentation planning and generated rule artifacts. |
 | Senior System Architect | The accepted target landscape is already documented in ADR-0017. The workflow must preserve no shared Java implementation modules and must retire monolith modules only after service parity evidence. |
-| Senior Java Backend Developer | Six service slices already exist. The missing behavior is orchestration, Gateway HTTP, artifact-byte ownership, BTM file delivery, and migration of remaining monolith implementation. |
+| Senior Java Backend Developer | Seven service slices already exist. The missing behavior is orchestration, build-output package ownership, artifact-byte ownership, BTM file delivery, and migration of remaining monolith implementation. |
 | Senior React Frontend Developer | Frontend work is downstream of Gateway contract stabilization. The UI must call Gateway/public APIs only and must not call worker services directly. |
 | Senior Tester | This is high-risk migration work. Every slice needs targeted service tests, contract tests, architecture tests and the applicable `QUALITY.md` gate before checkpoint commit or push. |
 
@@ -60,8 +97,8 @@ Question: Does the implementation still match the EPIC?
 Current answer: partially. EPIC v0.2 and ADR-0001 require plugins to trigger
 server-side analysis and receive server-generated BTM files when runtime
 debugging requires instrumentation. The repository already has service slices
-for repository analysis and BTM generation, but the end-to-end HTTP Gateway to
-gRPC BTM artifact path is not implemented yet.
+for Gateway submission, repository analysis and BTM generation, but the
+end-to-end HTTP Gateway to gRPC BTM artifact path is not implemented yet.
 
 ## Verified Baseline
 
@@ -74,8 +111,8 @@ Read-only verification before workflow authoring found:
 - Java baseline: Java 25 through Gradle wrapper
 - Full quality gate: `./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace`
 - Current build shape: one Gradle multi-project build in `settings.gradle.kts`
-- Existing service slices: `forensic-ingestion-service`, `repository-analysis-service`, `analysis-store-service`, `java-ast-analysis-service`, `joern-cpg-analysis-service`, `btm-generation-service`
-- Planned service roots: `forensic-gateway-service`, `graph-replay-service`, `report-generation-service`
+- Existing service slices: `forensic-gateway-service`, `forensic-ingestion-service`, `repository-analysis-service`, `analysis-store-service`, `java-ast-analysis-service`, `joern-cpg-analysis-service`, `btm-generation-service`
+- Planned service roots: `build-artifact-worker-service`, `graph-replay-service`, `report-generation-service`
 - Existing contract roots: `contracts/grpc`, `contracts/openapi`, `contracts/events`
 - Current frontend: `forensic-ui`
 
@@ -87,14 +124,16 @@ Verified service evidence:
   `.btm` files and exposes gRPC port `9095`.
 - `analysis-store-service` owns the current service-local analysis job and
   artifact metadata subset.
+- `forensic-gateway-service` owns the public HTTP shell and repository-analysis
+  submission facade for external Git repository requests.
 - Service projects do not declare `project(...)` dependencies on other Java
   modules.
 
 Verified gaps:
 
-- No implemented `forensic-gateway-service` exists.
-- No public HTTP Gateway endpoint exists for the new plugin repository request
-  path as an implemented service.
+- No implemented `build-artifact-worker-service` exists.
+- No verified repository source package, complete build-output package or
+  Joern materialization contract exists yet.
 - The current `btm-generation.proto` returns generated artifact references,
   not BTM file bytes.
 - The worker chain from repository checkout to AST facts, Joern artifacts,
@@ -115,6 +154,7 @@ services/
   forensic-gateway-service/
   forensic-ingestion-service/
   repository-analysis-service/
+  build-artifact-worker-service/
   java-ast-analysis-service/
   joern-cpg-analysis-service/
   btm-generation-service/
@@ -144,6 +184,7 @@ The target BTM pipeline is:
 Plugin / external client
   -> Gateway HTTP API
   -> Repository Analysis Service
+  -> Build Artifact Worker Service or verified external artifact producer
   -> Java AST Analysis Service
   -> Joern CPG Analysis Service
   -> Analysis Store Service
@@ -249,7 +290,7 @@ Backend execution must preserve:
 ## Frontend Assessment
 
 Frontend implementation is not first in the dependency chain. It waits until
-Slice 10 proves the Gateway/public API path. The existing `forensic-ui` API
+Slice 11 proves the Gateway/public API path. The existing `forensic-ui` API
 adapter currently targets `/api`; later slices may either adapt it to the new
 Gateway contract or migrate it into `frontend/frontend-web-app` after package
 tooling exists in that target root.
@@ -270,6 +311,8 @@ Early slices must close the verified contract gaps before implementation:
   Gateway owning generated artifacts;
 - artifact metadata and byte ownership between BTM Generation and Analysis
   Store;
+- repository source package, complete build-output package and Joern
+  materialization contracts before Joern handoff implementation;
 - error/status model, idempotency, retries, deadlines and cancellation;
 - required `Idempotency-Key` behavior for every Gateway mutation;
 - compatibility of existing `forensic-ingestion.proto` and
@@ -286,6 +329,7 @@ similarly named Java classes.
 | Public request facade, status facade and public BTM delivery facade | `forensic-gateway-service` |
 | Raw producer upload sessions | `forensic-ingestion-service` |
 | Repository workspaces and source snapshots | `repository-analysis-service` |
+| Complete build-output packages | `build-artifact-worker-service` when introduced; optional Artifactory/Jenkins producers may provide bytes but do not own Analytics metadata |
 | Java static source-fact worker output | `java-ast-analysis-service` until accepted |
 | Joern semantic artifacts | `joern-cpg-analysis-service` until accepted |
 | Canonical jobs, accepted artifact metadata and normalized facts | `analysis-store-service` |
@@ -316,6 +360,13 @@ status views only through documented owner APIs.
   HTTP calls.
 - BTM artifact transfer must support bounded payload or streaming behavior with
   explicit size limits.
+- Source-package and build-output package materialization must verify manifests,
+  checksums, byte limits and entry paths before extraction or Docker mounting.
+- Jenkins and Artifactory integrations are optional and skipped by default in
+  local quality gates; local tests must use fakes or deterministic fixtures.
+- Fallback build execution must run in a sandboxed worker service with explicit
+  build-system detection, quotas, network policy and secret isolation before it
+  can be called runtime-ready.
 - Missing analysis facts, missing Joern artifacts, partial BTM generation or
   incomplete runtime evidence must remain visible as incomplete, unknown,
   rejected or unavailable.
@@ -372,16 +423,17 @@ commit slice.
 | 04 | Gateway service bootstrap and public HTTP shell | Senior Java Backend / Senior DevOps | 02 |
 | 05 | Gateway to Repository Analysis integration for external Git repos | Senior Git Workspace Specialist / Senior Java Backend | 04 |
 | 06 | Source snapshot handoff to Java AST Analysis | Senior Java Backend | 05 |
-| 07 | Joern CPG analysis handoff and artifact registration | Senior Joern CPG Specialist | 05 |
-| 08 | Instrumentation target planning from accepted facts | Senior System Architect / Senior Java Backend | 06, 07 |
-| 09 | BTM generation gRPC file delivery and artifact metadata registration | Senior gRPC Proto Specialist / Senior Java Backend | 03, 08 |
-| 10 | End-to-end repository-to-BTM orchestration | Senior Java Backend / Senior Swarm Orchestrator | 04, 05, 06, 07, 08, 09 |
-| 11 | Runtime readiness and local service landscape | Senior DevOps | 10 |
-| 12 | Graph replay and report-generation service roots or explicit deferral | Senior System Architect | 10 |
-| 13 | Frontend and CLI Gateway integration | Senior React Frontend / Senior Java Backend | 10 |
-| 14 | Retire or isolate replaced monolith runtime paths | Senior System Architect / Senior Java Backend | 10, 11, 12, 13 |
-| 15 | Remove obsolete shared implementation modules from Gradle registration | Senior System Architect / Senior DevOps | 14 |
-| 16 | Full quality gate, evidence review and migration acceptance | Senior Tester / Quality Gate Orchestrator | 15 |
+| 07 | Repository snapshot and build artifact worker contract | Senior System Architect / Senior gRPC Proto Specialist | 03, 05, 06 |
+| 08 | Joern CPG analysis handoff and artifact registration | Senior Joern CPG Specialist | 07 |
+| 09 | Instrumentation target planning from accepted facts | Senior System Architect / Senior Java Backend | 06, 08 |
+| 10 | BTM generation gRPC file delivery and artifact metadata registration | Senior gRPC Proto Specialist / Senior Java Backend | 03, 09 |
+| 11 | End-to-end repository-to-BTM orchestration | Senior Java Backend / Senior Swarm Orchestrator | 04, 05, 06, 07, 08, 09, 10 |
+| 12 | Runtime readiness and local service landscape | Senior DevOps | 11 |
+| 13 | Graph replay and report-generation service roots or explicit deferral | Senior System Architect | 11 |
+| 14 | Frontend and CLI Gateway integration | Senior React Frontend / Senior Java Backend | 11 |
+| 15 | Retire or isolate replaced monolith runtime paths | Senior System Architect / Senior Java Backend | 11, 12, 13, 14 |
+| 16 | Remove obsolete shared implementation modules from Gradle registration | Senior System Architect / Senior DevOps | 15 |
+| 17 | Full quality gate, evidence review and migration acceptance | Senior Tester / Quality Gate Orchestrator | 16 |
 
 ## Slice Execution Matrix
 
@@ -394,16 +446,17 @@ commit slice.
 | 04 | `services/forensic-gateway-service/**`, Gradle registration | Gateway service tests, ArchUnit boundary tests, `bootJar` | Add Gateway README and runtime notes |
 | 05 | Gateway and Repository Analysis integration files | Gateway tests, Repository Analysis tests, safe Git workspace tests | Update workspace security notes if behavior changes |
 | 06 | Java AST handoff service files after contract precondition | Java AST tests, Repository Analysis source-transfer tests, contract tests | Document source transfer ownership |
-| 07 | Joern handoff service files after contract precondition | Joern tests, workspace/artifact transfer tests, timeout/unavailable tests | Document Joern artifact transfer boundaries |
-| 08 | Instrumentation target owner service and tests | Target-planning tests and evidence-integrity tests | Record target owner and non-evidence rule |
-| 09 | BTM delivery contracts and service files | BTM generation tests, gRPC delivery tests, artifact determinism tests | Document BTM byte owner and delivery path |
-| 10 | Gateway facade, Analysis Store job orchestration, worker clients/adapters | Deterministic end-to-end repository-to-BTM test command added and executed by this slice | Update runtime view and execution report |
-| 11 | `deployment/**`, service config, Docker material | Service `bootJar`, healthcheck, Docker config checks that exist | Update deployment view |
-| 12 | Graph/replay and report docs or service roots | Gate depends on deferral or implementation decision | Update arc42 runtime/deployment notes |
-| 13 | `forensic-ui/**`, `frontend/**`, CLI files if migrated | `cd forensic-ui && npm ci && npm test && npm run build`; stop if `frontend/frontend-web-app` lacks package tooling | Update frontend README/API notes |
-| 14 | Replaced `forensic-analytics-*` paths | Parity tests, caller-verification searches, rollback documentation | Document deprecation or isolation |
-| 15 | `settings.gradle.kts`, obsolete modules | Full affected Gradle tests, dependency verification, architecture tests | Update current-state and migration map |
-| 16 | Whole repository | Full `QUALITY.md` gate, leakage gates, diff checks | Final acceptance report and arc42/ADR sync |
+| 07 | `contracts/grpc/**`, `contracts/events/**`, `docs/architecture/**`, `docs/arc42/**`, Analysis Store/Repository Analysis/Joern contract tests and service mappings when required | Protobuf generation, contract tests, byte-access roundtrip tests, repository/analysis-store/Joern tests, security leakage checks | Record source package, build-output package, optional producer order, byte custody and Joern materialization boundaries |
+| 08 | Joern handoff service files after Slice 07 contract precondition | Joern tests, workspace/artifact transfer tests, timeout/unavailable tests | Document Joern artifact transfer boundaries |
+| 09 | Instrumentation target owner service and tests | Target-planning tests and evidence-integrity tests | Record target owner and non-evidence rule |
+| 10 | BTM delivery contracts and service files | BTM generation tests, gRPC delivery tests, artifact determinism tests | Document BTM byte owner and delivery path |
+| 11 | Gateway facade, Analysis Store job orchestration, worker clients/adapters | Deterministic end-to-end repository-to-BTM test command added and executed by this slice | Update runtime view and execution report |
+| 12 | `deployment/**`, service config, Docker material | Service `bootJar`, healthcheck, Docker config checks that exist | Update deployment view |
+| 13 | Graph/replay and report docs or service roots | Gate depends on deferral or implementation decision | Update arc42 runtime/deployment notes |
+| 14 | `forensic-ui/**`, `frontend/**`, CLI files if migrated | `cd forensic-ui && npm ci && npm test && npm run build`; stop if `frontend/frontend-web-app` lacks package tooling | Update frontend README/API notes |
+| 15 | Replaced `forensic-analytics-*` paths | Parity tests, caller-verification searches, rollback documentation | Document deprecation or isolation |
+| 16 | `settings.gradle.kts`, obsolete modules | Full affected Gradle tests, dependency verification, architecture tests | Update current-state and migration map |
+| 17 | Whole repository | Full `QUALITY.md` gate, leakage gates, diff checks | Final acceptance report and arc42/ADR sync |
 
 ## Slice Details
 
@@ -546,7 +599,68 @@ back to a contract-governance slice before production code changes.
 Stop if static facts are treated as runtime execution or unresolved symbols are
 silently dropped.
 
-### Slice 07 - Joern Worker Handoff
+### Slice 07 - Repository Snapshot And Build Artifact Worker Contract
+
+Purpose: define and implement the contract path that pins repository input to a
+deterministic source snapshot, declares the complete build-output package, and
+allows Joern to materialize a service-owned workspace without receiving
+Repository Analysis private workspace IDs.
+
+Allowed write scope:
+
+- `contracts/grpc/**`
+- `contracts/events/**`
+- `docs/architecture/**`
+- `docs/arc42/**`
+- `services/repository-analysis-service/**` for verified source/build package
+  contract mapping
+- `services/analysis-store-service/**` for `ArtifactByteAccess` preservation
+  and validation
+- `services/joern-cpg-analysis-service/**` for verified byte-access and
+  materialization contract mapping
+- `settings.gradle.kts` and `services/build-artifact-worker-service/**` only
+  if this slice explicitly introduces the service shell and its contract
+- focused tests
+
+Required decisions:
+
+- Branch and revision input are resolved to a concrete commit SHA before the
+  analysis snapshot is created. A moving branch update creates a new source
+  snapshot, not an in-place workspace update.
+- The source snapshot declares source-package metadata and the expected
+  complete build-output package metadata.
+- Build-output package resolution order is Artifactory or Artifact Store first,
+  optional Jenkins second, and `build-artifact-worker-service` fallback third.
+- Jenkins and Artifactory are optional producers only. They are not local test
+  dependencies and are not canonical evidence authorities.
+- `build-artifact-worker-service`, when introduced, owns produced build-output
+  bytes, manifests, checksums and retrieval references. Analysis Store owns
+  accepted metadata only.
+- Joern consumes validated source/build package bytes or owner API references,
+  materializes them into a Joern-owned workspace ID, and mounts only that
+  Joern-owned workspace into the Joern Docker runtime.
+
+Stop if:
+
+- any Repository Analysis private `workspace_id`, workspace path, `file:` URI,
+  private object prefix or shared mount crosses into Joern;
+- `ArtifactByteAccess` is missing, omitted or dropped by Analysis Store, Joern
+  or a producer/consumer mapper;
+- Artifactory or Jenkins credentials are required but not verified through a
+  secret-governed path;
+- checksum or manifest mismatch is treated as a fallback trigger instead of a
+  terminal integrity failure;
+- fallback build execution would require unbounded network access,
+  user-supplied shell commands, host secret mounts, Docker socket access or
+  privileged containers;
+- build-system detection is ambiguous and the result would be guessed;
+- archive extraction would allow absolute paths, Windows drives, UNC paths,
+  traversal, symlinks, hardlinks, device files, sockets, FIFOs, duplicate
+  normalized paths, excessive depth or quota overruns;
+- diagnostics expose local paths, command arguments, URLs with coordinates,
+  source content, secrets or raw stderr.
+
+### Slice 08 - Joern Worker Handoff
 
 Purpose: connect source snapshot output to Joern semantic analysis and register
 semantic artifacts with explicit incompleteness when Joern is unavailable or
@@ -560,13 +674,14 @@ Allowed write scope:
 - `docker/joern/**` only when verified as service-contained runtime material
 - tests
 
-Contract precondition: Repository to Joern transfer must use artifact transfer,
-source package transfer or another explicit owner API. Passing Repository
-Analysis private workspace IDs into Joern is forbidden.
+Contract precondition: Slice 07 must have defined and verified repository
+source-package/build-output package transfer, artifact-byte access preservation
+and Joern-local materialization. Passing Repository Analysis private workspace
+IDs into Joern is forbidden.
 
 Stop if Joern artifacts become shared filesystem coupling.
 
-### Slice 08 - Instrumentation Target Planning
+### Slice 09 - Instrumentation Target Planning
 
 Purpose: create deterministic instrumentation targets from accepted static and
 semantic facts through an explicitly owned service path.
@@ -580,7 +695,7 @@ Allowed write scope:
 Stop if target selection would infer runtime execution or fabricate missing
 facts.
 
-### Slice 09 - BTM gRPC File Delivery
+### Slice 10 - BTM gRPC File Delivery
 
 Purpose: extend or implement BTM delivery so completed `.btm` bytes and
 manifest bytes can be received over gRPC with bounded transfer semantics.
@@ -596,7 +711,7 @@ Allowed write scope:
 Stop if BTM bytes cannot be traced to rule IDs, source fact references,
 semantic artifact references and generation policy.
 
-### Slice 10 - End-To-End Repository To BTM Orchestration
+### Slice 11 - End-To-End Repository To BTM Orchestration
 
 Purpose: connect the public Gateway facade, Analysis Store job lifecycle,
 Repository Analysis, Java AST, Joern and BTM Generation into a tested local
@@ -625,7 +740,7 @@ Done criteria:
   any optional external-service test must be separately named and skipped by
   default unless credentials and environment are documented.
 
-### Slice 11 - Runtime Readiness And Local Service Landscape
+### Slice 12 - Runtime Readiness And Local Service Landscape
 
 Purpose: add verified local runtime material for the implemented service path.
 
@@ -639,7 +754,7 @@ Allowed write scope:
 Stop if Docker, Swarm or Kubernetes readiness is claimed without files and
 commands.
 
-### Slice 12 - Graph Replay And Report Service Decision
+### Slice 13 - Graph Replay And Report Service Decision
 
 Purpose: decide whether graph-replay and report-generation services are
 required for the BTM pipeline acceptance or remain explicitly deferred.
@@ -653,7 +768,7 @@ Allowed write scope:
 
 Stop if projections become source of truth.
 
-### Slice 13 - Frontend And CLI Gateway Integration
+### Slice 14 - Frontend And CLI Gateway Integration
 
 Purpose: route UI and CLI behavior through the Gateway/public API after Slice
 10 proves the Gateway/public API path.
@@ -683,7 +798,7 @@ Done criteria:
 - Tests cover missing idempotency/correlation behavior in the frontend API
   adapter when the Gateway contract requires those headers.
 
-### Slice 14 - Retire Or Isolate Replaced Monolith Runtime Paths
+### Slice 15 - Retire Or Isolate Replaced Monolith Runtime Paths
 
 Purpose: disable, isolate or retire old in-process paths only after replacement
 service evidence exists.
@@ -696,7 +811,7 @@ Allowed write scope:
 
 Stop if removing a module would break a still-used behavior.
 
-### Slice 15 - Remove Obsolete Shared Implementation Modules
+### Slice 16 - Remove Obsolete Shared Implementation Modules
 
 Purpose: remove Gradle registrations and source roots for implementation
 modules that have verified service-owned replacements.
@@ -709,7 +824,7 @@ Allowed write scope:
 
 Stop if any caller cannot be verified.
 
-### Slice 16 - Full Quality Gate And Migration Acceptance
+### Slice 17 - Full Quality Gate And Migration Acceptance
 
 Purpose: run final repository validation and verify that the target path is
 accurately documented.
@@ -733,6 +848,9 @@ Default execution is serial until Slice 03 stabilizes contracts. After that:
 
 - Gateway shell, BTM delivery tests and Analysis Store artifact metadata may be
   parallel only when contracts are frozen and write scopes are disjoint.
+- Joern handoff Slice 08 waits for Slice 07 because Joern must consume only
+  source/build artifacts through verified owner APIs or materialized
+  Joern-owned workspaces.
 - Frontend work waits for Gateway API implementation.
 - Deployment work waits for service bootJar and healthcheck evidence.
 - Module removal waits for end-to-end parity evidence.
@@ -825,19 +943,23 @@ The workflow is done only when:
 
 ## Handoff To Workflow Execute
 
-This workflow is ready for release to `workflow execute` after the
-workflow-create package is committed.
+This workflow is ready for release to `workflow execute` after the v2
+workflow-governance package is committed and pushed.
 
-`workflow execute` must start at Slice 00, execute one slice at a time and
-run a slice-scoped checkpoint commit and push after every successful slice.
+`workflow execute` has already completed Slice 00 through Slice 06 under v1.
+After the v2 package is committed and pushed, execution resumes at the new
+Slice 07, then continues one slice at a time with a slice-scoped checkpoint
+commit and push after every successful slice.
 No direct implementation may start before the relevant service-boundary,
 contract, data ownership and quality review for that slice has completed.
-Because `workflow execute` requires a clean preflight, do not run it on the
-dirty workflow-create worktree; first commit the regenerated workflow package.
+Because `workflow execute` requires a clean preflight, do not continue on a
+dirty workflow-governance worktree; first commit and push the v2 workflow
+package.
 
 ## arc42 Check Status
 
-arc42 was checked during workflow creation:
+arc42 was checked during workflow creation and updated during the v2
+workflow-governance update:
 
 - `docs/arc42/03-system-scope-and-context.md`
 - `docs/arc42/04-solution-strategy.md`
@@ -847,9 +969,8 @@ arc42 was checked during workflow creation:
 - `docs/arc42/08-crosscutting-concepts.md`
 - `docs/arc42/09-architecture-decisions.md`
 
-Current arc42 already records plugin producer boundaries, server-side BTM
-generation, target microservice runtime flow and governance process rules.
-No arc42 production-claim correction is required during workflow creation.
-Stale slice-number wording in arc42 and supporting architecture documents was
-aligned where it described current or future migration sequencing.
-Later implementation slices must update arc42 when verified behavior changes.
+Current arc42 records plugin producer boundaries, server-side BTM generation,
+target microservice runtime flow, optional Artifact Store/Jenkins producer
+boundaries, planned build-artifact worker ownership, Joern-owned materialized
+workspaces and governance process rules. Later implementation slices must
+update arc42 when verified behavior changes.

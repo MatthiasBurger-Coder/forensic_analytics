@@ -94,6 +94,7 @@ Frontend / CLI / external client
   -> Gateway
   -> Ingestion or analysis job APIs
   -> Repository Analysis
+  -> Source Snapshot And Build Artifact Resolution
   -> Java AST Analysis
   -> Joern CPG Analysis
   -> Analysis Store
@@ -107,6 +108,14 @@ Plugin, scanner and runtime evidence enters through the ingestion service.
 Canonical evidence and one-writer analysis state belong to the analysis store.
 Graph, replay, reports and LLM packages are projections or generated artifacts
 that must remain traceable to owner evidence APIs.
+
+Repository Analysis resolves branch input to a concrete commit SHA before
+analysis handoff. The source snapshot may reference a complete build-output
+package from a verified Artifact Store/Artifactory artifact, an optional
+Jenkins pipeline for the pinned snapshot, or a future sandboxed
+`build-artifact-worker-service` fallback. Joern consumes only validated
+source/build package descriptors or materialized Joern-owned workspaces; it
+must not receive Repository Analysis private workspace IDs.
 
 ADR-0018 allows the initial runtime communication contracts to describe planned
 Gateway, worker, replay, report and event flows before each runtime path exists.
