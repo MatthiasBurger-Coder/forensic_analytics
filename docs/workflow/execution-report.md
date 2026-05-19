@@ -796,8 +796,8 @@ responsibleAgent=Workflow Executor with Senior System Architect, Senior Java Bac
 changedFiles=contracts/grpc/**; services/analysis-store-service/**; docs/workflow/execution-report.md
 qualityGateCommands=./gradlew --no-daemon --max-workers=1 :services:analysis-store-service:generateProto --dependency-verification strict --console=plain --stacktrace; ./gradlew --no-daemon --max-workers=1 :services:analysis-store-service:test --dependency-verification strict --console=plain --stacktrace; ./gradlew --no-daemon --max-workers=1 :services:analysis-store-service:jacocoTestReport :services:analysis-store-service:jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace; ./gradlew --no-daemon --max-workers=1 :services:btm-generation-service:test --dependency-verification strict --console=plain --stacktrace; ./gradlew --no-daemon --max-workers=1 clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace; git diff --check; cross-service implementation import scan
 qualityGateResult=PASS
-commitHash=pending
-pushResult=pending
+commitHash=b52f2dc33e8b67330f971556b68becbb2735186d
+pushResult=PUB_DONE to origin/feature/workflow-microservices-btm-pipeline-20260517
 rollbackReference=87eb5b939a52bb33849dcc1555551aab92af6d9f
 arc42Updated=not changed in this slice
 adrUpdated=not required in this slice
