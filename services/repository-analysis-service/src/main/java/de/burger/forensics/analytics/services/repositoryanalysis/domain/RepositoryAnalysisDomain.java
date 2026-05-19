@@ -143,6 +143,126 @@ public final class RepositoryAnalysisDomain {
         }
     }
 
+    public record ArtifactByteAccess(
+        String ownerService,
+        String retrievalContract,
+        String retrievalReference,
+        ArtifactByteCustody byteCustody
+    ) {
+        public ArtifactByteAccess {
+            ownerService = requireText(ownerService, "artifact byte owner service");
+            retrievalContract = requireText(retrievalContract, "artifact byte retrieval contract");
+            retrievalReference = requirePublicReference(retrievalReference, "artifact byte retrieval reference");
+            byteCustody = Objects.requireNonNull(byteCustody, "artifact byte custody must not be null");
+        }
+    }
+
+    public record SourcePackageDescriptor(
+        PackageAvailability availability,
+        ArtifactReference manifestArtifact,
+        ArtifactReference packageArtifact,
+        String schemaVersion,
+        String producerService,
+        ArtifactByteAccess byteAccess,
+        SourceSnapshotCompleteness completeness
+    ) {
+        public SourcePackageDescriptor {
+            availability = Objects.requireNonNull(availability, "source package availability must not be null");
+            Objects.requireNonNull(manifestArtifact, "source package manifest artifact must not be null");
+            schemaVersion = requireText(schemaVersion, "source package schema version");
+            producerService = requireText(producerService, "source package producer service");
+            Objects.requireNonNull(byteAccess, "source package byte access must not be null");
+            completeness = Objects.requireNonNullElse(completeness, SourceSnapshotCompleteness.UNKNOWN);
+            requirePackageArtifactWhenAvailable(availability, packageArtifact, "source package");
+        }
+    }
+
+    public record BuildOutputPackageDescriptor(
+        PackageAvailability availability,
+        ArtifactReference manifestArtifact,
+        ArtifactReference packageArtifact,
+        String schemaVersion,
+        String producerService,
+        ArtifactByteAccess byteAccess,
+        SourceSnapshotCompleteness completeness,
+        BuildOutputResolution resolution,
+        String buildSystem
+    ) {
+        public BuildOutputPackageDescriptor {
+            availability = Objects.requireNonNull(availability, "build-output package availability must not be null");
+            schemaVersion = requireText(schemaVersion, "build-output package schema version");
+            producerService = requireText(producerService, "build-output package producer service");
+            Objects.requireNonNull(byteAccess, "build-output package byte access must not be null");
+            completeness = Objects.requireNonNullElse(completeness, SourceSnapshotCompleteness.UNKNOWN);
+            resolution = Objects.requireNonNull(resolution, "build-output resolution must not be null");
+            buildSystem = requireText(buildSystem, "build system");
+            requirePackageArtifactWhenAvailable(availability, packageArtifact, "build-output package");
+            if (availability == PackageAvailability.AVAILABLE && manifestArtifact == null) {
+                throw new IllegalArgumentException("build-output package manifest artifact is required when available");
+            }
+        }
+    }
+
+    public record BuildOutputResolution(
+        List<BuildOutputProducerCandidate> candidates,
+        BuildOutputProducer selectedProducer,
+        boolean terminalIntegrityFailure,
+        List<Diagnostic> diagnostics
+    ) {
+        public BuildOutputResolution {
+            candidates = List.copyOf(Objects.requireNonNull(candidates, "build-output candidates must not be null"));
+            selectedProducer = Objects.requireNonNullElse(selectedProducer, BuildOutputProducer.UNSPECIFIED);
+            diagnostics = List.copyOf(Objects.requireNonNullElse(diagnostics, List.of()));
+            if (candidates.isEmpty()) {
+                throw new IllegalArgumentException("build-output resolution candidates must not be empty");
+            }
+            var order = candidates.stream().map(BuildOutputProducerCandidate::producer).toList();
+            var expected = List.of(
+                BuildOutputProducer.ARTIFACT_STORE,
+                BuildOutputProducer.ARTIFACTORY,
+                BuildOutputProducer.JENKINS,
+                BuildOutputProducer.BUILD_ARTIFACT_WORKER
+            );
+            if (!order.equals(expected)) {
+                throw new IllegalArgumentException(
+                    "build-output resolution order must be Artifact Store, Artifactory, Jenkins, build-artifact-worker"
+                );
+            }
+            var hasIntegrityFailure = candidates.stream()
+                .anyMatch(candidate -> candidate.status() == BuildOutputProducerStatus.TERMINAL_INTEGRITY_FAILURE);
+            if (hasIntegrityFailure != terminalIntegrityFailure) {
+                throw new IllegalArgumentException("terminal integrity failure must match producer candidate status");
+            }
+            if (terminalIntegrityFailure && selectedProducer != BuildOutputProducer.UNSPECIFIED) {
+                throw new IllegalArgumentException("terminal integrity failure must not select a fallback producer");
+            }
+            if (selectedProducer != BuildOutputProducer.UNSPECIFIED) {
+                var producerToSelect = selectedProducer;
+                var selectedCandidate = candidates.stream()
+                    .filter(candidate -> candidate.producer() == producerToSelect)
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalArgumentException("selected build-output producer must be part of candidates"));
+                if (selectedCandidate.status() != BuildOutputProducerStatus.AVAILABLE) {
+                    throw new IllegalArgumentException("selected build-output producer must be available");
+                }
+            }
+        }
+    }
+
+    public record BuildOutputProducerCandidate(
+        BuildOutputProducer producer,
+        BuildOutputProducerStatus status,
+        String reference,
+        List<Diagnostic> diagnostics
+    ) {
+        public BuildOutputProducerCandidate {
+            producer = Objects.requireNonNull(producer, "build-output producer must not be null");
+            status = Objects.requireNonNull(status, "build-output producer status must not be null");
+            reference = reference == null || reference.isBlank() ? "" : requirePublicReference(reference, "build-output producer reference");
+            diagnostics = List.copyOf(Objects.requireNonNullElse(diagnostics, List.of()));
+        }
+    }
+
     public record SourceRoot(String relativePath, String language) {
         public SourceRoot {
             relativePath = requireRelativeReference(relativePath, "source root");
@@ -201,7 +321,9 @@ public final class RepositoryAnalysisDomain {
         SourceSnapshotCompleteness completeness,
         List<SourceRoot> sourceRoots,
         ArtifactReference manifestArtifact,
-        List<String> limitations
+        List<String> limitations,
+        SourcePackageDescriptor sourcePackage,
+        BuildOutputPackageDescriptor buildOutputPackage
     ) {
         public SourceSnapshot {
             Objects.requireNonNull(sourceSnapshotId, "source snapshot id must not be null");
@@ -212,6 +334,8 @@ public final class RepositoryAnalysisDomain {
             }
             Objects.requireNonNull(manifestArtifact, "manifest artifact must not be null");
             limitations = List.copyOf(Objects.requireNonNullElse(limitations, List.of()));
+            Objects.requireNonNull(sourcePackage, "source package must not be null");
+            Objects.requireNonNull(buildOutputPackage, "build-output package must not be null");
         }
     }
 
@@ -402,6 +526,35 @@ public final class RepositoryAnalysisDomain {
         UNKNOWN
     }
 
+    public enum PackageAvailability {
+        AVAILABLE,
+        PENDING,
+        UNAVAILABLE,
+        FAILED_INTEGRITY
+    }
+
+    public enum ArtifactByteCustody {
+        PRODUCER_RETAINED,
+        SCOPED_OBJECT_ACCESS,
+        EXPLICIT_HANDOFF
+    }
+
+    public enum BuildOutputProducer {
+        UNSPECIFIED,
+        ARTIFACT_STORE,
+        ARTIFACTORY,
+        JENKINS,
+        BUILD_ARTIFACT_WORKER
+    }
+
+    public enum BuildOutputProducerStatus {
+        AVAILABLE,
+        NOT_CONFIGURED,
+        MISSING,
+        FALLBACK_PLANNED,
+        TERMINAL_INTEGRITY_FAILURE
+    }
+
     public enum DiagnosticSeverity {
         INFO,
         WARNING,
@@ -516,6 +669,32 @@ public final class RepositoryAnalysisDomain {
             throw new IllegalArgumentException(name + " must be relative and service-owned");
         }
         return reference;
+    }
+
+    private static String requirePublicReference(String value, String name) {
+        var reference = requireText(value, name);
+        var lower = reference.toLowerCase(Locale.ROOT);
+        if (reference.startsWith("/") || reference.startsWith("\\") || reference.contains("\\")
+            || lower.startsWith("file:") || reference.matches("^[A-Za-z]:.*")
+            || reference.contains("://")
+            || Arrays.asList(reference.split("/")).contains("..")
+            || reference.contains("\n") || reference.contains("\r")) {
+            throw new IllegalArgumentException(name + " must be an opaque public reference");
+        }
+        return reference;
+    }
+
+    private static void requirePackageArtifactWhenAvailable(
+        PackageAvailability availability,
+        ArtifactReference packageArtifact,
+        String name
+    ) {
+        if (availability == PackageAvailability.AVAILABLE && packageArtifact == null) {
+            throw new IllegalArgumentException(name + " artifact is required when available");
+        }
+        if (availability == PackageAvailability.FAILED_INTEGRITY && packageArtifact != null) {
+            throw new IllegalArgumentException(name + " artifact must be omitted after integrity failure");
+        }
     }
 
     private static String requireSha256(String value, String name) {

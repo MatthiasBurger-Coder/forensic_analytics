@@ -2,7 +2,13 @@ package de.burger.forensics.analytics.services.joerncpganalysis.adapter.out.file
 
 import de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.AnalysisJobId;
 import de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.AnalysisRunId;
+import de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.AnalysisArtifactCategory;
+import de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.AnalysisArtifactReference;
+import de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.AnalysisCompleteness;
 import de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.AnalyzeJoernCpgCommand;
+import de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.ArtifactByteAccess;
+import de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.ArtifactByteCustody;
+import de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.ArtifactReference;
 import de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.JoernCpgPolicy;
 import de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.RequestMetadata;
 import de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.SourceRoot;
@@ -26,29 +32,59 @@ class FileSystemJoernWorkspaceAdapterTest {
 
     @Test
     void resolvesOpaqueWorkspaceAndCountsWorkspaceBytes() throws Exception {
-        var sourceRoot = tempDir.resolve("workspace-1/src/main/java");
+        var sourceRoot = tempDir.resolve("joern-workspace-1/src/main/java");
         Files.createDirectories(sourceRoot);
         Files.writeString(sourceRoot.resolve("App.java"), "class App {}\n");
 
-        var resolved = new FileSystemJoernWorkspaceAdapter(tempDir).resolve(command("workspace-1", "src/main/java", "JAVA"));
+        var resolved = new FileSystemJoernWorkspaceAdapter(tempDir).resolve(command("joern-workspace-1", "src/main/java", "JAVA"));
 
         assertEquals(new SourceSnapshotId("snapshot-1"), resolved.sourceSnapshotId());
-        assertEquals("workspace-1", resolved.workspaceId());
-        assertEquals(tempDir.resolve("workspace-1").toAbsolutePath().normalize(), resolved.workspacePath());
+        assertEquals("joern-workspace-1", resolved.workspaceId());
+        assertEquals(tempDir.resolve("joern-workspace-1").toAbsolutePath().normalize(), resolved.workspacePath());
         assertEquals(List.of(sourceRoot.toAbsolutePath().normalize()), resolved.sourceRootPaths());
         assertTrue(resolved.workspaceBytes() > 0);
     }
 
     @Test
     void rejectsUnavailableWorkspaceUnsupportedLanguagesAndMissingRoots() throws Exception {
-        var sourceRoot = tempDir.resolve("workspace-1/src/main/java");
+        var sourceRoot = tempDir.resolve("joern-workspace-1/src/main/java");
         Files.createDirectories(sourceRoot);
 
         var adapter = new FileSystemJoernWorkspaceAdapter(tempDir);
 
-        assertThrows(IllegalArgumentException.class, () -> adapter.resolve(command("missing-workspace", "src/main/java", "java")));
-        assertThrows(IllegalArgumentException.class, () -> adapter.resolve(command("workspace-1", "src/test/java", "java")));
-        assertThrows(IllegalArgumentException.class, () -> adapter.resolve(command("workspace-1", "src/main/java", "kotlin")));
+        assertThrows(IllegalArgumentException.class, () -> adapter.resolve(command("joern-workspace-missing", "src/main/java", "java")));
+        assertThrows(IllegalArgumentException.class, () -> adapter.resolve(command("joern-workspace-1", "src/test/java", "java")));
+        assertThrows(IllegalArgumentException.class, () -> adapter.resolve(command("joern-workspace-1", "src/main/java", "kotlin")));
+    }
+
+    @Test
+    void rejectsSymlinkedSourceRootsAndHardLinkedFilesBeforeJoernRuntime() throws Exception {
+        var workspace = tempDir.resolve("joern-workspace-1");
+        var sourceRoot = workspace.resolve("src/main/java");
+        Files.createDirectories(sourceRoot);
+        Files.writeString(sourceRoot.resolve("App.java"), "class App {}\n");
+
+        var adapter = new FileSystemJoernWorkspaceAdapter(tempDir);
+
+        var linkedRoot = workspace.resolve("linked");
+        try {
+            Files.createSymbolicLink(linkedRoot, sourceRoot);
+            assertThrows(IllegalArgumentException.class, () -> adapter.resolve(command("joern-workspace-1", "linked", "java")));
+            Files.createSymbolicLink(sourceRoot.resolve("AppLink.java"), sourceRoot.resolve("App.java"));
+            assertThrows(IllegalArgumentException.class, () -> adapter.resolve(command("joern-workspace-1", "src/main/java", "java")));
+            Files.deleteIfExists(sourceRoot.resolve("AppLink.java"));
+            Files.deleteIfExists(linkedRoot);
+        } catch (UnsupportedOperationException ignored) {
+            return;
+        }
+
+        var hardLink = sourceRoot.resolve("AppCopy.java");
+        try {
+            Files.createLink(hardLink, sourceRoot.resolve("App.java"));
+            assertThrows(IllegalArgumentException.class, () -> adapter.resolve(command("joern-workspace-1", "src/main/java", "java")));
+        } catch (UnsupportedOperationException ignored) {
+            // Some filesystems do not support hard links in the test workspace.
+        }
     }
 
     private static AnalyzeJoernCpgCommand command(String workspaceId, String sourceRoot, String language) {
@@ -75,7 +111,23 @@ class FileSystemJoernWorkspaceAdapterTest {
                 false,
                 false
             ),
-            new SourceWorkspace(workspaceId, List.of(new SourceRoot(sourceRoot, language)), List.of())
+            new SourceWorkspace(workspaceId, List.of(new SourceRoot(sourceRoot, language)), List.of(reference()))
+        );
+    }
+
+    private static AnalysisArtifactReference reference() {
+        return new AnalysisArtifactReference(
+            new ArtifactReference("source-package.zip", "application/zip", "a".repeat(64), 1),
+            AnalysisArtifactCategory.STATIC,
+            "repository-analysis-service",
+            "source-package-v1",
+            AnalysisCompleteness.COMPLETE,
+            new ArtifactByteAccess(
+                "repository-analysis-service",
+                "repository-analysis.v1.GetRepositoryPreparation",
+                "source-snapshot/snapshot-1",
+                ArtifactByteCustody.PRODUCER_RETAINED
+            )
         );
     }
 }

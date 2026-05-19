@@ -8,6 +8,8 @@ import de.burger.forensics.analytics.services.analysisstore.domain.AnalysisJobId
 import de.burger.forensics.analytics.services.analysisstore.domain.AnalysisJobState;
 import de.burger.forensics.analytics.services.analysisstore.domain.AnalysisRunId;
 import de.burger.forensics.analytics.services.analysisstore.domain.AnalysisWorkerKind;
+import de.burger.forensics.analytics.services.analysisstore.domain.ArtifactByteAccess;
+import de.burger.forensics.analytics.services.analysisstore.domain.ArtifactByteCustody;
 import de.burger.forensics.analytics.services.analysisstore.domain.ArtifactReference;
 import de.burger.forensics.analytics.services.analysisstore.domain.SourceSnapshotId;
 import org.junit.jupiter.api.Test;
@@ -294,7 +296,13 @@ class AnalysisJobApplicationServiceTest {
             category,
             "analysis-store-test",
             "schema-v1",
-            AnalysisCompleteness.UNKNOWN
+            AnalysisCompleteness.UNKNOWN,
+            new ArtifactByteAccess(
+                "analysis-store-test",
+                "analysis-job.v1.ArtifactBytes",
+                "artifacts/" + path,
+                ArtifactByteCustody.PRODUCER_RETAINED
+            )
         );
     }
 }

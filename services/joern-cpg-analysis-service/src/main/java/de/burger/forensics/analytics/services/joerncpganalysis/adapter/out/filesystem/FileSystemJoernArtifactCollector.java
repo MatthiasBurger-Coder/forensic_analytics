@@ -8,6 +8,8 @@ import de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAn
 import de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.AnalysisArtifactReference;
 import de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.AnalysisCompleteness;
 import de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.AnalyzeJoernCpgCommand;
+import de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.ArtifactByteAccess;
+import de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.ArtifactByteCustody;
 import de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.ArtifactReference;
 import de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.JoernArtifactCollectionResult;
 import de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.JoernCpgDiagnostic;
@@ -125,7 +127,13 @@ public final class FileSystemJoernArtifactCollector implements JoernArtifactColl
                 AnalysisArtifactCategory.STATIC,
                 PRODUCER_SERVICE,
                 SEMANTIC_ARTIFACT_SCHEMA_VERSION,
-                artifactCompleteness
+                artifactCompleteness,
+                new ArtifactByteAccess(
+                    PRODUCER_SERVICE,
+                    "analysis-job.v1.ArtifactBytes",
+                    "artifacts/" + artifact.path(),
+                    ArtifactByteCustody.PRODUCER_RETAINED
+                )
             );
         } catch (IOException error) {
             throw new UncheckedIOException("Failed to inspect Joern artifact.", error);

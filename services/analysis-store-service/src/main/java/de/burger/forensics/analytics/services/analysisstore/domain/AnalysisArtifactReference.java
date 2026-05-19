@@ -7,7 +7,8 @@ public record AnalysisArtifactReference(
     AnalysisArtifactCategory category,
     String producerService,
     String schemaVersion,
-    AnalysisCompleteness completeness
+    AnalysisCompleteness completeness,
+    ArtifactByteAccess byteAccess
 ) {
     public AnalysisArtifactReference {
         Objects.requireNonNull(artifact, "artifact must not be null");
@@ -15,6 +16,7 @@ public record AnalysisArtifactReference(
         producerService = RequiredText.require(producerService, "producerService");
         schemaVersion = RequiredText.require(schemaVersion, "schemaVersion");
         Objects.requireNonNull(completeness, "completeness must not be null");
+        Objects.requireNonNull(byteAccess, "byteAccess must not be null");
     }
 
     public String path() {

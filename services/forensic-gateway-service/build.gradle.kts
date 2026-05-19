@@ -27,7 +27,7 @@ sourceSets {
         proto {
             srcDir(rootProject.file("contracts/grpc"))
             include("**/repository-analysis.proto")
-            exclude("**/analysis-job.proto")
+            include("**/analysis-job.proto")
             exclude("**/btm-generation.proto")
             exclude("**/forensic-ingestion.proto")
             exclude("**/java-ast-analysis.proto")

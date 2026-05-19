@@ -555,3 +555,137 @@ rollbackReference=51954e322d4f29e17c607e66a929e5d174332e27
 arc42Updated=checked and updated for source/build package and Joern materialization flow
 adrUpdated=not required; ADR impact deferred unless build-artifact-worker-service is implemented as a service root
 ```
+
+## Slice 07 Execution Attempt - v2
+
+### Scope
+
+Slice 07 implementation was resumed for
+`microservices-btm-pipeline-20260517-v2` after the workspace/build-artifact
+worker requirement refinement. The slice covers Repository Analysis source
+package descriptors, complete build-output package descriptors, Analysis Store
+byte-access preservation and Joern-owned workspace materialization from
+validated package bytes.
+
+### Review Evidence
+
+- Senior Analysis Storage Architect, Senior Swarm Orchestrator, Senior Security
+  Sandbox Engineer, Senior Tester, Senior Java Backend Engineer, Senior gRPC
+  Proto Specialist, Senior System Architect and Senior DevOps reviewed the
+  Slice 07 unblock scope before implementation.
+- Post-fix Senior Security Sandbox review returned `READY` and confirmed that
+  Joern now materializes only into Joern-owned workspace IDs, validates package
+  manifests and archive bytes, rejects unsafe entries and preserves
+  `ArtifactByteAccess`.
+
+### Implementation Evidence
+
+- Repository Analysis now exposes source-package and complete build-output
+  package descriptors with ordered resolution candidates:
+  Artifact Store/Artifactory, optional Jenkins and build-artifact-worker
+  fallback.
+- Analysis Store preserves artifact byte ownership, retrieval contract,
+  retrieval reference and custody instead of storing only metadata references.
+- Joern CPG Analysis now has a materialization RPC and a filesystem
+  materializer that reads package bytes from the service-owned cache, verifies
+  descriptor checksums, validates manifest entries, enforces quotas, rejects
+  traversal/duplicate/unsafe archive entries and cleans incomplete workspaces.
+- Joern tests cover byte-access roundtrip, descriptor rejection, checksum
+  mismatch, unsafe manifest entries, archive traversal, unexpected entries,
+  entry checksum mismatch and workspace quota rejection.
+
+### Quality Evidence
+
+```text
+workflowVersion=microservices-btm-pipeline-20260517-v2
+sliceId=07
+sliceTitle=Repository Snapshot And Build Artifact Worker Contract
+targetedGate1=./gradlew --no-daemon --max-workers=1 :services:joern-cpg-analysis-service:test --tests "*.FileSystemJoernWorkspaceMaterializerTest" --dependency-verification strict --console=plain --stacktrace
+targetedGate1Result=PASS
+targetedGate2=./gradlew --no-daemon --max-workers=1 :services:repository-analysis-service:test :services:analysis-store-service:test :services:joern-cpg-analysis-service:test --dependency-verification strict --console=plain --stacktrace
+targetedGate2Result=PASS
+protoGate=./gradlew --no-daemon --max-workers=1 :services:repository-analysis-service:generateProto :services:analysis-store-service:generateProto :services:joern-cpg-analysis-service:generateProto --dependency-verification strict --console=plain --stacktrace
+protoGateResult=PASS
+analysisStoreRetest=./gradlew --no-daemon --max-workers=1 :services:analysis-store-service:test --dependency-verification strict --console=plain --stacktrace
+analysisStoreRetestResult=PASS
+fullGate=./gradlew --no-daemon --max-workers=1 clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace
+fullGateResult=PASS
+fullGateAttempt1=FAILED: services:analysis-store-service:test aborted while closing Gradle binary test-result writer with NoSuchFileException; no test XML failures found; isolated analysis-store-service:test passed immediately afterwards.
+fullGateAttempt2=FAILED: Gradle DaemonStoppedException during clean phase after stop command received.
+fullGateAttempt3=FAILED: WSL/Gradle build ended without test failure summary; dmesg showed WSL instance poweroff/termination sequence and no generated test XML failures were found.
+fullGateAttempt4=FAILED: after WSL restart the full gate completed far enough to expose a real checkPackageCoverage blocker; package de.burger.forensics.analytics.services.joerncpganalysis.adapter.out.filesystem branch coverage was 69.63%.
+coverageRemediation=Added focused FileSystemJoernWorkspaceMaterializer branch coverage for directory entries, missing package bytes, package size mismatch, malformed manifests, entry-kind mismatches, missing manifest entries and declared-byte overflow.
+coveragePrecheck=./gradlew --no-daemon --max-workers=1 :services:joern-cpg-analysis-service:jacocoTestReport checkPackageCoverage --dependency-verification strict --console=plain --stacktrace
+coveragePrecheckResult=PASS
+fullGateAttempt5=PASS: ./gradlew --no-daemon --max-workers=1 clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace
+commitHash=pending checkpoint commit
+pushResult=pending checkpoint push
+rollbackReference=ae6348e38c57e0522d4f8ee36b61c9046bc1bb16
+arc42Updated=not changed in this attempt
+adrUpdated=not required in this attempt
+```
+
+### D8 Decision
+
+Slice 07 is `D8_PASS`. Targeted service and proto gates passed, post-fix
+security review is ready, the Joern filesystem package coverage blocker was
+remediated, and the mandatory full local quality gate completed successfully
+after the WSL environment was restarted.
+
+### Requirement Engineering Remediation - D8
+
+Requirement review confirmed that no requirement or workflow clarification can
+unblock D8 without weakening the active quality contract.
+
+Classification:
+
+- Functional: Slice 07 implementation remains limited to repository source
+  packages, complete build-output package descriptors, artifact byte access
+  preservation and Joern-owned materialization.
+- Non-functional: deterministic source/build artifact handling and stable
+  verification output remain required.
+- Architecture constraint: service ownership and byte-custody boundaries remain
+  governed by EPIC v0.2, ADR-0017 and the Slice 07 workflow.
+- Resilience requirement: infrastructure instability must be reported as an
+  environment blocker, not converted into a successful gate.
+- Scalability requirement: no new scalability requirement is introduced by the
+  D8 remediation.
+- UX requirement: not affected.
+- Observability requirement: the failed full-gate attempts must stay recorded
+  with enough diagnostic detail to preserve auditability.
+- Security requirement: post-fix security readiness does not replace the full
+  `QUALITY.md` gate.
+- Quality-gate requirement: the full local quality gate remains mandatory for
+  Slice 07 checkpoint commit and push readiness.
+- Assumption resolved: no test XML failure was found in the infrastructure
+  attempts, and the stable post-restart full-gate run completed successfully
+  after the concrete coverage blocker was remediated.
+- Open question resolved: Slice 07 still matches EPIC v0.2 after the stable
+  full-gate run because ownership remains split between Repository Analysis,
+  Analysis Store and Joern CPG Analysis without introducing shared Java
+  implementation modules.
+
+Drift and conflict findings:
+
+- No EPIC drift was identified in the D8 remediation itself. EPIC v0.2 remains
+  the active source for producer-neutral Analytics ownership and evidence
+  provenance.
+- No service-ownership drift was accepted. Repository Analysis, Analysis Store
+  and Joern ownership remains as described in the Slice 07 workflow.
+- No quality-gate conflict was found that permits a waiver. `QUALITY.md`,
+  ADR-0012, workflow-executor rules and D8 governance all block commit and push
+  when a required gate fails or cannot be verified.
+- Product-code remediation was requirement-compliant only after the stable WSL
+  rerun exposed the concrete Joern filesystem package coverage failure. The
+  remediation remained limited to observable materializer behavior and tests.
+
+Completed remediation:
+
+The full local quality gate was rerun in a stable WSL/Gradle environment:
+
+```bash
+./gradlew --no-daemon --max-workers=1 clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace
+```
+
+The command completed successfully. Slice 07 is ready for checkpoint commit and
+branch push under the workflow-execute checkpoint rules.

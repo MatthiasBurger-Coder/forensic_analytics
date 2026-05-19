@@ -24,6 +24,8 @@ import de.burger.forensics.analytics.services.analysisstore.domain.AnalysisJobId
 import de.burger.forensics.analytics.services.analysisstore.domain.AnalysisJobState;
 import de.burger.forensics.analytics.services.analysisstore.domain.AnalysisRunId;
 import de.burger.forensics.analytics.services.analysisstore.domain.AnalysisWorkerKind;
+import de.burger.forensics.analytics.services.analysisstore.domain.ArtifactByteAccess;
+import de.burger.forensics.analytics.services.analysisstore.domain.ArtifactByteCustody;
 import de.burger.forensics.analytics.services.analysisstore.domain.ArtifactReference;
 import de.burger.forensics.analytics.services.analysisstore.domain.SourceSnapshotId;
 import io.grpc.Status;
@@ -133,6 +135,22 @@ public final class AnalysisJobGrpcEndpoint extends AnalysisJobServiceGrpc.Analys
         de.burger.forensics.analytics.analysisjob.v1.AnalysisArtifactCategory.ANALYSIS_ARTIFACT_CATEGORY_PROJECTION,
         de.burger.forensics.analytics.services.analysisstore.domain.AnalysisArtifactCategory.GENERATED,
         de.burger.forensics.analytics.analysisjob.v1.AnalysisArtifactCategory.ANALYSIS_ARTIFACT_CATEGORY_GENERATED
+    );
+    private static final Map<de.burger.forensics.analytics.analysisjob.v1.ArtifactByteCustody, ArtifactByteCustody> BYTE_CUSTODIES = Map.of(
+        de.burger.forensics.analytics.analysisjob.v1.ArtifactByteCustody.ARTIFACT_BYTE_CUSTODY_PRODUCER_RETAINED,
+        ArtifactByteCustody.PRODUCER_RETAINED,
+        de.burger.forensics.analytics.analysisjob.v1.ArtifactByteCustody.ARTIFACT_BYTE_CUSTODY_SCOPED_OBJECT_ACCESS,
+        ArtifactByteCustody.SCOPED_OBJECT_ACCESS,
+        de.burger.forensics.analytics.analysisjob.v1.ArtifactByteCustody.ARTIFACT_BYTE_CUSTODY_EXPLICIT_HANDOFF,
+        ArtifactByteCustody.EXPLICIT_HANDOFF
+    );
+    private static final Map<ArtifactByteCustody, de.burger.forensics.analytics.analysisjob.v1.ArtifactByteCustody> BYTE_CUSTODY_PROTOS = Map.of(
+        ArtifactByteCustody.PRODUCER_RETAINED,
+        de.burger.forensics.analytics.analysisjob.v1.ArtifactByteCustody.ARTIFACT_BYTE_CUSTODY_PRODUCER_RETAINED,
+        ArtifactByteCustody.SCOPED_OBJECT_ACCESS,
+        de.burger.forensics.analytics.analysisjob.v1.ArtifactByteCustody.ARTIFACT_BYTE_CUSTODY_SCOPED_OBJECT_ACCESS,
+        ArtifactByteCustody.EXPLICIT_HANDOFF,
+        de.burger.forensics.analytics.analysisjob.v1.ArtifactByteCustody.ARTIFACT_BYTE_CUSTODY_EXPLICIT_HANDOFF
     );
 
     private final AnalysisJobApplicationService applicationService;
@@ -385,7 +403,8 @@ public final class AnalysisJobGrpcEndpoint extends AnalysisJobServiceGrpc.Analys
             category(reference.getCategory()),
             reference.getProducerService(),
             reference.getSchemaVersion(),
-            completeness(reference.getCompleteness())
+            completeness(reference.getCompleteness()),
+            byteAccess(reference.getByteAccess())
         );
     }
 
@@ -435,6 +454,7 @@ public final class AnalysisJobGrpcEndpoint extends AnalysisJobServiceGrpc.Analys
             .setProducerService(reference.producerService())
             .setSchemaVersion(reference.schemaVersion())
             .setCompleteness(toProto(reference.completeness()))
+            .setByteAccess(toProto(reference.byteAccess()))
             .build();
     }
 
@@ -476,6 +496,24 @@ public final class AnalysisJobGrpcEndpoint extends AnalysisJobServiceGrpc.Analys
         de.burger.forensics.analytics.analysisjob.v1.AnalysisArtifactCategory category
     ) {
         return required(CATEGORIES.get(category), "artifact.category must be specified");
+    }
+
+    private static ArtifactByteAccess byteAccess(de.burger.forensics.analytics.analysisjob.v1.ArtifactByteAccess byteAccess) {
+        return new ArtifactByteAccess(
+            byteAccess.getOwnerService(),
+            byteAccess.getRetrievalContract(),
+            byteAccess.getRetrievalReference(),
+            required(BYTE_CUSTODIES.get(byteAccess.getByteCustody()), "artifact.byteAccess.byteCustody must be specified")
+        );
+    }
+
+    private static de.burger.forensics.analytics.analysisjob.v1.ArtifactByteAccess toProto(ArtifactByteAccess byteAccess) {
+        return de.burger.forensics.analytics.analysisjob.v1.ArtifactByteAccess.newBuilder()
+            .setOwnerService(byteAccess.ownerService())
+            .setRetrievalContract(byteAccess.retrievalContract())
+            .setRetrievalReference(byteAccess.retrievalReference())
+            .setByteCustody(BYTE_CUSTODY_PROTOS.get(byteAccess.byteCustody()))
+            .build();
     }
 
     private static de.burger.forensics.analytics.analysisjob.v1.AnalysisWorkerKind toProto(AnalysisWorkerKind kind) {

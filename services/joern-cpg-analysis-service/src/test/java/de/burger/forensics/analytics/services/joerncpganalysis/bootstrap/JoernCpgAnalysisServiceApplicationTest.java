@@ -168,6 +168,9 @@ class JoernCpgAnalysisServiceApplicationTest {
     private static JoernCpgAnalysisGrpcEndpoint endpoint() {
         return new JoernCpgAnalysisGrpcEndpoint(new JoernCpgAnalysisApplicationService(
             command -> {
+                throw new UnsupportedOperationException("materializer not used by lifecycle test");
+            },
+            command -> {
                 throw new UnsupportedOperationException("workspace not used by lifecycle test");
             },
             (command, workspace) -> new JoernRuntimeResult("joern-test", image(), "joern-cpg/run-1", List.of()),

@@ -7,12 +7,19 @@ import de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAn
 import de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.AnalysisRunId;
 import de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.AnalyzeJoernCpgCommand;
 import de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.AnalyzeJoernCpgResult;
+import de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.ArtifactByteAccess;
+import de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.ArtifactByteCustody;
 import de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.ArtifactReference;
 import de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.DiagnosticSeverity;
 import de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.JoernArtifactCollectionResult;
 import de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.JoernCpgDiagnostic;
 import de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.JoernCpgPolicy;
 import de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.JoernCpgSummary;
+import de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.JoernMaterializationPolicy;
+import de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.MaterializationMetadata;
+import de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.MaterializedPackageDescriptor;
+import de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.MaterializeJoernWorkspaceCommand;
+import de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.PackageAvailability;
 import de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.RequestMetadata;
 import de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.SourceRoot;
 import de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.SourceSnapshotId;
@@ -37,6 +44,7 @@ class JoernCpgAnalysisDomainTest {
         assertThrows(IllegalArgumentException.class, () -> new SourceRoot("../src", "java"));
         assertThrows(IllegalArgumentException.class, () -> new SourceRoot("/workspace/src", "java"));
         assertThrows(IllegalArgumentException.class, () -> new SourceWorkspace("workspace/1", List.of(new SourceRoot("src", "java")), List.of()));
+        assertThrows(IllegalArgumentException.class, () -> new SourceWorkspace("workspace-1", List.of(new SourceRoot("src", "java")), List.of()));
         assertThrows(IllegalArgumentException.class, () -> metadata(Map.of("api_token", "secret")));
         assertThrows(IllegalArgumentException.class, () -> metadata(Map.of("tenant", "file:/private/path")));
         assertThrows(IllegalArgumentException.class, () -> new JoernCpgPolicy(
@@ -55,9 +63,9 @@ class JoernCpgAnalysisDomainTest {
     @Test
     void sortsSourceRootsAndKeepsIncompleteEvidenceExplicit() {
         var workspace = new SourceWorkspace(
-            "workspace-1",
+            "joern-workspace-1",
             List.of(new SourceRoot("z", "java"), new SourceRoot("a", "JAVA")),
-            List.of()
+            List.of(reference("input.json"))
         );
         var diagnostics = List.of(JoernCpgDiagnostic.warning(
             new SourceSnapshotId("snapshot-1"),
@@ -74,7 +82,12 @@ class JoernCpgAnalysisDomainTest {
 
     @Test
     void rejectsInvalidPolicyCommandArtifactAndSummaryBoundaries() {
-        assertThrows(IllegalArgumentException.class, () -> new SourceWorkspace("workspace-1", List.of(), List.of()));
+        assertThrows(IllegalArgumentException.class, () -> new SourceWorkspace("joern-workspace-1", List.of(), List.of()));
+        assertThrows(IllegalArgumentException.class, () -> new SourceWorkspace(
+            "joern-workspace-1",
+            List.of(new SourceRoot("src", "java")),
+            List.of()
+        ));
         assertThrows(IllegalArgumentException.class, () -> new SourceWorkspace(".", List.of(new SourceRoot("src", "java")), List.of()));
         assertThrows(IllegalArgumentException.class, () -> new SourceWorkspace("workspace:1", List.of(new SourceRoot("src", "java")), List.of()));
         assertThrows(IllegalArgumentException.class, () -> new JoernCpgPolicy(0, 100, 100, 60, image(), "queries-v1", false, false, false));
@@ -91,14 +104,18 @@ class JoernCpgAnalysisDomainTest {
         assertThrows(IllegalArgumentException.class, () -> new AnalyzeJoernCpgCommand(
             metadata(Map.of("tenant", "demo")),
             policy(1),
-            new SourceWorkspace("workspace-1", List.of(new SourceRoot("a", "java"), new SourceRoot("b", "java")), List.of())
+            new SourceWorkspace(
+                "joern-workspace-1",
+                List.of(new SourceRoot("a", "java"), new SourceRoot("b", "java")),
+                List.of(reference("input.json"))
+            )
         ));
     }
 
     @Test
     void sortsArtifactReferencesAndSanitizesDiagnostics() {
         var inputArtifacts = List.of(reference("z.json"), reference("a.json"));
-        var workspace = new SourceWorkspace("workspace-1", List.of(new SourceRoot("src", "java")), inputArtifacts);
+        var workspace = new SourceWorkspace("joern-workspace-1", List.of(new SourceRoot("src", "java")), inputArtifacts);
         var diagnostics = List.of(
             JoernCpgDiagnostic.error(new SourceSnapshotId("snapshot-1"), "JOERN_RUNTIME_UNAVAILABLE", "C:\\secret\\trace.log", true),
             JoernCpgDiagnostic.info(new SourceSnapshotId("snapshot-1"), "JOERN_OPTIONAL_QUERY_SKIPPED", "line one\nline two")
@@ -137,6 +154,44 @@ class JoernCpgAnalysisDomainTest {
         assertThrows(IllegalArgumentException.class, () -> requireText(" ", "text"));
     }
 
+    @Test
+    void validatesJoernMaterializationPoliciesAndPackageReadiness() {
+        var sourcePackage = packageDescriptor("source package", PackageAvailability.AVAILABLE, AnalysisCompleteness.COMPLETE, 10);
+        var buildPackage = packageDescriptor("build-output package", PackageAvailability.AVAILABLE, AnalysisCompleteness.COMPLETE, 10);
+
+        var command = new MaterializeJoernWorkspaceCommand(
+            materializationMetadata(),
+            List.of(new SourceRoot("src/main/java", "java")),
+            sourcePackage,
+            buildPackage,
+            materializationPolicy()
+        );
+
+        assertEquals(List.of("src/main/java"), command.sourceRoots().stream().map(SourceRoot::relativePath).toList());
+        assertThrows(IllegalArgumentException.class, () -> new JoernMaterializationPolicy(0, 100, 100, 1, true, true, true, true));
+        assertThrows(IllegalArgumentException.class, () -> new JoernMaterializationPolicy(1, 0, 100, 1, true, true, true, true));
+        assertThrows(IllegalArgumentException.class, () -> new JoernMaterializationPolicy(1, 100, 0, 1, true, true, true, true));
+        assertThrows(IllegalArgumentException.class, () -> new JoernMaterializationPolicy(1, 100, 100, 0, true, true, true, true));
+        assertThrows(IllegalArgumentException.class, () -> new JoernMaterializationPolicy(1, 100, 100, 1, false, true, true, true));
+        assertThrows(IllegalArgumentException.class, () -> packageDescriptor("source package", PackageAvailability.PENDING, AnalysisCompleteness.COMPLETE, 10));
+        assertThrows(IllegalArgumentException.class, () -> packageDescriptor("source package", PackageAvailability.AVAILABLE, AnalysisCompleteness.INCOMPLETE, 10));
+        assertThrows(IllegalArgumentException.class, () -> packageDescriptor("source package", PackageAvailability.AVAILABLE, AnalysisCompleteness.COMPLETE, 0));
+        assertThrows(IllegalArgumentException.class, () -> new MaterializeJoernWorkspaceCommand(
+            materializationMetadata(),
+            List.of(new SourceRoot("src", "java"), new SourceRoot("generated", "java")),
+            sourcePackage,
+            buildPackage,
+            new JoernMaterializationPolicy(1, 100, 100, 1, true, true, true, true)
+        ));
+        assertThrows(IllegalArgumentException.class, () -> new MaterializeJoernWorkspaceCommand(
+            materializationMetadata(),
+            List.of(new SourceRoot("src", "java")),
+            sourcePackage,
+            packageDescriptor("build-output package", PackageAvailability.AVAILABLE, AnalysisCompleteness.COMPLETE, 101),
+            new JoernMaterializationPolicy(1, 100, 100, 1, true, true, true, true)
+        ));
+    }
+
     private static RequestMetadata metadata(Map<String, String> attributes) {
         return new RequestMetadata(
             "request-1",
@@ -151,6 +206,46 @@ class JoernCpgAnalysisDomainTest {
         );
     }
 
+    private static MaterializationMetadata materializationMetadata() {
+        return new MaterializationMetadata(
+            "request-1",
+            "idempotency-1",
+            "joern-materialization-v1",
+            "correlation-1",
+            new AnalysisRunId("run-1"),
+            new AnalysisJobId("job-1"),
+            new SourceSnapshotId("snapshot-1"),
+            Map.of("tenant", "demo")
+        );
+    }
+
+    private static JoernMaterializationPolicy materializationPolicy() {
+        return new JoernMaterializationPolicy(2, 1_000, 100, 10, true, true, true, true);
+    }
+
+    private static MaterializedPackageDescriptor packageDescriptor(
+        String packageName,
+        PackageAvailability availability,
+        AnalysisCompleteness completeness,
+        long sizeBytes
+    ) {
+        return new MaterializedPackageDescriptor(
+            packageName,
+            availability,
+            new ArtifactReference(packageName.replace(' ', '-') + "-manifest.json", "application/json", "b".repeat(64), 1),
+            new ArtifactReference(packageName.replace(' ', '-') + ".zip", "application/zip", "a".repeat(64), sizeBytes),
+            "repository-analysis-service",
+            "package-v1",
+            completeness,
+            new ArtifactByteAccess(
+                "repository-analysis-service",
+                "repository-analysis.v1.GetRepositoryPreparation",
+                "source-snapshot/snapshot-1/" + packageName.replace(' ', '-') + ".zip",
+                ArtifactByteCustody.PRODUCER_RETAINED
+            )
+        );
+    }
+
     private static JoernCpgPolicy policy(int maxSourceRoots) {
         return new JoernCpgPolicy(maxSourceRoots, 1_000, 1_000, 60, image(), "queries-v1", true, true, true);
     }
@@ -161,7 +256,13 @@ class JoernCpgAnalysisDomainTest {
             AnalysisArtifactCategory.STATIC,
             "joern-cpg-analysis-service",
             "schema",
-            AnalysisCompleteness.COMPLETE
+            AnalysisCompleteness.COMPLETE,
+            new ArtifactByteAccess(
+                "joern-cpg-analysis-service",
+                "analysis-job.v1.ArtifactBytes",
+                "artifacts/" + path,
+                ArtifactByteCustody.PRODUCER_RETAINED
+            )
         );
     }
 

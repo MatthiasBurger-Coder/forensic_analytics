@@ -119,6 +119,28 @@ final class AnalysisJobRequestValidator {
         RequiredFields.nonBlank(reference.getProducerService(), "artifact.producerService");
         RequiredFields.nonBlank(reference.getSchemaVersion(), "artifact.schemaVersion");
         completeness(reference.getCompleteness(), "artifact.completeness");
+        RequiredFields.present(reference.hasByteAccess(), "artifact.byteAccess");
+        RequiredFields.nonBlank(reference.getByteAccess().getOwnerService(), "artifact.byteAccess.ownerService");
+        RequiredFields.nonBlank(reference.getByteAccess().getRetrievalContract(), "artifact.byteAccess.retrievalContract");
+        RequiredFields.nonBlank(reference.getByteAccess().getRetrievalReference(), "artifact.byteAccess.retrievalReference");
+        safeByteAccess(reference.getByteAccess().getRetrievalContract(), "artifact.byteAccess.retrievalContract");
+        safeByteAccess(reference.getByteAccess().getRetrievalReference(), "artifact.byteAccess.retrievalReference");
+        if (
+            reference.getByteAccess().getByteCustody()
+                == de.burger.forensics.analytics.analysisjob.v1.ArtifactByteCustody.ARTIFACT_BYTE_CUSTODY_UNSPECIFIED
+                || reference.getByteAccess().getByteCustody()
+                == de.burger.forensics.analytics.analysisjob.v1.ArtifactByteCustody.UNRECOGNIZED
+        ) {
+            throw new ValidationException("artifact.byteAccess.byteCustody must be specified");
+        }
+    }
+
+    private void safeByteAccess(String value, String fieldName) {
+        try {
+            de.burger.forensics.analytics.services.analysisstore.domain.ArtifactByteAccess.requirePublicReference(value, fieldName);
+        } catch (IllegalArgumentException error) {
+            throw new ValidationException(error.getMessage());
+        }
     }
 
     private void workerKind(AnalysisWorkerKind workerKind) {

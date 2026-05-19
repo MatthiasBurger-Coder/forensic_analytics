@@ -3,9 +3,15 @@ package de.burger.forensics.analytics.services.joerncpganalysis.adapter.out.joer
 import de.burger.forensics.analytics.services.joerncpganalysis.application.JoernRuntimeUnavailableException;
 import de.burger.forensics.analytics.services.joerncpganalysis.application.JoernCpgAnalysisTimeoutException;
 import de.burger.forensics.analytics.services.joerncpganalysis.application.port.ResolvedJoernWorkspace;
+import de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.AnalysisCompleteness;
+import de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.AnalysisArtifactCategory;
+import de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.AnalysisArtifactReference;
 import de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.AnalysisJobId;
 import de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.AnalysisRunId;
 import de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.AnalyzeJoernCpgCommand;
+import de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.ArtifactByteAccess;
+import de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.ArtifactByteCustody;
+import de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.ArtifactReference;
 import de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.JoernCpgPolicy;
 import de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.RequestMetadata;
 import de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.SourceRoot;
@@ -342,7 +348,23 @@ class ProcessJoernRuntimeAdapterTest {
                 controlflow,
                 dataflow
             ),
-            new SourceWorkspace("workspace-1", List.of(new SourceRoot("src/main/java", "java")), List.of())
+            new SourceWorkspace("joern-workspace-1", List.of(new SourceRoot("src/main/java", "java")), List.of(inputArtifact()))
+        );
+    }
+
+    private static AnalysisArtifactReference inputArtifact() {
+        return new AnalysisArtifactReference(
+            new ArtifactReference("source-package.zip", "application/zip", "a".repeat(64), 1),
+            AnalysisArtifactCategory.STATIC,
+            "repository-analysis-service",
+            "source-package-v1",
+            AnalysisCompleteness.COMPLETE,
+            new ArtifactByteAccess(
+                "repository-analysis-service",
+                "repository-analysis.v1.GetRepositoryPreparation",
+                "source-snapshot/snapshot-1",
+                ArtifactByteCustody.PRODUCER_RETAINED
+            )
         );
     }
 

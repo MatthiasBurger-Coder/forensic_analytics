@@ -2,6 +2,8 @@ package de.burger.forensics.analytics.services.repositoryanalysis.adapter.in.grp
 
 import de.burger.forensics.analytics.repositoryanalysis.v1.CleanupRepositoryWorkspaceRequest;
 import de.burger.forensics.analytics.repositoryanalysis.v1.GetRepositoryPreparationRequest;
+import de.burger.forensics.analytics.repositoryanalysis.v1.BuildOutputProducer;
+import de.burger.forensics.analytics.repositoryanalysis.v1.PackageAvailability;
 import de.burger.forensics.analytics.repositoryanalysis.v1.PrepareRepositoryRequest;
 import de.burger.forensics.analytics.repositoryanalysis.v1.RepositoryAnalysisServiceGrpc;
 import de.burger.forensics.analytics.repositoryanalysis.v1.RepositoryReference;
@@ -88,6 +90,25 @@ class RepositoryAnalysisGrpcEndpointTest {
         assertEquals("PREPARED", prepared.getStatus().getCode());
         assertEquals("https://example.com/acme/demo.git", loaded.getRepository().getRemoteUrl());
         assertEquals("src/main/java", loaded.getSourceSnapshot().getSourceRoots(0).getRelativePath());
+        assertEquals(PackageAvailability.PACKAGE_AVAILABILITY_PENDING, loaded.getSourceSnapshot().getSourcePackage().getAvailability());
+        assertEquals("repository-analysis-service", loaded.getSourceSnapshot().getSourcePackage().getByteAccess().getOwnerService());
+        assertEquals("build-artifact-worker-service", loaded.getSourceSnapshot().getBuildOutputPackage().getByteAccess().getOwnerService());
+        assertEquals("auto-detect", loaded.getSourceSnapshot().getBuildOutputPackage().getBuildSystem());
+        assertEquals(
+            List.of(
+                BuildOutputProducer.BUILD_OUTPUT_PRODUCER_ARTIFACT_STORE,
+                BuildOutputProducer.BUILD_OUTPUT_PRODUCER_ARTIFACTORY,
+                BuildOutputProducer.BUILD_OUTPUT_PRODUCER_JENKINS,
+                BuildOutputProducer.BUILD_OUTPUT_PRODUCER_BUILD_ARTIFACT_WORKER
+            ),
+            loaded.getSourceSnapshot().getBuildOutputPackage().getResolution().getCandidatesList().stream()
+                .map(candidate -> candidate.getProducer())
+                .toList()
+        );
+        assertEquals(
+            BuildOutputProducer.BUILD_OUTPUT_PRODUCER_UNSPECIFIED,
+            loaded.getSourceSnapshot().getBuildOutputPackage().getResolution().getSelectedProducer()
+        );
         assertEquals(RepositoryWorkspaceStatus.REPOSITORY_WORKSPACE_STATUS_CLEANED, cleaned.getWorkspaceStatus());
         assertEquals("CLEANED", cleaned.getStatus().getCode());
     }
@@ -118,6 +139,58 @@ class RepositoryAnalysisGrpcEndpointTest {
         assertEquals("Invalid repository analysis request", invalid.getStatus().getDescription());
         assertEquals(Status.Code.ALREADY_EXISTS, conflict.getStatus().getCode());
         assertEquals(Status.Code.NOT_FOUND, missing.getStatus().getCode());
+    }
+
+    @Test
+    void mapsPackageDescriptorEnumsAcrossGrpcBoundary() {
+        assertEquals(
+            PackageAvailability.PACKAGE_AVAILABILITY_AVAILABLE,
+            RepositoryAnalysisGrpcEndpoint.packageAvailability(
+                de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.PackageAvailability.AVAILABLE
+            )
+        );
+        assertEquals(
+            PackageAvailability.PACKAGE_AVAILABILITY_UNAVAILABLE,
+            RepositoryAnalysisGrpcEndpoint.packageAvailability(
+                de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.PackageAvailability.UNAVAILABLE
+            )
+        );
+        assertEquals(
+            PackageAvailability.PACKAGE_AVAILABILITY_FAILED_INTEGRITY,
+            RepositoryAnalysisGrpcEndpoint.packageAvailability(
+                de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.PackageAvailability.FAILED_INTEGRITY
+            )
+        );
+        assertEquals(
+            de.burger.forensics.analytics.repositoryanalysis.v1.BuildOutputProducerStatus.BUILD_OUTPUT_PRODUCER_STATUS_AVAILABLE,
+            RepositoryAnalysisGrpcEndpoint.buildOutputProducerStatus(
+                de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.BuildOutputProducerStatus.AVAILABLE
+            )
+        );
+        assertEquals(
+            de.burger.forensics.analytics.repositoryanalysis.v1.BuildOutputProducerStatus.BUILD_OUTPUT_PRODUCER_STATUS_MISSING,
+            RepositoryAnalysisGrpcEndpoint.buildOutputProducerStatus(
+                de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.BuildOutputProducerStatus.MISSING
+            )
+        );
+        assertEquals(
+            de.burger.forensics.analytics.repositoryanalysis.v1.BuildOutputProducerStatus.BUILD_OUTPUT_PRODUCER_STATUS_TERMINAL_INTEGRITY_FAILURE,
+            RepositoryAnalysisGrpcEndpoint.buildOutputProducerStatus(
+                de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.BuildOutputProducerStatus.TERMINAL_INTEGRITY_FAILURE
+            )
+        );
+        assertEquals(
+            de.burger.forensics.analytics.analysisjob.v1.ArtifactByteCustody.ARTIFACT_BYTE_CUSTODY_SCOPED_OBJECT_ACCESS,
+            RepositoryAnalysisGrpcEndpoint.byteCustody(
+                de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.ArtifactByteCustody.SCOPED_OBJECT_ACCESS
+            )
+        );
+        assertEquals(
+            de.burger.forensics.analytics.analysisjob.v1.ArtifactByteCustody.ARTIFACT_BYTE_CUSTODY_EXPLICIT_HANDOFF,
+            RepositoryAnalysisGrpcEndpoint.byteCustody(
+                de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.ArtifactByteCustody.EXPLICIT_HANDOFF
+            )
+        );
     }
 
     @Test

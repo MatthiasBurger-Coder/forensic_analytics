@@ -8,6 +8,8 @@ import de.burger.forensics.analytics.analysisjob.v1.AnalysisJobServiceGrpc;
 import de.burger.forensics.analytics.analysisjob.v1.AnalysisJobState;
 import de.burger.forensics.analytics.analysisjob.v1.AnalysisRunId;
 import de.burger.forensics.analytics.analysisjob.v1.AnalysisWorkerKind;
+import de.burger.forensics.analytics.analysisjob.v1.ArtifactByteAccess;
+import de.burger.forensics.analytics.analysisjob.v1.ArtifactByteCustody;
 import de.burger.forensics.analytics.analysisjob.v1.ArtifactReference;
 import de.burger.forensics.analytics.analysisjob.v1.CompleteAnalysisJobRequest;
 import de.burger.forensics.analytics.analysisjob.v1.FailAnalysisJobRequest;
@@ -113,6 +115,7 @@ class AnalysisJobGrpcEndpointTest {
         assertEquals("schema-v1", submitted.getJob().getSchemaVersion());
         assertEquals("correlation-1", submitted.getJob().getCorrelationId());
         assertEquals("demo", submitted.getJob().getAttributesMap().get("repository"));
+        assertEquals("analysis-store-test", submitted.getJob().getInputArtifacts(0).getByteAccess().getOwnerService());
         assertEquals(AnalysisJobState.ANALYSIS_JOB_STATE_RUNNING, leased.getJobs(0).getState());
         assertEquals("worker-a", leased.getJobs(0).getLeaseOwner());
         assertEquals("scanner running", progressed.getDiagnostics(0));
@@ -120,7 +123,9 @@ class AnalysisJobGrpcEndpointTest {
         assertEquals(AnalysisJobState.ANALYSIS_JOB_STATE_COMPLETED, completed.getState());
         assertEquals(AnalysisCompleteness.ANALYSIS_COMPLETENESS_COMPLETE, completed.getCompleteness());
         assertEquals(100, completed.getPercentComplete());
+        assertEquals("artifacts/output.json", completed.getOutputArtifacts(0).getByteAccess().getRetrievalReference());
         assertEquals(2, registered.getArtifactsCount());
+        assertEquals("artifacts/report.json", registered.getArtifacts(1).getByteAccess().getRetrievalReference());
     }
 
     @Test
@@ -273,6 +278,11 @@ class AnalysisJobGrpcEndpointTest {
             .setProducerService("analysis-store-test")
             .setSchemaVersion("schema-v1")
             .setCompleteness(AnalysisCompleteness.ANALYSIS_COMPLETENESS_UNKNOWN)
+            .setByteAccess(ArtifactByteAccess.newBuilder()
+                .setOwnerService("analysis-store-test")
+                .setRetrievalContract("analysis-job.v1.ArtifactBytes")
+                .setRetrievalReference("artifacts/" + path)
+                .setByteCustody(ArtifactByteCustody.ARTIFACT_BYTE_CUSTODY_PRODUCER_RETAINED))
             .build();
     }
 }

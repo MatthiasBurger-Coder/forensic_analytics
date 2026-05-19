@@ -2,6 +2,7 @@ package de.burger.forensics.analytics.services.joerncpganalysis.application;
 
 import de.burger.forensics.analytics.services.joerncpganalysis.application.port.JoernArtifactCollectorPort;
 import de.burger.forensics.analytics.services.joerncpganalysis.application.port.JoernRuntimePort;
+import de.burger.forensics.analytics.services.joerncpganalysis.application.port.JoernWorkspaceMaterializerPort;
 import de.burger.forensics.analytics.services.joerncpganalysis.application.port.JoernWorkspacePort;
 import de.burger.forensics.analytics.services.joerncpganalysis.application.port.ResolvedJoernWorkspace;
 import de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.AnalysisArtifactCategory;
@@ -10,6 +11,8 @@ import de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAn
 import de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.AnalysisJobId;
 import de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.AnalysisRunId;
 import de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.AnalyzeJoernCpgCommand;
+import de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.ArtifactByteAccess;
+import de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.ArtifactByteCustody;
 import de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.ArtifactReference;
 import de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.JoernArtifactCollectionResult;
 import de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.JoernCpgDiagnostic;
@@ -37,6 +40,7 @@ class JoernCpgAnalysisApplicationServiceTest {
     @Test
     void analyzesWithServiceOwnedPortsAndPreservesIncompleteDiagnostics() {
         var application = new JoernCpgAnalysisApplicationService(
+            materializer(),
             workspace(100),
             (command, workspace) -> new JoernRuntimeResult("joern 1.2.3", image(), "joern-cpg/run-1", List.of()),
             (command, runtimeResult) -> new JoernArtifactCollectionResult(
@@ -64,6 +68,7 @@ class JoernCpgAnalysisApplicationServiceTest {
     void rejectsOversizedWorkspaceBeforeInvokingJoern() {
         var runtimeInvoked = new AtomicBoolean();
         var application = new JoernCpgAnalysisApplicationService(
+            materializer(),
             workspace(1_001),
             (command, workspace) -> {
                 runtimeInvoked.set(true);
@@ -79,6 +84,7 @@ class JoernCpgAnalysisApplicationServiceTest {
     @Test
     void propagatesUnavailableJoernAndTimeouts() {
         var unavailable = new JoernCpgAnalysisApplicationService(
+            materializer(),
             workspace(100),
             (command, workspace) -> {
                 throw new JoernRuntimeUnavailableException("Joern unavailable");
@@ -86,6 +92,7 @@ class JoernCpgAnalysisApplicationServiceTest {
             emptyCollector()
         );
         var timeout = new JoernCpgAnalysisApplicationService(
+            materializer(),
             workspace(100),
             (command, workspace) -> {
                 throw new JoernCpgAnalysisTimeoutException("timeout");
@@ -100,6 +107,7 @@ class JoernCpgAnalysisApplicationServiceTest {
     @Test
     void reportsUnknownCompletenessWhenJoernProducesNoArtifacts() {
         var application = new JoernCpgAnalysisApplicationService(
+            materializer(),
             workspace(100),
             (command, workspace) -> new JoernRuntimeResult("joern 1.2.3", image(), "joern-cpg/run-1", List.of()),
             emptyCollector()
@@ -122,10 +130,35 @@ class JoernCpgAnalysisApplicationServiceTest {
     private static JoernWorkspacePort workspace(long bytes) {
         return command -> new ResolvedJoernWorkspace(
             command.metadata().sourceSnapshotId(),
-            "workspace-1",
+            "joern-workspace-1",
             Path.of("build/test-workspace"),
             List.of(Path.of("build/test-workspace/src/main/java")),
             bytes
+        );
+    }
+
+    private static JoernWorkspaceMaterializerPort materializer() {
+        return command -> new SourceWorkspace(
+            "joern-workspace-" + command.metadata().sourceSnapshotId().value(),
+            command.sourceRoots(),
+            List.of(
+                new AnalysisArtifactReference(
+                    command.sourcePackage().packageArtifact(),
+                    AnalysisArtifactCategory.STATIC,
+                    command.sourcePackage().producerService(),
+                    command.sourcePackage().schemaVersion(),
+                    command.sourcePackage().completeness(),
+                    command.sourcePackage().byteAccess()
+                ),
+                new AnalysisArtifactReference(
+                    command.buildOutputPackage().packageArtifact(),
+                    AnalysisArtifactCategory.STATIC,
+                    command.buildOutputPackage().producerService(),
+                    command.buildOutputPackage().schemaVersion(),
+                    command.buildOutputPackage().completeness(),
+                    command.buildOutputPackage().byteAccess()
+                )
+            )
         );
     }
 
@@ -139,7 +172,13 @@ class JoernCpgAnalysisApplicationServiceTest {
             AnalysisArtifactCategory.STATIC,
             PRODUCER_SERVICE,
             SEMANTIC_ARTIFACT_SCHEMA_VERSION,
-            AnalysisCompleteness.COMPLETE
+            AnalysisCompleteness.COMPLETE,
+            new ArtifactByteAccess(
+                PRODUCER_SERVICE,
+                "analysis-job.v1.ArtifactBytes",
+                "artifacts/" + path,
+                ArtifactByteCustody.PRODUCER_RETAINED
+            )
         );
     }
 
@@ -167,7 +206,7 @@ class JoernCpgAnalysisApplicationServiceTest {
                 true,
                 true
             ),
-            new SourceWorkspace("workspace-1", List.of(new SourceRoot("src/main/java", "java")), List.of())
+            new SourceWorkspace("joern-workspace-1", List.of(new SourceRoot("src/main/java", "java")), List.of(reference("input.json")))
         );
     }
 
