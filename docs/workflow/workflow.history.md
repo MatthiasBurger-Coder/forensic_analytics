@@ -1,5 +1,29 @@
 # Workflow History
 
+## microservices-btm-pipeline-20260517-v5
+
+| Field | Value |
+|---|---|
+| Created | 2026-05-20 |
+| Branch | `feature/workflow-microservices-btm-pipeline-20260517` |
+| Strand | workflow-governance refinement inside `workflow execute` stop handling |
+| Status | Active. V5 inserts Slice 13 for the Java AST source-fact artifact payload contract and artifact IO hardening before the end-to-end orchestration slice can resume. |
+| Source request | Continue all slices and commit them; the Slice 13 read-only precheck found artifact contract and symlink-safety blockers. |
+
+V5 preserves completed v4 Slice 00 through Slice 12 checkpoints. Downstream
+slices are renumbered by one: v4 Slice 13 becomes v5 Slice 14, and the final
+quality gate becomes v5 Slice 20.
+
+The v5 prerequisite keeps `GetSourceFactArtifactBytes` as the Java AST owner
+byte retrieval RPC and formalizes the JSON payload contract for
+`application/vnd.forensic-analytics.java-ast-source-facts.v1+json` before
+Analysis Store parses source-fact bytes. It also requires Java AST and BTM
+artifact filesystem adapters to reject symlinked directories and files using
+no-follow checks before read/write verification. The default readiness path
+continues to use fakes, in-process gRPC or local fixtures rather than external
+Git network access, Docker, Jenkins, Artifactory, credentials or host
+workspace mounts.
+
 ## microservices-btm-pipeline-20260517-v4
 
 | Field | Value |
@@ -7,7 +31,7 @@
 | Created | 2026-05-20 |
 | Branch | `feature/workflow-microservices-btm-pipeline-20260517` |
 | Strand | workflow-governance refinement through `workflow create` after blocked `workflow execute` Slice 12 precheck |
-| Status | Active. V4 inserts Slice 12 for source-fact byte retrieval, Repository Analysis to Java AST handoff closure and deterministic local E2E fixture readiness before end-to-end orchestration can resume. |
+| Status | Superseded by v5. V4 inserted Slice 12 for source-fact byte retrieval, Repository Analysis to Java AST handoff closure and deterministic local E2E fixture readiness before end-to-end orchestration can resume. |
 | Source request | Create the missing prerequisite workflow slice after the Slice 12 review identified source-fact byte retrieval and deterministic fixture blockers. |
 
 V4 preserves completed v3 Slice 00 through Slice 11 checkpoints. Downstream
@@ -29,7 +53,7 @@ or credentials.
 | Created | 2026-05-19 |
 | Branch | `feature/workflow-microservices-btm-pipeline-20260517` |
 | Strand | workflow-governance refinement inside `workflow execute` stop handling |
-| Status | Active. V3 inserts Slice 11 for the Repository-to-BTM orchestration contract and artifact-readiness bridge before the end-to-end orchestration slice can resume. |
+| Status | Superseded by v4. V3 inserted Slice 11 for the Repository-to-BTM orchestration contract and artifact-readiness bridge before the end-to-end orchestration slice could resume. |
 | Source request | Continue safely by inserting the prerequisite workflow-refinement slice identified after the blocked Slice 11 review. |
 
 V3 preserves completed v2 Slice 00 through Slice 10 checkpoints. Downstream
@@ -49,7 +73,7 @@ continues.
 | Created | 2026-05-19 |
 | Branch | `feature/workflow-microservices-btm-pipeline-20260517` |
 | Strand | workflow-governance update inside `workflow execute` recovery |
-| Status | Active. V2 inserts Slice 07 for repository snapshot, complete build-output package, optional Artifactory/Jenkins producers, `build-artifact-worker-service` fallback contract, `ArtifactByteAccess` preservation and Joern-owned materialization before the Joern handoff can resume. |
+| Status | Superseded by v3. V2 inserted Slice 07 for repository snapshot, complete build-output package, optional Artifactory/Jenkins producers, `build-artifact-worker-service` fallback contract, `ArtifactByteAccess` preservation and Joern-owned materialization before the Joern handoff could resume. |
 | Source request | Add the missing workspace/build-artifact slice and continue the workflow after the Slice 07 blocker. |
 
 V2 preserves completed v1 Slice 00 through Slice 06 checkpoints. Downstream

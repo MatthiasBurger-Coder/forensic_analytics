@@ -159,6 +159,14 @@ bytes through generated Java AST stubs with checksum and size validation, never
 by reading Java AST private files, Repository Analysis workspaces or another
 service's implementation classes.
 
+The v5 prerequisite requires the Java AST source-fact artifact media type
+`application/vnd.forensic-analytics.java-ast-source-facts.v1+json` to be
+formalized as an external payload contract before Analysis Store parses it for
+target planning. Analysis Store may consume that payload only in a
+service-local adapter boundary and map it into Analysis Store-owned fact
+models. Java AST and BTM artifact filesystem adapters must reject symlinked
+directories and files before artifact byte read/write verification.
+
 The build-artifact worker is a planned byte-owner service for complete
 build-output packages. It does not own Repository Analysis workspaces,
 canonical Analysis Store facts or Joern execution. Artifactory and Jenkins are

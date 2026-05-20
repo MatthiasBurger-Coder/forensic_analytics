@@ -105,6 +105,14 @@ a reviewed service contract, and deterministic local fixtures must avoid
 external Git network access, Docker, Jenkins, Artifactory, credentials, private
 workspace paths and raw source content by default.
 
+The v5 artifact-contract prerequisite requires the Java AST source-fact JSON
+payload to be an explicit external contract before Analysis Store turns source
+facts into target-planning input. Parsing belongs in Analysis Store adapters,
+not in shared Java DTOs or Java AST implementation imports. Java AST and BTM
+artifact filesystem adapters must use no-follow symlink checks for directory
+segments and files before reading, writing or accepting existing artifact
+bytes.
+
 ## 8.7 Replay Uncertainty
 
 The replay must explicitly show missing, incomplete or uncertain event chains.

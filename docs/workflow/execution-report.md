@@ -12,8 +12,12 @@ readiness bridge were not verified. `microservices-btm-pipeline-20260517-v3`
 introduced that bridge and Slice 11 completed successfully. The v3 Slice 12
 precheck then stopped before implementation because source-fact byte retrieval,
 Repository Analysis to Java AST handoff completion and deterministic local
-fixtures were not verified. `microservices-btm-pipeline-20260517-v4` is being
-introduced to add that prerequisite before end-to-end orchestration resumes.
+fixtures were not verified. `microservices-btm-pipeline-20260517-v4` added
+that prerequisite and Slice 12 completed successfully. The v4 Slice 13
+precheck then stopped because the Java AST source-fact artifact payload
+contract and no-follow artifact IO hardening were not verified.
+`microservices-btm-pipeline-20260517-v5` is being introduced to add that
+prerequisite before end-to-end orchestration resumes.
 
 ## Branch
 
@@ -1147,3 +1151,52 @@ dependency verification, architecture review, tester review, `git diff
 completed successfully. The initial pushed checkpoint remains part of the
 branch history; the effective Slice 12 checkpoint is the correction commit
 `073fbbe1674809581140c64d3598eb77c969b487`.
+
+## Slice 13 Read-Only Precheck - End-To-End Repository To BTM Orchestration
+
+The v4 Slice 13 precheck stopped before product implementation. Mandatory
+read-only reviews found that the end-to-end orchestration slice would still
+require guessing the private Java AST source-fact artifact JSON document shape
+and that Java AST and BTM artifact filesystem writes still needed no-follow
+symlink hardening before a secure default end-to-end path could execute.
+
+Review decisions:
+
+- Senior Swarm Orchestrator: `READY` for branch, worktree, dependency and
+  Slice 12 checkpoint preflight; no parallel downstream slices may write until
+  the end-to-end prerequisite is resolved.
+- Microservice Senior Expert: `BLOCKED` because Analysis Store must not infer
+  the Java AST artifact payload from the private
+  `FileSystemAstResultArtifactWriter` record.
+- Senior Tester: `BLOCKED` because no deterministic local end-to-end path
+  exists until the orchestration can consume accepted facts through verified
+  contracts.
+- Security Reviewer: `BLOCKED` because Java AST and BTM artifact write paths
+  must reject symlinked directories and files before artifact byte access.
+- Senior gRPC Proto Specialist: `BLOCKED` for Slice 13 start, but recommended
+  an artifact JSON schema/documentation refinement instead of changing the
+  existing bounded `GetSourceFactArtifactBytes` RPC.
+- Senior Workflow Architect: route as a new prerequisite slice before the
+  end-to-end orchestration slice, not as a Slice 12 correction.
+
+### Slice 13 D8 Decision
+
+Slice 13 is `D8_BLOCKED_REQUIRES_REFINEMENT` for the v4 workflow package. No
+product files were changed. The workflow package was updated to
+`microservices-btm-pipeline-20260517-v5` to insert the new prerequisite Slice
+13 and renumber the former end-to-end orchestration slice to Slice 14.
+
+## Workflow Governance Update v5
+
+The v5 workflow package inserts the new Slice 13 Source-Fact Artifact Contract
+And Artifact IO Hardening prerequisite. The completed v4 Slice 00 through
+Slice 12 checkpoints remain valid. The former end-to-end orchestration slice
+is now v5 Slice 14, and the final quality gate is now v5 Slice 20.
+
+The v5 prerequisite keeps `GetSourceFactArtifactBytes` as the Java AST owner
+byte retrieval RPC, requires an explicit external contract for the
+`application/vnd.forensic-analytics.java-ast-source-facts.v1+json` payload
+before Analysis Store parses source-fact bytes, keeps Analysis Store parsing
+inside a service-local adapter boundary and requires Java AST plus BTM
+artifact filesystem adapters to reject symlinked directories and files before
+read/write verification.
