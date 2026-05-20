@@ -2,14 +2,14 @@ package de.burger.forensics.analytics.services.gateway.bootstrap;
 
 public record ForensicGatewayServiceProperties(
     Http http,
-    RepositoryAnalysis repositoryAnalysis
+    AnalysisStore analysisStore
 ) {
     public ForensicGatewayServiceProperties {
         if (http == null) {
             throw new NullPointerException("http must not be null");
         }
-        if (repositoryAnalysis == null) {
-            throw new NullPointerException("repository analysis must not be null");
+        if (analysisStore == null) {
+            throw new NullPointerException("analysis store must not be null");
         }
     }
 
@@ -20,10 +20,10 @@ public record ForensicGatewayServiceProperties(
         }
     }
 
-    public record RepositoryAnalysis(Grpc grpc) {
-        public RepositoryAnalysis {
+    public record AnalysisStore(Grpc grpc) {
+        public AnalysisStore {
             if (grpc == null) {
-                throw new NullPointerException("repository analysis gRPC must not be null");
+                throw new NullPointerException("analysis store gRPC must not be null");
             }
         }
     }

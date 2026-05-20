@@ -14,6 +14,8 @@ import de.burger.forensics.analytics.analysisjob.v1.InstrumentationTarget;
 import de.burger.forensics.analytics.analysisjob.v1.InstrumentationTargetSelection;
 import de.burger.forensics.analytics.analysisjob.v1.PlanInstrumentationTargetsRequest;
 import de.burger.forensics.analytics.analysisjob.v1.PlanInstrumentationTargetsResponse;
+import de.burger.forensics.analytics.analysisjob.v1.RepositoryToBtmOrchestrationStatus;
+import de.burger.forensics.analytics.analysisjob.v1.StartRepositoryToBtmRequest;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -31,6 +33,8 @@ class AnalysisJobContractTest {
         assertNotNull(AnalysisJobServiceGrpc.getFailAnalysisJobMethod());
         assertNotNull(AnalysisJobServiceGrpc.getRegisterAnalysisArtifactsMethod());
         assertNotNull(AnalysisJobServiceGrpc.getPlanInstrumentationTargetsMethod());
+        assertNotNull(AnalysisJobServiceGrpc.getStartRepositoryToBtmMethod());
+        assertNotNull(AnalysisJobServiceGrpc.getGetRepositoryToBtmStatusMethod());
 
         assertEquals(2, AnalysisWorkerKind.ANALYSIS_WORKER_KIND_AST_ANALYSIS.getNumber());
         assertEquals(3, AnalysisJobState.ANALYSIS_JOB_STATE_RUNNING.getNumber());
@@ -54,6 +58,10 @@ class AnalysisJobContractTest {
         assertEquals(12, PlanInstrumentationTargetsRequest.getDescriptor().findFieldByName("semantic_artifacts").getNumber());
         assertEquals(6, PlanInstrumentationTargetsResponse.getDescriptor().findFieldByName("target_selection").getNumber());
         assertEquals(7, PlanInstrumentationTargetsResponse.getDescriptor().findFieldByName("targets").getNumber());
+        assertEquals(6, StartRepositoryToBtmRequest.getDescriptor().findFieldByName("repository").getNumber());
+        assertEquals(10, StartRepositoryToBtmRequest.getDescriptor().findFieldByName("requested_outputs").getNumber());
+        assertEquals(7, RepositoryToBtmOrchestrationStatus.getDescriptor().findFieldByName("btm_delivery_readiness").getNumber());
+        assertEquals(10, RepositoryToBtmOrchestrationStatus.getDescriptor().findFieldByName("accepted_generated_artifacts").getNumber());
         assertEquals(1, InstrumentationTargetSelection.getDescriptor().findFieldByName("selection_id").getNumber());
         assertEquals(4, InstrumentationTargetSelection.getDescriptor().findFieldByName("selection_fingerprint").getNumber());
         assertEquals(9, InstrumentationTarget.getDescriptor().findFieldByName("probe_kind").getNumber());

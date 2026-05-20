@@ -4,6 +4,7 @@ import de.burger.forensics.analytics.services.analysisstore.adapter.in.grpc.Anal
 import de.burger.forensics.analytics.services.analysisstore.adapter.out.memory.InMemoryAnalysisJobRepository;
 import de.burger.forensics.analytics.services.analysisstore.application.AnalysisJobApplicationService;
 import de.burger.forensics.analytics.services.analysisstore.application.InstrumentationTargetPlanningApplicationService;
+import de.burger.forensics.analytics.services.analysisstore.application.RepositoryToBtmOrchestrationApplicationService;
 import de.burger.forensics.analytics.services.analysisstore.application.port.AnalysisJobRepository;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -38,11 +39,19 @@ public class AnalysisStoreServiceConfiguration {
     }
 
     @Bean
+    public RepositoryToBtmOrchestrationApplicationService repositoryToBtmOrchestrationApplicationService(
+        AnalysisJobApplicationService analysisJobApplicationService
+    ) {
+        return new RepositoryToBtmOrchestrationApplicationService(analysisJobApplicationService);
+    }
+
+    @Bean
     public AnalysisJobGrpcEndpoint analysisJobGrpcEndpoint(
         AnalysisJobApplicationService applicationService,
-        InstrumentationTargetPlanningApplicationService targetPlanningService
+        InstrumentationTargetPlanningApplicationService targetPlanningService,
+        RepositoryToBtmOrchestrationApplicationService orchestrationService
     ) {
-        return new AnalysisJobGrpcEndpoint(applicationService, targetPlanningService);
+        return new AnalysisJobGrpcEndpoint(applicationService, targetPlanningService, orchestrationService);
     }
 
     @Bean

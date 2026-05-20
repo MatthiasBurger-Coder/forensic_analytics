@@ -1,9 +1,11 @@
 package de.burger.forensics.analytics.services.analysisstore.adapter.in.grpc;
 
 import de.burger.forensics.analytics.analysisjob.v1.AnalysisJobServiceGrpc;
+import de.burger.forensics.analytics.analysisjob.v1.BtmDeliveryReadiness;
 import de.burger.forensics.analytics.analysisjob.v1.CompleteAnalysisJobRequest;
 import de.burger.forensics.analytics.analysisjob.v1.FailAnalysisJobRequest;
 import de.burger.forensics.analytics.analysisjob.v1.GetAnalysisJobRequest;
+import de.burger.forensics.analytics.analysisjob.v1.GetRepositoryToBtmStatusRequest;
 import de.burger.forensics.analytics.analysisjob.v1.LeaseAnalysisJobRequest;
 import de.burger.forensics.analytics.analysisjob.v1.LeaseAnalysisJobResponse;
 import de.burger.forensics.analytics.analysisjob.v1.ListAnalysisJobsRequest;
@@ -13,13 +15,18 @@ import de.burger.forensics.analytics.analysisjob.v1.PlanInstrumentationTargetsRe
 import de.burger.forensics.analytics.analysisjob.v1.PlanInstrumentationTargetsResponse;
 import de.burger.forensics.analytics.analysisjob.v1.RegisterAnalysisArtifactsRequest;
 import de.burger.forensics.analytics.analysisjob.v1.RegisterAnalysisArtifactsResponse;
+import de.burger.forensics.analytics.analysisjob.v1.RepositoryToBtmDiagnosticSeverity;
+import de.burger.forensics.analytics.analysisjob.v1.RepositoryToBtmOrchestrationState;
 import de.burger.forensics.analytics.analysisjob.v1.ReportAnalysisJobProgressRequest;
+import de.burger.forensics.analytics.analysisjob.v1.RequestedRepositoryToBtmOutput;
+import de.burger.forensics.analytics.analysisjob.v1.StartRepositoryToBtmRequest;
 import de.burger.forensics.analytics.analysisjob.v1.SubmitAnalysisJobRequest;
 import de.burger.forensics.analytics.analysisjob.v1.SubmitAnalysisJobResponse;
 import de.burger.forensics.analytics.services.analysisstore.application.AnalysisJobApplicationService;
 import de.burger.forensics.analytics.services.analysisstore.application.AnalysisJobNotFoundException;
 import de.burger.forensics.analytics.services.analysisstore.application.IdempotencyConflictException;
 import de.burger.forensics.analytics.services.analysisstore.application.InstrumentationTargetPlanningApplicationService;
+import de.burger.forensics.analytics.services.analysisstore.application.RepositoryToBtmOrchestrationApplicationService;
 import de.burger.forensics.analytics.services.analysisstore.domain.AnalysisArtifactReference;
 import de.burger.forensics.analytics.services.analysisstore.domain.AnalysisCompleteness;
 import de.burger.forensics.analytics.services.analysisstore.domain.AnalysisJob;
@@ -31,6 +38,7 @@ import de.burger.forensics.analytics.services.analysisstore.domain.ArtifactByteA
 import de.burger.forensics.analytics.services.analysisstore.domain.ArtifactByteCustody;
 import de.burger.forensics.analytics.services.analysisstore.domain.ArtifactReference;
 import de.burger.forensics.analytics.services.analysisstore.domain.InstrumentationTargetPlanningDomain;
+import de.burger.forensics.analytics.services.analysisstore.domain.RepositoryToBtmOrchestrationDomain;
 import de.burger.forensics.analytics.services.analysisstore.domain.SourceSnapshotId;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
@@ -180,15 +188,55 @@ public final class AnalysisJobGrpcEndpoint extends AnalysisJobServiceGrpc.Analys
         InstrumentationTargetPlanningDomain.DiagnosticSeverity.ERROR,
         de.burger.forensics.analytics.analysisjob.v1.TargetPlanningDiagnosticSeverity.TARGET_PLANNING_DIAGNOSTIC_SEVERITY_ERROR
     );
+    private static final Map<RepositoryToBtmOrchestrationDomain.RequestedOutput, RequestedRepositoryToBtmOutput> REQUESTED_OUTPUT_PROTOS = Map.of(
+        RepositoryToBtmOrchestrationDomain.RequestedOutput.BTM_RULES,
+        RequestedRepositoryToBtmOutput.REQUESTED_REPOSITORY_TO_BTM_OUTPUT_BTM_RULES
+    );
+    private static final Map<RequestedRepositoryToBtmOutput, RepositoryToBtmOrchestrationDomain.RequestedOutput> REQUESTED_OUTPUTS = Map.of(
+        RequestedRepositoryToBtmOutput.REQUESTED_REPOSITORY_TO_BTM_OUTPUT_BTM_RULES,
+        RepositoryToBtmOrchestrationDomain.RequestedOutput.BTM_RULES
+    );
+    private static final Map<RepositoryToBtmOrchestrationDomain.OrchestrationState, RepositoryToBtmOrchestrationState> ORCHESTRATION_STATE_PROTOS = Map.of(
+        RepositoryToBtmOrchestrationDomain.OrchestrationState.ACCEPTED,
+        RepositoryToBtmOrchestrationState.REPOSITORY_TO_BTM_ORCHESTRATION_STATE_ACCEPTED,
+        RepositoryToBtmOrchestrationDomain.OrchestrationState.WAITING_FOR_REPOSITORY,
+        RepositoryToBtmOrchestrationState.REPOSITORY_TO_BTM_ORCHESTRATION_STATE_WAITING_FOR_REPOSITORY,
+        RepositoryToBtmOrchestrationDomain.OrchestrationState.READY_FOR_BTM_DELIVERY,
+        RepositoryToBtmOrchestrationState.REPOSITORY_TO_BTM_ORCHESTRATION_STATE_READY_FOR_BTM_DELIVERY,
+        RepositoryToBtmOrchestrationDomain.OrchestrationState.INCOMPLETE,
+        RepositoryToBtmOrchestrationState.REPOSITORY_TO_BTM_ORCHESTRATION_STATE_INCOMPLETE,
+        RepositoryToBtmOrchestrationDomain.OrchestrationState.FAILED,
+        RepositoryToBtmOrchestrationState.REPOSITORY_TO_BTM_ORCHESTRATION_STATE_FAILED
+    );
+    private static final Map<RepositoryToBtmOrchestrationDomain.BtmDeliveryReadiness, BtmDeliveryReadiness> BTM_DELIVERY_READINESS_PROTOS = Map.of(
+        RepositoryToBtmOrchestrationDomain.BtmDeliveryReadiness.NOT_READY,
+        BtmDeliveryReadiness.BTM_DELIVERY_READINESS_NOT_READY,
+        RepositoryToBtmOrchestrationDomain.BtmDeliveryReadiness.READY,
+        BtmDeliveryReadiness.BTM_DELIVERY_READINESS_READY,
+        RepositoryToBtmOrchestrationDomain.BtmDeliveryReadiness.UNAVAILABLE,
+        BtmDeliveryReadiness.BTM_DELIVERY_READINESS_UNAVAILABLE,
+        RepositoryToBtmOrchestrationDomain.BtmDeliveryReadiness.UNKNOWN,
+        BtmDeliveryReadiness.BTM_DELIVERY_READINESS_UNKNOWN
+    );
+    private static final Map<RepositoryToBtmOrchestrationDomain.DiagnosticSeverity, RepositoryToBtmDiagnosticSeverity> REPOSITORY_TO_BTM_DIAGNOSTIC_SEVERITY_PROTOS = Map.of(
+        RepositoryToBtmOrchestrationDomain.DiagnosticSeverity.INFO,
+        RepositoryToBtmDiagnosticSeverity.REPOSITORY_TO_BTM_DIAGNOSTIC_SEVERITY_INFO,
+        RepositoryToBtmOrchestrationDomain.DiagnosticSeverity.WARNING,
+        RepositoryToBtmDiagnosticSeverity.REPOSITORY_TO_BTM_DIAGNOSTIC_SEVERITY_WARNING,
+        RepositoryToBtmOrchestrationDomain.DiagnosticSeverity.ERROR,
+        RepositoryToBtmDiagnosticSeverity.REPOSITORY_TO_BTM_DIAGNOSTIC_SEVERITY_ERROR
+    );
 
     private final AnalysisJobApplicationService applicationService;
     private final InstrumentationTargetPlanningApplicationService targetPlanningService;
+    private final RepositoryToBtmOrchestrationApplicationService orchestrationService;
     private final AnalysisJobRequestValidator validator;
 
     public AnalysisJobGrpcEndpoint(AnalysisJobApplicationService applicationService) {
         this(
             applicationService,
             new InstrumentationTargetPlanningApplicationService(applicationService),
+            new RepositoryToBtmOrchestrationApplicationService(applicationService),
             new AnalysisJobRequestValidator()
         );
     }
@@ -197,16 +245,31 @@ public final class AnalysisJobGrpcEndpoint extends AnalysisJobServiceGrpc.Analys
         AnalysisJobApplicationService applicationService,
         InstrumentationTargetPlanningApplicationService targetPlanningService
     ) {
-        this(applicationService, targetPlanningService, new AnalysisJobRequestValidator());
+        this(
+            applicationService,
+            targetPlanningService,
+            new RepositoryToBtmOrchestrationApplicationService(applicationService),
+            new AnalysisJobRequestValidator()
+        );
+    }
+
+    public AnalysisJobGrpcEndpoint(
+        AnalysisJobApplicationService applicationService,
+        InstrumentationTargetPlanningApplicationService targetPlanningService,
+        RepositoryToBtmOrchestrationApplicationService orchestrationService
+    ) {
+        this(applicationService, targetPlanningService, orchestrationService, new AnalysisJobRequestValidator());
     }
 
     AnalysisJobGrpcEndpoint(
         AnalysisJobApplicationService applicationService,
         InstrumentationTargetPlanningApplicationService targetPlanningService,
+        RepositoryToBtmOrchestrationApplicationService orchestrationService,
         AnalysisJobRequestValidator validator
     ) {
         this.applicationService = Objects.requireNonNull(applicationService, "applicationService must not be null");
         this.targetPlanningService = Objects.requireNonNull(targetPlanningService, "targetPlanningService must not be null");
+        this.orchestrationService = Objects.requireNonNull(orchestrationService, "orchestrationService must not be null");
         this.validator = Objects.requireNonNull(validator, "validator must not be null");
     }
 
@@ -251,6 +314,38 @@ public final class AnalysisJobGrpcEndpoint extends AnalysisJobServiceGrpc.Analys
                 targetPlanningCommand(request)
             );
             responseObserver.onNext(targetPlanningResponse(result));
+            responseObserver.onCompleted();
+        } catch (RuntimeException error) {
+            responseObserver.onError(toStatus(error).asRuntimeException());
+        }
+    }
+
+    @Override
+    public void startRepositoryToBtm(
+        StartRepositoryToBtmRequest request,
+        StreamObserver<de.burger.forensics.analytics.analysisjob.v1.RepositoryToBtmOrchestrationStatus> responseObserver
+    ) {
+        try {
+            validator.validate(request);
+            var result = orchestrationService.start(request.getIdempotencyKey(), orchestrationCommand(request));
+            responseObserver.onNext(toProto(result));
+            responseObserver.onCompleted();
+        } catch (RuntimeException error) {
+            responseObserver.onError(toStatus(error).asRuntimeException());
+        }
+    }
+
+    @Override
+    public void getRepositoryToBtmStatus(
+        GetRepositoryToBtmStatusRequest request,
+        StreamObserver<de.burger.forensics.analytics.analysisjob.v1.RepositoryToBtmOrchestrationStatus> responseObserver
+    ) {
+        try {
+            validator.validate(request);
+            responseObserver.onNext(toProto(orchestrationService.status(
+                request.getCorrelationId(),
+                runId(request.getAnalysisRunId())
+            )));
             responseObserver.onCompleted();
         } catch (RuntimeException error) {
             responseObserver.onError(toStatus(error).asRuntimeException());
@@ -451,6 +546,46 @@ public final class AnalysisJobGrpcEndpoint extends AnalysisJobServiceGrpc.Analys
         );
     }
 
+    private static RepositoryToBtmOrchestrationDomain.StartRepositoryToBtmCommand orchestrationCommand(
+        StartRepositoryToBtmRequest request
+    ) {
+        return new RepositoryToBtmOrchestrationDomain.StartRepositoryToBtmCommand(
+            new RepositoryToBtmOrchestrationDomain.OrchestrationMetadata(
+                request.getRequestId(),
+                request.getSchemaVersion(),
+                request.getCorrelationId(),
+                runId(request.getAnalysisRunId())
+            ),
+            new RepositoryToBtmOrchestrationDomain.RepositoryReference(
+                request.getRepository().getRemoteUrl(),
+                request.getRepository().getProvider()
+            ),
+            new RepositoryToBtmOrchestrationDomain.RevisionSelector(
+                request.getRevision().getBranch(),
+                request.getRevision().getCommit()
+            ),
+            new RepositoryToBtmOrchestrationDomain.WorkspacePolicy(
+                request.getWorkspacePolicy().getEphemeral(),
+                request.getWorkspacePolicy().getAllowShallowClone(),
+                request.getWorkspacePolicy().getAllowPartialClone(),
+                request.getWorkspacePolicy().getAllowSparseCheckout(),
+                request.getWorkspacePolicy().getTimeoutSeconds(),
+                request.getWorkspacePolicy().getMaxWorkspaceBytes()
+            ),
+            new RepositoryToBtmOrchestrationDomain.BuildContext(
+                request.getBuildContext().getBuildTool(),
+                request.getBuildContext().getBuildId(),
+                request.getBuildContext().getRootProjectName(),
+                request.getBuildContext().getDeclaredModulesList(),
+                request.getBuildContext().getAttributesMap()
+            ),
+            request.getRequestedOutputsList().stream()
+                .map(AnalysisJobGrpcEndpoint::requestedOutput)
+                .toList(),
+            request.getAttributesMap()
+        );
+    }
+
     private static InstrumentationTargetPlanningDomain.InstrumentationTargetPolicy targetPolicy(
         de.burger.forensics.analytics.analysisjob.v1.InstrumentationTargetPolicy policy
     ) {
@@ -580,6 +715,49 @@ public final class AnalysisJobGrpcEndpoint extends AnalysisJobServiceGrpc.Analys
         return response.build();
     }
 
+    private static de.burger.forensics.analytics.analysisjob.v1.RepositoryToBtmOrchestrationStatus toProto(
+        RepositoryToBtmOrchestrationDomain.RepositoryToBtmOrchestrationStatus status
+    ) {
+        var response = de.burger.forensics.analytics.analysisjob.v1.RepositoryToBtmOrchestrationStatus.newBuilder()
+            .setStatus(orchestrationStatus(status.status()))
+            .setAnalysisRunId(de.burger.forensics.analytics.analysisjob.v1.AnalysisRunId.newBuilder()
+                .setValue(status.analysisRunId().value()))
+            .setRepositoryAnalysisJobId(de.burger.forensics.analytics.analysisjob.v1.AnalysisJobId.newBuilder()
+                .setValue(status.repositoryAnalysisJobId().value()))
+            .setSourceSnapshotId(de.burger.forensics.analytics.analysisjob.v1.SourceSnapshotId.newBuilder()
+                .setValue(status.sourceSnapshotId().value()))
+            .setCompleteness(toProto(status.completeness()))
+            .setState(ORCHESTRATION_STATE_PROTOS.get(status.state()))
+            .setBtmDeliveryReadiness(BTM_DELIVERY_READINESS_PROTOS.get(status.btmDeliveryReadiness()))
+            .setJoernSkipped(status.joernSkipped())
+            .putAllAttributes(status.attributes());
+        status.diagnostics().forEach(diagnostic -> response.addDiagnostics(diagnostic(diagnostic)));
+        status.acceptedGeneratedArtifacts().forEach(artifact -> response.addAcceptedGeneratedArtifacts(toProto(artifact)));
+        return response.build();
+    }
+
+    private static OperationStatus orchestrationStatus(RepositoryToBtmOrchestrationDomain.OperationStatus status) {
+        return OperationStatus.newBuilder()
+            .setCode(status.code())
+            .setMessage(status.message())
+            .setRetryable(status.retryable())
+            .setCorrelationId(status.correlationId())
+            .addAllDiagnostics(status.diagnostics())
+            .build();
+    }
+
+    private static de.burger.forensics.analytics.analysisjob.v1.RepositoryToBtmDiagnostic diagnostic(
+        RepositoryToBtmOrchestrationDomain.RepositoryToBtmDiagnostic diagnostic
+    ) {
+        return de.burger.forensics.analytics.analysisjob.v1.RepositoryToBtmDiagnostic.newBuilder()
+            .setCode(diagnostic.code())
+            .setMessage(diagnostic.message())
+            .setSeverity(REPOSITORY_TO_BTM_DIAGNOSTIC_SEVERITY_PROTOS.get(diagnostic.severity()))
+            .setRetryable(diagnostic.retryable())
+            .setAffectsCompleteness(diagnostic.affectsCompleteness())
+            .build();
+    }
+
     private static OperationStatus targetPlanningStatus(
         InstrumentationTargetPlanningDomain.PlanInstrumentationTargetsResult result
     ) {
@@ -704,6 +882,12 @@ public final class AnalysisJobGrpcEndpoint extends AnalysisJobServiceGrpc.Analys
         de.burger.forensics.analytics.analysisjob.v1.InstrumentationProbeKind probeKind
     ) {
         return required(PROBE_KINDS.get(probeKind), "policy.probeKinds must contain supported probe kinds");
+    }
+
+    private static RepositoryToBtmOrchestrationDomain.RequestedOutput requestedOutput(
+        RequestedRepositoryToBtmOutput requestedOutput
+    ) {
+        return required(REQUESTED_OUTPUTS.get(requestedOutput), "requestedOutputs must contain supported outputs");
     }
 
     private static ArtifactByteAccess byteAccess(de.burger.forensics.analytics.analysisjob.v1.ArtifactByteAccess byteAccess) {

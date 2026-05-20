@@ -8,6 +8,8 @@ import de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnal
 import de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.AnalysisJobId;
 import de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.AnalysisRunId;
 import de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.AnalyzeSourceSnapshotCommand;
+import de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.ArtifactByteAccess;
+import de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.ArtifactByteCustody;
 import de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.ArtifactReference;
 import de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.JavaAstDiagnostic;
 import de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.JavaAstScanResult;
@@ -38,6 +40,10 @@ class JavaAstAnalysisApplicationServiceTest {
 
         assertEquals(AnalysisCompleteness.COMPLETE, result.completeness());
         assertEquals("java-ast/source-facts.json", result.sourceFactArtifact().artifact().path());
+        assertEquals("java-ast-analysis-service", result.sourceFactArtifact().byteAccess().ownerService());
+        assertEquals("analysis-job.v1.ArtifactBytes", result.sourceFactArtifact().byteAccess().retrievalContract());
+        assertEquals("java-ast/source-facts.json", result.sourceFactArtifact().byteAccess().retrievalReference());
+        assertEquals(ArtifactByteCustody.PRODUCER_RETAINED, result.sourceFactArtifact().byteAccess().byteCustody());
         assertEquals(1, result.summary().sourceFactCount());
     }
 
@@ -148,7 +154,13 @@ class JavaAstAnalysisApplicationServiceTest {
                 AnalysisArtifactCategory.STATIC,
                 "java-ast-analysis-service",
                 metadata.schemaVersion(),
-                AnalysisCompleteness.COMPLETE
+                AnalysisCompleteness.COMPLETE,
+                new ArtifactByteAccess(
+                    "java-ast-analysis-service",
+                    "analysis-job.v1.ArtifactBytes",
+                    "java-ast/source-facts.json",
+                    ArtifactByteCustody.PRODUCER_RETAINED
+                )
             );
         }
     }

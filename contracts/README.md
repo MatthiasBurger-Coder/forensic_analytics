@@ -11,8 +11,9 @@ models, mappers, Spring configuration, fixtures, jars or shared runtime
 libraries.
 
 The active workflow owns Gateway HTTP and public gRPC BTM delivery contract
-updates in Slice 02, then artifact-byte and instrumentation-target ownership
-contracts in Slice 03. Existing contract files include:
+updates in Slice 02, artifact-byte and instrumentation-target ownership
+contracts in Slice 03, and the Analysis Store-owned repository-to-BTM
+orchestration owner API in Slice 11. Existing contract files include:
 
 - `grpc/forensic-ingestion.proto`
 - `grpc/analysis-job.proto`

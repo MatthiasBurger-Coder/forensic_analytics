@@ -391,7 +391,8 @@ public final class JavaAstAnalysisDomain {
         AnalysisArtifactCategory category,
         String producerService,
         String schemaVersion,
-        AnalysisCompleteness completeness
+        AnalysisCompleteness completeness,
+        ArtifactByteAccess byteAccess
     ) {
         public AnalysisArtifactReference {
             artifact = Objects.requireNonNull(artifact, "artifact must not be null");
@@ -399,6 +400,21 @@ public final class JavaAstAnalysisDomain {
             producerService = requireText(producerService, "producer service");
             schemaVersion = requireText(schemaVersion, "schema version");
             completeness = Objects.requireNonNull(completeness, "completeness must not be null");
+            byteAccess = Objects.requireNonNull(byteAccess, "artifact byte access must not be null");
+        }
+    }
+
+    public record ArtifactByteAccess(
+        String ownerService,
+        String retrievalContract,
+        String retrievalReference,
+        ArtifactByteCustody byteCustody
+    ) {
+        public ArtifactByteAccess {
+            ownerService = requireText(ownerService, "artifact byte owner service");
+            retrievalContract = requirePublicReference(retrievalContract, "artifact byte retrieval contract");
+            retrievalReference = requireRelativePath(retrievalReference, "artifact byte retrieval reference");
+            byteCustody = Objects.requireNonNull(byteCustody, "artifact byte custody must not be null");
         }
     }
 
@@ -428,6 +444,12 @@ public final class JavaAstAnalysisDomain {
         STATIC
     }
 
+    public enum ArtifactByteCustody {
+        PRODUCER_RETAINED,
+        SCOPED_OBJECT_ACCESS,
+        EXPLICIT_HANDOFF
+    }
+
     public enum DiagnosticSeverity {
         INFO,
         WARNING,
@@ -436,5 +458,20 @@ public final class JavaAstAnalysisDomain {
 
     public enum EvidenceKind {
         STATIC_SOURCE_FACT
+    }
+
+    private static String requirePublicReference(String value, String name) {
+        var reference = requireText(value, name).replace('\\', '/');
+        var lower = reference.toLowerCase(Locale.ROOT);
+        if (lower.startsWith("file:")
+            || reference.startsWith("/")
+            || WINDOWS_DRIVE_PATH.matcher(reference).matches()
+            || reference.contains("://")
+            || reference.contains("\n")
+            || reference.contains("\r")
+            || Arrays.asList(reference.split("/")).stream().anyMatch(part -> part.isBlank() || part.equals(".") || part.equals(".."))) {
+            throw new IllegalArgumentException(name + " must be a public artifact reference");
+        }
+        return reference;
     }
 }

@@ -9,8 +9,9 @@ boundary plan:
 
 - `forensic-ingestion.proto`: extracted v1 ingestion compatibility contract,
   preserving current package, service methods, field numbers and enum numbers.
-- `analysis-job.proto`: planned initial worker handoff and analysis-job
-  contract.
+- `analysis-job.proto`: worker handoff, analysis-job state,
+  instrumentation-target planning and Slice 11 repository-to-BTM
+  orchestration owner contract.
 - `repository-analysis.proto`: provisional Slice 06 repository checkout,
   workspace preparation and source-snapshot handoff contract.
 - `java-ast-analysis.proto`: provisional Slice 06 JavaParser source-scanning
@@ -69,6 +70,14 @@ then returns deterministic target snapshots with selection fingerprints,
 correlation, completeness and diagnostics. It must not fetch workspace paths,
 run JavaParser or Joern, infer runtime execution or invent semantic-node
 mappings when no verified semantic schema is available.
+
+Slice 11 adds the Analysis Store-owned repository-to-BTM orchestration bridge
+to `analysis-job.proto`. Gateway submits public repository-to-BTM requests to
+`StartRepositoryToBtm` and reads status through `GetRepositoryToBtmStatus`.
+The response is deliberately a readiness state: unavailable source/build
+packages keep Joern skipped with explicit incomplete diagnostics, and completed
+BTM bytes remain owned by BTM Generation until the public delivery path returns
+them.
 
 `btm-generation.proto` is intentionally limited to generated instrumentation
 artifacts. It accepts accepted fact artifact references and bounded inline

@@ -21,10 +21,10 @@ into implemented runtime evidence.
 | Contract | Authority | Status |
 |---|---|---|
 | `contracts/grpc/forensic-ingestion.proto` | gRPC ingestion compatibility contract | Current v1 shape extracted from implementation evidence |
-| `contracts/grpc/analysis-job.proto` | Worker handoff and analysis-job state contract | Planned initial contract |
+| `contracts/grpc/analysis-job.proto` | Worker handoff, analysis-job state, instrumentation target planning and repository-to-BTM orchestration owner API | Current verified for Analysis Store service-local gRPC implementation |
 | `contracts/grpc/repository-analysis.proto` | Repository checkout and source-snapshot preparation contract | Planned initial contract |
 | planned `contracts/grpc/build-artifact-worker.proto` or approved owner API | Complete build-output package production contract | Planned by workflow v2 and retained by v3; no file exists until a slice verifies the name and service boundary |
-| repository-to-BTM orchestration owner API | Worker-dispatch/job-graph owner contract between Gateway and Analysis Store or another reviewed owner | Planned by workflow v3 Slice 11; no end-to-end orchestration may resume until this owner API and readiness bridge pass review |
+| repository-to-BTM orchestration owner API | Worker-dispatch/job-graph owner contract between Gateway and Analysis Store | Implemented by workflow v3 Slice 11 in `contracts/grpc/analysis-job.proto`; end-to-end orchestration may only use this owner API and readiness bridge |
 | `contracts/grpc/java-ast-analysis.proto` | Java AST source-fact worker contract | Planned initial contract |
 | `contracts/grpc/joern-cpg-analysis.proto` | Joern CPG/CFG/DFG semantic artifact worker contract | Planned initial contract |
 | `contracts/grpc/btm-generation.proto` | BTM generation, generated artifact metadata and public BTM artifact delivery contract | Planned initial contract |

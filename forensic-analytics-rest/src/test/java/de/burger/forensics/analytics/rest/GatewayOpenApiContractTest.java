@@ -6,35 +6,60 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class GatewayOpenApiContractTest {
     @Test
     void gatewayContractDefinesAsyncRepositoryToBtmSubmissionAndRequiredMutationIdempotency() throws IOException {
         var contract = Files.readString(findGatewayContract());
-        var repositoryPost = section(contract, "  /repository-analyses:", "  /repository-analyses/{analysisRunId}:");
+        var repositoryListGet = section(contract, "  /repository-analyses:\n    get:", "    post:");
+        var repositoryPost = section(contract, "    post:", "  /repository-analyses/{analysisRunId}:");
+        var repositoryStatusGet = section(contract, "  /repository-analyses/{analysisRunId}:", "  /repository-analyses/{analysisRunId}/jobs:");
         var idempotencyParameter = section(contract, "    IdempotencyKey:", "    AnalysisRunId:");
 
+        assertContains(repositoryListGet, "operationId: listRepositoryAnalyses");
+        assertContains(repositoryListGet, "x-implementation-status: planned-initial");
         assertContains(repositoryPost, "operationId: startRepositoryToBtmAnalysis");
         assertContains(repositoryPost, "x-implementation-status: current-verified");
         assertContains(repositoryPost, "- $ref: '#/components/parameters/MutationCorrelationId'");
         assertContains(repositoryPost, "- $ref: '#/components/parameters/IdempotencyKey'");
         assertContains(repositoryPost, "'202':");
         assertContains(repositoryPost, "$ref: '#/components/schemas/RepositoryToBtmSubmission'");
+        assertContains(repositoryStatusGet, "operationId: getRepositoryAnalysis");
+        assertContains(repositoryStatusGet, "x-implementation-status: current-verified");
+        assertContains(repositoryStatusGet, "- $ref: '#/components/parameters/RequiredCorrelationId'");
+        assertContains(repositoryStatusGet, "$ref: '#/components/schemas/RepositoryToBtmStatus'");
 
         assertContains(idempotencyParameter, "required: true");
         assertContains(idempotencyParameter, "same request fingerprint returns the same accepted response");
         assertContains(idempotencyParameter, "different request fingerprint returns CONFLICT");
+        assertContains(contract, "    RequiredCorrelationId:");
+        assertContains(section(contract, "    RequiredCorrelationId:", "    MutationCorrelationId:"), "required: true");
 
         assertContains(contract, "required: [repositoryUrl, requestId, schemaVersion, requestedOutputs, buildContext, workspacePolicy]");
         assertContains(contract, "$ref: '#/components/schemas/RequestedAnalysisOutput'");
         assertContains(contract, "BTM_RULES");
         assertContains(contract, "RepositoryToBtmSubmission:");
+        assertContains(contract, "RepositoryToBtmStatus:");
+        assertContains(contract, "PublicDiagnostic:");
+        assertContains(contract, "TOKEN|SECRET|PASSWORD|CREDENTIAL|AUTHORIZATION");
+        assertContains(contract, "https?://\\S+");
+        assertContains(contract, "raw stdout");
+        assertContains(contract, "raw stderr");
         assertContains(contract, "btmDeliveryStatus:");
         assertContains(contract, "BtmArtifactDeliveryService");
         assertContains(contract, "BTM_DELIVERY_NOT_READY");
         assertContains(contract, "BTM_DELIVERY_READY");
         assertContains(contract, "BTM_DELIVERY_UNAVAILABLE");
+        assertNotContains(contract, "  /workspaces:");
+        assertNotContains(contract, "  /workspaces/{workspaceId}:");
+        assertNotContains(contract, "workspaceId:");
+        assertNotContains(contract, "workspaceName:");
+        assertNotContains(contract, "WorkspaceList:");
+        assertNotContains(contract, "    Workspace:");
+        assertNotContains(contract, "RepositoryAnalysis:");
+        assertNotContains(contract, "resolvedRemoteUrl:");
     }
 
     private static Path findGatewayContract() {
@@ -60,5 +85,9 @@ class GatewayOpenApiContractTest {
 
     private static void assertContains(String content, String expected) {
         assertTrue(content.contains(expected), () -> "Expected contract content to contain: " + expected);
+    }
+
+    private static void assertNotContains(String content, String unexpected) {
+        assertFalse(content.contains(unexpected), () -> "Expected contract content to not contain: " + unexpected);
     }
 }

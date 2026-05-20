@@ -3,8 +3,10 @@ package de.burger.forensics.analytics.services.javaastanalysis.adapter.in.grpc;
 import de.burger.forensics.analytics.analysisjob.v1.AnalysisJobId;
 import de.burger.forensics.analytics.analysisjob.v1.AnalysisRunId;
 import de.burger.forensics.analytics.analysisjob.v1.AnalysisWorkerKind;
+import de.burger.forensics.analytics.analysisjob.v1.ArtifactByteCustody;
 import de.burger.forensics.analytics.analysisjob.v1.SourceSnapshotId;
 import de.burger.forensics.analytics.javaastanalysis.v1.AnalyzeSourceSnapshotRequest;
+import de.burger.forensics.analytics.javaastanalysis.v1.DiagnosticSeverity;
 import de.burger.forensics.analytics.javaastanalysis.v1.JavaAstAnalysisServiceGrpc;
 import de.burger.forensics.analytics.javaastanalysis.v1.JavaSourceFile;
 import de.burger.forensics.analytics.javaastanalysis.v1.ScanPolicy;
@@ -70,6 +72,10 @@ class JavaAstAnalysisGrpcEndpointTest {
         assertEquals("ANALYZED_INCOMPLETE", response.getStatus().getCode());
         assertEquals("snapshot-1", response.getSourceSnapshotId().getValue());
         assertEquals("java-ast-analysis-service", response.getSourceFactArtifact().getProducerService());
+        assertEquals("java-ast-analysis-service", response.getSourceFactArtifact().getByteAccess().getOwnerService());
+        assertEquals("analysis-job.v1.ArtifactBytes", response.getSourceFactArtifact().getByteAccess().getRetrievalContract());
+        assertEquals(response.getSourceFactArtifact().getArtifact().getPath(), response.getSourceFactArtifact().getByteAccess().getRetrievalReference());
+        assertEquals(ArtifactByteCustody.ARTIFACT_BYTE_CUSTODY_PRODUCER_RETAINED, response.getSourceFactArtifact().getByteAccess().getByteCustody());
         assertEquals(1, response.getSummary().getSourceFactCount());
         assertEquals(List.of("SYMBOL_RESOLUTION_NOT_CONFIGURED"), response.getDiagnosticsList().stream().map(diagnostic -> diagnostic.getCode()).toList());
         assertEquals("ANALYZED", complete.getStatus().getCode());
@@ -129,6 +135,94 @@ class JavaAstAnalysisGrpcEndpointTest {
         assertEquals("Java AST analysis timed out", timeout.getStatus().getDescription());
     }
 
+    @Test
+    void mapsAllDomainEnumVariantsAtGrpcBoundary() throws Exception {
+        startServerWithApplicationService(new JavaAstAnalysisApplicationService(
+            command -> new de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.JavaAstScanResult(
+                List.of(new JavaSourceFact(
+                    "fact-1",
+                    "java-method",
+                    new de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.SourceLocation(
+                        "src/main/java/a/A.java",
+                        "a.A",
+                        "run",
+                        12,
+                        1
+                    ),
+                    "a.A#run()",
+                    "AST method a.A#run()",
+                    de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.EvidenceKind.STATIC_SOURCE_FACT
+                )),
+                List.of(
+                    JavaAstDiagnostic.info(
+                        new de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.SourceSnapshotId("snapshot-1"),
+                        "INFO",
+                        "info"
+                    ),
+                    JavaAstDiagnostic.warning(
+                        new de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.SourceSnapshotId("snapshot-1"),
+                        "WARNING",
+                        "warning",
+                        "",
+                        0,
+                        0,
+                        false
+                    ),
+                    new JavaAstDiagnostic(
+                        "ERROR",
+                        "error",
+                        de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.DiagnosticSeverity.ERROR,
+                        new de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.SourceSnapshotId("snapshot-1"),
+                        "",
+                        0,
+                        0,
+                        false,
+                        false
+                    )
+                ),
+                new ScanSummary(1, 1, 0, 0, 1, "fixture", "1")
+            ),
+            (metadata, sourceFacts, diagnostics, summary) -> domainArtifact(
+                de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.ArtifactByteCustody.SCOPED_OBJECT_ACCESS,
+                de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.AnalysisCompleteness.UNKNOWN
+            )
+        ));
+
+        var scoped = stub.analyzeSourceSnapshot(request(AnalysisWorkerKind.ANALYSIS_WORKER_KIND_AST_ANALYSIS, false));
+
+        assertEquals(
+            ArtifactByteCustody.ARTIFACT_BYTE_CUSTODY_SCOPED_OBJECT_ACCESS,
+            scoped.getSourceFactArtifact().getByteAccess().getByteCustody()
+        );
+        assertEquals(
+            de.burger.forensics.analytics.analysisjob.v1.AnalysisCompleteness.ANALYSIS_COMPLETENESS_UNKNOWN,
+            scoped.getSourceFactArtifact().getCompleteness()
+        );
+        assertEquals(DiagnosticSeverity.DIAGNOSTIC_SEVERITY_INFO, scoped.getDiagnostics(0).getSeverity());
+        assertEquals(DiagnosticSeverity.DIAGNOSTIC_SEVERITY_WARNING, scoped.getDiagnostics(1).getSeverity());
+        assertEquals(DiagnosticSeverity.DIAGNOSTIC_SEVERITY_ERROR, scoped.getDiagnostics(2).getSeverity());
+
+        stopServer();
+        startServerWithApplicationService(new JavaAstAnalysisApplicationService(
+            command -> new de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.JavaAstScanResult(
+                List.of(),
+                List.of(),
+                new ScanSummary(1, 1, 0, 0, 0, "fixture", "1")
+            ),
+            (metadata, sourceFacts, diagnostics, summary) -> domainArtifact(
+                de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.ArtifactByteCustody.EXPLICIT_HANDOFF,
+                de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.AnalysisCompleteness.COMPLETE
+            )
+        ));
+
+        var handoff = stub.analyzeSourceSnapshot(request(AnalysisWorkerKind.ANALYSIS_WORKER_KIND_AST_ANALYSIS, false));
+
+        assertEquals(
+            ArtifactByteCustody.ARTIFACT_BYTE_CUSTODY_EXPLICIT_HANDOFF,
+            handoff.getSourceFactArtifact().getByteAccess().getByteCustody()
+        );
+    }
+
     private void startServer(AstResultArtifactWriterPort writer) throws Exception {
         startServerWithApplicationService(new JavaAstAnalysisApplicationService(new JavaParserSourceScannerAdapter(), writer));
     }
@@ -179,5 +273,29 @@ class JavaAstAnalysisGrpcEndpointTest {
                 .setSizeBytes(content.getBytes(StandardCharsets.UTF_8).length))
             .putSafeAttributes("tenant", "demo")
             .build();
+    }
+
+    private static de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.AnalysisArtifactReference domainArtifact(
+        de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.ArtifactByteCustody byteCustody,
+        de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.AnalysisCompleteness completeness
+    ) {
+        return new de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.AnalysisArtifactReference(
+            new de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.ArtifactReference(
+                "java-ast/source-facts.json",
+                "application/json",
+                "a".repeat(64),
+                42
+            ),
+            de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.AnalysisArtifactCategory.STATIC,
+            "java-ast-analysis-service",
+            "schema-v1",
+            completeness,
+            new de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.ArtifactByteAccess(
+                "java-ast-analysis-service",
+                "analysis-job.v1.ArtifactBytes",
+                "java-ast/source-facts.json",
+                byteCustody
+            )
+        );
     }
 }

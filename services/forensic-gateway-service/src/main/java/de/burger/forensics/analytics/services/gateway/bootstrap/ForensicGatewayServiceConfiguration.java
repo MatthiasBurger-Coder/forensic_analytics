@@ -1,10 +1,10 @@
 package de.burger.forensics.analytics.services.gateway.bootstrap;
 
 import de.burger.forensics.analytics.services.gateway.adapter.in.http.GatewayHttpHandler;
-import de.burger.forensics.analytics.services.gateway.adapter.out.grpc.RepositoryAnalysisGrpcClient;
+import de.burger.forensics.analytics.services.gateway.adapter.out.grpc.AnalysisStoreRepositoryToBtmGrpcClient;
 import de.burger.forensics.analytics.services.gateway.application.GatewayRepositoryAnalysisSubmissionService;
 import de.burger.forensics.analytics.services.gateway.application.GatewayStatusService;
-import de.burger.forensics.analytics.services.gateway.application.port.RepositoryAnalysisPreparationPort;
+import de.burger.forensics.analytics.services.gateway.application.port.RepositoryToBtmOrchestrationPort;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -17,17 +17,17 @@ public class ForensicGatewayServiceConfiguration {
 
     @Bean
     public GatewayRepositoryAnalysisSubmissionService gatewayRepositoryAnalysisSubmissionService(
-        RepositoryAnalysisPreparationPort repositoryAnalysisPreparationPort
+        RepositoryToBtmOrchestrationPort repositoryToBtmOrchestrationPort
     ) {
-        return new GatewayRepositoryAnalysisSubmissionService(repositoryAnalysisPreparationPort);
+        return new GatewayRepositoryAnalysisSubmissionService(repositoryToBtmOrchestrationPort);
     }
 
     @Bean(destroyMethod = "close")
-    public RepositoryAnalysisPreparationPort repositoryAnalysisPreparationPort(
+    public RepositoryToBtmOrchestrationPort repositoryToBtmOrchestrationPort(
         ForensicGatewayServiceProperties properties
     ) {
-        var grpc = properties.repositoryAnalysis().grpc();
-        return new RepositoryAnalysisGrpcClient(grpc.host(), grpc.port(), grpc.deadlineSeconds());
+        var grpc = properties.analysisStore().grpc();
+        return new AnalysisStoreRepositoryToBtmGrpcClient(grpc.host(), grpc.port(), grpc.deadlineSeconds());
     }
 
     @Bean

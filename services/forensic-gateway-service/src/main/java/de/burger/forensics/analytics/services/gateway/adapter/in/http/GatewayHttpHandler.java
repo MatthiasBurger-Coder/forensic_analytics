@@ -9,6 +9,7 @@ import de.burger.forensics.analytics.services.gateway.application.GatewayReposit
 import de.burger.forensics.analytics.services.gateway.application.GatewayRepositoryAnalysisSubmissionService;
 import de.burger.forensics.analytics.services.gateway.application.GatewayStatusService;
 import de.burger.forensics.analytics.services.gateway.domain.GatewayRepositoryAnalysis.BuildContext;
+import de.burger.forensics.analytics.services.gateway.domain.GatewayRepositoryAnalysis.StatusRequest;
 import de.burger.forensics.analytics.services.gateway.domain.GatewayRepositoryAnalysis.SubmissionRequest;
 import de.burger.forensics.analytics.services.gateway.domain.GatewayRepositoryAnalysis.WorkspacePolicy;
 
@@ -56,10 +57,38 @@ public final class GatewayHttpHandler implements HttpHandler {
     }
 
     private void handleGet(HttpExchange exchange) throws IOException {
-        switch (exchange.getRequestURI().getPath()) {
+        var path = exchange.getRequestURI().getPath();
+        switch (path) {
             case "/health", "/api/health" -> write(exchange, 200, HEALTH);
             case "/api/status" -> write(exchange, 200, gson.toJson(statusService.currentStatus()));
-            default -> write(exchange, 404, NOT_FOUND);
+            default -> handleRepositoryAnalysisStatusGet(exchange, path);
+        }
+    }
+
+    private void handleRepositoryAnalysisStatusGet(HttpExchange exchange, String path) throws IOException {
+        var prefix = "/api/repository-analyses/";
+        if (!path.startsWith(prefix) || path.endsWith("/jobs")) {
+            write(exchange, 404, NOT_FOUND);
+            return;
+        }
+        var analysisRunId = path.substring(prefix.length());
+        if (analysisRunId.isBlank() || analysisRunId.contains("/")) {
+            write(exchange, 404, NOT_FOUND);
+            return;
+        }
+        var correlationId = "";
+        try {
+            correlationId = requiredMutationHeader(exchange, "X-Correlation-Id");
+            var status = repositoryAnalysisSubmissionService.status(new StatusRequest(
+                "gateway-status-" + analysisRunId,
+                correlationId,
+                analysisRunId
+            ));
+            write(exchange, 200, gson.toJson(status), status.correlationId());
+        } catch (GatewayRepositoryAnalysisException error) {
+            writeError(exchange, error.statusCode(), error.errorCode(), error.retryable(), error.getMessage(), correlationId);
+        } catch (IllegalArgumentException | NullPointerException error) {
+            writeError(exchange, 400, "VALIDATION_ERROR", false, "Invalid repository analysis status request", correlationId);
         }
     }
 

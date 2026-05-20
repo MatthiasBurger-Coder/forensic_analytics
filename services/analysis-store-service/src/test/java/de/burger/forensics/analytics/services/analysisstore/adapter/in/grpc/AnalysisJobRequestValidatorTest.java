@@ -7,10 +7,12 @@ import de.burger.forensics.analytics.analysisjob.v1.AnalysisWorkerKind;
 import de.burger.forensics.analytics.analysisjob.v1.LeaseAnalysisJobRequest;
 import de.burger.forensics.analytics.analysisjob.v1.ListAnalysisJobsRequest;
 import de.burger.forensics.analytics.analysisjob.v1.ReportAnalysisJobProgressRequest;
+import de.burger.forensics.analytics.analysisjob.v1.RequestedRepositoryToBtmOutput;
 import de.burger.forensics.analytics.analysisjob.v1.SubmitAnalysisJobRequest;
 import org.junit.jupiter.api.Test;
 
 import static de.burger.forensics.analytics.services.analysisstore.adapter.in.grpc.AnalysisJobGrpcEndpointTest.artifact;
+import static de.burger.forensics.analytics.services.analysisstore.adapter.in.grpc.AnalysisJobGrpcEndpointTest.repositoryToBtmRequest;
 import static de.burger.forensics.analytics.services.analysisstore.adapter.in.grpc.AnalysisJobGrpcEndpointTest.jobId;
 import static de.burger.forensics.analytics.services.analysisstore.adapter.in.grpc.AnalysisJobGrpcEndpointTest.submitRequest;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -189,6 +191,44 @@ class AnalysisJobRequestValidatorTest {
             .setRequestId("request-list")
             .setCorrelationId("correlation-1")
             .setPageToken("not-a-number")
+            .build()));
+    }
+
+    @Test
+    void validatesRepositoryToBtmOwnerRequests() {
+        assertDoesNotThrow(() -> validator.validate(repositoryToBtmRequest().build()));
+
+        assertThrows(ValidationException.class, () -> validator.validate(repositoryToBtmRequest()
+            .clearRepository()
+            .build()));
+        assertThrows(ValidationException.class, () -> validator.validate(repositoryToBtmRequest()
+            .clearRequestedOutputs()
+            .build()));
+        assertThrows(ValidationException.class, () -> validator.validate(repositoryToBtmRequest()
+            .clearRequestedOutputs()
+            .addRequestedOutputs(RequestedRepositoryToBtmOutput.REQUESTED_REPOSITORY_TO_BTM_OUTPUT_UNSPECIFIED)
+            .build()));
+        assertThrows(ValidationException.class, () -> validator.validate(repositoryToBtmRequest()
+            .clearRevision()
+            .build()));
+        assertThrows(ValidationException.class, () -> validator.validate(repositoryToBtmRequest()
+            .setWorkspacePolicy(repositoryToBtmRequest().getWorkspacePolicyBuilder()
+                .setTimeoutSeconds(0))
+            .build()));
+        assertThrows(ValidationException.class, () -> validator.validate(repositoryToBtmRequest()
+            .setWorkspacePolicy(repositoryToBtmRequest().getWorkspacePolicyBuilder()
+                .setMaxWorkspaceBytes(0))
+            .build()));
+        assertThrows(ValidationException.class, () -> validator.validate(repositoryToBtmRequest()
+            .setBuildContext(repositoryToBtmRequest().getBuildContextBuilder()
+                .setBuildTool(" "))
+            .build()));
+        assertThrows(ValidationException.class, () -> validator.validate(repositoryToBtmRequest()
+            .setBuildContext(repositoryToBtmRequest().getBuildContextBuilder()
+                .setBuildId(" "))
+            .build()));
+        assertThrows(ValidationException.class, () -> validator.validate(repositoryToBtmRequest()
+            .putAttributes("tenant", " ")
             .build()));
     }
 }

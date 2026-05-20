@@ -4,10 +4,11 @@ import com.sun.net.httpserver.HttpServer;
 import de.burger.forensics.analytics.services.gateway.application.GatewayRepositoryAnalysisException;
 import de.burger.forensics.analytics.services.gateway.application.GatewayRepositoryAnalysisSubmissionService;
 import de.burger.forensics.analytics.services.gateway.application.GatewayStatusService;
-import de.burger.forensics.analytics.services.gateway.application.port.RepositoryAnalysisPreparationPort;
+import de.burger.forensics.analytics.services.gateway.application.port.RepositoryToBtmOrchestrationPort;
 import de.burger.forensics.analytics.services.gateway.domain.GatewayRepositoryAnalysis.Diagnostic;
-import de.burger.forensics.analytics.services.gateway.domain.GatewayRepositoryAnalysis.RepositoryPreparationCommand;
-import de.burger.forensics.analytics.services.gateway.domain.GatewayRepositoryAnalysis.RepositoryPreparationResult;
+import de.burger.forensics.analytics.services.gateway.domain.GatewayRepositoryAnalysis.RepositoryToBtmSubmission;
+import de.burger.forensics.analytics.services.gateway.domain.GatewayRepositoryAnalysis.StatusRequest;
+import de.burger.forensics.analytics.services.gateway.domain.GatewayRepositoryAnalysis.SubmissionRequest;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -55,6 +56,8 @@ class ForensicGatewayHttpAdapterTest {
             var port = server.getAddress().getPort();
 
             var accepted = response(port, "/api/repository-analyses", "POST", validRequest(), "correlation-1", "idem-1");
+            var analysisRunId = valueOf(accepted.body(), "analysisRunId");
+            var status = response(port, "/api/repository-analyses/" + analysisRunId, "GET", "", "correlation-2", null);
 
             assertEquals(202, accepted.code());
             assertEquals("correlation-1", accepted.correlationId());
@@ -63,6 +66,14 @@ class ForensicGatewayHttpAdapterTest {
             assertTrue(accepted.body().contains("\"statusUrl\":\"/repository-analyses/analysis-run-"));
             assertTrue(accepted.body().contains("\"jobsUrl\":\"/repository-analyses/analysis-run-"));
             assertFalse(accepted.body().contains("workspace-"));
+            assertFalse(accepted.body().contains("/tmp"));
+            assertFalse(accepted.body().contains("token="));
+            assertTrue(accepted.body().contains("Diagnostic details redacted"));
+            assertEquals(200, status.code());
+            assertEquals("correlation-2", status.correlationId());
+            assertTrue(status.body().contains("\"analysisRunId\":\"" + analysisRunId + "\""));
+            assertTrue(status.body().contains("\"status\":\"ACCEPTED\""));
+            assertFalse(status.body().contains("/tmp"));
         } finally {
             server.stop(0);
         }
@@ -160,14 +171,7 @@ class ForensicGatewayHttpAdapterTest {
             server.stop(0);
         }
 
-        var failing = server(command -> {
-            throw new GatewayRepositoryAnalysisException(
-                503,
-                "BACKEND_UNAVAILABLE",
-                true,
-                "Repository analysis service is unavailable"
-            );
-        });
+        var failing = server(new FailingPreparationPort());
         try {
             var response = response(
                 failing.getAddress().getPort(),
@@ -191,7 +195,7 @@ class ForensicGatewayHttpAdapterTest {
         return server(new FakePreparationPort());
     }
 
-    private static HttpServer server(RepositoryAnalysisPreparationPort port) throws IOException {
+    private static HttpServer server(RepositoryToBtmOrchestrationPort port) throws IOException {
         var server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
         server.createContext("/", new GatewayHttpHandler(
             new GatewayStatusService(),
@@ -264,17 +268,70 @@ class ForensicGatewayHttpAdapterTest {
             """;
     }
 
+    private static String valueOf(String json, String name) {
+        var marker = "\"" + name + "\":\"";
+        var start = json.indexOf(marker);
+        if (start < 0) {
+            throw new AssertionError("Missing JSON field " + name + " in " + json);
+        }
+        var valueStart = start + marker.length();
+        var valueEnd = json.indexOf('"', valueStart);
+        return json.substring(valueStart, valueEnd);
+    }
+
     private record Response(int code, String body, String correlationId) {
     }
 
-    private static final class FakePreparationPort implements RepositoryAnalysisPreparationPort {
+    private static final class FakePreparationPort implements RepositoryToBtmOrchestrationPort {
         @Override
-        public RepositoryPreparationResult prepare(RepositoryPreparationCommand command) {
-            return new RepositoryPreparationResult(
-                command.analysisRunId(),
-                "source-snapshot-1",
-                "CHECKED_OUT",
-                List.of(Diagnostic.info("DOWNSTREAM_OK", "Repository Analysis accepted the snapshot"))
+        public RepositoryToBtmSubmission start(SubmissionRequest request) {
+            return new RepositoryToBtmSubmission(
+                request.analysisRunId(),
+                "ACCEPTED",
+                "/repository-analyses/" + request.analysisRunId(),
+                "/repository-analyses/" + request.analysisRunId() + "/jobs",
+                "BTM_DELIVERY_NOT_READY",
+                "BtmArtifactDeliveryService",
+                request.correlationId(),
+                List.of(
+                    Diagnostic.info("ORCHESTRATION_ACCEPTED", "Analysis Store accepted orchestration"),
+                    Diagnostic.info("PATH_LEAK", "git clone https://example.com/private.git failed in /tmp/repository-workspaces/workspace-1 with token=abc")
+                )
+            );
+        }
+
+        @Override
+        public RepositoryToBtmSubmission status(StatusRequest request) {
+            return new RepositoryToBtmSubmission(
+                request.analysisRunId(),
+                "ACCEPTED",
+                "/repository-analyses/" + request.analysisRunId(),
+                "/repository-analyses/" + request.analysisRunId() + "/jobs",
+                "BTM_DELIVERY_NOT_READY",
+                "BtmArtifactDeliveryService",
+                request.correlationId(),
+                List.of(Diagnostic.info("ORCHESTRATION_STATUS", "Analysis Store status loaded"))
+            );
+        }
+    }
+
+    private static final class FailingPreparationPort implements RepositoryToBtmOrchestrationPort {
+        @Override
+        public RepositoryToBtmSubmission start(SubmissionRequest request) {
+            throw unavailable();
+        }
+
+        @Override
+        public RepositoryToBtmSubmission status(StatusRequest request) {
+            throw unavailable();
+        }
+
+        private static GatewayRepositoryAnalysisException unavailable() {
+            return new GatewayRepositoryAnalysisException(
+                503,
+                "BACKEND_UNAVAILABLE",
+                true,
+                "Repository analysis service is unavailable"
             );
         }
     }

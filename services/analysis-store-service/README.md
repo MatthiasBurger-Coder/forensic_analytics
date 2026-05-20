@@ -2,13 +2,14 @@
 
 ## Status
 
-Slice 05 initial independent service implementation.
+Slice 11 Analysis Store-owned job and repository-to-BTM orchestration
+readiness implementation.
 
 This service currently implements the service-local `AnalysisJobService` gRPC
 contract from `contracts/grpc/analysis-job.proto`. It owns analysis job
 lifecycle state, worker leasing, progress persistence, completion/failure state
-analysis artifact metadata registration and bounded instrumentation target
-selection metadata.
+analysis artifact metadata registration, bounded instrumentation target
+selection metadata and the repository-to-BTM orchestration readiness bridge.
 
 The current persistence adapter is intentionally service-local and non-durable
 in-memory storage. Durable database selection, migrations, normalized fact
@@ -20,7 +21,7 @@ access.
 
 | Interface | Default Port | Notes |
 |---|---:|---|
-| gRPC `AnalysisJobService` | `9091` | Job submission, leasing, progress, completion, failure, listing, artifact registration and instrumentation target planning |
+| gRPC `AnalysisJobService` | `9091` | Job submission, leasing, progress, completion, failure, listing, artifact registration, instrumentation target planning and repository-to-BTM orchestration readiness |
 | JDK HTTP health endpoint | `8082` | Returns readiness-style health without Spring Actuator |
 
 ## Service Boundary
@@ -49,6 +50,13 @@ stable target IDs, deterministic ordering, a selection fingerprint and explicit
 completeness diagnostics. Missing semantic-node mappings are reported as
 incomplete rather than invented, and generated targets are not runtime
 execution evidence.
+
+Repository-to-BTM orchestration readiness is Analysis Store-owned. Gateway
+submits public requests through the `StartRepositoryToBtm` gRPC method instead
+of calling worker services directly. The current bridge creates deterministic
+repository-analysis dispatch state, keeps BTM delivery unavailable until
+accepted package metadata exists, and reports unavailable source/build packages
+with explicit incomplete diagnostics so Joern is skipped safely.
 
 ## Verification
 

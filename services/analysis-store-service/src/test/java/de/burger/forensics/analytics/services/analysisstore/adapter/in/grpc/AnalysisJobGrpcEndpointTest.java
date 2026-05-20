@@ -21,9 +21,16 @@ import de.burger.forensics.analytics.analysisjob.v1.InstrumentationProbeKind;
 import de.burger.forensics.analytics.analysisjob.v1.InstrumentationTargetPolicy;
 import de.burger.forensics.analytics.analysisjob.v1.PlanInstrumentationTargetsRequest;
 import de.burger.forensics.analytics.analysisjob.v1.RegisterAnalysisArtifactsRequest;
+import de.burger.forensics.analytics.analysisjob.v1.GetRepositoryToBtmStatusRequest;
+import de.burger.forensics.analytics.analysisjob.v1.RepositoryToBtmBuildContext;
+import de.burger.forensics.analytics.analysisjob.v1.RepositoryToBtmRepositoryReference;
+import de.burger.forensics.analytics.analysisjob.v1.RepositoryToBtmRevision;
+import de.burger.forensics.analytics.analysisjob.v1.RepositoryToBtmWorkspacePolicy;
 import de.burger.forensics.analytics.analysisjob.v1.ReportAnalysisJobProgressRequest;
+import de.burger.forensics.analytics.analysisjob.v1.RequestedRepositoryToBtmOutput;
 import de.burger.forensics.analytics.analysisjob.v1.SourceSnapshotId;
 import de.burger.forensics.analytics.analysisjob.v1.StaticSourceLocation;
+import de.burger.forensics.analytics.analysisjob.v1.StartRepositoryToBtmRequest;
 import de.burger.forensics.analytics.analysisjob.v1.SubmitAnalysisJobRequest;
 import de.burger.forensics.analytics.services.analysisstore.adapter.out.memory.InMemoryAnalysisJobRepository;
 import de.burger.forensics.analytics.services.analysisstore.application.AnalysisJobApplicationService;
@@ -349,6 +356,55 @@ class AnalysisJobGrpcEndpointTest {
         assertEquals(Status.Code.INVALID_ARGUMENT, unsafeAttributes.getStatus().getCode());
     }
 
+    @Test
+    void ownsRepositoryToBtmOrchestrationReadinessAndSkipsJoernUntilPackagesAreAvailable() {
+        var started = stub.startRepositoryToBtm(repositoryToBtmRequest().build());
+        var replayed = stub.startRepositoryToBtm(repositoryToBtmRequest().build());
+        var loaded = stub.getRepositoryToBtmStatus(GetRepositoryToBtmStatusRequest.newBuilder()
+            .setRequestId("request-status")
+            .setCorrelationId("correlation-1")
+            .setAnalysisRunId(runId())
+            .build());
+        var jobs = stub.listAnalysisJobs(ListAnalysisJobsRequest.newBuilder()
+            .setRequestId("request-list-orchestration")
+            .setCorrelationId("correlation-1")
+            .setAnalysisRunId(runId())
+            .setWorkerKind(AnalysisWorkerKind.ANALYSIS_WORKER_KIND_REPOSITORY_ANALYSIS)
+            .build());
+
+        assertEquals(started, replayed);
+        assertEquals("REPOSITORY_TO_BTM_ACCEPTED", started.getStatus().getCode());
+        assertEquals(AnalysisCompleteness.ANALYSIS_COMPLETENESS_INCOMPLETE, started.getCompleteness());
+        assertEquals(1, jobs.getJobsCount());
+        assertEquals(started.getRepositoryAnalysisJobId(), jobs.getJobs(0).getJobId());
+        assertEquals("DISPATCHABLE", started.getAttributesOrThrow("repositoryAnalysisJobState"));
+        assertEquals("REPOSITORY_SOURCE_PACKAGE_UNAVAILABLE", started.getDiagnostics(0).getCode());
+        assertEquals("JOERN_SKIPPED_UNAVAILABLE_PACKAGE", started.getDiagnostics(2).getCode());
+        assertEquals(true, started.getJoernSkipped());
+        assertEquals(0, started.getAcceptedGeneratedArtifactsCount());
+        assertEquals(started.getRepositoryAnalysisJobId(), loaded.getRepositoryAnalysisJobId());
+
+        var conflict = assertThrows(
+            StatusRuntimeException.class,
+            () -> stub.startRepositoryToBtm(repositoryToBtmRequest()
+                .setRepository(RepositoryToBtmRepositoryReference.newBuilder()
+                    .setRemoteUrl("https://example.com/acme/other.git")
+                    .setProvider("github"))
+                .build())
+        );
+        var invalidOutput = assertThrows(
+            StatusRuntimeException.class,
+            () -> stub.startRepositoryToBtm(repositoryToBtmRequest()
+                .clearRequestedOutputs()
+                .addRequestedOutputs(RequestedRepositoryToBtmOutput.REQUESTED_REPOSITORY_TO_BTM_OUTPUT_UNSPECIFIED)
+                .setIdempotencyKey("repository-to-btm-invalid")
+                .build())
+        );
+
+        assertEquals(Status.Code.ALREADY_EXISTS, conflict.getStatus().getCode());
+        assertEquals(Status.Code.INVALID_ARGUMENT, invalidOutput.getStatus().getCode());
+    }
+
     void registerTargetPlanningArtifacts() {
         stub.submitAnalysisJob(submitRequest(
             "submit-target-planning",
@@ -474,6 +530,35 @@ class AnalysisJobGrpcEndpointTest {
                 "semantic-sha",
                 AnalysisArtifactCategory.ANALYSIS_ARTIFACT_CATEGORY_STATIC
             ))
+            .putAttributes("tenant", "demo");
+    }
+
+    static StartRepositoryToBtmRequest.Builder repositoryToBtmRequest() {
+        return StartRepositoryToBtmRequest.newBuilder()
+            .setRequestId("request-repository-to-btm")
+            .setIdempotencyKey("repository-to-btm-1")
+            .setSchemaVersion("repository-to-btm-orchestration-v1")
+            .setCorrelationId("correlation-1")
+            .setAnalysisRunId(runId())
+            .setRepository(RepositoryToBtmRepositoryReference.newBuilder()
+                .setRemoteUrl("https://example.com/acme/demo.git")
+                .setProvider("github"))
+            .setRevision(RepositoryToBtmRevision.newBuilder()
+                .setBranch("main"))
+            .setWorkspacePolicy(RepositoryToBtmWorkspacePolicy.newBuilder()
+                .setEphemeral(false)
+                .setAllowShallowClone(true)
+                .setAllowPartialClone(false)
+                .setAllowSparseCheckout(false)
+                .setTimeoutSeconds(60)
+                .setMaxWorkspaceBytes(100_000))
+            .setBuildContext(RepositoryToBtmBuildContext.newBuilder()
+                .setBuildTool("gradle")
+                .setBuildId("build-1")
+                .setRootProjectName("demo")
+                .addDeclaredModules(":app")
+                .putAttributes("tenant", "demo"))
+            .addRequestedOutputs(RequestedRepositoryToBtmOutput.REQUESTED_REPOSITORY_TO_BTM_OUTPUT_BTM_RULES)
             .putAttributes("tenant", "demo");
     }
 

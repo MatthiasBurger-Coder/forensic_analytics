@@ -5,6 +5,8 @@ import com.google.gson.GsonBuilder;
 import de.burger.forensics.analytics.services.javaastanalysis.application.port.AstResultArtifactWriterPort;
 import de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.AnalysisArtifactCategory;
 import de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.AnalysisArtifactReference;
+import de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.ArtifactByteAccess;
+import de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.ArtifactByteCustody;
 import de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.ArtifactReference;
 import de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.JavaAstDiagnostic;
 import de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.JavaSourceFact;
@@ -23,6 +25,7 @@ import static de.burger.forensics.analytics.services.javaastanalysis.domain.Java
 
 public final class FileSystemAstResultArtifactWriter implements AstResultArtifactWriterPort {
     private static final String PRODUCER_SERVICE = "java-ast-analysis-service";
+    private static final String BYTE_RETRIEVAL_CONTRACT = "analysis-job.v1.ArtifactBytes";
     private static final String ARTIFACT_TYPE = "application/vnd.forensic-analytics.java-ast-source-facts.v1+json";
     private static final Gson GSON = new GsonBuilder()
         .disableHtmlEscaping()
@@ -63,14 +66,21 @@ public final class FileSystemAstResultArtifactWriter implements AstResultArtifac
         } catch (IOException error) {
             throw new UncheckedIOException("Failed to write Java AST source fact artifact.", error);
         }
+        var publicArtifactPath = relativePath.toString().replace('\\', '/');
         return new AnalysisArtifactReference(
-            new ArtifactReference(relativePath.toString().replace('\\', '/'), ARTIFACT_TYPE, sha256(bytes), bytes.length),
+            new ArtifactReference(publicArtifactPath, ARTIFACT_TYPE, sha256(bytes), bytes.length),
             AnalysisArtifactCategory.STATIC,
             PRODUCER_SERVICE,
             metadata.schemaVersion(),
             diagnostics.stream().anyMatch(JavaAstDiagnostic::affectsCompleteness)
                 ? de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.AnalysisCompleteness.INCOMPLETE
-                : de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.AnalysisCompleteness.COMPLETE
+                : de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.AnalysisCompleteness.COMPLETE,
+            new ArtifactByteAccess(
+                PRODUCER_SERVICE,
+                BYTE_RETRIEVAL_CONTRACT,
+                publicArtifactPath,
+                ArtifactByteCustody.PRODUCER_RETAINED
+            )
         );
     }
 

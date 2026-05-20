@@ -3,11 +3,12 @@ package de.burger.forensics.analytics.services.gateway.bootstrap;
 import de.burger.forensics.analytics.services.gateway.adapter.in.http.GatewayHttpHandler;
 import de.burger.forensics.analytics.services.gateway.application.GatewayRepositoryAnalysisSubmissionService;
 import de.burger.forensics.analytics.services.gateway.application.GatewayStatusService;
-import de.burger.forensics.analytics.services.gateway.application.port.RepositoryAnalysisPreparationPort;
+import de.burger.forensics.analytics.services.gateway.application.port.RepositoryToBtmOrchestrationPort;
 import de.burger.forensics.analytics.services.gateway.domain.DownstreamServiceStatus;
 import de.burger.forensics.analytics.services.gateway.domain.GatewayRepositoryAnalysis.Diagnostic;
-import de.burger.forensics.analytics.services.gateway.domain.GatewayRepositoryAnalysis.RepositoryPreparationCommand;
-import de.burger.forensics.analytics.services.gateway.domain.GatewayRepositoryAnalysis.RepositoryPreparationResult;
+import de.burger.forensics.analytics.services.gateway.domain.GatewayRepositoryAnalysis.RepositoryToBtmSubmission;
+import de.burger.forensics.analytics.services.gateway.domain.GatewayRepositoryAnalysis.StatusRequest;
+import de.burger.forensics.analytics.services.gateway.domain.GatewayRepositoryAnalysis.SubmissionRequest;
 import de.burger.forensics.analytics.services.gateway.domain.GatewayStatusSnapshot;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.WebApplicationType;
@@ -74,7 +75,7 @@ class ForensicGatewayServiceApplicationTest {
     void rejectsInvalidPropertiesAndKeepsDisabledLifecycleStopped() {
         assertThrows(NullPointerException.class, () -> new ForensicGatewayServiceProperties(
             null,
-            new ForensicGatewayServiceProperties.RepositoryAnalysis(
+            new ForensicGatewayServiceProperties.AnalysisStore(
                 new ForensicGatewayServiceProperties.Grpc("127.0.0.1", 0, 1)
             )
         ));
@@ -86,7 +87,7 @@ class ForensicGatewayServiceApplicationTest {
         assertThrows(IllegalArgumentException.class, () -> new ForensicGatewayServiceProperties.Http(true, null, 0));
         assertThrows(IllegalArgumentException.class, () -> new ForensicGatewayServiceProperties.Http(true, "127.0.0.1", -1));
         assertThrows(IllegalArgumentException.class, () -> new ForensicGatewayServiceProperties.Http(true, "127.0.0.1", 65_536));
-        assertThrows(NullPointerException.class, () -> new ForensicGatewayServiceProperties.RepositoryAnalysis(null));
+        assertThrows(NullPointerException.class, () -> new ForensicGatewayServiceProperties.AnalysisStore(null));
         assertThrows(IllegalArgumentException.class, () -> new ForensicGatewayServiceProperties.Grpc(" ", 9092, 5));
         assertThrows(IllegalArgumentException.class, () -> new ForensicGatewayServiceProperties.Grpc("127.0.0.1", 65_536, 5));
         assertThrows(IllegalArgumentException.class, () -> new ForensicGatewayServiceProperties.Grpc("127.0.0.1", 9092, 0));
@@ -95,7 +96,7 @@ class ForensicGatewayServiceApplicationTest {
 
         var properties = new ForensicGatewayServiceProperties(
             new ForensicGatewayServiceProperties.Http(false, "127.0.0.1", 0),
-            new ForensicGatewayServiceProperties.RepositoryAnalysis(
+            new ForensicGatewayServiceProperties.AnalysisStore(
                 new ForensicGatewayServiceProperties.Grpc("127.0.0.1", 0, 1)
             )
         );
@@ -140,14 +141,32 @@ class ForensicGatewayServiceApplicationTest {
         return ((java.net.HttpURLConnection) connection).getResponseCode();
     }
 
-    private static final class FakePreparationPort implements RepositoryAnalysisPreparationPort {
+    private static final class FakePreparationPort implements RepositoryToBtmOrchestrationPort {
         @Override
-        public RepositoryPreparationResult prepare(RepositoryPreparationCommand command) {
-            return new RepositoryPreparationResult(
-                command.analysisRunId(),
-                "source-snapshot-1",
-                "CHECKED_OUT",
+        public RepositoryToBtmSubmission start(SubmissionRequest request) {
+            return new RepositoryToBtmSubmission(
+                request.analysisRunId(),
+                "ACCEPTED",
+                "/repository-analyses/" + request.analysisRunId(),
+                "/repository-analyses/" + request.analysisRunId() + "/jobs",
+                "BTM_DELIVERY_NOT_READY",
+                "BtmArtifactDeliveryService",
+                request.correlationId(),
                 List.of(Diagnostic.info("OK", "prepared"))
+            );
+        }
+
+        @Override
+        public RepositoryToBtmSubmission status(StatusRequest request) {
+            return new RepositoryToBtmSubmission(
+                request.analysisRunId(),
+                "ACCEPTED",
+                "/repository-analyses/" + request.analysisRunId(),
+                "/repository-analyses/" + request.analysisRunId() + "/jobs",
+                "BTM_DELIVERY_NOT_READY",
+                "BtmArtifactDeliveryService",
+                request.correlationId(),
+                List.of(Diagnostic.info("OK", "loaded"))
             );
         }
     }

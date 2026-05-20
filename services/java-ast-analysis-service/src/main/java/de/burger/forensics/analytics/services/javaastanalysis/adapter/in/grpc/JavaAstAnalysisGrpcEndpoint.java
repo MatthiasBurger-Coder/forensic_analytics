@@ -6,6 +6,8 @@ import de.burger.forensics.analytics.analysisjob.v1.AnalysisCompleteness;
 import de.burger.forensics.analytics.analysisjob.v1.AnalysisJobId;
 import de.burger.forensics.analytics.analysisjob.v1.AnalysisRunId;
 import de.burger.forensics.analytics.analysisjob.v1.AnalysisWorkerKind;
+import de.burger.forensics.analytics.analysisjob.v1.ArtifactByteAccess;
+import de.burger.forensics.analytics.analysisjob.v1.ArtifactByteCustody;
 import de.burger.forensics.analytics.analysisjob.v1.ArtifactReference;
 import de.burger.forensics.analytics.analysisjob.v1.SourceSnapshotId;
 import de.burger.forensics.analytics.javaastanalysis.v1.AnalyzeSourceSnapshotRequest;
@@ -161,7 +163,29 @@ public final class JavaAstAnalysisGrpcEndpoint extends JavaAstAnalysisServiceGrp
             .setProducerService(artifact.producerService())
             .setSchemaVersion(artifact.schemaVersion())
             .setCompleteness(completeness(artifact.completeness()))
+            .setByteAccess(byteAccess(artifact.byteAccess()))
             .build();
+    }
+
+    private static ArtifactByteAccess byteAccess(
+        de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.ArtifactByteAccess byteAccess
+    ) {
+        return ArtifactByteAccess.newBuilder()
+            .setOwnerService(byteAccess.ownerService())
+            .setRetrievalContract(byteAccess.retrievalContract())
+            .setRetrievalReference(byteAccess.retrievalReference())
+            .setByteCustody(byteCustody(byteAccess.byteCustody()))
+            .build();
+    }
+
+    private static ArtifactByteCustody byteCustody(
+        de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.ArtifactByteCustody byteCustody
+    ) {
+        return switch (byteCustody) {
+            case PRODUCER_RETAINED -> ArtifactByteCustody.ARTIFACT_BYTE_CUSTODY_PRODUCER_RETAINED;
+            case SCOPED_OBJECT_ACCESS -> ArtifactByteCustody.ARTIFACT_BYTE_CUSTODY_SCOPED_OBJECT_ACCESS;
+            case EXPLICIT_HANDOFF -> ArtifactByteCustody.ARTIFACT_BYTE_CUSTODY_EXPLICIT_HANDOFF;
+        };
     }
 
     private static ScanSummary summary(

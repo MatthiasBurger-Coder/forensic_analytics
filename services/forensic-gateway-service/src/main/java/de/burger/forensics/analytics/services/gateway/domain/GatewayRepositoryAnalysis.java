@@ -19,6 +19,7 @@ public final class GatewayRepositoryAnalysis {
     private static final Pattern PRIVATE_IPV4 = Pattern.compile(
         "^(0\\.|127\\.|10\\.|192\\.168\\.|172\\.(1[6-9]|2[0-9]|3[0-1])\\.|169\\.254\\.)"
     );
+    private static final Pattern PUBLIC_DIAGNOSTIC_CODE = Pattern.compile("[A-Z0-9_:-]{1,96}");
     private static final Set<String> SENSITIVE_TOKENS = Set.of(
         "authorization",
         "credential",
@@ -153,30 +154,6 @@ public final class GatewayRepositoryAnalysis {
         }
     }
 
-    public record RepositoryPreparationCommand(
-        String analysisRunId,
-        SubmissionRequest request
-    ) {
-        public RepositoryPreparationCommand {
-            analysisRunId = requireText(analysisRunId, "analysis run id");
-            Objects.requireNonNull(request, "request must not be null");
-        }
-    }
-
-    public record RepositoryPreparationResult(
-        String analysisRunId,
-        String sourceSnapshotId,
-        String checkoutStatus,
-        List<Diagnostic> diagnostics
-    ) {
-        public RepositoryPreparationResult {
-            analysisRunId = requireText(analysisRunId, "analysis run id");
-            sourceSnapshotId = requireText(sourceSnapshotId, "source snapshot id");
-            checkoutStatus = optionalSafeText(checkoutStatus, "checkout status");
-            diagnostics = List.copyOf(Objects.requireNonNullElse(diagnostics, List.of()));
-        }
-    }
-
     public record RepositoryToBtmSubmission(
         String analysisRunId,
         String status,
@@ -199,11 +176,22 @@ public final class GatewayRepositoryAnalysis {
         }
     }
 
+    public record StatusRequest(String requestId, String correlationId, String analysisRunId) {
+        public StatusRequest {
+            requestId = requireText(requestId, "request id");
+            correlationId = requireText(correlationId, "correlation id");
+            analysisRunId = requireText(analysisRunId, "analysis run id");
+            if (looksLikePath(analysisRunId) || containsSensitiveToken(analysisRunId)) {
+                throw new IllegalArgumentException("analysis run id must be public");
+            }
+        }
+    }
+
     public record Diagnostic(String severity, String code, String message) {
         public Diagnostic {
-            severity = optionalSafeText(severity, "diagnostic severity");
-            code = optionalSafeText(code, "diagnostic code");
-            message = requireText(message, "diagnostic message");
+            severity = safeDiagnosticSeverity(severity);
+            code = safeDiagnosticCode(code);
+            message = safeDiagnosticMessage(message);
         }
 
         public static Diagnostic info(String code, String message) {
@@ -341,5 +329,56 @@ public final class GatewayRepositoryAnalysis {
             || lower.contains("\\users\\")
             || lower.contains("/users/")
             || lower.contains("/mnt/");
+    }
+
+    private static String safeDiagnosticSeverity(String value) {
+        if (value == null || value.isBlank()) {
+            return "";
+        }
+        var severity = requireText(value, "diagnostic severity").toUpperCase(Locale.ROOT);
+        return switch (severity) {
+            case "INFO", "WARNING", "ERROR", "UNKNOWN" -> severity;
+            default -> "UNKNOWN";
+        };
+    }
+
+    private static String safeDiagnosticCode(String value) {
+        if (value == null || value.isBlank()) {
+            return "";
+        }
+        var code = requireText(value, "diagnostic code").toUpperCase(Locale.ROOT);
+        if (!PUBLIC_DIAGNOSTIC_CODE.matcher(code).matches() || containsSensitiveToken(code) || looksLikePublicLeak(code)) {
+            return "DIAGNOSTIC_REDACTED";
+        }
+        return code;
+    }
+
+    private static String safeDiagnosticMessage(String value) {
+        var message = requireText(value, "diagnostic message")
+            .replace('\r', ' ')
+            .replace('\n', ' ')
+            .replace('\\', '/');
+        if (containsSensitiveToken(message) || looksLikePublicLeak(message)) {
+            return "Diagnostic details redacted";
+        }
+        return message;
+    }
+
+    private static boolean looksLikePublicLeak(String value) {
+        var lower = value.toLowerCase(Locale.ROOT).trim().replace('\\', '/');
+        return lower.startsWith("file:")
+            || lower.startsWith("/")
+            || lower.matches("^[a-z]:.*")
+            || lower.contains("/tmp")
+            || lower.contains("/mnt/")
+            || lower.contains("/home/")
+            || lower.contains("/users/")
+            || lower.contains("/var/lib/forensic-analytics")
+            || lower.contains("workspace-")
+            || lower.contains("repository-workspaces")
+            || lower.contains("raw stdout")
+            || lower.contains("raw stderr")
+            || lower.contains("git clone")
+            || lower.matches(".*https?://\\S+.*");
     }
 }

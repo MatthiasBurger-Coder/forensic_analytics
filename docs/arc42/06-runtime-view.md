@@ -110,9 +110,9 @@ Graph, replay, reports and LLM packages are projections or generated artifacts
 that must remain traceable to owner evidence APIs.
 
 Gateway remains a public facade in this flow. Repository-to-BTM worker
-dispatch, retry and job-graph state must be owned by Analysis Store or another
-explicitly reviewed orchestration owner before the end-to-end slice resumes.
-Gateway must not sequence worker business logic directly.
+dispatch, retry and job-graph readiness state is owned by Analysis Store
+through the Slice 11 owner API. Gateway must not sequence worker business logic
+directly.
 
 The repository-to-BTM delivery path must be verified as:
 

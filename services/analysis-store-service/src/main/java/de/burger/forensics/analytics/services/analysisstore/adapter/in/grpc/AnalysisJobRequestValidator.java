@@ -7,11 +7,13 @@ import de.burger.forensics.analytics.analysisjob.v1.AnalysisWorkerKind;
 import de.burger.forensics.analytics.analysisjob.v1.CompleteAnalysisJobRequest;
 import de.burger.forensics.analytics.analysisjob.v1.FailAnalysisJobRequest;
 import de.burger.forensics.analytics.analysisjob.v1.GetAnalysisJobRequest;
+import de.burger.forensics.analytics.analysisjob.v1.GetRepositoryToBtmStatusRequest;
 import de.burger.forensics.analytics.analysisjob.v1.LeaseAnalysisJobRequest;
 import de.burger.forensics.analytics.analysisjob.v1.ListAnalysisJobsRequest;
 import de.burger.forensics.analytics.analysisjob.v1.PlanInstrumentationTargetsRequest;
 import de.burger.forensics.analytics.analysisjob.v1.RegisterAnalysisArtifactsRequest;
 import de.burger.forensics.analytics.analysisjob.v1.ReportAnalysisJobProgressRequest;
+import de.burger.forensics.analytics.analysisjob.v1.StartRepositoryToBtmRequest;
 import de.burger.forensics.analytics.analysisjob.v1.SubmitAnalysisJobRequest;
 
 final class AnalysisJobRequestValidator {
@@ -147,6 +149,51 @@ final class AnalysisJobRequestValidator {
             RequiredFields.nonBlank(key, "attribute.key");
             RequiredFields.nonBlank(value, "attribute.value");
         });
+    }
+
+    void validate(StartRepositoryToBtmRequest request) {
+        commonMutation(request.getRequestId(), request.getIdempotencyKey(), request.getCorrelationId());
+        RequiredFields.nonBlank(request.getSchemaVersion(), "schemaVersion");
+        RequiredFields.present(request.hasAnalysisRunId(), "analysisRunId");
+        RequiredFields.nonBlank(request.getAnalysisRunId().getValue(), "analysisRunId.value");
+        RequiredFields.present(request.hasRepository(), "repository");
+        RequiredFields.nonBlank(request.getRepository().getRemoteUrl(), "repository.remoteUrl");
+        RequiredFields.present(request.hasRevision(), "revision");
+        if (request.getRevision().getBranch().isBlank() && request.getRevision().getCommit().isBlank()) {
+            throw new ValidationException("revision.branch or revision.commit is required");
+        }
+        RequiredFields.present(request.hasWorkspacePolicy(), "workspacePolicy");
+        if (request.getWorkspacePolicy().getTimeoutSeconds() < 1) {
+            throw new ValidationException("workspacePolicy.timeoutSeconds must be positive");
+        }
+        if (request.getWorkspacePolicy().getMaxWorkspaceBytes() < 1) {
+            throw new ValidationException("workspacePolicy.maxWorkspaceBytes must be positive");
+        }
+        RequiredFields.present(request.hasBuildContext(), "buildContext");
+        RequiredFields.nonBlank(request.getBuildContext().getBuildTool(), "buildContext.buildTool");
+        RequiredFields.nonBlank(request.getBuildContext().getBuildId(), "buildContext.buildId");
+        if (request.getRequestedOutputsList().isEmpty()) {
+            throw new ValidationException("requestedOutputs must not be empty");
+        }
+        request.getRequestedOutputsList().forEach(output -> {
+            if (
+                output == de.burger.forensics.analytics.analysisjob.v1.RequestedRepositoryToBtmOutput.REQUESTED_REPOSITORY_TO_BTM_OUTPUT_UNSPECIFIED
+                    || output == de.burger.forensics.analytics.analysisjob.v1.RequestedRepositoryToBtmOutput.UNRECOGNIZED
+            ) {
+                throw new ValidationException("requestedOutputs must contain supported outputs");
+            }
+        });
+        request.getAttributesMap().forEach((key, value) -> {
+            RequiredFields.nonBlank(key, "attribute.key");
+            RequiredFields.nonBlank(value, "attribute.value");
+        });
+    }
+
+    void validate(GetRepositoryToBtmStatusRequest request) {
+        RequiredFields.nonBlank(request.getRequestId(), "requestId");
+        RequiredFields.nonBlank(request.getCorrelationId(), "correlationId");
+        RequiredFields.present(request.hasAnalysisRunId(), "analysisRunId");
+        RequiredFields.nonBlank(request.getAnalysisRunId().getValue(), "analysisRunId.value");
     }
 
     private void commonMutation(String requestId, String idempotencyKey, String correlationId) {

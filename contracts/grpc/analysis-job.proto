@@ -38,6 +38,12 @@ service AnalysisJobService {
 
   rpc PlanInstrumentationTargets(PlanInstrumentationTargetsRequest)
       returns (PlanInstrumentationTargetsResponse);
+
+  rpc StartRepositoryToBtm(StartRepositoryToBtmRequest)
+      returns (RepositoryToBtmOrchestrationStatus);
+
+  rpc GetRepositoryToBtmStatus(GetRepositoryToBtmStatusRequest)
+      returns (RepositoryToBtmOrchestrationStatus);
 }
 
 message SubmitAnalysisJobRequest {
@@ -171,6 +177,75 @@ message PlanInstrumentationTargetsResponse {
   repeated InstrumentationTarget targets = 7;
   repeated TargetPlanningDiagnostic diagnostics = 8;
   map<string, string> attributes = 9;
+}
+
+message StartRepositoryToBtmRequest {
+  string request_id = 1;
+  string idempotency_key = 2;
+  string schema_version = 3;
+  string correlation_id = 4;
+  AnalysisRunId analysis_run_id = 5;
+  RepositoryToBtmRepositoryReference repository = 6;
+  RepositoryToBtmRevision revision = 7;
+  RepositoryToBtmWorkspacePolicy workspace_policy = 8;
+  RepositoryToBtmBuildContext build_context = 9;
+  repeated RequestedRepositoryToBtmOutput requested_outputs = 10;
+  map<string, string> attributes = 11;
+}
+
+message GetRepositoryToBtmStatusRequest {
+  string request_id = 1;
+  string correlation_id = 2;
+  AnalysisRunId analysis_run_id = 3;
+}
+
+message RepositoryToBtmOrchestrationStatus {
+  OperationStatus status = 1;
+  AnalysisRunId analysis_run_id = 2;
+  AnalysisJobId repository_analysis_job_id = 3;
+  SourceSnapshotId source_snapshot_id = 4;
+  AnalysisCompleteness completeness = 5;
+  RepositoryToBtmOrchestrationState state = 6;
+  BtmDeliveryReadiness btm_delivery_readiness = 7;
+  bool joern_skipped = 8;
+  repeated RepositoryToBtmDiagnostic diagnostics = 9;
+  repeated AnalysisArtifactReference accepted_generated_artifacts = 10;
+  map<string, string> attributes = 11;
+}
+
+message RepositoryToBtmRepositoryReference {
+  string remote_url = 1;
+  string provider = 2;
+}
+
+message RepositoryToBtmRevision {
+  string branch = 1;
+  string commit = 2;
+}
+
+message RepositoryToBtmWorkspacePolicy {
+  bool ephemeral = 1;
+  bool allow_shallow_clone = 2;
+  bool allow_partial_clone = 3;
+  bool allow_sparse_checkout = 4;
+  int64 timeout_seconds = 5;
+  int64 max_workspace_bytes = 6;
+}
+
+message RepositoryToBtmBuildContext {
+  string build_tool = 1;
+  string build_id = 2;
+  string root_project_name = 3;
+  repeated string declared_modules = 4;
+  map<string, string> attributes = 5;
+}
+
+message RepositoryToBtmDiagnostic {
+  string code = 1;
+  string message = 2;
+  RepositoryToBtmDiagnosticSeverity severity = 3;
+  bool retryable = 4;
+  bool affects_completeness = 5;
 }
 
 message InstrumentationTargetPolicy {
@@ -369,4 +444,33 @@ enum TargetPlanningDiagnosticSeverity {
   TARGET_PLANNING_DIAGNOSTIC_SEVERITY_INFO = 1;
   TARGET_PLANNING_DIAGNOSTIC_SEVERITY_WARNING = 2;
   TARGET_PLANNING_DIAGNOSTIC_SEVERITY_ERROR = 3;
+}
+
+enum RequestedRepositoryToBtmOutput {
+  REQUESTED_REPOSITORY_TO_BTM_OUTPUT_UNSPECIFIED = 0;
+  REQUESTED_REPOSITORY_TO_BTM_OUTPUT_BTM_RULES = 1;
+}
+
+enum RepositoryToBtmOrchestrationState {
+  REPOSITORY_TO_BTM_ORCHESTRATION_STATE_UNSPECIFIED = 0;
+  REPOSITORY_TO_BTM_ORCHESTRATION_STATE_ACCEPTED = 1;
+  REPOSITORY_TO_BTM_ORCHESTRATION_STATE_WAITING_FOR_REPOSITORY = 2;
+  REPOSITORY_TO_BTM_ORCHESTRATION_STATE_READY_FOR_BTM_DELIVERY = 3;
+  REPOSITORY_TO_BTM_ORCHESTRATION_STATE_INCOMPLETE = 4;
+  REPOSITORY_TO_BTM_ORCHESTRATION_STATE_FAILED = 5;
+}
+
+enum BtmDeliveryReadiness {
+  BTM_DELIVERY_READINESS_UNSPECIFIED = 0;
+  BTM_DELIVERY_READINESS_NOT_READY = 1;
+  BTM_DELIVERY_READINESS_READY = 2;
+  BTM_DELIVERY_READINESS_UNAVAILABLE = 3;
+  BTM_DELIVERY_READINESS_UNKNOWN = 4;
+}
+
+enum RepositoryToBtmDiagnosticSeverity {
+  REPOSITORY_TO_BTM_DIAGNOSTIC_SEVERITY_UNSPECIFIED = 0;
+  REPOSITORY_TO_BTM_DIAGNOSTIC_SEVERITY_INFO = 1;
+  REPOSITORY_TO_BTM_DIAGNOSTIC_SEVERITY_WARNING = 2;
+  REPOSITORY_TO_BTM_DIAGNOSTIC_SEVERITY_ERROR = 3;
 }

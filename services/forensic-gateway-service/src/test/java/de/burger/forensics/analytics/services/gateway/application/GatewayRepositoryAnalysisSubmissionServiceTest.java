@@ -1,11 +1,10 @@
 package de.burger.forensics.analytics.services.gateway.application;
 
-import de.burger.forensics.analytics.services.gateway.application.port.RepositoryAnalysisPreparationPort;
+import de.burger.forensics.analytics.services.gateway.application.port.RepositoryToBtmOrchestrationPort;
 import de.burger.forensics.analytics.services.gateway.domain.GatewayRepositoryAnalysis.BuildContext;
 import de.burger.forensics.analytics.services.gateway.domain.GatewayRepositoryAnalysis.Diagnostic;
-import de.burger.forensics.analytics.services.gateway.domain.GatewayRepositoryAnalysis.RepositoryPreparationCommand;
-import de.burger.forensics.analytics.services.gateway.domain.GatewayRepositoryAnalysis.RepositoryPreparationResult;
 import de.burger.forensics.analytics.services.gateway.domain.GatewayRepositoryAnalysis.RepositoryToBtmSubmission;
+import de.burger.forensics.analytics.services.gateway.domain.GatewayRepositoryAnalysis.StatusRequest;
 import de.burger.forensics.analytics.services.gateway.domain.GatewayRepositoryAnalysis.SubmissionRequest;
 import de.burger.forensics.analytics.services.gateway.domain.GatewayRepositoryAnalysis.WorkspacePolicy;
 import org.junit.jupiter.api.Test;
@@ -35,7 +34,7 @@ class GatewayRepositoryAnalysisSubmissionServiceTest {
         assertEquals("/repository-analyses/" + submitted.analysisRunId(), submitted.statusUrl());
         assertEquals("BTM_DELIVERY_NOT_READY", submitted.btmDeliveryStatus());
         assertEquals("correlation-1", submitted.correlationId());
-        assertEquals(submitted.analysisRunId(), port.lastCommand.analysisRunId());
+        assertEquals(submitted.analysisRunId(), port.lastRequest.analysisRunId());
         assertFalse(submitted.toString().contains("workspace-"));
     }
 
@@ -79,8 +78,21 @@ class GatewayRepositoryAnalysisSubmissionServiceTest {
 
         service.submit(request("commit-only", "https://example.com/acme/demo.git", "", "abcdef1"));
 
-        assertEquals("", port.lastCommand.request().branch());
-        assertEquals("abcdef1", port.lastCommand.request().commit());
+        assertEquals("", port.lastRequest.branch());
+        assertEquals("abcdef1", port.lastRequest.commit());
+    }
+
+    @Test
+    void readsRepositoryToBtmStatusThroughOwnerPort() {
+        var port = new CapturingPort();
+        var service = new GatewayRepositoryAnalysisSubmissionService(port);
+
+        var status = service.status(new StatusRequest("request-status", "correlation-1", "analysis-run-1"));
+
+        assertEquals("analysis-run-1", port.lastStatusRequest.analysisRunId());
+        assertEquals("correlation-1", status.correlationId());
+        assertEquals("ACCEPTED", status.status());
+        assertThrows(IllegalArgumentException.class, () -> new StatusRequest("request-status", "correlation-1", "/tmp/run"));
     }
 
     @Test
@@ -124,7 +136,6 @@ class GatewayRepositoryAnalysisSubmissionServiceTest {
     @Test
     void normalizesOptionalValueObjectsWithoutLeakingWorkspaceData() {
         var context = new BuildContext("gradle", "build-1", null, null, null);
-        var result = new RepositoryPreparationResult("analysis-run-1", "source-snapshot-1", null, null);
         var submission = new RepositoryToBtmSubmission(
             "analysis-run-1",
             "ACCEPTED",
@@ -139,12 +150,51 @@ class GatewayRepositoryAnalysisSubmissionServiceTest {
 
         assertEquals(List.of(), context.declaredModules());
         assertEquals(Map.of(), context.attributes());
-        assertEquals("", result.checkoutStatus());
-        assertEquals(List.of(), result.diagnostics());
         assertEquals("", submission.btmDeliveryService());
         assertEquals(List.of(), submission.diagnostics());
         assertEquals("", diagnostic.severity());
         assertEquals("", diagnostic.code());
+        assertEquals("UNKNOWN", new Diagnostic("debug", "SAFE_CODE", "message").severity());
+        assertEquals("SAFE_CODE:1", new Diagnostic("warning", "safe_code:1", "message").code());
+        assertEquals("line one  line two", new Diagnostic("INFO", "SAFE_CODE", "line one\r\nline two").message());
+        assertThrows(IllegalArgumentException.class, () -> new Diagnostic("INFO", "SAFE_CODE", " "));
+    }
+
+    @Test
+    void redactsPublicDiagnosticsFromOwnerResponses() {
+        var unsafe = new RepositoryToBtmSubmission(
+            "analysis-run-1",
+            "ACCEPTED",
+            "/repository-analyses/analysis-run-1",
+            "/repository-analyses/analysis-run-1/jobs",
+            "BTM_DELIVERY_NOT_READY",
+            "BtmArtifactDeliveryService",
+            "correlation-1",
+            List.of(
+                new Diagnostic("WARNING", "TOKEN_/TMP", "git clone https://example.com/private.git failed with token=abc in /tmp/workspace-1"),
+                new Diagnostic("ERROR", "PATH_LEAK", "file:/mnt/d/repository-workspaces/workspace-1/stdout")
+            )
+        );
+
+        assertEquals("DIAGNOSTIC_REDACTED", unsafe.diagnostics().get(0).code());
+        assertEquals("Diagnostic details redacted", unsafe.diagnostics().get(0).message());
+        assertEquals("Diagnostic details redacted", unsafe.diagnostics().get(1).message());
+        assertFalse(unsafe.toString().contains("/tmp"));
+        assertFalse(unsafe.toString().contains("workspace-"));
+        assertFalse(unsafe.toString().contains("token="));
+        assertFalse(unsafe.toString().contains("file:"));
+
+        List.of(
+            "C:\\Users\\demo\\repo",
+            "raw stdout from worker",
+            "raw stderr from worker",
+            "/var/lib/forensic-analytics/workspaces/workspace-1",
+            "repository-workspaces/workspace-1",
+            "https://example.com/private.git",
+            "https://example.com/private/repository"
+        ).forEach(message ->
+            assertEquals("Diagnostic details redacted", new Diagnostic("WARNING", "SAFE_CODE", message).message())
+        );
     }
 
     private static SubmissionRequest request(String idempotencyKey, String repositoryUrl, String branch, String commit) {
@@ -206,19 +256,39 @@ class GatewayRepositoryAnalysisSubmissionServiceTest {
         return new WorkspacePolicy(false, true, false, false, 60, 100_000);
     }
 
-    private static final class CapturingPort implements RepositoryAnalysisPreparationPort {
+    private static final class CapturingPort implements RepositoryToBtmOrchestrationPort {
         private int calls;
-        private RepositoryPreparationCommand lastCommand;
+        private SubmissionRequest lastRequest;
+        private StatusRequest lastStatusRequest;
 
         @Override
-        public RepositoryPreparationResult prepare(RepositoryPreparationCommand command) {
+        public RepositoryToBtmSubmission start(SubmissionRequest request) {
             calls++;
-            lastCommand = command;
-            return new RepositoryPreparationResult(
-                command.analysisRunId(),
-                "source-snapshot-1",
-                "CHECKED_OUT",
-                List.of(Diagnostic.info("DOWNSTREAM_OK", "Repository Analysis accepted the snapshot"))
+            lastRequest = request;
+            return new RepositoryToBtmSubmission(
+                request.analysisRunId(),
+                "ACCEPTED",
+                "/repository-analyses/" + request.analysisRunId(),
+                "/repository-analyses/" + request.analysisRunId() + "/jobs",
+                "BTM_DELIVERY_NOT_READY",
+                "BtmArtifactDeliveryService",
+                request.correlationId(),
+                List.of(Diagnostic.info("ORCHESTRATION_ACCEPTED", "Analysis Store accepted orchestration"))
+            );
+        }
+
+        @Override
+        public RepositoryToBtmSubmission status(StatusRequest request) {
+            lastStatusRequest = request;
+            return new RepositoryToBtmSubmission(
+                request.analysisRunId(),
+                "ACCEPTED",
+                "/repository-analyses/" + request.analysisRunId(),
+                "/repository-analyses/" + request.analysisRunId() + "/jobs",
+                "BTM_DELIVERY_NOT_READY",
+                "BtmArtifactDeliveryService",
+                request.correlationId(),
+                List.of(Diagnostic.info("ORCHESTRATION_STATUS", "Analysis Store status loaded"))
             );
         }
     }

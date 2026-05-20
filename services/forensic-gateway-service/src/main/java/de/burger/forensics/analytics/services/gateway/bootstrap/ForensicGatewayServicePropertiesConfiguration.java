@@ -14,11 +14,11 @@ public class ForensicGatewayServicePropertiesConfiguration {
                 text(environment, "forensics.gateway.service.http.host", "127.0.0.1"),
                 integer(environment, "forensics.gateway.service.http.port", 8080)
             ),
-            new ForensicGatewayServiceProperties.RepositoryAnalysis(
+            new ForensicGatewayServiceProperties.AnalysisStore(
                 new ForensicGatewayServiceProperties.Grpc(
-                    text(environment, "forensics.gateway.service.repository-analysis.grpc.host", "127.0.0.1"),
-                    integer(environment, "forensics.gateway.service.repository-analysis.grpc.port", 9092),
-                    integer(environment, "forensics.gateway.service.repository-analysis.grpc.deadline-seconds", 5)
+                    text(environment, "forensics.gateway.service.analysis-store.grpc.host", "127.0.0.1"),
+                    integer(environment, "forensics.gateway.service.analysis-store.grpc.port", 9091),
+                    integer(environment, "forensics.gateway.service.analysis-store.grpc.deadline-seconds", 5)
                 )
             )
         );
