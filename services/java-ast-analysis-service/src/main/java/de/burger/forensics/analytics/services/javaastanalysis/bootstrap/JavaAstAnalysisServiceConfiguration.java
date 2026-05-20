@@ -4,8 +4,10 @@ import de.burger.forensics.analytics.services.javaastanalysis.adapter.in.grpc.Ja
 import de.burger.forensics.analytics.services.javaastanalysis.adapter.out.filesystem.FileSystemAstResultArtifactWriter;
 import de.burger.forensics.analytics.services.javaastanalysis.adapter.out.javaparser.JavaParserSourceScannerAdapter;
 import de.burger.forensics.analytics.services.javaastanalysis.application.JavaAstAnalysisApplicationService;
+import de.burger.forensics.analytics.services.javaastanalysis.application.port.AstResultArtifactReaderPort;
 import de.burger.forensics.analytics.services.javaastanalysis.application.port.AstResultArtifactWriterPort;
 import de.burger.forensics.analytics.services.javaastanalysis.application.port.JavaSourceScannerPort;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -22,16 +24,26 @@ public class JavaAstAnalysisServiceConfiguration {
     }
 
     @Bean
+    public AstResultArtifactReaderPort astResultArtifactReaderPort(JavaAstAnalysisServiceProperties properties) {
+        return new FileSystemAstResultArtifactWriter(properties.artifacts().root());
+    }
+
+    @Bean
     public JavaAstAnalysisApplicationService javaAstAnalysisApplicationService(
         JavaSourceScannerPort scanner,
+        @Qualifier("astResultArtifactWriterPort")
         AstResultArtifactWriterPort artifactWriter
     ) {
         return new JavaAstAnalysisApplicationService(scanner, artifactWriter);
     }
 
     @Bean
-    public JavaAstAnalysisGrpcEndpoint javaAstAnalysisGrpcEndpoint(JavaAstAnalysisApplicationService applicationService) {
-        return new JavaAstAnalysisGrpcEndpoint(applicationService);
+    public JavaAstAnalysisGrpcEndpoint javaAstAnalysisGrpcEndpoint(
+        JavaAstAnalysisApplicationService applicationService,
+        @Qualifier("astResultArtifactReaderPort")
+        AstResultArtifactReaderPort artifactReader
+    ) {
+        return new JavaAstAnalysisGrpcEndpoint(applicationService, artifactReader);
     }
 
     @Bean

@@ -11,6 +11,8 @@ import de.burger.forensics.analytics.javaastanalysis.v1.JavaSourceFile;
 import de.burger.forensics.analytics.javaastanalysis.v1.ScanPolicy;
 import de.burger.forensics.analytics.javaastanalysis.v1.SourceRoot;
 import de.burger.forensics.analytics.services.repositoryanalysis.application.port.JavaAstAnalysisPort;
+import de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.ArtifactByteAccess;
+import de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.ArtifactByteCustody;
 import de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.ArtifactReference;
 import de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.Diagnostic;
 import de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.JavaAstAnalysisHandoffCommand;
@@ -67,6 +69,9 @@ public final class JavaAstAnalysisGrpcClient implements JavaAstAnalysisPort, Aut
                     response.getSourceFactArtifact().getArtifact().getSha256(),
                     response.getSourceFactArtifact().getArtifact().getSizeBytes()
                 ),
+                response.getSourceFactArtifact().getProducerService(),
+                response.getSourceFactArtifact().getSchemaVersion(),
+                byteAccess(response.getSourceFactArtifact().getByteAccess()),
                 new JavaAstScanSummary(
                     response.getSummary().getReceivedFileCount(),
                     response.getSummary().getParsedFileCount(),
@@ -127,6 +132,27 @@ public final class JavaAstAnalysisGrpcClient implements JavaAstAnalysisPort, Aut
             case ANALYSIS_COMPLETENESS_COMPLETE -> SourceSnapshotCompleteness.COMPLETE;
             case ANALYSIS_COMPLETENESS_INCOMPLETE -> SourceSnapshotCompleteness.INCOMPLETE;
             default -> SourceSnapshotCompleteness.UNKNOWN;
+        };
+    }
+
+    private static ArtifactByteAccess byteAccess(
+        de.burger.forensics.analytics.analysisjob.v1.ArtifactByteAccess byteAccess
+    ) {
+        return new ArtifactByteAccess(
+            byteAccess.getOwnerService(),
+            byteAccess.getRetrievalContract(),
+            byteAccess.getRetrievalReference(),
+            byteCustody(byteAccess.getByteCustody())
+        );
+    }
+
+    private static ArtifactByteCustody byteCustody(
+        de.burger.forensics.analytics.analysisjob.v1.ArtifactByteCustody byteCustody
+    ) {
+        return switch (byteCustody) {
+            case ARTIFACT_BYTE_CUSTODY_SCOPED_OBJECT_ACCESS -> ArtifactByteCustody.SCOPED_OBJECT_ACCESS;
+            case ARTIFACT_BYTE_CUSTODY_EXPLICIT_HANDOFF -> ArtifactByteCustody.EXPLICIT_HANDOFF;
+            default -> ArtifactByteCustody.PRODUCER_RETAINED;
         };
     }
 

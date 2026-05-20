@@ -24,10 +24,10 @@ into implemented runtime evidence.
 |---|---|---|
 | `contracts/grpc/forensic-ingestion.proto` | gRPC ingestion compatibility contract | Current v1 shape extracted from implementation evidence |
 | `contracts/grpc/analysis-job.proto` | Worker handoff, analysis-job state, instrumentation target planning and repository-to-BTM orchestration owner API | Current verified for Analysis Store service-local gRPC implementation |
-| `contracts/grpc/repository-analysis.proto` | Repository checkout and source-snapshot preparation contract | Planned initial contract |
+| `contracts/grpc/repository-analysis.proto` | Repository checkout, source-snapshot preparation and Java AST handoff contract | Current verified for Repository Analysis preparation and Slice 12 Java AST handoff surface |
 | planned `contracts/grpc/build-artifact-worker.proto` or approved owner API | Complete build-output package production contract | Planned by workflow v2 and retained by v3/v4; no file exists until a slice verifies the name and service boundary |
 | repository-to-BTM orchestration owner API | Worker-dispatch/job-graph owner contract between Gateway and Analysis Store | Implemented by workflow v3 Slice 11 in `contracts/grpc/analysis-job.proto`; end-to-end orchestration may only use this owner API and readiness bridge |
-| `contracts/grpc/java-ast-analysis.proto` | Java AST source-fact worker and source-fact byte retrieval contract | Planned initial contract; workflow v4 Slice 12 must verify the owner retrieval API before end-to-end orchestration consumes source-fact bytes |
+| `contracts/grpc/java-ast-analysis.proto` | Java AST source-fact worker and source-fact byte retrieval contract | Current verified for Java AST source snapshot analysis and Slice 12 source-fact byte owner retrieval |
 | `contracts/grpc/joern-cpg-analysis.proto` | Joern CPG/CFG/DFG semantic artifact worker contract | Planned initial contract |
 | `contracts/grpc/btm-generation.proto` | BTM generation, generated artifact metadata and public BTM artifact delivery contract | Planned initial contract |
 | `contracts/openapi/gateway-api.yaml` | Public Gateway REST contract | Mixed current verified and planned initial operations; repository-to-BTM submission is planned initial |

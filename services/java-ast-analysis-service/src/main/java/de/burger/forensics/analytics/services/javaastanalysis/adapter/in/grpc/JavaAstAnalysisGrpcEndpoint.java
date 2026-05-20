@@ -1,5 +1,6 @@
 package de.burger.forensics.analytics.services.javaastanalysis.adapter.in.grpc;
 
+import com.google.protobuf.ByteString;
 import de.burger.forensics.analytics.analysisjob.v1.AnalysisArtifactCategory;
 import de.burger.forensics.analytics.analysisjob.v1.AnalysisArtifactReference;
 import de.burger.forensics.analytics.analysisjob.v1.AnalysisCompleteness;
@@ -13,6 +14,8 @@ import de.burger.forensics.analytics.analysisjob.v1.SourceSnapshotId;
 import de.burger.forensics.analytics.javaastanalysis.v1.AnalyzeSourceSnapshotRequest;
 import de.burger.forensics.analytics.javaastanalysis.v1.AnalyzeSourceSnapshotResponse;
 import de.burger.forensics.analytics.javaastanalysis.v1.DiagnosticSeverity;
+import de.burger.forensics.analytics.javaastanalysis.v1.GetSourceFactArtifactBytesRequest;
+import de.burger.forensics.analytics.javaastanalysis.v1.GetSourceFactArtifactBytesResponse;
 import de.burger.forensics.analytics.javaastanalysis.v1.JavaAstAnalysisServiceGrpc;
 import de.burger.forensics.analytics.javaastanalysis.v1.JavaAstDiagnostic;
 import de.burger.forensics.analytics.javaastanalysis.v1.JavaSourceFile;
@@ -22,9 +25,12 @@ import de.burger.forensics.analytics.javaastanalysis.v1.ScanSummary;
 import de.burger.forensics.analytics.javaastanalysis.v1.SourceRoot;
 import de.burger.forensics.analytics.services.javaastanalysis.application.JavaAstAnalysisApplicationService;
 import de.burger.forensics.analytics.services.javaastanalysis.application.JavaAstAnalysisTimeoutException;
+import de.burger.forensics.analytics.services.javaastanalysis.application.port.AstResultArtifactReaderPort;
 import de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.AnalyzeSourceSnapshotCommand;
 import de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.AnalyzeSourceSnapshotResult;
 import de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.RequestMetadata;
+import de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.SourceFactArtifactBytes;
+import de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.SourceFactArtifactBytesRequest;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 
@@ -35,9 +41,14 @@ import static de.burger.forensics.analytics.services.javaastanalysis.domain.Java
 
 public final class JavaAstAnalysisGrpcEndpoint extends JavaAstAnalysisServiceGrpc.JavaAstAnalysisServiceImplBase {
     private final JavaAstAnalysisApplicationService applicationService;
+    private final AstResultArtifactReaderPort artifactReader;
 
-    public JavaAstAnalysisGrpcEndpoint(JavaAstAnalysisApplicationService applicationService) {
+    public JavaAstAnalysisGrpcEndpoint(
+        JavaAstAnalysisApplicationService applicationService,
+        AstResultArtifactReaderPort artifactReader
+    ) {
         this.applicationService = Objects.requireNonNull(applicationService, "application service must not be null");
+        this.artifactReader = Objects.requireNonNull(artifactReader, "artifact reader must not be null");
     }
 
     @Override
@@ -49,6 +60,20 @@ public final class JavaAstAnalysisGrpcEndpoint extends JavaAstAnalysisServiceGrp
             requireAstWorker(request);
             var result = applicationService.analyze(command(request));
             responseObserver.onNext(response(result));
+            responseObserver.onCompleted();
+        } catch (RuntimeException error) {
+            responseObserver.onError(status(error).asRuntimeException());
+        }
+    }
+
+    @Override
+    public void getSourceFactArtifactBytes(
+        GetSourceFactArtifactBytesRequest request,
+        StreamObserver<GetSourceFactArtifactBytesResponse> responseObserver
+    ) {
+        try {
+            var bytes = artifactReader.read(bytesRequest(request));
+            responseObserver.onNext(bytesResponse(request, bytes));
             responseObserver.onCompleted();
         } catch (RuntimeException error) {
             responseObserver.onError(status(error).asRuntimeException());
@@ -87,6 +112,28 @@ public final class JavaAstAnalysisGrpcEndpoint extends JavaAstAnalysisServiceGrp
             scanPolicy(request.getScanPolicy()),
             request.getSourceRootsList().stream().map(JavaAstAnalysisGrpcEndpoint::sourceRoot).toList(),
             request.getSourceFilesList().stream().map(JavaAstAnalysisGrpcEndpoint::sourceFile).toList()
+        );
+    }
+
+    private static SourceFactArtifactBytesRequest bytesRequest(GetSourceFactArtifactBytesRequest request) {
+        return new SourceFactArtifactBytesRequest(
+            request.getRequestId(),
+            request.getCorrelationId(),
+            new de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.AnalysisRunId(
+                request.getAnalysisRunId().getValue()
+            ),
+            new de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.AnalysisJobId(
+                request.getAnalysisJobId().getValue()
+            ),
+            new de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.SourceSnapshotId(
+                request.getSourceSnapshotId().getValue()
+            ),
+            request.getRetrievalReference(),
+            request.getExpectedSha256(),
+            request.getExpectedSizeBytes(),
+            request.getMaxBytes(),
+            request.getSchemaVersion(),
+            request.getSafeAttributesMap()
         );
     }
 
@@ -135,6 +182,41 @@ public final class JavaAstAnalysisGrpcEndpoint extends JavaAstAnalysisServiceGrp
             .putAllSafeAttributes(result.metadata().safeAttributes());
         result.diagnostics().forEach(diagnostic -> builder.addDiagnostics(diagnostic(diagnostic)));
         return builder.build();
+    }
+
+    private static GetSourceFactArtifactBytesResponse bytesResponse(
+        GetSourceFactArtifactBytesRequest request,
+        SourceFactArtifactBytes bytes
+    ) {
+        return GetSourceFactArtifactBytesResponse.newBuilder()
+            .setStatus(OperationStatus.newBuilder()
+                .setCode("SOURCE_FACT_ARTIFACT_BYTES_RETRIEVED")
+                .setMessage("Java AST source fact artifact bytes retrieved")
+                .setRetryable(false)
+                .setCorrelationId(request.getCorrelationId()))
+            .setAnalysisRunId(request.getAnalysisRunId())
+            .setAnalysisJobId(request.getAnalysisJobId())
+            .setSourceSnapshotId(request.getSourceSnapshotId())
+            .setSourceFactArtifact(AnalysisArtifactReference.newBuilder()
+                .setArtifact(ArtifactReference.newBuilder()
+                    .setPath(bytes.artifact().path())
+                    .setType(bytes.artifact().type())
+                    .setSha256(bytes.artifact().sha256())
+                    .setSizeBytes(bytes.artifact().sizeBytes()))
+                .setCategory(AnalysisArtifactCategory.ANALYSIS_ARTIFACT_CATEGORY_STATIC)
+                .setProducerService("java-ast-analysis-service")
+                .setSchemaVersion(request.getSchemaVersion())
+                .setCompleteness(AnalysisCompleteness.ANALYSIS_COMPLETENESS_COMPLETE)
+                .setByteAccess(ArtifactByteAccess.newBuilder()
+                    .setOwnerService("java-ast-analysis-service")
+                    .setRetrievalContract("java-ast-analysis.v1.JavaAstAnalysisService.GetSourceFactArtifactBytes")
+                    .setRetrievalReference(bytes.artifact().path())
+                    .setByteCustody(ArtifactByteCustody.ARTIFACT_BYTE_CUSTODY_PRODUCER_RETAINED)))
+            .setContent(ByteString.copyFrom(bytes.content()))
+            .setSha256(bytes.artifact().sha256())
+            .setSizeBytes(bytes.artifact().sizeBytes())
+            .putAllSafeAttributes(bytes.safeAttributes())
+            .build();
     }
 
     private static OperationStatus status(String code, String message, AnalyzeSourceSnapshotResult result) {

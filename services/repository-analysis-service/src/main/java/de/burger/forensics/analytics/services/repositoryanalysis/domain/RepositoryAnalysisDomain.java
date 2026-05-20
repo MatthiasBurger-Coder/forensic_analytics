@@ -440,6 +440,9 @@ public final class RepositoryAnalysisDomain {
         SourceSnapshotId sourceSnapshotId,
         SourceSnapshotCompleteness completeness,
         ArtifactReference sourceFactArtifact,
+        String sourceFactArtifactProducerService,
+        String sourceFactArtifactSchemaVersion,
+        ArtifactByteAccess sourceFactArtifactByteAccess,
         JavaAstScanSummary summary,
         List<Diagnostic> diagnostics,
         Map<String, String> safeAttributes
@@ -450,6 +453,9 @@ public final class RepositoryAnalysisDomain {
             Objects.requireNonNull(sourceSnapshotId, "source snapshot id must not be null");
             completeness = Objects.requireNonNullElse(completeness, SourceSnapshotCompleteness.UNKNOWN);
             Objects.requireNonNull(sourceFactArtifact, "source fact artifact must not be null");
+            sourceFactArtifactProducerService = requireText(sourceFactArtifactProducerService, "source fact artifact producer service");
+            sourceFactArtifactSchemaVersion = requireText(sourceFactArtifactSchemaVersion, "source fact artifact schema version");
+            Objects.requireNonNull(sourceFactArtifactByteAccess, "source fact artifact byte access must not be null");
             Objects.requireNonNull(summary, "scan summary must not be null");
             diagnostics = List.copyOf(Objects.requireNonNullElse(diagnostics, List.of()));
             safeAttributes = RepositoryAnalysisDomain.safeAttributes(safeAttributes);

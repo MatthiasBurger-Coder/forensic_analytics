@@ -5,6 +5,8 @@ import de.burger.forensics.analytics.analysisjob.v1.AnalysisArtifactReference;
 import de.burger.forensics.analytics.analysisjob.v1.AnalysisCompleteness;
 import de.burger.forensics.analytics.analysisjob.v1.AnalysisJobId;
 import de.burger.forensics.analytics.analysisjob.v1.AnalysisRunId;
+import de.burger.forensics.analytics.analysisjob.v1.ArtifactByteAccess;
+import de.burger.forensics.analytics.analysisjob.v1.ArtifactByteCustody;
 import de.burger.forensics.analytics.analysisjob.v1.ArtifactReference;
 import de.burger.forensics.analytics.analysisjob.v1.SourceSnapshotId;
 import de.burger.forensics.analytics.javaastanalysis.v1.AnalyzeSourceSnapshotRequest;
@@ -70,6 +72,14 @@ class JavaAstAnalysisGrpcClientTest {
         assertTrue(service.request.getScanPolicy().getEmitSymbolResolutionDiagnostics());
         assertEquals(SourceSnapshotCompleteness.INCOMPLETE, result.completeness());
         assertEquals("java-ast/snapshot-1-source-facts.json", result.sourceFactArtifact().reference());
+        assertEquals("java-ast-analysis-service", result.sourceFactArtifactProducerService());
+        assertEquals("schema-v1", result.sourceFactArtifactSchemaVersion());
+        assertEquals("java-ast-analysis-service", result.sourceFactArtifactByteAccess().ownerService());
+        assertEquals(
+            "java-ast-analysis.v1.JavaAstAnalysisService.GetSourceFactArtifactBytes",
+            result.sourceFactArtifactByteAccess().retrievalContract()
+        );
+        assertEquals("java-ast/snapshot-1-source-facts.json", result.sourceFactArtifactByteAccess().retrievalReference());
         assertEquals("SYMBOL_RESOLUTION_NOT_CONFIGURED", result.diagnostics().getFirst().code());
     }
 
@@ -185,7 +195,8 @@ class JavaAstAnalysisGrpcClientTest {
                     .setCategory(AnalysisArtifactCategory.ANALYSIS_ARTIFACT_CATEGORY_STATIC)
                     .setProducerService("java-ast-analysis-service")
                     .setSchemaVersion("schema-v1")
-                    .setCompleteness(AnalysisCompleteness.ANALYSIS_COMPLETENESS_INCOMPLETE))
+                    .setCompleteness(AnalysisCompleteness.ANALYSIS_COMPLETENESS_INCOMPLETE)
+                    .setByteAccess(byteAccess()))
                 .setSummary(ScanSummary.newBuilder()
                     .setReceivedFileCount(1)
                     .setParsedFileCount(1)
@@ -236,7 +247,8 @@ class JavaAstAnalysisGrpcClientTest {
                     .setCategory(AnalysisArtifactCategory.ANALYSIS_ARTIFACT_CATEGORY_STATIC)
                     .setProducerService("java-ast-analysis-service")
                     .setSchemaVersion("schema-v1")
-                    .setCompleteness(completeness))
+                    .setCompleteness(completeness)
+                    .setByteAccess(byteAccess()))
                 .setSummary(ScanSummary.newBuilder()
                     .setReceivedFileCount(1)
                     .setParsedFileCount(1)
@@ -264,5 +276,14 @@ class JavaAstAnalysisGrpcClientTest {
                 Status.FAILED_PRECONDITION.withDescription("failed at /private/workspace")
             ));
         }
+    }
+
+    private static ArtifactByteAccess byteAccess() {
+        return ArtifactByteAccess.newBuilder()
+            .setOwnerService("java-ast-analysis-service")
+            .setRetrievalContract("java-ast-analysis.v1.JavaAstAnalysisService.GetSourceFactArtifactBytes")
+            .setRetrievalReference("java-ast/snapshot-1-source-facts.json")
+            .setByteCustody(ArtifactByteCustody.ARTIFACT_BYTE_CUSTODY_PRODUCER_RETAINED)
+            .build();
     }
 }

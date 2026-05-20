@@ -434,6 +434,58 @@ public final class JavaAstAnalysisDomain {
         }
     }
 
+    public record SourceFactArtifactBytesRequest(
+        String requestId,
+        String correlationId,
+        AnalysisRunId analysisRunId,
+        AnalysisJobId analysisJobId,
+        SourceSnapshotId sourceSnapshotId,
+        String retrievalReference,
+        String expectedSha256,
+        long expectedSizeBytes,
+        long maxBytes,
+        String schemaVersion,
+        Map<String, String> safeAttributes
+    ) {
+        public SourceFactArtifactBytesRequest {
+            requestId = requireText(requestId, "request id");
+            correlationId = requireText(correlationId, "correlation id");
+            analysisRunId = Objects.requireNonNull(analysisRunId, "analysis run id must not be null");
+            analysisJobId = Objects.requireNonNull(analysisJobId, "analysis job id must not be null");
+            sourceSnapshotId = Objects.requireNonNull(sourceSnapshotId, "source snapshot id must not be null");
+            retrievalReference = requireRelativePath(retrievalReference, "retrieval reference");
+            expectedSha256 = requireText(expectedSha256, "expected checksum").toLowerCase(Locale.ROOT);
+            if (!expectedSha256.matches("[0-9a-f]{64}")) {
+                throw new IllegalArgumentException("expected checksum must be a SHA-256 hex value");
+            }
+            if (expectedSizeBytes < 0) {
+                throw new IllegalArgumentException("expected size must not be negative");
+            }
+            if (maxBytes < 1 || maxBytes > 104_857_600L) {
+                throw new IllegalArgumentException("max bytes must be between 1 and 104857600");
+            }
+            schemaVersion = requireText(schemaVersion, "schema version");
+            safeAttributes = JavaAstAnalysisDomain.safeAttributes(safeAttributes);
+        }
+    }
+
+    public record SourceFactArtifactBytes(
+        ArtifactReference artifact,
+        byte[] content,
+        Map<String, String> safeAttributes
+    ) {
+        public SourceFactArtifactBytes {
+            artifact = Objects.requireNonNull(artifact, "artifact must not be null");
+            content = Objects.requireNonNull(content, "content must not be null").clone();
+            safeAttributes = JavaAstAnalysisDomain.safeAttributes(safeAttributes);
+        }
+
+        @Override
+        public byte[] content() {
+            return content.clone();
+        }
+    }
+
     public enum AnalysisCompleteness {
         COMPLETE,
         INCOMPLETE,

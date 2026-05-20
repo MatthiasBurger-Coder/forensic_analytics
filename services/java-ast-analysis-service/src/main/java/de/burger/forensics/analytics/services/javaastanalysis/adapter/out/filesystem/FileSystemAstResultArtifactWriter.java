@@ -2,6 +2,7 @@ package de.burger.forensics.analytics.services.javaastanalysis.adapter.out.files
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import de.burger.forensics.analytics.services.javaastanalysis.application.port.AstResultArtifactReaderPort;
 import de.burger.forensics.analytics.services.javaastanalysis.application.port.AstResultArtifactWriterPort;
 import de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.AnalysisArtifactCategory;
 import de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.AnalysisArtifactReference;
@@ -12,6 +13,8 @@ import de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnal
 import de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.JavaSourceFact;
 import de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.RequestMetadata;
 import de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.ScanSummary;
+import de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.SourceFactArtifactBytes;
+import de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.SourceFactArtifactBytesRequest;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -23,9 +26,10 @@ import java.util.Objects;
 
 import static de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.sha256;
 
-public final class FileSystemAstResultArtifactWriter implements AstResultArtifactWriterPort {
+public final class FileSystemAstResultArtifactWriter implements AstResultArtifactWriterPort, AstResultArtifactReaderPort {
     private static final String PRODUCER_SERVICE = "java-ast-analysis-service";
-    private static final String BYTE_RETRIEVAL_CONTRACT = "analysis-job.v1.ArtifactBytes";
+    public static final String BYTE_RETRIEVAL_CONTRACT =
+        "java-ast-analysis.v1.JavaAstAnalysisService.GetSourceFactArtifactBytes";
     private static final String ARTIFACT_TYPE = "application/vnd.forensic-analytics.java-ast-source-facts.v1+json";
     private static final Gson GSON = new GsonBuilder()
         .disableHtmlEscaping()
@@ -82,6 +86,39 @@ public final class FileSystemAstResultArtifactWriter implements AstResultArtifac
                 ArtifactByteCustody.PRODUCER_RETAINED
             )
         );
+    }
+
+    @Override
+    public SourceFactArtifactBytes read(SourceFactArtifactBytesRequest request) {
+        var relativePath = Path.of(request.retrievalReference());
+        var target = artifactRoot.resolve(relativePath).normalize();
+        if (!target.startsWith(artifactRoot)) {
+            throw new IllegalArgumentException("retrieval reference must stay inside Java AST artifact storage");
+        }
+        try {
+            if (!Files.isRegularFile(target)) {
+                throw new IllegalStateException("Source fact artifact is not available");
+            }
+            var size = Files.size(target);
+            if (size > request.maxBytes()) {
+                throw new IllegalStateException("Source fact artifact exceeds requested byte limit");
+            }
+            if (size != request.expectedSizeBytes()) {
+                throw new IllegalStateException("Source fact artifact size mismatch");
+            }
+            var bytes = Files.readAllBytes(target);
+            var checksum = sha256(bytes);
+            if (!checksum.equals(request.expectedSha256())) {
+                throw new IllegalStateException("Source fact artifact checksum mismatch");
+            }
+            return new SourceFactArtifactBytes(
+                new ArtifactReference(request.retrievalReference(), ARTIFACT_TYPE, checksum, bytes.length),
+                bytes,
+                request.safeAttributes()
+            );
+        } catch (IOException error) {
+            throw new UncheckedIOException("Failed to read Java AST source fact artifact.", error);
+        }
     }
 
     private static Path artifactPath(RequestMetadata metadata) {

@@ -16,6 +16,8 @@ import de.burger.forensics.analytics.analysisjob.v1.PlanInstrumentationTargetsRe
 import de.burger.forensics.analytics.analysisjob.v1.PlanInstrumentationTargetsResponse;
 import de.burger.forensics.analytics.analysisjob.v1.RepositoryToBtmOrchestrationStatus;
 import de.burger.forensics.analytics.analysisjob.v1.StartRepositoryToBtmRequest;
+import de.burger.forensics.analytics.javaastanalysis.v1.GetSourceFactArtifactBytesRequest;
+import de.burger.forensics.analytics.javaastanalysis.v1.JavaAstAnalysisServiceGrpc;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -35,6 +37,7 @@ class AnalysisJobContractTest {
         assertNotNull(AnalysisJobServiceGrpc.getPlanInstrumentationTargetsMethod());
         assertNotNull(AnalysisJobServiceGrpc.getStartRepositoryToBtmMethod());
         assertNotNull(AnalysisJobServiceGrpc.getGetRepositoryToBtmStatusMethod());
+        assertNotNull(JavaAstAnalysisServiceGrpc.getGetSourceFactArtifactBytesMethod());
 
         assertEquals(2, AnalysisWorkerKind.ANALYSIS_WORKER_KIND_AST_ANALYSIS.getNumber());
         assertEquals(3, AnalysisJobState.ANALYSIS_JOB_STATE_RUNNING.getNumber());
@@ -62,6 +65,8 @@ class AnalysisJobContractTest {
         assertEquals(10, StartRepositoryToBtmRequest.getDescriptor().findFieldByName("requested_outputs").getNumber());
         assertEquals(7, RepositoryToBtmOrchestrationStatus.getDescriptor().findFieldByName("btm_delivery_readiness").getNumber());
         assertEquals(10, RepositoryToBtmOrchestrationStatus.getDescriptor().findFieldByName("accepted_generated_artifacts").getNumber());
+        assertEquals(6, GetSourceFactArtifactBytesRequest.getDescriptor().findFieldByName("retrieval_reference").getNumber());
+        assertEquals(10, GetSourceFactArtifactBytesRequest.getDescriptor().findFieldByName("schema_version").getNumber());
         assertEquals(1, InstrumentationTargetSelection.getDescriptor().findFieldByName("selection_id").getNumber());
         assertEquals(4, InstrumentationTargetSelection.getDescriptor().findFieldByName("selection_fingerprint").getNumber());
         assertEquals(9, InstrumentationTarget.getDescriptor().findFieldByName("probe_kind").getNumber());

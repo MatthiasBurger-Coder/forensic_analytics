@@ -1,6 +1,7 @@
 package de.burger.forensics.analytics.services.repositoryanalysis.adapter.in.grpc;
 
 import de.burger.forensics.analytics.repositoryanalysis.v1.ArtifactReference;
+import de.burger.forensics.analytics.repositoryanalysis.v1.AnalyzeSourceSnapshotWithJavaAstRequest;
 import de.burger.forensics.analytics.repositoryanalysis.v1.BuildOutputPackageDescriptor;
 import de.burger.forensics.analytics.repositoryanalysis.v1.BuildOutputProducer;
 import de.burger.forensics.analytics.repositoryanalysis.v1.BuildOutputProducerCandidate;
@@ -13,6 +14,8 @@ import de.burger.forensics.analytics.repositoryanalysis.v1.CleanupRepositoryWork
 import de.burger.forensics.analytics.repositoryanalysis.v1.Diagnostic;
 import de.burger.forensics.analytics.repositoryanalysis.v1.DiagnosticSeverity;
 import de.burger.forensics.analytics.repositoryanalysis.v1.GetRepositoryPreparationRequest;
+import de.burger.forensics.analytics.repositoryanalysis.v1.JavaAstHandoffResponse;
+import de.burger.forensics.analytics.repositoryanalysis.v1.JavaAstScanSummary;
 import de.burger.forensics.analytics.repositoryanalysis.v1.OperationStatus;
 import de.burger.forensics.analytics.repositoryanalysis.v1.PackageAvailability;
 import de.burger.forensics.analytics.repositoryanalysis.v1.PrepareRepositoryRequest;
@@ -30,6 +33,8 @@ import de.burger.forensics.analytics.repositoryanalysis.v1.WorkspacePolicy;
 import de.burger.forensics.analytics.services.repositoryanalysis.application.IdempotencyConflictException;
 import de.burger.forensics.analytics.services.repositoryanalysis.application.RepositoryAnalysisApplicationService;
 import de.burger.forensics.analytics.services.repositoryanalysis.application.RepositoryPreparationNotFoundException;
+import de.burger.forensics.analytics.services.repositoryanalysis.application.RepositorySourceSnapshotHandoffService;
+import de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.AnalysisJobId;
 import de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.AnalysisRunId;
 import de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.SourceSnapshotId;
 import de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.WorkspaceId;
@@ -42,9 +47,14 @@ import static de.burger.forensics.analytics.services.repositoryanalysis.domain.R
 
 public final class RepositoryAnalysisGrpcEndpoint extends RepositoryAnalysisServiceGrpc.RepositoryAnalysisServiceImplBase {
     private final RepositoryAnalysisApplicationService applicationService;
+    private final RepositorySourceSnapshotHandoffService handoffService;
 
-    public RepositoryAnalysisGrpcEndpoint(RepositoryAnalysisApplicationService applicationService) {
+    public RepositoryAnalysisGrpcEndpoint(
+        RepositoryAnalysisApplicationService applicationService,
+        RepositorySourceSnapshotHandoffService handoffService
+    ) {
         this.applicationService = Objects.requireNonNull(applicationService, "application service must not be null");
+        this.handoffService = Objects.requireNonNull(handoffService, "handoff service must not be null");
     }
 
     @Override
@@ -118,6 +128,31 @@ public final class RepositoryAnalysisGrpcEndpoint extends RepositoryAnalysisServ
         }
     }
 
+    @Override
+    public void analyzeSourceSnapshotWithJavaAst(
+        AnalyzeSourceSnapshotWithJavaAstRequest request,
+        StreamObserver<JavaAstHandoffResponse> responseObserver
+    ) {
+        try {
+            requireText(request.getRequestId(), "request id");
+            var result = handoffService.analyzeWithJavaAst(
+                request.getRequestId(),
+                request.getIdempotencyKey(),
+                request.getSchemaVersion(),
+                request.getCorrelationId(),
+                new AnalysisRunId(request.getAnalysisRunId()),
+                new AnalysisJobId(request.getAnalysisJobId()),
+                new SourceSnapshotId(request.getSourceSnapshotId()),
+                handoffPolicy(request.getHandoffPolicy()),
+                request.getSafeAttributesMap()
+            );
+            responseObserver.onNext(handoffResponse(result, request.getCorrelationId()));
+            responseObserver.onCompleted();
+        } catch (RuntimeException error) {
+            responseObserver.onError(status(error).asRuntimeException());
+        }
+    }
+
     private static de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.RepositoryReference repository(
         RepositoryReference repository
     ) {
@@ -150,6 +185,65 @@ public final class RepositoryAnalysisGrpcEndpoint extends RepositoryAnalysisServ
             policy.getTimeoutSeconds(),
             policy.getMaxWorkspaceBytes()
         );
+    }
+
+    private static de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.SourceSnapshotHandoffPolicy handoffPolicy(
+        de.burger.forensics.analytics.repositoryanalysis.v1.SourceSnapshotHandoffPolicy policy
+    ) {
+        return new de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.SourceSnapshotHandoffPolicy(
+            policy.getMaxFiles(),
+            policy.getMaxSourceBytes(),
+            policy.getTimeoutSeconds()
+        );
+    }
+
+    private static JavaAstHandoffResponse handoffResponse(
+        de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.JavaAstAnalysisHandoffResult result,
+        String correlationId
+    ) {
+        var builder = JavaAstHandoffResponse.newBuilder()
+            .setStatus(status("JAVA_AST_HANDOFF_COMPLETED", "Java AST source snapshot handoff completed", correlationId))
+            .setAnalysisRunId(result.analysisRunId().value())
+            .setAnalysisJobId(result.analysisJobId().value())
+            .setSourceSnapshotId(result.sourceSnapshotId().value())
+            .setCompleteness(completeness(result.completeness()))
+            .setSourceFactArtifact(sourceFactArtifact(result))
+            .setSummary(javaAstSummary(result.summary()))
+            .putAllSafeAttributes(result.safeAttributes());
+        result.diagnostics().forEach(diagnostic -> builder.addDiagnostics(diagnostic(diagnostic)));
+        return builder.build();
+    }
+
+    private static de.burger.forensics.analytics.analysisjob.v1.AnalysisArtifactReference sourceFactArtifact(
+        de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.JavaAstAnalysisHandoffResult result
+    ) {
+        var artifact = result.sourceFactArtifact();
+        return de.burger.forensics.analytics.analysisjob.v1.AnalysisArtifactReference.newBuilder()
+            .setArtifact(de.burger.forensics.analytics.analysisjob.v1.ArtifactReference.newBuilder()
+                .setPath(artifact.reference())
+                .setType(artifact.type())
+                .setSha256(artifact.sha256())
+                .setSizeBytes(artifact.sizeBytes()))
+            .setCategory(de.burger.forensics.analytics.analysisjob.v1.AnalysisArtifactCategory.ANALYSIS_ARTIFACT_CATEGORY_STATIC)
+            .setProducerService(result.sourceFactArtifactProducerService())
+            .setSchemaVersion(result.sourceFactArtifactSchemaVersion())
+            .setCompleteness(analysisCompleteness(result.completeness()))
+            .setByteAccess(byteAccess(result.sourceFactArtifactByteAccess()))
+            .build();
+    }
+
+    private static JavaAstScanSummary javaAstSummary(
+        de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.JavaAstScanSummary summary
+    ) {
+        return JavaAstScanSummary.newBuilder()
+            .setReceivedFileCount(summary.receivedFileCount())
+            .setParsedFileCount(summary.parsedFileCount())
+            .setSkippedFileCount(summary.skippedFileCount())
+            .setParseErrorCount(summary.parseErrorCount())
+            .setSourceFactCount(summary.sourceFactCount())
+            .setParser(summary.parser())
+            .setParserVersion(summary.parserVersion())
+            .build();
     }
 
     private static RepositoryPreparation preparation(
@@ -376,6 +470,16 @@ public final class RepositoryAnalysisGrpcEndpoint extends RepositoryAnalysisServ
             case COMPLETE -> SourceSnapshotCompleteness.SOURCE_SNAPSHOT_COMPLETENESS_COMPLETE;
             case INCOMPLETE -> SourceSnapshotCompleteness.SOURCE_SNAPSHOT_COMPLETENESS_INCOMPLETE;
             case UNKNOWN -> SourceSnapshotCompleteness.SOURCE_SNAPSHOT_COMPLETENESS_UNKNOWN;
+        };
+    }
+
+    static de.burger.forensics.analytics.analysisjob.v1.AnalysisCompleteness analysisCompleteness(
+        de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.SourceSnapshotCompleteness completeness
+    ) {
+        return switch (completeness) {
+            case COMPLETE -> de.burger.forensics.analytics.analysisjob.v1.AnalysisCompleteness.ANALYSIS_COMPLETENESS_COMPLETE;
+            case INCOMPLETE -> de.burger.forensics.analytics.analysisjob.v1.AnalysisCompleteness.ANALYSIS_COMPLETENESS_INCOMPLETE;
+            case UNKNOWN -> de.burger.forensics.analytics.analysisjob.v1.AnalysisCompleteness.ANALYSIS_COMPLETENESS_UNKNOWN;
         };
     }
 

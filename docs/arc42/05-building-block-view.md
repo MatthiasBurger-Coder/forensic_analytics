@@ -152,10 +152,12 @@ Analysis Store through the Slice 11 `analysis-job.proto` owner API. Gateway
 remains a facade and must not own worker orchestration logic.
 
 Source-fact artifact bytes are owned by Java AST Analysis until a verified
-handoff or object-store contract transfers custody. Slice 12 must prove that
-Analysis Store retrieves those bytes through a Java AST owner API using
-service-local generated client stubs, never by reading Java AST private files,
-Repository Analysis workspaces or another service's implementation classes.
+handoff or object-store contract transfers custody. Slice 12 verifies
+`GetSourceFactArtifactBytes` as the Java AST owner API and adds an Analysis
+Store service-local gRPC client for that RPC. Analysis Store retrieves those
+bytes through generated Java AST stubs with checksum and size validation, never
+by reading Java AST private files, Repository Analysis workspaces or another
+service's implementation classes.
 
 The build-artifact worker is a planned byte-owner service for complete
 build-output packages. It does not own Repository Analysis workspaces,

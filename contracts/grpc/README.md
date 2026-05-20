@@ -12,11 +12,10 @@ boundary plan:
 - `analysis-job.proto`: worker handoff, analysis-job state,
   instrumentation-target planning and Slice 11 repository-to-BTM
   orchestration owner contract.
-- `repository-analysis.proto`: provisional Slice 06 repository checkout,
-  workspace preparation and source-snapshot handoff contract.
-- `java-ast-analysis.proto`: provisional Slice 06 JavaParser source-scanning
-  contract for bounded source snapshot input, deterministic source-fact
-  artifacts, counts and diagnostics.
+- `repository-analysis.proto`: repository checkout, workspace preparation and
+  Java AST source-snapshot handoff contract.
+- `java-ast-analysis.proto`: JavaParser source-scanning and Java AST-owned
+  source-fact artifact byte retrieval contract.
 - `joern-cpg-analysis.proto`: provisional Slice 08 Joern CPG/CFG/DFG
   semantic artifact worker contract.
 - `btm-generation.proto`: provisional server-side Byteman/BTM generation and
@@ -55,6 +54,16 @@ instead of unbounded inline facts.
 Diagnostics distinguish parse errors, skipped or unsupported source roots and
 the current `SYMBOL_RESOLUTION_NOT_CONFIGURED` limitation. Static AST output
 must not be presented as runtime execution evidence.
+
+Slice 12 adds the verified Java AST owner API
+`GetSourceFactArtifactBytes`. `ArtifactByteAccess.retrieval_contract` for Java
+AST source-fact artifacts names this RPC, and consumers such as Analysis Store
+must retrieve bytes through service-local generated Java AST stubs with
+expected checksum, expected size and bounded `max_bytes`. Repository Analysis
+also exposes `AnalyzeSourceSnapshotWithJavaAst` so Java AST handoff completion,
+artifact metadata, byte access, completeness and diagnostics cross the
+Repository Analysis boundary through its gRPC contract rather than through
+workspace paths or implementation imports.
 
 `joern-cpg-analysis.proto` is intentionally limited to static semantic Joern
 analysis. It accepts opaque workspace IDs, source snapshot IDs, relative source

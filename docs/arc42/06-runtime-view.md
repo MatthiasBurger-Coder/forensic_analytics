@@ -115,11 +115,11 @@ dispatch, retry and job-graph readiness state is owned by Analysis Store
 through the Slice 11 owner API. Gateway must not sequence worker business logic
 directly.
 
-Before the end-to-end flow can resume, Slice 12 must prove the Java AST
-source-fact byte retrieval owner API, the Repository Analysis to Java AST
-handoff signal and deterministic local repository-to-BTM fixtures. The default
-readiness path must use fakes, in-process gRPC or local fixtures rather than
-external Git network access, Docker, Jenkins, Artifactory or credentials.
+Slice 12 verifies the Java AST source-fact byte retrieval owner API, the
+Repository Analysis to Java AST handoff signal and deterministic local
+repository-to-BTM fixtures. The default readiness path uses fakes, in-process
+gRPC and service-local fixtures rather than external Git network access,
+Docker, Jenkins, Artifactory or credentials.
 
 The repository-to-BTM delivery path must be verified as:
 

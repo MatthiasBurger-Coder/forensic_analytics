@@ -236,6 +236,14 @@ class RepositorySourceSnapshotHandoffServiceTest {
                     "c".repeat(64),
                     100
                 ),
+                "java-ast-analysis-service",
+                "java-ast-analysis-v1",
+                new ArtifactByteAccess(
+                    "java-ast-analysis-service",
+                    "java-ast-analysis.v1.JavaAstAnalysisService.GetSourceFactArtifactBytes",
+                    "java-ast/snapshot-1-job-ast-1-source-facts.json",
+                    ArtifactByteCustody.PRODUCER_RETAINED
+                ),
                 new JavaAstScanSummary(1, 1, 0, 0, 1, "JavaParser", "3.27.1"),
                 List.of(Diagnostic.info("SYMBOL_RESOLUTION_NOT_CONFIGURED", "unresolved symbols remain explicit")),
                 command.safeAttributes()

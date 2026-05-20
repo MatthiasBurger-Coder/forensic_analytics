@@ -74,9 +74,10 @@ public class RepositoryAnalysisServiceConfiguration {
 
     @Bean
     public RepositoryAnalysisGrpcEndpoint repositoryAnalysisGrpcEndpoint(
-        RepositoryAnalysisApplicationService applicationService
+        RepositoryAnalysisApplicationService applicationService,
+        RepositorySourceSnapshotHandoffService handoffService
     ) {
-        return new RepositoryAnalysisGrpcEndpoint(applicationService);
+        return new RepositoryAnalysisGrpcEndpoint(applicationService, handoffService);
     }
 
     @Bean

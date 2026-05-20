@@ -7,6 +7,7 @@ import de.burger.forensics.analytics.analysisjob.v1.ArtifactByteCustody;
 import de.burger.forensics.analytics.analysisjob.v1.SourceSnapshotId;
 import de.burger.forensics.analytics.javaastanalysis.v1.AnalyzeSourceSnapshotRequest;
 import de.burger.forensics.analytics.javaastanalysis.v1.DiagnosticSeverity;
+import de.burger.forensics.analytics.javaastanalysis.v1.GetSourceFactArtifactBytesRequest;
 import de.burger.forensics.analytics.javaastanalysis.v1.JavaAstAnalysisServiceGrpc;
 import de.burger.forensics.analytics.javaastanalysis.v1.JavaSourceFile;
 import de.burger.forensics.analytics.javaastanalysis.v1.ScanPolicy;
@@ -15,6 +16,7 @@ import de.burger.forensics.analytics.services.javaastanalysis.adapter.out.filesy
 import de.burger.forensics.analytics.services.javaastanalysis.adapter.out.javaparser.JavaParserSourceScannerAdapter;
 import de.burger.forensics.analytics.services.javaastanalysis.application.JavaAstAnalysisApplicationService;
 import de.burger.forensics.analytics.services.javaastanalysis.application.JavaAstAnalysisTimeoutException;
+import de.burger.forensics.analytics.services.javaastanalysis.application.port.AstResultArtifactReaderPort;
 import de.burger.forensics.analytics.services.javaastanalysis.application.port.AstResultArtifactWriterPort;
 import de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.JavaAstDiagnostic;
 import de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.JavaSourceFact;
@@ -62,6 +64,32 @@ class JavaAstAnalysisGrpcEndpointTest {
         startServer(new FileSystemAstResultArtifactWriter(tempDir));
 
         var response = stub.analyzeSourceSnapshot(request(AnalysisWorkerKind.ANALYSIS_WORKER_KIND_AST_ANALYSIS, true));
+
+        assertEquals("ANALYZED_INCOMPLETE", response.getStatus().getCode());
+        assertEquals("snapshot-1", response.getSourceSnapshotId().getValue());
+        assertEquals("java-ast-analysis-service", response.getSourceFactArtifact().getProducerService());
+        assertEquals("java-ast-analysis-service", response.getSourceFactArtifact().getByteAccess().getOwnerService());
+        assertEquals(
+            FileSystemAstResultArtifactWriter.BYTE_RETRIEVAL_CONTRACT,
+            response.getSourceFactArtifact().getByteAccess().getRetrievalContract()
+        );
+        assertEquals(response.getSourceFactArtifact().getArtifact().getPath(), response.getSourceFactArtifact().getByteAccess().getRetrievalReference());
+        assertEquals(ArtifactByteCustody.ARTIFACT_BYTE_CUSTODY_PRODUCER_RETAINED, response.getSourceFactArtifact().getByteAccess().getByteCustody());
+        assertEquals(1, response.getSummary().getSourceFactCount());
+        assertEquals(List.of("SYMBOL_RESOLUTION_NOT_CONFIGURED"), response.getDiagnosticsList().stream().map(diagnostic -> diagnostic.getCode()).toList());
+
+        var bytes = stub.getSourceFactArtifactBytes(bytesRequest(response.getSourceFactArtifact()));
+
+        assertEquals("SOURCE_FACT_ARTIFACT_BYTES_RETRIEVED", bytes.getStatus().getCode());
+        assertEquals(response.getSourceFactArtifact().getArtifact().getPath(), bytes.getSourceFactArtifact().getArtifact().getPath());
+        assertEquals(response.getSourceFactArtifact().getArtifact().getSha256(), bytes.getSha256());
+        assertEquals(response.getSourceFactArtifact().getArtifact().getSizeBytes(), bytes.getSizeBytes());
+        assertEquals(
+            FileSystemAstResultArtifactWriter.BYTE_RETRIEVAL_CONTRACT,
+            bytes.getSourceFactArtifact().getByteAccess().getRetrievalContract()
+        );
+        assertEquals(bytes.getSha256(), sha256(bytes.getContent().toByteArray()));
+
         var complete = stub.analyzeSourceSnapshot(request(AnalysisWorkerKind.ANALYSIS_WORKER_KIND_AST_ANALYSIS, false));
         var parseError = stub.analyzeSourceSnapshot(request(
             AnalysisWorkerKind.ANALYSIS_WORKER_KIND_AST_ANALYSIS,
@@ -69,15 +97,6 @@ class JavaAstAnalysisGrpcEndpointTest {
             "class Broken { void fail( }"
         ));
 
-        assertEquals("ANALYZED_INCOMPLETE", response.getStatus().getCode());
-        assertEquals("snapshot-1", response.getSourceSnapshotId().getValue());
-        assertEquals("java-ast-analysis-service", response.getSourceFactArtifact().getProducerService());
-        assertEquals("java-ast-analysis-service", response.getSourceFactArtifact().getByteAccess().getOwnerService());
-        assertEquals("analysis-job.v1.ArtifactBytes", response.getSourceFactArtifact().getByteAccess().getRetrievalContract());
-        assertEquals(response.getSourceFactArtifact().getArtifact().getPath(), response.getSourceFactArtifact().getByteAccess().getRetrievalReference());
-        assertEquals(ArtifactByteCustody.ARTIFACT_BYTE_CUSTODY_PRODUCER_RETAINED, response.getSourceFactArtifact().getByteAccess().getByteCustody());
-        assertEquals(1, response.getSummary().getSourceFactCount());
-        assertEquals(List.of("SYMBOL_RESOLUTION_NOT_CONFIGURED"), response.getDiagnosticsList().stream().map(diagnostic -> diagnostic.getCode()).toList());
         assertEquals("ANALYZED", complete.getStatus().getCode());
         assertEquals("JAVA_PARSE_ERROR", parseError.getDiagnostics(0).getCode());
     }
@@ -126,7 +145,9 @@ class JavaAstAnalysisGrpcEndpointTest {
         stopServer();
         startServerWithApplicationService(new JavaAstAnalysisApplicationService(command -> {
             throw new JavaAstAnalysisTimeoutException("timeout");
-        }, new FileSystemAstResultArtifactWriter(tempDir)));
+        }, new FileSystemAstResultArtifactWriter(tempDir)), request -> {
+            throw new IllegalStateException("Source fact artifact is not available");
+        });
         var timeout = assertThrows(
             StatusRuntimeException.class,
             () -> stub.analyzeSourceSnapshot(request(AnalysisWorkerKind.ANALYSIS_WORKER_KIND_AST_ANALYSIS, false))
@@ -186,7 +207,9 @@ class JavaAstAnalysisGrpcEndpointTest {
                 de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.ArtifactByteCustody.SCOPED_OBJECT_ACCESS,
                 de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.AnalysisCompleteness.UNKNOWN
             )
-        ));
+        ), request -> {
+            throw new IllegalStateException("Source fact artifact is not available");
+        });
 
         var scoped = stub.analyzeSourceSnapshot(request(AnalysisWorkerKind.ANALYSIS_WORKER_KIND_AST_ANALYSIS, false));
 
@@ -213,7 +236,9 @@ class JavaAstAnalysisGrpcEndpointTest {
                 de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.ArtifactByteCustody.EXPLICIT_HANDOFF,
                 de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.AnalysisCompleteness.COMPLETE
             )
-        ));
+        ), request -> {
+            throw new IllegalStateException("Source fact artifact is not available");
+        });
 
         var handoff = stub.analyzeSourceSnapshot(request(AnalysisWorkerKind.ANALYSIS_WORKER_KIND_AST_ANALYSIS, false));
 
@@ -224,18 +249,44 @@ class JavaAstAnalysisGrpcEndpointTest {
     }
 
     private void startServer(AstResultArtifactWriterPort writer) throws Exception {
-        startServerWithApplicationService(new JavaAstAnalysisApplicationService(new JavaParserSourceScannerAdapter(), writer));
+        var reader = writer instanceof AstResultArtifactReaderPort artifactReader
+            ? artifactReader
+            : (AstResultArtifactReaderPort) request -> {
+                throw new IllegalStateException("Source fact artifact is not available");
+            };
+        startServerWithApplicationService(new JavaAstAnalysisApplicationService(new JavaParserSourceScannerAdapter(), writer), reader);
     }
 
-    private void startServerWithApplicationService(JavaAstAnalysisApplicationService applicationService) throws Exception {
+    private void startServerWithApplicationService(
+        JavaAstAnalysisApplicationService applicationService,
+        AstResultArtifactReaderPort artifactReader
+    ) throws Exception {
         var serverName = InProcessServerBuilder.generateName();
         server = InProcessServerBuilder.forName(serverName)
             .directExecutor()
-            .addService(new JavaAstAnalysisGrpcEndpoint(applicationService))
+            .addService(new JavaAstAnalysisGrpcEndpoint(applicationService, artifactReader))
             .build()
             .start();
         channel = InProcessChannelBuilder.forName(serverName).directExecutor().build();
         stub = JavaAstAnalysisServiceGrpc.newBlockingStub(channel);
+    }
+
+    private static GetSourceFactArtifactBytesRequest bytesRequest(
+        de.burger.forensics.analytics.analysisjob.v1.AnalysisArtifactReference artifact
+    ) {
+        return GetSourceFactArtifactBytesRequest.newBuilder()
+            .setRequestId("request-bytes-1")
+            .setCorrelationId("correlation-1")
+            .setAnalysisRunId(AnalysisRunId.newBuilder().setValue("run-1"))
+            .setAnalysisJobId(AnalysisJobId.newBuilder().setValue("job-1"))
+            .setSourceSnapshotId(SourceSnapshotId.newBuilder().setValue("snapshot-1"))
+            .setRetrievalReference(artifact.getByteAccess().getRetrievalReference())
+            .setExpectedSha256(artifact.getArtifact().getSha256())
+            .setExpectedSizeBytes(artifact.getArtifact().getSizeBytes())
+            .setMaxBytes(10_000)
+            .setSchemaVersion(artifact.getSchemaVersion())
+            .putSafeAttributes("tenant", "demo")
+            .build();
     }
 
     private static AnalyzeSourceSnapshotRequest request(AnalysisWorkerKind workerKind, boolean symbolDiagnostics) {
@@ -292,7 +343,7 @@ class JavaAstAnalysisGrpcEndpointTest {
             completeness,
             new de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.ArtifactByteAccess(
                 "java-ast-analysis-service",
-                "analysis-job.v1.ArtifactBytes",
+                FileSystemAstResultArtifactWriter.BYTE_RETRIEVAL_CONTRACT,
                 "java-ast/source-facts.json",
                 byteCustody
             )
