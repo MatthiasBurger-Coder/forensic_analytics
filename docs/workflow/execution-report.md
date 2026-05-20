@@ -1078,3 +1078,72 @@ resources.
 After the v4 workflow-governance package is committed and pushed,
 `workflow execute` resumes at the new Slice 12. Direct product implementation
 must not resume from a dirty workflow-governance worktree.
+
+## Slice 12 Execution - Source-Fact Byte Retrieval And Java AST Handoff Contract
+
+Slice 12 implements the source-fact byte retrieval and Java AST handoff
+contract that unblocked the end-to-end repository-to-BTM orchestration slice.
+The slice keeps Java AST as the source-fact byte owner, makes Analysis Store
+verify Java AST source-fact bytes through the owner API before persistence, and
+keeps Repository Analysis to Java AST handoff validation contract-based.
+
+Implemented behavior:
+
+- Analysis Store owns a `SourceFactArtifactByteVerifierPort` and fails closed
+  for supported Java AST source-fact artifacts when no owner verifier is wired.
+- Analysis Store verifies and canonicalizes supported Java AST source-fact
+  artifacts during job submission, job completion and explicit artifact
+  registration before the artifacts can be used for target planning.
+- The Analysis Store Java AST gRPC client validates artifact category,
+  producer, byte owner, retrieval contract, retrieval reference, byte custody,
+  checksum, size and completeness metadata before accepting bytes.
+- Analysis Store local and Docker profiles define the Java AST gRPC client
+  host, port, deadline and byte limit explicitly.
+- Java AST Analysis returns stored owner metadata and payload bytes from the
+  source-fact artifact read API instead of reconstructing metadata from the
+  caller request.
+- Repository Analysis validates Java AST handoff metadata and byte custody
+  before returning the handoff result to its domain boundary.
+
+### Slice 12 Reviews
+
+- Architecture Reviewer: initial post-checkpoint review blocked the correction
+  because `submit(...)` and `complete(...)` could still store Java AST
+  source-fact artifacts without owner API verification. The correction routed
+  `submit(...)`, `complete(...)` and `registerArtifacts(...)` through the same
+  verifier helper. Final re-review returned `READY`.
+- Senior Tester: initial post-checkpoint review blocked the correction because
+  default fail-closed behavior for `complete(...)` was not covered. The
+  correction added the requested regression test and verified that a failed
+  completion leaves the job running with no output artifacts. Final re-review
+  returned `READY`.
+
+### Slice 12 CP_RECORD
+
+```text
+workflowVersion=microservices-btm-pipeline-20260517-v4
+sliceId=12
+sliceTitle=Source-Fact Byte Retrieval And Java AST Handoff Contract
+responsibleAgent=Workflow Executor with Architecture Reviewer and Senior Tester
+changedFiles=services/analysis-store-service/**; services/java-ast-analysis-service/**; services/repository-analysis-service/**
+qualityGateCommands=./gradlew :services:analysis-store-service:test --tests de.burger.forensics.analytics.services.analysisstore.application.AnalysisJobApplicationServiceTest --dependency-verification strict --console=plain --stacktrace; ./gradlew :services:analysis-store-service:test :services:analysis-store-service:jacocoTestReport checkPackageCoverage --dependency-verification strict --console=plain --stacktrace; ./gradlew --no-daemon --max-workers=1 clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace; git diff --check; git diff --cached --check
+qualityGateResult=PASS
+initialCommitHash=42d8e3d0944006365a48f2b62aead8fd7711a595
+correctionCommitHash=073fbbe1674809581140c64d3598eb77c969b487
+effectiveCheckpointCommitHash=073fbbe1674809581140c64d3598eb77c969b487
+pushResult=PUB_DONE to origin/feature/workflow-microservices-btm-pipeline-20260517
+rollbackReference=e50569c544864ba96e4f0ad4779d5f51c42b1faa
+correctionRollbackReference=42d8e3d0944006365a48f2b62aead8fd7711a595
+arc42Updated=not changed in this correction; v4 workflow architecture decision remains unchanged
+adrUpdated=not required in this slice
+```
+
+### Slice 12 D8 Decision
+
+Slice 12 is `D8_PASS`. Targeted application-service regression tests,
+Analysis Store service coverage gate, the full local quality gate with strict
+dependency verification, architecture review, tester review, `git diff
+--check`, `git diff --cached --check`, checkpoint commit and branch push
+completed successfully. The initial pushed checkpoint remains part of the
+branch history; the effective Slice 12 checkpoint is the correction commit
+`073fbbe1674809581140c64d3598eb77c969b487`.
