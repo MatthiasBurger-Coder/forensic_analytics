@@ -965,3 +965,78 @@ rollbackReference=02d06f7d484ff4ac79e0206f3f2bea31ab2e5fe5
 arc42Updated=docs/arc42/05-building-block-view.md; docs/arc42/06-runtime-view.md; docs/arc42/08-crosscutting-concepts.md
 adrUpdated=not required; ADR-0017 and ADR-0018 remain valid because Slice 11 keeps Analysis Store as preferred orchestration owner and Gateway facade-only
 ```
+
+## Slice 11 Execution - Repository-To-BTM Orchestration Contract And Artifact-Readiness Bridge
+
+Slice 11 implements the prerequisite owner contract and readiness bridge that
+was required before end-to-end repository-to-BTM orchestration can safely
+resume. The slice keeps the Gateway facade-only, moves repository-to-BTM
+orchestration state to the Analysis Store owner API and makes missing source,
+build and Joern readiness explicit instead of treating unavailable artifacts as
+complete evidence.
+
+Implemented behavior:
+
+- Analysis Store exposes `StartRepositoryToBtm` and `GetRepositoryToBtmStatus`
+  on the `analysis-job.v1.AnalysisJobService` owner contract.
+- Repository-to-BTM starts are deterministic and idempotent by analysis run,
+  dispatch a repository-analysis job and return explicit incomplete readiness
+  diagnostics for unavailable repository source packages, unavailable build
+  output packages and skipped Joern semantic materialization.
+- Gateway routes public repository-to-BTM submission and status reads through
+  the Analysis Store owner API and no longer calls the Repository Analysis
+  service directly.
+- The public Gateway OpenAPI contract removes active workspace-facing schemas
+  and exposes only redacted repository-to-BTM submission/status responses.
+- Public diagnostics redact repository coordinates, local paths, workspace
+  markers, raw stdout/stderr markers and credential-like content.
+- Java AST source-fact artifacts now carry producer-retained byte-access
+  metadata so downstream artifact registration can verify byte custody instead
+  of guessing how to retrieve artifact bytes.
+
+### Slice 11 Reviews
+
+- Senior System Architect / Contract-First API Steward: PASS; Analysis Store
+  owns repository-to-BTM orchestration state, Gateway stays facade-only and
+  cross-service interaction remains contract-based.
+- Security Reviewer: initial review blocked on diagnostic leakage for non-`.git`
+  repository URLs. The blocker was remediated by redacting any `http(s)` URL in
+  Analysis Store and Gateway diagnostics and by constraining the OpenAPI
+  `PublicDiagnostic` schema. Final re-review returned `PASS`.
+- Senior gRPC Proto Specialist: initial review blocked on the missing Gateway
+  status path for `GetRepositoryToBtmStatus`, then on an optional OpenAPI
+  correlation header that contradicted runtime behavior. The blockers were
+  remediated by adding the Gateway status route/client path and a required
+  `RequiredCorrelationId` parameter for the current-verified status operation.
+  Final re-review returned `PASS`.
+- Quality Reviewer: initial review blocked on stale full-gate evidence and the
+  OpenAPI/runtime mismatch. Fresh targeted service tests, focused OpenAPI tests,
+  full local quality gate and `git diff --check` completed successfully. Final
+  re-review returned `PASS`.
+- Git Commit Reviewer: `READY`; all staged implementation files are inside
+  Slice 11 scope, and the implementation commit may precede this CP_RECORD so
+  the report can include the real implementation SHA.
+
+### Slice 11 CP_RECORD
+
+```text
+workflowVersion=microservices-btm-pipeline-20260517-v3
+sliceId=11
+sliceTitle=Repository-To-BTM Orchestration Contract And Artifact-Readiness Bridge
+responsibleAgent=Workflow Executor with Senior System Architect / Contract-First API Steward, Security Reviewer, Senior gRPC Proto Specialist, Quality Reviewer and Git Commit Reviewer
+changedFiles=contracts/**; forensic-analytics-rest/src/test/java/de/burger/forensics/analytics/rest/GatewayOpenApiContractTest.java; services/analysis-store-service/**; services/forensic-gateway-service/**; services/java-ast-analysis-service/**; docs/arc42/**; docs/architecture/**; docs/workflow/execution-report.md
+qualityGateCommands=./gradlew :services:forensic-gateway-service:generateProto :services:analysis-store-service:generateProto :services:java-ast-analysis-service:generateProto --dependency-verification strict --console=plain --stacktrace; ./gradlew :services:forensic-gateway-service:test --tests "*GatewayRepositoryAnalysisSubmissionServiceTest" --tests "*ForensicGatewayHttpAdapterTest" --tests "*AnalysisStoreRepositoryToBtmGrpcClientTest" --tests "*ForensicGatewayServiceApplicationTest" :forensic-analytics-rest:test --tests "*GatewayOpenApiContractTest" --dependency-verification strict --console=plain --stacktrace; ./gradlew :services:forensic-gateway-service:test :services:analysis-store-service:test :services:java-ast-analysis-service:test --dependency-verification strict --console=plain --stacktrace; ./gradlew --no-daemon --max-workers=1 clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace; git diff --check; git diff --cached --check
+qualityGateResult=PASS
+commitHash=f2b9a6972226388f0a9c3362bf473b0d2cae57f2
+pushResult=PUB_DONE to origin/feature/workflow-microservices-btm-pipeline-20260517
+rollbackReference=38e52afc06100fb38483cf96672a14f98532ccbd
+arc42Updated=docs/arc42/05-building-block-view.md; docs/arc42/06-runtime-view.md
+adrUpdated=not required in this slice
+```
+
+### Slice 11 D8 Decision
+
+Slice 11 is `D8_PASS`. Proto generation, focused Gateway/OpenAPI tests,
+affected service tests, full local quality gate with strict dependency
+verification, specialist reviews, git commit readiness review,
+`git diff --check` and `git diff --cached --check` completed successfully.
