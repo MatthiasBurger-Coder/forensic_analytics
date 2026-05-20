@@ -140,10 +140,10 @@ paths.
 | `forensic-ingestion-service` | gRPC intake and validation of plugin, scanner and runtime evidence packages | Raw ingestion intake and upload-session lifecycle |
 | `repository-analysis-service` | Repository checkout, branch resolution, workspace preparation and source snapshot preparation | Repository workspaces, leases and checkout diagnostics |
 | `build-artifact-worker-service` | Optional sandboxed production of complete build-output packages for pinned source snapshots | Build-output package bytes, manifests, checksums and retrieval references when introduced |
-| `java-ast-analysis-service` | JavaParser source scanning, stable source identifiers and unresolved-symbol diagnostics | AST execution output until accepted by Analysis Store |
+| `java-ast-analysis-service` | JavaParser source scanning, stable source identifiers, source-fact artifact byte retrieval and unresolved-symbol diagnostics | AST execution output and produced source-fact bytes until accepted or transferred through an explicit byte-handoff contract |
 | `joern-cpg-analysis-service` | Joern runtime, CPG/CFG/DFG analysis and semantic artifact mapping | Joern execution artifacts and semantic worker output |
 | `btm-generation-service` | Deterministic Byteman/BTM artifacts from delivered analysis facts | Generated BTM rule artifacts |
-| `analysis-store-service` | Authoritative normalized facts, analysis sessions, jobs, Slice 11 repository-to-BTM orchestration readiness state, incidents, correlations and artifact catalog | Canonical evidence, worker-dispatch/job-graph state and one-writer analysis state |
+| `analysis-store-service` | Authoritative normalized facts, analysis sessions, jobs, Slice 11 repository-to-BTM orchestration readiness state, Slice 12 source-fact retrieval readiness, incidents, correlations and artifact catalog | Canonical evidence, worker-dispatch/job-graph state and one-writer analysis state |
 | `graph-replay-service` | Graph/runtime overlays and exception-centered replay | Rebuildable graph/replay projections |
 | `report-generation-service` | Reports, incident context packages and LLM-ready/generated packages | Report artifacts and generated analysis packages |
 | `frontend-web-app` | React user interface through Gateway/public APIs only | UI state only, no forensic data ownership |
@@ -159,6 +159,7 @@ Frontend / CLI / external client
   -> Repository Analysis
   -> Build Artifact Worker or verified external artifact producer
   -> Java AST Analysis
+  -> Java AST owner source-fact byte retrieval
   -> Joern CPG Analysis
   -> Analysis Store
   -> Graph Replay

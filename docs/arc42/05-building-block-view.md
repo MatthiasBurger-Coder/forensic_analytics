@@ -151,6 +151,12 @@ Repository-to-BTM worker-dispatch and job-graph readiness state is owned by
 Analysis Store through the Slice 11 `analysis-job.proto` owner API. Gateway
 remains a facade and must not own worker orchestration logic.
 
+Source-fact artifact bytes are owned by Java AST Analysis until a verified
+handoff or object-store contract transfers custody. Slice 12 must prove that
+Analysis Store retrieves those bytes through a Java AST owner API using
+service-local generated client stubs, never by reading Java AST private files,
+Repository Analysis workspaces or another service's implementation classes.
+
 The build-artifact worker is a planned byte-owner service for complete
 build-output packages. It does not own Repository Analysis workspaces,
 canonical Analysis Store facts or Joern execution. Artifactory and Jenkins are

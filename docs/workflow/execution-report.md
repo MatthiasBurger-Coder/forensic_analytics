@@ -9,8 +9,11 @@ completed and pushed under `microservices-btm-pipeline-20260517-v1`. Slices
 orchestration review stopped before implementation because the required
 orchestration owner API, Gateway public API security cleanup and artifact
 readiness bridge were not verified. `microservices-btm-pipeline-20260517-v3`
-is being introduced to add the missing Repository-to-BTM orchestration contract
-and artifact-readiness bridge before end-to-end orchestration resumes.
+introduced that bridge and Slice 11 completed successfully. The v3 Slice 12
+precheck then stopped before implementation because source-fact byte retrieval,
+Repository Analysis to Java AST handoff completion and deterministic local
+fixtures were not verified. `microservices-btm-pipeline-20260517-v4` is being
+introduced to add that prerequisite before end-to-end orchestration resumes.
 
 ## Branch
 
@@ -1040,3 +1043,38 @@ Slice 11 is `D8_PASS`. Proto generation, focused Gateway/OpenAPI tests,
 affected service tests, full local quality gate with strict dependency
 verification, specialist reviews, git commit readiness review,
 `git diff --check` and `git diff --cached --check` completed successfully.
+
+## Slice 12 Read-Only Precheck - End-To-End Repository To BTM Orchestration
+
+The v3 Slice 12 precheck stopped before product implementation. The mandatory
+role reviews found that the end-to-end orchestration slice still required
+guessing the Java AST source-fact byte retrieval path, the Repository Analysis
+to Java AST handoff completion signal and the deterministic local fixture
+contract.
+
+### Slice 12 D8 Decision
+
+Slice 12 is `D8_BLOCKED_REQUIRES_REFINEMENT` for the v3 workflow package. No
+product files were changed. The workflow package was regenerated as
+`microservices-btm-pipeline-20260517-v4` to insert the new prerequisite Slice
+12 and renumber the former end-to-end orchestration slice to Slice 13.
+
+## Workflow Governance Update v4
+
+The v4 workflow package inserts the new Slice 12
+Source-Fact Byte Retrieval And Java AST Handoff Contract. The completed v3
+Slice 00 through Slice 11 checkpoints remain valid. The former end-to-end
+orchestration slice is now v4 Slice 13, and the final quality gate is now v4
+Slice 19.
+
+The v4 prerequisite keeps Java AST as source-fact byte owner until a verified
+handoff or object-store contract transfers custody, requires Analysis Store to
+retrieve source-fact bytes through the Java AST owner API using service-local
+generated client stubs, requires Repository Analysis to expose Java AST handoff
+completion through a reviewed gRPC service contract and moves deterministic
+fixtures out of `contracts/**` into documentation plus service-local test
+resources.
+
+After the v4 workflow-governance package is committed and pushed,
+`workflow execute` resumes at the new Slice 12. Direct product implementation
+must not resume from a dirty workflow-governance worktree.

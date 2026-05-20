@@ -173,3 +173,22 @@ Gateway stays facade-only, Analysis Store is the preferred orchestration owner
 unless Slice 11 records another reviewed owner, incomplete Joern/build-artifact
 inputs remain explicit diagnostics, and deterministic local readiness tests
 must not require external services or credentials.
+
+## v4 Refinement Decision
+
+During the v3 Slice 12 end-to-end orchestration precheck, the mandatory
+workflow roles found that implementation would still require guessing the Java
+AST source-fact byte retrieval path, the Repository Analysis to Java AST
+handoff signal and the deterministic local fixture contract. Continuing inside
+the previous Slice 12 would risk private workspace coupling, service
+implementation imports or unverified artifact-byte access.
+
+Decision: insert v4 Slice 12,
+`Source-fact byte retrieval and Java AST handoff contract`, before end-to-end
+orchestration resumes. Java AST remains the source-fact byte owner until an
+explicit handoff or object-store contract transfers custody. Analysis Store may
+consume source-fact bytes only through the verified Java AST owner API using
+service-local generated client stubs. Repository Analysis must expose handoff
+completion through a reviewed gRPC service contract, and the local readiness
+path must use deterministic fixtures, fakes or in-process gRPC without external
+Git network access, Docker, Jenkins, Artifactory or credentials by default.

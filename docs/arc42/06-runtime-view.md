@@ -96,6 +96,7 @@ Frontend / CLI / external client
   -> Repository Analysis
   -> Source Snapshot And Build Artifact Resolution
   -> Java AST Analysis
+  -> Java AST Source-Fact Byte Retrieval
   -> Joern CPG Analysis
   -> Analysis Store
   -> Graph Replay
@@ -114,6 +115,12 @@ dispatch, retry and job-graph readiness state is owned by Analysis Store
 through the Slice 11 owner API. Gateway must not sequence worker business logic
 directly.
 
+Before the end-to-end flow can resume, Slice 12 must prove the Java AST
+source-fact byte retrieval owner API, the Repository Analysis to Java AST
+handoff signal and deterministic local repository-to-BTM fixtures. The default
+readiness path must use fakes, in-process gRPC or local fixtures rather than
+external Git network access, Docker, Jenkins, Artifactory or credentials.
+
 The repository-to-BTM delivery path must be verified as:
 
 ```text
@@ -121,7 +128,8 @@ Plugin / external client
   -> Gateway HTTP repository-to-BTM request
   -> Analysis Store orchestration owner API
   -> Repository Analysis source snapshot
-  -> Java AST and optional Joern worker outputs
+  -> Java AST source-fact bytes through owner API
+  -> optional Joern worker outputs
   -> Analysis Store accepted metadata and target selection
   -> BTM Generation
   -> Gateway public BTM delivery facade

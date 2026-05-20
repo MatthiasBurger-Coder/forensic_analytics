@@ -98,6 +98,13 @@ incomplete diagnostics instead of receiving invalid package metadata. Public
 Gateway diagnostics must be allow-listed or redacted before downstream messages
 cross the external API boundary.
 
+The v4 source-fact retrieval bridge requires `ArtifactByteAccess` to resolve to
+a verified Java AST owner API before Analysis Store consumes source-fact bytes.
+Repository Analysis to Java AST handoff completion must be represented through
+a reviewed service contract, and deterministic local fixtures must avoid
+external Git network access, Docker, Jenkins, Artifactory, credentials, private
+workspace paths and raw source content by default.
+
 ## 8.7 Replay Uncertainty
 
 The replay must explicitly show missing, incomplete or uncertain event chains.

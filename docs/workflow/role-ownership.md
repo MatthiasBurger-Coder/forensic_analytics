@@ -47,10 +47,11 @@
 | 09 | Senior System Architect, Senior Java Backend, Evidence integrity review |
 | 10 | Senior gRPC Proto Specialist, Senior Java Backend, BTM determinism tests |
 | 11 | Senior System Architect, Contract-First API Steward, Senior gRPC Proto Specialist, Security Sandbox Engineer, Senior Java Backend, Senior Tester |
-| 12 | Senior Swarm Orchestrator, Senior Java Backend, Senior Tester |
-| 13 | Senior DevOps, Microservice Runtime Readiness, Security review |
-| 14 | Senior System Architect, Replay/Graph/LLM reviewer |
-| 15 | Senior React Frontend, Senior UX Designer, frontend test owner |
-| 16 | Senior System Architect, Senior Java Backend, Release governance |
-| 17 | Senior DevOps, Build Gradle, Architecture validation |
-| 18 | Senior Tester, Quality Gate Orchestrator, Documentation reviewer |
+| 12 | Contract-First API Steward, Senior gRPC Proto Specialist, Senior Java Backend, Senior Analysis Storage Architect, Security Sandbox Engineer, Senior Tester |
+| 13 | Senior Swarm Orchestrator, Senior Java Backend, Senior Tester |
+| 14 | Senior DevOps, Microservice Runtime Readiness, Security review |
+| 15 | Senior System Architect, Replay/Graph/LLM reviewer |
+| 16 | Senior React Frontend, Senior UX Designer, frontend test owner |
+| 17 | Senior System Architect, Senior Java Backend, Release governance |
+| 18 | Senior DevOps, Build Gradle, Architecture validation |
+| 19 | Senior Tester, Quality Gate Orchestrator, Documentation reviewer |

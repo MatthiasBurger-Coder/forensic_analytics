@@ -12,6 +12,30 @@
 
 ## Result
 
+## v4 Workflow-Governance Check
+
+The v4 workflow-governance refinement checked and updated the runtime and
+ownership documentation for the new Slice 12 source-fact byte retrieval and
+Java AST handoff contract:
+
+- `docs/arc42/05-building-block-view.md`
+- `docs/arc42/06-runtime-view.md`
+- `docs/arc42/08-crosscutting-concepts.md`
+- `docs/architecture/contract-versioning.md`
+- `docs/architecture/data-ownership.md`
+- `docs/architecture/service-boundaries.md`
+- `docs/architecture/service-communication-matrix.md`
+- `docs/architecture/service-migration-map.md`
+- `docs/architecture/target-microservices-architecture.md`
+
+The v4 check records that Java AST owns produced source-fact bytes until a
+verified handoff or object-store contract transfers custody, Analysis Store
+must retrieve source-fact bytes through the Java AST owner API using
+service-local generated client stubs, Repository Analysis must expose Java AST
+handoff completion through a reviewed gRPC service contract and deterministic
+local fixtures must not require external Git network access, Docker, Jenkins,
+Artifactory or credentials by default.
+
 ## v3 Workflow-Governance Check
 
 The v3 workflow-governance refinement checked and updated the runtime and

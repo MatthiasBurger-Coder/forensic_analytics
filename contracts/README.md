@@ -13,7 +13,9 @@ libraries.
 The active workflow owns Gateway HTTP and public gRPC BTM delivery contract
 updates in Slice 02, artifact-byte and instrumentation-target ownership
 contracts in Slice 03, and the Analysis Store-owned repository-to-BTM
-orchestration owner API in Slice 11. Existing contract files include:
+orchestration owner API in Slice 11. Slice 12 owns the Java AST source-fact
+byte retrieval contract and Repository Analysis to Java AST handoff closure.
+Existing contract files include:
 
 - `grpc/forensic-ingestion.proto`
 - `grpc/analysis-job.proto`

@@ -199,7 +199,8 @@ snapshots when no verified external artifact is available.
 
 Status: planned by workflow version
 `microservices-btm-pipeline-20260517-v2` and retained by
-`microservices-btm-pipeline-20260517-v3`; no service root is implemented yet.
+`microservices-btm-pipeline-20260517-v3` and
+`microservices-btm-pipeline-20260517-v4`; no service root is implemented yet.
 
 Owns:
 
@@ -257,7 +258,10 @@ Owns:
 - stable source identifiers;
 - source locations;
 - unresolved-symbol diagnostics;
-- AST worker output until accepted by Analysis Store.
+- AST worker output until accepted by Analysis Store;
+- produced source-fact artifact bytes and the owner API that makes them
+  retrievable until an explicit byte-handoff or object-store contract transfers
+  custody.
 
 Non-scope:
 
@@ -265,7 +269,8 @@ Non-scope:
 - runtime execution truth;
 - Joern CPG ownership;
 - BTM generation;
-- canonical store ownership.
+- canonical store ownership;
+- Repository Analysis workspace ownership.
 
 Inbound communication:
 
@@ -275,8 +280,10 @@ Inbound communication:
 
 Outbound communication:
 
-- source fact results to `analysis-store-service` through gRPC or events after
-  contracts exist.
+- source fact result metadata to `analysis-store-service` through gRPC or events
+  after contracts exist;
+- source-fact byte retrieval through the Java AST owner API, consumed by
+  Analysis Store through service-local generated client stubs only.
 
 Current evidence:
 
@@ -289,7 +296,8 @@ Stop conditions:
 
 - static reachability is documented as runtime execution;
 - unresolved symbols are dropped silently;
-- parser-specific APIs leak into service-neutral contracts.
+- parser-specific APIs leak into service-neutral contracts;
+- another service reads Java AST private files instead of using the owner API.
 
 ## `joern-cpg-analysis-service`
 
@@ -411,7 +419,10 @@ Inbound communication:
 
 Outbound communication:
 
-- event publication or query responses after contracts exist.
+- event publication or query responses after contracts exist;
+- client calls to the Java AST owner API for source-fact byte retrieval after
+  Slice 12 verifies the contract. The generated client code must remain
+  service-local and must not become a shared Java module.
 
 Current evidence:
 
@@ -425,6 +436,8 @@ Stop conditions:
 
 - another service writes canonical facts directly;
 - another service reads private database tables directly;
+- Analysis Store reads Repository Analysis workspaces or Java AST private files
+  directly instead of using owner APIs;
 - persistence schema names are invented before a storage slice;
 - evidence provenance, sensitivity or completeness is lost.
 

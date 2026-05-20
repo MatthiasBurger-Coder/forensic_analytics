@@ -1,5 +1,27 @@
 # Workflow History
 
+## microservices-btm-pipeline-20260517-v4
+
+| Field | Value |
+|---|---|
+| Created | 2026-05-20 |
+| Branch | `feature/workflow-microservices-btm-pipeline-20260517` |
+| Strand | workflow-governance refinement through `workflow create` after blocked `workflow execute` Slice 12 precheck |
+| Status | Active. V4 inserts Slice 12 for source-fact byte retrieval, Repository Analysis to Java AST handoff closure and deterministic local E2E fixture readiness before end-to-end orchestration can resume. |
+| Source request | Create the missing prerequisite workflow slice after the Slice 12 review identified source-fact byte retrieval and deterministic fixture blockers. |
+
+V4 preserves completed v3 Slice 00 through Slice 11 checkpoints. Downstream
+slices are renumbered by one: v3 Slice 12 becomes v4 Slice 13, and the final
+quality gate becomes v4 Slice 19.
+
+The v4 prerequisite keeps Java AST as the owner of source-fact artifact bytes
+until an explicit handoff or object-store contract transfers custody. It
+requires `ArtifactByteAccess.retrieval_contract` to name a real owner API,
+closes the Repository Analysis to Java AST handoff signal and defines a
+deterministic local fixture path that uses fakes, in-process gRPC or local
+fixtures instead of external Git network access, Docker, Jenkins, Artifactory
+or credentials.
+
 ## microservices-btm-pipeline-20260517-v3
 
 | Field | Value |

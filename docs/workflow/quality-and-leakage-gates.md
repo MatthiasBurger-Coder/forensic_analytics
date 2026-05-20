@@ -130,6 +130,44 @@ Slice 11 readiness tests must cover:
   local fixtures and does not require external network services, Jenkins,
   Artifactory, Docker or credentials by default.
 
+## Source-Fact Byte Retrieval And Local E2E Fixture Gates
+
+Use for the Slice 12 source-fact byte retrieval and Java AST handoff contract:
+
+```bash
+./gradlew :services:repository-analysis-service:generateProto :services:java-ast-analysis-service:generateProto :services:analysis-store-service:generateProto --dependency-verification strict --console=plain --stacktrace
+./gradlew :services:repository-analysis-service:test :services:java-ast-analysis-service:test :services:analysis-store-service:test --dependency-verification strict --console=plain --stacktrace
+./gradlew test --dependency-verification strict --console=plain --stacktrace
+git diff --check
+```
+
+When Slice 12 adds deterministic repository-to-BTM fixture consumers for
+Gateway, Joern or BTM Generation, include the affected service-local `test`
+tasks in the same readiness gate before claiming the fixture command is
+complete.
+
+Slice 12 readiness tests must cover:
+
+- `ArtifactByteAccess.retrieval_contract` names a real Java AST owner API or
+  returns an explicit unavailable state that blocks end-to-end orchestration;
+- Java AST source-fact bytes are retrieved only through the owner API with
+  checksum and size validation;
+- Analysis Store consumes source-fact bytes through the Java AST owner API
+  using service-local generated client stubs only, with no direct filesystem
+  access and no Java implementation imports from another service;
+- Repository Analysis exposes Java AST handoff completion through a reviewed
+  gRPC service contract; if that contract is missing or insufficient, the slice
+  stops for contract refinement;
+- the versioned synthetic fixture shape in
+  `docs/workflow/fixtures/repository-to-btm-v1.md` and service-local
+  `src/test/resources/repository-to-btm/v1/**` fixture files contain no local
+  paths, private repository coordinates, credentials, raw source content, host
+  workspace details, Jenkins URLs, Artifactory URLs or Docker assumptions;
+- default local tests use fakes, in-process gRPC or local fixtures and do not
+  require external Git network access, Docker, Jenkins, Artifactory or
+  credentials;
+- missing build-output or Joern inputs remain explicit incomplete diagnostics.
+
 ## Frontend Gate
 
 After frontend API-adapter changes in `forensic-ui`, run:
