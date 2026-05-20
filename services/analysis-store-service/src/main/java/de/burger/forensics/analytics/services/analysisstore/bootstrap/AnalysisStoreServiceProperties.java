@@ -2,11 +2,13 @@ package de.burger.forensics.analytics.services.analysisstore.bootstrap;
 
 public record AnalysisStoreServiceProperties(
     Grpc grpc,
-    Health health
+    Health health,
+    JavaAstAnalysis javaAstAnalysis
 ) {
     public AnalysisStoreServiceProperties {
         java.util.Objects.requireNonNull(grpc, "grpc must not be null");
         java.util.Objects.requireNonNull(health, "health must not be null");
+        java.util.Objects.requireNonNull(javaAstAnalysis, "java ast analysis must not be null");
     }
 
     public record Grpc(boolean enabled, String host, int port) {
@@ -20,6 +22,25 @@ public record AnalysisStoreServiceProperties(
         public Health {
             requireHost(host, "health host");
             requirePort(port, "health port");
+        }
+    }
+
+    public record JavaAstAnalysis(ClientGrpc grpc) {
+        public JavaAstAnalysis {
+            java.util.Objects.requireNonNull(grpc, "java ast analysis gRPC must not be null");
+        }
+    }
+
+    public record ClientGrpc(String host, int port, long deadlineSeconds, long maxBytes) {
+        public ClientGrpc {
+            requireHost(host, "client gRPC host");
+            requirePort(port, "client gRPC port");
+            if (deadlineSeconds < 1 || deadlineSeconds > 3_600) {
+                throw new IllegalArgumentException("client gRPC deadline must be between 1 and 3600 seconds");
+            }
+            if (maxBytes < 1 || maxBytes > 104_857_600L) {
+                throw new IllegalArgumentException("client gRPC max bytes must be between 1 and 104857600");
+            }
         }
     }
 

@@ -5,19 +5,67 @@ import de.burger.forensics.analytics.analysisjob.v1.AnalysisRunId;
 import de.burger.forensics.analytics.analysisjob.v1.SourceSnapshotId;
 import de.burger.forensics.analytics.javaastanalysis.v1.GetSourceFactArtifactBytesRequest;
 import de.burger.forensics.analytics.javaastanalysis.v1.JavaAstAnalysisServiceGrpc;
+import de.burger.forensics.analytics.services.analysisstore.application.port.SourceFactArtifactByteVerifierPort;
 import de.burger.forensics.analytics.services.analysisstore.domain.AnalysisArtifactReference;
+import de.burger.forensics.analytics.services.analysisstore.domain.AnalysisArtifactCategory;
+import de.burger.forensics.analytics.services.analysisstore.domain.AnalysisCompleteness;
+import de.burger.forensics.analytics.services.analysisstore.domain.ArtifactByteAccess;
+import de.burger.forensics.analytics.services.analysisstore.domain.ArtifactByteCustody;
+import de.burger.forensics.analytics.services.analysisstore.domain.ArtifactReference;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.StatusRuntimeException;
 
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.HexFormat;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
-public final class JavaAstSourceFactArtifactClient implements AutoCloseable {
+public final class JavaAstSourceFactArtifactClient implements SourceFactArtifactByteVerifierPort, AutoCloseable {
     public static final String OWNER_SERVICE = "java-ast-analysis-service";
     public static final String RETRIEVAL_CONTRACT =
         "java-ast-analysis.v1.JavaAstAnalysisService.GetSourceFactArtifactBytes";
+    private static final Map<AnalysisCompleteness, de.burger.forensics.analytics.analysisjob.v1.AnalysisCompleteness>
+        PROTO_COMPLETENESS = Map.of(
+            AnalysisCompleteness.COMPLETE,
+            de.burger.forensics.analytics.analysisjob.v1.AnalysisCompleteness.ANALYSIS_COMPLETENESS_COMPLETE,
+            AnalysisCompleteness.INCOMPLETE,
+            de.burger.forensics.analytics.analysisjob.v1.AnalysisCompleteness.ANALYSIS_COMPLETENESS_INCOMPLETE,
+            AnalysisCompleteness.UNKNOWN,
+            de.burger.forensics.analytics.analysisjob.v1.AnalysisCompleteness.ANALYSIS_COMPLETENESS_UNKNOWN
+        );
+    private static final Map<de.burger.forensics.analytics.analysisjob.v1.AnalysisCompleteness, AnalysisCompleteness>
+        DOMAIN_COMPLETENESS = Map.of(
+            de.burger.forensics.analytics.analysisjob.v1.AnalysisCompleteness.ANALYSIS_COMPLETENESS_COMPLETE,
+            AnalysisCompleteness.COMPLETE,
+            de.burger.forensics.analytics.analysisjob.v1.AnalysisCompleteness.ANALYSIS_COMPLETENESS_INCOMPLETE,
+            AnalysisCompleteness.INCOMPLETE,
+            de.burger.forensics.analytics.analysisjob.v1.AnalysisCompleteness.ANALYSIS_COMPLETENESS_UNKNOWN,
+            AnalysisCompleteness.UNKNOWN,
+            de.burger.forensics.analytics.analysisjob.v1.AnalysisCompleteness.ANALYSIS_COMPLETENESS_UNSPECIFIED,
+            AnalysisCompleteness.UNKNOWN
+        );
+    private static final Map<ArtifactByteCustody, de.burger.forensics.analytics.analysisjob.v1.ArtifactByteCustody>
+        PROTO_BYTE_CUSTODY = Map.of(
+            ArtifactByteCustody.PRODUCER_RETAINED,
+            de.burger.forensics.analytics.analysisjob.v1.ArtifactByteCustody.ARTIFACT_BYTE_CUSTODY_PRODUCER_RETAINED,
+            ArtifactByteCustody.SCOPED_OBJECT_ACCESS,
+            de.burger.forensics.analytics.analysisjob.v1.ArtifactByteCustody.ARTIFACT_BYTE_CUSTODY_SCOPED_OBJECT_ACCESS,
+            ArtifactByteCustody.EXPLICIT_HANDOFF,
+            de.burger.forensics.analytics.analysisjob.v1.ArtifactByteCustody.ARTIFACT_BYTE_CUSTODY_EXPLICIT_HANDOFF
+        );
+    private static final Map<de.burger.forensics.analytics.analysisjob.v1.ArtifactByteCustody, ArtifactByteCustody>
+        DOMAIN_BYTE_CUSTODY = Map.of(
+            de.burger.forensics.analytics.analysisjob.v1.ArtifactByteCustody.ARTIFACT_BYTE_CUSTODY_PRODUCER_RETAINED,
+            ArtifactByteCustody.PRODUCER_RETAINED,
+            de.burger.forensics.analytics.analysisjob.v1.ArtifactByteCustody.ARTIFACT_BYTE_CUSTODY_SCOPED_OBJECT_ACCESS,
+            ArtifactByteCustody.SCOPED_OBJECT_ACCESS,
+            de.burger.forensics.analytics.analysisjob.v1.ArtifactByteCustody.ARTIFACT_BYTE_CUSTODY_EXPLICIT_HANDOFF,
+            ArtifactByteCustody.EXPLICIT_HANDOFF
+        );
 
     private final ManagedChannel channel;
     private final JavaAstAnalysisServiceGrpc.JavaAstAnalysisServiceBlockingStub stub;
@@ -46,6 +94,27 @@ public final class JavaAstSourceFactArtifactClient implements AutoCloseable {
         this.maxBytes = requirePositive(maxBytes, "maxBytes");
     }
 
+    @Override
+    public boolean supports(AnalysisArtifactReference artifact) {
+        return artifact.category() == AnalysisArtifactCategory.STATIC
+            && OWNER_SERVICE.equals(artifact.byteAccess().ownerService())
+            && RETRIEVAL_CONTRACT.equals(artifact.byteAccess().retrievalContract());
+    }
+
+    @Override
+    public AnalysisArtifactReference verify(
+        de.burger.forensics.analytics.services.analysisstore.domain.AnalysisRunId analysisRunId,
+        de.burger.forensics.analytics.services.analysisstore.domain.AnalysisJobId analysisJobId,
+        de.burger.forensics.analytics.services.analysisstore.domain.SourceSnapshotId sourceSnapshotId,
+        String requestId,
+        String correlationId,
+        AnalysisArtifactReference artifact,
+        Map<String, String> safeAttributes
+    ) {
+        return read(analysisRunId, analysisJobId, sourceSnapshotId, requestId, correlationId, artifact, safeAttributes)
+            .artifact();
+    }
+
     public SourceFactArtifactBytes read(
         de.burger.forensics.analytics.services.analysisstore.domain.AnalysisRunId analysisRunId,
         de.burger.forensics.analytics.services.analysisstore.domain.AnalysisJobId analysisJobId,
@@ -72,14 +141,18 @@ public final class JavaAstSourceFactArtifactClient implements AutoCloseable {
                     artifactReference,
                     safeAttributes
                 ));
-            if (!artifactReference.artifact().sha256().equals(response.getSha256())) {
+            var content = response.getContent().toByteArray();
+            var contentSha256 = sha256(content);
+            if (!artifactReference.artifact().sha256().equals(response.getSha256())
+                || !artifactReference.artifact().sha256().equals(contentSha256)) {
                 throw new IllegalStateException("Java AST source fact artifact checksum mismatch");
             }
             if (artifactReference.artifact().sizeBytes() != response.getSizeBytes()
-                || artifactReference.artifact().sizeBytes() != response.getContent().size()) {
+                || artifactReference.artifact().sizeBytes() != content.length) {
                 throw new IllegalStateException("Java AST source fact artifact size mismatch");
             }
-            return new SourceFactArtifactBytes(artifactReference, response.getContent().toByteArray());
+            requireVerifiedArtifactMetadata(artifactReference, response.getSourceFactArtifact());
+            return new SourceFactArtifactBytes(canonicalArtifact(response.getSourceFactArtifact()), content);
         } catch (StatusRuntimeException error) {
             throw new IllegalStateException("Java AST source fact artifact retrieval failed with status "
                 + error.getStatus().getCode());
@@ -111,12 +184,109 @@ public final class JavaAstSourceFactArtifactClient implements AutoCloseable {
     }
 
     private static void requireJavaAstOwnerApi(AnalysisArtifactReference artifact) {
-        if (!OWNER_SERVICE.equals(artifact.byteAccess().ownerService())) {
+        if (artifact.category() != AnalysisArtifactCategory.STATIC) {
+            throw new IllegalArgumentException("source fact artifact must be static");
+        }
+        if (!OWNER_SERVICE.equals(artifact.producerService())
+            || !OWNER_SERVICE.equals(artifact.byteAccess().ownerService())) {
             throw new IllegalArgumentException("source fact artifact bytes must be owned by Java AST Analysis");
         }
         if (!RETRIEVAL_CONTRACT.equals(artifact.byteAccess().retrievalContract())) {
             throw new IllegalArgumentException("source fact artifact retrieval contract is not the Java AST owner API");
         }
+    }
+
+    private static void requireVerifiedArtifactMetadata(
+        AnalysisArtifactReference expected,
+        de.burger.forensics.analytics.analysisjob.v1.AnalysisArtifactReference actual
+    ) {
+        if (!metadataSignature(expected).equals(metadataSignature(actual))) {
+            throw new IllegalStateException("Java AST source fact artifact metadata mismatch");
+        }
+    }
+
+    private static List<String> metadataSignature(AnalysisArtifactReference artifact) {
+        return List.of(
+            de.burger.forensics.analytics.analysisjob.v1.AnalysisArtifactCategory.ANALYSIS_ARTIFACT_CATEGORY_STATIC.name(),
+            artifact.producerService(),
+            artifact.artifact().path(),
+            artifact.artifact().type(),
+            artifact.artifact().sha256(),
+            Long.toString(artifact.artifact().sizeBytes()),
+            artifact.schemaVersion(),
+            completeness(artifact.completeness()).name(),
+            artifact.byteAccess().ownerService(),
+            artifact.byteAccess().retrievalContract(),
+            artifact.byteAccess().retrievalReference(),
+            byteCustody(artifact.byteAccess().byteCustody()).name()
+        );
+    }
+
+    private static List<String> metadataSignature(
+        de.burger.forensics.analytics.analysisjob.v1.AnalysisArtifactReference artifact
+    ) {
+        return List.of(
+            artifact.getCategory().name(),
+            artifact.getProducerService(),
+            artifact.getArtifact().getPath(),
+            artifact.getArtifact().getType(),
+            artifact.getArtifact().getSha256(),
+            Long.toString(artifact.getArtifact().getSizeBytes()),
+            artifact.getSchemaVersion(),
+            artifact.getCompleteness().name(),
+            artifact.getByteAccess().getOwnerService(),
+            artifact.getByteAccess().getRetrievalContract(),
+            artifact.getByteAccess().getRetrievalReference(),
+            artifact.getByteAccess().getByteCustody().name()
+        );
+    }
+
+    private static AnalysisArtifactReference canonicalArtifact(
+        de.burger.forensics.analytics.analysisjob.v1.AnalysisArtifactReference artifact
+    ) {
+        return new AnalysisArtifactReference(
+            new ArtifactReference(
+                artifact.getArtifact().getPath(),
+                artifact.getArtifact().getType(),
+                artifact.getArtifact().getSha256(),
+                artifact.getArtifact().getSizeBytes()
+            ),
+            AnalysisArtifactCategory.STATIC,
+            artifact.getProducerService(),
+            artifact.getSchemaVersion(),
+            completeness(artifact.getCompleteness()),
+            new ArtifactByteAccess(
+                artifact.getByteAccess().getOwnerService(),
+                artifact.getByteAccess().getRetrievalContract(),
+                artifact.getByteAccess().getRetrievalReference(),
+                byteCustody(artifact.getByteAccess().getByteCustody())
+            )
+        );
+    }
+
+    private static de.burger.forensics.analytics.analysisjob.v1.AnalysisCompleteness completeness(
+        AnalysisCompleteness completeness
+    ) {
+        return PROTO_COMPLETENESS.get(completeness);
+    }
+
+    private static AnalysisCompleteness completeness(
+        de.burger.forensics.analytics.analysisjob.v1.AnalysisCompleteness completeness
+    ) {
+        return DOMAIN_COMPLETENESS.getOrDefault(completeness, AnalysisCompleteness.UNKNOWN);
+    }
+
+    private static de.burger.forensics.analytics.analysisjob.v1.ArtifactByteCustody byteCustody(
+        ArtifactByteCustody custody
+    ) {
+        return PROTO_BYTE_CUSTODY.get(custody);
+    }
+
+    private static ArtifactByteCustody byteCustody(
+        de.burger.forensics.analytics.analysisjob.v1.ArtifactByteCustody custody
+    ) {
+        return java.util.Optional.ofNullable(DOMAIN_BYTE_CUSTODY.get(custody))
+            .orElseThrow(() -> new IllegalStateException("Java AST source fact artifact byte custody must be specified"));
     }
 
     private static String requireText(String value, String fieldName) {
@@ -131,6 +301,14 @@ public final class JavaAstSourceFactArtifactClient implements AutoCloseable {
             throw new IllegalArgumentException(fieldName + " must be positive");
         }
         return value;
+    }
+
+    private static String sha256(byte[] content) {
+        try {
+            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(content));
+        } catch (NoSuchAlgorithmException error) {
+            throw new IllegalStateException("SHA-256 is not available", error);
+        }
     }
 
     @Override

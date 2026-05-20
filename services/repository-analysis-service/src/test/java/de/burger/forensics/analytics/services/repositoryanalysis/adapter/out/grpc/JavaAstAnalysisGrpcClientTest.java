@@ -128,6 +128,91 @@ class JavaAstAnalysisGrpcClientTest {
     }
 
     @Test
+    void mapsScopedAndExplicitJavaAstByteCustodyBranches() throws Exception {
+        var scopedClient = startClient(new VariantJavaAstService(
+            AnalysisCompleteness.ANALYSIS_COMPLETENESS_COMPLETE,
+            List.of(DiagnosticSeverity.DIAGNOSTIC_SEVERITY_WARNING),
+            ArtifactByteCustody.ARTIFACT_BYTE_CUSTODY_SCOPED_OBJECT_ACCESS
+        ));
+
+        var scoped = scopedClient.analyze(command());
+
+        assertEquals(
+            de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.ArtifactByteCustody.SCOPED_OBJECT_ACCESS,
+            scoped.sourceFactArtifactByteAccess().byteCustody()
+        );
+
+        stopServer();
+        var explicitClient = startClient(new VariantJavaAstService(
+            AnalysisCompleteness.ANALYSIS_COMPLETENESS_COMPLETE,
+            List.of(DiagnosticSeverity.DIAGNOSTIC_SEVERITY_WARNING),
+            ArtifactByteCustody.ARTIFACT_BYTE_CUSTODY_EXPLICIT_HANDOFF
+        ));
+
+        var explicit = explicitClient.analyze(command());
+
+        assertEquals(
+            de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.ArtifactByteCustody.EXPLICIT_HANDOFF,
+            explicit.sourceFactArtifactByteAccess().byteCustody()
+        );
+    }
+
+    @Test
+    void rejectsUnverifiedJavaAstSourceFactArtifactMetadata() throws Exception {
+        var nonStaticClient = startClient(new InvalidArtifactJavaAstService(
+            AnalysisArtifactCategory.ANALYSIS_ARTIFACT_CATEGORY_RUNTIME,
+            "java-ast-analysis-service",
+            "java-ast-analysis-service",
+            "java-ast-analysis.v1.JavaAstAnalysisService.GetSourceFactArtifactBytes"
+        ));
+
+        var nonStaticFailure = assertThrows(IllegalArgumentException.class, () -> nonStaticClient.analyze(command()));
+        assertEquals("Java AST source fact artifact must be static", nonStaticFailure.getMessage());
+
+        stopServer();
+        var wrongProducerClient = startClient(new InvalidArtifactJavaAstService(
+            AnalysisArtifactCategory.ANALYSIS_ARTIFACT_CATEGORY_STATIC,
+            "other-service",
+            "java-ast-analysis-service",
+            "java-ast-analysis.v1.JavaAstAnalysisService.GetSourceFactArtifactBytes"
+        ));
+
+        var wrongProducerFailure = assertThrows(IllegalArgumentException.class, () -> wrongProducerClient.analyze(command()));
+        assertEquals("Java AST source fact artifact must be owned by Java AST Analysis", wrongProducerFailure.getMessage());
+
+        stopServer();
+        var wrongOwnerClient = startClient(new InvalidArtifactJavaAstService(
+            AnalysisArtifactCategory.ANALYSIS_ARTIFACT_CATEGORY_STATIC,
+            "java-ast-analysis-service",
+            "other-service",
+            "java-ast-analysis.v1.JavaAstAnalysisService.GetSourceFactArtifactBytes"
+        ));
+
+        var wrongOwnerFailure = assertThrows(IllegalArgumentException.class, () -> wrongOwnerClient.analyze(command()));
+        assertEquals("Java AST source fact artifact must be owned by Java AST Analysis", wrongOwnerFailure.getMessage());
+
+        stopServer();
+        var wrongContractClient = startClient(new InvalidArtifactJavaAstService(
+            AnalysisArtifactCategory.ANALYSIS_ARTIFACT_CATEGORY_STATIC,
+            "java-ast-analysis-service",
+            "java-ast-analysis-service",
+            "other.v1.Bytes"
+        ));
+
+        var wrongContractFailure = assertThrows(IllegalArgumentException.class, () -> wrongContractClient.analyze(command()));
+        assertEquals("Java AST source fact artifact retrieval contract is not verified", wrongContractFailure.getMessage());
+    }
+
+    @Test
+    void rejectsUnspecifiedJavaAstByteCustody() throws Exception {
+        var client = startClient(new UnspecifiedByteCustodyJavaAstService());
+
+        var failure = assertThrows(IllegalArgumentException.class, () -> client.analyze(command()));
+
+        assertEquals("Java AST source fact artifact byte custody must be specified", failure.getMessage());
+    }
+
+    @Test
     void closesManagedChannelClient() {
         var client = new JavaAstAnalysisGrpcClient("127.0.0.1", 1, 1);
 
@@ -218,10 +303,20 @@ class JavaAstAnalysisGrpcClientTest {
     private static final class VariantJavaAstService extends JavaAstAnalysisServiceGrpc.JavaAstAnalysisServiceImplBase {
         private final AnalysisCompleteness completeness;
         private final List<DiagnosticSeverity> severities;
+        private final ArtifactByteCustody custody;
 
         private VariantJavaAstService(AnalysisCompleteness completeness, List<DiagnosticSeverity> severities) {
+            this(completeness, severities, ArtifactByteCustody.ARTIFACT_BYTE_CUSTODY_PRODUCER_RETAINED);
+        }
+
+        private VariantJavaAstService(
+            AnalysisCompleteness completeness,
+            List<DiagnosticSeverity> severities,
+            ArtifactByteCustody custody
+        ) {
             this.completeness = completeness;
             this.severities = severities;
+            this.custody = custody;
         }
 
         @Override
@@ -248,7 +343,7 @@ class JavaAstAnalysisGrpcClientTest {
                     .setProducerService("java-ast-analysis-service")
                     .setSchemaVersion("schema-v1")
                     .setCompleteness(completeness)
-                    .setByteAccess(byteAccess()))
+                    .setByteAccess(byteAccess(custody)))
                 .setSummary(ScanSummary.newBuilder()
                     .setReceivedFileCount(1)
                     .setParsedFileCount(1)
@@ -266,6 +361,64 @@ class JavaAstAnalysisGrpcClientTest {
         }
     }
 
+    private static final class InvalidArtifactJavaAstService extends JavaAstAnalysisServiceGrpc.JavaAstAnalysisServiceImplBase {
+        private final AnalysisArtifactCategory category;
+        private final String producerService;
+        private final String byteOwnerService;
+        private final String retrievalContract;
+
+        private InvalidArtifactJavaAstService(
+            AnalysisArtifactCategory category,
+            String producerService,
+            String byteOwnerService,
+            String retrievalContract
+        ) {
+            this.category = category;
+            this.producerService = producerService;
+            this.byteOwnerService = byteOwnerService;
+            this.retrievalContract = retrievalContract;
+        }
+
+        @Override
+        public void analyzeSourceSnapshot(
+            AnalyzeSourceSnapshotRequest request,
+            StreamObserver<AnalyzeSourceSnapshotResponse> responseObserver
+        ) {
+            responseObserver.onNext(AnalyzeSourceSnapshotResponse.newBuilder()
+                .setStatus(OperationStatus.newBuilder()
+                    .setCode("ANALYZED")
+                    .setMessage("Java AST analysis completed")
+                    .setCorrelationId(request.getCorrelationId()))
+                .setAnalysisRunId(AnalysisRunId.newBuilder().setValue(request.getAnalysisRunId().getValue()))
+                .setAnalysisJobId(AnalysisJobId.newBuilder().setValue(request.getAnalysisJobId().getValue()))
+                .setSourceSnapshotId(SourceSnapshotId.newBuilder().setValue(request.getSourceSnapshotId().getValue()))
+                .setCompleteness(AnalysisCompleteness.ANALYSIS_COMPLETENESS_COMPLETE)
+                .setSourceFactArtifact(AnalysisArtifactReference.newBuilder()
+                    .setArtifact(ArtifactReference.newBuilder()
+                        .setPath("java-ast/snapshot-1-source-facts.json")
+                        .setType("application/vnd.forensic-analytics.java-ast-source-facts.v1+json")
+                        .setSha256("f".repeat(64))
+                        .setSizeBytes(100))
+                    .setCategory(category)
+                    .setProducerService(producerService)
+                    .setSchemaVersion("schema-v1")
+                    .setCompleteness(AnalysisCompleteness.ANALYSIS_COMPLETENESS_COMPLETE)
+                    .setByteAccess(ArtifactByteAccess.newBuilder()
+                        .setOwnerService(byteOwnerService)
+                        .setRetrievalContract(retrievalContract)
+                        .setRetrievalReference("java-ast/snapshot-1-source-facts.json")
+                        .setByteCustody(ArtifactByteCustody.ARTIFACT_BYTE_CUSTODY_PRODUCER_RETAINED)))
+                .setSummary(ScanSummary.newBuilder()
+                    .setReceivedFileCount(1)
+                    .setParsedFileCount(1)
+                    .setSourceFactCount(1)
+                    .setParser("JavaParser")
+                    .setParserVersion("3.27.1"))
+                .build());
+            responseObserver.onCompleted();
+        }
+    }
+
     private static final class FailingJavaAstService extends JavaAstAnalysisServiceGrpc.JavaAstAnalysisServiceImplBase {
         @Override
         public void analyzeSourceSnapshot(
@@ -278,12 +431,56 @@ class JavaAstAnalysisGrpcClientTest {
         }
     }
 
+    private static final class UnspecifiedByteCustodyJavaAstService extends JavaAstAnalysisServiceGrpc.JavaAstAnalysisServiceImplBase {
+        @Override
+        public void analyzeSourceSnapshot(
+            AnalyzeSourceSnapshotRequest request,
+            StreamObserver<AnalyzeSourceSnapshotResponse> responseObserver
+        ) {
+            responseObserver.onNext(AnalyzeSourceSnapshotResponse.newBuilder()
+                .setStatus(OperationStatus.newBuilder()
+                    .setCode("ANALYZED")
+                    .setMessage("Java AST analysis completed")
+                    .setCorrelationId(request.getCorrelationId()))
+                .setAnalysisRunId(AnalysisRunId.newBuilder().setValue(request.getAnalysisRunId().getValue()))
+                .setAnalysisJobId(AnalysisJobId.newBuilder().setValue(request.getAnalysisJobId().getValue()))
+                .setSourceSnapshotId(SourceSnapshotId.newBuilder().setValue(request.getSourceSnapshotId().getValue()))
+                .setCompleteness(AnalysisCompleteness.ANALYSIS_COMPLETENESS_COMPLETE)
+                .setSourceFactArtifact(AnalysisArtifactReference.newBuilder()
+                    .setArtifact(ArtifactReference.newBuilder()
+                        .setPath("java-ast/snapshot-1-source-facts.json")
+                        .setType("application/vnd.forensic-analytics.java-ast-source-facts.v1+json")
+                        .setSha256("e".repeat(64))
+                        .setSizeBytes(100))
+                    .setCategory(AnalysisArtifactCategory.ANALYSIS_ARTIFACT_CATEGORY_STATIC)
+                    .setProducerService("java-ast-analysis-service")
+                    .setSchemaVersion("schema-v1")
+                    .setCompleteness(AnalysisCompleteness.ANALYSIS_COMPLETENESS_COMPLETE)
+                    .setByteAccess(ArtifactByteAccess.newBuilder()
+                        .setOwnerService("java-ast-analysis-service")
+                        .setRetrievalContract("java-ast-analysis.v1.JavaAstAnalysisService.GetSourceFactArtifactBytes")
+                        .setRetrievalReference("java-ast/snapshot-1-source-facts.json")))
+                .setSummary(ScanSummary.newBuilder()
+                    .setReceivedFileCount(1)
+                    .setParsedFileCount(1)
+                    .setSourceFactCount(1)
+                    .setParser("JavaParser")
+                    .setParserVersion("3.27.1"))
+                .build());
+            responseObserver.onCompleted();
+        }
+    }
+
     private static ArtifactByteAccess byteAccess() {
+        return byteAccess(ArtifactByteCustody.ARTIFACT_BYTE_CUSTODY_PRODUCER_RETAINED);
+    }
+
+    private static ArtifactByteAccess byteAccess(ArtifactByteCustody custody) {
         return ArtifactByteAccess.newBuilder()
             .setOwnerService("java-ast-analysis-service")
             .setRetrievalContract("java-ast-analysis.v1.JavaAstAnalysisService.GetSourceFactArtifactBytes")
             .setRetrievalReference("java-ast/snapshot-1-source-facts.json")
-            .setByteCustody(ArtifactByteCustody.ARTIFACT_BYTE_CUSTODY_PRODUCER_RETAINED)
+            .setByteCustody(custody)
             .build();
     }
 }

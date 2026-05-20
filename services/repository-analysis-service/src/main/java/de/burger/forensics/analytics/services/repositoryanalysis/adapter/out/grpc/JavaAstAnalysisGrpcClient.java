@@ -26,6 +26,10 @@ import io.grpc.StatusRuntimeException;
 import java.util.concurrent.TimeUnit;
 
 public final class JavaAstAnalysisGrpcClient implements JavaAstAnalysisPort, AutoCloseable {
+    private static final String JAVA_AST_OWNER_SERVICE = "java-ast-analysis-service";
+    private static final String SOURCE_FACT_RETRIEVAL_CONTRACT =
+        "java-ast-analysis.v1.JavaAstAnalysisService.GetSourceFactArtifactBytes";
+
     private final ManagedChannel channel;
     private final JavaAstAnalysisServiceGrpc.JavaAstAnalysisServiceBlockingStub stub;
     private final long deadlineSeconds;
@@ -52,6 +56,7 @@ public final class JavaAstAnalysisGrpcClient implements JavaAstAnalysisPort, Aut
             var response = stub
                 .withDeadlineAfter(deadlineSeconds, TimeUnit.SECONDS)
                 .analyzeSourceSnapshot(request(command));
+            requireJavaAstSourceFactArtifact(response.getSourceFactArtifact());
             return new JavaAstAnalysisHandoffResult(
                 new de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.AnalysisRunId(
                     response.getAnalysisRunId().getValue()
@@ -150,10 +155,28 @@ public final class JavaAstAnalysisGrpcClient implements JavaAstAnalysisPort, Aut
         de.burger.forensics.analytics.analysisjob.v1.ArtifactByteCustody byteCustody
     ) {
         return switch (byteCustody) {
+            case ARTIFACT_BYTE_CUSTODY_PRODUCER_RETAINED -> ArtifactByteCustody.PRODUCER_RETAINED;
             case ARTIFACT_BYTE_CUSTODY_SCOPED_OBJECT_ACCESS -> ArtifactByteCustody.SCOPED_OBJECT_ACCESS;
             case ARTIFACT_BYTE_CUSTODY_EXPLICIT_HANDOFF -> ArtifactByteCustody.EXPLICIT_HANDOFF;
-            default -> ArtifactByteCustody.PRODUCER_RETAINED;
+            case ARTIFACT_BYTE_CUSTODY_UNSPECIFIED, UNRECOGNIZED ->
+                throw new IllegalArgumentException("Java AST source fact artifact byte custody must be specified");
         };
+    }
+
+    private static void requireJavaAstSourceFactArtifact(
+        de.burger.forensics.analytics.analysisjob.v1.AnalysisArtifactReference artifact
+    ) {
+        if (artifact.getCategory()
+            != de.burger.forensics.analytics.analysisjob.v1.AnalysisArtifactCategory.ANALYSIS_ARTIFACT_CATEGORY_STATIC) {
+            throw new IllegalArgumentException("Java AST source fact artifact must be static");
+        }
+        if (!JAVA_AST_OWNER_SERVICE.equals(artifact.getProducerService())
+            || !JAVA_AST_OWNER_SERVICE.equals(artifact.getByteAccess().getOwnerService())) {
+            throw new IllegalArgumentException("Java AST source fact artifact must be owned by Java AST Analysis");
+        }
+        if (!SOURCE_FACT_RETRIEVAL_CONTRACT.equals(artifact.getByteAccess().getRetrievalContract())) {
+            throw new IllegalArgumentException("Java AST source fact artifact retrieval contract is not verified");
+        }
     }
 
     private static de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.DiagnosticSeverity severity(

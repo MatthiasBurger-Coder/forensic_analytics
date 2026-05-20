@@ -66,20 +66,32 @@ class AnalysisStoreServiceApplicationTest {
     void rejectsInvalidServicePropertiesAndKeepsDisabledLifecyclesStopped() {
         assertThrows(NullPointerException.class, () -> new AnalysisStoreServiceProperties(
             null,
-            new AnalysisStoreServiceProperties.Health(true, "127.0.0.1", 0)
+            new AnalysisStoreServiceProperties.Health(true, "127.0.0.1", 0),
+            javaAstAnalysis()
         ));
         assertThrows(NullPointerException.class, () -> new AnalysisStoreServiceProperties(
             new AnalysisStoreServiceProperties.Grpc(true, "127.0.0.1", 0),
+            null,
+            javaAstAnalysis()
+        ));
+        assertThrows(NullPointerException.class, () -> new AnalysisStoreServiceProperties(
+            new AnalysisStoreServiceProperties.Grpc(true, "127.0.0.1", 0),
+            new AnalysisStoreServiceProperties.Health(true, "127.0.0.1", 0),
             null
         ));
         assertThrows(IllegalArgumentException.class, () -> new AnalysisStoreServiceProperties.Grpc(true, " ", 0));
         assertThrows(IllegalArgumentException.class, () -> new AnalysisStoreServiceProperties.Grpc(true, null, 0));
         assertThrows(IllegalArgumentException.class, () -> new AnalysisStoreServiceProperties.Health(true, "127.0.0.1", -1));
         assertThrows(IllegalArgumentException.class, () -> new AnalysisStoreServiceProperties.Health(true, "127.0.0.1", 65_536));
+        assertThrows(IllegalArgumentException.class, () -> new AnalysisStoreServiceProperties.ClientGrpc(" ", 9093, 30, 1));
+        assertThrows(IllegalArgumentException.class, () -> new AnalysisStoreServiceProperties.ClientGrpc("127.0.0.1", -1, 30, 1));
+        assertThrows(IllegalArgumentException.class, () -> new AnalysisStoreServiceProperties.ClientGrpc("127.0.0.1", 9093, 0, 1));
+        assertThrows(IllegalArgumentException.class, () -> new AnalysisStoreServiceProperties.ClientGrpc("127.0.0.1", 9093, 30, 0));
 
         var properties = new AnalysisStoreServiceProperties(
             new AnalysisStoreServiceProperties.Grpc(false, "127.0.0.1", 0),
-            new AnalysisStoreServiceProperties.Health(false, "127.0.0.1", 0)
+            new AnalysisStoreServiceProperties.Health(false, "127.0.0.1", 0),
+            javaAstAnalysis()
         );
         var grpc = new GrpcServerLifecycle(properties, null);
         var health = new HealthHttpServerLifecycle(properties, grpc);
@@ -101,7 +113,8 @@ class AnalysisStoreServiceApplicationTest {
     void healthEndpointReportsDownWhenGrpcIsExpectedButStopped() throws Exception {
         var properties = new AnalysisStoreServiceProperties(
             new AnalysisStoreServiceProperties.Grpc(true, "127.0.0.1", 0),
-            new AnalysisStoreServiceProperties.Health(true, "127.0.0.1", 0)
+            new AnalysisStoreServiceProperties.Health(true, "127.0.0.1", 0),
+            javaAstAnalysis()
         );
         var grpc = new GrpcServerLifecycle(properties, null);
         var health = new HealthHttpServerLifecycle(properties, grpc);
@@ -154,5 +167,11 @@ class AnalysisStoreServiceApplicationTest {
     private static int healthResponseCode(int port) throws Exception {
         var connection = URI.create("http://127.0.0.1:" + port + "/health").toURL().openConnection();
         return ((java.net.HttpURLConnection) connection).getResponseCode();
+    }
+
+    private static AnalysisStoreServiceProperties.JavaAstAnalysis javaAstAnalysis() {
+        return new AnalysisStoreServiceProperties.JavaAstAnalysis(
+            new AnalysisStoreServiceProperties.ClientGrpc("127.0.0.1", 9093, 30, 104_857_600)
+        );
     }
 }

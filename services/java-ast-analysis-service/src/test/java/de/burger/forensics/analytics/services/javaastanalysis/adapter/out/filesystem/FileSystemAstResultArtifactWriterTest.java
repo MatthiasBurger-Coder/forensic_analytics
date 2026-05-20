@@ -1,6 +1,8 @@
 package de.burger.forensics.analytics.services.javaastanalysis.adapter.out.filesystem;
 
 import de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.AnalysisArtifactCategory;
+import de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.AnalysisArtifactReference;
+import de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.AnalysisCompleteness;
 import de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.AnalysisJobId;
 import de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.AnalysisRunId;
 import de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.DiagnosticSeverity;
@@ -10,6 +12,7 @@ import de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnal
 import de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.RequestMetadata;
 import de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.ScanSummary;
 import de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.SourceLocation;
+import de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.SourceFactArtifactBytesRequest;
 import de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.SourceSnapshotId;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -79,6 +82,94 @@ class FileSystemAstResultArtifactWriterTest {
         );
     }
 
+    @Test
+    void readsSourceFactBytesAndPreservesCompleteMetadata() {
+        var writer = new FileSystemAstResultArtifactWriter(tempDir);
+        var artifact = writer.write(metadata(), List.of(), List.of(), new ScanSummary(0, 0, 0, 0, 0, "JavaParser", "3.27.1"));
+
+        var bytes = writer.read(request(artifact));
+
+        assertEquals(AnalysisCompleteness.COMPLETE, bytes.artifact().completeness());
+        assertEquals("java-ast-analysis-service", bytes.artifact().byteAccess().ownerService());
+        assertEquals(Map.of("tenant", "demo"), bytes.safeAttributes());
+        assertTrue(new String(bytes.content(), java.nio.charset.StandardCharsets.UTF_8).contains("\"sourceFacts\": []"));
+    }
+
+    @Test
+    void rejectsUnavailableOversizedMismatchedAndWrongIdentityArtifacts() {
+        var writer = new FileSystemAstResultArtifactWriter(tempDir);
+        var artifact = writer.write(metadata(), List.of(), List.of(), new ScanSummary(0, 0, 0, 0, 0, "JavaParser", "3.27.1"));
+
+        var unavailable = assertThrows(
+            IllegalStateException.class,
+            () -> writer.read(request("java-ast/missing-source-facts.json", "a".repeat(64), 0, 1, "java-ast-analysis-v1"))
+        );
+        assertEquals("Source fact artifact is not available", unavailable.getMessage());
+
+        var oversized = assertThrows(
+            IllegalStateException.class,
+            () -> writer.read(request(
+                artifact.artifact().path(),
+                artifact.artifact().sha256(),
+                artifact.artifact().sizeBytes(),
+                artifact.artifact().sizeBytes() - 1,
+                "java-ast-analysis-v1"
+            ))
+        );
+        assertEquals("Source fact artifact exceeds requested byte limit", oversized.getMessage());
+
+        var sizeMismatch = assertThrows(
+            IllegalStateException.class,
+            () -> writer.read(request(
+                artifact.artifact().path(),
+                artifact.artifact().sha256(),
+                artifact.artifact().sizeBytes() + 1,
+                artifact.artifact().sizeBytes() + 1,
+                "java-ast-analysis-v1"
+            ))
+        );
+        assertEquals("Source fact artifact size mismatch", sizeMismatch.getMessage());
+
+        var checksumMismatch = assertThrows(
+            IllegalStateException.class,
+            () -> writer.read(request(
+                artifact.artifact().path(),
+                "b".repeat(64),
+                artifact.artifact().sizeBytes(),
+                artifact.artifact().sizeBytes(),
+                "java-ast-analysis-v1"
+            ))
+        );
+        assertEquals("Source fact artifact checksum mismatch", checksumMismatch.getMessage());
+
+        var runIdentityMismatch = assertThrows(
+            IllegalStateException.class,
+            () -> writer.read(request(
+                artifact.artifact().path(),
+                artifact.artifact().sha256(),
+                artifact.artifact().sizeBytes(),
+                artifact.artifact().sizeBytes(),
+                "java-ast-analysis-v1",
+                new AnalysisRunId("run-2"),
+                new AnalysisJobId("job-1"),
+                new SourceSnapshotId("snapshot-1")
+            ))
+        );
+        assertEquals("Source fact artifact identity mismatch", runIdentityMismatch.getMessage());
+
+        var identityMismatch = assertThrows(
+            IllegalStateException.class,
+            () -> writer.read(request(
+                artifact.artifact().path(),
+                artifact.artifact().sha256(),
+                artifact.artifact().sizeBytes(),
+                artifact.artifact().sizeBytes(),
+                "java-ast-analysis-v2"
+            ))
+        );
+        assertEquals("Source fact artifact identity mismatch", identityMismatch.getMessage());
+    }
+
     private static RequestMetadata metadata() {
         return new RequestMetadata(
             "request-1",
@@ -89,6 +180,60 @@ class FileSystemAstResultArtifactWriterTest {
             new AnalysisJobId("job-1"),
             new SourceSnapshotId("snapshot-1"),
             "java-ast-analysis-service-test",
+            Map.of("tenant", "demo")
+        );
+    }
+
+    private static SourceFactArtifactBytesRequest request(AnalysisArtifactReference artifact) {
+        return request(
+            artifact.artifact().path(),
+            artifact.artifact().sha256(),
+            artifact.artifact().sizeBytes(),
+            artifact.artifact().sizeBytes(),
+            artifact.schemaVersion()
+        );
+    }
+
+    private static SourceFactArtifactBytesRequest request(
+        String retrievalReference,
+        String expectedSha256,
+        long expectedSizeBytes,
+        long maxBytes,
+        String schemaVersion
+    ) {
+        return request(
+            retrievalReference,
+            expectedSha256,
+            expectedSizeBytes,
+            maxBytes,
+            schemaVersion,
+            new AnalysisRunId("run-1"),
+            new AnalysisJobId("job-1"),
+            new SourceSnapshotId("snapshot-1")
+        );
+    }
+
+    private static SourceFactArtifactBytesRequest request(
+        String retrievalReference,
+        String expectedSha256,
+        long expectedSizeBytes,
+        long maxBytes,
+        String schemaVersion,
+        AnalysisRunId analysisRunId,
+        AnalysisJobId analysisJobId,
+        SourceSnapshotId sourceSnapshotId
+    ) {
+        return new SourceFactArtifactBytesRequest(
+            "request-bytes",
+            "correlation-1",
+            analysisRunId,
+            analysisJobId,
+            sourceSnapshotId,
+            retrievalReference,
+            expectedSha256,
+            expectedSizeBytes,
+            maxBytes,
+            schemaVersion,
             Map.of("tenant", "demo")
         );
     }

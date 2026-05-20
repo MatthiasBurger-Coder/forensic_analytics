@@ -470,7 +470,7 @@ public final class JavaAstAnalysisDomain {
     }
 
     public record SourceFactArtifactBytes(
-        ArtifactReference artifact,
+        AnalysisArtifactReference artifact,
         byte[] content,
         Map<String, String> safeAttributes
     ) {

@@ -1,11 +1,13 @@
 package de.burger.forensics.analytics.services.analysisstore.bootstrap;
 
 import de.burger.forensics.analytics.services.analysisstore.adapter.in.grpc.AnalysisJobGrpcEndpoint;
+import de.burger.forensics.analytics.services.analysisstore.adapter.out.grpc.JavaAstSourceFactArtifactClient;
 import de.burger.forensics.analytics.services.analysisstore.adapter.out.memory.InMemoryAnalysisJobRepository;
 import de.burger.forensics.analytics.services.analysisstore.application.AnalysisJobApplicationService;
 import de.burger.forensics.analytics.services.analysisstore.application.InstrumentationTargetPlanningApplicationService;
 import de.burger.forensics.analytics.services.analysisstore.application.RepositoryToBtmOrchestrationApplicationService;
 import de.burger.forensics.analytics.services.analysisstore.application.port.AnalysisJobRepository;
+import de.burger.forensics.analytics.services.analysisstore.application.port.SourceFactArtifactByteVerifierPort;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -26,9 +28,16 @@ public class AnalysisStoreServiceConfiguration {
     @Bean
     public AnalysisJobApplicationService analysisJobApplicationService(
         AnalysisJobRepository analysisJobRepository,
-        Clock analysisStoreClock
+        Clock analysisStoreClock,
+        SourceFactArtifactByteVerifierPort sourceFactArtifactByteVerifier
     ) {
-        return new AnalysisJobApplicationService(analysisJobRepository, analysisStoreClock);
+        return new AnalysisJobApplicationService(analysisJobRepository, analysisStoreClock, sourceFactArtifactByteVerifier);
+    }
+
+    @Bean
+    public SourceFactArtifactByteVerifierPort sourceFactArtifactByteVerifierPort(AnalysisStoreServiceProperties properties) {
+        var grpc = properties.javaAstAnalysis().grpc();
+        return new JavaAstSourceFactArtifactClient(grpc.host(), grpc.port(), grpc.deadlineSeconds(), grpc.maxBytes());
     }
 
     @Bean

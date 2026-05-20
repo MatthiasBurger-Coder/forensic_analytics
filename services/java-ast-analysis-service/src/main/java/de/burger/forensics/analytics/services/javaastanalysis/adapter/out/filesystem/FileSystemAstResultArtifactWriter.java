@@ -111,13 +111,39 @@ public final class FileSystemAstResultArtifactWriter implements AstResultArtifac
             if (!checksum.equals(request.expectedSha256())) {
                 throw new IllegalStateException("Source fact artifact checksum mismatch");
             }
+            var document = GSON.fromJson(new String(bytes, StandardCharsets.UTF_8), AstArtifactDocument.class);
+            requireArtifactIdentity(request, document);
             return new SourceFactArtifactBytes(
-                new ArtifactReference(request.retrievalReference(), ARTIFACT_TYPE, checksum, bytes.length),
+                new AnalysisArtifactReference(
+                    new ArtifactReference(request.retrievalReference(), ARTIFACT_TYPE, checksum, bytes.length),
+                    AnalysisArtifactCategory.STATIC,
+                    PRODUCER_SERVICE,
+                    document.schemaVersion(),
+                    document.diagnostics().stream().anyMatch(JavaAstDiagnostic::affectsCompleteness)
+                        ? de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.AnalysisCompleteness.INCOMPLETE
+                        : de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.AnalysisCompleteness.COMPLETE,
+                    new ArtifactByteAccess(
+                        PRODUCER_SERVICE,
+                        BYTE_RETRIEVAL_CONTRACT,
+                        request.retrievalReference(),
+                        ArtifactByteCustody.PRODUCER_RETAINED
+                    )
+                ),
                 bytes,
                 request.safeAttributes()
             );
         } catch (IOException error) {
             throw new UncheckedIOException("Failed to read Java AST source fact artifact.", error);
+        }
+    }
+
+    private static void requireArtifactIdentity(SourceFactArtifactBytesRequest request, AstArtifactDocument document) {
+        if (document == null
+            || !document.analysisRunId().equals(request.analysisRunId().value())
+            || !document.analysisJobId().equals(request.analysisJobId().value())
+            || !document.sourceSnapshotId().equals(request.sourceSnapshotId().value())
+            || !document.schemaVersion().equals(request.schemaVersion())) {
+            throw new IllegalStateException("Source fact artifact identity mismatch");
         }
     }
 

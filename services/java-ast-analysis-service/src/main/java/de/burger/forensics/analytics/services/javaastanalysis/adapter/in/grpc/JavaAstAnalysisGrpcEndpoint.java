@@ -188,6 +188,7 @@ public final class JavaAstAnalysisGrpcEndpoint extends JavaAstAnalysisServiceGrp
         GetSourceFactArtifactBytesRequest request,
         SourceFactArtifactBytes bytes
     ) {
+        var artifact = bytes.artifact();
         return GetSourceFactArtifactBytesResponse.newBuilder()
             .setStatus(OperationStatus.newBuilder()
                 .setCode("SOURCE_FACT_ARTIFACT_BYTES_RETRIEVED")
@@ -199,22 +200,18 @@ public final class JavaAstAnalysisGrpcEndpoint extends JavaAstAnalysisServiceGrp
             .setSourceSnapshotId(request.getSourceSnapshotId())
             .setSourceFactArtifact(AnalysisArtifactReference.newBuilder()
                 .setArtifact(ArtifactReference.newBuilder()
-                    .setPath(bytes.artifact().path())
-                    .setType(bytes.artifact().type())
-                    .setSha256(bytes.artifact().sha256())
-                    .setSizeBytes(bytes.artifact().sizeBytes()))
+                    .setPath(artifact.artifact().path())
+                    .setType(artifact.artifact().type())
+                    .setSha256(artifact.artifact().sha256())
+                    .setSizeBytes(artifact.artifact().sizeBytes()))
                 .setCategory(AnalysisArtifactCategory.ANALYSIS_ARTIFACT_CATEGORY_STATIC)
-                .setProducerService("java-ast-analysis-service")
-                .setSchemaVersion(request.getSchemaVersion())
-                .setCompleteness(AnalysisCompleteness.ANALYSIS_COMPLETENESS_COMPLETE)
-                .setByteAccess(ArtifactByteAccess.newBuilder()
-                    .setOwnerService("java-ast-analysis-service")
-                    .setRetrievalContract("java-ast-analysis.v1.JavaAstAnalysisService.GetSourceFactArtifactBytes")
-                    .setRetrievalReference(bytes.artifact().path())
-                    .setByteCustody(ArtifactByteCustody.ARTIFACT_BYTE_CUSTODY_PRODUCER_RETAINED)))
+                .setProducerService(artifact.producerService())
+                .setSchemaVersion(artifact.schemaVersion())
+                .setCompleteness(completeness(artifact.completeness()))
+                .setByteAccess(byteAccess(artifact.byteAccess())))
             .setContent(ByteString.copyFrom(bytes.content()))
-            .setSha256(bytes.artifact().sha256())
-            .setSizeBytes(bytes.artifact().sizeBytes())
+            .setSha256(artifact.artifact().sha256())
+            .setSizeBytes(artifact.artifact().sizeBytes())
             .putAllSafeAttributes(bytes.safeAttributes())
             .build();
     }

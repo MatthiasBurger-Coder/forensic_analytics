@@ -2,6 +2,7 @@ package de.burger.forensics.analytics.services.javaastanalysis.adapter.in.grpc;
 
 import de.burger.forensics.analytics.analysisjob.v1.AnalysisJobId;
 import de.burger.forensics.analytics.analysisjob.v1.AnalysisRunId;
+import de.burger.forensics.analytics.analysisjob.v1.AnalysisCompleteness;
 import de.burger.forensics.analytics.analysisjob.v1.AnalysisWorkerKind;
 import de.burger.forensics.analytics.analysisjob.v1.ArtifactByteCustody;
 import de.burger.forensics.analytics.analysisjob.v1.SourceSnapshotId;
@@ -84,6 +85,7 @@ class JavaAstAnalysisGrpcEndpointTest {
         assertEquals(response.getSourceFactArtifact().getArtifact().getPath(), bytes.getSourceFactArtifact().getArtifact().getPath());
         assertEquals(response.getSourceFactArtifact().getArtifact().getSha256(), bytes.getSha256());
         assertEquals(response.getSourceFactArtifact().getArtifact().getSizeBytes(), bytes.getSizeBytes());
+        assertEquals(AnalysisCompleteness.ANALYSIS_COMPLETENESS_INCOMPLETE, bytes.getSourceFactArtifact().getCompleteness());
         assertEquals(
             FileSystemAstResultArtifactWriter.BYTE_RETRIEVAL_CONTRACT,
             bytes.getSourceFactArtifact().getByteAccess().getRetrievalContract()
