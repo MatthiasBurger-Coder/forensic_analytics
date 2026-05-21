@@ -74,6 +74,27 @@ Profile routing must not bypass S3 preflight, S3D lock checks, Typed Error
 Router ownership, checkpoint rules, `QUALITY.md` commands or active workflow
 STOP conditions.
 
+## Quality Impact Classification
+
+Before selecting quality commands, route the slice through
+`.agents/skills/quality-impact-classifier/SKILL.md`.
+
+The classifier returns one of:
+
+- `DOC_ONLY`
+- `GOVERNANCE_METADATA`
+- `PRODUCT_BUILD_AFFECTING`
+- `UNKNOWN`
+
+`DOC_ONLY` and `GOVERNANCE_METADATA` may use targeted documentation,
+structured-format, registry, routing or flowchart checks when the file set
+cannot influence product build, runtime behavior, contracts, tests,
+architecture or quality rules.
+
+`PRODUCT_BUILD_AFFECTING` requires the applicable `QUALITY.md` Gradle gate.
+`UNKNOWN` stops and escalates instead of guessing. A failed required gate must
+never be downgraded by classification.
+
 ## S3D Execution Orchestrator
 
 S3D runs after `S3_CLASSIFY` and before write-capable slice execution. It is the

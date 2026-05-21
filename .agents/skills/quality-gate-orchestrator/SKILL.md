@@ -14,6 +14,7 @@ This skill orchestrates quality evidence. It does not weaken tests, lower covera
 ## Responsibilities
 
 - Read `QUALITY.md` before documenting quality commands.
+- Classify the change through `quality-impact-classifier` before selecting commands.
 - Define narrow targeted checks for each slice.
 - Identify when Gradle minimum or full local gates are required.
 - Distinguish required, optional, unavailable and not-applicable checks.
@@ -67,6 +68,8 @@ the active workflow explicitly declares that report as a `D8` requirement.
 
 ## Collaboration Rules
 
+- Use `quality-impact-classifier` before selecting required, optional and
+  not-applicable commands.
 - Consult Senior Tester for test strategy and regression coverage.
 - Consult Senior DevOps for CI, Docker, deployment or build tooling checks.
 - Consult Senior System Architect for ArchUnit and architecture-sensitive checks.

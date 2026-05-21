@@ -26,6 +26,19 @@ git diff --check
 
 Documentation-only checks do not replace the minimum quality command when claiming commit readiness.
 
+## Quality Impact Matrix
+
+| Impact | Typical files | Required gate |
+|---|---|---|
+| `DOC_ONLY` | Markdown-only documentation with no command, branch, quality, routing, architecture or process-authority change | `git diff --check` plus targeted documentation review |
+| `GOVERNANCE_METADATA` | `.agents/**`, `.codex/**`, `docs/process/**`, `docs/agents/**`, `docs/governance/**`, `docs/workflow/**` without product-build impact | `git diff --check` plus targeted registry, routing, structured-format, arc42 or ADR checks |
+| `PRODUCT_BUILD_AFFECTING` | product source, tests, build logic, contracts, deployment, runtime wiring, dependency verification or `QUALITY.md` | targeted checks plus the applicable `QUALITY.md` Gradle gate |
+| `UNKNOWN` | unknown or conflicting impact | stop and escalate instead of guessing |
+
+The matrix may reduce unnecessary checks only when the changed file set cannot
+influence product build, runtime behavior, contracts, tests, architecture or
+quality rules. It must never mark a failed required gate as optional.
+
 ## Quality Dimensions
 
 - Build

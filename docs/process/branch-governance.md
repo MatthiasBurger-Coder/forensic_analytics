@@ -101,6 +101,12 @@ commit or release when build, tests, architecture validation, required
 documentation, workflow versioning or any required quality gate fails or is
 missing.
 
+Quality-impact classification may decide that a Gradle gate is not applicable
+for documentation-only or governance-metadata slices only when the affected
+file set cannot influence product build, runtime behavior, contracts, tests,
+architecture or quality rules. It must not downgrade a failed required gate or
+replace a required Gradle gate with `git diff --check`.
+
 `Q11` is the asynchronous execution report after `CP_FINAL`. It is
 non-blocking by default and must not block checkpoint push, normal PR creation
 or release preparation unless the active workflow explicitly promotes a

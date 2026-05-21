@@ -72,6 +72,7 @@ Must not change:
 | Execution Report Maintainer | `workflow execute` | Workflow Executor | record workflow version, slice ID, responsible agent, changed files, quality gates, commit SHA, rollback reference, documentation update status, push result and blockers |
 | Commit Traceability Maintainer | `workflow execute` | Senior Documentation Engineer / Workflow Executor | keep `CP_RECORD` fields, one-slice-one-commit evidence and workflow history synchronized |
 | Execution Profile Router | `workflow create`, `workflow execute` | Senior System Architect / Workflow Executor | classify requests as `FAST_PATH`, `NORMAL_PATH` or `FULL_PATH` before specialist routing without weakening mandatory gates |
+| Quality Impact Classifier | `workflow execute` | Senior Tester / Quality Gate Orchestrator | classify changed files as `DOC_ONLY`, `GOVERNANCE_METADATA`, `PRODUCT_BUILD_AFFECTING` or `UNKNOWN` before quality command selection |
 
 ## Governance Flowchart V2 Capability Linkage
 
@@ -83,7 +84,7 @@ Must not change:
 | Conflict Locking | Senior Swarm Orchestrator, S3D, Workflow Executor | VERIFIED |
 | Rollback Governance | Release and Branch Governance, Git Commit Preparation, Senior DevOps | VERIFIED |
 | Documentation Governance | Senior Documentation Engineer, Documentation Sync, `DOCROOT` | VERIFIED |
-| Quality Gate Classification | Senior Tester, Quality Gate Orchestrator, Quality Gate skill | VERIFIED |
+| Quality Gate Classification | Senior Tester, Quality Gate Orchestrator, Quality Gate skill, `skills/quality-impact-classifier/SKILL.md` | VERIFIED |
 | Execution Profile Routing | `skills/execution-profile-router/SKILL.md`, routing rules, Swarm Orchestrator | VERIFIED |
 | Flowchart Integrity Audit | Senior Documentation Engineer and Senior System Architect using `docs/governance/workflow/` rules | MAPPED_WITH_GAP: no dedicated flowchart-integrity skill exists |
 
