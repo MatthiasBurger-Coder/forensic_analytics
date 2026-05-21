@@ -167,6 +167,19 @@ classes remain inside the service build.
 evidence and rollback input. It is not a compatibility alias for
 `repository-source-service` and is not removed by S05.
 
+Slice S06 adds `services/ingestion-service` as target-service implementation
+evidence for the FA-MSA-001 ingestion boundary. It is registered as its own
+Gradle project and owns service-local domain, application ports, inbound gRPC
+adapter, file-based engine request adapter, in-memory session store,
+bootstrap, configuration, tests, README and Dockerfile. The predecessor
+`forensic-ingestion.proto` wire shape remains unchanged and generated
+transport classes stay inside the service build.
+
+`services/forensic-ingestion-service`, `forensic-analytics-ingestion-grpc` and
+`forensic-analytics-ingestion-request` remain current-state predecessor and
+rollback evidence. They are not compatibility aliases for `ingestion-service`
+and are not removed by S06.
+
 The orchestrator coordinates workflow state only. It must not own repository
 checkout, JavaParser scanning, Joern execution, report rendering or private
 persistence owned by another service.

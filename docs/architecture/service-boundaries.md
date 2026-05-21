@@ -3,7 +3,7 @@
 ## Status
 
 FA-MSA-001 Slice 04 service-boundary and data-ownership baseline with Slice 05
-repository-source implementation evidence.
+repository-source and Slice 06 ingestion implementation evidence.
 
 These are target boundaries. Current `services/**` directories and
 `forensic-analytics-*` modules are implementation evidence and migration
@@ -146,10 +146,28 @@ Outbound communication:
 
 Current evidence:
 
+- `services/ingestion-service`;
 - `forensic-analytics-ingestion-grpc`;
 - `forensic-analytics-ingestion-request`;
 - `services/forensic-ingestion-service`;
 - `contracts/grpc/forensic-ingestion.proto`.
+
+S06 implementation state:
+
+- registered Gradle project `services:ingestion-service`;
+- service-local package `de.burger.forensics.analytics.services.ingestion`;
+- service-local domain, application ports, inbound gRPC adapter, inbound engine
+  request file adapter, in-memory session adapter, bootstrap, configuration,
+  tests, README and Dockerfile;
+- local gRPC port `9090` and health port `8081`;
+- unchanged `contracts/grpc/forensic-ingestion.proto` wire shape and generated
+  transport classes kept service-local.
+
+`services/forensic-ingestion-service`, `forensic-analytics-ingestion-grpc` and
+`forensic-analytics-ingestion-request` remain predecessor and rollback
+evidence. S06 does not remove them, does not route production callers to the
+new service and does not claim Docker Compose, Docker Swarm or Kubernetes
+readiness for the target landscape.
 
 Stop conditions:
 

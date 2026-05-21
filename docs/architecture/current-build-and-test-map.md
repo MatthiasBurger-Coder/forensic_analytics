@@ -52,13 +52,15 @@ Verified from `settings.gradle.kts`:
 - `services:repository-source-service`
 - `services:repository-analysis-service`
 - `services:analysis-store-service`
+- `services:ingestion-service`
 - `services:forensic-ingestion-service`
 - `services:forensic-gateway-service`
 
-Eight service-specific Gradle projects under `services/**` are now registered.
-`services:repository-source-service` is the first FA-MSA-001 target-name service
-project introduced by this workflow. `services:repository-analysis-service`
-remains a predecessor service and rollback input, not a compatibility alias.
+Nine service-specific Gradle projects under `services/**` are now registered.
+`services:repository-source-service` and `services:ingestion-service` are the
+first FA-MSA-001 target-name service projects introduced by this workflow.
+`services:repository-analysis-service` and `services:forensic-ingestion-service`
+remain predecessor services and rollback inputs, not compatibility aliases.
 Graph-replay and report-generation remain README-only planned service roots and
 are explicitly deferred from repository-to-BTM acceptance by Slice 16. The
 build-artifact worker is planned by workflow v2 and retained by workflow v3; it
@@ -167,6 +169,7 @@ Existing Docker material:
 - `docker/joern/scripts/**`
 - `forensic-ui/Dockerfile`
 - `services/repository-source-service/Dockerfile`
+- `services/ingestion-service/Dockerfile`
 - `deployment/docker-compose/repository-to-btm.local.yml`
 
 The DevOps review verified Joern Compose configuration with:
@@ -183,6 +186,11 @@ Slice 05 adds a service-local Dockerfile for
 packaging evidence only; Compose, Swarm and Kubernetes readiness for the
 FA-MSA-001 target landscape remains future work until descriptors and
 validation commands exist.
+
+Slice 06 adds a service-local Dockerfile for `services/ingestion-service`.
+This is target-service container packaging evidence only; Compose, Swarm and
+Kubernetes readiness for the FA-MSA-001 target landscape remains future work
+until descriptors and validation commands exist.
 
 Slice 15 later verified the local repository-to-BTM Compose descriptor with
 six service `bootJar` tasks, `docker compose config`, `docker compose build`,

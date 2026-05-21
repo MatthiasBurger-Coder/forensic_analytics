@@ -153,6 +153,33 @@ Docker Swarm or Kubernetes deployment descriptors for the target landscape.
 Those readiness claims require later repository tooling and validation
 commands.
 
+Slice S06 adds `services/ingestion-service` as target-service deployment
+evidence. The service owns:
+
+- `services/ingestion-service/build.gradle.kts`;
+- `services/ingestion-service/Dockerfile`;
+- `services/ingestion-service/src/main/resources/application.properties`;
+- `services/ingestion-service/src/main/resources/application-docker.properties`;
+- a service-local health HTTP endpoint on port `8081`;
+- a service-local gRPC endpoint on port `9090`.
+
+The service can be packaged independently with:
+
+```bash
+./gradlew :services:ingestion-service:bootJar --dependency-verification strict --console=plain --stacktrace
+```
+
+It can be started locally with:
+
+```bash
+./gradlew :services:ingestion-service:bootRun --dependency-verification strict --console=plain --stacktrace
+```
+
+The service Dockerfile is service-owned, but S06 does not add Docker Compose,
+Docker Swarm or Kubernetes deployment descriptors for the target landscape.
+Those readiness claims require later repository tooling and validation
+commands.
+
 ## 7.7 Local Repository-to-BTM Transitional Landscape
 
 The repository currently contains a local Docker Compose descriptor for the

@@ -106,6 +106,32 @@ decision before persistence is split. Graph, replay, reports and LLM packages
 are projections or generated artifacts that must remain traceable to owner
 evidence APIs.
 
+Slice S06 verifies a local ingestion runtime boundary:
+
+```text
+producer / scanner / runtime collector
+  -> ForensicIngestionService gRPC request or stream
+  -> services/ingestion-service inbound adapter
+  -> service-local ingestion application service
+  -> service-local raw intake session state
+  -> accepted raw payload handoff port
+```
+
+The S06 service also supports service-local engine request manifest import:
+
+```text
+engine-request.json
+  -> service-local request reader
+  -> verified build, module, plugin and payload descriptors
+  -> payload file bytes
+  -> service-local ingestion application service
+```
+
+The manifest importer uses only verified fields from the request file. Missing
+fields, malformed JSON, unsupported payload kinds and missing payload files are
+reported as ingestion request errors. The importer does not write canonical
+static, semantic, runtime, report or orchestration facts.
+
 `query-report-api-service` remains a public facade in this flow. It must not
 sequence worker business logic directly, run analysis or read private service
 databases. `analysis-orchestrator-service` coordinates state, retry and

@@ -31,7 +31,7 @@
 | S03 | COMPLETED | Contract authorities aligned to FA-MSA-001 target services; wire/schema shapes unchanged; required Gradle test gate passed. |
 | S04 | COMPLETED | Data ownership, artifact custody, orchestration state and query/report ownership assigned; reviewer-required consistency docs included through S04 scope updates. |
 | S05 | COMPLETED | Repository source service extracted as first FA-MSA-001 target-name service; security remediation, service test, service packaging, root test and staged whitespace gate passed. |
-| S06 | PENDING | Ingestion service extraction |
+| S06 | COMPLETED | Ingestion service extracted as target-name service; Java backend race remediation, service test, service packaging, root test and staged whitespace gate passed. |
 | S07 | PENDING | JavaParser analysis service extraction |
 | S08 | PENDING | Joern analysis service extraction |
 | S09 | PENDING | Analysis orchestrator service boundary |
@@ -85,6 +85,14 @@
 | S05 | `git diff --cached --check` | PASS: no whitespace errors after staging tracked and newly added S05 files. |
 | S06 | S06 workflow-scope review | BLOCKED: S06 required arc42 documentation and execution-report updates, but `docs/arc42/**`, `docs/architecture/**`, `docs/workflow/execution-report.md` and `contracts/grpc/**` file locks were incomplete before implementation. |
 | S06 | `git diff --check` for S06 workflow-scope remediation | PASS: no whitespace errors before the S06 scope-remediation commit. |
+| S06 | `rg -n "project\\(\|de\\.burger\\.forensics\\.analytics\\.(application\|domain\|persistence\|observability\|ingestion\\.grpc\|ingestion\\.request)\\." services/ingestion-service/src/main/java services/ingestion-service/build.gradle.kts \|\| true` | PASS: no direct Gradle project dependency or forbidden monolith implementation package reference exists inside the new service production code. |
+| S06 | `./gradlew :services:ingestion-service:test --tests "de.burger.forensics.analytics.services.ingestion.application.IngestionApplicationServiceTest" --dependency-verification strict --console=plain --stacktrace` | FAILED before remediation: the new concurrent-upload regression exposed a test-harness latch mismatch. The test used 24 payloads but only 8 worker threads, so not every task could report readiness before the start gate opened. |
+| S06 | `./gradlew :services:ingestion-service:test --tests "de.burger.forensics.analytics.services.ingestion.application.IngestionApplicationServiceTest" --dependency-verification strict --console=plain --stacktrace` | PASS after remediation: build successful in 12s after using 24 workers and a thread-safe handoff counter. |
+| S06 | `./gradlew :services:ingestion-service:test --dependency-verification strict --console=plain --stacktrace` | PASS: build successful in 47s after Java backend race remediation. Gradle emitted protobuf/gRPC Java/native access warnings, but no task failed. |
+| S06 | `./gradlew :services:ingestion-service:bootJar --dependency-verification strict --console=plain --stacktrace` | PASS: build successful in 4s; service Boot jar packaged independently. |
+| S06 | `./gradlew test --dependency-verification strict --console=plain --stacktrace` | PASS: build successful in 25s after registering `services:ingestion-service`; 174 actionable tasks up-to-date. |
+| S06 | `git diff --check` | PASS: no whitespace errors after S06 implementation and documentation updates. The first run timed out at the tool's 34s default; the 120s rerun completed cleanly. |
+| S06 | `git diff --cached --check` | PASS: no whitespace errors after staging tracked and newly added S06 files. |
 
 ## Subagent Review Log
 
@@ -120,10 +128,16 @@
 | S06 | Senior gRPC/Proto Specialist subagent | BLOCKED before remediation: product implementation must wait until S06 workflow-scope remediation is finalized; after that, create `services/ingestion-service`, preserve `contracts/grpc/forensic-ingestion.proto` wire shape and keep `AnalyzeRepository` compatibility-only and `UNIMPLEMENTED`. |
 | S06 | Microservice Senior Expert subagent | PASS_WITH_PLAN: use `services/forensic-ingestion-service` as source evidence for a new target-owned `services/ingestion-service`; retain predecessor service and legacy ingestion modules as rollback/current paths, not aliases. |
 | S06 | Senior Tester subagent | BLOCKED before target service creation: do not substitute `services:forensic-ingestion-service` for the S06 target `services:ingestion-service`; once created, run the target service test, root test and final whitespace checks. |
+| S06 | Senior gRPC/Proto Specialist subagent | PASS after implementation: `forensic-ingestion.proto` wire shape remained unchanged, generated transport classes stay service-local, and `AnalyzeRepository` remains compatibility-only and `UNIMPLEMENTED`. |
+| S06 | Microservice Senior Expert subagent | PASS after implementation: `services:ingestion-service` is a target-name service root with local domain/application/adapters/bootstrap, its predecessor remains retained and no shared Java implementation module dependency was introduced. |
+| S06 | Ingestion Handoff Reviewer subagent | PASS after implementation: request-manifest import uses verified fields only, accepted payloads flow through a service-local handoff port and canonical fact writes remain out of scope. |
+| S06 | Senior Java Backend subagent | BLOCKED before remediation: `IngestionApplicationService.upload` used non-atomic read-modify-write session updates, creating a lost-update risk for concurrent uploads. |
+| S06 | Senior Java Backend subagent | PASS after remediation: upload, complete and abort mutate state through the service-local repository `update(...)` path; the in-memory adapter uses `ConcurrentHashMap.computeIfPresent` and the concurrent upload regression passed. |
+| S06 | Senior Tester subagent | PASS after final staging: target service test, service packaging, root test, scoped coupling scan, unstaged whitespace check and staged whitespace check passed. |
 
 ## Blockers
 
-No active blocker for S00, S01, S02, S03, S04 or S05 as completed workflow slices.
+No active blocker for S00, S01, S02, S03, S04, S05 or S06 as completed workflow slices.
 Production implementation migration remains gated by the later service
 extraction slices. Legacy module removal remains blocked until a later slice
 proves caller-free evidence, replacement parity or explicit deprecation,

@@ -41,6 +41,7 @@ include(
     "services:repository-source-service",
     "services:repository-analysis-service",
     "services:analysis-store-service",
+    "services:ingestion-service",
     "services:forensic-ingestion-service",
     "services:forensic-gateway-service",
 )
