@@ -57,10 +57,11 @@ remove mandatory authority, required STOP paths or required quality gates.
 
 ## S3D Execution Orchestration
 
-S3D belongs to the `workflow execute` strand. It reads the checked workflow
-metadata, validates dependencies, rejects cycles, forms topological execution
-groups and allows parallel write-capable work only when file, contract, module
-and architecture-boundary locks are disjoint.
+S3D belongs to the `workflow execute` strand. The Senior Execution Orchestrator
+and `skills/s3d-execution-orchestrator/SKILL.md` own the technical dependency
+graph, topological sort, execution groups and lock validation. The Senior Swarm
+Orchestrator remains responsible for coordination, handoffs and conflict
+communication across roles.
 
 If S3D finds missing metadata, ambiguous dependency ranges, unknown slice IDs,
 cycles or overlapping locks, it stops before implementation. Lock conflicts

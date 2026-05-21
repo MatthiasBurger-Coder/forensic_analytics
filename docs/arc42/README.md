@@ -61,6 +61,10 @@ Checked sections for this workflow:
 Later workflow-execute slices must update the relevant arc42 sections when
 they close a documented governance gap or change accepted governance behavior.
 
+Slice S05 closes the S3D ownership gap for this workflow branch by introducing
+the dedicated Senior Execution Orchestrator and `s3d-execution-orchestrator`
+skill. Senior Swarm Orchestrator remains the coordination owner.
+
 The three-strand agent and workflow governance model was checked and
 synchronized for Governance Flowchart V2 workflow execution on branch
 `architecture/workflow-governance-flowchart-v2-20260517`. That branch is now

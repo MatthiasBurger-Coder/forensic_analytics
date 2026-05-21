@@ -36,14 +36,14 @@ gates. Unclear impact defaults to `FULL_PATH`.
   - `BUILD_FAILURE` routes to the responsible backend or frontend owner plus `roles/senior-devops.md`; Gradle-specific failures also route to `skills/build-gradle/SKILL.md`.
   - `TEST_FAILURE` routes to `roles/senior-tester.md` and the responsible slice agent.
   - `DOC_GOVERNANCE_FAILURE` routes to `roles/senior-documentation-engineer.md` and `roles/senior-requirement-engineer/SKILL.md`.
-  - `LOCK_CONFLICT` routes to `roles/senior-swarm-orchestrator.md` and Root Architect escalation.
+  - `LOCK_CONFLICT` routes to `roles/senior-execution-orchestrator.md`, `skills/s3d-execution-orchestrator/SKILL.md`, Senior Swarm Orchestrator coordination and Root Architect escalation.
   - `UNKNOWN_FAILURE` routes to Root Architect escalation.
 - Gradle, Docker, Kubernetes, CI, observability or deployment work routes to `roles/senior-devops.md`.
 - New workflow creation, full `docs/workflow` regeneration, slice dependency planning or planning-risk review routes to `roles/senior-workflow-architect/SKILL.md`.
 - EPIC consistency, requirement drift, requirement classification, assumption tracking or requirement-to-architecture synchronization routes to `roles/senior-requirement-engineer/SKILL.md`.
 - Incoming requirement gatekeeping before workflow authoring, Three Amigos review, acceptance-criteria validation, dependency/deadlock checks or `READY_FOR_WORKFLOW` versus `REQUIRES_REFINEMENT` decisions route to `skills/three-amigos-requirement-gatekeeper/SKILL.md`.
 - Multi-role coordination, conflict resolution or slice planning routes to `roles/senior-swarm-orchestrator.md`.
-- S3D execution orchestration, dependency graph construction, topological sorting, parallelization grouping or file/contract/module/architecture-boundary conflict locks route to `roles/senior-swarm-orchestrator.md`.
+- S3D execution orchestration, dependency graph construction, topological sorting, parallelization grouping or file/contract/module/architecture-boundary conflict locks route to `roles/senior-execution-orchestrator.md` and `skills/s3d-execution-orchestrator/SKILL.md`.
 - Protobuf contracts, streaming RPC design, request validation or gRPC compatibility route to `roles/senior-grpc-proto-specialist.md`.
 - Repository checkout, workspace lifecycle, source-root preparation or large Git repositories route to `roles/senior-git-workspace-specialist.md`.
 - Plugin producer handoff, plugin-side request construction or plugin-to-server communication routes to `roles/senior-plugin-integration-developer.md`.

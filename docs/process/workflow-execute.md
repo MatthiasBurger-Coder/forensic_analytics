@@ -103,8 +103,10 @@ never be downgraded by classification.
 
 ## S3D Execution Orchestrator
 
-S3D runs after `S3_CLASSIFY` and before write-capable slice execution. It is the
-Execution Orchestrator for `workflow execute`, not a fourth process strand.
+S3D runs after `S3_CLASSIFY` and before write-capable slice execution. The
+Senior Execution Orchestrator and `s3d-execution-orchestrator` skill own S3D
+technical planning for `workflow execute`. S3D is not a fourth process strand.
+Senior Swarm Orchestrator remains the coordination owner around S3D output.
 
 S3D reads the checked `docs/workflow/workflow.md` and extracts:
 
@@ -154,7 +156,7 @@ flowchart TD
   R -->|BUILD_FAILURE| B["Slice-assigned Backend or Frontend Agent / Senior DevOps / build-gradle"]
   R -->|TEST_FAILURE| T["Senior Tester / slice-assigned implementation agent"]
   R -->|DOC_GOVERNANCE_FAILURE| D["Senior Documentation Engineer / Senior Requirement Engineer"]
-  R -->|LOCK_CONFLICT| L["Senior Swarm Orchestrator / Root Architect"]
+  R -->|LOCK_CONFLICT| L["Senior Execution Orchestrator / Senior Swarm Orchestrator / Root Architect"]
   R -->|UNKNOWN_FAILURE| X["Root Architect Escalation"]
   A --> RC{"Retry <= 3?"}
   B --> RC
@@ -175,7 +177,7 @@ The router categories are:
 | `BUILD_FAILURE` | slice-assigned Backend or Frontend Agent, Senior DevOps, `build-gradle` for Gradle-specific failures |
 | `TEST_FAILURE` | Senior Tester, slice-assigned implementation agent |
 | `DOC_GOVERNANCE_FAILURE` | Senior Documentation Engineer, Senior Requirement Engineer |
-| `LOCK_CONFLICT` | Senior Swarm Orchestrator, Root Architect |
+| `LOCK_CONFLICT` | Senior Execution Orchestrator, Senior Swarm Orchestrator, Root Architect |
 | `UNKNOWN_FAILURE` | Root Architect |
 
 Automatic fix attempts are capped at `maxRetries = 3`. Retry exhaustion,

@@ -38,7 +38,7 @@ Workflow execution has started. Slice results are recorded below.
 | S02 | Completed | pending checkpoint | pending checkpoint |
 | S03 | Completed | pending checkpoint | pending checkpoint |
 | S04 | Completed | pending checkpoint | pending checkpoint |
-| S05 | Pending | n/a | n/a |
+| S05 | Completed | pending checkpoint | pending checkpoint |
 | S06 | Pending | n/a | n/a |
 | S07 | Pending | n/a | n/a |
 | S08 | Pending | n/a | n/a |
@@ -105,6 +105,44 @@ blockers=none
 | File locks | `docs/workflow/execution-report.md` |
 | Contract locks | none |
 | Architecture locks | `workflow-execute-preflight` |
+| Lock result | no conflict |
+
+## Slice S05 - Split Dedicated S3D Execution Orchestrator
+
+```text
+workflowVersion=governance-performance-20260521-v1
+sliceId=S05
+sliceTitle=Split Dedicated S3D Execution Orchestrator
+responsibleAgent=Senior System Architect
+changedFiles=.agents/roles/senior-execution-orchestrator.md; .agents/skills/s3d-execution-orchestrator/SKILL.md; .agents/orchestrator/routing-rules.md; .agents/orchestrator/swarm-orchestrator.md; .agents/roles/senior-swarm-orchestrator.md; docs/agents/skill-registry.md; docs/process/workflow-execute.md; docs/arc42/README.md; docs/workflow/context-pack.json; docs/workflow/execution-report.md
+qualityGateCommands=git diff --check; rg -n "senior-execution-orchestrator|s3d-execution-orchestrator|LOCK_CONFLICT" .agents docs
+qualityGateResult=PASS
+commitHash=pending
+rollbackReference=pending checkpoint commit
+arc42Updated=docs/arc42/README.md updated for S3D ownership gap closure
+adrUpdated=checked, no ADR update required because ADR-0021 already names S3D as execution orchestrator
+pushResult=pending checkpoint push
+blockers=none
+```
+
+### S05 Role Review
+
+| Role | Result |
+|---|---|
+| Senior System Architect | Dedicated S3D ownership is separated from swarm coordination without creating a fourth process strand. |
+| Senior Swarm Orchestrator | Swarm role now coordinates handoffs around S3D output instead of owning technical graph and lock validation. |
+| Senior Documentation Engineer | Routing, process docs, skill registry, arc42 status and role text are synchronized. |
+| Senior Tester | S05 requires governance checks only; no product or build files changed. |
+
+### S05 S3D Summary
+
+| Field | Value |
+|---|---|
+| Classification | documentation / governance / metadata |
+| Dependencies | S04 completed |
+| File locks | `.agents/roles/senior-execution-orchestrator.md`, `.agents/skills/s3d-execution-orchestrator/**`, `.agents/orchestrator/**`, `.agents/roles/senior-swarm-orchestrator.md`, `docs/agents/skill-registry.md`, `docs/process/workflow-execute.md`, `docs/arc42/README.md`, `docs/workflow/context-pack.json`, `docs/workflow/execution-report.md` |
+| Contract locks | none |
+| Architecture locks | `s3d-orchestration` |
 | Lock result | no conflict |
 
 ## Slice S04 - Formalize Machine-Readable Slice Metadata

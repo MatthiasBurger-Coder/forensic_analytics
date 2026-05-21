@@ -67,7 +67,7 @@ Must not change:
 | `PUB_PR_MERGE_GUARD` | publication mode | Git Commit Reviewer / Git Commit Operator | decide whether a PR may merge, stay open, be blocked or be rejected |
 | docs/workflow/workflow.md Maintainer | `workflow create` | Senior Workflow Architect | maintain active workflow specification |
 | arc42 Architecture Documentation Maintainer | `workflow create` | arc42 Architecture Governance | keep architecture docs checked or updated |
-| S3D Execution Orchestrator | `workflow execute` | Senior Swarm Orchestrator | build dependency graph, run topological sort and enforce file, contract, module and architecture-boundary locks |
+| S3D Execution Orchestrator | `workflow execute` | Senior Execution Orchestrator / `s3d-execution-orchestrator` | build dependency graph, run topological sort and enforce file, contract, module and architecture-boundary locks |
 | Testing Documentation Maintainer | `workflow execute` | Senior Tester | keep test strategy and quality-gate evidence |
 | Execution Report Maintainer | `workflow execute` | Workflow Executor | record workflow version, slice ID, responsible agent, changed files, quality gates, commit SHA, rollback reference, documentation update status, push result and blockers |
 | Commit Traceability Maintainer | `workflow execute` | Senior Documentation Engineer / Workflow Executor | keep `CP_RECORD` fields, one-slice-one-commit evidence and workflow history synchronized |
@@ -81,8 +81,8 @@ Must not change:
 |---|---|---|
 | Root Architect Escalation | Senior System Architect via Root Architect decision path | MAPPED_WITH_GAP: no dedicated `.agents/roles/root-architect.md` exists |
 | Typed Error Routing | Workflow Executor, Quality Gate Orchestrator, routing rules | VERIFIED |
-| Execution Orchestration | Senior Swarm Orchestrator, S3D, Agent Swarm Coordination Specialist | VERIFIED |
-| Conflict Locking | Senior Swarm Orchestrator, S3D, Workflow Executor | VERIFIED |
+| Execution Orchestration | Senior Execution Orchestrator, S3D, Senior Swarm Orchestrator coordination | VERIFIED |
+| Conflict Locking | Senior Execution Orchestrator, S3D, Workflow Executor, Senior Swarm Orchestrator coordination | VERIFIED |
 | Rollback Governance | Release and Branch Governance, Git Commit Preparation, Senior DevOps | VERIFIED |
 | Documentation Governance | Senior Documentation Engineer, Documentation Sync, `DOCROOT` | VERIFIED |
 | Quality Gate Classification | Senior Tester, Quality Gate Orchestrator, Quality Gate skill, `skills/quality-impact-classifier/SKILL.md` | VERIFIED |

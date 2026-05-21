@@ -184,7 +184,7 @@ starting any retry or targeted fix:
 | `BUILD_FAILURE` | responsible Backend or Frontend Agent, Senior DevOps, `build-gradle` for Gradle-specific failures |
 | `TEST_FAILURE` | Senior Tester and responsible Slice Agent |
 | `DOC_GOVERNANCE_FAILURE` | Senior Documentation Engineer, Requirement Engineer |
-| `LOCK_CONFLICT` | Senior Swarm Orchestrator, Workflow Executor, Root Architect |
+| `LOCK_CONFLICT` | Senior Execution Orchestrator, Senior Swarm Orchestrator, Workflow Executor, Root Architect |
 | `UNKNOWN_FAILURE` | Root Architect escalation |
 
 Every failure report must include the error type, owner, retry count, next
