@@ -30,7 +30,7 @@
 | S00 | COMPLETED | Branch, local ref, clean working tree, context-pack hashes, S3D metadata and diff check passed. |
 | S01 | COMPLETED | Added deterministic local real repository E2E fixture and test; targeted and module test gates passed. |
 | S02 | COMPLETED | Added WildFly hardening runbook and documented opt-in external evidence; targeted skip/default gate passed. |
-| S03 | PENDING | CLI Gateway contract. |
+| S03 | COMPLETED | Added explicit planned CLI-to-Gateway contract, OpenAPI markers and contract tests; REST and CLI module gates passed. |
 | S04 | PENDING | Separate deployment workflow handoff. |
 | S05 | PENDING | Monolith caller inventory. |
 | S06 | PENDING | CLI first caller-free migration. |
@@ -164,3 +164,37 @@ Optional external hardening:
 | Check | Result |
 |---|---|
 | Live WildFly checkout | SKIPPED, no explicit WildFly branch or commit was provided for this workflow execution turn. |
+
+## S03 CLI Gateway Contract
+
+| Field | Result |
+|---|---|
+| Owner | Contract Governance Expert |
+| Secondary reviewers | Senior Java Backend, Senior System Architect, Senior Tester, Senior React Frontend |
+| Changed files | `contracts/cli/gateway-cli-contract.md`; `contracts/README.md`; `contracts/openapi/gateway-api.yaml`; `forensic-analytics-rest/src/test/java/de/burger/forensics/analytics/rest/GatewayOpenApiContractTest.java`; `forensic-analytics-cli/src/test/java/de/burger/forensics/analytics/cli/ForensicAnalyticsCliTest.java`; `docs/architecture/service-migration-map.md`; `docs/workflow/execution-report.md` |
+| Decision | COMPLETED |
+
+Role-review checklist:
+
+| Role | Result |
+|---|---|
+| Contract Governance Expert | PASS, the CLI contract is documented as a planned consumer contract and maps CLI concepts to verified Gateway OpenAPI request, response, header and error shapes. |
+| Senior Java Backend | PASS, no shared Java DTOs or Gateway implementation classes were introduced into CLI. |
+| Senior System Architect | PASS, the current CLI local-path adapter remains explicitly legacy and no in-process monolith path was silently rerouted. |
+| Senior Tester | PASS, REST and CLI tests assert the contract markers and compatibility decision. |
+| Senior React Frontend | PASS, public Gateway schema fields were not changed; only OpenAPI extension metadata and documentation were added. |
+
+Verification:
+
+| Command | Result |
+|---|---|
+| `./gradlew :forensic-analytics-rest:test --tests '*GatewayOpenApiContractTest' --dependency-verification strict --console=plain --stacktrace` | PASS |
+| `./gradlew :forensic-analytics-cli:test --tests '*ForensicAnalyticsCliTest' --dependency-verification strict --console=plain --stacktrace` | PASS after keeping intentionally asserted contract decision text on one Markdown line. |
+| `./gradlew :forensic-analytics-rest:test :forensic-analytics-cli:test --dependency-verification strict --console=plain --stacktrace` | PASS |
+| `git diff --check` | PASS |
+
+Notes:
+
+- The new CLI contract does not claim that `forensic-analytics-cli` already calls `forensic-gateway-service`.
+- A later implementation slice must add an explicit Gateway mode or Gateway command before CLI traffic can move to Gateway.
+- The existing local-path `analyze` command must not be silently routed to Gateway.

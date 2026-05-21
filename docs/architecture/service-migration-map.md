@@ -66,7 +66,7 @@ logic or register service builds.
 | `forensic-analytics-engine` | Retire or isolate after Gateway, Analysis Store and worker-service orchestration parity exists |
 | `forensic-analytics-logging` | Replace with service-local logging/diagnostic configuration; no shared runtime logging module between services |
 | `forensic-analytics-observability` | Replace with service-local correlation and diagnostics contracts/configuration; no shared observability implementation module between services |
-| `forensic-analytics-cli` | Gateway/public API client adapter after Slice 16 if CLI remains in repository scope |
+| `forensic-analytics-cli` | Gateway/public API client adapter after the CLI Gateway contract is implemented; `contracts/cli/gateway-cli-contract.md` records that current local-path `analyze` remains legacy until an explicit Gateway mode or command exists |
 | `forensic-analytics-testbed` | Retain as monolith test evidence until Slice 17/18 decides parity or retirement; do not share as service fixture module |
 | `forensic-analytics-ingestion-request` | Map request-import behavior to Gateway or Ingestion contract path after Slice 02 clarifies public submission semantics |
 | `forensic-analytics-bootstrap` | Retire after service runtime path and deployment readiness are verified |

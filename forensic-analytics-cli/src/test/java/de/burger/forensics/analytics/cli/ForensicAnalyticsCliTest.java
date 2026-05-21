@@ -32,6 +32,25 @@ class ForensicAnalyticsCliTest {
     Path tempDir;
 
     @Test
+    void cliGatewayContractKeepsGatewayModeExplicitAndRedacted() throws Exception {
+        var contract = Files.readString(findCliGatewayContract(), StandardCharsets.UTF_8);
+
+        assertContains(contract, "Contract version | `gateway-cli-v1`");
+        assertContains(contract, "does not claim that `forensic-analytics-cli` already calls `forensic-gateway-service`");
+        assertContains(contract, "must add an explicit Gateway mode or Gateway command");
+        assertContains(contract, "must not silently route the existing local-path `analyze` command to Gateway");
+        assertContains(contract, "StartRepositoryAnalysisRequest.repositoryUrl");
+        assertContains(contract, "X-Correlation-Id");
+        assertContains(contract, "Idempotency-Key");
+        assertContains(contract, "RepositoryToBtmSubmission");
+        assertContains(contract, "RepositoryToBtmStatus");
+        assertContains(contract, "workspace IDs or workspace paths");
+        assertContains(contract, "raw Git stdout or stderr");
+        assertContains(contract, "must not depend on Gateway implementation classes");
+        assertContains(contract, "contracts/openapi/gateway-api.yaml");
+    }
+
+    @Test
     void runsUseCaseAndWritesSummary() throws Exception {
         var useCase = new RecordingUseCase();
         var standardOutput = new ByteArrayOutputStream();
@@ -305,6 +324,22 @@ class ForensicAnalyticsCliTest {
 
     private static PrintStream stream(ByteArrayOutputStream output) {
         return new PrintStream(output, true, StandardCharsets.UTF_8);
+    }
+
+    private static Path findCliGatewayContract() {
+        var current = Path.of("").toAbsolutePath();
+        while (current != null) {
+            var candidate = current.resolve("contracts/cli/gateway-cli-contract.md");
+            if (Files.isRegularFile(candidate)) {
+                return candidate;
+            }
+            current = current.getParent();
+        }
+        throw new IllegalStateException("contracts/cli/gateway-cli-contract.md not found from test working directory");
+    }
+
+    private static void assertContains(String content, String expected) {
+        assertTrue(content.contains(expected), () -> "Expected contract content to contain: " + expected);
     }
 
     private static String engineRequestJson(Path payloadFile) {

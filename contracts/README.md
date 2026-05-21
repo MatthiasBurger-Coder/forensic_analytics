@@ -10,6 +10,10 @@ implementation code, generated Java classes, shared DTOs, shared domain
 models, mappers, Spring configuration, fixtures, jars or shared runtime
 libraries.
 
+CLI-facing contract notes live under `cli/`. They describe command-to-contract
+mapping only and do not authorize shared Java DTOs or Gateway implementation
+dependencies in the CLI.
+
 The active workflow owns Gateway HTTP and public gRPC BTM delivery contract
 updates in Slice 02, artifact-byte and instrumentation-target ownership
 contracts in Slice 03, and the Analysis Store-owned repository-to-BTM
@@ -24,6 +28,7 @@ Existing contract files include:
 - `grpc/joern-cpg-analysis.proto`
 - `grpc/btm-generation.proto`
 - `openapi/gateway-api.yaml`
+- `cli/gateway-cli-contract.md`
 - `events/analysis-events.md`
 
 These files are interface descriptions only. Generated code must remain
