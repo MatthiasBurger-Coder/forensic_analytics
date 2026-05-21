@@ -9,6 +9,13 @@ export interface RepositoryAnalysisSummary {
   commit: string | null;
   resolvedCommit: string | null;
   checkoutStatus: string | null;
+  sourceSnapshotStatus: string | null;
+  workflow: string | null;
+  statusUrl: string | null;
+  jobsUrl: string | null;
+  btmDeliveryStatus: string | null;
+  btmDeliveryService: string | null;
+  correlationId: string | null;
   status: AnalysisStatusState;
   createdAt: string | null;
   startedAt: string | null;
@@ -42,7 +49,10 @@ export interface WorkspacePolicy {
 
 export interface StartRepositoryAnalysisCommand {
   requestId: string;
+  correlationId: string;
+  idempotencyKey: string;
   schemaVersion: string;
+  requestedOutputs: string[];
   repositoryUrl: string;
   provider: string | null;
   branch: string | null;
@@ -52,3 +62,4 @@ export interface StartRepositoryAnalysisCommand {
 }
 
 export const REPOSITORY_ANALYSIS_SCHEMA_VERSION = "schema-v1";
+export const BTM_RULES_REQUESTED_OUTPUT = "BTM_RULES";

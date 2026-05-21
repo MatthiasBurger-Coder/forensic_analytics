@@ -31,7 +31,10 @@ describe("start repository analysis use case", () => {
 
 const command = (): StartRepositoryAnalysisCommand => ({
   requestId: "request-1",
+  correlationId: "correlation-1",
+  idempotencyKey: "idem-1",
   schemaVersion: "schema-v1",
+  requestedOutputs: ["BTM_RULES"],
   repositoryUrl: "https://example.invalid/project.git",
   provider: null,
   branch: "main",
@@ -49,7 +52,7 @@ const command = (): StartRepositoryAnalysisCommand => ({
     allowPartialClone: false,
     allowSparseCheckout: false,
     timeoutSeconds: 60,
-    maxWorkspaceBytes: 0
+    maxWorkspaceBytes: 100000
   }
 });
 
@@ -61,6 +64,13 @@ const analysis = (): RepositoryAnalysis => ({
   commit: null,
   resolvedCommit: null,
   checkoutStatus: "CHECKED_OUT",
+  sourceSnapshotStatus: null,
+  workflow: null,
+  statusUrl: null,
+  jobsUrl: null,
+  btmDeliveryStatus: null,
+  btmDeliveryService: null,
+  correlationId: null,
   status: createStatusState("REGISTERED", "REGISTERED"),
   sourceRoots: [],
   diagnostics: [],

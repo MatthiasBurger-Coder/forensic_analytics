@@ -1,8 +1,5 @@
 import {
   Activity,
-  AlertTriangle,
-  BarChart3,
-  Database,
   FilePlus2,
   RadioTower,
   Settings,
@@ -11,10 +8,12 @@ import {
 import { NavLink, Outlet } from "react-router-dom";
 
 const navItems = [
-  { to: "/", label: "Dashboard", icon: BarChart3, end: true },
-  { to: "/workspaces", label: "Workspaces", icon: Database },
-  { to: "/repository-analyses/new", label: "Register session", icon: FilePlus2 },
-  { to: "/diagnostics", label: "Diagnostics", icon: AlertTriangle },
+  {
+    to: "/repository-analyses/new",
+    label: "Register session",
+    icon: FilePlus2,
+    end: true
+  },
   { to: "/backend-unavailable", label: "Backend", icon: RadioTower },
   { to: "/settings", label: "Settings", icon: Settings }
 ];

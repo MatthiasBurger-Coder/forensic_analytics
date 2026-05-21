@@ -9,14 +9,12 @@ import type {
 } from "@/domain/repositoryAnalysis";
 
 import { resolveApiConfig, type ApiConfig } from "./config";
-import type { RepositoryAnalysisDto, WorkspaceDto } from "./dtos";
+import type { RepositoryAnalysisDto } from "./dtos";
 import { HttpClient, type Delay, type Fetcher } from "./httpClient";
 import {
   mapAnalysisJobDto,
   mapRepositoryAnalysisDto,
-  mapRepositoryAnalysisListDto,
-  mapWorkspaceDto,
-  mapWorkspaceListDto
+  mapRepositoryAnalysisListDto
 } from "./mappers";
 
 export interface ApiClientOptions extends Partial<ApiConfig> {
@@ -38,16 +36,19 @@ export const createApiClient = (
 
   const repositoryAnalysis: RepositoryAnalysisPort = {
     async listRepositoryAnalyses(signal) {
-      const response = await http.requestJson<unknown>("/repository-analyses", {
-        signal
-      });
+      void signal;
 
-      return mapRepositoryAnalysisListDto(response);
+      return mapRepositoryAnalysisListDto([]);
     },
     async getAnalysisJob(analysisRunId, signal) {
       const response = await http.requestJson<RepositoryAnalysisDto>(
         `/repository-analyses/${encodeURIComponent(analysisRunId)}`,
-        { signal }
+        {
+          headers: {
+            "X-Correlation-Id": createGatewayMetadata("status").correlationId
+          },
+          signal
+        }
       );
 
       return mapAnalysisJobDto(response);
@@ -58,37 +59,39 @@ export const createApiClient = (
         "/repository-analyses",
         {
           method: "POST",
+          headers: {
+            "X-Correlation-Id": command.correlationId,
+            "Idempotency-Key": command.idempotencyKey
+          },
           body: toStartRequest(command),
           signal
         }
       );
 
-      return mapRepositoryAnalysisDto(response);
+      return withSubmittedCommand(mapRepositoryAnalysisDto(response), command);
     }
   };
 
   const workspaces: WorkspacePort = {
     async listWorkspaces(signal) {
-      const response = await http.requestJson<unknown>("/workspaces", {
-        signal
-      });
+      void signal;
 
-      return mapWorkspaceListDto(response);
+      return [];
     },
     async getWorkspace(workspaceId, signal) {
-      const response = await http.requestJson<WorkspaceDto>(
-        `/workspaces/${encodeURIComponent(workspaceId)}`,
-        { signal }
-      );
+      void signal;
 
-      return mapWorkspaceDto(response);
+      throw new ApplicationError(
+        "VALIDATION_ERROR",
+        `Gateway workspace route is not available for workspace ${workspaceId}.`
+      );
     }
   };
 
   const diagnostics: DiagnosticsPort = {
     async collectDiagnostics(signal) {
-      const analyses = await repositoryAnalysis.listRepositoryAnalyses(signal);
-      return analyses.flatMap((analysis) => analysis.diagnostics);
+      void signal;
+      return [];
     }
   };
 
@@ -102,6 +105,7 @@ export const createApiClient = (
 const toStartRequest = (command: StartRepositoryAnalysisCommand) => ({
   requestId: command.requestId,
   schemaVersion: command.schemaVersion,
+  requestedOutputs: command.requestedOutputs,
   repositoryUrl: command.repositoryUrl,
   provider: command.provider,
   branch: command.branch,
@@ -127,6 +131,8 @@ const validateStartCommand = (command: StartRepositoryAnalysisCommand): void => 
   const missingText = [
     ["repositoryUrl", command.repositoryUrl],
     ["requestId", command.requestId],
+    ["correlationId", command.correlationId],
+    ["idempotencyKey", command.idempotencyKey],
     ["schemaVersion", command.schemaVersion],
     ["buildContext.buildTool", command.buildContext.buildTool],
     ["buildContext.buildId", command.buildContext.buildId]
@@ -147,14 +153,44 @@ const validateStartCommand = (command: StartRepositoryAnalysisCommand): void => 
   }
 
   if (
-    command.workspacePolicy.timeoutSeconds < 0 ||
-    command.workspacePolicy.maxWorkspaceBytes < 0
+    command.workspacePolicy.timeoutSeconds < 1 ||
+    command.workspacePolicy.maxWorkspaceBytes < 1
   ) {
     throw new ApplicationError(
       "VALIDATION_ERROR",
-      "Workspace timeout and byte limits must not be negative."
+      "Workspace timeout and byte limits must be positive."
     );
   }
+
+  if (!command.requestedOutputs.includes("BTM_RULES")) {
+    throw new ApplicationError(
+      "VALIDATION_ERROR",
+      "BTM_RULES must be requested before starting repository-to-BTM analysis."
+    );
+  }
+};
+
+const withSubmittedCommand = (
+  analysis: RepositoryAnalysis,
+  command: StartRepositoryAnalysisCommand
+): RepositoryAnalysis => ({
+  ...analysis,
+  repositoryUrl: analysis.repositoryUrl || command.repositoryUrl,
+  branch: analysis.branch ?? command.branch,
+  commit: analysis.commit ?? command.commit,
+  correlationId: analysis.correlationId ?? command.correlationId
+});
+
+const createGatewayMetadata = (purpose: string): { correlationId: string } => ({
+  correlationId: `ui-${purpose}-${createPublicId()}`
+});
+
+const createPublicId = (): string => {
+  if (globalThis.crypto?.randomUUID) {
+    return globalThis.crypto.randomUUID();
+  }
+
+  return Date.now().toString(36);
 };
 
 export const collectAnalysisDiagnostics = (

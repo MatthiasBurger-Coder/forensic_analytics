@@ -44,6 +44,28 @@ describe("API DTO mapping", () => {
     expect(analysis.status.lifecycle).toBe("REGISTERED");
   });
 
+  it("maps Gateway repository-to-BTM status metadata", () => {
+    const analysis = mapRepositoryAnalysisDto({
+      analysisRunId: "run-1",
+      status: "ACCEPTED",
+      sourceSnapshotStatus: "AVAILABLE",
+      workflow: "repository-to-btm",
+      statusUrl: "/repository-analyses/run-1",
+      jobsUrl: "/repository-analyses/run-1/jobs",
+      btmDeliveryStatus: "BTM_DELIVERY_NOT_READY",
+      btmDeliveryService: "BtmArtifactDeliveryService",
+      correlationId: "correlation-1"
+    });
+
+    expect(analysis.sourceSnapshotStatus).toBe("AVAILABLE");
+    expect(analysis.workflow).toBe("repository-to-btm");
+    expect(analysis.statusUrl).toBe("/repository-analyses/run-1");
+    expect(analysis.jobsUrl).toBe("/repository-analyses/run-1/jobs");
+    expect(analysis.btmDeliveryStatus).toBe("BTM_DELIVERY_NOT_READY");
+    expect(analysis.btmDeliveryService).toBe("BtmArtifactDeliveryService");
+    expect(analysis.correlationId).toBe("correlation-1");
+  });
+
   it("sanitizes diagnostic text during mapping", () => {
     const analysis = mapRepositoryAnalysisDto({
       analysisRunId: "run-1",

@@ -5,17 +5,29 @@ import { RefreshCcw, Send } from "lucide-react";
 import { ApplicationError, toUserMessage } from "@/application/errors";
 import { useStartRepositoryAnalysis } from "@/application/hooks/useStartRepositoryAnalysis";
 import {
+  BTM_RULES_REQUESTED_OUTPUT,
   REPOSITORY_ANALYSIS_SCHEMA_VERSION,
   type StartRepositoryAnalysisCommand
 } from "@/domain/repositoryAnalysis";
 
 const DEFAULT_TIMEOUT_SECONDS = 60;
+const DEFAULT_MAX_WORKSPACE_BYTES = 1_073_741_824;
 
 export const CreateRepositoryAnalysisPage = () => {
   const navigate = useNavigate();
   const starter = useStartRepositoryAnalysis();
   const initialRequestId = useMemo(() => createRequestId(), []);
+  const initialCorrelationId = useMemo(
+    () => createRequestId("ui-correlation"),
+    []
+  );
+  const initialIdempotencyKey = useMemo(
+    () => createRequestId("ui-idempotency"),
+    []
+  );
   const [requestId, setRequestId] = useState(initialRequestId);
+  const [correlationId, setCorrelationId] = useState(initialCorrelationId);
+  const [idempotencyKey, setIdempotencyKey] = useState(initialIdempotencyKey);
   const [schemaVersion, setSchemaVersion] = useState(
     REPOSITORY_ANALYSIS_SCHEMA_VERSION
   );
@@ -29,6 +41,9 @@ export const CreateRepositoryAnalysisPage = () => {
   const [declaredModules, setDeclaredModules] = useState("");
   const [attributes, setAttributes] = useState("");
   const [timeoutSeconds, setTimeoutSeconds] = useState(DEFAULT_TIMEOUT_SECONDS);
+  const [maxWorkspaceBytes, setMaxWorkspaceBytes] = useState(
+    DEFAULT_MAX_WORKSPACE_BYTES
+  );
   const [allowShallowClone, setAllowShallowClone] = useState(true);
   const [validationError, setValidationError] = useState<ApplicationError | null>(
     null
@@ -58,7 +73,10 @@ export const CreateRepositoryAnalysisPage = () => {
 
   const buildCommand = (): StartRepositoryAnalysisCommand => ({
     requestId: requestId.trim(),
+    correlationId: correlationId.trim(),
+    idempotencyKey: idempotencyKey.trim(),
     schemaVersion: schemaVersion.trim(),
+    requestedOutputs: [BTM_RULES_REQUESTED_OUTPUT],
     repositoryUrl: repositoryUrl.trim(),
     provider: optionalText(provider),
     branch: optionalText(branch),
@@ -76,7 +94,7 @@ export const CreateRepositoryAnalysisPage = () => {
       allowPartialClone: false,
       allowSparseCheckout: false,
       timeoutSeconds,
-      maxWorkspaceBytes: 0
+      maxWorkspaceBytes
     }
   });
 
@@ -168,6 +186,48 @@ export const CreateRepositoryAnalysisPage = () => {
               />
             </label>
           </div>
+          <div className="form-row two">
+            <label>
+              Correlation ID
+              <span className="input-with-button">
+                <input
+                  required
+                  value={correlationId}
+                  onChange={(event) => setCorrelationId(event.target.value)}
+                />
+                <button
+                  className="icon-button"
+                  type="button"
+                  title="Generate correlation ID"
+                  onClick={() =>
+                    setCorrelationId(createRequestId("ui-correlation"))
+                  }
+                >
+                  <RefreshCcw size={16} aria-hidden="true" />
+                </button>
+              </span>
+            </label>
+            <label>
+              Idempotency key
+              <span className="input-with-button">
+                <input
+                  required
+                  value={idempotencyKey}
+                  onChange={(event) => setIdempotencyKey(event.target.value)}
+                />
+                <button
+                  className="icon-button"
+                  type="button"
+                  title="Generate idempotency key"
+                  onClick={() =>
+                    setIdempotencyKey(createRequestId("ui-idempotency"))
+                  }
+                >
+                  <RefreshCcw size={16} aria-hidden="true" />
+                </button>
+              </span>
+            </label>
+          </div>
         </section>
 
         <section className="panel form-section">
@@ -241,6 +301,17 @@ export const CreateRepositoryAnalysisPage = () => {
                 }
               />
             </label>
+            <label>
+              Workspace byte limit
+              <input
+                min={1}
+                type="number"
+                value={maxWorkspaceBytes}
+                onChange={(event) =>
+                  setMaxWorkspaceBytes(Number(event.target.value))
+                }
+              />
+            </label>
           </div>
           <div className="toggle-grid">
             <label>
@@ -284,6 +355,23 @@ const validateCommand = (
     );
   }
 
+  if (!command.correlationId || !command.idempotencyKey) {
+    return new ApplicationError(
+      "VALIDATION_ERROR",
+      "Correlation ID and idempotency key are required before registering a repository analysis session."
+    );
+  }
+
+  if (
+    command.workspacePolicy.timeoutSeconds < 1 ||
+    command.workspacePolicy.maxWorkspaceBytes < 1
+  ) {
+    return new ApplicationError(
+      "VALIDATION_ERROR",
+      "Workspace timeout and byte limits must be positive."
+    );
+  }
+
   return null;
 };
 
@@ -316,10 +404,10 @@ const parseAttributes = (value: string): Record<string, string> =>
       .filter(([key, itemValue]) => key && itemValue)
   );
 
-const createRequestId = (): string => {
+const createRequestId = (prefix = "ui-request"): string => {
   if (globalThis.crypto?.randomUUID) {
-    return globalThis.crypto.randomUUID();
+    return `${prefix}-${globalThis.crypto.randomUUID()}`;
   }
 
-  return `ui-${Date.now().toString(36)}`;
+  return `${prefix}-${Date.now().toString(36)}`;
 };

@@ -17,6 +17,7 @@ export interface HttpClientOptions extends ApiConfig {
 interface RequestOptions {
   method?: "GET" | "POST";
   body?: unknown;
+  headers?: Record<string, string>;
   signal?: AbortSignal;
 }
 
@@ -94,13 +95,11 @@ export class HttpClient {
     try {
       const response = await this.fetcher(this.url(path), {
         method,
-        headers:
-          options.body === undefined
-            ? { Accept: "application/json" }
-            : {
-                Accept: "application/json",
-                "Content-Type": "application/json"
-              },
+        headers: {
+          Accept: "application/json",
+          ...(options.body === undefined ? {} : { "Content-Type": "application/json" }),
+          ...(options.headers ?? {})
+        },
         body: options.body === undefined ? undefined : JSON.stringify(options.body),
         signal: timeout.signal
       });
