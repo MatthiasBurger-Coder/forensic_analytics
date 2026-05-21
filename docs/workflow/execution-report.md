@@ -1445,3 +1445,68 @@ explicitly deferred from repository-to-BTM acceptance. Full local quality gate
 with strict dependency verification, Senior System Architect review, `git diff
 --check`, `git diff --cached --check`, checkpoint commit and branch push
 completed successfully.
+
+## Slice 17 Execution - Frontend And CLI Gateway Integration
+
+Slice 17 routes the active React frontend through the verified Gateway/public
+API surface after Slice 14 established the repository-to-BTM path. The slice
+keeps `frontend/frontend-web-app` untouched because that planned root still has
+no package tooling, and it defers CLI migration because no verified CLI Gateway
+command contract exists for converting the current local path/file-URI CLI
+shape into the Gateway's clean external HTTPS repository submission contract.
+
+Implemented behavior:
+
+- `forensic-ui` now sends `X-Correlation-Id` and `Idempotency-Key` on Gateway
+  mutation requests.
+- Repository-to-BTM start requests include `requestedOutputs: ["BTM_RULES"]`
+  and a positive workspace byte limit that matches the Gateway contract.
+- Status reads include caller correlation metadata for the verified
+  `GET /api/repository-analyses/{analysisRunId}` Gateway route.
+- The frontend adapter no longer calls planned or unavailable Gateway list,
+  workspace or aggregate diagnostics routes at runtime.
+- Dashboard, workspace and diagnostics navigation entries are isolated until
+  verified public Gateway query routes exist.
+- The analysis-job detail view exposes public Gateway status fields as
+  separate evidence classes for confirmed evidence, derived analysis,
+  generated BTM artifacts, diagnostics, unresolved gaps, hypotheses and
+  suggested fixes without inventing missing facts.
+
+### Slice 17 Reviews
+
+- Senior React / Backend read-only precheck initially returned `BLOCKED`
+  because `forensic-ui` did not send required Gateway headers, omitted
+  `requestedOutputs`, used `maxWorkspaceBytes: 0`, and still called planned or
+  unavailable public query routes. It also confirmed that CLI migration would
+  require an explicit public command redesign.
+- Post-implementation read-only re-review returned `READY`; only verified
+  Gateway submission/status routes are used at runtime, planned query routes
+  are isolated, `frontend/frontend-web-app` and `forensic-analytics-cli` remain
+  untouched, and `git diff --check` passed.
+
+### Slice 17 CP_RECORD
+
+```text
+workflowVersion=microservices-btm-pipeline-20260517-v5
+sliceId=17
+sliceTitle=Frontend And CLI Gateway Integration
+responsibleAgent=Workflow Executor with Senior React Frontend / Backend read-only review
+changedFiles=forensic-ui/**
+qualityGateCommands=cd forensic-ui && npm ci && npm test && npm run build; git diff --check; git diff --cached --check
+qualityGateResult=PASS
+checkpointCommitHash=b8b945bafd9c760fbd2825bd8075b657521db3a6
+pushResult=PUB_DONE to origin/feature/workflow-microservices-btm-pipeline-20260517
+rollbackReference=0bf23cee58b9a8ee07496356916fefbb2c66e3ef
+arc42Updated=not changed in this slice
+adrUpdated=not required in this slice
+```
+
+### Slice 17 D8 Decision
+
+Slice 17 is `D8_PASS`. The frontend Gateway adapter, command form, status view
+and tests now align with the verified Gateway repository-to-BTM submission and
+status endpoints. The exact frontend gate `cd forensic-ui && npm ci && npm
+test && npm run build`, `git diff --check`, `git diff --cached --check`,
+read-only post-implementation review, checkpoint commit and branch push
+completed successfully. CLI migration remains explicitly deferred because the
+required public CLI-to-Gateway command contract has not been defined.
