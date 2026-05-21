@@ -33,7 +33,7 @@
 | S03 | COMPLETED | Added explicit planned CLI-to-Gateway contract, OpenAPI markers and contract tests; REST and CLI module gates passed. |
 | S04 | COMPLETED | Strengthened separate Swarm/Kubernetes workflow handoff; no manifests, stack files or readiness claims added. |
 | S05 | COMPLETED | Added monolith caller inventory and retirement gates; no legacy path removed. |
-| S06 | PENDING | CLI first caller-free migration. |
+| S06 | COMPLETED | Added explicit CLI `gateway-submit` path through Gateway contract; local `analyze` remains documented legacy. |
 | S07 | PENDING | Conditional legacy runtime path retirement. |
 | S08 | PENDING | Final documentation and quality gate. |
 
@@ -261,3 +261,37 @@ Notes:
 - No module, package, class or runtime path was removed in S05.
 - No current path is caller-free.
 - The CLI boundary is the only near-term candidate, and only through an explicit Gateway mode or Gateway command.
+
+## S06 CLI First Caller-Free Migration
+
+| Field | Result |
+|---|---|
+| Owner | Senior Java Backend |
+| Secondary reviewers | Contract Governance Expert, Senior System Architect, Senior Tester, Microservice Senior Expert |
+| Changed files | `forensic-analytics-cli/build.gradle.kts`; `forensic-analytics-cli/src/main/java/de/burger/forensics/analytics/cli/**`; `forensic-analytics-cli/src/test/java/de/burger/forensics/analytics/cli/**`; `contracts/cli/gateway-cli-contract.md`; `docs/architecture/monolith-caller-retirement-plan.md`; `docs/workflow/execution-report.md` |
+| Decision | COMPLETED |
+
+Role-review checklist:
+
+| Role | Result |
+|---|---|
+| Senior Java Backend | PASS, `gateway-submit` uses a CLI-owned HTTP/JSON client and does not call `RunRepositoryAnalysisUseCase`. |
+| Contract Governance Expert | PASS, request fields, headers, idempotency key, timeout, workspace policy and public response fields map to `contracts/openapi/gateway-api.yaml` and `contracts/cli/gateway-cli-contract.md`. |
+| Senior System Architect | PASS, the local-path `analyze` command remains explicitly legacy and is not silently routed to Gateway. |
+| Senior Tester | PASS, CLI tests cover command parsing, Gateway-client routing, redacted failure mapping and HTTP payload/header construction. |
+| Microservice Senior Expert | PASS, CLI does not depend on Gateway service Java implementation classes or generated Gateway DTO modules. |
+
+Verification:
+
+| Command | Result |
+|---|---|
+| `./gradlew :forensic-analytics-cli:test --dependency-verification strict --console=plain --stacktrace` | PASS after fixing missing test-stub imports for `SSLSession` and `HttpClient.Version`. |
+| `./gradlew :services:forensic-gateway-service:test --dependency-verification strict --console=plain --stacktrace` | PASS |
+| `./gradlew test --dependency-verification strict --console=plain --stacktrace` | PASS |
+| `git diff --check` | PASS |
+
+Notes:
+
+- `gateway-submit` is the migrated repository-to-BTM CLI submission path.
+- The CLI module still contains the legacy local `analyze` command; S06 does not remove it.
+- No shared Gateway Java implementation classes, generated DTO modules or service-local domain models were added to CLI.

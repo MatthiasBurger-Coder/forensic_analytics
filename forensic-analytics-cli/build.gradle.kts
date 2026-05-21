@@ -8,6 +8,7 @@ dependencies {
     implementation(project(":forensic-analytics-ingestion-request"))
     implementation(project(":forensic-analytics-observability"))
     implementation(project(":forensic-analytics-persistence"))
+    implementation(libs.gson)
 }
 
 application {

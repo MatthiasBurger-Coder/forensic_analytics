@@ -21,6 +21,8 @@ public final class ForensicAnalyticsCli {
     private final AnalysisResultOutput resultOutput;
     private final Function<EngineRequestImportCommand, EngineIngestionRequestImporter> requestImporterFactory;
     private final EngineRequestImportOutput requestImportOutput;
+    private final Function<GatewaySubmitCommand, GatewaySubmissionClient> gatewayClientFactory;
+    private final GatewaySubmissionOutput gatewaySubmissionOutput;
     private final PrintStream standardOutput;
     private final PrintStream errorOutput;
     private final OperationLogger operationLogger;
@@ -33,9 +35,11 @@ public final class ForensicAnalyticsCli {
         this(
             ignored -> Objects.requireNonNull(useCase, "useCase must not be null"),
             defaultRequestImporterFactory(),
+            defaultGatewayClientFactory(),
             new CliArgumentParser(),
             new AnalysisResultOutput(),
             new EngineRequestImportOutput(),
+            new GatewaySubmissionOutput(),
             standardOutput,
             errorOutput,
             OperationLogger.system(ForensicAnalyticsCli.class)
@@ -45,9 +49,11 @@ public final class ForensicAnalyticsCli {
     private ForensicAnalyticsCli(
         Function<AnalyzeCommand, RunRepositoryAnalysisUseCase> useCaseFactory,
         Function<EngineRequestImportCommand, EngineIngestionRequestImporter> requestImporterFactory,
+        Function<GatewaySubmitCommand, GatewaySubmissionClient> gatewayClientFactory,
         CliArgumentParser parser,
         AnalysisResultOutput resultOutput,
         EngineRequestImportOutput requestImportOutput,
+        GatewaySubmissionOutput gatewaySubmissionOutput,
         PrintStream standardOutput,
         PrintStream errorOutput,
         OperationLogger operationLogger
@@ -57,6 +63,8 @@ public final class ForensicAnalyticsCli {
         this.resultOutput = Objects.requireNonNull(resultOutput, "resultOutput must not be null");
         this.requestImporterFactory = Objects.requireNonNull(requestImporterFactory, "requestImporterFactory must not be null");
         this.requestImportOutput = Objects.requireNonNull(requestImportOutput, "requestImportOutput must not be null");
+        this.gatewayClientFactory = Objects.requireNonNull(gatewayClientFactory, "gatewayClientFactory must not be null");
+        this.gatewaySubmissionOutput = Objects.requireNonNull(gatewaySubmissionOutput, "gatewaySubmissionOutput must not be null");
         this.standardOutput = Objects.requireNonNull(standardOutput, "standardOutput must not be null");
         this.errorOutput = Objects.requireNonNull(errorOutput, "errorOutput must not be null");
         this.operationLogger = Objects.requireNonNull(operationLogger, "operationLogger must not be null");
@@ -106,12 +114,32 @@ public final class ForensicAnalyticsCli {
         PrintStream errorOutput,
         OperationLogger operationLogger
     ) {
+        return withFactories(
+            useCaseFactory,
+            requestImporterFactory,
+            defaultGatewayClientFactory(),
+            standardOutput,
+            errorOutput,
+            operationLogger
+        );
+    }
+
+    static ForensicAnalyticsCli withFactories(
+        Function<AnalyzeCommand, RunRepositoryAnalysisUseCase> useCaseFactory,
+        Function<EngineRequestImportCommand, EngineIngestionRequestImporter> requestImporterFactory,
+        Function<GatewaySubmitCommand, GatewaySubmissionClient> gatewayClientFactory,
+        PrintStream standardOutput,
+        PrintStream errorOutput,
+        OperationLogger operationLogger
+    ) {
         return new ForensicAnalyticsCli(
             useCaseFactory,
             requestImporterFactory,
+            gatewayClientFactory,
             new CliArgumentParser(),
             new AnalysisResultOutput(),
             new EngineRequestImportOutput(),
+            new GatewaySubmissionOutput(),
             standardOutput,
             errorOutput,
             operationLogger
@@ -122,6 +150,10 @@ public final class ForensicAnalyticsCli {
         return ignored -> new EngineIngestionRequestImporter(
             new DefaultForensicIngestionUseCase(new InMemoryIngestionSessionRepository())
         );
+    }
+
+    private static Function<GatewaySubmitCommand, GatewaySubmissionClient> defaultGatewayClientFactory() {
+        return ignored -> new GatewaySubmissionHttpClient();
     }
 
     public int run(String[] args) {
@@ -162,6 +194,7 @@ public final class ForensicAnalyticsCli {
             }
             case AnalyzeCommand analyze -> runAnalyze(analyze);
             case EngineRequestImportCommand importRequest -> runImportRequest(importRequest);
+            case GatewaySubmitCommand gatewaySubmit -> runGatewaySubmit(gatewaySubmit);
         };
     }
 
@@ -192,10 +225,24 @@ public final class ForensicAnalyticsCli {
         return 0;
     }
 
+    private int runGatewaySubmit(GatewaySubmitCommand command) {
+        var client = Objects.requireNonNull(
+            gatewayClientFactory.apply(command),
+            "gateway client must not be null"
+        );
+        var result = Objects.requireNonNull(
+            client.submit(command),
+            "gateway submission result must not be null"
+        );
+        standardOutput.print(gatewaySubmissionOutput.format(result));
+        return 0;
+    }
+
     private static String operationName(CliCommand command) {
         return switch (command) {
             case AnalyzeCommand ignored -> "cli.analyze";
             case EngineRequestImportCommand ignored -> "cli.ingest-request";
+            case GatewaySubmitCommand ignored -> "cli.gateway-submit";
             case HelpCommand ignored -> "cli.help";
         };
     }

@@ -19,8 +19,10 @@ import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -36,8 +38,8 @@ class ForensicAnalyticsCliTest {
         var contract = Files.readString(findCliGatewayContract(), StandardCharsets.UTF_8);
 
         assertContains(contract, "Contract version | `gateway-cli-v1`");
-        assertContains(contract, "does not claim that `forensic-analytics-cli` already calls `forensic-gateway-service`");
-        assertContains(contract, "must add an explicit Gateway mode or Gateway command");
+        assertContains(contract, "`forensic-analytics-cli gateway-submit` is the explicit Gateway command");
+        assertContains(contract, "the implemented Gateway path is `gateway-submit`");
         assertContains(contract, "must not silently route the existing local-path `analyze` command to Gateway");
         assertContains(contract, "StartRepositoryAnalysisRequest.repositoryUrl");
         assertContains(contract, "X-Correlation-Id");
@@ -122,7 +124,109 @@ class ForensicAnalyticsCliTest {
         assertEquals(0, exitCode);
         assertTrue(standardOutput.toString(StandardCharsets.UTF_8).contains("forensic-analytics analyze"));
         assertTrue(standardOutput.toString(StandardCharsets.UTF_8).contains("forensic-analytics ingest-request"));
+        assertTrue(standardOutput.toString(StandardCharsets.UTF_8).contains("forensic-analytics gateway-submit"));
         assertFalse(useCase.called());
+    }
+
+    @Test
+    void gatewaySubmitUsesGatewayClientWithoutAnalysisUseCase() {
+        var submitted = new AtomicReference<GatewaySubmitCommand>();
+        var standardOutput = new ByteArrayOutputStream();
+        var errorOutput = new ByteArrayOutputStream();
+        var cli = ForensicAnalyticsCli.withFactories(
+            command -> {
+                throw new AssertionError("analysis use case must not be used by gateway-submit");
+            },
+            command -> {
+                throw new AssertionError("request importer must not be used by gateway-submit");
+            },
+            factoryCommand -> clientCommand -> {
+                assertEquals(factoryCommand, clientCommand);
+                submitted.set(clientCommand);
+                return new GatewaySubmissionResult(
+                    "analysis-run-1",
+                    "ACCEPTED",
+                    "/repository-analyses/analysis-run-1",
+                    "/repository-analyses/analysis-run-1/jobs",
+                    "BTM_DELIVERY_NOT_READY",
+                    "BtmArtifactDeliveryService",
+                    "correlation-1",
+                    1
+                );
+            },
+            stream(standardOutput),
+            stream(errorOutput),
+            OperationLogger.noop()
+        );
+
+        var exitCode = cli.run(gatewaySubmitArgs());
+
+        assertEquals(0, exitCode);
+        assertNotNull(submitted.get());
+        assertEquals("https://example.com/acme/demo.git", submitted.get().repositoryUrl());
+        assertEquals("main", submitted.get().branch());
+        assertEquals("", submitted.get().commit());
+        assertEquals(List.of("BTM_RULES"), submitted.get().requestedOutputs());
+        assertEquals(List.of(":app", ":lib"), submitted.get().declaredModules());
+        assertEquals("correlation-1", submitted.get().correlationId());
+        assertEquals("idem-1", submitted.get().idempotencyKey());
+        assertTrue(standardOutput.toString(StandardCharsets.UTF_8).contains("analysisRunId=analysis-run-1"));
+        assertTrue(standardOutput.toString(StandardCharsets.UTF_8).contains("status=ACCEPTED"));
+        assertTrue(standardOutput.toString(StandardCharsets.UTF_8).contains("btmDeliveryStatus=BTM_DELIVERY_NOT_READY"));
+        assertTrue(standardOutput.toString(StandardCharsets.UTF_8).contains("diagnostics=1"));
+        assertFalse(standardOutput.toString(StandardCharsets.UTF_8).contains("workspace-"));
+        assertFalse(standardOutput.toString(StandardCharsets.UTF_8).contains("/tmp"));
+        assertEquals("", errorOutput.toString(StandardCharsets.UTF_8));
+    }
+
+    @Test
+    void gatewaySubmitMapsGatewayFailureWithoutAnalysisUseCase() {
+        var standardOutput = new ByteArrayOutputStream();
+        var errorOutput = new ByteArrayOutputStream();
+        var cli = ForensicAnalyticsCli.withFactories(
+            command -> {
+                throw new AssertionError("analysis use case must not be used by gateway-submit");
+            },
+            command -> {
+                throw new AssertionError("request importer must not be used by gateway-submit");
+            },
+            command -> ignored -> {
+                throw new CliGatewayException("Gateway error status=409 code=CONFLICT retryable=false correlationId=correlation-1");
+            },
+            stream(standardOutput),
+            stream(errorOutput),
+            OperationLogger.noop()
+        );
+
+        var exitCode = cli.run(gatewaySubmitArgs());
+
+        assertEquals(1, exitCode);
+        assertEquals("", standardOutput.toString(StandardCharsets.UTF_8));
+        assertTrue(errorOutput.toString(StandardCharsets.UTF_8).contains("code=CONFLICT"));
+        assertTrue(errorOutput.toString(StandardCharsets.UTF_8).contains("retryable=false"));
+        assertFalse(errorOutput.toString(StandardCharsets.UTF_8).contains("/tmp"));
+    }
+
+    @Test
+    void gatewaySubmitRequiresExplicitBranchOrCommit() {
+        var standardOutput = new ByteArrayOutputStream();
+        var errorOutput = new ByteArrayOutputStream();
+        var args = gatewaySubmitArgs();
+        var withoutBranch = new ArrayList<String>();
+        for (var source = 0; source < args.length; source++) {
+            if ("--branch".equals(args[source])) {
+                source++;
+                continue;
+            }
+            withoutBranch.add(args[source]);
+        }
+
+        var exitCode = new ForensicAnalyticsCli(new RecordingUseCase(), stream(standardOutput), stream(errorOutput)).run(
+            withoutBranch.toArray(String[]::new)
+        );
+
+        assertEquals(2, exitCode);
+        assertTrue(errorOutput.toString(StandardCharsets.UTF_8).contains("gateway-submit requires --branch or --commit"));
     }
 
     @Test
@@ -340,6 +444,28 @@ class ForensicAnalyticsCliTest {
 
     private static void assertContains(String content, String expected) {
         assertTrue(content.contains(expected), () -> "Expected contract content to contain: " + expected);
+    }
+
+    private static String[] gatewaySubmitArgs() {
+        return new String[] {
+            "gateway-submit",
+            "--gateway", "http://gateway.example/api",
+            "--repo-url", "https://example.com/acme/demo.git",
+            "--branch", "main",
+            "--request-id", "request-1",
+            "--schema-version", "gateway.v1",
+            "--requested-outputs", "BTM_RULES",
+            "--provider", "github",
+            "--build-tool", "gradle",
+            "--build-id", "build-1",
+            "--root-project", "demo",
+            "--declared-modules", ":app,:lib",
+            "--correlation-id", "correlation-1",
+            "--idempotency-key", "idem-1",
+            "--timeout-seconds", "60",
+            "--max-workspace-bytes", "100000",
+            "--allow-shallow-clone", "true"
+        };
     }
 
     private static String engineRequestJson(Path payloadFile) {

@@ -52,7 +52,14 @@ routing:
 
 ## S06 Candidate
 
-The only near-term candidate is the CLI boundary, and only as an explicit
-Gateway mode or Gateway command. The current local-path `analyze` behavior is
-not caller-free and must remain available unless a later slice explicitly
-deprecates it with tests and migration notes.
+The CLI boundary is the first migrated caller path only for explicit Gateway
+submission. Slice 06 adds `forensic-analytics-cli gateway-submit`, which sends
+repository-to-BTM requests through the Gateway HTTP contract without using
+`RunRepositoryAnalysisUseCase`, Gateway implementation classes or generated
+Gateway DTO modules.
+
+The current local-path `analyze` behavior remains an active legacy command. It
+is not caller-free and must remain available unless a later slice explicitly
+deprecates it with tests and migration notes. Therefore the CLI module is not
+fully retired from monolith dependencies in Slice 06; only the new
+repository-to-BTM Gateway submission path is caller-free.

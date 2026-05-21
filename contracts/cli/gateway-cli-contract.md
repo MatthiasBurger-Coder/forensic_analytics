@@ -2,9 +2,11 @@
 
 ## Status
 
-Planned CLI consumer contract for Gateway repository-to-BTM submission.
+CLI consumer contract for Gateway repository-to-BTM submission.
 
-This file is a contract document only. It does not claim that `forensic-analytics-cli` already calls `forensic-gateway-service`.
+`forensic-analytics-cli gateway-submit` is the explicit Gateway command for this
+contract. The local-path `forensic-analytics-cli analyze` command remains a
+legacy in-process adapter and is not silently routed to Gateway.
 
 ## Producer And Consumer
 
@@ -31,27 +33,30 @@ Gateway repository-to-BTM submission requires:
 - `StartRepositoryAnalysisRequest`;
 - redacted `RepositoryToBtmSubmission` and `RepositoryToBtmStatus` responses.
 
-Therefore, a later implementation slice must add an explicit Gateway mode or Gateway command before CLI traffic can move to Gateway. The implementation slice must not silently route the existing local-path `analyze` command to Gateway.
+Therefore, the implemented Gateway path is `gateway-submit`. The implementation
+must not silently route the existing local-path `analyze` command to Gateway.
 
 ## Planned CLI Request Mapping
 
-The Gateway CLI mode must collect these values before sending the request:
+The `gateway-submit` command must collect these values before sending the
+request:
 
 | CLI concept | Gateway field or header |
 |---|---|
-| repository URL | `StartRepositoryAnalysisRequest.repositoryUrl` |
-| branch | `StartRepositoryAnalysisRequest.branch` |
-| commit | `StartRepositoryAnalysisRequest.commit` |
-| requested output | `StartRepositoryAnalysisRequest.requestedOutputs[]` |
-| schema version | `StartRepositoryAnalysisRequest.schemaVersion` |
-| request ID | `StartRepositoryAnalysisRequest.requestId` |
-| build tool | `StartRepositoryAnalysisRequest.buildContext.buildTool` |
-| build ID | `StartRepositoryAnalysisRequest.buildContext.buildId` |
-| root project name | `StartRepositoryAnalysisRequest.buildContext.rootProjectName` |
-| declared modules | `StartRepositoryAnalysisRequest.buildContext.declaredModules[]` |
-| workspace policy | `StartRepositoryAnalysisRequest.workspacePolicy` |
-| correlation ID | `X-Correlation-Id` |
-| idempotency key | `Idempotency-Key` |
+| `--repo-url` | `StartRepositoryAnalysisRequest.repositoryUrl` |
+| `--branch` | `StartRepositoryAnalysisRequest.branch` |
+| `--commit` | `StartRepositoryAnalysisRequest.commit` |
+| `--requested-outputs` | `StartRepositoryAnalysisRequest.requestedOutputs[]` |
+| `--schema-version` | `StartRepositoryAnalysisRequest.schemaVersion` |
+| `--request-id` | `StartRepositoryAnalysisRequest.requestId` |
+| `--provider` | `StartRepositoryAnalysisRequest.provider` |
+| `--build-tool` | `StartRepositoryAnalysisRequest.buildContext.buildTool` |
+| `--build-id` | `StartRepositoryAnalysisRequest.buildContext.buildId` |
+| `--root-project` | `StartRepositoryAnalysisRequest.buildContext.rootProjectName` |
+| `--declared-modules` | `StartRepositoryAnalysisRequest.buildContext.declaredModules[]` |
+| `--timeout-seconds`, `--max-workspace-bytes`, `--allow-shallow-clone` | `StartRepositoryAnalysisRequest.workspacePolicy` |
+| `--correlation-id` | `X-Correlation-Id` |
+| `--idempotency-key` | `Idempotency-Key` |
 
 At least one of branch or commit is required. If both are provided, Gateway
 must preserve both in the request and downstream services must resolve the
@@ -119,8 +124,9 @@ Required contract tests:
 
 - `GatewayOpenApiContractTest` verifies Gateway route, schema, idempotency and
   redaction contract markers.
-- `ForensicAnalyticsCliTest` verifies that this CLI contract exists and
-  preserves the current compatibility decision before implementation.
+- `ForensicAnalyticsCliTest` verifies that `gateway-submit` uses a Gateway
+  client instead of the in-process `RunRepositoryAnalysisUseCase`, preserves the
+  current local `analyze` compatibility decision and keeps output public.
 
 ## Implementation Stop Conditions
 
