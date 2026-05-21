@@ -2,12 +2,13 @@
 
 ## Status
 
-FA-MSA-001 Slice 01 service-boundary and migration planning map.
+FA-MSA-001 Slice 02 service-boundary and migration inventory map.
 
 This document maps current modular-monolith and transitional service evidence
 to FA-MSA-001 target ownership candidates. It does not move production code,
 create build projects, create service implementations or claim runtime
-readiness.
+readiness. S02 refreshed this map after caller and Gradle coupling scans and
+confirmed that no central module retirement is safe yet.
 
 ## Target Mapping
 
@@ -25,24 +26,34 @@ readiness.
 
 ## Central Module Retirement Map
 
-| Current module | Target decision |
-|---|---|
-| `forensic-analytics-domain` | Split into service-local domain models; remove only after all callers are migrated or deprecated. |
-| `forensic-analytics-application` | Split into service-local application/use-case code; remove only after service owners and contracts are verified. |
-| `forensic-analytics-persistence` | Replace with service-local persistence adapters after S04 assigns one-writer ownership. |
-| `forensic-analytics-logging` | Replace with service-local logging configuration or `observability-stack` deployment material. |
-| `forensic-analytics-observability` | Replace with service-local diagnostics/correlation configuration or deployment observability material. |
-| `forensic-analytics-bootstrap` | Retire after service-local bootstraps and runtime start paths are verified. |
-| `forensic-analytics-boot-app` | Retire after mandatory service runtime paths and rollback evidence exist. |
-| `forensic-analytics-engine` | Retire or split into `analysis-orchestrator-service` after orchestration ownership is explicit. |
-| `forensic-analytics-rest` | Retire after `query-report-api-service` has public API parity and caller migration. |
+Every row in this table is blocked until a later slice proves caller-free
+evidence, replacement parity or explicit deprecation, rollback or
+operator-visible migration notes and the relevant `QUALITY.md` quality gate.
+
+| Current module | Target decision | Retirement gate |
+|---|---|---|
+| `forensic-analytics-domain` | Split into service-local domain models. | Caller-free evidence across production code, tests, build files and docs; service-local domain parity or explicit deprecation; rollback/operator note; required quality gate. |
+| `forensic-analytics-application` | Split into service-local application/use-case code. | Caller-free evidence; verified service owners and contracts; replacement parity or explicit deprecation; rollback/operator note; required quality gate. |
+| `forensic-analytics-persistence` | Replace with service-local persistence adapters after S04 assigns one-writer ownership. | Caller-free evidence; S04 data-owner decision; replacement parity or explicit deprecation; rollback/operator note; required quality gate. |
+| `forensic-analytics-logging` | Replace with service-local logging configuration or `observability-stack` deployment material. | Caller-free evidence; service-local diagnostics or deployment replacement; explicit redaction behavior; rollback/operator note; required quality gate. |
+| `forensic-analytics-observability` | Replace with service-local diagnostics/correlation configuration or deployment observability material. | Caller-free evidence; service-local observability replacement; replacement parity or explicit deprecation; rollback/operator note; required quality gate. |
+| `forensic-analytics-bootstrap` | Retire after service-local bootstraps and runtime start paths are verified. | Caller-free evidence; service-local start/health/container parity; rollback/operator note; required quality gate. |
+| `forensic-analytics-boot-app` | Retire after mandatory service runtime paths and rollback evidence exist. | Caller-free evidence; mandatory service runtime parity; rollback/operator note; required quality gate. |
+| `forensic-analytics-engine` | Retire or split into `analysis-orchestrator-service` after orchestration ownership is explicit. | Caller-free evidence; orchestration API parity or explicit deprecation; rollback/operator note; required quality gate. |
+| `forensic-analytics-rest` | Retire after `query-report-api-service` has public API parity and caller migration. | Caller-free evidence; public API parity or explicit deprecation; rollback/operator note; required quality gate. |
 
 ## Current Implementation Evidence
 
 The existing `forensic-analytics-*` Gradle modules remain the current
 implementation baseline until later slices move behavior behind verified
-contracts. S01 does not rename modules, move packages, copy production logic or
+contracts. S02 does not rename modules, move packages, copy production logic or
 register service builds.
+
+S02 found no direct `project(...)` dependencies in
+`services/*/build.gradle.kts` and no `project(":services:...")` dependencies in
+tracked Gradle build files. Transitional service builds that generate code from
+`contracts/grpc` are consuming external interface contracts locally; this is
+not a shared Java implementation module and still requires S03 contract review.
 
 The current service directories are transitional evidence:
 
