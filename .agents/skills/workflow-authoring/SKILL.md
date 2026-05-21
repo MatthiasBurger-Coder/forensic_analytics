@@ -144,6 +144,23 @@ Every workflow should include:
 - Handoff to workflow execute
 - arc42 Check Status
 
+## Workflow Context Pack
+
+When a workflow is created or regenerated, create or update:
+
+- `docs/workflow/context-pack.md`
+- `docs/workflow/context-pack.json`
+
+The context pack is a workflow-local navigation aid. It must record the active
+workflow version, branch, process strand, execution profile, affected areas,
+forbidden areas, required roles, conditional roles, quality commands and hashes
+for governing files used during creation.
+
+The context pack must not replace root `AGENTS.md`, `QUALITY.md`, ADRs, arc42,
+routing rules, active workflow files or skill files. It is stale when any
+recorded hash changes, when the task touches governance files, or when a
+conflict is detected.
+
 Workflow creation is complete only when both of these artifacts have been checked:
 
 1. complete checked `docs/workflow/workflow.md`

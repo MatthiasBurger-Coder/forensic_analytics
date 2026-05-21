@@ -31,6 +31,11 @@ Read these files before implementation:
 6. Relevant `.agents/roles` files for the slice.
 7. Relevant `.agents/skills` files for the slice.
 
+When `docs/workflow/context-pack.md` or
+`docs/workflow/context-pack.json` exists, read it first for orientation and
+hash provenance. Reopen the authoritative files above when a recorded hash
+changed, the slice touches governance files, or any conflict is detected.
+
 ## Active Workflow Discovery
 
 Locate the active workflow in this order:
@@ -118,6 +123,14 @@ Route lock conflicts as `LOCK_CONFLICT` through the Typed Error Router. S3D may
 stop, report, escalate or recommend manual workflow refinement, but it must not
 call `workflow create`, rewrite the active workflow from S3 or expand scope
 automatically.
+
+## Context Pack Validation
+
+Before the first write-capable slice and whenever a slice depends on cached
+governance context, verify `docs/workflow/context-pack.json` against the
+current files it hashes. A stale context pack is not a failure when the active
+slice is responsible for refreshing it; otherwise it is a S3/S3D blocker and
+the executor must reread the authoritative files directly.
 
 ## Core Rule
 

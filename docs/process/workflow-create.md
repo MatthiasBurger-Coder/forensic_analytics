@@ -157,3 +157,9 @@ Classic labels such as Requirement Analyst, Architecture Validator and Quality V
 - Definition of Done
 - Handoff to workflow execute
 - arc42 Check Status
+
+`workflow create` should also create `docs/workflow/context-pack.md` and
+`docs/workflow/context-pack.json` when the workflow needs repeated role,
+routing or quality decisions. The context pack is a secondary navigation aid
+with hash provenance. It must not replace `AGENTS.md`, `QUALITY.md`, ADRs,
+arc42, routing rules, workflow files or skill files.

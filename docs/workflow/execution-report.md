@@ -36,7 +36,7 @@ Workflow execution has started. Slice results are recorded below.
 | S00 | Completed | pending checkpoint | pending checkpoint |
 | S01 | Completed | pending checkpoint | pending checkpoint |
 | S02 | Completed | pending checkpoint | pending checkpoint |
-| S03 | Pending | n/a | n/a |
+| S03 | Completed | pending checkpoint | pending checkpoint |
 | S04 | Pending | n/a | n/a |
 | S05 | Pending | n/a | n/a |
 | S06 | Pending | n/a | n/a |
@@ -105,6 +105,44 @@ blockers=none
 | File locks | `docs/workflow/execution-report.md` |
 | Contract locks | none |
 | Architecture locks | `workflow-execute-preflight` |
+| Lock result | no conflict |
+
+## Slice S03 - Define Workflow Context Pack
+
+```text
+workflowVersion=governance-performance-20260521-v1
+sliceId=S03
+sliceTitle=Define Workflow Context Pack
+responsibleAgent=Senior Workflow Architect
+changedFiles=.agents/skills/workflow-authoring/SKILL.md; .agents/skills/workflow-executor/SKILL.md; docs/process/workflow-create.md; docs/process/workflow-execute.md; docs/workflow/context-pack.md; docs/workflow/context-pack.json; docs/workflow/execution-report.md
+qualityGateCommands=git diff --check; python3 -m json.tool docs/workflow/context-pack.json
+qualityGateResult=PASS
+commitHash=pending
+rollbackReference=pending checkpoint commit
+arc42Updated=checked, no update required for S03
+adrUpdated=checked, no update required for S03
+pushResult=pending checkpoint push
+blockers=none
+```
+
+### S03 Role Review
+
+| Role | Result |
+|---|---|
+| Senior Workflow Architect | Context pack creation and consumption rules are now defined in workflow authoring and execution skills. |
+| Senior Documentation Engineer | Workflow-create and workflow-execute process docs now describe context-pack secondary status and stale-hash handling. |
+| Senior System Architect | Context packs remain navigation aids and cannot replace source-of-truth governance files. |
+| Senior Tester | JSON validation is required for context-pack changes; Gradle is not required for this governance-only slice. |
+
+### S03 S3D Summary
+
+| Field | Value |
+|---|---|
+| Classification | documentation / governance / metadata |
+| Dependencies | S01 and S02 completed |
+| File locks | `.agents/skills/workflow-authoring/SKILL.md`, `.agents/skills/workflow-executor/SKILL.md`, `docs/process/workflow-create.md`, `docs/process/workflow-execute.md`, `docs/workflow/context-pack.*`, `docs/workflow/execution-report.md` |
+| Contract locks | none |
+| Architecture locks | `workflow-context-provenance` |
 | Lock result | no conflict |
 
 ## Slice S02 - Add Quality Impact Classifier

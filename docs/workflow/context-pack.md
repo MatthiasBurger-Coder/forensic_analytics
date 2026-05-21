@@ -12,9 +12,9 @@ routing rules, workflow files and skill files remain authoritative.
 |---|---|
 | Repository | `forensic_analytics` |
 | Workflow branch | `architecture/workflow-governance-performance-20260521` |
-| Active strand | `workflow create` |
+| Active strand | `workflow execute` |
 | Execution profile | `FULL_PATH` |
-| Automation status | Planned in Slice S03 |
+| Automation status | Defined by Slice S03 |
 
 ## Required Roles
 
@@ -75,4 +75,6 @@ when:
 ## Hash Record
 
 The machine-readable hash record is
-[`context-pack.json`](context-pack.json).
+[`context-pack.json`](context-pack.json). Slice S03 owns the initial formal
+definition; later workflow slices refresh hashes when their governing files
+change.

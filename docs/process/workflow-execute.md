@@ -19,6 +19,12 @@ documentation step.
 
 Stop when either artifact is missing or contradicts `AGENTS.md`, `QUALITY.md`, ADRs or verified repository state.
 
+When present, `docs/workflow/context-pack.md` and
+`docs/workflow/context-pack.json` are read first for orientation. They remain
+secondary artifacts. If their hashes are stale, governing files are touched, or
+a conflict is detected, the executor must reopen the authoritative files before
+continuing.
+
 ## S3 Safety Preflight
 
 `workflow execute` must pass these safety nodes before any slice is routed or
