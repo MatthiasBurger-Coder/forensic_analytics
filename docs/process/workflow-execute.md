@@ -101,6 +101,24 @@ architecture or quality rules.
 `UNKNOWN` stops and escalates instead of guessing. A failed required gate must
 never be downgraded by classification.
 
+## Persistent Skill Registry Reuse
+
+When `docs/skill-audit/skill-registry.md` and
+`docs/skill-audit/skill-registry.json` exist, workflow execution may use them
+as routing and conflict-audit cache evidence only after hash validation.
+
+Reuse is allowed only when the registry hashes still match the repository files
+and no file under `.agents/**`, `.codex/**`, `AGENTS.md`, `QUALITY.md`,
+`docs/workflow/**`, `docs/skill-audit/**`, `docs/agents/**`,
+`docs/process/**` or `docs/governance/**` changed since the registry was
+verified. If a slice touches those paths, the executor must reopen the
+authoritative files and route through `skill-registry-conflict-auditor`.
+
+The persistent registry is secondary evidence. It must never mark unresolved
+owner conflicts, incompatible STOP rules, quality authority conflicts or
+architecture authority conflicts as ready. Stale registry reuse is a
+`DOC_GOVERNANCE_FAILURE`.
+
 ## S3D Execution Orchestrator
 
 S3D runs after `S3_CLASSIFY` and before write-capable slice execution. The

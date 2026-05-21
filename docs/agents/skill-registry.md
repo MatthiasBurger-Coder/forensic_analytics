@@ -60,6 +60,7 @@ Must not change:
 | Skill / Agent Creator | `skills-agents` | Skill Registry Maintainer | create or update skills, roles, prompts and agent definitions |
 | Skill Integrity Reviewer | `skills-agents` | Skill Registry Conflict Auditor | check dead references, ownership and duplicate authority |
 | Skill Registry Maintainer | `skills-agents` | Senior System Architect | maintain this registry |
+| Persistent Skill Registry Matrix | `skills-agents`, `workflow execute` | Skill Registry Conflict Auditor / Senior Documentation Engineer | maintain and validate `docs/skill-audit/skill-registry.md` and `docs/skill-audit/skill-registry.json` as hash-invalidated cache evidence |
 | Organigramm Maintainer | `skills-agents` | Senior Documentation Engineer | maintain role hierarchy diagrams |
 | AGENTS.md Maintainer | `skills-agents` | Senior System Architect | keep root agent governance authoritative |
 | Process Governance Maintainer | all strands | Senior Documentation Engineer | keep process documents synchronized |
@@ -74,6 +75,7 @@ Must not change:
 | Execution Profile Router | `workflow create`, `workflow execute` | Senior System Architect / Workflow Executor | classify requests as `FAST_PATH`, `NORMAL_PATH` or `FULL_PATH` before specialist routing without weakening mandatory gates |
 | Quality Impact Classifier | `workflow execute` | Senior Tester / Quality Gate Orchestrator | classify changed files as `DOC_ONLY`, `GOVERNANCE_METADATA`, `PRODUCT_BUILD_AFFECTING` or `UNKNOWN` before quality command selection |
 | Machine-Readable Slice Metadata | `workflow create`, `workflow execute` | Senior Workflow Architect / Workflow Executor / S3D | require concrete YAML slice metadata for dependency graph, lock and quality-gate validation |
+| Persistent Registry Reuse | all strands | Skill Registry Conflict Auditor | allow registry-cache reuse only when hashes match and no governing files changed |
 
 ## Governance Flowchart V2 Capability Linkage
 
@@ -88,6 +90,7 @@ Must not change:
 | Quality Gate Classification | Senior Tester, Quality Gate Orchestrator, Quality Gate skill, `skills/quality-impact-classifier/SKILL.md` | VERIFIED |
 | Execution Profile Routing | `skills/execution-profile-router/SKILL.md`, routing rules, Swarm Orchestrator | VERIFIED |
 | Flowchart Integrity Audit | Senior Documentation Engineer and Senior System Architect using `docs/governance/workflow/` rules | MAPPED_WITH_GAP: no dedicated flowchart-integrity skill exists |
+| Persistent Skill Registry Matrix | `docs/skill-audit/skill-registry.md`, `docs/skill-audit/skill-registry.json`, `skill-registry-conflict-auditor` | VERIFIED |
 
 Detailed evidence is recorded in
 [`../skill-audit/governance-flowchart-v2-linkage.md`](../skill-audit/governance-flowchart-v2-linkage.md).

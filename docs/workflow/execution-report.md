@@ -33,13 +33,13 @@ Workflow execution has started. Slice results are recorded below.
 
 | Slice | Status | Commit | Push |
 |---|---|---|---|
-| S00 | Completed | pending checkpoint | pending checkpoint |
-| S01 | Completed | pending checkpoint | pending checkpoint |
-| S02 | Completed | pending checkpoint | pending checkpoint |
-| S03 | Completed | pending checkpoint | pending checkpoint |
-| S04 | Completed | pending checkpoint | pending checkpoint |
-| S05 | Completed | pending checkpoint | pending checkpoint |
-| S06 | Pending | n/a | n/a |
+| S00 | Completed | `f5fc0be` | pushed |
+| S01 | Completed | `d1398fe` | pushed |
+| S02 | Completed | `2d0c444` | pushed |
+| S03 | Completed | `954bdf7` | pushed |
+| S04 | Completed | `80d4d21` | pushed |
+| S05 | Completed | `c2859a3` | pushed |
+| S06 | Completed | pending checkpoint | pending checkpoint |
 | S07 | Pending | n/a | n/a |
 | S08 | Pending | n/a | n/a |
 | S09 | Pending | n/a | n/a |
@@ -68,6 +68,44 @@ blockers=
 
 `commitHash` remains `pending` until the slice-scoped checkpoint commit
 succeeds. The post-commit report must record the actual hash and push result.
+
+## Slice S06 - Persist Skill Registry Matrix
+
+```text
+workflowVersion=governance-performance-20260521-v1
+sliceId=S06
+sliceTitle=Persist Skill Registry Matrix
+responsibleAgent=Senior System Architect
+changedFiles=.agents/skills/skill-registry-conflict-auditor/SKILL.md; docs/agents/skill-registry.md; docs/skill-audit/README.md; docs/skill-audit/skill-registry.md; docs/skill-audit/skill-registry.json; docs/process/skills-update.md; docs/process/workflow-execute.md; docs/workflow/execution-report.md
+qualityGateCommands=git diff --check; python3 -m json.tool docs/skill-audit/skill-registry.json; rg -n "skill-registry.json|Persistent Skill Registry|REUSE_ALLOWED|OPEN_PLANNED_S09" .agents docs
+qualityGateResult=PASS
+commitHash=pending
+rollbackReference=pending checkpoint commit
+arc42Updated=checked, no update required for S06
+adrUpdated=checked, no ADR update required because ADR-0015 already owns skill registry conflict governance
+pushResult=pending checkpoint push
+blockers=none
+```
+
+### S06 Role Review
+
+| Role | Result |
+|---|---|
+| Senior System Architect | Persistent registry cache remains secondary evidence and cannot override `AGENTS.md`, `QUALITY.md` or repository files. |
+| Senior Documentation Engineer | Skill-audit README, process docs and agent registry now point to the persistent matrix and its invalidation rule. |
+| Senior Tester | Required S06 checks are documentation and JSON validation checks; Gradle is not required because no product, build or test files changed. |
+| Skill Registry Conflict Auditor | Hash mismatch, changed governing paths, missing owners and unresolved STOP-rule conflicts remain manual-review blockers. |
+
+### S06 S3D Summary
+
+| Field | Value |
+|---|---|
+| Classification | documentation / governance / metadata |
+| Dependencies | S01 completed |
+| File locks | `.agents/skills/skill-registry-conflict-auditor/**`, `docs/agents/skill-registry.md`, `docs/skill-audit/**`, `docs/process/skills-update.md`, `docs/process/workflow-execute.md`, `docs/workflow/execution-report.md` |
+| Contract locks | none |
+| Architecture locks | `skill-registry-governance` |
+| Lock result | no conflict |
 
 ## Slice S00 - Execution Preflight And Workflow Context Freeze
 

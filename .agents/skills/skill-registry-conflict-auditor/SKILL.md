@@ -14,10 +14,12 @@ This skill is a governance reviewer. It does not implement product code, write b
 ## Responsibilities
 
 - Inventory `.agents/skills`, `.agents/roles`, `.codex/skills`, `.codex/agents`, workflow files and related governance docs.
+- Maintain `docs/skill-audit/skill-registry.md` and `docs/skill-audit/skill-registry.json` as a persistent, hash-invalidated registry cache.
 - Identify duplicated ownership, missing owners, incompatible STOP rules and conflicting quality or architecture expectations.
 - Classify conflicts as `BLOCKING` or `NON_BLOCKING`.
 - Verify that every new skill defines mission, responsibilities, forbidden scope, inputs, outputs, collaboration rules and STOP rules.
 - Preserve the distinction between reusable `.codex` assets and project-specific `.agents` or documentation assets.
+- Reuse a previous registry result only when the recorded governance hashes still match the repository files and no governing path changed.
 - Escalate unresolved architecture, security, quality, API, data ownership or release conflicts to the owning specialist skill or role.
 
 ## Authority
@@ -46,6 +48,8 @@ The Skill Registry & Conflict Auditor may:
 - Existing `docs/workplan/**` when referenced by migration or historical context
 - `docs/adr/**`
 - `docs/skill-audit/**`
+- `docs/skill-audit/skill-registry.md`
+- `docs/skill-audit/skill-registry.json`
 - `.agents/skills/**`
 - `.agents/roles/**`
 - `.agents/orchestrator/**`
@@ -61,6 +65,8 @@ The Skill Registry & Conflict Auditor may:
 - Compatibility matrix
 - Missing-owner report
 - Required specialist review list
+- Updated or validated persistent skill registry matrix
+- Registry reuse decision: `REUSE_ALLOWED`, `MANUAL_REVIEW_REQUIRED` or `BLOCKED`
 - `READY_FOR_WORKFLOW` or blocking governance findings when used in a requirement gate
 
 ## Collaboration Rules
@@ -83,5 +89,8 @@ Stop and report when:
 - a skill permits commit or push without required quality gates;
 - several skills own the same output but apply incompatible rules;
 - a workflow references a skill, role, prompt or agent that cannot be verified;
+- a cached registry is reused after `.agents/**`, `.codex/**`, `AGENTS.md`, `QUALITY.md`, `docs/workflow/**`, `docs/skill-audit/**`, `docs/agents/**`, `docs/process/**` or `docs/governance/**` changed;
+- the persistent registry marks an unresolved owner or STOP-rule conflict as ready;
+- the persistent registry is treated as the source of truth instead of repository files;
 - a governance decision would require guessing ownership, quality authority, architecture authority or source of truth;
 - project-specific rules are being added to portable `.codex` files without a reusable-template justification.

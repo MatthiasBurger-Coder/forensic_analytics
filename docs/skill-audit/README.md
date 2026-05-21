@@ -61,8 +61,19 @@ The governance update added reusable workflow, requirement, arc42 and engineerin
 - [conflicts-resolved.md](conflicts-resolved.md)
 - [manual-review-required.md](manual-review-required.md)
 - [skill-inventory.md](skill-inventory.md)
+- [skill-registry.md](skill-registry.md)
+- [skill-registry.json](skill-registry.json)
 - [microservice-skill-sharpening-audit.md](microservice-skill-sharpening-audit.md)
 - [governance-flowchart-v2-linkage.md](governance-flowchart-v2-linkage.md)
+
+## Persistent Registry Matrix
+
+`skill-registry.md` and `skill-registry.json` provide a hash-invalidated cache
+for governance routing and conflict-audit reuse. They are secondary evidence,
+not source-of-truth files. Manual review is required whenever governance files
+under `.agents/**`, `.codex/**`, `AGENTS.md`, `QUALITY.md`,
+`docs/workflow/**`, `docs/skill-audit/**`, `docs/agents/**`,
+`docs/process/**` or `docs/governance/**` changed.
 
 ## Three-Strand Governance Addendum
 

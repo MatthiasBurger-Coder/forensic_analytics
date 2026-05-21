@@ -64,6 +64,23 @@ The current `skills-agents` flow stops and reports on review failures. If an aut
 - `docs/arc42/**` only for governance consequences
 - `docs/adr/**` only for governance consequences
 
+## Persistent Skill Registry
+
+The `skills-agents` strand maintains the persistent skill registry matrix at:
+
+- `docs/skill-audit/skill-registry.md`
+- `docs/skill-audit/skill-registry.json`
+
+The matrix is a cache for routing and conflict-audit reuse. It must not replace
+the source repository files. A previous registry result may be reused only when
+the recorded hashes still match and no relevant governance file changed.
+
+Manual registry review is required whenever `.agents/**`, `.codex/**`,
+`AGENTS.md`, `QUALITY.md`, `docs/workflow/**`, `docs/skill-audit/**`,
+`docs/agents/**`, `docs/process/**` or `docs/governance/**` changed. Missing
+owners, incompatible STOP rules and unresolved authority conflicts remain
+blocking and must never be marked ready by cached evidence.
+
 ## Forbidden Files
 
 - `src/**`
