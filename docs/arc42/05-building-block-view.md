@@ -108,83 +108,69 @@ Automatic logging records operation name, phase, duration, correlation ID and ex
 
 ## 5.9 Target Microservices Ecosystem
 
-ADR-0017 defines the active target service landscape for service-split work.
-The landscape is partially implemented: gateway, ingestion,
-repository-analysis, analysis-store, Java AST, Joern CPG and BTM generation
-have service slices. The build-artifact worker, graph-replay,
-report-generation and frontend migration remain planned:
+ADR-0017 defines the FA-MSA-001 target service landscape for service-split
+work. The current service directories are transitional implementation evidence
+and migration inputs. They are not compatibility aliases and do not prove
+production readiness.
 
 ```text
-frontend-web-app
-  -> forensic-gateway-service
-    -> forensic-ingestion-service
-    -> repository-analysis-service
-    -> analysis-store-service
-    -> graph-replay-service
-    -> report-generation-service
+cli-client / UI / external client
+  -> query-report-api-service
+  -> analysis-orchestrator-service
+  -> repository-source-service
+  -> java-parser-analysis-service
+  -> joern-analysis-service
+  -> analysis-orchestrator-service
+  -> query-report-api-service
 
-repository-analysis-service
-  -> build-artifact-worker-service
-  -> java-ast-analysis-service
-  -> joern-cpg-analysis-service
+producer / scanner / runtime collector
+  -> ingestion-service
+  -> analysis-orchestrator-service or a service-owned storage path after S04
 
-analysis-store-service
-  <- java-ast-analysis-service
-  <- joern-cpg-analysis-service
-  <- btm-generation-service
+observability-stack
+  observes services through deployment and configuration, not shared Java code
 
-graph-replay-service
-  -> analysis-store-service
-
-report-generation-service
-  -> analysis-store-service
-  -> graph-replay-service
+testbed
+  starts and verifies services without becoming a production dependency
 ```
 
-Every service must own its internal domain, application, adapters,
-configuration, tests, health checks and Dockerfile before production readiness
-is claimed. Service communication is limited to REST/OpenAPI, gRPC/protobuf or
-approved event contracts. Shared Java implementation modules between
-independently deployable services are forbidden.
+Mandatory FA-MSA-001 service roots:
 
-Repository-to-BTM worker-dispatch and job-graph readiness state is owned by
-Analysis Store through the Slice 11 `analysis-job.proto` owner API. Gateway
-remains a facade and must not own worker orchestration logic.
+```text
+services/repository-source-service
+services/ingestion-service
+services/java-parser-analysis-service
+services/joern-analysis-service
+services/analysis-orchestrator-service
+services/query-report-api-service
+services/cli-client
+services/observability-stack
+services/testbed
+```
 
-Source-fact artifact bytes are owned by Java AST Analysis until a verified
-handoff or object-store contract transfers custody. Slice 12 verifies
-`GetSourceFactArtifactBytes` as the Java AST owner API and adds an Analysis
-Store service-local gRPC client for that RPC. Analysis Store retrieves those
-bytes through generated Java AST stubs with checksum and size validation, never
-by reading Java AST private files, Repository Analysis workspaces or another
-service's implementation classes.
+Every productive service must own its internal domain, application, adapters,
+bootstrap, configuration, tests, health checks and Dockerfile before production
+readiness is claimed. Service communication is limited to REST/OpenAPI,
+gRPC/protobuf, approved message contracts or documented file contracts. Shared
+Java implementation modules between independently deployable services are
+forbidden.
 
-The v5 prerequisite requires the Java AST source-fact artifact media type
-`application/vnd.forensic-analytics.java-ast-source-facts.v1+json` to be
-formalized as an external payload contract before Analysis Store parses it for
-target planning. Analysis Store may consume that payload only in a
-service-local adapter boundary and map it into Analysis Store-owned fact
-models. Java AST and BTM artifact filesystem adapters must reject symlinked
-directories and files before artifact byte read/write verification.
+The orchestrator coordinates workflow state only. It must not own repository
+checkout, JavaParser scanning, Joern execution, report rendering or private
+persistence owned by another service.
 
-The build-artifact worker is a planned byte-owner service for complete
-build-output packages. It does not own Repository Analysis workspaces,
-canonical Analysis Store facts or Joern execution. Artifactory and Jenkins are
-optional external producers and must be represented through verified artifact
-metadata, checksums and `ArtifactByteAccess`.
+The query/report API service is the public facade for status, query and report
+responses. It must use owner APIs and must not perform analysis execution or
+read private service databases.
+
+Optional later service candidates such as `btm-generation-service`,
+`graph-replay-service` and `incident-analysis-service` remain outside
+mandatory FA-MSA-001 closure unless a later requirement makes them mandatory.
 
 ADR-0018 accepts initial logical contracts for target service communication.
-Contracts marked as planned are design artifacts only; they do not prove that a
-Gateway endpoint, gRPC method, event publisher or event consumer is implemented.
-Generated transport classes must remain service-local implementation details.
-
-The current `analysis-store-service` implementation provides the first
-boundary for the `AnalysisJobService` job lifecycle and artifact metadata
-subset. The service has its own domain, application, gRPC adapter, in-memory
-repository, Spring Boot bootstrap, tests and Dockerfile. It does not depend on
-monolith domain, application or persistence modules and does not yet implement
-durable normalized facts, incident records, correlation indexes or database
-migrations.
+Contracts marked as planned are design artifacts only; they do not prove that
+an endpoint, RPC, event publisher or event consumer is implemented. Generated
+transport classes must remain service-local implementation details.
 
 ## 5.10 Agent Governance Building Blocks
 

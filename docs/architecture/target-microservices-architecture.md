@@ -2,48 +2,56 @@
 
 ## Status
 
-Slice 01 target architecture baseline for the microservices ecosystem
-conversion workflow.
+FA-MSA-001 Slice 01 target architecture baseline.
 
-This document defines the target service landscape. Seven service slices are
-now registered Gradle projects with service-local documentation, tests and
-Dockerfiles. This does not claim that the full landscape is independently
-deployable, health-checkable, containerized for production or complete.
+This document defines the active target service landscape for the monolith
+decomposition workflow. It is an architecture target, not an implementation or
+production-readiness claim.
 
 ## Architecture Decision
 
-The target service landscape is the active workflow landscape:
+ADR-0017 defines the FA-MSA-001 target service landscape:
 
-- `forensic-gateway-service`
-- `forensic-ingestion-service`
-- `repository-analysis-service`
-- `build-artifact-worker-service`
-- `java-ast-analysis-service`
-- `joern-cpg-analysis-service`
+- `repository-source-service`
+- `ingestion-service`
+- `java-parser-analysis-service`
+- `joern-analysis-service`
+- `analysis-orchestrator-service`
+- `query-report-api-service`
+- `cli-client`
+- `observability-stack`
+- `testbed`
+
+Optional later service candidates remain outside mandatory FA-MSA-001 closure
+unless a later requirement adds them:
+
 - `btm-generation-service`
-- `analysis-store-service`
 - `graph-replay-service`
-- `report-generation-service`
-- `frontend-web-app`
+- `incident-analysis-service`
 
-This replaces older arc42 planning names such as `forensic-server` and
-`*-worker` roots for the active migration workflow. Older names remain
-historical context only.
+Older names such as `forensic-gateway-service`,
+`forensic-ingestion-service`, `repository-analysis-service`,
+`java-ast-analysis-service`, `joern-cpg-analysis-service`,
+`analysis-store-service`, `graph-replay-service`,
+`report-generation-service` and `frontend-web-app` are current-state or
+historical planning evidence only. They are not compatibility aliases for the
+FA-MSA-001 target names.
 
 ## Current Baseline
 
 The current platform has:
 
 - one Gradle multi-project build;
-- one Spring Boot application boundary;
-- one manual bootstrap runtime;
+- central `forensic-analytics-*` domain, application, persistence, logging,
+  bootstrap, boot and adapter modules;
+- one Spring Boot monolith boundary and one manual bootstrap runtime;
 - in-process REST and gRPC adapters;
 - in-memory persistence;
-- one source-owned gRPC proto inside an implementation module;
-- a separate `forensic-ui` frontend;
-- Boot, Joern and frontend Docker material.
+- partial service slice directories under `services/**`;
+- Docker material for some current surfaces;
+- no verified Docker Swarm or Kubernetes manifests for the target landscape.
 
-The current platform has seven implemented service slices:
+The currently registered service slices are implementation evidence only:
 
 - `forensic-gateway-service`;
 - `forensic-ingestion-service`;
@@ -53,36 +61,28 @@ The current platform has seven implemented service slices:
 - `joern-cpg-analysis-service`;
 - `btm-generation-service`.
 
-The current platform still does not have:
-
-- implemented graph-replay, report-generation or build-artifact-worker
-  executable services;
-- service-private databases;
-- fully verified service-local health checks for the full target landscape;
-- production-wide Docker Compose service landscape;
-- Docker Swarm or Kubernetes manifests.
-
-Slice 15 verifies a local Docker Compose landscape for the repository-to-BTM
-service path only. That evidence does not claim full target-landscape,
-Docker Swarm or Kubernetes readiness.
+They do not prove the FA-MSA-001 target service landscape is complete,
+independently deployable, health-checkable, containerized for production or
+free of monolith callers.
 
 ## Target Principles
 
-Each service owns its internal hexagonal architecture:
+Each productive FA-MSA-001 service owns its internal hexagonal architecture:
 
 ```text
 domain
 application
-adapter/inbound
-adapter/outbound
-infrastructure
+adapter/in
+adapter/out
+bootstrap
 ```
 
 Allowed service integration mechanisms:
 
 - REST/OpenAPI;
 - gRPC/protobuf;
-- approved event contracts.
+- approved message contracts;
+- documented file contracts with explicit ownership and provenance.
 
 Forbidden coupling:
 
@@ -93,34 +93,32 @@ Forbidden coupling:
 - shared service modules;
 - shared utility modules;
 - shared test-fixture modules;
-- shared internal error-model modules;
-- direct class dependencies between services;
+- shared logging, persistence or internal error-model modules;
+- direct Gradle project dependencies between services;
 - direct cross-service database access;
-- shared private database tables.
+- shared private database tables;
+- private workspace or filesystem coupling.
 
 `contracts/` may contain interface contracts and contract documentation only.
-Generated Java code, mappers, exceptions, Spring configuration, shared
-fixtures and shared observability helpers must not become shared service
-runtime libraries.
+Generated Java code, mappers, exceptions, Spring configuration, shared fixtures
+and shared observability helpers must remain service-local implementation
+details.
 
 ## Target Repository Shape
 
-Planned target shape:
+Mandatory target shape:
 
 ```text
 services/
-  forensic-gateway-service/
-  forensic-ingestion-service/
-  repository-analysis-service/
-  build-artifact-worker-service/
-  java-ast-analysis-service/
-  joern-cpg-analysis-service/
-  btm-generation-service/
-  analysis-store-service/
-  graph-replay-service/
-  report-generation-service/
-frontend/
-  frontend-web-app/
+  repository-source-service/
+  ingestion-service/
+  java-parser-analysis-service/
+  joern-analysis-service/
+  analysis-orchestrator-service/
+  query-report-api-service/
+  cli-client/
+  observability-stack/
+  testbed/
 contracts/
   grpc/
   openapi/
@@ -131,81 +129,62 @@ deployment/
   kubernetes/
 ```
 
-Most target roots now exist. Graph-replay and report-generation are README-only
-planned roots and are explicitly deferred from repository-to-BTM pipeline
-acceptance by Slice 16. Build-artifact-worker, frontend migration and
-production deployment roots still require later implementation slices before
-they can be treated as executable runtime paths.
+Optional later service roots may be added only when a later requirement or
+slice explicitly introduces them.
 
 ## Target Service Responsibilities
 
 | Service | Planned Responsibility | Primary Ownership |
 |---|---|---|
-| `forensic-gateway-service` | External API, UI/CLI facade, public request/status facade and public BTM delivery facade | Public facade state only, not worker orchestration state, analysis facts or artifact bytes |
-| `forensic-ingestion-service` | gRPC intake and validation of plugin, scanner and runtime evidence packages | Raw ingestion intake and upload-session lifecycle |
-| `repository-analysis-service` | Repository checkout, branch resolution, workspace preparation and source snapshot preparation | Repository workspaces, leases and checkout diagnostics |
-| `build-artifact-worker-service` | Optional sandboxed production of complete build-output packages for pinned source snapshots | Build-output package bytes, manifests, checksums and retrieval references when introduced |
-| `java-ast-analysis-service` | JavaParser source scanning, stable source identifiers, source-fact artifact byte retrieval and unresolved-symbol diagnostics | AST execution output and produced source-fact bytes until accepted or transferred through an explicit byte-handoff contract |
-| `joern-cpg-analysis-service` | Joern runtime, CPG/CFG/DFG analysis and semantic artifact mapping | Joern execution artifacts and semantic worker output |
-| `btm-generation-service` | Deterministic Byteman/BTM artifacts from delivered analysis facts | Generated BTM rule artifacts |
-| `analysis-store-service` | Authoritative normalized facts, analysis sessions, jobs, Slice 11 repository-to-BTM orchestration readiness state, Slice 12 source-fact retrieval readiness, incidents, correlations and artifact catalog | Canonical evidence, worker-dispatch/job-graph state and one-writer analysis state |
-| `graph-replay-service` | Graph/runtime overlays and exception-centered replay | Rebuildable graph/replay projections |
-| `report-generation-service` | Reports, incident context packages and LLM-ready/generated packages | Report artifacts and generated analysis packages |
-| `frontend-web-app` | React user interface through Gateway/public APIs only | UI state only, no forensic data ownership |
+| `repository-source-service` | Repository access, branch and commit resolution, checkout/fetch, workspace preparation and source snapshot descriptors | Repository workspaces, leases, source snapshots and checkout diagnostics |
+| `ingestion-service` | gRPC or API intake, validation and normalization of analysis and runtime data | Raw intake, upload sessions and rejected-ingestion diagnostics |
+| `java-parser-analysis-service` | JavaParser-based AST analysis and deterministic Java source facts | Java AST/source fact output, stable source IDs and unresolved-symbol diagnostics |
+| `joern-analysis-service` | Joern runtime control and CPG/CFG/DFG semantic analysis | Joern execution artifacts, semantic facts and mapping diagnostics |
+| `analysis-orchestrator-service` | Analysis job coordination across repository, ingestion, JavaParser and Joern services | Orchestration state, status, retry and failure coordination only |
+| `query-report-api-service` | Public query/report REST API, client status views and report aggregation through owner APIs | Public API facade state and report/query response assembly |
+| `cli-client` | Command-line client for public APIs | CLI state only; no analysis, parser, Joern or persistence ownership |
+| `observability-stack` | Logging, metrics, tracing, dashboards and deployment observability configuration | Operational configuration and dashboards, not shared Java runtime code |
+| `testbed` | Non-production integration/system test environment | Test orchestration, fixtures and environment wiring only |
 
-## Canonical Data Flow
+## Current-To-Target Migration View
 
-Planned analysis flow:
+| Current evidence | FA-MSA-001 target |
+|---|---|
+| `forensic-analytics-adapter-repository-source`, `services/repository-analysis-service` | `repository-source-service` |
+| `forensic-analytics-ingestion-grpc`, `forensic-analytics-ingestion-request`, `services/forensic-ingestion-service` | `ingestion-service` |
+| `forensic-analytics-adapter-javaparser`, `services/java-ast-analysis-service` | `java-parser-analysis-service` |
+| `forensic-analytics-adapter-joern-docker`, `services/joern-cpg-analysis-service` | `joern-analysis-service` |
+| `forensic-analytics-engine`, orchestration portions of current application code and applicable `analysis-store-service` coordination state | `analysis-orchestrator-service`, pending S04 ownership review |
+| `forensic-analytics-rest`, public API portions of `forensic-gateway-service` and report/query API behavior | `query-report-api-service` |
+| `forensic-analytics-cli` | `cli-client` |
+| `forensic-analytics-observability`, `forensic-analytics-logging`, deployment observability docs | `observability-stack` |
+| `forensic-analytics-testbed` | `testbed` |
+| `forensic-analytics-domain`, `forensic-analytics-application`, `forensic-analytics-persistence`, `forensic-analytics-bootstrap`, `forensic-analytics-boot-app` | Split into service-local structures or removed after caller-free proof |
 
-```text
-Frontend / CLI / external client
-  -> Gateway
-  -> Analysis Store orchestration owner API
-  -> Repository Analysis
-  -> Build Artifact Worker or verified external artifact producer
-  -> Java AST Analysis
-  -> Java AST owner source-fact byte retrieval
-  -> Joern CPG Analysis
-  -> Analysis Store
-  -> Graph Replay
-  -> Report Generation
-  -> Gateway
-  -> Frontend / client
-```
-
-Planned plugin-ingestion flow:
+## Canonical Target Flow
 
 ```text
-Plugin / scanner / runtime collector
-  -> Forensic Ingestion Service
-  -> Analysis Store
-  -> downstream projections and reports through contracts
+CLI / UI / external client
+  -> query-report-api-service
+  -> analysis-orchestrator-service
+  -> repository-source-service
+  -> java-parser-analysis-service
+  -> joern-analysis-service
+  -> analysis-orchestrator-service
+  -> query-report-api-service
+  -> client
+
+producer / scanner / runtime collector
+  -> ingestion-service
+  -> analysis-orchestrator-service or service-owned storage path after S04
 ```
 
-Planned replay flow:
+The orchestrator coordinates only. It does not own repository checkout,
+JavaParser scanning, Joern execution, public report rendering or another
+service's private persistence.
 
-```text
-Exception or correlation context
-  -> Gateway
-  -> Graph Replay Service
-  -> Analysis Store owner APIs
-  -> replay projection and gaps
-  -> Gateway / Report Generation
-```
-
-Planned report and LLM package flow:
-
-```text
-Report request
-  -> Gateway
-  -> Report Generation Service
-  -> Analysis Store owner APIs
-  -> Graph Replay APIs
-  -> reproducible report or LLM-ready package
-```
-
-LLM output remains generated analysis or hypothesis. It is never canonical
-evidence.
+LLM output, reports and graph/replay projections remain generated analysis or
+projection output. They are never canonical evidence.
 
 ## Rollback And Strangler Strategy
 
@@ -213,22 +192,20 @@ The migration strategy is strangler-first:
 
 1. Preserve the current modular monolith while target boundaries are
    documented.
-2. Create target roots without moving business logic blindly.
-3. Define external contracts before service implementations.
-4. Add independent service implementations behind contracts.
-5. Route one workflow path at a time through a service boundary after tests
-   and runtime-start evidence exist.
-6. Keep the old in-process path until the replacement path has verified
-   contract, integration and quality evidence.
-7. Remove obsolete monolith paths only after replacement evidence exists and
-   the active workflow's monolith-retirement milestone approves the change.
-
-Rollback for behavior-changing slices must keep the previous in-process path
-available until the service path is proven and documented.
+2. Reconcile ADR and arc42 names before moving code.
+3. Define external contracts before service implementations depend on
+   communication behavior.
+4. Assign data ownership before persistence is split.
+5. Add service-local implementations one service at a time.
+6. Route one workflow path at a time through a service boundary after tests and
+   runtime-start evidence exist.
+7. Keep old in-process paths until replacement paths have contract,
+   integration, quality and rollback evidence.
+8. Remove obsolete monolith paths only after caller-free proof.
 
 ## Runtime Readiness Evidence Required Later
 
-Each service must later prove:
+Each productive target service must later prove:
 
 - independent build;
 - independent start;
@@ -236,12 +213,12 @@ Each service must later prove:
 - configuration ownership;
 - observability and diagnostics;
 - healthcheck behavior;
-- container build;
-- Docker Compose participation;
-- Docker Swarm readiness;
-- Kubernetes readiness where manifests are added.
+- Dockerfile and container build;
+- Docker Compose participation where applicable;
+- Docker Swarm or Kubernetes readiness only when repository manifests and
+  validation commands exist.
 
-No later slice may claim readiness before the corresponding evidence exists.
+No slice may claim readiness before the corresponding evidence exists.
 
 ## Quality And Verification
 

@@ -77,77 +77,63 @@ The Docker baseline lives under `docker/boot-app/`. It copies only the generated
 
 ## 7.6 Microservice Deployment Boundaries
 
-ADR-0017 defines the active target service landscape. Microservice extraction
-must keep every service independently deployable. Each service must own its
-Spring Boot application, Dockerfile, health checks, configuration, tests and
-service-local domain model before production readiness is claimed.
+ADR-0017 defines the FA-MSA-001 target service landscape. Microservice
+extraction must keep every productive service independently deployable. Each
+service must own its bootstrap, Dockerfile, health checks, configuration, tests
+and service-local domain model before production readiness is claimed.
 
-The target service roots are:
+The FA-MSA-001 target service roots are:
 
 ```text
-services/forensic-gateway-service
-services/forensic-ingestion-service
-services/repository-analysis-service
-services/build-artifact-worker-service
-services/java-ast-analysis-service
-services/joern-cpg-analysis-service
-services/btm-generation-service
-services/analysis-store-service
-services/graph-replay-service
-services/report-generation-service
-frontend/frontend-web-app
+services/repository-source-service
+services/ingestion-service
+services/java-parser-analysis-service
+services/joern-analysis-service
+services/analysis-orchestrator-service
+services/query-report-api-service
+services/cli-client
+services/observability-stack
+services/testbed
 ```
 
-Shared Java implementation modules between these services are forbidden.
-Service-to-service integration is limited to REST/OpenAPI, gRPC/protobuf and
-approved event contracts. Deployment targets must cover local Spring Boot
-startup, Docker, Docker Swarm and Kubernetes through service-owned deployment
-material before readiness is claimed.
+`cli-client`, `observability-stack` and `testbed` are special boundaries:
+
+- `cli-client` is a public API client, not a productive backend service.
+- `observability-stack` is deployment/configuration material, not a shared
+  Java runtime module.
+- `testbed` is non-production integration and system-test infrastructure.
+
+Shared Java implementation modules between services are forbidden.
+Service-to-service integration is limited to REST/OpenAPI, gRPC/protobuf,
+approved message contracts or documented file contracts. Deployment targets
+must cover local startup, Docker and later Docker Swarm or Kubernetes only
+when service-owned deployment material and validation commands exist.
 
 ADR-0018 keeps contract artifacts separate from deployment readiness. A
 contract file may exist before the service, container, healthcheck, manifest or
 broker topology exists. Deployment documentation must not claim readiness from
 contract presence alone.
 
-`build-artifact-worker-service` is a planned service root only. Before it is
-called deployable, a slice must add its Spring Boot application, healthcheck,
-Dockerfile, sandbox configuration, resource quotas, network policy, tests and
-service-local contract generation. Jenkins and Artifactory integrations remain
-optional external integrations and are skipped by default in local quality
-gates.
-
 Joern Docker input must be a Joern-owned materialized workspace volume. A
-Repository Analysis private workspace volume must not be mounted into the Joern
+Repository Source private workspace volume must not be mounted into the Joern
 container.
 
-`services/analysis-store-service` is implemented as an independently buildable
-Spring Boot service. It exposes gRPC on port `9091`, a JDK HTTP health endpoint
-on port `8082`, and can be packaged with:
+The current `services/analysis-store-service` and other `services/forensic-*`
+or analysis-worker roots are transitional implementation evidence. They do not
+prove that the FA-MSA-001 target service roots are independently deployable.
+Docker Swarm and Kubernetes deployment descriptors are still future slice
+material.
 
-```bash
-./gradlew --no-daemon :services:analysis-store-service:bootJar --dependency-verification strict --console=plain --stacktrace
-```
+## 7.7 Local Repository-to-BTM Transitional Landscape
 
-Its Dockerfile builds a standalone runtime image for the service jar. Docker
-Swarm and Kubernetes deployment descriptors are still future slice material.
-The first local Docker Compose descriptor is limited to the repository-to-BTM
-service landscape described below.
-
-Workflow `e2e-wildfly-cli-deploy-20260521-v1` records a separate Swarm and
-Kubernetes deployment workflow handoff. That handoff does not add stack files,
-manifests, charts, probes, resource policies or readiness claims.
-
-## 7.7 Local Repository-to-BTM Service Landscape
-
-Slice 15 adds the first local Docker Compose descriptor for the implemented
-repository-to-BTM path:
+The repository currently contains a local Docker Compose descriptor for the
+implemented transitional repository-to-BTM path:
 
 ```text
 deployment/docker-compose/repository-to-btm.local.yml
 ```
 
-The descriptor covers only the service path that Slice 14 proved through owner
-APIs:
+The descriptor covers only the current transitional service path:
 
 ```text
 forensic-gateway-service
@@ -172,3 +158,7 @@ by a later slice.
 
 Verified commands for the local descriptor are recorded in
 `deployment/docker-compose/README.md`.
+
+The descriptor is current evidence only. It is not a readiness claim for the
+FA-MSA-001 target landscape until the target services exist and are verified by
+their own build, start, healthcheck, Docker and quality gates.

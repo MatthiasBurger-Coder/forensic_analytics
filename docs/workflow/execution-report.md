@@ -26,7 +26,7 @@
 | Slice | Status | Notes |
 |---|---|---|
 | S00 | COMPLETED | Branch, local ref, clean status, context-pack hashes, S3D metadata and `git diff --check` verified. |
-| S01 | PENDING | ADR and arc42 target landscape reconciliation |
+| S01 | COMPLETED | ADR, arc42, architecture docs and services README aligned to the FA-MSA-001 target service landscape. |
 | S02 | PENDING | Caller and coupling inventory gate |
 | S03 | PENDING | Contract-first communication baseline |
 | S04 | PENDING | Data ownership and persistence split |
@@ -50,6 +50,10 @@
 | S00 | `sha256sum AGENTS.md QUALITY.md .codex/AGENTS.md .codex/workflow/workflow-execution-rules.md .agents/orchestrator/routing-rules.md .agents/orchestrator/swarm-orchestrator.md .agents/skills/workflow-authoring/SKILL.md .agents/skills/three-amigos-requirement-gatekeeper/SKILL.md .agents/skills/execution-profile-router/SKILL.md .agents/skills/microservice-migration-safety-gate/SKILL.md docs/adr/ADR-0017-target-microservices-service-landscape.md docs/architecture/target-microservices-architecture.md settings.gradle.kts build.gradle.kts` | PASS: hashes match `docs/workflow/context-pack.json`. |
 | S00 | `git diff --check` | PASS: no whitespace errors. |
 | S00 | S3D metadata validation script over `docs/workflow/workflow.md` | PASS: 16 slices, concrete IDs, complete required metadata, no unknown dependencies, no cycles. |
+| S01 | `git status --short --branch` | PASS: active workflow branch verified; branch was ahead by the S00 commit and S01 diff was limited to architecture documentation and `services/README.md`. |
+| S01 | `git diff --name-status` | PASS: changed files matched the S01 documentation scope plus this execution report update. |
+| S01 | `rg -n "report-generation-service" ...` | PASS: predecessor/deferred report service references aligned across ADR-0017, target architecture, service boundaries, migration map and `services/README.md`. |
+| S01 | `git diff --check` | PASS: no whitespace errors after S01 edits and remediation. |
 
 ## Subagent Review Log
 
@@ -58,12 +62,15 @@
 | S00 | Senior Execution Orchestrator subagent | PASS: S00 metadata, dependency shape, branch/scope, context-pack hashes and quality checks verified. |
 | S00 | Senior Tester subagent | PASS: S00 gates are sufficient; broader Gradle tests are not required for S00 because no Java, Gradle, contract or runtime files changed. |
 | S00 | Senior System Architect subagent | PASS: no architecture/governance blocker prevents starting S01; known ADR/arc42 service-name drift is intentionally assigned to S01. |
+| S01 | Senior System Architect subagent | PASS after remediation: `report-generation-service` is consistently documented as predecessor/deferred scope, not mandatory FA-MSA-001 scope, and report/query responsibility moves first to `query-report-api-service`. |
+| S01 | Senior Requirement Engineer subagent | PASS: ADR-0017 formalizes FA-MSA-001 naming; older names are current/transitional evidence, not compatibility aliases; optional services remain deferred. |
+| S01 | Microservice Senior Expert subagent | PASS: target names are consistent, transitional names are not production-readiness claims, and no shared Java implementation module claim was introduced. |
+| S01 | Senior Documentation Engineer subagent | PASS: S01 docs consistently use FA-MSA-001 target names and retain old names only as predecessor/current-state or optional later-service evidence. |
 
 ## Blockers
 
-No active blocker for S00. Production migration remains blocked until S01
-reconciles ADR/arc42 target names, S03 reconciles contracts and S04 resolves
-data ownership.
+No active blocker for S00 or S01. Production migration remains blocked until
+S03 reconciles contracts and S04 resolves data ownership.
 
 ## Final Acceptance
 
