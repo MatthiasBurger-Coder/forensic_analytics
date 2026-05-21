@@ -408,9 +408,20 @@ secondary_reviewers:
   - senior-security-sandbox-engineer
   - senior-tester
 affected_files:
+  - docs/architecture/contract-versioning.md
   - docs/architecture/data-ownership.md
   - docs/architecture/service-boundaries.md
+  - docs/architecture/service-communication-matrix.md
   - docs/architecture/service-migration-map.md
+  - docs/workflow/execution-report.md
+  - services/analysis-store-service/README.md
+  - services/btm-generation-service/README.md
+  - services/forensic-gateway-service/README.md
+  - services/forensic-ingestion-service/README.md
+  - services/graph-replay-service/README.md
+  - services/java-ast-analysis-service/README.md
+  - services/joern-cpg-analysis-service/README.md
+  - services/report-generation-service/README.md
 affected_modules:
   - forensic-analytics-persistence
   - services:*
@@ -422,9 +433,20 @@ dependencies:
   - S03
 parallel_group: G03
 file_locks:
+  - docs/architecture/contract-versioning.md
   - docs/architecture/data-ownership.md
   - docs/architecture/service-boundaries.md
+  - docs/architecture/service-communication-matrix.md
   - docs/architecture/service-migration-map.md
+  - docs/workflow/execution-report.md
+  - services/analysis-store-service/README.md
+  - services/btm-generation-service/README.md
+  - services/forensic-gateway-service/README.md
+  - services/forensic-ingestion-service/README.md
+  - services/graph-replay-service/README.md
+  - services/java-ast-analysis-service/README.md
+  - services/joern-cpg-analysis-service/README.md
+  - services/report-generation-service/README.md
 contract_locks:
   - persistence-ownership
 architecture_locks:
@@ -443,7 +465,9 @@ stop_conditions:
 ```
 
 Purpose: make persistence ownership explicit before removing
-`forensic-analytics-persistence` or rehoming canonical state.
+`forensic-analytics-persistence` or rehoming canonical state. S04 includes
+documentation consistency updates needed to remove stale S04 owner placeholders
+from contract governance notes and current/predecessor service READMEs.
 
 ### Slice 05 - Repository Source Service Extraction
 
