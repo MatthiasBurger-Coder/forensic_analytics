@@ -1336,3 +1336,59 @@ coverage, full local quality gate with strict dependency verification,
 microservice review, security review, quality review, `git diff --check`,
 `git diff --cached --check`, checkpoint commit and branch push completed
 successfully.
+
+## Slice 15 Execution - Runtime Readiness And Local Service Landscape
+
+Slice 15 adds verified local runtime material for the repository-to-BTM service
+path that Slice 14 proved through owner APIs. The slice does not claim Docker
+Swarm or Kubernetes readiness.
+
+Implemented behavior:
+
+- `deployment/docker-compose/repository-to-btm.local.yml` defines the six
+  service local landscape: Gateway, Analysis Store, Repository Analysis, Java
+  AST Analysis, Joern CPG Analysis and BTM Generation.
+- The Compose descriptor uses service-owned Dockerfiles, Docker profile
+  configuration, health checks and named volumes for repository workspaces plus
+  Java AST, Joern and BTM artifacts.
+- Gateway is the only public HTTP facade in the local landscape; Analysis
+  Store remains the repository-to-BTM orchestration owner and calls worker
+  owner APIs over gRPC.
+- `.dockerignore` now allows the Gateway service jar in the Docker build
+  context, matching the other service jar exceptions.
+- Deployment, service and arc42 documentation records the verified local
+  Compose path and keeps Swarm/Kubernetes explicitly not ready.
+
+### Slice 15 Reviews
+
+- Senior DevOps Reviewer: initial read-only precheck returned `READY` with a
+  minimal local Compose implementation plan. Post-implementation review
+  initially blocked one stale arc42 sentence that still grouped Docker Compose
+  with future Swarm/Kubernetes material. After correction, final re-review
+  returned `READY`.
+
+### Slice 15 CP_RECORD
+
+```text
+workflowVersion=microservices-btm-pipeline-20260517-v5
+sliceId=15
+sliceTitle=Runtime Readiness And Local Service Landscape
+responsibleAgent=Workflow Executor with Senior DevOps Reviewer
+changedFiles=.dockerignore; deployment/**; docs/arc42/07-deployment-view.md; services/*/README.md
+qualityGateCommands=./gradlew --no-daemon --max-workers=1 :services:forensic-gateway-service:bootJar :services:analysis-store-service:bootJar :services:repository-analysis-service:bootJar :services:java-ast-analysis-service:bootJar :services:joern-cpg-analysis-service:bootJar :services:btm-generation-service:bootJar --dependency-verification strict --console=plain --stacktrace; docker compose -f deployment/docker-compose/repository-to-btm.local.yml config; docker compose -f deployment/docker-compose/repository-to-btm.local.yml build; docker compose -f deployment/docker-compose/repository-to-btm.local.yml up -d; curl -fsS http://127.0.0.1:18080/api/health; curl -fsS http://127.0.0.1:18082/health; curl -fsS http://127.0.0.1:18083/health; curl -fsS http://127.0.0.1:18084/health; curl -fsS http://127.0.0.1:18085/health; curl -fsS http://127.0.0.1:18086/health; docker compose -f deployment/docker-compose/repository-to-btm.local.yml down -v; ./gradlew --no-daemon --max-workers=1 clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace; git diff --check; git diff --cached --check
+qualityGateResult=PASS
+checkpointCommitHash=f92a78b4933c40804285418885de8ec2b6833aea
+pushResult=PUB_DONE to origin/feature/workflow-microservices-btm-pipeline-20260517
+rollbackReference=de4ec8073944bf3a166b375dcc4be1a189e1597a
+arc42Updated=deployment view updated with local repository-to-BTM Compose landscape
+adrUpdated=not required in this slice
+```
+
+### Slice 15 D8 Decision
+
+Slice 15 is `D8_PASS`. Six-service `bootJar`, Docker Compose config, Docker
+Compose build, Compose startup, Gateway plus five service health checks,
+Compose cleanup, full local quality gate with strict dependency verification,
+DevOps review, `git diff --check`, `git diff --cached --check`, checkpoint
+commit and branch push completed successfully. Docker Swarm and Kubernetes
+readiness remain explicitly unclaimed.
