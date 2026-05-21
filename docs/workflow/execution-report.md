@@ -1392,3 +1392,56 @@ Compose cleanup, full local quality gate with strict dependency verification,
 DevOps review, `git diff --check`, `git diff --cached --check`, checkpoint
 commit and branch push completed successfully. Docker Swarm and Kubernetes
 readiness remain explicitly unclaimed.
+
+## Slice 16 Execution - Graph Replay And Report Service Decision
+
+Slice 16 records the architecture decision that graph-replay and
+report-generation services are not required for repository-to-BTM pipeline
+acceptance. Implementing them in this slice would add unneeded runtime scope
+and risk turning projections or generated reports into source-of-truth paths.
+
+Implemented behavior:
+
+- `graph-replay-service` and `report-generation-service` remain README-only
+  planned roots.
+- Service boundaries, communication matrix, migration map, current build/test
+  map, target architecture and arc42 runtime view now record the explicit
+  Slice 16 deferral.
+- The accepted BTM path ends at deterministic BTM artifact generation and
+  public delivery readiness.
+- Future graph/replay/report implementation requires contracts, owner-query
+  access, projection rebuild rules, storage ownership, generated-output labels
+  and tests that keep projections and generated output separate from evidence.
+
+### Slice 16 Reviews
+
+- Senior System Architect: read-only precheck returned `READY` for explicit
+  deferral instead of implementation. Post-implementation review returned
+  `READY`; changed files were docs/README only, no Java/Gradle/proto/Docker/
+  Compose/runtime wiring was added, and the source-of-truth guard stayed
+  explicit.
+
+### Slice 16 CP_RECORD
+
+```text
+workflowVersion=microservices-btm-pipeline-20260517-v5
+sliceId=16
+sliceTitle=Graph Replay And Report Service Decision
+responsibleAgent=Workflow Executor with Senior System Architect
+changedFiles=docs/arc42/06-runtime-view.md; docs/architecture/current-build-and-test-map.md; docs/architecture/service-boundaries.md; docs/architecture/service-communication-matrix.md; docs/architecture/service-migration-map.md; docs/architecture/target-microservices-architecture.md; services/graph-replay-service/README.md; services/report-generation-service/README.md
+qualityGateCommands=./gradlew --no-daemon --max-workers=1 clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace; git diff --check; git diff --cached --check
+qualityGateResult=PASS
+checkpointCommitHash=4c32f694d397c780b62f9f9dab0124903c1250bd
+pushResult=PUB_DONE to origin/feature/workflow-microservices-btm-pipeline-20260517
+rollbackReference=babbc4d0aa95a1bc10e354410a0eb6fe8923f64d
+arc42Updated=runtime view updated with graph/report deferral decision
+adrUpdated=not required in this slice
+```
+
+### Slice 16 D8 Decision
+
+Slice 16 is `D8_PASS`. The graph-replay and report-generation services are
+explicitly deferred from repository-to-BTM acceptance. Full local quality gate
+with strict dependency verification, Senior System Architect review, `git diff
+--check`, `git diff --cached --check`, checkpoint commit and branch push
+completed successfully.
