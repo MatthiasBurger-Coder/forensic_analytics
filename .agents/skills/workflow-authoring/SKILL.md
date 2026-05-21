@@ -180,14 +180,47 @@ For each slice define:
 
 - purpose
 - prerequisites
+- machine-readable YAML metadata
 - affected files
+- affected modules
+- affected contracts
 - owner role
 - allowed write scope
 - dependencies
+- parallel group
+- file, contract and architecture locks
 - parallelization status
 - done criteria
 - verification commands
 - stop conditions
+
+Each slice must include a fenced `yaml` metadata block with these fields:
+
+```yaml
+slice_id:
+profile:
+owner:
+secondary_reviewers: []
+affected_files: []
+affected_modules: []
+affected_contracts: []
+dependencies: []
+parallel_group:
+file_locks: []
+contract_locks: []
+architecture_locks: []
+quality_gates:
+  targeted: []
+  required: []
+documentation:
+  arc42:
+  adr:
+stop_conditions: []
+```
+
+Use empty arrays for none. Dependencies must be concrete slice IDs, not ranges
+or prose. Missing metadata blocks future `workflow execute` until the workflow
+is corrected.
 
 Parallelize only when write scopes are disjoint, shared contracts are stable and verification can be run independently.
 

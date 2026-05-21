@@ -73,6 +73,7 @@ Must not change:
 | Commit Traceability Maintainer | `workflow execute` | Senior Documentation Engineer / Workflow Executor | keep `CP_RECORD` fields, one-slice-one-commit evidence and workflow history synchronized |
 | Execution Profile Router | `workflow create`, `workflow execute` | Senior System Architect / Workflow Executor | classify requests as `FAST_PATH`, `NORMAL_PATH` or `FULL_PATH` before specialist routing without weakening mandatory gates |
 | Quality Impact Classifier | `workflow execute` | Senior Tester / Quality Gate Orchestrator | classify changed files as `DOC_ONLY`, `GOVERNANCE_METADATA`, `PRODUCT_BUILD_AFFECTING` or `UNKNOWN` before quality command selection |
+| Machine-Readable Slice Metadata | `workflow create`, `workflow execute` | Senior Workflow Architect / Workflow Executor / S3D | require concrete YAML slice metadata for dependency graph, lock and quality-gate validation |
 
 ## Governance Flowchart V2 Capability Linkage
 

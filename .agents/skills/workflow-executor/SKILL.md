@@ -99,19 +99,28 @@ workflow-execute Execution Orchestrator. S3D is not a fourth strand.
 
 S3D must extract these fields from the checked active workflow:
 
-- slice ID
-- slice goal
-- affected files
-- affected modules
-- affected contracts
-- responsible subagents or roles
-- dependencies
-- quality gates
-- documentation duties
+- `slice_id`
+- slice goal or purpose
+- `profile`
+- `owner`
+- `secondary_reviewers`
+- `affected_files`
+- `affected_modules`
+- `affected_contracts`
+- `dependencies`
+- `parallel_group`
+- `file_locks`
+- `contract_locks`
+- `architecture_locks`
+- `quality_gates.targeted`
+- `quality_gates.required`
+- `documentation.arc42`
+- `documentation.adr`
+- `stop_conditions`
 
 Use explicit `none` or `not applicable` values when a field has no content.
-Missing fields, ambiguous dependency ranges, unknown slice IDs and dependency
-cycles stop execution before implementation.
+Missing fields, dependency ranges that are not concrete slice IDs, unknown
+slice IDs and dependency cycles stop execution before implementation.
 
 S3D builds a directed dependency graph, runs topological sort, forms
 independent parallelization groups and acquires file, contract, module and

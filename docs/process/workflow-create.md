@@ -163,3 +163,14 @@ Classic labels such as Requirement Analyst, Architecture Validator and Quality V
 routing or quality decisions. The context pack is a secondary navigation aid
 with hash provenance. It must not replace `AGENTS.md`, `QUALITY.md`, ADRs,
 arc42, routing rules, workflow files or skill files.
+
+## Machine-Readable Slice Metadata
+
+Every executable workflow slice must include a fenced `yaml` metadata block
+with concrete fields for slice ID, profile, owner, reviewers, affected files,
+affected modules, affected contracts, dependencies, parallel group, file locks,
+contract locks, architecture locks, quality gates, documentation duties and
+stop conditions.
+
+Dependencies must be concrete slice IDs. Ranges and prose-only dependencies are
+not executable.

@@ -37,7 +37,7 @@ Workflow execution has started. Slice results are recorded below.
 | S01 | Completed | pending checkpoint | pending checkpoint |
 | S02 | Completed | pending checkpoint | pending checkpoint |
 | S03 | Completed | pending checkpoint | pending checkpoint |
-| S04 | Pending | n/a | n/a |
+| S04 | Completed | pending checkpoint | pending checkpoint |
 | S05 | Pending | n/a | n/a |
 | S06 | Pending | n/a | n/a |
 | S07 | Pending | n/a | n/a |
@@ -105,6 +105,44 @@ blockers=none
 | File locks | `docs/workflow/execution-report.md` |
 | Contract locks | none |
 | Architecture locks | `workflow-execute-preflight` |
+| Lock result | no conflict |
+
+## Slice S04 - Formalize Machine-Readable Slice Metadata
+
+```text
+workflowVersion=governance-performance-20260521-v1
+sliceId=S04
+sliceTitle=Formalize Machine-Readable Slice Metadata
+responsibleAgent=Senior Workflow Architect
+changedFiles=.agents/skills/workflow-authoring/SKILL.md; .agents/skills/workflow-executor/SKILL.md; .agents/skills/three-amigos-requirement-gatekeeper/templates/slice-template.md; docs/process/workflow-create.md; docs/process/workflow-execute.md; docs/agents/skill-registry.md; docs/workflow/context-pack.json; docs/workflow/execution-report.md
+qualityGateCommands=git diff --check; rg -n "slice_id|affected_files|dependencies|file_locks|quality_gates" .agents docs
+qualityGateResult=PASS
+commitHash=pending
+rollbackReference=pending checkpoint commit
+arc42Updated=checked, no update required for S04
+adrUpdated=checked, no update required for S04
+pushResult=pending checkpoint push
+blockers=none
+```
+
+### S04 Role Review
+
+| Role | Result |
+|---|---|
+| Senior Workflow Architect | Workflow authoring now requires a concrete YAML metadata block for every executable slice. |
+| Senior Swarm Orchestrator | S3D extraction fields are explicit and dependency ranges are rejected. |
+| Senior Documentation Engineer | Three Amigos slice template, workflow create and workflow execute docs were synchronized. |
+| Senior Tester | Required quality-gate metadata is part of the mandatory slice block. |
+
+### S04 S3D Summary
+
+| Field | Value |
+|---|---|
+| Classification | documentation / governance / metadata |
+| Dependencies | S03 completed |
+| File locks | `.agents/skills/workflow-authoring/SKILL.md`, `.agents/skills/workflow-executor/SKILL.md`, `.agents/skills/three-amigos-requirement-gatekeeper/templates/slice-template.md`, `docs/process/workflow-create.md`, `docs/process/workflow-execute.md`, `docs/agents/skill-registry.md`, `docs/workflow/context-pack.json`, `docs/workflow/execution-report.md` |
+| Contract locks | none |
+| Architecture locks | `workflow-slice-metadata` |
 | Lock result | no conflict |
 
 ## Slice S03 - Define Workflow Context Pack

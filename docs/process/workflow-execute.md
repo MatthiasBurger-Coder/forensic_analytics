@@ -108,15 +108,24 @@ Execution Orchestrator for `workflow execute`, not a fourth process strand.
 
 S3D reads the checked `docs/workflow/workflow.md` and extracts:
 
-- slice ID
-- slice goal
-- affected files
-- affected modules
-- affected contracts
-- responsible subagents or roles
-- dependencies
-- quality gates
-- documentation duties
+- `slice_id`
+- slice goal or purpose
+- `profile`
+- `owner`
+- `secondary_reviewers`
+- `affected_files`
+- `affected_modules`
+- `affected_contracts`
+- `dependencies`
+- `parallel_group`
+- `file_locks`
+- `contract_locks`
+- `architecture_locks`
+- `quality_gates.targeted`
+- `quality_gates.required`
+- `documentation.arc42`
+- `documentation.adr`
+- `stop_conditions`
 
 S3D then builds a directed dependency graph, runs topological sort, forms
 independent parallelization groups and checks file, contract, module and
