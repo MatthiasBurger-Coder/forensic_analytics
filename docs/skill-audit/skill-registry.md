@@ -22,7 +22,7 @@ behavior and quality commands.
 
 | Asset set | Count | Source path |
 |---|---:|---|
-| Project skills | 73 | `.agents/skills/*/SKILL.md` |
+| Project skills | 75 | `.agents/skills/*/SKILL.md` |
 | Project roles | 17 | `.agents/roles/*.md` |
 | Reusable Codex skills | 6 | `.codex/skills/*/SKILL.md` |
 | Callable Codex agents | 34 | `.codex/agents/*.toml` |
@@ -61,6 +61,8 @@ decision is explicit.
 | Execution profile router | `.agents/skills/execution-profile-router/SKILL.md` | Senior System Architect / Workflow Executor | `FAST_PATH`, `NORMAL_PATH`, `FULL_PATH` routing | hash must match |
 | Quality impact classifier | `.agents/skills/quality-impact-classifier/SKILL.md` | Senior Tester / Quality Gate Orchestrator | quality command impact decision | hash must match |
 | S3D execution orchestrator | `.agents/skills/s3d-execution-orchestrator/SKILL.md` | Senior Execution Orchestrator | dependency graph, topological groups and locks | hash must match |
+| Flowchart integrity auditor | `.agents/skills/flowchart-integrity-auditor/SKILL.md` | Senior Documentation Engineer / Senior System Architect | governance diagram integrity audit | hash must match |
+| Process performance profiler | `.agents/skills/process-performance-profiler/SKILL.md` | Senior Performance Engineer / Workflow Executor | process diagnostics under `docs/workflow/metrics/**` | hash must match |
 | Skill registry conflict auditor | `.agents/skills/skill-registry-conflict-auditor/SKILL.md` | Senior System Architect | ownership and compatibility review | hash must match |
 | Routing rules | `.agents/orchestrator/routing-rules.md` | Agent Workflow Orchestrator | specialist and typed-error routing | hash must match |
 | Swarm orchestrator | `.agents/orchestrator/swarm-orchestrator.md` | Senior Swarm Orchestrator | handoff and coordination rules | hash must match |
