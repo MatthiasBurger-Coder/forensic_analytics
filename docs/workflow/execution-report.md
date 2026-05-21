@@ -32,7 +32,7 @@
 | S04 | COMPLETED | Data ownership, artifact custody, orchestration state and query/report ownership assigned; reviewer-required consistency docs included through S04 scope updates. |
 | S05 | COMPLETED | Repository source service extracted as first FA-MSA-001 target-name service; security remediation, service test, service packaging, root test and staged whitespace gate passed. |
 | S06 | COMPLETED | Ingestion service extracted as target-name service; Java backend race remediation, service test, service packaging, root test and staged whitespace gate passed. |
-| S07 | PENDING | JavaParser analysis service extraction; S3D scope remediation completed before product implementation. |
+| S07 | COMPLETED | JavaParser analysis service extracted as target-name service; source-analysis remediation, service build, service tests, root test, specialist reviews and staged whitespace gate passed. |
 | S08 | PENDING | Joern analysis service extraction |
 | S09 | PENDING | Analysis orchestrator service boundary |
 | S10 | PENDING | Query report API service boundary |
@@ -99,6 +99,19 @@
 | S07 | `./gradlew :forensic-analytics-adapter-javaparser:test --dependency-verification strict --console=plain --stacktrace` | PASS as tester diagnostic: legacy adapter parity tests pass before S07 implementation. |
 | S07 | `./gradlew test --dependency-verification strict --console=plain --stacktrace` | PASS as tester diagnostic before S07 implementation; root gate must be rerun after the target service is implemented. |
 | S07 | `git diff --check` for S07 workflow-scope remediation | PASS: no whitespace errors after adding S07 documentation, contract and report locks before product implementation. |
+| S07 | S07 coupling and identity scan over `services/java-parser-analysis-service` | PASS: no production direct Gradle `project(...)` dependency or forbidden shared implementation package reference was found; remaining `de.burger.forensics.analytics.application/domain/observability/persistence/adapter` matches are the service-local ArchUnit forbidden-package assertions. |
+| S07 | `./gradlew :services:java-parser-analysis-service:test --tests "de.burger.forensics.analytics.services.javaparseranalysis.adapter.out.javaparser.JavaParserSourceScannerAdapterTest" --dependency-verification strict --console=plain --stacktrace` | FAILED before test remediation: the parse-error diagnostic assertion assumed deterministic diagnostic ordering after the new always-on unresolved-symbol diagnostic. |
+| S07 | `./gradlew :services:java-parser-analysis-service:test --tests "de.burger.forensics.analytics.services.javaparseranalysis.adapter.out.javaparser.JavaParserSourceScannerAdapterTest" --dependency-verification strict --console=plain --stacktrace` | PASS after test remediation: diagnostic codes are compared deterministically without relying on parser emission order. |
+| S07 | `./gradlew :services:java-parser-analysis-service:test --dependency-verification strict --console=plain --stacktrace` | FAILED before remediation: the new target service exposed missing schema path resolution in `JavaAstAnalysisContractTest`, diagnostic ordering in the gRPC parse-error test, and two stale `java-ast` symlink fixture paths. |
+| S07 | `./gradlew :services:java-parser-analysis-service:test --dependency-verification strict --console=plain --stacktrace` | PASS after remediation: build successful in 1m 5s; Gradle emitted protobuf Unsafe and gRPC native-access warnings, but no task failed. |
+| S07 | `./gradlew :services:java-parser-analysis-service:bootJar --dependency-verification strict --console=plain --stacktrace` | PASS: build successful in 15s; service Boot jar packaged independently. |
+| S07 | `./gradlew :services:java-parser-analysis-service:build --dependency-verification strict --console=plain --stacktrace` | PASS: build successful in 47s; service assembled, packaged and tested independently. |
+| S07 | `./gradlew test --dependency-verification strict --console=plain --stacktrace` | PASS: build successful in 2m 2s after registering `services:java-parser-analysis-service`; 186 actionable tasks, 9 executed, 177 up-to-date. |
+| S07 | `git diff --check` | PASS: no whitespace errors after S07 implementation, contract updates and documentation updates. |
+| S07 | `./gradlew :services:java-parser-analysis-service:test --tests "de.burger.forensics.analytics.services.javaparseranalysis.adapter.in.grpc.JavaAstAnalysisGrpcEndpointTest" --dependency-verification strict --console=plain --stacktrace` | PASS after tester remediation: build successful in 33s after adding top-level gRPC response completeness assertions. |
+| S07 | `./gradlew :services:java-parser-analysis-service:test --dependency-verification strict --console=plain --stacktrace` | PASS after tester remediation: build successful in 58s; Gradle emitted protobuf Unsafe and gRPC native-access warnings, but no task failed. |
+| S07 | `git diff --cached --check` | PASS after staging S07 files: no whitespace errors in tracked and newly added target service files. |
+| S07 | `./gradlew test --dependency-verification strict --console=plain --stacktrace` | PASS after tester remediation: build successful in 28s; 186 actionable tasks up-to-date. |
 
 ## Subagent Review Log
 
@@ -145,6 +158,11 @@
 | S07 | Source Analysis reviewer | BLOCKED before implementation: unresolved-symbol diagnostics are conditional in the predecessor, source-root/module context is not explicit in source-fact artifacts, and parse errors must remain diagnostics rather than canonical facts. |
 | S07 | Microservice Senior Expert subagent | PASS_WITH_PLAN: create and register the target service, retain `services/java-ast-analysis-service` and `forensic-analytics-adapter-javaparser` as predecessor evidence, and avoid shared Java implementation modules or runtime/deployment readiness claims. |
 | S07 | Senior Tester subagent | BLOCKED before implementation: the required `:services:java-parser-analysis-service:test` target cannot run until the target module exists; predecessor tests are diagnostic only. |
+| S07 | Senior Java Backend subagent | PASS after implementation: target service package and hexagonal boundaries are service-local; no forbidden shared implementation module dependency or JavaParser API leakage into domain/application was reported. |
+| S07 | Source Analysis reviewer | PASS after implementation: unresolved-symbol diagnostics are always emitted as completeness-affecting diagnostics, parse errors remain diagnostics, `sourceRoot` is explicit in domain and artifact schema, and static facts do not claim runtime execution. |
+| S07 | Microservice Senior Expert subagent | PASS after implementation: `services:java-parser-analysis-service` is registered, independently buildable/startable, containerized with distinct ports and documented without overclaiming predecessor removal. |
+| S07 | Senior Tester subagent | BLOCKED before final remediation: new service files were still untracked for staged whitespace validation, and the gRPC test lacked direct top-level `AnalyzeSourceSnapshotResponse.getCompleteness()` assertions. |
+| S07 | Senior Tester subagent | PASS after final remediation: S07 files are staged, `git diff --cached --check` passed, direct top-level gRPC completeness assertions are present, and no remaining coverage or command blocker was found. |
 
 ## Blockers
 

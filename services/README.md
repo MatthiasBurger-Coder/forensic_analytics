@@ -51,6 +51,17 @@ Optional services are added only by later requirements or workflow slices.
 `report-generation-service` is not a FA-MSA-001 mandatory service; report and
 query API responsibility moves first to `query-report-api-service`.
 
+## Implemented Target Service Evidence
+
+- `repository-source-service`
+- `ingestion-service`
+- `java-parser-analysis-service`
+
+These target-name service roots are additive migration evidence. Their
+predecessor service directories and legacy modules remain rollback/current
+state evidence until later retirement slices prove caller migration, parity and
+quality gates.
+
 ## Local Runtime Evidence
 
 The existing local repository-to-BTM service landscape is documented in

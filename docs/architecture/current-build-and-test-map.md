@@ -48,6 +48,7 @@ Verified from `settings.gradle.kts`:
 - `forensic-analytics-boot-app`
 - `services:btm-generation-service`
 - `services:joern-cpg-analysis-service`
+- `services:java-parser-analysis-service`
 - `services:java-ast-analysis-service`
 - `services:repository-source-service`
 - `services:repository-analysis-service`
@@ -56,10 +57,11 @@ Verified from `settings.gradle.kts`:
 - `services:forensic-ingestion-service`
 - `services:forensic-gateway-service`
 
-Nine service-specific Gradle projects under `services/**` are now registered.
-`services:repository-source-service` and `services:ingestion-service` are the
-first FA-MSA-001 target-name service projects introduced by this workflow.
-`services:repository-analysis-service` and `services:forensic-ingestion-service`
+Ten service-specific Gradle projects under `services/**` are now registered.
+`services:repository-source-service`, `services:ingestion-service` and
+`services:java-parser-analysis-service` are FA-MSA-001 target-name service
+projects introduced by this workflow. `services:repository-analysis-service`,
+`services:forensic-ingestion-service` and `services:java-ast-analysis-service`
 remain predecessor services and rollback inputs, not compatibility aliases.
 Graph-replay and report-generation remain README-only planned service roots and
 are explicitly deferred from repository-to-BTM acceptance by Slice 16. The
@@ -170,6 +172,7 @@ Existing Docker material:
 - `forensic-ui/Dockerfile`
 - `services/repository-source-service/Dockerfile`
 - `services/ingestion-service/Dockerfile`
+- `services/java-parser-analysis-service/Dockerfile`
 - `deployment/docker-compose/repository-to-btm.local.yml`
 
 The DevOps review verified Joern Compose configuration with:
@@ -191,6 +194,12 @@ Slice 06 adds a service-local Dockerfile for `services/ingestion-service`.
 This is target-service container packaging evidence only; Compose, Swarm and
 Kubernetes readiness for the FA-MSA-001 target landscape remains future work
 until descriptors and validation commands exist.
+
+Slice 07 adds a service-local Dockerfile for
+`services/java-parser-analysis-service`. This is target-service container
+packaging evidence only; Compose, Swarm and Kubernetes readiness for the
+FA-MSA-001 target landscape remains future work until descriptors and
+validation commands exist.
 
 Slice 15 later verified the local repository-to-BTM Compose descriptor with
 six service `bootJar` tasks, `docker compose config`, `docker compose build`,

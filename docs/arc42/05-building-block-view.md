@@ -180,6 +180,19 @@ transport classes stay inside the service build.
 rollback evidence. They are not compatibility aliases for `ingestion-service`
 and are not removed by S06.
 
+Slice S07 adds `services/java-parser-analysis-service` as target-service
+implementation evidence for the FA-MSA-001 JavaParser analysis boundary. It is
+registered as its own Gradle project and owns service-local domain,
+application ports, inbound gRPC adapter, outbound JavaParser adapter,
+filesystem artifact adapter, bootstrap, configuration, tests, README and
+Dockerfile. The predecessor `java-ast-analysis.proto` wire shape remains
+unchanged and generated transport classes stay inside the service build.
+
+`services/java-ast-analysis-service` and
+`forensic-analytics-adapter-javaparser` remain current-state predecessor and
+rollback evidence. They are not compatibility aliases for
+`java-parser-analysis-service` and are not removed by S07.
+
 The orchestrator coordinates workflow state only. It must not own repository
 checkout, JavaParser scanning, Joern execution, report rendering or private
 persistence owned by another service.

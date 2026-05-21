@@ -76,9 +76,10 @@ the JSON document carried in the returned bytes, not a duplicate protobuf fact
 stream. The S04-approved canonical fact owner may parse this payload only
 inside service-local adapter code and must map it into service-owned fact
 models. The JSON payload must preserve analysis identity, source snapshot
-identity, scan summary, source facts and diagnostics, use safe relative source
-paths only and must not contain workspace paths, `file:` URIs, repository URLs,
-credentials or raw source content.
+identity, scan summary, source facts, explicit safe-relative `sourceRoot`
+context and diagnostics, use safe relative source paths only and must not
+contain workspace paths, `file:` URIs, repository URLs, credentials or raw
+source content.
 
 `joern-cpg-analysis.proto` is intentionally limited to static semantic Joern
 analysis. It accepts opaque workspace IDs, source snapshot IDs, relative source

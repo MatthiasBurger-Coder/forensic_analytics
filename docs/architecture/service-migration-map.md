@@ -3,8 +3,8 @@
 ## Status
 
 FA-MSA-001 Slice 04 service-boundary, migration inventory and
-data-ownership map with Slice 05 repository-source and Slice 06 ingestion
-implementation evidence.
+data-ownership map with Slice 05 repository-source, Slice 06 ingestion and
+Slice 07 JavaParser implementation evidence.
 
 This document maps current modular-monolith and transitional service evidence
 to FA-MSA-001 target ownership decisions. It does not move production code,
@@ -20,7 +20,7 @@ starts.
 |---|---|---|---|---|---|---|---|
 | `repository-source-service` | `services/repository-source-service`; predecessors `forensic-analytics-adapter-repository-source`, `services/repository-analysis-service` | S05 target service is service-local and registered; legacy adapter paths still have monolith application/domain dependencies and the predecessor service remains as rollback input | Move repository access, branch resolution, checkout/fetch, workspace preparation, source package byte custody and source snapshot descriptors into a service-local boundary; later slices must route callers and retire predecessor paths only after parity evidence | Repository source/snapshot REST, gRPC or file contract; S05 uses predecessor `repository-analysis.proto` wire shape as transitional external contract only | Owns workspaces, leases, cleanup, source package bytes, source snapshot descriptors and accepted source metadata | No private workspace sharing; no target repository code execution without sandbox approval; no JavaParser or Joern handoff logic inside repository source | Service-local architecture, Git safety, checkout diagnostics, build/start and Dockerfile checks |
 | `ingestion-service` | `services/ingestion-service`; predecessors `forensic-analytics-ingestion-grpc`, `forensic-analytics-ingestion-request`, `services/forensic-ingestion-service` | S06 target service is service-local and registered; legacy gRPC/request modules still depend on central application/domain modules and predecessor service remains as rollback input | Move intake, validation, normalization and request import behavior into service-local domain/application/adapters; later slices must route callers and retire predecessor paths only after parity evidence | Ingestion gRPC/API contract; S06 keeps `forensic-ingestion.proto` wire shape unchanged | Owns raw intake, upload sessions, raw runtime or analysis payload byte custody before handoff and rejected-ingestion diagnostics | No shared generated Java DTO module; no static/semantic canonical fact writes; no repository checkout responsibility | gRPC/API contract tests, validation tests, request-manifest tests and missing-field diagnostics |
-| `java-parser-analysis-service` | `forensic-analytics-adapter-javaparser`, `services/java-ast-analysis-service` | JavaParser adapter shares application/domain models in legacy path | Move JavaParser AST scanning and static source-fact extraction into service-local boundary | JavaParser analysis and source-fact artifact contracts | Owns canonical static Java source facts it produces, source-fact artifact bytes and producer-local artifact metadata | No runtime execution claims from static facts; no JavaParser API leakage into neutral contracts | Source-location, unresolved-symbol, deterministic ID and artifact retrieval tests |
+| `java-parser-analysis-service` | `services/java-parser-analysis-service`; predecessors `forensic-analytics-adapter-javaparser`, `services/java-ast-analysis-service` | S07 target service is service-local and registered; legacy adapter still depends on monolith application/domain/observability modules and predecessor service remains as rollback input | Move JavaParser AST scanning and static source-fact extraction into service-local boundary; later slices must route callers and retire predecessor paths only after parity evidence | JavaParser analysis and source-fact artifact contracts; S07 keeps `java-ast-analysis.proto` wire shape unchanged and adds explicit `sourceRoot` to the JSON artifact schema | Owns canonical static Java source facts it produces, source-fact artifact bytes and producer-local artifact metadata | No runtime execution claims from static facts; no JavaParser API leakage into neutral contracts; unresolved-symbol diagnostics must stay explicit | Source-location, unresolved-symbol, deterministic ID, artifact retrieval and JSON schema tests |
 | `joern-analysis-service` | `forensic-analytics-adapter-joern-docker`, `services/joern-cpg-analysis-service`, `docker/joern/**` | Joern adapter shares ports and monolith domain/application models in legacy path | Move Joern Docker control, CPG/CFG/DFG analysis and semantic mapping into service-local boundary | Joern analysis artifact contract | Owns canonical Joern semantic facts it produces, semantic artifact bytes and producer-local artifact metadata | No shared CPG filesystem coupling; no Repository Source private workspace mounts | Joern unavailable, timeout, mapping and Docker-boundary tests |
 | `analysis-orchestrator-service` | `forensic-analytics-engine`, orchestration parts of `forensic-analytics-application`, coordination/status parts of `services/analysis-store-service` | Current orchestration is in-process and mixed with application and persistence concerns | Create orchestration-only service after contracts and data ownership are explicit | Analysis orchestration API or event contracts | Owns job lifecycle, workflow status, worker leases/attempts, retry/timeout/failure/dead-letter state, correlation references and job-to-artifact references | No repository checkout, parser, Joern, report, artifact byte custody, producer catalog or canonical fact storage inside orchestrator | Job lifecycle, retry, timeout, status, failure and no-hidden-monolith tests |
 | `query-report-api-service` | `forensic-analytics-rest`, public facade parts of `services/forensic-gateway-service`, report/query concepts | Current REST and Gateway-style behavior are not the FA-MSA-001 query/report API target | Create public API facade that queries owner APIs and assembles reports/status only | REST/OpenAPI query/report contract | Owns public read models, public cache state, generated report packages, LLM-ready packages and stored generated LLM output only as labeled generated analysis or hypotheses | No analysis execution, checkout, Joern, JavaParser, direct DB access or canonical evidence ownership | OpenAPI contract, redaction, error mapping and frontend/CLI compatibility tests |
@@ -55,7 +55,10 @@ register service builds. S05 registers the first target service build,
 `services:repository-source-service`, without removing the predecessor
 `services:repository-analysis-service`. S06 registers
 `services:ingestion-service`, without removing predecessor
-`services:forensic-ingestion-service` or legacy ingestion modules.
+`services:forensic-ingestion-service` or legacy ingestion modules. S07
+registers `services:java-parser-analysis-service`, without removing
+predecessor `services:java-ast-analysis-service` or the legacy JavaParser
+adapter.
 
 S02 found no direct `project(...)` dependencies in
 `services/*/build.gradle.kts` and no `project(":services:...")` dependencies in
@@ -83,6 +86,7 @@ The first target-name service implementation evidence is:
 
 - `services/repository-source-service`.
 - `services/ingestion-service`.
+- `services/java-parser-analysis-service`.
 
 `services/repository-source-service` owns repository source preparation only.
 It does not implement JavaParser analysis handoff, Joern execution, report
@@ -92,6 +96,12 @@ generation, BTM generation or direct consumer access to private workspaces.
 engine request manifest import and accepted raw payload handoff ports only. It
 does not implement repository checkout, canonical fact writes, JavaParser
 analysis, Joern execution, reporting or orchestration state.
+
+`services/java-parser-analysis-service` owns JavaParser execution, static Java
+method facts, source locations, source-root context, parser diagnostics,
+unresolved-symbol limitation diagnostics and source-fact artifact bytes only.
+It does not implement repository checkout, runtime execution truth, Joern
+semantic analysis, report generation or orchestration state.
 
 ## Migration Sequencing
 

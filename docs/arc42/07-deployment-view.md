@@ -180,6 +180,33 @@ Docker Swarm or Kubernetes deployment descriptors for the target landscape.
 Those readiness claims require later repository tooling and validation
 commands.
 
+Slice S07 adds `services/java-parser-analysis-service` as target-service
+deployment evidence. The service owns:
+
+- `services/java-parser-analysis-service/build.gradle.kts`;
+- `services/java-parser-analysis-service/Dockerfile`;
+- `services/java-parser-analysis-service/src/main/resources/application.properties`;
+- `services/java-parser-analysis-service/src/main/resources/application-docker.properties`;
+- a service-local health HTTP endpoint on port `8085`;
+- a service-local gRPC endpoint on port `9094`.
+
+The service can be packaged independently with:
+
+```bash
+./gradlew :services:java-parser-analysis-service:bootJar --dependency-verification strict --console=plain --stacktrace
+```
+
+It can be started locally with:
+
+```bash
+./gradlew :services:java-parser-analysis-service:bootRun --dependency-verification strict --console=plain --stacktrace
+```
+
+The service Dockerfile is service-owned, but S07 does not add Docker Compose,
+Docker Swarm or Kubernetes deployment descriptors for the target landscape.
+Those readiness claims require later repository tooling and validation
+commands.
+
 ## 7.7 Local Repository-to-BTM Transitional Landscape
 
 The repository currently contains a local Docker Compose descriptor for the

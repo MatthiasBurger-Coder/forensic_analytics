@@ -56,6 +56,7 @@ The currently registered service slices are implementation evidence only:
 
 - `repository-source-service`;
 - `ingestion-service`;
+- `java-parser-analysis-service`;
 - `forensic-gateway-service`;
 - `forensic-ingestion-service`;
 - `repository-analysis-service`;
@@ -64,10 +65,11 @@ The currently registered service slices are implementation evidence only:
 - `joern-cpg-analysis-service`;
 - `btm-generation-service`.
 
-`repository-source-service` and `ingestion-service` are the first registered
-FA-MSA-001 target-name services introduced by this workflow. The remaining
-listed services are predecessor or current-state service evidence. Together
-they do not prove the FA-MSA-001 target service landscape is complete,
+`repository-source-service`, `ingestion-service` and
+`java-parser-analysis-service` are registered FA-MSA-001 target-name services
+introduced by this workflow. The remaining listed services are predecessor or
+current-state service evidence. Together they do not prove the FA-MSA-001
+target service landscape is complete,
 independently deployable, health-checkable, containerized for production or
 free of monolith callers.
 
@@ -158,7 +160,7 @@ slice explicitly introduces them.
 |---|---|
 | `services/repository-source-service` plus predecessors `forensic-analytics-adapter-repository-source`, `services/repository-analysis-service` | `repository-source-service` |
 | `services/ingestion-service` plus predecessors `forensic-analytics-ingestion-grpc`, `forensic-analytics-ingestion-request`, `services/forensic-ingestion-service` | `ingestion-service` |
-| `forensic-analytics-adapter-javaparser`, `services/java-ast-analysis-service` | `java-parser-analysis-service` |
+| `services/java-parser-analysis-service` plus predecessors `forensic-analytics-adapter-javaparser`, `services/java-ast-analysis-service` | `java-parser-analysis-service` |
 | `forensic-analytics-adapter-joern-docker`, `services/joern-cpg-analysis-service` | `joern-analysis-service` |
 | `forensic-analytics-engine`, orchestration portions of current application code and applicable `analysis-store-service` coordination state | `analysis-orchestrator-service` for job lifecycle, worker leases, retries, failures, correlation references and job-to-artifact references |
 | `forensic-analytics-rest`, public API portions of `forensic-gateway-service` and report/query API behavior | `query-report-api-service` |

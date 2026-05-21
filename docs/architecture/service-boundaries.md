@@ -3,7 +3,8 @@
 ## Status
 
 FA-MSA-001 Slice 04 service-boundary and data-ownership baseline with Slice 05
-repository-source and Slice 06 ingestion implementation evidence.
+repository-source, Slice 06 ingestion and Slice 07 JavaParser implementation
+evidence.
 
 These are target boundaries. Current `services/**` directories and
 `forensic-analytics-*` modules are implementation evidence and migration
@@ -210,10 +211,31 @@ Outbound communication:
 
 Current evidence:
 
+- `services/java-parser-analysis-service`;
 - `forensic-analytics-adapter-javaparser`;
 - `services/java-ast-analysis-service`;
 - `contracts/grpc/java-ast-analysis.proto`;
 - `contracts/grpc/java-ast-source-facts-v1.schema.json`.
+
+S07 implementation state:
+
+- registered Gradle project `services:java-parser-analysis-service`;
+- service-local package `de.burger.forensics.analytics.services.javaparseranalysis`;
+- service-local domain, application ports, inbound gRPC adapter, outbound
+  JavaParser adapter, filesystem artifact adapter, bootstrap, configuration,
+  tests, README and Dockerfile;
+- local gRPC port `9094` and health port `8085`;
+- unchanged `contracts/grpc/java-ast-analysis.proto` wire shape and generated
+  transport classes kept service-local;
+- source-fact JSON artifacts include explicit `sourceRoot` context and the
+  service reports `SYMBOL_RESOLUTION_NOT_CONFIGURED` as completeness-affecting
+  until real symbol solving exists.
+
+`services/java-ast-analysis-service` and
+`forensic-analytics-adapter-javaparser` remain predecessor and rollback
+evidence. S07 does not remove them, does not route production callers to the
+new service and does not claim Docker Compose, Docker Swarm or Kubernetes
+readiness for the target landscape.
 
 Stop conditions:
 

@@ -156,6 +156,7 @@
       "required": [
         "factId",
         "factType",
+        "sourceRoot",
         "location",
         "signature",
         "summary",
@@ -167,6 +168,9 @@
         },
         "factType": {
           "const": "java-method"
+        },
+        "sourceRoot": {
+          "$ref": "#/$defs/safeRelativePath"
         },
         "location": {
           "$ref": "#/$defs/sourceLocation"

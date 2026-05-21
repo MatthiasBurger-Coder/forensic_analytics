@@ -132,6 +132,23 @@ fields, malformed JSON, unsupported payload kinds and missing payload files are
 reported as ingestion request errors. The importer does not write canonical
 static, semantic, runtime, report or orchestration facts.
 
+Slice S07 verifies a local JavaParser runtime boundary:
+
+```text
+repository-source-service source snapshot contract
+  -> JavaAstAnalysisService.AnalyzeSourceSnapshot
+  -> services/java-parser-analysis-service inbound adapter
+  -> service-local JavaParser analysis application service
+  -> service-local JavaParser outbound adapter
+  -> service-local source-fact artifact writer
+  -> source-fact metadata plus retrievable artifact bytes
+```
+
+The S07 service emits static Java source facts only. Parse errors are reported
+as diagnostics, not canonical facts, and `SYMBOL_RESOLUTION_NOT_CONFIGURED` is
+reported as a completeness-affecting limitation until real symbol solving is
+implemented. Source-fact JSON artifacts carry explicit `sourceRoot` context.
+
 `query-report-api-service` remains a public facade in this flow. It must not
 sequence worker business logic directly, run analysis or read private service
 databases. `analysis-orchestrator-service` coordinates state, retry and
