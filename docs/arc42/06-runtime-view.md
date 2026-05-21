@@ -139,6 +139,24 @@ before analysis handoff. Joern consumes only validated source/build package
 descriptors or materialized Joern-owned workspaces; it must not receive
 Repository Source private workspace IDs.
 
+Slice S05 verifies a local repository-source runtime boundary:
+
+```text
+RepositoryAnalysisService gRPC request
+  -> services/repository-source-service inbound adapter
+  -> service-local repository source application service
+  -> service-local Git checkout and workspace adapters
+  -> opaque workspace ID and source snapshot descriptor
+```
+
+The S05 service does not run JavaParser, Joern, repository build scripts,
+repository hooks, BTM generation or report logic. Public responses expose
+snapshot IDs, relative source roots, artifact references, completeness markers
+and diagnostics, not private filesystem paths. The inherited Java AST handoff
+RPC from the transitional predecessor contract is intentionally not implemented
+in this service slice; a later contract migration must replace or retire that
+predecessor wire shape explicitly.
+
 ADR-0018 allows the initial runtime communication contracts to describe planned
 API, worker, replay, report and event flows before each runtime path exists.
 Those flows remain contract design until a slice implements and verifies

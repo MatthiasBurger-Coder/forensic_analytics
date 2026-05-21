@@ -155,6 +155,18 @@ gRPC/protobuf, approved message contracts or documented file contracts. Shared
 Java implementation modules between independently deployable services are
 forbidden.
 
+Slice S05 adds `services/repository-source-service` as the first target-service
+implementation evidence for FA-MSA-001. It is registered as its own Gradle
+project and owns service-local domain, application ports, inbound gRPC adapter,
+outbound Git/workspace adapters, bootstrap, configuration, tests, README and
+Dockerfile. It keeps the predecessor `repository-analysis.proto` filename and
+wire service name as a transitional external contract only; generated transport
+classes remain inside the service build.
+
+`services/repository-analysis-service` remains current-state predecessor
+evidence and rollback input. It is not a compatibility alias for
+`repository-source-service` and is not removed by S05.
+
 The orchestrator coordinates workflow state only. It must not own repository
 checkout, JavaParser scanning, Joern execution, report rendering or private
 persistence owned by another service.

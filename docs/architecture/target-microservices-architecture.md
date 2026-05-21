@@ -5,7 +5,8 @@
 FA-MSA-001 Slice 01 target architecture baseline.
 
 This document defines the active target service landscape for the monolith
-decomposition workflow. It is an architecture target, not an implementation or
+decomposition workflow. It is an architecture target and records slice-level
+implementation evidence only where the workflow has verified it. It is not a
 production-readiness claim.
 
 ## Architecture Decision
@@ -53,6 +54,7 @@ The current platform has:
 
 The currently registered service slices are implementation evidence only:
 
+- `repository-source-service`;
 - `forensic-gateway-service`;
 - `forensic-ingestion-service`;
 - `repository-analysis-service`;
@@ -61,9 +63,11 @@ The currently registered service slices are implementation evidence only:
 - `joern-cpg-analysis-service`;
 - `btm-generation-service`.
 
-They do not prove the FA-MSA-001 target service landscape is complete,
-independently deployable, health-checkable, containerized for production or
-free of monolith callers.
+`repository-source-service` is the first registered FA-MSA-001 target-name
+service introduced by this workflow. The remaining listed services are
+predecessor or current-state service evidence. Together they do not prove the
+FA-MSA-001 target service landscape is complete, independently deployable,
+health-checkable, containerized for production or free of monolith callers.
 
 ## Target Principles
 
@@ -150,7 +154,7 @@ slice explicitly introduces them.
 
 | Current evidence | FA-MSA-001 target |
 |---|---|
-| `forensic-analytics-adapter-repository-source`, `services/repository-analysis-service` | `repository-source-service` |
+| `services/repository-source-service` plus predecessors `forensic-analytics-adapter-repository-source`, `services/repository-analysis-service` | `repository-source-service` |
 | `forensic-analytics-ingestion-grpc`, `forensic-analytics-ingestion-request`, `services/forensic-ingestion-service` | `ingestion-service` |
 | `forensic-analytics-adapter-javaparser`, `services/java-ast-analysis-service` | `java-parser-analysis-service` |
 | `forensic-analytics-adapter-joern-docker`, `services/joern-cpg-analysis-service` | `joern-analysis-service` |

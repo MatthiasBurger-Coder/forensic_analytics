@@ -3,7 +3,7 @@
 ## Status
 
 FA-MSA-001 Slice 04 service-boundary, migration inventory and
-data-ownership map.
+data-ownership map with Slice 05 repository-source implementation evidence.
 
 This document maps current modular-monolith and transitional service evidence
 to FA-MSA-001 target ownership decisions. It does not move production code,
@@ -17,7 +17,7 @@ starts.
 
 | FA-MSA-001 target | Current source evidence | Current coupling | Planned migration path | Required contract first | Data owner status | Forbidden moves | Verification needed |
 |---|---|---|---|---|---|---|---|
-| `repository-source-service` | `forensic-analytics-adapter-repository-source`, `services/repository-analysis-service` | Checkout and source snapshot behavior still has monolith application/domain dependencies in legacy adapter paths | Move repository access, branch resolution, checkout/fetch, workspace preparation, source package byte custody and source snapshot descriptors into a service-local boundary | Repository source/snapshot REST, gRPC or file contract | Owns workspaces, leases, cleanup, source package bytes, source snapshot descriptors and accepted source metadata | No private workspace sharing; no target repository code execution without sandbox approval | Service-local architecture, Git safety, checkout diagnostics, build/start and Dockerfile checks |
+| `repository-source-service` | `services/repository-source-service`; predecessors `forensic-analytics-adapter-repository-source`, `services/repository-analysis-service` | S05 target service is service-local and registered; legacy adapter paths still have monolith application/domain dependencies and the predecessor service remains as rollback input | Move repository access, branch resolution, checkout/fetch, workspace preparation, source package byte custody and source snapshot descriptors into a service-local boundary; later slices must route callers and retire predecessor paths only after parity evidence | Repository source/snapshot REST, gRPC or file contract; S05 uses predecessor `repository-analysis.proto` wire shape as transitional external contract only | Owns workspaces, leases, cleanup, source package bytes, source snapshot descriptors and accepted source metadata | No private workspace sharing; no target repository code execution without sandbox approval; no JavaParser or Joern handoff logic inside repository source | Service-local architecture, Git safety, checkout diagnostics, build/start and Dockerfile checks |
 | `ingestion-service` | `forensic-analytics-ingestion-grpc`, `forensic-analytics-ingestion-request`, `services/forensic-ingestion-service` | Legacy gRPC/request modules still depend on central application/domain modules | Move intake, validation, normalization and request import behavior into service-local domain/application/adapters | Ingestion gRPC/API contract | Owns raw intake, upload sessions, raw runtime or analysis payload byte custody before handoff and rejected-ingestion diagnostics | No shared generated Java DTO module; no static/semantic canonical fact writes | gRPC/API contract tests, validation tests and missing-field diagnostics |
 | `java-parser-analysis-service` | `forensic-analytics-adapter-javaparser`, `services/java-ast-analysis-service` | JavaParser adapter shares application/domain models in legacy path | Move JavaParser AST scanning and static source-fact extraction into service-local boundary | JavaParser analysis and source-fact artifact contracts | Owns canonical static Java source facts it produces, source-fact artifact bytes and producer-local artifact metadata | No runtime execution claims from static facts; no JavaParser API leakage into neutral contracts | Source-location, unresolved-symbol, deterministic ID and artifact retrieval tests |
 | `joern-analysis-service` | `forensic-analytics-adapter-joern-docker`, `services/joern-cpg-analysis-service`, `docker/joern/**` | Joern adapter shares ports and monolith domain/application models in legacy path | Move Joern Docker control, CPG/CFG/DFG analysis and semantic mapping into service-local boundary | Joern analysis artifact contract | Owns canonical Joern semantic facts it produces, semantic artifact bytes and producer-local artifact metadata | No shared CPG filesystem coupling; no Repository Source private workspace mounts | Joern unavailable, timeout, mapping and Docker-boundary tests |
@@ -49,8 +49,10 @@ operator-visible migration notes and the relevant `QUALITY.md` quality gate.
 
 The existing `forensic-analytics-*` Gradle modules remain the current
 implementation baseline until later slices move behavior behind verified
-contracts. S02 does not rename modules, move packages, copy production logic or
-register service builds.
+contracts. S02 did not rename modules, move packages, copy production logic or
+register service builds. S05 registers the first target service build,
+`services:repository-source-service`, without removing the predecessor
+`services:repository-analysis-service`.
 
 S02 found no direct `project(...)` dependencies in
 `services/*/build.gradle.kts` and no `project(":services:...")` dependencies in
@@ -73,6 +75,14 @@ The current service directories are transitional evidence:
 These directories are not FA-MSA-001 compatibility aliases. Later slices may
 move, replace, split or retire them only with verified caller evidence,
 contracts, tests and rollback notes.
+
+The first target-name service implementation evidence is:
+
+- `services/repository-source-service`.
+
+It owns repository source preparation only. It does not implement JavaParser
+analysis handoff, Joern execution, report generation, BTM generation or direct
+consumer access to private workspaces.
 
 ## Migration Sequencing
 

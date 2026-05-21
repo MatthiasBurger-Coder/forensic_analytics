@@ -2,7 +2,8 @@
 
 ## Status
 
-FA-MSA-001 Slice 04 service-boundary and data-ownership baseline.
+FA-MSA-001 Slice 04 service-boundary and data-ownership baseline with Slice 05
+repository-source implementation evidence.
 
 These are target boundaries. Current `services/**` directories and
 `forensic-analytics-*` modules are implementation evidence and migration
@@ -75,9 +76,29 @@ Outbound communication:
 
 Current evidence:
 
+- `services/repository-source-service`;
 - `forensic-analytics-adapter-repository-source`;
 - `services/repository-analysis-service`;
 - `contracts/grpc/repository-analysis.proto`.
+
+S05 implementation state:
+
+- registered Gradle project `services:repository-source-service`;
+- service-local package
+  `de.burger.forensics.analytics.services.repositorysource`;
+- service-local domain, application ports, inbound gRPC adapter, outbound
+  Git/workspace adapters, bootstrap, configuration, tests, README and
+  Dockerfile;
+- local gRPC port `9092` and health port `8083`;
+- Docker profile workspace root
+  `/var/lib/forensic-analytics/repository-workspaces`;
+- transitional use of the predecessor `repository-analysis.proto` filename and
+  wire service name as an external contract only.
+
+`services/repository-analysis-service` remains predecessor and rollback
+evidence. S05 does not remove it, does not route production callers to the new
+service and does not claim Docker Compose, Docker Swarm or Kubernetes readiness
+for the target landscape.
 
 Stop conditions:
 

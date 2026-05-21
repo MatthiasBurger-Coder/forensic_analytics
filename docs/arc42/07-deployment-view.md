@@ -124,6 +124,35 @@ prove that the FA-MSA-001 target service roots are independently deployable.
 Docker Swarm and Kubernetes deployment descriptors are still future slice
 material.
 
+Slice S05 adds `services/repository-source-service` as target-service
+deployment evidence. The service owns:
+
+- `services/repository-source-service/build.gradle.kts`;
+- `services/repository-source-service/Dockerfile`;
+- `services/repository-source-service/src/main/resources/application.properties`;
+- `services/repository-source-service/src/main/resources/application-docker.properties`;
+- a service-local health HTTP endpoint on port `8083`;
+- a service-local gRPC endpoint on port `9092`;
+- the Docker profile workspace root
+  `/var/lib/forensic-analytics/repository-workspaces`.
+
+The service can be packaged independently with:
+
+```bash
+./gradlew :services:repository-source-service:bootJar --dependency-verification strict --console=plain --stacktrace
+```
+
+It can be started locally with:
+
+```bash
+./gradlew :services:repository-source-service:bootRun --dependency-verification strict --console=plain --stacktrace
+```
+
+The service Dockerfile is service-owned, but S05 does not add Docker Compose,
+Docker Swarm or Kubernetes deployment descriptors for the target landscape.
+Those readiness claims require later repository tooling and validation
+commands.
+
 ## 7.7 Local Repository-to-BTM Transitional Landscape
 
 The repository currently contains a local Docker Compose descriptor for the

@@ -38,6 +38,7 @@ include(
     "services:btm-generation-service",
     "services:joern-cpg-analysis-service",
     "services:java-ast-analysis-service",
+    "services:repository-source-service",
     "services:repository-analysis-service",
     "services:analysis-store-service",
     "services:forensic-ingestion-service",

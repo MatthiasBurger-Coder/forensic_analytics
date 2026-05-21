@@ -5,8 +5,9 @@
 Slice 00 baseline for the microservices ecosystem conversion workflow.
 
 This document records the verified build, test, quality and deployment-command
-state before service migration begins. It does not claim that any quality gate
-passed unless the command is explicitly listed as executed.
+state before service migration begins, then appends verified slice updates as
+target services are introduced. It does not claim that any quality gate passed
+unless the command is explicitly listed as executed.
 
 ## Build Baseline
 
@@ -48,16 +49,20 @@ Verified from `settings.gradle.kts`:
 - `services:btm-generation-service`
 - `services:joern-cpg-analysis-service`
 - `services:java-ast-analysis-service`
+- `services:repository-source-service`
 - `services:repository-analysis-service`
 - `services:analysis-store-service`
 - `services:forensic-ingestion-service`
 - `services:forensic-gateway-service`
 
-Seven service-specific Gradle projects under `services/**` are now registered.
-Graph-replay and report-generation remain README-only planned service roots
-and are explicitly deferred from repository-to-BTM acceptance by Slice 16. The
-build-artifact worker is planned by workflow v2 and retained by workflow v3;
-it has no service root yet.
+Eight service-specific Gradle projects under `services/**` are now registered.
+`services:repository-source-service` is the first FA-MSA-001 target-name service
+project introduced by this workflow. `services:repository-analysis-service`
+remains a predecessor service and rollback input, not a compatibility alias.
+Graph-replay and report-generation remain README-only planned service roots and
+are explicitly deferred from repository-to-BTM acceptance by Slice 16. The
+build-artifact worker is planned by workflow v2 and retained by workflow v3; it
+has no service root yet.
 
 ## Quality Commands
 
@@ -161,6 +166,7 @@ Existing Docker material:
 - `docker/joern/docker-compose.joern.yml`
 - `docker/joern/scripts/**`
 - `forensic-ui/Dockerfile`
+- `services/repository-source-service/Dockerfile`
 - `deployment/docker-compose/repository-to-btm.local.yml`
 
 The DevOps review verified Joern Compose configuration with:
@@ -171,6 +177,12 @@ docker compose --env-file docker/joern/.env -f docker/joern/docker-compose.joern
 
 No Boot jar build, Boot Docker image build, frontend image build, Swarm command
 or Kubernetes command was executed as part of Slice 00.
+
+Slice 05 adds a service-local Dockerfile for
+`services/repository-source-service`. This is target-service container
+packaging evidence only; Compose, Swarm and Kubernetes readiness for the
+FA-MSA-001 target landscape remains future work until descriptors and
+validation commands exist.
 
 Slice 15 later verified the local repository-to-BTM Compose descriptor with
 six service `bootJar` tasks, `docker compose config`, `docker compose build`,

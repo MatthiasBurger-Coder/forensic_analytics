@@ -30,7 +30,7 @@
 | S02 | COMPLETED | Caller and coupling inventory refreshed; legacy module removal remains blocked because active callers and shared Gradle dependencies remain. |
 | S03 | COMPLETED | Contract authorities aligned to FA-MSA-001 target services; wire/schema shapes unchanged; required Gradle test gate passed. |
 | S04 | COMPLETED | Data ownership, artifact custody, orchestration state and query/report ownership assigned; reviewer-required consistency docs included through S04 scope updates. |
-| S05 | PENDING | Repository source service extraction |
+| S05 | COMPLETED | Repository source service extracted as first FA-MSA-001 target-name service; security remediation, service test, service packaging, root test and staged whitespace gate passed. |
 | S06 | PENDING | Ingestion service extraction |
 | S07 | PENDING | JavaParser analysis service extraction |
 | S08 | PENDING | Joern analysis service extraction |
@@ -74,6 +74,15 @@
 | S04 | S04 placeholder scan over `docs/architecture` and `services` | PASS: no unresolved `S04-approved`, `pending S04`, `resolved by S04`, `service-owned storage path after S04` or equivalent owner placeholders remain; the remaining S04 text is the explicit ownership matrix reference. |
 | S04 | `git diff --check` | PASS: no whitespace errors after S04 ownership edits. |
 | S04 | `./gradlew test --dependency-verification strict --console=plain --stacktrace` | NOT RUN: S04 has `quality_gates.required: []` and the final diff is documentation-only Markdown; Gradle remains required if production Java, tests, Gradle, contracts, runtime wiring, persistence code, plugin metadata or adapter implementation changes. |
+| S05 | `git status --short --branch --untracked-files=all` | PASS: active workflow branch verified; S05 working tree contains `settings.gradle.kts`, new `services/repository-source-service/**` files and S05 documentation updates only. |
+| S05 | `rg -n "project\\(|forensic-analytics-domain|forensic-analytics-application|forensic-analytics-persistence|forensic-analytics-logging|forensic-analytics-bootstrap|forensic-analytics-boot-app|forensic-analytics-engine" services/repository-source-service \|\| true` | PASS: no direct Gradle project dependency or forbidden shared monolith module reference exists inside the new service. |
+| S05 | `rg -n "JavaAst|java-ast|AnalyzeSourceSnapshotWithJavaAst|JavaParser|Joern|BTM|btm" services/repository-source-service/src services/repository-source-service/README.md services/repository-source-service/build.gradle.kts` | PASS: Java AST and BTM remain only as excluded protobuf inputs in the new service build; no JavaParser, Joern, BTM generation or Java AST handoff implementation remains in the new service source or README. |
+| S05 | `./gradlew :services:repository-source-service:test --tests "de.burger.forensics.analytics.services.repositorysource.adapter.out.git.SafeGitCommandRunnerTest" --dependency-verification strict --console=plain --stacktrace` | PASS: build successful in 28s after adding the malicious repository-owned Git config regression test. |
+| S05 | `./gradlew :services:repository-source-service:test --dependency-verification strict --console=plain --stacktrace` | PASS: build successful in 55s after Security remediation and repository-source naming cleanup. Gradle emitted protobuf Unsafe and gRPC native-access warnings, but no task failed. |
+| S05 | `./gradlew :services:repository-source-service:bootJar --dependency-verification strict --console=plain --stacktrace` | PASS: build successful in 5s after Security remediation; service Boot jar packaged independently. |
+| S05 | `./gradlew test --dependency-verification strict --console=plain --stacktrace` | PASS: build successful in 19s after registering `services:repository-source-service` and applying Security remediation; 163 actionable tasks up-to-date. |
+| S05 | `git diff --check` | PASS: no whitespace errors in tracked S05 diffs before staging. |
+| S05 | `git diff --cached --check` | PASS: no whitespace errors after staging tracked and newly added S05 files. |
 
 ## Subagent Review Log
 
@@ -99,10 +108,16 @@
 | S04 | Senior Security/Sandbox subagent | PASS after remediation: runtime/trace byte custody is explicit, target flow uses owner APIs/events/artifact references/handoff contracts instead of direct storage paths, and no private DB/workspace/object-prefix coupling was found. |
 | S04 | Senior Tester subagent | PASS after workflow-scope updates: no untracked files, Markdown-only diff, changed files inside S04 locks, `git diff --check` passed and Gradle is not required for S04. |
 | S04 | Senior Workflow Architect subagent | STOP before remediation: original S04 locks did not include required consistency docs; resolved by explicit workflow-scope commits `d8c8436` and `4cebabe` before S04 closure. |
+| S05 | Senior Java Backend subagent | PASS: new service Gradle build has no `project(...)` dependencies, service-local package boundaries are preserved and transitional `repositoryanalysis.v1` use is limited to generated contract transport types. Non-blocking stale Slice 06 messages were corrected before closure. |
+| S05 | Microservice Senior Expert subagent | PASS: `services:repository-source-service` is a true target-name service root, predecessor `services/repository-analysis-service` remains retained instead of becoming an alias, no shared Java module dependency was introduced and Java AST handoff is not carried over. |
+| S05 | Senior Security/Sandbox subagent | BLOCKED before remediation: Git commands used a repository-worktree `.git-home`, allowing malicious repository-owned Git config to influence later Git commands. Remediated by moving Git home/config outside the working directory, pinning global/system config to the null device and adding a malicious filter regression test. |
+| S05 | Senior Security/Sandbox subagent | PASS after remediation: repository-owned `.git-home/.gitconfig` no longer influences Git process configuration; the real-git regression test proves a malicious filter marker is not created. |
+| S05 | Senior DevOps subagent | PASS: service Gradle build, Dockerfile, local/Docker properties, gRPC port `9092`, health port `8083` and docs are aligned; S05 does not claim Docker Compose, Swarm or Kubernetes readiness. |
+| S05 | Senior Tester subagent | PASS: changed files are inside S05 scope, service-local tests and ArchUnit coverage are adequate, required Gradle gates passed and final whitespace validation must include new files through `git diff --cached --check`. |
 
 ## Blockers
 
-No active blocker for S00, S01, S02, S03 or S04 as completed workflow slices.
+No active blocker for S00, S01, S02, S03, S04 or S05 as completed workflow slices.
 Production implementation migration remains gated by the later service
 extraction slices. Legacy module removal remains blocked until a later slice
 proves caller-free evidence, replacement parity or explicit deprecation,
