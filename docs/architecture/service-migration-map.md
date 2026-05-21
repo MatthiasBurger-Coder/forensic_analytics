@@ -66,7 +66,7 @@ logic or register service builds.
 | `forensic-analytics-engine` | Retire or isolate after Gateway, Analysis Store and worker-service orchestration parity exists |
 | `forensic-analytics-logging` | Replace with service-local logging/diagnostic configuration; no shared runtime logging module between services |
 | `forensic-analytics-observability` | Replace with service-local correlation and diagnostics contracts/configuration; no shared observability implementation module between services |
-| `forensic-analytics-cli` | Gateway/public API client adapter after Slice 16 if CLI remains in repository scope |
+| `forensic-analytics-cli` | Gateway/public API client adapter after the CLI Gateway contract is implemented; `contracts/cli/gateway-cli-contract.md` records that current local-path `analyze` remains legacy until an explicit Gateway mode or command exists |
 | `forensic-analytics-testbed` | Retain as monolith test evidence until Slice 17/18 decides parity or retirement; do not share as service fixture module |
 | `forensic-analytics-ingestion-request` | Map request-import behavior to Gateway or Ingestion contract path after Slice 02 clarifies public submission semantics |
 | `forensic-analytics-bootstrap` | Retire after service runtime path and deployment readiness are verified |
@@ -80,6 +80,18 @@ parity or explicit deprecation tests and rollback instructions.
 Slice 19 reviewed the same module set for removal and did not remove any
 module from `settings.gradle.kts`. No current module is both replaced and
 caller-free.
+
+Workflow `e2e-wildfly-cli-deploy-20260521-v1` Slice 05 records the current
+caller inventory and retirement gates in
+`docs/architecture/monolith-caller-retirement-plan.md`. The inventory finds
+active production or test callers for CLI, REST, Bootstrap, Boot App, Engine,
+Ingestion Request, Testbed and shared application/domain modules. No path is
+caller-free in Slice 05.
+
+Slice 07 completes as `NO_REMOVAL_SAFE` for the same workflow. The new CLI
+`gateway-submit` path is routed through the Gateway contract, but the legacy
+local `analyze` command and the other in-process runtime paths still have active
+production or test callers. No module is removed from `settings.gradle.kts`.
 
 ## Migration Sequencing
 

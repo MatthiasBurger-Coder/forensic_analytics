@@ -1,63 +1,47 @@
 # Slice Dependency Map
 
-```mermaid
-flowchart TD
-  S00["Slice 00: execution preflight and context freeze"]
-  S01["Slice 01: execution profile router"]
-  S02["Slice 02: quality impact classifier"]
-  S03["Slice 03: workflow context pack"]
-  S04["Slice 04: machine-readable slice metadata"]
-  S05["Slice 05: dedicated S3D execution orchestrator"]
-  S06["Slice 06: persistent skill registry matrix"]
-  S07["Slice 07: branch strategy unification"]
-  S08["Slice 08: flowchart integrity auditor"]
-  S09["Slice 09: workflow-executor resolution"]
-  S10["Slice 10: process performance profiler"]
-  S11["Slice 11: final governance synchronization"]
+## Graph
 
-  S00 --> S01
-  S01 --> S02
-  S01 --> S03
-  S02 --> S03
-  S03 --> S04
-  S04 --> S05
-  S01 --> S06
-  S01 --> S07
-  S01 --> S08
-  S01 --> S09
-  S06 --> S09
-  S03 --> S10
-  S04 --> S10
-  S05 --> S11
-  S06 --> S11
-  S07 --> S11
-  S08 --> S11
-  S09 --> S11
-  S10 --> S11
+```text
+S00 Execution Preflight And Context Freeze
+|-- S01 Real Repository End-To-End Test
+|   `-- S02 WildFly Hardening Preparation
+|-- S03 CLI Gateway Contract
+|   `-- S06 CLI First Caller-Free Migration
+|-- S04 Separate Swarm And Kubernetes Workflow Handoff
+|-- S05 Legacy Monolith Caller Inventory And Retirement Gates
+|   |-- S06 CLI First Caller-Free Migration
+|   `-- S07 Conditional Legacy Runtime Path Retirement
+`-- S08 Final Documentation And Quality Gate
 ```
 
-## Parallelization Notes
+## Execution Groups
 
-| Group | Slices | Rule |
+| Group | Slices | Parallelization |
 |---|---|---|
-| G00 | S00 | Always first and serial. |
-| G01 | S01 | Serial because downstream routing semantics depend on it. |
-| G02 | S02 | Serial after S01 because quality impact depends on profile classification. |
-| G03 | S03 | Serial after S01 and S02 because context packs summarize profile and quality authority. |
-| G04 | S04 | Serial after S03 because metadata rules reference context-pack fields. |
-| G05 | S05 | Serial after S04 because S3D consumes slice metadata. |
-| G06 | S06 | May run after S01 when file locks do not overlap with active slices. |
-| G07 | S07 | May run after S01 but must not overlap with S09 or S11 because branch and executor docs share process files. |
-| G08 | S08 | May run after S01 when governance-flowchart files are isolated. |
-| G09 | S09 | Waits for S06 and must not overlap with branch or workflow-execute process edits. |
-| G10 | S10 | Waits for S03 and S04. |
-| G11 | S11 | Always final and serial. |
+| G00 | S00 | Must run first. |
+| G01 | S01, S03, S04 | May run in parallel after S00 if file locks remain disjoint. |
+| G02 | S02 | Runs after S01. |
+| G03 | S05 | Runs after S03 because caller gates need contract context. |
+| G04 | S06 | Runs after S03 and S05. |
+| G05 | S07 | Runs after S05 and S06. |
+| G06 | S08 | Runs last after S01 through S07. |
 
 ## Lock Summary
 
-- Routing locks: S01, S05, S08.
-- Quality-gate locks: S02.
-- Workflow context and metadata locks: S03, S04, S10.
-- Skill registry locks: S06, S09.
-- Branch-governance locks: S07.
-- Final documentation locks: S11.
+| Slice | Primary locks |
+|---|---|
+| S01 | `forensic-analytics-testbed/src/test/**`, real repository fixture files |
+| S02 | `WildFlyRepositoryHardeningTest`, WildFly hardening documentation |
+| S03 | `contracts/**`, CLI contract tests, Gateway OpenAPI tests |
+| S04 | deployment workflow handoff docs only |
+| S05 | monolith caller inventory docs |
+| S06 | CLI implementation and CLI tests |
+| S07 | conditional legacy module paths and `settings.gradle.kts` |
+| S08 | workflow, architecture and arc42 synchronization docs |
+
+## S3D Notes
+
+S3D must stop before implementation if a slice uses dependency ranges, unknown
+slice IDs, overlapping file locks, overlapping contract locks or unclear
+architecture locks.

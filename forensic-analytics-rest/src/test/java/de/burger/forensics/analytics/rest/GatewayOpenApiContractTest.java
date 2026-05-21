@@ -22,12 +22,16 @@ class GatewayOpenApiContractTest {
         assertContains(repositoryListGet, "x-implementation-status: planned-initial");
         assertContains(repositoryPost, "operationId: startRepositoryToBtmAnalysis");
         assertContains(repositoryPost, "x-implementation-status: current-verified");
+        assertContains(repositoryPost, "x-cli-contract: contracts/cli/gateway-cli-contract.md");
+        assertContains(repositoryPost, "forensic-analytics-cli planned Gateway mode");
         assertContains(repositoryPost, "- $ref: '#/components/parameters/MutationCorrelationId'");
         assertContains(repositoryPost, "- $ref: '#/components/parameters/IdempotencyKey'");
         assertContains(repositoryPost, "'202':");
         assertContains(repositoryPost, "$ref: '#/components/schemas/RepositoryToBtmSubmission'");
         assertContains(repositoryStatusGet, "operationId: getRepositoryAnalysis");
         assertContains(repositoryStatusGet, "x-implementation-status: current-verified");
+        assertContains(repositoryStatusGet, "x-cli-contract: contracts/cli/gateway-cli-contract.md");
+        assertContains(repositoryStatusGet, "forensic-analytics-cli planned Gateway mode");
         assertContains(repositoryStatusGet, "- $ref: '#/components/parameters/RequiredCorrelationId'");
         assertContains(repositoryStatusGet, "$ref: '#/components/schemas/RepositoryToBtmStatus'");
 

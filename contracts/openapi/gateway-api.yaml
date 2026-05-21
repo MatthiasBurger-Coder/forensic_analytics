@@ -45,6 +45,9 @@ paths:
       summary: Start an asynchronous repository-to-BTM analysis run.
       operationId: startRepositoryToBtmAnalysis
       x-implementation-status: current-verified
+      x-cli-contract: contracts/cli/gateway-cli-contract.md
+      x-cli-consumers:
+        - forensic-analytics-cli planned Gateway mode
       parameters:
         - $ref: '#/components/parameters/MutationCorrelationId'
         - $ref: '#/components/parameters/IdempotencyKey'
@@ -72,6 +75,9 @@ paths:
       summary: Get a repository analysis run.
       operationId: getRepositoryAnalysis
       x-implementation-status: current-verified
+      x-cli-contract: contracts/cli/gateway-cli-contract.md
+      x-cli-consumers:
+        - forensic-analytics-cli planned Gateway mode
       parameters:
         - $ref: '#/components/parameters/RequiredCorrelationId'
         - $ref: '#/components/parameters/AnalysisRunId'

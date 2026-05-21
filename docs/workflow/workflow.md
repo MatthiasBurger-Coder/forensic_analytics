@@ -1,45 +1,50 @@
-# Workflow: Governance Performance Optimization
+# Workflow: E2E Repository Hardening, CLI Gateway Contract And Monolith Caller Retirement
 
 ## Workflow Version
 
 | Field | Value |
 |---|---|
-| Workflow version | `governance-performance-20260521-v1` |
-| Workflow branch | `architecture/workflow-governance-performance-20260521` |
+| Workflow version | `e2e-wildfly-cli-deploy-20260521-v1` |
+| Workflow branch | `feature/workflow-e2e-wildfly-cli-deploy-20260521` |
 | Creation status | Created by `workflow create`; execution requires a clean committed workflow package. |
 | Process strand | `workflow create` now; later `workflow execute` for slices. |
+| Execution profile | `FULL_PATH` |
 
 ## Executive Summary
 
-This workflow optimizes the repository's agent and workflow governance without
-weakening the forensic safety rules. The target is to reduce repeated full
-governance review for low-risk work by introducing profile classification,
-quality-impact classification, workflow context packs, machine-readable slice
-metadata, dedicated S3D ownership, persistent skill registry evidence,
-unified branch rules, flowchart integrity auditing, workflow-executor
-resolution rules and process-performance metrics.
+This workflow turns the requested hardening and migration goals into executable
+slices:
 
-The workflow is governance-only. It must not implement product backend,
-frontend, Docker/runtime, gRPC/protobuf, persistence, analysis-engine, Joern,
-JavaParser, BTM generator or analytics behavior.
+- run a real end-to-end repository analysis test against a deterministic real
+  test repository rather than only synthetic source strings;
+- prepare WildFly as an explicit opt-in large repository hardening scenario;
+- define the CLI-to-Gateway contract before changing CLI runtime behavior;
+- split Docker Swarm and Kubernetes deployment into a separate workflow;
+- make legacy monolith paths caller-free step by step, with caller evidence,
+  contract parity and rollback gates before removal.
+
+The workflow is product-impacting and architecture-sensitive. It touches test
+strategy, public contracts, CLI behavior, service migration and deployment
+governance. It must therefore use `FULL_PATH` review depth during execution.
 
 ## Requirement Clarification Decision
 
 | Field | Decision |
 |---|---|
-| Original request | Create a workflow for the listed process-performance optimizations: execution profile routing, quality-impact classification, context packs, machine-readable slice metadata, dedicated S3D orchestration, persistent skill registry, branch strategy unification, flowchart integrity audit, workflow-executor cleanup and process-performance profiling. |
-| Interpreted intent | Create an executable governance workflow that later implements those optimizations as small process slices while preserving `AGENTS.md`, `QUALITY.md`, ADRs, arc42, process-strand separation and quality-gate authority. |
-| Change type | Process governance, skills, roles, routing, workflow documentation and architecture-governance documentation. |
+| Original request | Create a workflow for: real end-to-end test with a real test repository; prepare WildFly as hardening case; define CLI Gateway contract; start Swarm/Kubernetes deployment as a separate workflow; make old monolith paths caller-free step by step. |
+| Interpreted intent | Create an executable workflow that hardens repository-to-BTM verification, adds contract-first CLI-to-Gateway migration, and safely retires legacy in-process paths only when caller evidence proves replacement parity. |
+| Change type | Backend tests, contract governance, CLI adapter migration, microservice migration governance, deployment workflow handoff and documentation synchronization. |
 | Affected process strand | `workflow create` now; later `workflow execute`. |
-| Affected architecture area | Agent governance, workflow governance, quality-gate routing, branch governance, documentation governance and skill registry ownership. |
-| Product runtime impact | None planned. Product code changes are forbidden by this workflow. |
-| EPIC source | Product EPIC v0.2 remains unchanged; this workflow is process-governance architecture and does not change product requirements. |
-| Confidence | 94 percent. |
+| Affected architecture area | Repository analysis, Gateway facade contract, CLI adapter boundary, service migration, large-repository checkout, legacy monolith retirement and deployment governance. |
+| Explicit requirements | Real E2E repository test; WildFly hardening preparation; CLI Gateway contract; separate Swarm/Kubernetes workflow; caller-free legacy paths. |
+| Implicit requirements | Deterministic tests by default; no external network in the default quality gate; contract-first migration; no shared service implementation modules; no deployment readiness claim without manifests and validation commands; no module removal without caller proof. |
+| Assumptions | "Real test repository" means a deterministic repository fixture committed to the test scope or materialized locally during tests, not an external network checkout in the default test suite. Swarm/Kubernetes is started as a separate workflow handoff, not implemented inside this workflow. |
+| Non-goals | No live WildFly network run in the default gate; no Swarm stack or Kubernetes manifests in this workflow; no removal of monolith modules until caller-free evidence exists; no shared Java DTO or fixture modules between services. |
+| Risks | External repository size and network instability; accidental workspace path or secret leakage through Gateway/CLI output; breaking CLI users; removing legacy paths before replacement parity; deployment readiness overclaiming. |
+| Open questions | Which WildFly branch or commit should be used for the opt-in hardening run during execution. This is non-blocking because the workflow requires the value before running the external test. |
+| Blocking questions | None for workflow creation. |
+| Confidence | 91 percent. |
 | Decision | `READY_FOR_WORKFLOW`. |
-
-No blocking requirement question remains for workflow creation. Ambiguities that
-could change repository governance are assigned to early decision slices before
-any process rule is edited.
 
 ## Verified Baseline
 
@@ -47,154 +52,191 @@ Read-only verification before workflow authoring found:
 
 - Repository root: `/mnt/d/Projects/forensic_analytics`.
 - WSL repository access: available from the Windows-hosted worktree.
-- Workflow branch created and verified: `architecture/workflow-governance-performance-20260521`.
+- Workflow branch created and verified: `feature/workflow-e2e-wildfly-cli-deploy-20260521`.
 - Working tree before workflow regeneration: clean.
-- Existing active workflow before regeneration: `docs/workflow/workflow.md` for the Microservices BTM Pipeline.
+- Existing workflow package was removed and regenerated on the workflow branch.
 - Quality authority: `QUALITY.md`.
 - Minimum quality command:
   `./gradlew test --dependency-verification strict --console=plain --stacktrace`.
 - Full local quality gate:
   `./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace`.
 - Root `checkPackageCoverage` task exists in `build.gradle.kts`.
-- Process strands are accepted by ADR-0020.
-- Branch-first workflow creation is accepted by ADR-0016.
-- Skill registry conflict auditing is accepted by ADR-0015.
-- Governance Flowchart V2 is accepted by ADR-0021.
-
-Verified existing gaps that this workflow may address:
-
-- Flowchart Integrity Audit is mapped with a documented gap and no dedicated skill.
-- S3D execution orchestration currently routes through Senior Swarm Orchestrator.
-- Project-specific and reusable workflow-executor skill files share the same front-matter name.
-- Quality-gate orchestration exists, but a dedicated quality-impact classifier is not present.
-- Skill registry auditing exists, but the persistent JSON registry proposed by the request is not present.
-- Branch rules are spread across `AGENTS.md`, process docs and git governance skills.
+- Current Gradle modules are registered in `settings.gradle.kts`, including
+  `forensic-analytics-testbed`, `forensic-analytics-cli`,
+  `forensic-analytics-rest` and the implemented `services/**` projects.
+- `forensic-analytics-testbed` already contains
+  `RepositoryAnalysisMiniEndToEndTest`, which uses a synthetic local Git
+  repository and in-process gRPC.
+- `forensic-analytics-testbed` already contains
+  `WildFlyRepositoryHardeningTest`, tagged `hardening` and gated by
+  `FORENSIC_ANALYTICS_WILDFLY_HARDENING=true`, branch or commit input, timeout,
+  disk and report-directory environment variables.
+- `contracts/openapi/gateway-api.yaml` exists and marks repository-to-BTM
+  submission and status routes as current verified.
+- `forensic-analytics-rest/src/test/java/.../GatewayOpenApiContractTest.java`
+  checks the Gateway OpenAPI contract and public leakage rules.
+- `services/forensic-gateway-service` has HTTP adapter tests for public
+  Gateway facade behavior, idempotency, validation and diagnostic redaction.
+- `deployment/docker-swarm/README.md` and `deployment/kubernetes/README.md`
+  are planned roots only; no stack file or manifests exist.
+- `deployment/docker-compose/repository-to-btm.local.yml` is the verified
+  local repository-to-BTM Compose descriptor, but it does not claim Swarm or
+  Kubernetes readiness.
+- `docs/architecture/service-migration-map.md` records that legacy
+  `forensic-analytics-*` paths remain because active callers still exist.
 
 ## Target Picture
 
-The target governance model after workflow execution is:
+After workflow execution, the repository should have:
 
 ```text
-User request
-  -> execution-profile-router
-  -> requirement and architecture gate with profile-aware depth
-  -> workflow context pack
-  -> machine-readable slice metadata
-  -> dedicated S3D execution orchestrator
-  -> quality-impact-classifier
-  -> slice quality gates
-  -> skill registry cache when safe
-  -> checkpoint and branch governance
-  -> process-performance metrics
-```
+real local repository E2E fixture
+  -> repository-to-BTM path tested with deterministic inputs
 
-Governance remains strict where risk is real. Low-risk documentation,
-metadata and typo changes may use reduced reviews only when the classifier
-proves no product build, runtime behavior, contracts, tests, architecture or
-quality-rule impact.
+WildFly opt-in hardening runbook
+  -> explicit branch or commit, timeout, disk budget, metrics and cleanup proof
+
+CLI Gateway contract
+  -> CLI commands mapped to Gateway public API without exposing workspaces
+
+caller evidence
+  -> CLI migration first, then legacy runtime paths retired only when caller-free
+
+deployment workflow handoff
+  -> separate Swarm/Kubernetes workflow request with no manifest claims here
+```
 
 ## Scope
 
 In scope:
 
-- Add or update project-specific skills under `.agents/skills/**`.
-- Add or update project-specific roles under `.agents/roles/**`.
-- Update routing rules under `.agents/orchestrator/**`.
-- Update process-governance docs under `docs/process/**`.
-- Update agent-governance docs under `docs/agents/**`.
-- Update governance flowchart docs under `docs/governance/**`.
-- Update skill-audit docs under `docs/skill-audit/**`.
-- Update workflow-authoring and workflow-execution governance docs.
-- Check or update arc42 governance documentation.
-- Update root `AGENTS.md` only when branch or process-strand authority cannot
-  be made consistent through narrower governance docs.
+- Testbed E2E tests and deterministic repository fixtures.
+- Optional WildFly hardening documentation and test harness refinement.
+- Gateway OpenAPI contract and CLI-to-Gateway contract documentation.
+- CLI adapter tests and implementation only after the contract slice passes.
+- Caller inventory for legacy monolith paths.
+- Removal or isolation of only those legacy callers proven replacement-safe.
+- Architecture and workflow documentation synchronization.
+- Separate workflow handoff for Swarm/Kubernetes deployment readiness.
 
 ## Non-Goals
 
 Out of scope:
 
-- Product backend, frontend, runtime, Docker, persistence or analytics behavior.
-- gRPC/protobuf, REST/OpenAPI or event contract implementation changes.
-- Java source changes, Gradle plugin implementation changes or dependency upgrades.
-- Microservice extraction, deployment topology changes or runtime service wiring.
-- Automatic PR creation, merge, branch cleanup or `push auto`.
-- Rewriting historical ADR decisions without a new explicit ADR slice.
+- Running WildFly by default in `./gradlew test`.
+- Executing untrusted repository build scripts as part of checkout or E2E tests.
+- Adding Docker Swarm stack files or Kubernetes manifests in this workflow.
+- Claiming production deployment readiness.
+- Introducing shared Java implementation, DTO, fixture, utility or error-model
+  modules between services.
+- Removing any Gradle module before caller-free evidence and replacement parity.
+- Graph, replay, report-generation or live LLM implementation.
+- Push, PR creation, PR merge, branch cleanup or `push auto`.
 
-## Architecture Boundaries
+## Architecture Constraints
 
-- `.codex/**` remains reusable unless a change is proven portable.
-- Project-specific rules belong in root `AGENTS.md`, `QUALITY.md`, `.agents/**`
-  or project documentation.
-- `workflow create` does not execute implementation slices.
-- `workflow execute` must not jump backward to `workflow create` or rewrite
-  the active workflow to resolve execution blockers.
-- Governance optimizations may reduce review depth only by routing some roles
-  to N/A impact checks; they must not bypass mandatory authority, STOP rules or
-  required quality gates.
-- `QUALITY.md` remains authoritative for quality commands.
-- Failed required quality gates must never be marked optional.
-- Missing or ambiguous skill, role, route, branch, quality or workflow authority
-  stops the slice and escalates through the documented owner.
+- Domain and application packages stay framework-free.
+- Gateway remains a facade and must not own worker orchestration, workspace
+  paths, source snapshot bytes, AST facts, Joern artifacts, BTM generation or
+  canonical evidence state.
+- CLI-to-Gateway work must be contract-first. Do not infer routes, request
+  fields or response fields from similarly named Java classes.
+- CLI and Gateway output must not expose private workspace paths, raw stdout,
+  raw stderr, credentials, tokens, internal service exceptions or resolved
+  private repository metadata.
+- Large repository handling must preserve repository URL, branch input, commit
+  input, resolved commit, checkout mode, elapsed time, cleanup result and
+  diagnostics without executing target repository code.
+- WildFly is an opt-in hardening scenario only. It must not become a default
+  unit test dependency.
+- Monolith path retirement must be one path at a time and must stop when caller
+  proof, parity tests, rollback strategy or quality commands are missing.
+- Docker Swarm and Kubernetes deployment readiness require a separate workflow,
+  separate branch, manifests or stack files, resource policies, health probes
+  and validation commands.
 
 ## Backend Assessment
 
-Backend product modules are not in scope. Senior Java Backend review is still
-required by workflow-create governance, but this workflow classifies backend
-impact as N/A unless a future slice unexpectedly proposes Java source, build,
-contract or product test changes. Such a proposal must stop and require a
-separate workflow.
+Backend impact is high. The workflow may touch Java tests, CLI code, contract
+tests, Gateway adapter behavior and service migration documentation. Senior
+Java Backend, Senior System Architect, Contract Governance, Microservice Senior
+Expert, Senior Tester and Senior DevOps reviews are required for the relevant
+slices.
 
 ## Frontend Assessment
 
-Frontend product modules are not in scope. Senior React Frontend review is an
-N/A impact check unless a future slice unexpectedly proposes React source,
-frontend API adapter or frontend test changes. Such a proposal must stop and
-require a separate workflow.
+The existing frontend root is `forensic-ui`. This workflow does not plan a
+frontend implementation change. Senior React Frontend performs an N/A impact
+check unless the CLI/Gateway contract slice changes public Gateway fields that
+the frontend API adapter consumes. If that happens, frontend adapter tests under
+`forensic-ui` become required for the affected slice.
 
 ## Test Strategy
 
-The workflow is process-governance documentation and skill/role metadata work.
-Default slice verification is:
+Default verification follows `QUALITY.md`:
 
-- `git status --short --branch`
-- `git diff --check`
-- targeted Markdown, JSON, YAML or registry consistency checks when a slice
-  changes those formats
-- skill-registry conflict review when `.agents/**`, `.codex/**`,
-  `docs/agents/**` or `docs/skill-audit/**` changes
-- flowchart integrity review when `docs/governance/workflow/**` changes
+1. Run the narrowest targeted test for the changed slice.
+2. Run the affected module test command.
+3. Run the repository minimum quality command when production Java, contracts,
+   tests or build behavior changes:
+   `./gradlew test --dependency-verification strict --console=plain --stacktrace`.
+4. Run the full local quality gate before commit readiness when the workflow
+   reaches broad caller removal or cross-module changes:
+   `./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace`.
+5. Always run:
+   `git diff --check`.
 
-The minimum Gradle test command is required only if a slice changes product
-source, tests, build logic, contracts, `QUALITY.md` or another file that can
-influence the product build. This workflow forbids product code changes, so
-any such change is a scope blocker unless the workflow is explicitly refined.
+WildFly hardening has two levels:
 
-## Subagent Assignment
+- Required default check: prove the hardening test stays opt-in and skips when
+  required environment variables are absent.
+- Optional external check: run the WildFly hardening test only when branch or
+  commit, network, disk and timeout prerequisites are explicitly satisfied.
 
-Callable subagents were not required during this `workflow create` turn because
-the user did not request delegated or parallel agent execution. The mandatory
-five-role review was performed as local role-review checklists.
+## Resilience Requirements
+
+- External Git operations must have explicit timeouts and cleanup-after-failure
+  behavior.
+- Large-repository metrics must be written to a deterministic report path.
+- Optional external checks must report `SKIPPED` with reasons, not success.
+- CLI and Gateway failures must return stable error categories and redacted
+  diagnostics.
+- Caller removal must preserve rollback instructions for each retired path.
+- Deployment workflow handoff must state missing tooling instead of inventing
+  Swarm or Kubernetes commands.
+
+## Role And Subagent Assignment
+
+Callable subagents were not used during this `workflow create` turn because the
+active user request did not explicitly ask for delegated or parallel agent
+execution. The mandatory reviews are represented as local role-review
+checklists in `docs/workflow/three-amigos-decision-record.md`.
 
 During `workflow execute`, role or callable-subagent routing is:
 
-- Senior Workflow Architect: overall workflow execution order and workflow
-  metadata consistency.
-- Senior Requirement Engineer: process requirement integrity and EPIC drift
-  check.
-- Senior System Architect: governance architecture, ADR and arc42 impact.
-- Senior Documentation Engineer: process, agent, workflow, skill-audit and
-  arc42 documentation synchronization.
-- Senior Tester: quality-impact classification and verification plan.
-- Senior Java Backend Developer: N/A impact check unless product backend files
-  are unexpectedly touched.
-- Senior React Frontend Developer: N/A impact check unless frontend files are
-  unexpectedly touched.
-- Skill Registry Conflict Auditor: required for new or changed skills, roles
-  and routing rules.
+- Senior Workflow Architect: overall workflow execution order, metadata and
+  dependency graph.
+- Senior Requirement Engineer: EPIC drift, requirement clarity and non-goals.
+- Senior System Architect: architecture boundaries, service ownership and
+  caller-retirement safety.
+- Senior Java Backend Developer: Java tests, CLI, Gateway, contracts and
+  service-adapter changes.
+- Senior React Frontend Developer: N/A impact check unless Gateway contract
+  changes affect `forensic-ui`.
+- Senior Tester: regression strategy, targeted checks, coverage and quality
+  gate expectations.
+- Senior DevOps Engineer: WildFly external hardening run, Docker Compose
+  evidence, and separate Swarm/Kubernetes workflow handoff.
+- Microservice Senior Expert: service autonomy, no shared Java implementation
+  modules and caller retirement gates.
+- Contract Governance Expert: CLI/Gateway contract and compatibility.
+- Git Large Repository Specialist: WildFly and real repository checkout
+  hardening.
+- Security Sandbox Specialist: untrusted repository handling and leakage checks.
 
 ## Ordered Slices
 
-### Slice 00 - Execution Preflight And Workflow Context Freeze
+### Slice 00 - Execution Preflight And Context Freeze
 
 ```yaml
 slice_id: S00
@@ -211,790 +253,623 @@ affected_contracts: []
 dependencies: []
 parallel_group: G00
 file_locks:
-  - docs/workflow/execution-report.md
+  - docs/workflow/**
 contract_locks: []
 architecture_locks:
   - workflow-execute-preflight
 quality_gates:
   targeted:
-    - git status --short --branch
-    - git diff --check
+    - "git status --short --branch"
+    - "git diff --check"
   required:
-    - git status --short --branch
-    - git diff --check
+    - "git status --short --branch"
+    - "git diff --check"
 documentation:
   arc42: check
   adr: check
 stop_conditions:
-  - active branch does not match workflow branch
+  - active branch does not match the workflow branch
   - working tree contains unrelated changes
   - workflow version cannot be verified
+  - context pack hashes are stale without documented acceptance
 ```
 
-Purpose: verify the execution branch, clean worktree, workflow version, process
-strand and context-pack state before any write-capable slice starts.
+Purpose: verify the execution branch, clean worktree, workflow version, context
+pack and active file locks before any write-capable slice starts.
 
 Done criteria:
 
-- Execution branch and local ref are verified.
-- `docs/workflow/context-pack.json` is either current or explicitly marked
-  stale with a stop decision.
-- No product implementation files are in the planned write set.
+- Workflow branch and local ref are verified.
+- `docs/workflow/context-pack.json` is checked against governing-file hashes.
+- The execution report records the preflight result.
 
-### Slice 01 - Add Execution Profile Router
+### Slice 01 - Real Repository End-To-End Test
 
 ```yaml
 slice_id: S01
 profile: FULL_PATH
-owner: senior-system-architect
+owner: senior-tester
 secondary_reviewers:
-  - senior-requirement-engineer
-  - senior-documentation-engineer
+  - senior-java-backend
+  - senior-system-architect
+  - security-sandbox-specialist
+affected_files:
+  - forensic-analytics-testbed/src/test/java/de/burger/forensics/analytics/testbed/RepositoryAnalysisRealRepositoryEndToEndTest.java
+  - forensic-analytics-testbed/src/test/resources/repository-e2e/**
+  - docs/architecture/current-build-and-test-map.md
+  - docs/workflow/execution-report.md
+affected_modules:
+  - forensic-analytics-testbed
+  - forensic-analytics-ingestion-grpc
+  - forensic-analytics-adapter-repository-source
+  - forensic-analytics-persistence
+affected_contracts:
+  - contracts/grpc/forensic-ingestion.proto
+dependencies:
+  - S00
+parallel_group: G01
+file_locks:
+  - forensic-analytics-testbed/src/test/**
+  - docs/architecture/current-build-and-test-map.md
+contract_locks:
+  - forensic-ingestion-grpc-request-shape
+architecture_locks:
+  - repository-analysis-e2e
+  - untrusted-repository-sandbox
+quality_gates:
+  targeted:
+    - "./gradlew :forensic-analytics-testbed:test --tests '*RepositoryAnalysisRealRepositoryEndToEndTest' --dependency-verification strict --console=plain --stacktrace"
+  required:
+    - "./gradlew :forensic-analytics-testbed:test --dependency-verification strict --console=plain --stacktrace"
+    - "git diff --check"
+documentation:
+  arc42: check runtime and quality views
+  adr: none
+stop_conditions:
+  - real repository fixture would require network access in the default gate
+  - fixture setup would execute target repository build scripts
+  - checkout result cannot preserve resolved commit and cleanup evidence
+  - E2E test collapses missing evidence into a successful analysis fact
+```
+
+Purpose: replace the current purely synthetic mini E2E signal with a
+deterministic local real repository fixture that exercises repository checkout,
+source-root detection, ingestion, session storage and cleanup.
+
+Done criteria:
+
+- The real repository fixture has stable source files, Git metadata and a
+  deterministic commit.
+- The E2E test verifies session creation, checkout status, resolved commit,
+  detected source roots, cleanup and absence of private path leakage in public
+  outputs.
+- No external network access is required for the default test.
+
+### Slice 02 - WildFly Hardening Preparation
+
+```yaml
+slice_id: S02
+profile: FULL_PATH
+owner: senior-performance-engineer
+secondary_reviewers:
+  - git-large-repository-specialist
+  - senior-devops
+  - senior-tester
+  - security-sandbox-specialist
+affected_files:
+  - forensic-analytics-testbed/src/test/java/de/burger/forensics/analytics/testbed/WildFlyRepositoryHardeningTest.java
+  - docs/testing/wildfly-hardening.md
+  - docs/architecture/current-build-and-test-map.md
+  - docs/workflow/execution-report.md
+affected_modules:
+  - forensic-analytics-testbed
+  - forensic-analytics-adapter-repository-source
+affected_contracts: []
+dependencies:
+  - S01
+parallel_group: G02
+file_locks:
+  - forensic-analytics-testbed/src/test/java/de/burger/forensics/analytics/testbed/WildFlyRepositoryHardeningTest.java
+  - docs/testing/wildfly-hardening.md
+contract_locks: []
+architecture_locks:
+  - large-repository-checkout
+  - external-git-hardening
+quality_gates:
+  targeted:
+    - "./gradlew :forensic-analytics-testbed:test --tests '*WildFlyRepositoryHardeningTest' --dependency-verification strict --console=plain --stacktrace"
+  required:
+    - "./gradlew :forensic-analytics-testbed:test --tests '*WildFlyRepositoryHardeningTest' --dependency-verification strict --console=plain --stacktrace"
+    - "git diff --check"
+documentation:
+  arc42: check quality and risk views
+  adr: none
+stop_conditions:
+  - hardening run lacks explicit WildFly branch or commit
+  - external network, disk or timeout prerequisites are not satisfied
+  - cleanup target cannot be proven inside the temporary workspace
+  - large-repository optimization would make commit resolution unverifiable
+```
+
+Purpose: make the existing opt-in WildFly hardening scenario operationally
+usable, measurable and safe without adding it to the default test suite.
+
+Done criteria:
+
+- Documentation records required environment variables, branch or commit input,
+  disk budget, timeout, report path and expected skip behavior.
+- The default targeted command proves the test remains opt-in when hardening is
+  not enabled.
+- Optional execution command is documented with `SKIPPED` reporting when local
+  prerequisites are missing.
+
+### Slice 03 - CLI Gateway Contract
+
+```yaml
+slice_id: S03
+profile: FULL_PATH
+owner: contract-governance-expert
+secondary_reviewers:
+  - senior-java-backend
+  - senior-system-architect
+  - senior-tester
+  - senior-react-frontend
+affected_files:
+  - contracts/openapi/gateway-api.yaml
+  - contracts/README.md
+  - contracts/cli/gateway-cli-contract.md
+  - forensic-analytics-rest/src/test/java/de/burger/forensics/analytics/rest/GatewayOpenApiContractTest.java
+  - forensic-analytics-cli/src/test/java/de/burger/forensics/analytics/cli/ForensicAnalyticsCliTest.java
+  - docs/architecture/service-migration-map.md
+  - docs/workflow/execution-report.md
+affected_modules:
+  - forensic-analytics-rest
+  - forensic-analytics-cli
+  - services:forensic-gateway-service
+affected_contracts:
+  - contracts/openapi/gateway-api.yaml
+  - contracts/cli/gateway-cli-contract.md
+dependencies:
+  - S00
+parallel_group: G01
+file_locks:
+  - contracts/**
+  - forensic-analytics-rest/src/test/java/de/burger/forensics/analytics/rest/GatewayOpenApiContractTest.java
+  - forensic-analytics-cli/src/test/java/de/burger/forensics/analytics/cli/**
+contract_locks:
+  - gateway-openapi-v1
+  - cli-gateway-contract-v1
+architecture_locks:
+  - gateway-facade
+  - cli-public-adapter
+quality_gates:
+  targeted:
+    - "./gradlew :forensic-analytics-rest:test --tests '*GatewayOpenApiContractTest' --dependency-verification strict --console=plain --stacktrace"
+    - "./gradlew :forensic-analytics-cli:test --tests '*ForensicAnalyticsCliTest' --dependency-verification strict --console=plain --stacktrace"
+  required:
+    - "./gradlew :forensic-analytics-rest:test --dependency-verification strict --console=plain --stacktrace"
+    - "./gradlew :forensic-analytics-cli:test --dependency-verification strict --console=plain --stacktrace"
+    - "git diff --check"
+documentation:
+  arc42: check scope, runtime and building-block views
+  adr: check ADR-0018
+stop_conditions:
+  - CLI route, request field or response field is not defined in a contract
+  - contract marks planned behavior as implemented
+  - generated or transport DTOs would leak into CLI domain logic
+  - public CLI or Gateway output exposes workspace paths or sensitive values
+```
+
+Purpose: define the CLI-to-Gateway boundary before implementation. The
+contract must map CLI commands and output expectations to public Gateway API
+behavior without using shared Java DTOs or hidden compatibility wrappers.
+
+Done criteria:
+
+- CLI-to-Gateway contract exists and names producer, consumer, protocol,
+  request model, response model, idempotency, retry, timeout, error and
+  redaction behavior.
+- OpenAPI and CLI contract tests verify the public contract.
+- Frontend impact is checked and recorded.
+
+### Slice 04 - Separate Swarm And Kubernetes Workflow Handoff
+
+```yaml
+slice_id: S04
+profile: FULL_PATH
+owner: senior-devops
+secondary_reviewers:
+  - microservice-senior-expert
+  - senior-system-architect
   - senior-tester
 affected_files:
-  - .agents/skills/execution-profile-router/SKILL.md
-  - .agents/orchestrator/routing-rules.md
-  - .agents/orchestrator/swarm-orchestrator.md
-  - docs/agents/skill-registry.md
-  - docs/process/workflow-create.md
-  - docs/process/workflow-execute.md
-  - docs/governance/README.md
+  - docs/workflow/deployment-workflow-request.md
+  - deployment/docker-swarm/README.md
+  - deployment/kubernetes/README.md
+  - docs/architecture/current-build-and-test-map.md
+  - docs/workflow/execution-report.md
 affected_modules: []
 affected_contracts: []
 dependencies:
   - S00
 parallel_group: G01
 file_locks:
-  - .agents/skills/execution-profile-router/**
-  - .agents/orchestrator/**
-  - docs/agents/skill-registry.md
-  - docs/process/workflow-create.md
-  - docs/process/workflow-execute.md
-  - docs/governance/README.md
+  - docs/workflow/deployment-workflow-request.md
+  - deployment/docker-swarm/README.md
+  - deployment/kubernetes/README.md
 contract_locks: []
 architecture_locks:
-  - agent-governance-routing
+  - deployment-readiness-claims
+  - service-runtime-readiness
 quality_gates:
   targeted:
-    - git diff --check
-    - rg -n "execution-profile-router|FAST_PATH|NORMAL_PATH|FULL_PATH" .agents docs
+    - "git diff --check"
   required:
-    - git diff --check
+    - "git diff --check"
 documentation:
-  arc42: check
-  adr: check
+  arc42: check deployment view
+  adr: check ADR-0017 and ADR-0018
 stop_conditions:
-  - profile classification would bypass a mandatory root AGENTS.md rule
-  - profile output lacks STOP rules
-  - routing update changes process strand semantics
+  - slice attempts to add Swarm stack or Kubernetes manifests
+  - deployment readiness is claimed without validation commands
+  - service health checks, resource policies or image ownership are unclear
 ```
 
-Purpose: introduce `FAST_PATH`, `NORMAL_PATH` and `FULL_PATH` classification
-before specialist role routing.
+Purpose: create a separate workflow request for Docker Swarm and Kubernetes
+deployment readiness without mixing deployment implementation into this
+workflow.
 
 Done criteria:
 
-- New skill defines mission, responsibilities, forbidden scope, inputs,
-  outputs, collaboration rules and STOP rules.
-- Routing rules require classification before specialist assignment.
-- Reduced reviews are limited to N/A impact checks and cannot waive required
-  gates.
+- `docs/workflow/deployment-workflow-request.md` contains a ready-to-run future
+  workflow create request.
+- Current Swarm and Kubernetes README files continue to state planned status
+  unless a separate workflow later adds manifests and validates them.
+- No stack file, manifest, chart or readiness claim is added here.
 
-### Slice 02 - Add Quality Impact Classifier
-
-```yaml
-slice_id: S02
-profile: FULL_PATH
-owner: senior-tester
-secondary_reviewers:
-  - senior-system-architect
-  - senior-documentation-engineer
-affected_files:
-  - .agents/skills/quality-impact-classifier/SKILL.md
-  - .agents/skills/quality-gate-orchestrator/SKILL.md
-  - .agents/skills/quality-gate-orchestrator/quality-gates.md
-  - docs/process/workflow-execute.md
-  - docs/process/branch-governance.md
-  - docs/agents/skill-registry.md
-affected_modules: []
-affected_contracts: []
-dependencies:
-  - S01
-parallel_group: G02
-file_locks:
-  - .agents/skills/quality-impact-classifier/**
-  - .agents/skills/quality-gate-orchestrator/**
-  - docs/process/workflow-execute.md
-  - docs/process/branch-governance.md
-  - docs/agents/skill-registry.md
-contract_locks: []
-architecture_locks:
-  - quality-gate-governance
-quality_gates:
-  targeted:
-    - git diff --check
-    - rg -n "quality-impact-classifier|FAST_PATH|NORMAL_PATH|FULL_PATH|failed required" .agents docs
-  required:
-    - git diff --check
-documentation:
-  arc42: check
-  adr: check
-stop_conditions:
-  - classifier can downgrade a failed required gate
-  - classifier conflicts with QUALITY.md
-  - Gradle commands are invented or renamed without build evidence
-```
-
-Purpose: formalize when documentation-only, governance-only and product
-implementation slices require documentation checks, targeted tests, minimum
-Gradle tests or the full local gate.
-
-Done criteria:
-
-- Quality matrix exists and preserves `QUALITY.md` authority.
-- Documentation-only governance slices do not require Gradle by default.
-- Product, build, source, test, contract and `QUALITY.md` changes still require
-  the applicable Gradle gate.
-
-### Slice 03 - Define Workflow Context Pack
-
-```yaml
-slice_id: S03
-profile: FULL_PATH
-owner: senior-workflow-architect
-secondary_reviewers:
-  - senior-documentation-engineer
-  - senior-system-architect
-  - senior-tester
-affected_files:
-  - .agents/skills/workflow-authoring/SKILL.md
-  - .agents/skills/workflow-executor/SKILL.md
-  - docs/process/workflow-create.md
-  - docs/process/workflow-execute.md
-  - docs/workflow/context-pack.md
-  - docs/workflow/context-pack.json
-affected_modules: []
-affected_contracts: []
-dependencies:
-  - S01
-  - S02
-parallel_group: G03
-file_locks:
-  - .agents/skills/workflow-authoring/SKILL.md
-  - .agents/skills/workflow-executor/SKILL.md
-  - docs/process/workflow-create.md
-  - docs/process/workflow-execute.md
-  - docs/workflow/context-pack.*
-contract_locks: []
-architecture_locks:
-  - workflow-context-provenance
-quality_gates:
-  targeted:
-    - git diff --check
-    - python3 -m json.tool docs/workflow/context-pack.json
-  required:
-    - git diff --check
-documentation:
-  arc42: check
-  adr: check
-stop_conditions:
-  - context pack claims stale hashes are current
-  - context pack replaces source-of-truth files
-  - subagents are told to skip rereading changed governing files
-```
-
-Purpose: define `docs/workflow/context-pack.md` and
-`docs/workflow/context-pack.json` as a workflow-local summary and hash record.
-
-Done criteria:
-
-- Context pack is explicitly secondary evidence.
-- Subagents reopen `AGENTS.md`, `QUALITY.md`, routing or workflow files when
-  hashes change, governance files are touched or a conflict is detected.
-- The pack records active strand, branch, profile, affected areas, required
-  roles and quality commands.
-
-### Slice 04 - Formalize Machine-Readable Slice Metadata
-
-```yaml
-slice_id: S04
-profile: FULL_PATH
-owner: senior-workflow-architect
-secondary_reviewers:
-  - senior-swarm-orchestrator
-  - senior-documentation-engineer
-  - senior-tester
-affected_files:
-  - .agents/skills/workflow-authoring/SKILL.md
-  - .agents/skills/workflow-executor/SKILL.md
-  - .agents/skills/three-amigos-requirement-gatekeeper/templates/slice-template.md
-  - docs/process/workflow-create.md
-  - docs/process/workflow-execute.md
-  - docs/agents/skill-registry.md
-affected_modules: []
-affected_contracts: []
-dependencies:
-  - S03
-parallel_group: G04
-file_locks:
-  - .agents/skills/workflow-authoring/SKILL.md
-  - .agents/skills/workflow-executor/SKILL.md
-  - .agents/skills/three-amigos-requirement-gatekeeper/templates/slice-template.md
-  - docs/process/workflow-create.md
-  - docs/process/workflow-execute.md
-  - docs/agents/skill-registry.md
-contract_locks: []
-architecture_locks:
-  - workflow-slice-metadata
-quality_gates:
-  targeted:
-    - git diff --check
-    - rg -n "slice_id|affected_files|dependencies|file_locks|quality_gates" .agents docs
-  required:
-    - git diff --check
-documentation:
-  arc42: check
-  adr: check
-stop_conditions:
-  - metadata allows dependency ranges instead of concrete slice IDs
-  - metadata omits locks or quality gates
-  - metadata changes conflict with S3D STOP rules
-```
-
-Purpose: make future workflow slices parseable without guessing free-form
-Markdown.
-
-Done criteria:
-
-- Required metadata fields are documented for every slice.
-- S3D stop conditions name missing metadata, unknown dependencies, cycles and
-  overlapping locks.
-- Templates and process docs use the same field names.
-
-### Slice 05 - Split Dedicated S3D Execution Orchestrator
+### Slice 05 - Legacy Monolith Caller Inventory And Retirement Gates
 
 ```yaml
 slice_id: S05
 profile: FULL_PATH
-owner: senior-system-architect
+owner: microservice-senior-expert
 secondary_reviewers:
-  - senior-swarm-orchestrator
-  - senior-documentation-engineer
+  - senior-system-architect
+  - senior-java-backend
   - senior-tester
 affected_files:
-  - .agents/roles/senior-execution-orchestrator.md
-  - .agents/skills/s3d-execution-orchestrator/SKILL.md
-  - .agents/orchestrator/routing-rules.md
-  - .agents/orchestrator/swarm-orchestrator.md
-  - docs/agents/skill-registry.md
-  - docs/process/workflow-execute.md
-affected_modules: []
+  - docs/architecture/service-migration-map.md
+  - docs/architecture/monolith-caller-retirement-plan.md
+  - docs/workflow/execution-report.md
+affected_modules:
+  - forensic-analytics-cli
+  - forensic-analytics-rest
+  - forensic-analytics-bootstrap
+  - forensic-analytics-boot-app
+  - forensic-analytics-engine
+  - forensic-analytics-ingestion-request
+  - forensic-analytics-testbed
 affected_contracts: []
 dependencies:
-  - S04
-parallel_group: G05
+  - S03
+parallel_group: G03
 file_locks:
-  - .agents/roles/senior-execution-orchestrator.md
-  - .agents/skills/s3d-execution-orchestrator/**
-  - .agents/orchestrator/**
-  - docs/agents/skill-registry.md
-  - docs/process/workflow-execute.md
+  - docs/architecture/service-migration-map.md
+  - docs/architecture/monolith-caller-retirement-plan.md
 contract_locks: []
 architecture_locks:
-  - s3d-orchestration
+  - monolith-retirement
+  - no-shared-java-implementation
 quality_gates:
   targeted:
-    - git diff --check
-    - rg -n "senior-execution-orchestrator|s3d-execution-orchestrator|LOCK_CONFLICT" .agents docs
+    - "rg -n 'RunRepositoryAnalysisUseCase|DefaultRepositoryAnalysisIngestionUseCase|forensic-analytics-application|forensic-analytics-domain' forensic-analytics-* services docs"
+    - "git diff --check"
   required:
-    - git diff --check
+    - "git diff --check"
 documentation:
-  arc42: update_if_governance_model_changes
-  adr: check
+  arc42: check building-block and runtime views
+  adr: check ADR-0017
 stop_conditions:
-  - S3D becomes a fourth process strand
-  - S3D is allowed to rewrite workflow-create artifacts during execution
-  - lock conflict routing no longer reaches Typed Error Router
+  - caller inventory cannot prove current callers
+  - target owner for a legacy path is unclear
+  - replacement parity test is missing
+  - rollback or deprecation strategy is missing
 ```
 
-Purpose: move technical dependency graph planning and lock validation from
-Senior Swarm Orchestrator to a dedicated S3D role and skill.
+Purpose: produce the caller map and retirement rules before changing or
+removing any legacy in-process path.
 
 Done criteria:
 
-- Swarm Orchestrator remains coordinator.
-- S3D owns DAG, topological groups and lock validation.
-- `LOCK_CONFLICT` routing remains explicit.
+- Every legacy path has a current caller status: active caller, candidate for
+  migration, caller-free candidate, or blocked.
+- Each candidate names target service owner, contract, parity test, rollback
+  strategy and forbidden changes.
+- No module or path is removed in this slice.
 
-### Slice 06 - Persist Skill Registry Matrix
+### Slice 06 - CLI First Caller-Free Migration
 
 ```yaml
 slice_id: S06
 profile: FULL_PATH
-owner: senior-system-architect
+owner: senior-java-backend
 secondary_reviewers:
-  - senior-documentation-engineer
+  - contract-governance-expert
+  - senior-system-architect
   - senior-tester
+  - microservice-senior-expert
 affected_files:
-  - .agents/skills/skill-registry-conflict-auditor/SKILL.md
-  - docs/agents/skill-registry.md
-  - docs/skill-audit/skill-registry.md
-  - docs/skill-audit/skill-registry.json
-  - docs/process/skills-update.md
-  - docs/process/workflow-execute.md
-affected_modules: []
-affected_contracts: []
+  - forensic-analytics-cli/src/main/java/de/burger/forensics/analytics/cli/**
+  - forensic-analytics-cli/src/test/java/de/burger/forensics/analytics/cli/**
+  - contracts/cli/gateway-cli-contract.md
+  - docs/architecture/monolith-caller-retirement-plan.md
+  - docs/workflow/execution-report.md
+affected_modules:
+  - forensic-analytics-cli
+  - services:forensic-gateway-service
+affected_contracts:
+  - contracts/cli/gateway-cli-contract.md
+  - contracts/openapi/gateway-api.yaml
 dependencies:
-  - S01
-parallel_group: G06
+  - S03
+  - S05
+parallel_group: G04
 file_locks:
-  - .agents/skills/skill-registry-conflict-auditor/**
-  - docs/agents/skill-registry.md
-  - docs/skill-audit/**
-  - docs/process/skills-update.md
-  - docs/process/workflow-execute.md
-contract_locks: []
+  - forensic-analytics-cli/src/main/java/de/burger/forensics/analytics/cli/**
+  - forensic-analytics-cli/src/test/java/de/burger/forensics/analytics/cli/**
+contract_locks:
+  - cli-gateway-contract-v1
+  - gateway-openapi-v1
 architecture_locks:
-  - skill-registry-governance
+  - cli-gateway-adapter
+  - monolith-caller-removal
 quality_gates:
   targeted:
-    - git diff --check
-    - python3 -m json.tool docs/skill-audit/skill-registry.json
+    - "./gradlew :forensic-analytics-cli:test --dependency-verification strict --console=plain --stacktrace"
+    - "./gradlew :services:forensic-gateway-service:test --dependency-verification strict --console=plain --stacktrace"
   required:
-    - git diff --check
+    - "./gradlew test --dependency-verification strict --console=plain --stacktrace"
+    - "git diff --check"
 documentation:
-  arc42: check
-  adr: check
+  arc42: check runtime and building-block views
+  adr: check ADR-0018
 stop_conditions:
-  - cached registry is reused after governing files changed
-  - registry marks unresolved conflicts as ready
-  - persistent registry becomes the source of truth over repository files
+  - CLI migration requires undocumented backward compatibility
+  - Gateway contract lacks required CLI behavior
+  - CLI still depends on monolith application use cases after migration
+  - redaction or idempotency behavior differs from the contract
 ```
 
-Purpose: add a persistent, hash-invalidated skill registry matrix for routing
-and conflict-audit reuse.
+Purpose: make the CLI the first caller-free legacy path by routing repository
+analysis submission through the Gateway contract or stopping with explicit
+missing-contract evidence.
 
 Done criteria:
 
-- Registry reuse is allowed only when relevant hashes are unchanged.
-- Missing owners and incompatible STOP rules remain blocking.
-- Manual review is required when `.agents/**`, `.codex/**`, `AGENTS.md`,
-  `QUALITY.md`, `docs/workflow/**` or `docs/skill-audit/**` changed.
+- CLI tests prove command behavior against the CLI/Gateway contract.
+- The CLI no longer uses in-process monolith analysis use cases for the
+  migrated repository-to-BTM path.
+- Any remaining CLI legacy command is explicitly documented with caller status
+  and non-removal reason.
 
-### Slice 07 - Unify Branch Strategy Rules
+### Slice 07 - Conditional Legacy Runtime Path Retirement
 
 ```yaml
 slice_id: S07
 profile: FULL_PATH
 owner: senior-system-architect
 secondary_reviewers:
-  - senior-documentation-engineer
+  - senior-java-backend
+  - microservice-senior-expert
+  - senior-devops
   - senior-tester
 affected_files:
-  - .agents/skills/git-branch-strategy/SKILL.md
-  - .agents/skills/release-branch-governance/branch-rules.md
-  - .agents/skills/git-commit-preparation/SKILL.md
-  - docs/process/branch-governance.md
-  - docs/agents/skill-registry.md
-  - AGENTS.md
-affected_modules: []
-affected_contracts: []
+  - settings.gradle.kts
+  - forensic-analytics-engine/**
+  - forensic-analytics-rest/**
+  - forensic-analytics-bootstrap/**
+  - forensic-analytics-boot-app/**
+  - forensic-analytics-ingestion-request/**
+  - forensic-analytics-testbed/**
+  - docs/architecture/monolith-caller-retirement-plan.md
+  - docs/architecture/service-migration-map.md
+  - docs/workflow/execution-report.md
+affected_modules:
+  - forensic-analytics-engine
+  - forensic-analytics-rest
+  - forensic-analytics-bootstrap
+  - forensic-analytics-boot-app
+  - forensic-analytics-ingestion-request
+  - forensic-analytics-testbed
+affected_contracts:
+  - contracts/openapi/gateway-api.yaml
+  - contracts/grpc/forensic-ingestion.proto
 dependencies:
-  - S01
-parallel_group: G07
+  - S05
+  - S06
+parallel_group: G05
 file_locks:
-  - .agents/skills/git-branch-strategy/SKILL.md
-  - .agents/skills/release-branch-governance/**
-  - .agents/skills/git-commit-preparation/**
-  - docs/process/branch-governance.md
-  - docs/agents/skill-registry.md
-  - AGENTS.md
-contract_locks: []
+  - settings.gradle.kts
+  - forensic-analytics-engine/**
+  - forensic-analytics-rest/**
+  - forensic-analytics-bootstrap/**
+  - forensic-analytics-boot-app/**
+  - forensic-analytics-ingestion-request/**
+  - forensic-analytics-testbed/**
+contract_locks:
+  - gateway-openapi-v1
+  - ingestion-grpc-v1
 architecture_locks:
-  - branch-governance
+  - monolith-module-retirement
+  - service-autonomy
+  - rollback-readiness
 quality_gates:
   targeted:
-    - git diff --check
-    - rg -n "workflow create|workflow execute|skills update|work/" AGENTS.md .agents docs
+    - "./gradlew test --dependency-verification strict --console=plain --stacktrace"
   required:
-    - git diff --check
+    - "./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace"
+    - "git diff --check"
 documentation:
-  arc42: update_if_branch_governance_changes
-  adr: check
+  arc42: update if runtime or deployment views change
+  adr: create or update ADR if module removal changes accepted architecture
 stop_conditions:
-  - commit preparation can create a generic branch that conflicts with the active strand
-  - branch matrix contradicts ADR-0016
-  - branch rules weaken shared-branch protection
+  - any candidate path still has production or test callers
+  - replacement parity is not proven
+  - rollback strategy is missing
+  - module removal would weaken the default quality gate
+  - removal would delete required rollback or test evidence
 ```
 
-Purpose: centralize branch naming for `skills update`, `workflow create`,
-`workflow execute`, ad-hoc implementation and commit preparation on shared
-branches.
+Purpose: retire only those legacy runtime paths that S05 proves are both
+caller-free and covered by replacement parity. This slice may complete as
+`NO_REMOVAL_SAFE` if caller evidence still blocks removal.
 
 Done criteria:
 
-- Branch matrix has one source of truth or one authoritative cross-reference.
-- `workflow create` keeps `feature/`, `fix/`, `docs/` and `architecture/`
-  workflow branch forms.
-- Generic `work/<task-slug>` creation is removed or guarded when it conflicts
-  with active strand branch rules.
+- Either a narrowly scoped caller-free path is removed with full quality gate
+  evidence, or the execution report records why removal is blocked.
+- `settings.gradle.kts` changes are limited to verified caller-free modules.
+- arc42 and architecture docs are synchronized when runtime composition
+  changes.
 
-### Slice 08 - Add Flowchart Integrity Auditor
+### Slice 08 - Final Documentation And Quality Gate
 
 ```yaml
 slice_id: S08
 profile: FULL_PATH
 owner: senior-documentation-engineer
 secondary_reviewers:
-  - senior-system-architect
-  - senior-tester
-affected_files:
-  - .agents/skills/flowchart-integrity-auditor/SKILL.md
-  - .agents/orchestrator/routing-rules.md
-  - docs/governance/workflow/README.md
-  - docs/governance/workflow/level-1-overview.md
-  - docs/governance/workflow/level-2-subgraphs.md
-  - docs/agents/skill-registry.md
-affected_modules: []
-affected_contracts: []
-dependencies:
-  - S01
-parallel_group: G08
-file_locks:
-  - .agents/skills/flowchart-integrity-auditor/**
-  - .agents/orchestrator/routing-rules.md
-  - docs/governance/workflow/**
-  - docs/agents/skill-registry.md
-contract_locks: []
-architecture_locks:
-  - governance-flowchart-integrity
-quality_gates:
-  targeted:
-    - git diff --check
-    - rg -n "flowchart-integrity-auditor|STOP|CP_FINAL|PUB_PUSH" .agents docs/governance docs/agents
-  required:
-    - git diff --check
-documentation:
-  arc42: update_if_gap_closed
-  adr: check
-stop_conditions:
-  - auditor allows push auto self-reference
-  - auditor allows workflow execute to call workflow create automatically
-  - STOP, fallback or terminal nodes become ambiguous
-```
-
-Purpose: close the documented Flowchart Integrity Audit gap with a dedicated
-skill and route.
-
-Done criteria:
-
-- Auditor checks yes/no/default paths, STOP paths, terminals, self-loops,
-  backward jumps and Level 1/Level 2 consistency.
-- Routing no longer requires Senior Documentation Engineer plus Senior System
-  Architect as the primary flowchart-audit bootstrap owner.
-- arc42 risk notes are updated if the gap is closed.
-
-### Slice 09 - Clarify Workflow Executor Resolution
-
-```yaml
-slice_id: S09
-profile: FULL_PATH
-owner: senior-workflow-architect
-secondary_reviewers:
-  - senior-system-architect
-  - skill-registry-conflict-auditor
-  - senior-documentation-engineer
-affected_files:
-  - .codex/skills/workflow-executor/SKILL.md
-  - .agents/skills/workflow-executor/SKILL.md
-  - .codex/AGENTS.md
-  - docs/agents/skill-registry.md
-  - docs/process/workflow-execute.md
-affected_modules: []
-affected_contracts: []
-dependencies:
-  - S01
-  - S06
-parallel_group: G09
-file_locks:
-  - .codex/skills/workflow-executor/SKILL.md
-  - .agents/skills/workflow-executor/SKILL.md
-  - .codex/AGENTS.md
-  - docs/agents/skill-registry.md
-  - docs/process/workflow-execute.md
-contract_locks: []
-architecture_locks:
-  - workflow-executor-resolution
-quality_gates:
-  targeted:
-    - git diff --check
-    - rg -n "workflow-executor|project-specific|reusable base|override" .codex .agents docs
-  required:
-    - git diff --check
-documentation:
-  arc42: check
-  adr: check
-stop_conditions:
-  - renaming front matter would break verified runtime skill discovery
-  - portable .codex files receive project-specific Forensic Analytics rules
-  - project-specific override precedence is ambiguous
-```
-
-Purpose: remove ambiguity between the reusable `.codex` workflow executor and
-the project-specific `.agents` workflow executor.
-
-Done criteria:
-
-- The active Forensic Analytics executor is the `.agents` skill.
-- The `.codex` skill remains reusable base protocol.
-- If front-matter renaming is not proven safe, use explicit resolution text
-  instead of renaming.
-
-### Slice 10 - Add Process Performance Profiler
-
-```yaml
-slice_id: S10
-profile: NORMAL_PATH
-owner: senior-performance-engineer
-secondary_reviewers:
   - senior-workflow-architect
-  - senior-documentation-engineer
+  - senior-system-architect
   - senior-tester
 affected_files:
-  - .agents/skills/process-performance-profiler/SKILL.md
-  - .agents/skills/workflow-executor/SKILL.md
-  - docs/process/workflow-execute.md
-  - docs/workflow/metrics/README.md
-  - docs/agents/skill-registry.md
+  - docs/workflow/execution-report.md
+  - docs/workflow/arc42-check-status.md
+  - docs/architecture/current-build-and-test-map.md
+  - docs/architecture/service-migration-map.md
+  - docs/arc42/**
 affected_modules: []
 affected_contracts: []
 dependencies:
+  - S01
+  - S02
   - S03
   - S04
-parallel_group: G10
-file_locks:
-  - .agents/skills/process-performance-profiler/**
-  - .agents/skills/workflow-executor/SKILL.md
-  - docs/process/workflow-execute.md
-  - docs/workflow/metrics/**
-  - docs/agents/skill-registry.md
-contract_locks: []
-architecture_locks:
-  - process-performance-observability
-quality_gates:
-  targeted:
-    - git diff --check
-    - rg -n "process-performance-profiler|metrics|critical path|repeated reads" .agents docs
-  required:
-    - git diff --check
-documentation:
-  arc42: check
-  adr: check
-stop_conditions:
-  - profiler records secrets, prompt content or raw evidence payloads
-  - profiler blocks required quality gates
-  - metrics become proof of correctness instead of operational diagnostics
-```
-
-Purpose: measure workflow process time and repeated governance work so future
-optimizations are evidence-based.
-
-Done criteria:
-
-- Profiler records timing, role count, file-read count, quality commands,
-  repeated governing-file reads, retries, blockers and critical path.
-- Metrics are written under `docs/workflow/metrics/**` only during
-  workflow-execute documentation updates.
-- Metrics are diagnostics and never replace required reviews or quality gates.
-
-### Slice 11 - Final Governance Synchronization And Release Gate
-
-```yaml
-slice_id: S11
-profile: FULL_PATH
-owner: senior-documentation-engineer
-secondary_reviewers:
-  - senior-system-architect
-  - senior-requirement-engineer
-  - senior-tester
-affected_files:
-  - AGENTS.md
-  - QUALITY.md
-  - .agents/**
-  - .codex/**
-  - docs/agents/**
-  - docs/process/**
-  - docs/governance/**
-  - docs/skill-audit/**
-  - docs/arc42/**
-  - docs/adr/**
-  - docs/workflow/**
-affected_modules: []
-affected_contracts: []
-dependencies:
   - S05
   - S06
   - S07
-  - S08
-  - S09
-  - S10
-parallel_group: G11
+parallel_group: G06
 file_locks:
-  - AGENTS.md
-  - QUALITY.md
-  - .agents/**
-  - .codex/**
-  - docs/**
+  - docs/workflow/**
+  - docs/architecture/**
+  - docs/arc42/**
 contract_locks: []
 architecture_locks:
-  - documentation-governance
-  - arc42-governance
-  - adr-governance
+  - documentation-synchronization
+  - quality-gate-reporting
 quality_gates:
   targeted:
-    - git status --short --branch
-    - git diff --check
-    - python3 -m json.tool docs/workflow/context-pack.json
+    - "git diff --check"
   required:
-    - git diff --check
+    - "./gradlew test --dependency-verification strict --console=plain --stacktrace"
+    - "git diff --check"
 documentation:
-  arc42: required_check_or_update
-  adr: required_check_or_update
+  arc42: checked or updated
+  adr: checked
 stop_conditions:
-  - docs and routing disagree about owner or trigger
-  - arc42 still reports a closed gap as open
-  - ADR update is required but missing
-  - root AGENTS.md and process docs conflict
+  - workflow result lacks exact commands and outcomes
+  - arc42 drift remains unresolved
+  - quality gate failure is not classified
+  - deployment readiness is overstated
 ```
 
-Purpose: perform the final Documentation Governance, arc42/ADR impact check,
-quality-impact summary and release decision for this workflow package.
+Purpose: synchronize workflow results, architecture documentation and quality
+evidence before the workflow is considered complete.
 
 Done criteria:
 
-- All new skills and roles are in the registry.
-- Routing, process docs, arc42 and ADR references agree.
-- Context pack and persistent registry are either current or explicitly stale.
-- No product implementation files changed.
-- The workflow is released for final commit/push only after required checks pass.
+- Execution report lists changed files, exact commands, pass/fail/skip results
+  and blockers.
+- arc42 check status is complete.
+- Remaining deployment work is clearly assigned to the separate workflow.
 
-## Dependency Graph
+## Slice Dependency Graph
 
-The detailed dependency diagram is maintained in
-[`slice-dependency-map.md`](slice-dependency-map.md).
-
-Execution summary:
-
-- S00 is mandatory first.
-- S01 and S02 are early controls and must finish before downstream optimization.
-- S03 and S04 define context and parseable slice metadata before S3D is split.
-- S05 waits for S04 because the dedicated S3D role depends on metadata rules.
-- S06, S07, S08 and S09 can start after their direct dependencies when locks
-  are disjoint.
-- S10 waits for context-pack and metadata rules.
-- S11 is final and waits for all governance slices.
+```text
+S00
+|-- S01
+|   `-- S02
+|-- S03
+|   `-- S06
+|-- S04
+|-- S05
+|   |-- S06
+|   `-- S07
+`-- S08 after S01-S07
+```
 
 ## Parallelization Opportunities
 
-Parallel execution is allowed only when S3D proves disjoint file locks.
-Potential groups:
-
-- G01 and G02 are serial because quality classification depends on profile
-  classification semantics.
-- G06 and G08 may be parallel after S01 when file locks are disjoint.
-- G07 and G09 must not run in parallel if both touch `.agents/skills/git-*`,
-  `.codex/AGENTS.md`, `docs/process/workflow-execute.md` or root `AGENTS.md`.
-- S11 is serial.
-
-## Quality Gates
-
-Quality authority is `QUALITY.md`.
-
-For this governance-only workflow:
-
-- Required for every slice: `git diff --check`.
-- Required before checkpoint commit: staged diff ownership and
-  `git diff --cached --check`.
-- Required when JSON artifacts are changed:
-  `python3 -m json.tool <json-file>`.
-- Required when product source, tests, build logic, contracts or `QUALITY.md`
-  are changed: stop as out-of-scope unless the workflow is refined; if refined,
-  run the minimum Gradle command from `QUALITY.md`.
-- Required before final release if scope expands into product build influence:
-  the full local quality gate from `QUALITY.md`.
-
-Do not claim any Gradle gate passed unless it was actually executed.
-
-## Documentation Synchronization Points
-
-- Every skill or role change updates `docs/agents/skill-registry.md`.
-- Every routing change updates `.agents/orchestrator/routing-rules.md`.
-- Every process-strand behavior change updates `docs/process/**`.
-- Every governance-flowchart change updates `docs/governance/workflow/**`.
-- Closing a documented governance gap updates arc42 risks and quality scenarios.
-- ADRs are updated only when an accepted decision changes, not for routine
-  implementation of an existing decision.
-
-## Stop Conditions
-
-Stop workflow execution if:
-
-- active branch does not match `architecture/workflow-governance-performance-20260521`;
-- product implementation files are modified;
-- a slice touches source, contracts, build logic, tests or `QUALITY.md` without
-  explicit workflow refinement;
-- execution profile or quality-impact classification can bypass mandatory
-  `AGENTS.md`, `QUALITY.md`, ADR or STOP rules;
-- cached context or registry artifacts are reused after relevant hashes changed;
-- workflow-executor resolution would require guessing runtime skill discovery;
-- branch rules conflict with ADR-0016;
-- flowchart integrity rules allow missing STOP paths, self-references or
-  automatic `workflow execute` to `workflow create` jumps;
-- any required file, route, role, skill or quality command cannot be verified.
-
-## Uncertainty Escalation
-
-Unclear governance authority escalates to Senior System Architect / Root
-Architect path. Automatic clarification or correction loops are capped at
-`maxRetries = 3`. After the third unresolved attempt, workflow execution stops
-and reports the attempted loop, blocker, files or decisions involved and why
-continuing automatically would be unsafe.
+- S01 and S03 may run in parallel after S00 because their write locks do not
+  overlap.
+- S04 may run in parallel with S01 or S03 because it is a deployment handoff
+  documentation slice only.
+- S02 depends on S01 because WildFly hardening should reuse the real E2E
+  repository metrics vocabulary where practical.
+- S06 depends on S03 and S05 because CLI migration needs both contract and
+  caller inventory.
+- S07 depends on S05 and S06 because removal must follow caller proof and first
+  CLI migration evidence.
 
 ## Commit And Push Plan
 
-This `workflow create` turn does not commit or push unless the user explicitly
-requests it.
+Workflow creation does not commit or push unless the user explicitly requests
+it. During `workflow execute`, commits and pushes are allowed only when the
+active workflow executor and slice checkpoint rules permit them. Slice
+checkpoint pushes target only the workflow branch and do not create or merge a
+pull request.
 
-During later `workflow execute`:
+## Stop Conditions
 
-- each successful slice creates exactly one slice-scoped checkpoint commit;
-- the checkpoint push targets only `origin/architecture/workflow-governance-performance-20260521`;
-- checkpoint push does not create or merge a PR, run branch cleanup, force-push
-  or run `push auto`;
-- `push auto` remains restricted to `skills-agents`.
+Stop the workflow when:
+
+- a required file, route, field, Gradle task, module, service owner or contract
+  cannot be verified exactly;
+- a slice would execute external Git, Docker, Swarm or Kubernetes behavior
+  without documented prerequisites;
+- Gateway or CLI output could leak workspace paths, credentials, raw stdout,
+  raw stderr or private repository metadata;
+- a service would depend on another service's Java implementation classes;
+- a monolith path still has callers but a slice attempts to remove it;
+- quality commands fail and the failure cannot be classified;
+- continuing would require guessing implementation or contract details.
 
 ## Definition Of Done
 
-- `docs/workflow/workflow.md` is complete and checked.
-- `docs/workflow/three-amigos-decision-record.md` records `READY_FOR_WORKFLOW`.
-- `docs/workflow/slice-dependency-map.md` matches slice metadata.
-- `docs/workflow/quality-and-leakage-gates.md` matches `QUALITY.md`.
-- `docs/workflow/context-pack.json` validates as JSON.
-- arc42 governance documentation is checked or updated.
-- No product implementation files are changed by workflow creation.
-- Final `git diff --check` passes.
+- `docs/workflow/workflow.md` and context pack are complete and checked.
+- arc42 impact is checked and recorded.
+- Each executed slice records changed files, exact verification commands and
+  pass/fail/skip status.
+- Real repository E2E coverage exists and is deterministic by default.
+- WildFly hardening is opt-in, documented and measurable.
+- CLI Gateway contract exists before CLI migration.
+- Swarm/Kubernetes deployment remains a separate workflow with no readiness
+  overclaim here.
+- Legacy monolith paths are removed or isolated only after caller-free proof.
 
-## Handoff To Workflow Execute
+## Handoff To `workflow execute`
 
-`workflow execute` may start only after this workflow package is committed or
-otherwise accepted by the user on the workflow branch. Execution must begin with
-Slice S00 and must use the checked branch, context pack and slice metadata from
-this workflow.
+`workflow execute` may start from S00 on branch
+`feature/workflow-e2e-wildfly-cli-deploy-20260521`.
+
+Before implementation, the executor must read this complete workflow,
+`docs/workflow/context-pack.json`, `QUALITY.md`, root `AGENTS.md`, routing
+rules and the role files named by the slice.
 
 ## arc42 Check Status
 
-arc42 was checked for workflow creation. The workflow changes process
-governance architecture, not product runtime architecture. The immediate arc42
-update is limited to the repository governance check status. Later slices must
-update arc42 quality scenarios, risks or architecture-decision references when
-they close documented gaps or change accepted governance behavior.
+See `docs/workflow/arc42-check-status.md`. The workflow creation review found
+the existing arc42 scope, building-block, runtime, deployment, quality and risk
+views already describe the relevant baseline. No direct arc42 edit is required
+for workflow creation. Future execution slices must update arc42 if runtime,
+contract, deployment or monolith-retirement behavior changes.

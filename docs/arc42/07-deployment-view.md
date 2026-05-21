@@ -133,6 +133,10 @@ Swarm and Kubernetes deployment descriptors are still future slice material.
 The first local Docker Compose descriptor is limited to the repository-to-BTM
 service landscape described below.
 
+Workflow `e2e-wildfly-cli-deploy-20260521-v1` records a separate Swarm and
+Kubernetes deployment workflow handoff. That handoff does not add stack files,
+manifests, charts, probes, resource policies or readiness claims.
+
 ## 7.7 Local Repository-to-BTM Service Landscape
 
 Slice 15 adds the first local Docker Compose descriptor for the implemented

@@ -104,6 +104,18 @@ The test suite covers domain, application, adapters, gRPC ingestion,
 persistence, REST, CLI, bootstrap, Boot, logging, observability and testbed
 scenarios.
 
+`forensic-analytics-testbed` now includes a deterministic local real
+repository E2E fixture under `src/test/resources/repository-e2e/`. The
+corresponding `RepositoryAnalysisRealRepositoryEndToEndTest` materializes that
+fixture as a local Git repository, pins a commit, sends a plugin-style in-process
+gRPC request and verifies checkout, source-root detection, session storage and
+workspace cleanup without external network access or target build execution.
+
+WildFly large-repository hardening is available as an opt-in testbed scenario
+through `WildFlyRepositoryHardeningTest`. It is skipped by default unless
+`FORENSIC_ANALYTICS_WILDFLY_HARDENING=true` and an explicit WildFly branch or
+commit is provided. The runbook is `docs/testing/wildfly-hardening.md`.
+
 Architecture tests were verified in these areas:
 
 - application contract architecture;
@@ -166,6 +178,10 @@ Compose startup, Gateway plus service health checks and Compose cleanup. This
 is local repository-to-BTM readiness only and does not claim production-wide
 Compose, Swarm or Kubernetes readiness.
 
+The active E2E/WildFly/CLI workflow records a separate Swarm and Kubernetes
+workflow handoff in `docs/workflow/deployment-workflow-request.md`. That handoff
+does not add stack files, manifests or readiness claims.
+
 Missing deployment material:
 
 - `deployment/docker-compose/docker-compose.yml`
@@ -205,6 +221,28 @@ Slice 19 also leaves the Gradle module list unchanged. Removal is blocked
 until caller-verification searches prove that a module has no remaining
 production or test caller and parity or explicit deprecation tests exist.
 
+## Active E2E/WildFly/CLI Workflow Verification
+
+Workflow `e2e-wildfly-cli-deploy-20260521-v1` adds current verification
+evidence without changing the default build topology:
+
+- a deterministic local real repository E2E fixture in
+  `forensic-analytics-testbed`;
+- an opt-in WildFly hardening scenario that is skipped by default unless an
+  explicit external WildFly branch or commit is provided;
+- an explicit CLI `gateway-submit` command for Gateway/public API submission;
+- a caller inventory showing that local `analyze`, REST, Bootstrap, Boot,
+  Engine, Ingestion Request and Testbed paths remain active legacy callers;
+- a separate Swarm and Kubernetes deployment workflow request, with no stack
+  files, manifests or readiness claims added by this workflow.
+
+The workflow full local quality gate passed after the S07 CLI coverage
+remediation:
+
+```bash
+./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace
+```
+
 ## Residual Risks
 
 - CI workflow evidence is absent.
@@ -215,6 +253,8 @@ production or test caller and parity or explicit deprecation tests exist.
 - Frontend coverage and end-to-end test gates are not configured.
 - Boot container healthcheck evidence is absent.
 - Swarm and Kubernetes readiness is absent.
-- Full local quality gate was not required for the baseline documentation
-  review because the baseline was documentation-only and required
-  `git diff --check`.
+- WildFly hardening is optional external evidence and is not part of the
+  default Gradle quality gate.
+- Baseline documentation-only reviews still require only their documented
+  `git diff --check` gate unless a later workflow slice changes product code,
+  build logic, tests or deployment behavior.

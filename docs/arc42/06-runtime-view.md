@@ -136,6 +136,11 @@ Plugin / external client
   -> Plugin / external client receives completed BTM files or unavailable state
 ```
 
+The CLI now implements an explicit `gateway-submit` command for Gateway HTTP
+repository-to-BTM submission. That command is a Gateway/public API client path
+only. The local CLI `analyze` command remains an in-process legacy path and
+must not be treated as Gateway execution evidence.
+
 Slice 16 defers graph-replay and report-generation service implementation from
 repository-to-BTM acceptance. The accepted BTM pipeline does not require replay
 views, graph projections, reports, incident packages, LLM-ready packages or

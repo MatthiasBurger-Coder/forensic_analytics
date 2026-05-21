@@ -1,83 +1,54 @@
 # Quality And Leakage Gates
 
-## Authority
+## Required Baseline
 
-`QUALITY.md` is the authoritative quality contract. This workflow may classify
-which gates apply, but it must not weaken a required gate or mark a failed
-required gate as optional.
+`QUALITY.md` is the authoritative quality contract.
 
-## Default Governance-Only Gate
-
-Required for every slice in this workflow:
-
-```bash
-git diff --check
-```
-
-Required before a slice checkpoint commit during `workflow execute`:
-
-```bash
-git diff --cached --check
-```
-
-Required when JSON files are created or changed:
-
-```bash
-python3 -m json.tool <json-file>
-```
-
-## Gradle Gate Escalation
-
-This workflow forbids product source, frontend source, tests, build logic,
-contracts and `QUALITY.md` changes by default.
-
-If a future slice unexpectedly touches one of those areas, execution must stop
-as a scope conflict unless the workflow is refined. If refined, the minimum
-quality command from `QUALITY.md` applies:
+Minimum command:
 
 ```bash
 ./gradlew test --dependency-verification strict --console=plain --stacktrace
 ```
 
-If the refined change affects broad product behavior, build health, package
-coverage or final release readiness, the full local gate applies:
+Full local gate:
 
 ```bash
 ./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace
 ```
 
-## Profile Matrix
+Every slice must also run:
 
-| Profile | Typical scope | Required checks |
-|---|---|---|
-| `FAST_PATH` | Documentation-only typo, Mermaid or process text without behavioral change | `git diff --check`, targeted documentation review |
-| `NORMAL_PATH` | Isolated governance skill or metadata change without architecture, branch, quality or routing authority change | `git diff --check`, targeted registry/routing checks, JSON validation when applicable |
-| `FULL_PATH` | Workflow governance, skill/role structure, branch rules, quality rules, routing, S3D, `.codex` interaction, arc42/ADR impact | `git diff --check`, role review, registry conflict review, arc42/ADR check, slice-specific validation |
+```bash
+git diff --check
+```
 
-## Leakage Gates
+## Leakage Rules
 
-Every slice must verify that the changed files remain inside the workflow
-scope. Product implementation leakage is blocked.
+Gateway, CLI, E2E tests and WildFly reports must not expose:
 
-Forbidden by this workflow:
+- credentials, tokens, authorization headers or secret-like values;
+- private workspace paths in public Gateway or CLI outputs;
+- raw stdout or raw stderr from Git, Docker, service runtimes or workers;
+- raw exception stack traces in public contracts;
+- private repository checkout paths;
+- unresolved facts as confirmed evidence.
 
-- Java production source changes;
-- Java test source changes;
-- React or frontend source changes;
-- gRPC/protobuf, OpenAPI or event contract implementation changes;
-- Docker, runtime, deployment or persistence changes;
-- Gradle build logic or dependency changes;
-- analytics behavior changes.
+## Slice-Specific Gates
 
-If any of these appear in `git diff --name-status`, execution stops and reports
-the scope conflict.
+| Slice | Required gate |
+|---|---|
+| S01 | Targeted real repository E2E test and `:forensic-analytics-testbed:test`. |
+| S02 | Targeted WildFly hardening test proving opt-in skip by default; optional external run only with prerequisites. |
+| S03 | Gateway OpenAPI contract test, CLI contract test and contract leakage checks. |
+| S04 | Documentation-only `git diff --check`; no deployment readiness claim. |
+| S05 | Caller inventory commands and documentation diff check. |
+| S06 | CLI tests, Gateway service tests and repository minimum quality command. |
+| S07 | Repository minimum command; full local gate if any module or build registration changes. |
+| S08 | Final repository minimum command and documentation diff check. |
 
-## Required Reporting
+## Optional External Checks
 
-For every slice, the execution report records:
-
-- commands executed;
-- whether each command passed, failed or was not applicable;
-- whether Gradle was required;
-- whether any product leakage was detected;
-- remaining risk and blocker status.
+WildFly, Docker image build, Docker Compose runtime startup, Docker Swarm and
+Kubernetes checks are optional unless the slice changes those runtime behaviors
+or documentation makes them required. Skipped optional checks must be reported
+as `SKIPPED` with the concrete reason.
