@@ -32,6 +32,35 @@ The EPIC remains the product and requirement baseline. The arc42 documentation t
 
 ## Governance Check Status
 
+The Governance Performance Optimization workflow was checked for workflow
+creation on branch `architecture/workflow-governance-performance-20260521`.
+The workflow affects process-governance architecture only. It does not change
+product runtime boundaries, product service responsibilities, deployment
+topology, persistence ownership, contracts or evidence semantics.
+
+Checked sections for this workflow:
+
+- Architecture Constraints: checked for branch-first workflow creation,
+  process-strand separation and quality authority.
+- Solution Strategy: checked for profile-aware governance routing without
+  weakening required gates.
+- Building Block View: checked for skills, roles, routing, workflow and
+  documentation-governance ownership.
+- Runtime View: no product runtime flow change required.
+- Deployment View: no deployment topology change required.
+- Crosscutting Concepts: checked for context-pack, registry-cache and metrics
+  provenance boundaries.
+- Architecture Decisions: checked against ADR-0015, ADR-0016, ADR-0020 and
+  ADR-0021.
+- Quality Requirements: checked for profile-aware quality gates and mandatory
+  STOP behavior.
+- Risks and Technical Debt: checked for existing Flowchart Integrity Audit and
+  S3D ownership gaps.
+- Glossary: no term update required during workflow creation.
+
+Later workflow-execute slices must update the relevant arc42 sections when
+they close a documented governance gap or change accepted governance behavior.
+
 The three-strand agent and workflow governance model was checked and
 synchronized for Governance Flowchart V2 workflow execution on branch
 `architecture/workflow-governance-flowchart-v2-20260517`. That branch is now
@@ -92,4 +121,4 @@ arc42 sections updated for agent governance:
 - Glossary
 
 Current workflow branch:
-`docs/workflow-forensics-tracing-analytics-epic-alignment-20260516`.
+`architecture/workflow-governance-performance-20260521`.
