@@ -1264,3 +1264,75 @@ full local quality gate with strict dependency verification, JSON schema parse
 check, quality review, security review, architecture review, `git diff
 --check`, `git diff --cached --check`, checkpoint commit and branch push
 completed successfully.
+
+## Slice 14 Execution - End-To-End Repository To BTM Orchestration
+
+Slice 14 implements the deterministic repository-to-BTM orchestration path in
+Analysis Store. The slice keeps Gateway as facade-only, keeps worker ownership
+behind service contracts and lets Analysis Store coordinate Repository
+Analysis, Java AST source-fact retrieval, optional Joern enrichment and BTM
+generation through owner APIs.
+
+Implemented behavior:
+
+- Analysis Store wires Repository Analysis, Java AST source-fact, Joern CPG and
+  BTM Generation owner clients through service-local ports.
+- Analysis Store submits deterministic repository, Java AST and BTM generation
+  jobs for a repository-to-BTM start request and registers accepted artifacts
+  only after owner API validation.
+- Repository Analysis prepares source and build-output package descriptors and
+  exposes the Java AST handoff result through gRPC/protobuf contracts.
+- Java AST source-fact bytes are read through the Java AST owner API, parsed by
+  the Analysis Store adapter and mapped into Analysis Store-owned static source
+  fact models.
+- Joern CPG analysis is invoked only when source and build-output packages are
+  available and complete; otherwise BTM generation continues with accepted
+  static source facts and an explicit skipped diagnostic.
+- BTM Generation receives source-fact artifacts, optional semantic artifacts
+  and deterministic instrumentation targets, then returns generated BTM rule
+  and manifest artifacts.
+- Owner API outages are stage-specific: repository owner outages create a
+  pending repository job, Java AST source-fact outages preserve the verified
+  source snapshot, and BTM owner outages preserve target-planning state without
+  resubmitting repository work.
+- Plaintext gRPC owner clients are restricted to loopback and configured
+  internal service DNS names, and Joern image/query metadata is constrained to
+  public digest-pinned and secret-free values.
+
+### Slice 14 Reviews
+
+- Microservice Senior Expert: final read-only re-review returned `READY`;
+  Docker DNS endpoints, generated gRPC/protobuf client usage and service
+  autonomy were verified.
+- Security Reviewer: final read-only re-review returned `READY`; artifact
+  integrity failure handling, plaintext target validation and Joern metadata
+  hardening were verified.
+- Quality Reviewer: final read-only re-review returned `READY`; stage-specific
+  owner outage handling, snapshot provenance, deterministic E2E tests,
+  production gRPC client tests and service coverage were verified.
+
+### Slice 14 CP_RECORD
+
+```text
+workflowVersion=microservices-btm-pipeline-20260517-v5
+sliceId=14
+sliceTitle=End-To-End Repository To BTM Orchestration
+responsibleAgent=Workflow Executor with Microservice Senior Expert, Security Reviewer and Quality Reviewer
+changedFiles=services/analysis-store-service/**
+qualityGateCommands=./gradlew --no-daemon --max-workers=1 :services:analysis-store-service:test --tests "*RepositoryToBtmOwnerApiEndToEndTest" --tests "*AnalysisStoreWorkerGrpcClientTest" --tests "*AnalysisStoreWorkerPortTest" --tests "*AnalysisStoreServiceApplicationTest" --tests "*JavaAstSourceFactArtifactClientTest" --dependency-verification strict --console=plain --stacktrace; ./gradlew --no-daemon --max-workers=1 :services:analysis-store-service:generateProto :services:analysis-store-service:jacocoTestReport :services:analysis-store-service:jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace; ./gradlew --no-daemon --max-workers=1 clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace; git diff --check; git diff --cached --check
+qualityGateResult=PASS
+checkpointCommitHash=6e0280397b0ba592b99e8a8391843e0519a9b2b0
+pushResult=PUB_DONE to origin/feature/workflow-microservices-btm-pipeline-20260517
+rollbackReference=4a12fc74f480795544f91b7fc90955e87be37df0
+arc42Updated=not changed in this slice; v5 runtime dependency rules remain unchanged
+adrUpdated=not required in this slice
+```
+
+### Slice 14 D8 Decision
+
+Slice 14 is `D8_PASS`. Targeted owner API, E2E orchestration, client,
+application-port and bootstrap regression tests, Analysis Store service
+coverage, full local quality gate with strict dependency verification,
+microservice review, security review, quality review, `git diff --check`,
+`git diff --cached --check`, checkpoint commit and branch push completed
+successfully.
