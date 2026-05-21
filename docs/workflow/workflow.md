@@ -604,7 +604,12 @@ affected_files:
   - services/java-parser-analysis-service/**
   - forensic-analytics-adapter-javaparser/**
   - settings.gradle.kts
-  - contracts/**
+  - contracts/grpc/**
+  - contracts/events/**
+  - docs/arc42/**
+  - docs/architecture/**
+  - docs/workflow/execution-report.md
+  - services/README.md
 affected_modules:
   - services:java-parser-analysis-service
   - forensic-analytics-adapter-javaparser
@@ -618,6 +623,12 @@ file_locks:
   - services/java-parser-analysis-service/**
   - forensic-analytics-adapter-javaparser/**
   - settings.gradle.kts
+  - contracts/grpc/**
+  - contracts/events/**
+  - docs/arc42/**
+  - docs/architecture/**
+  - docs/workflow/execution-report.md
+  - services/README.md
 contract_locks:
   - java-parser-analysis-service
 architecture_locks:
@@ -640,6 +651,12 @@ stop_conditions:
 
 Purpose: move JavaParser AST scanning and static source-fact extraction into
 `services/java-parser-analysis-service`.
+
+`services/java-ast-analysis-service` remains predecessor and rollback
+evidence during S07 unless a later scope update explicitly adds it as writable
+scope. S07 must create and register the target service and must not substitute
+`:services:java-ast-analysis-service:test` for the required
+`:services:java-parser-analysis-service:test` quality gate.
 
 ### Slice 08 - Joern Analysis Service Extraction
 

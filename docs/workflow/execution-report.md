@@ -32,7 +32,7 @@
 | S04 | COMPLETED | Data ownership, artifact custody, orchestration state and query/report ownership assigned; reviewer-required consistency docs included through S04 scope updates. |
 | S05 | COMPLETED | Repository source service extracted as first FA-MSA-001 target-name service; security remediation, service test, service packaging, root test and staged whitespace gate passed. |
 | S06 | COMPLETED | Ingestion service extracted as target-name service; Java backend race remediation, service test, service packaging, root test and staged whitespace gate passed. |
-| S07 | PENDING | JavaParser analysis service extraction |
+| S07 | PENDING | JavaParser analysis service extraction; S3D scope remediation completed before product implementation. |
 | S08 | PENDING | Joern analysis service extraction |
 | S09 | PENDING | Analysis orchestrator service boundary |
 | S10 | PENDING | Query report API service boundary |
@@ -93,6 +93,12 @@
 | S06 | `./gradlew test --dependency-verification strict --console=plain --stacktrace` | PASS: build successful in 25s after registering `services:ingestion-service`; 174 actionable tasks up-to-date. |
 | S06 | `git diff --check` | PASS: no whitespace errors after S06 implementation and documentation updates. The first run timed out at the tool's 34s default; the 120s rerun completed cleanly. |
 | S06 | `git diff --cached --check` | PASS: no whitespace errors after staging tracked and newly added S06 files. |
+| S07 | S07 workflow-scope review | BLOCKED: S07 required arc42 and workflow report updates but omitted `docs/arc42/**`, `docs/architecture/**`, `docs/workflow/execution-report.md`, concrete contract locks and `services/README.md` from S07 locks before implementation. |
+| S07 | `./gradlew :services:java-parser-analysis-service:test --dependency-verification strict --console=plain --stacktrace` | FAILED before implementation: Gradle could not find project `:services:java-parser-analysis-service`; the target module must be created and registered before this required S07 gate can pass. |
+| S07 | `./gradlew :services:java-ast-analysis-service:test --dependency-verification strict --console=plain --stacktrace` | PASS as tester diagnostic only: predecessor service tests pass, but this cannot substitute for the required S07 target service gate. |
+| S07 | `./gradlew :forensic-analytics-adapter-javaparser:test --dependency-verification strict --console=plain --stacktrace` | PASS as tester diagnostic: legacy adapter parity tests pass before S07 implementation. |
+| S07 | `./gradlew test --dependency-verification strict --console=plain --stacktrace` | PASS as tester diagnostic before S07 implementation; root gate must be rerun after the target service is implemented. |
+| S07 | `git diff --check` for S07 workflow-scope remediation | PASS: no whitespace errors after adding S07 documentation, contract and report locks before product implementation. |
 
 ## Subagent Review Log
 
@@ -134,6 +140,11 @@
 | S06 | Senior Java Backend subagent | BLOCKED before remediation: `IngestionApplicationService.upload` used non-atomic read-modify-write session updates, creating a lost-update risk for concurrent uploads. |
 | S06 | Senior Java Backend subagent | PASS after remediation: upload, complete and abort mutate state through the service-local repository `update(...)` path; the in-memory adapter uses `ConcurrentHashMap.computeIfPresent` and the concurrent upload regression passed. |
 | S06 | Senior Tester subagent | PASS after final staging: target service test, service packaging, root test, scoped coupling scan, unstaged whitespace check and staged whitespace check passed. |
+| S07 | Senior Workflow Architect subagent | BLOCKED before scope remediation: S07 documentation and contract locks did not include required `docs/arc42/**`, `docs/architecture/**`, `docs/workflow/execution-report.md`, concrete `contracts/**` locks or `services/README.md`; implementation must wait until workflow scope is corrected. |
+| S07 | Senior Java Backend subagent | PASS_WITH_PLAN: create `services/java-parser-analysis-service` from `services/java-ast-analysis-service` source evidence, keep proto wire shape unchanged, rename only service-local identity and do not invent unimplemented class, call-site or branch extraction. |
+| S07 | Source Analysis reviewer | BLOCKED before implementation: unresolved-symbol diagnostics are conditional in the predecessor, source-root/module context is not explicit in source-fact artifacts, and parse errors must remain diagnostics rather than canonical facts. |
+| S07 | Microservice Senior Expert subagent | PASS_WITH_PLAN: create and register the target service, retain `services/java-ast-analysis-service` and `forensic-analytics-adapter-javaparser` as predecessor evidence, and avoid shared Java implementation modules or runtime/deployment readiness claims. |
+| S07 | Senior Tester subagent | BLOCKED before implementation: the required `:services:java-parser-analysis-service:test` target cannot run until the target module exists; predecessor tests are diagnostic only. |
 
 ## Blockers
 
