@@ -2,49 +2,53 @@
 
 ## Status
 
-Checked during workflow creation and final workflow execution on `2026-05-21`.
+`CHECKED_WITH_REQUIRED_EXECUTION_UPDATES`
+
+Workflow creation checked the current arc42 and architecture documentation. The
+documents are sufficient to create the FA-MSA-001 workflow, but they intentionally
+must be updated during Slice 01 before production migration slices run.
 
 ## Files Checked
 
-- `docs/arc42/03-system-scope-and-context.md`
+- `docs/arc42/04-solution-strategy.md`
 - `docs/arc42/05-building-block-view.md`
-- `docs/arc42/06-runtime-view.md`
 - `docs/arc42/07-deployment-view.md`
-- `docs/arc42/10-quality-requirements.md`
-- `docs/arc42/11-risks-and-technical-debt.md`
+- `docs/arc42/09-architecture-decisions.md`
+- `docs/architecture/target-microservices-architecture.md`
+- `docs/architecture/service-boundaries.md`
+- `docs/architecture/service-migration-map.md`
+- `docs/architecture/current-coupling-map.md`
+- `docs/architecture/data-ownership.md`
+- `docs/architecture/service-communication-matrix.md`
+- `docs/architecture/monolith-runtime-isolation.md`
+- `docs/architecture/monolith-caller-retirement-plan.md`
 
-## Result
+## Findings
 
-Final S08 synchronization updated:
+- Current arc42 and ADRs document a target service landscape that differs from
+  FA-MSA-001 names.
+- Current architecture docs correctly state that existing `forensic-analytics-*`
+  modules are not microservices.
+- Current architecture docs record active callers for legacy monolith modules
+  and block unproven removal.
+- Docker Swarm and Kubernetes readiness are not currently implemented; the
+  workflow must not claim readiness before manifests and validation commands
+  exist.
 
-- `docs/arc42/06-runtime-view.md`, to record the implemented CLI
-  `gateway-submit` Gateway submission path while keeping local `analyze` as a
-  legacy in-process path.
-- `docs/arc42/07-deployment-view.md`, to record that the Swarm and Kubernetes
-  deployment work is a separate workflow handoff and not deployment readiness
-  evidence.
+## Required Slice 01 Updates
 
-The checked arc42 files now document:
+Slice 01 must update or supersede the affected ADR/arc42 documents so the
+architecture source of truth explicitly handles:
 
-- repository analysis, Gateway, runtime and microservice target flows;
-- the implemented explicit CLI Gateway submission path and the remaining
-  local in-process `analyze` path;
-- the target service landscape and service-autonomy constraints;
-- local repository-to-BTM Docker Compose evidence;
-- absence of Docker Swarm and Kubernetes readiness;
-- large legacy codebase quality concerns;
-- governance and workflow quality scenarios.
+- `repository-source-service`;
+- `ingestion-service`;
+- `java-parser-analysis-service`;
+- `joern-analysis-service`;
+- `analysis-orchestrator-service`;
+- `query-report-api-service`;
+- `cli-client`;
+- `observability-stack`;
+- `testbed`.
 
-No ADR update is required by S08 because no accepted architecture decision,
-service boundary, deployment target or quality policy changed.
-
-## Required Future Updates
-
-Execution slices must update arc42 when they:
-
-- change runtime flow or Gateway public behavior;
-- change service ownership or caller retirement status;
-- add or remove a Gradle module;
-- change deployment readiness evidence;
-- change quality-gate expectations;
-- introduce a new accepted architecture decision.
+The update must keep planned behavior separate from implemented behavior and
+must not call current partial service slices production-ready without evidence.
