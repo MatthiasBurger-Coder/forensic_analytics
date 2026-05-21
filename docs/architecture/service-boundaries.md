@@ -473,7 +473,17 @@ Current evidence:
 
 - arc42 graph/replay concepts;
 - semantic graph domain model;
-- no standalone graph/replay service exists yet.
+- no standalone graph/replay service exists yet;
+- Slice 16 explicitly defers graph/replay implementation from
+  repository-to-BTM pipeline acceptance.
+
+Deferral decision:
+
+- repository-to-BTM acceptance currently ends at deterministic BTM artifact
+  generation and public delivery readiness;
+- graph/replay remains a future rebuildable projection service;
+- no Gateway, Analysis Store or worker code may treat graph/replay projections
+  as canonical evidence.
 
 Stop conditions:
 
@@ -513,7 +523,18 @@ Outbound communication:
 Current evidence:
 
 - arc42 reporting and LLM concepts;
-- no standalone report-generation service exists yet.
+- no standalone report-generation service exists yet;
+- Slice 16 explicitly defers report-generation implementation from
+  repository-to-BTM pipeline acceptance.
+
+Deferral decision:
+
+- repository-to-BTM acceptance currently does not require generated reports,
+  incident packages, LLM-ready packages or live LLM output;
+- reports remain future generated artifacts built from owner APIs and optional
+  Graph Replay projections;
+- no generated report or LLM output may overwrite evidence or become verified
+  fact.
 
 Stop conditions:
 

@@ -54,9 +54,10 @@ Verified from `settings.gradle.kts`:
 - `services:forensic-gateway-service`
 
 Seven service-specific Gradle projects under `services/**` are now registered.
-Graph-replay and report-generation remain README-only planned service roots.
-The build-artifact worker is planned by workflow v2 and retained by workflow
-v3; it has no service root yet.
+Graph-replay and report-generation remain README-only planned service roots
+and are explicitly deferred from repository-to-BTM acceptance by Slice 16. The
+build-artifact worker is planned by workflow v2 and retained by workflow v3;
+it has no service root yet.
 
 ## Quality Commands
 
@@ -184,8 +185,9 @@ deployment behavior, run the minimum `QUALITY.md` command before continuing:
 
 Service-specific test commands exist for the seven registered service projects.
 Graph-replay and report-generation still have no service-local Gradle test task
-because they remain README-only planned service roots. The build-artifact
-worker has no Gradle task until a later slice creates the service root.
+because they remain README-only planned service roots and are deferred from
+repository-to-BTM acceptance. The build-artifact worker has no Gradle task
+until a later slice creates the service root.
 
 ## Residual Risks
 

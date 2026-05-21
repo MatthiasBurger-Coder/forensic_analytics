@@ -86,7 +86,7 @@ Operational correlation IDs help connect adapter logs for diagnostics. They are 
 ## 6.8 Target Microservice Runtime Flow
 
 The target runtime flow for service-split work is defined by ADR-0017 and is
-partially implemented. The full end-to-end flow remains planned until Gateway,
+partially implemented. The full evidence-review flow remains planned until
 graph-replay and report-generation runtime paths are implemented and verified:
 
 ```text
@@ -135,6 +135,13 @@ Plugin / external client
   -> Gateway public BTM delivery facade
   -> Plugin / external client receives completed BTM files or unavailable state
 ```
+
+Slice 16 defers graph-replay and report-generation service implementation from
+repository-to-BTM acceptance. The accepted BTM pipeline does not require replay
+views, graph projections, reports, incident packages, LLM-ready packages or
+live LLM output. Those services may be added only after a later slice defines
+contracts, owner-query access, projection rebuild rules, storage ownership and
+tests that keep projections and generated output separate from evidence.
 
 Repository Analysis resolves branch input to a concrete commit SHA before
 analysis handoff. The source snapshot may reference a complete build-output

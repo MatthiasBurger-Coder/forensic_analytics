@@ -127,10 +127,11 @@ deployment/
   kubernetes/
 ```
 
-Most target roots now exist. Graph-replay, report-generation,
-build-artifact-worker, frontend migration and deployment roots still require
-later implementation slices before they can be treated as executable runtime
-paths.
+Most target roots now exist. Graph-replay and report-generation are README-only
+planned roots and are explicitly deferred from repository-to-BTM pipeline
+acceptance by Slice 16. Build-artifact-worker, frontend migration and
+production deployment roots still require later implementation slices before
+they can be treated as executable runtime paths.
 
 ## Target Service Responsibilities
 
