@@ -1,6 +1,12 @@
 package de.burger.forensics.analytics.services.repositoryanalysis.adapter.in.grpc;
 
 import de.burger.forensics.analytics.repositoryanalysis.v1.ArtifactReference;
+import de.burger.forensics.analytics.repositoryanalysis.v1.AnalyzeSourceSnapshotWithJavaAstRequest;
+import de.burger.forensics.analytics.repositoryanalysis.v1.BuildOutputPackageDescriptor;
+import de.burger.forensics.analytics.repositoryanalysis.v1.BuildOutputProducer;
+import de.burger.forensics.analytics.repositoryanalysis.v1.BuildOutputProducerCandidate;
+import de.burger.forensics.analytics.repositoryanalysis.v1.BuildOutputProducerStatus;
+import de.burger.forensics.analytics.repositoryanalysis.v1.BuildOutputResolution;
 import de.burger.forensics.analytics.repositoryanalysis.v1.CheckoutResult;
 import de.burger.forensics.analytics.repositoryanalysis.v1.CheckoutStatus;
 import de.burger.forensics.analytics.repositoryanalysis.v1.CleanupRepositoryWorkspaceRequest;
@@ -8,7 +14,10 @@ import de.burger.forensics.analytics.repositoryanalysis.v1.CleanupRepositoryWork
 import de.burger.forensics.analytics.repositoryanalysis.v1.Diagnostic;
 import de.burger.forensics.analytics.repositoryanalysis.v1.DiagnosticSeverity;
 import de.burger.forensics.analytics.repositoryanalysis.v1.GetRepositoryPreparationRequest;
+import de.burger.forensics.analytics.repositoryanalysis.v1.JavaAstHandoffResponse;
+import de.burger.forensics.analytics.repositoryanalysis.v1.JavaAstScanSummary;
 import de.burger.forensics.analytics.repositoryanalysis.v1.OperationStatus;
+import de.burger.forensics.analytics.repositoryanalysis.v1.PackageAvailability;
 import de.burger.forensics.analytics.repositoryanalysis.v1.PrepareRepositoryRequest;
 import de.burger.forensics.analytics.repositoryanalysis.v1.PrepareRepositoryResponse;
 import de.burger.forensics.analytics.repositoryanalysis.v1.RepositoryAnalysisServiceGrpc;
@@ -16,6 +25,7 @@ import de.burger.forensics.analytics.repositoryanalysis.v1.RepositoryPreparation
 import de.burger.forensics.analytics.repositoryanalysis.v1.RepositoryReference;
 import de.burger.forensics.analytics.repositoryanalysis.v1.RepositoryWorkspaceStatus;
 import de.burger.forensics.analytics.repositoryanalysis.v1.RevisionSelector;
+import de.burger.forensics.analytics.repositoryanalysis.v1.SourcePackageDescriptor;
 import de.burger.forensics.analytics.repositoryanalysis.v1.SourceRoot;
 import de.burger.forensics.analytics.repositoryanalysis.v1.SourceSnapshot;
 import de.burger.forensics.analytics.repositoryanalysis.v1.SourceSnapshotCompleteness;
@@ -23,6 +33,8 @@ import de.burger.forensics.analytics.repositoryanalysis.v1.WorkspacePolicy;
 import de.burger.forensics.analytics.services.repositoryanalysis.application.IdempotencyConflictException;
 import de.burger.forensics.analytics.services.repositoryanalysis.application.RepositoryAnalysisApplicationService;
 import de.burger.forensics.analytics.services.repositoryanalysis.application.RepositoryPreparationNotFoundException;
+import de.burger.forensics.analytics.services.repositoryanalysis.application.RepositorySourceSnapshotHandoffService;
+import de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.AnalysisJobId;
 import de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.AnalysisRunId;
 import de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.SourceSnapshotId;
 import de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.WorkspaceId;
@@ -35,9 +47,14 @@ import static de.burger.forensics.analytics.services.repositoryanalysis.domain.R
 
 public final class RepositoryAnalysisGrpcEndpoint extends RepositoryAnalysisServiceGrpc.RepositoryAnalysisServiceImplBase {
     private final RepositoryAnalysisApplicationService applicationService;
+    private final RepositorySourceSnapshotHandoffService handoffService;
 
-    public RepositoryAnalysisGrpcEndpoint(RepositoryAnalysisApplicationService applicationService) {
+    public RepositoryAnalysisGrpcEndpoint(
+        RepositoryAnalysisApplicationService applicationService,
+        RepositorySourceSnapshotHandoffService handoffService
+    ) {
         this.applicationService = Objects.requireNonNull(applicationService, "application service must not be null");
+        this.handoffService = Objects.requireNonNull(handoffService, "handoff service must not be null");
     }
 
     @Override
@@ -111,6 +128,31 @@ public final class RepositoryAnalysisGrpcEndpoint extends RepositoryAnalysisServ
         }
     }
 
+    @Override
+    public void analyzeSourceSnapshotWithJavaAst(
+        AnalyzeSourceSnapshotWithJavaAstRequest request,
+        StreamObserver<JavaAstHandoffResponse> responseObserver
+    ) {
+        try {
+            requireText(request.getRequestId(), "request id");
+            var result = handoffService.analyzeWithJavaAst(
+                request.getRequestId(),
+                request.getIdempotencyKey(),
+                request.getSchemaVersion(),
+                request.getCorrelationId(),
+                new AnalysisRunId(request.getAnalysisRunId()),
+                new AnalysisJobId(request.getAnalysisJobId()),
+                new SourceSnapshotId(request.getSourceSnapshotId()),
+                handoffPolicy(request.getHandoffPolicy()),
+                request.getSafeAttributesMap()
+            );
+            responseObserver.onNext(handoffResponse(result, request.getCorrelationId()));
+            responseObserver.onCompleted();
+        } catch (RuntimeException error) {
+            responseObserver.onError(status(error).asRuntimeException());
+        }
+    }
+
     private static de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.RepositoryReference repository(
         RepositoryReference repository
     ) {
@@ -143,6 +185,65 @@ public final class RepositoryAnalysisGrpcEndpoint extends RepositoryAnalysisServ
             policy.getTimeoutSeconds(),
             policy.getMaxWorkspaceBytes()
         );
+    }
+
+    private static de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.SourceSnapshotHandoffPolicy handoffPolicy(
+        de.burger.forensics.analytics.repositoryanalysis.v1.SourceSnapshotHandoffPolicy policy
+    ) {
+        return new de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.SourceSnapshotHandoffPolicy(
+            policy.getMaxFiles(),
+            policy.getMaxSourceBytes(),
+            policy.getTimeoutSeconds()
+        );
+    }
+
+    private static JavaAstHandoffResponse handoffResponse(
+        de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.JavaAstAnalysisHandoffResult result,
+        String correlationId
+    ) {
+        var builder = JavaAstHandoffResponse.newBuilder()
+            .setStatus(status("JAVA_AST_HANDOFF_COMPLETED", "Java AST source snapshot handoff completed", correlationId))
+            .setAnalysisRunId(result.analysisRunId().value())
+            .setAnalysisJobId(result.analysisJobId().value())
+            .setSourceSnapshotId(result.sourceSnapshotId().value())
+            .setCompleteness(completeness(result.completeness()))
+            .setSourceFactArtifact(sourceFactArtifact(result))
+            .setSummary(javaAstSummary(result.summary()))
+            .putAllSafeAttributes(result.safeAttributes());
+        result.diagnostics().forEach(diagnostic -> builder.addDiagnostics(diagnostic(diagnostic)));
+        return builder.build();
+    }
+
+    private static de.burger.forensics.analytics.analysisjob.v1.AnalysisArtifactReference sourceFactArtifact(
+        de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.JavaAstAnalysisHandoffResult result
+    ) {
+        var artifact = result.sourceFactArtifact();
+        return de.burger.forensics.analytics.analysisjob.v1.AnalysisArtifactReference.newBuilder()
+            .setArtifact(de.burger.forensics.analytics.analysisjob.v1.ArtifactReference.newBuilder()
+                .setPath(artifact.reference())
+                .setType(artifact.type())
+                .setSha256(artifact.sha256())
+                .setSizeBytes(artifact.sizeBytes()))
+            .setCategory(de.burger.forensics.analytics.analysisjob.v1.AnalysisArtifactCategory.ANALYSIS_ARTIFACT_CATEGORY_STATIC)
+            .setProducerService(result.sourceFactArtifactProducerService())
+            .setSchemaVersion(result.sourceFactArtifactSchemaVersion())
+            .setCompleteness(analysisCompleteness(result.completeness()))
+            .setByteAccess(byteAccess(result.sourceFactArtifactByteAccess()))
+            .build();
+    }
+
+    private static JavaAstScanSummary javaAstSummary(
+        de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.JavaAstScanSummary summary
+    ) {
+        return JavaAstScanSummary.newBuilder()
+            .setReceivedFileCount(summary.receivedFileCount())
+            .setParsedFileCount(summary.parsedFileCount())
+            .setSkippedFileCount(summary.skippedFileCount())
+            .setParseErrorCount(summary.parseErrorCount())
+            .setSourceFactCount(summary.sourceFactCount())
+            .setParser(summary.parser())
+            .setParserVersion(summary.parserVersion())
+            .build();
     }
 
     private static RepositoryPreparation preparation(
@@ -209,7 +310,9 @@ public final class RepositoryAnalysisGrpcEndpoint extends RepositoryAnalysisServ
             .setSourceSnapshotId(sourceSnapshot.sourceSnapshotId().value())
             .setCompleteness(completeness(sourceSnapshot.completeness()))
             .setManifestArtifact(artifact(sourceSnapshot.manifestArtifact()))
-            .addAllLimitations(sourceSnapshot.limitations());
+            .addAllLimitations(sourceSnapshot.limitations())
+            .setSourcePackage(sourcePackage(sourceSnapshot.sourcePackage()))
+            .setBuildOutputPackage(buildOutputPackage(sourceSnapshot.buildOutputPackage()));
         sourceSnapshot.sourceRoots().forEach(sourceRoot -> builder.addSourceRoots(sourceRoot(sourceRoot)));
         return builder.build();
     }
@@ -222,6 +325,75 @@ public final class RepositoryAnalysisGrpcEndpoint extends RepositoryAnalysisServ
             .setType(artifact.type())
             .setSha256(artifact.sha256())
             .setSizeBytes(artifact.sizeBytes())
+            .build();
+    }
+
+    private static SourcePackageDescriptor sourcePackage(
+        de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.SourcePackageDescriptor descriptor
+    ) {
+        var builder = SourcePackageDescriptor.newBuilder()
+            .setAvailability(packageAvailability(descriptor.availability()))
+            .setManifestArtifact(artifact(descriptor.manifestArtifact()))
+            .setSchemaVersion(descriptor.schemaVersion())
+            .setProducerService(descriptor.producerService())
+            .setByteAccess(byteAccess(descriptor.byteAccess()))
+            .setCompleteness(completeness(descriptor.completeness()));
+        if (descriptor.packageArtifact() != null) {
+            builder.setPackageArtifact(artifact(descriptor.packageArtifact()));
+        }
+        return builder.build();
+    }
+
+    private static BuildOutputPackageDescriptor buildOutputPackage(
+        de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.BuildOutputPackageDescriptor descriptor
+    ) {
+        var builder = BuildOutputPackageDescriptor.newBuilder()
+            .setAvailability(packageAvailability(descriptor.availability()))
+            .setSchemaVersion(descriptor.schemaVersion())
+            .setProducerService(descriptor.producerService())
+            .setByteAccess(byteAccess(descriptor.byteAccess()))
+            .setCompleteness(completeness(descriptor.completeness()))
+            .setResolution(buildOutputResolution(descriptor.resolution()))
+            .setBuildSystem(descriptor.buildSystem());
+        if (descriptor.manifestArtifact() != null) {
+            builder.setManifestArtifact(artifact(descriptor.manifestArtifact()));
+        }
+        if (descriptor.packageArtifact() != null) {
+            builder.setPackageArtifact(artifact(descriptor.packageArtifact()));
+        }
+        return builder.build();
+    }
+
+    private static BuildOutputResolution buildOutputResolution(
+        de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.BuildOutputResolution resolution
+    ) {
+        var builder = BuildOutputResolution.newBuilder()
+            .setSelectedProducer(buildOutputProducer(resolution.selectedProducer()))
+            .setTerminalIntegrityFailure(resolution.terminalIntegrityFailure());
+        resolution.candidates().forEach(candidate -> builder.addCandidates(buildOutputCandidate(candidate)));
+        resolution.diagnostics().forEach(diagnostic -> builder.addDiagnostics(diagnostic(diagnostic)));
+        return builder.build();
+    }
+
+    private static BuildOutputProducerCandidate buildOutputCandidate(
+        de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.BuildOutputProducerCandidate candidate
+    ) {
+        var builder = BuildOutputProducerCandidate.newBuilder()
+            .setProducer(buildOutputProducer(candidate.producer()))
+            .setStatus(buildOutputProducerStatus(candidate.status()))
+            .setReference(candidate.reference());
+        candidate.diagnostics().forEach(diagnostic -> builder.addDiagnostics(diagnostic(diagnostic)));
+        return builder.build();
+    }
+
+    private static de.burger.forensics.analytics.analysisjob.v1.ArtifactByteAccess byteAccess(
+        de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.ArtifactByteAccess byteAccess
+    ) {
+        return de.burger.forensics.analytics.analysisjob.v1.ArtifactByteAccess.newBuilder()
+            .setOwnerService(byteAccess.ownerService())
+            .setRetrievalContract(byteAccess.retrievalContract())
+            .setRetrievalReference(byteAccess.retrievalReference())
+            .setByteCustody(byteCustody(byteAccess.byteCustody()))
             .build();
     }
 
@@ -298,6 +470,64 @@ public final class RepositoryAnalysisGrpcEndpoint extends RepositoryAnalysisServ
             case COMPLETE -> SourceSnapshotCompleteness.SOURCE_SNAPSHOT_COMPLETENESS_COMPLETE;
             case INCOMPLETE -> SourceSnapshotCompleteness.SOURCE_SNAPSHOT_COMPLETENESS_INCOMPLETE;
             case UNKNOWN -> SourceSnapshotCompleteness.SOURCE_SNAPSHOT_COMPLETENESS_UNKNOWN;
+        };
+    }
+
+    static de.burger.forensics.analytics.analysisjob.v1.AnalysisCompleteness analysisCompleteness(
+        de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.SourceSnapshotCompleteness completeness
+    ) {
+        return switch (completeness) {
+            case COMPLETE -> de.burger.forensics.analytics.analysisjob.v1.AnalysisCompleteness.ANALYSIS_COMPLETENESS_COMPLETE;
+            case INCOMPLETE -> de.burger.forensics.analytics.analysisjob.v1.AnalysisCompleteness.ANALYSIS_COMPLETENESS_INCOMPLETE;
+            case UNKNOWN -> de.burger.forensics.analytics.analysisjob.v1.AnalysisCompleteness.ANALYSIS_COMPLETENESS_UNKNOWN;
+        };
+    }
+
+    static PackageAvailability packageAvailability(
+        de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.PackageAvailability availability
+    ) {
+        return switch (availability) {
+            case AVAILABLE -> PackageAvailability.PACKAGE_AVAILABILITY_AVAILABLE;
+            case PENDING -> PackageAvailability.PACKAGE_AVAILABILITY_PENDING;
+            case UNAVAILABLE -> PackageAvailability.PACKAGE_AVAILABILITY_UNAVAILABLE;
+            case FAILED_INTEGRITY -> PackageAvailability.PACKAGE_AVAILABILITY_FAILED_INTEGRITY;
+        };
+    }
+
+    static BuildOutputProducer buildOutputProducer(
+        de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.BuildOutputProducer producer
+    ) {
+        return switch (producer) {
+            case UNSPECIFIED -> BuildOutputProducer.BUILD_OUTPUT_PRODUCER_UNSPECIFIED;
+            case ARTIFACT_STORE -> BuildOutputProducer.BUILD_OUTPUT_PRODUCER_ARTIFACT_STORE;
+            case ARTIFACTORY -> BuildOutputProducer.BUILD_OUTPUT_PRODUCER_ARTIFACTORY;
+            case JENKINS -> BuildOutputProducer.BUILD_OUTPUT_PRODUCER_JENKINS;
+            case BUILD_ARTIFACT_WORKER -> BuildOutputProducer.BUILD_OUTPUT_PRODUCER_BUILD_ARTIFACT_WORKER;
+        };
+    }
+
+    static BuildOutputProducerStatus buildOutputProducerStatus(
+        de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.BuildOutputProducerStatus status
+    ) {
+        return switch (status) {
+            case AVAILABLE -> BuildOutputProducerStatus.BUILD_OUTPUT_PRODUCER_STATUS_AVAILABLE;
+            case NOT_CONFIGURED -> BuildOutputProducerStatus.BUILD_OUTPUT_PRODUCER_STATUS_NOT_CONFIGURED;
+            case MISSING -> BuildOutputProducerStatus.BUILD_OUTPUT_PRODUCER_STATUS_MISSING;
+            case FALLBACK_PLANNED -> BuildOutputProducerStatus.BUILD_OUTPUT_PRODUCER_STATUS_FALLBACK_PLANNED;
+            case TERMINAL_INTEGRITY_FAILURE -> BuildOutputProducerStatus.BUILD_OUTPUT_PRODUCER_STATUS_TERMINAL_INTEGRITY_FAILURE;
+        };
+    }
+
+    static de.burger.forensics.analytics.analysisjob.v1.ArtifactByteCustody byteCustody(
+        de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.ArtifactByteCustody custody
+    ) {
+        return switch (custody) {
+            case PRODUCER_RETAINED ->
+                de.burger.forensics.analytics.analysisjob.v1.ArtifactByteCustody.ARTIFACT_BYTE_CUSTODY_PRODUCER_RETAINED;
+            case SCOPED_OBJECT_ACCESS ->
+                de.burger.forensics.analytics.analysisjob.v1.ArtifactByteCustody.ARTIFACT_BYTE_CUSTODY_SCOPED_OBJECT_ACCESS;
+            case EXPLICIT_HANDOFF ->
+                de.burger.forensics.analytics.analysisjob.v1.ArtifactByteCustody.ARTIFACT_BYTE_CUSTODY_EXPLICIT_HANDOFF;
         };
     }
 

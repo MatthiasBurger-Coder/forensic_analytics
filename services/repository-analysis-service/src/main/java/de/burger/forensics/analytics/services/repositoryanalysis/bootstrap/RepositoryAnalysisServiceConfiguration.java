@@ -2,14 +2,19 @@ package de.burger.forensics.analytics.services.repositoryanalysis.bootstrap;
 
 import de.burger.forensics.analytics.services.repositoryanalysis.adapter.in.grpc.RepositoryAnalysisGrpcEndpoint;
 import de.burger.forensics.analytics.services.repositoryanalysis.adapter.out.filesystem.FileSystemRepositoryWorkspaceAdapter;
+import de.burger.forensics.analytics.services.repositoryanalysis.adapter.out.filesystem.FileSystemSourceSnapshotFileCollector;
 import de.burger.forensics.analytics.services.repositoryanalysis.adapter.out.git.GitRepositoryCheckoutAdapter;
 import de.burger.forensics.analytics.services.repositoryanalysis.adapter.out.git.SafeGitCommandRunner;
 import de.burger.forensics.analytics.services.repositoryanalysis.adapter.out.git.SourceRootDetector;
+import de.burger.forensics.analytics.services.repositoryanalysis.adapter.out.grpc.JavaAstAnalysisGrpcClient;
 import de.burger.forensics.analytics.services.repositoryanalysis.adapter.out.memory.InMemoryRepositoryPreparationRepository;
 import de.burger.forensics.analytics.services.repositoryanalysis.application.RepositoryAnalysisApplicationService;
+import de.burger.forensics.analytics.services.repositoryanalysis.application.RepositorySourceSnapshotHandoffService;
+import de.burger.forensics.analytics.services.repositoryanalysis.application.port.JavaAstAnalysisPort;
 import de.burger.forensics.analytics.services.repositoryanalysis.application.port.RepositoryCheckoutPort;
 import de.burger.forensics.analytics.services.repositoryanalysis.application.port.RepositoryPreparationRepository;
 import de.burger.forensics.analytics.services.repositoryanalysis.application.port.RepositoryWorkspacePort;
+import de.burger.forensics.analytics.services.repositoryanalysis.application.port.SourceSnapshotFileCollectorPort;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -33,8 +38,19 @@ public class RepositoryAnalysisServiceConfiguration {
     }
 
     @Bean
+    public SourceSnapshotFileCollectorPort sourceSnapshotFileCollectorPort(RepositoryAnalysisServiceProperties properties) {
+        return new FileSystemSourceSnapshotFileCollector(properties.workspace().root());
+    }
+
+    @Bean
     public RepositoryCheckoutPort repositoryCheckoutPort() {
         return new GitRepositoryCheckoutAdapter(new SafeGitCommandRunner(), new SourceRootDetector());
+    }
+
+    @Bean
+    public JavaAstAnalysisPort javaAstAnalysisPort(RepositoryAnalysisServiceProperties properties) {
+        var grpc = properties.javaAstAnalysis().grpc();
+        return new JavaAstAnalysisGrpcClient(grpc.host(), grpc.port(), grpc.deadlineSeconds());
     }
 
     @Bean
@@ -48,10 +64,20 @@ public class RepositoryAnalysisServiceConfiguration {
     }
 
     @Bean
-    public RepositoryAnalysisGrpcEndpoint repositoryAnalysisGrpcEndpoint(
-        RepositoryAnalysisApplicationService applicationService
+    public RepositorySourceSnapshotHandoffService repositorySourceSnapshotHandoffService(
+        RepositoryPreparationRepository repository,
+        SourceSnapshotFileCollectorPort sourceFileCollector,
+        JavaAstAnalysisPort javaAstAnalysisPort
     ) {
-        return new RepositoryAnalysisGrpcEndpoint(applicationService);
+        return new RepositorySourceSnapshotHandoffService(repository, sourceFileCollector, javaAstAnalysisPort);
+    }
+
+    @Bean
+    public RepositoryAnalysisGrpcEndpoint repositoryAnalysisGrpcEndpoint(
+        RepositoryAnalysisApplicationService applicationService,
+        RepositorySourceSnapshotHandoffService handoffService
+    ) {
+        return new RepositoryAnalysisGrpcEndpoint(applicationService, handoffService);
     }
 
     @Bean

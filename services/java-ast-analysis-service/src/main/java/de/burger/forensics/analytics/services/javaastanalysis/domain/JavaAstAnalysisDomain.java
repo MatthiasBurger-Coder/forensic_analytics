@@ -40,6 +40,7 @@ public final class JavaAstAnalysisDomain {
             || text.startsWith("file:")
             || text.contains(":")
             || text.contains("//")
+            || text.chars().anyMatch(Character::isISOControl)
             || WINDOWS_DRIVE_PATH.matcher(text).matches()
             || Arrays.asList(text.split("/")).contains("..")) {
             throw new IllegalArgumentException(name + " must be a safe relative path");
@@ -328,7 +329,17 @@ public final class JavaAstAnalysisDomain {
                 .replace('\r', ' ')
                 .replace('\n', ' ')
                 .replace('\\', '/');
-            if (text.startsWith("file:") || WINDOWS_DRIVE_PATH.matcher(text).matches()) {
+            var lower = text.toLowerCase(Locale.ROOT);
+            if (text.chars().anyMatch(Character::isISOControl)
+                || lower.contains("file:")
+                || text.contains("://")
+                || lower.contains("token")
+                || lower.contains("password")
+                || lower.contains("secret")
+                || lower.contains("credential")
+                || lower.contains("authorization")
+                || text.matches(".*(^|\\s)/[^\\s]+.*")
+                || text.matches(".*(^|\\s)[A-Za-z]:[\\\\/][^\\s]+.*")) {
                 return "diagnostic details redacted";
             }
             return text;
@@ -391,7 +402,8 @@ public final class JavaAstAnalysisDomain {
         AnalysisArtifactCategory category,
         String producerService,
         String schemaVersion,
-        AnalysisCompleteness completeness
+        AnalysisCompleteness completeness,
+        ArtifactByteAccess byteAccess
     ) {
         public AnalysisArtifactReference {
             artifact = Objects.requireNonNull(artifact, "artifact must not be null");
@@ -399,6 +411,21 @@ public final class JavaAstAnalysisDomain {
             producerService = requireText(producerService, "producer service");
             schemaVersion = requireText(schemaVersion, "schema version");
             completeness = Objects.requireNonNull(completeness, "completeness must not be null");
+            byteAccess = Objects.requireNonNull(byteAccess, "artifact byte access must not be null");
+        }
+    }
+
+    public record ArtifactByteAccess(
+        String ownerService,
+        String retrievalContract,
+        String retrievalReference,
+        ArtifactByteCustody byteCustody
+    ) {
+        public ArtifactByteAccess {
+            ownerService = requireText(ownerService, "artifact byte owner service");
+            retrievalContract = requirePublicReference(retrievalContract, "artifact byte retrieval contract");
+            retrievalReference = requireRelativePath(retrievalReference, "artifact byte retrieval reference");
+            byteCustody = Objects.requireNonNull(byteCustody, "artifact byte custody must not be null");
         }
     }
 
@@ -418,6 +445,58 @@ public final class JavaAstAnalysisDomain {
         }
     }
 
+    public record SourceFactArtifactBytesRequest(
+        String requestId,
+        String correlationId,
+        AnalysisRunId analysisRunId,
+        AnalysisJobId analysisJobId,
+        SourceSnapshotId sourceSnapshotId,
+        String retrievalReference,
+        String expectedSha256,
+        long expectedSizeBytes,
+        long maxBytes,
+        String schemaVersion,
+        Map<String, String> safeAttributes
+    ) {
+        public SourceFactArtifactBytesRequest {
+            requestId = requireText(requestId, "request id");
+            correlationId = requireText(correlationId, "correlation id");
+            analysisRunId = Objects.requireNonNull(analysisRunId, "analysis run id must not be null");
+            analysisJobId = Objects.requireNonNull(analysisJobId, "analysis job id must not be null");
+            sourceSnapshotId = Objects.requireNonNull(sourceSnapshotId, "source snapshot id must not be null");
+            retrievalReference = requireRelativePath(retrievalReference, "retrieval reference");
+            expectedSha256 = requireText(expectedSha256, "expected checksum").toLowerCase(Locale.ROOT);
+            if (!expectedSha256.matches("[0-9a-f]{64}")) {
+                throw new IllegalArgumentException("expected checksum must be a SHA-256 hex value");
+            }
+            if (expectedSizeBytes < 0) {
+                throw new IllegalArgumentException("expected size must not be negative");
+            }
+            if (maxBytes < 1 || maxBytes > 104_857_600L) {
+                throw new IllegalArgumentException("max bytes must be between 1 and 104857600");
+            }
+            schemaVersion = requireText(schemaVersion, "schema version");
+            safeAttributes = JavaAstAnalysisDomain.safeAttributes(safeAttributes);
+        }
+    }
+
+    public record SourceFactArtifactBytes(
+        AnalysisArtifactReference artifact,
+        byte[] content,
+        Map<String, String> safeAttributes
+    ) {
+        public SourceFactArtifactBytes {
+            artifact = Objects.requireNonNull(artifact, "artifact must not be null");
+            content = Objects.requireNonNull(content, "content must not be null").clone();
+            safeAttributes = JavaAstAnalysisDomain.safeAttributes(safeAttributes);
+        }
+
+        @Override
+        public byte[] content() {
+            return content.clone();
+        }
+    }
+
     public enum AnalysisCompleteness {
         COMPLETE,
         INCOMPLETE,
@@ -428,6 +507,12 @@ public final class JavaAstAnalysisDomain {
         STATIC
     }
 
+    public enum ArtifactByteCustody {
+        PRODUCER_RETAINED,
+        SCOPED_OBJECT_ACCESS,
+        EXPLICIT_HANDOFF
+    }
+
     public enum DiagnosticSeverity {
         INFO,
         WARNING,
@@ -436,5 +521,20 @@ public final class JavaAstAnalysisDomain {
 
     public enum EvidenceKind {
         STATIC_SOURCE_FACT
+    }
+
+    private static String requirePublicReference(String value, String name) {
+        var reference = requireText(value, name).replace('\\', '/');
+        var lower = reference.toLowerCase(Locale.ROOT);
+        if (lower.startsWith("file:")
+            || reference.startsWith("/")
+            || WINDOWS_DRIVE_PATH.matcher(reference).matches()
+            || reference.contains("://")
+            || reference.contains("\n")
+            || reference.contains("\r")
+            || Arrays.asList(reference.split("/")).stream().anyMatch(part -> part.isBlank() || part.equals(".") || part.equals(".."))) {
+            throw new IllegalArgumentException(name + " must be a public artifact reference");
+        }
+        return reference;
     }
 }

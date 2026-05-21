@@ -11,6 +11,9 @@
 !services/forensic-ingestion-service/build/
 !services/forensic-ingestion-service/build/libs/
 !services/forensic-ingestion-service/build/libs/*.jar
+!services/forensic-gateway-service/build/
+!services/forensic-gateway-service/build/libs/
+!services/forensic-gateway-service/build/libs/*.jar
 !services/analysis-store-service/build/
 !services/analysis-store-service/build/libs/
 !services/analysis-store-service/build/libs/*.jar

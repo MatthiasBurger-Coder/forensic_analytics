@@ -6,6 +6,8 @@ import de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnal
 import de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.AnalysisJobId;
 import de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.AnalysisRunId;
 import de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.AnalyzeSourceSnapshotCommand;
+import de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.ArtifactByteAccess;
+import de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.ArtifactByteCustody;
 import de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.ArtifactReference;
 import de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.DiagnosticSeverity;
 import de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.EvidenceKind;
@@ -113,7 +115,47 @@ class JavaAstAnalysisDomainTest {
         );
         assertThrows(IllegalArgumentException.class, () -> new ArtifactReference("artifact.json", "application/json", "bad", 1));
         assertThrows(IllegalArgumentException.class, () -> new ArtifactReference("artifact.json", "application/json", "a".repeat(64), -1));
-        assertThrows(NullPointerException.class, () -> new AnalysisArtifactReference(null, AnalysisArtifactCategory.STATIC, "producer", "schema", AnalysisCompleteness.COMPLETE));
+        var byteAccess = new ArtifactByteAccess(
+            "java-ast-analysis-service",
+            "analysis-job.v1.ArtifactBytes",
+            "java-ast/source-facts.json",
+            ArtifactByteCustody.PRODUCER_RETAINED
+        );
+        var artifact = new AnalysisArtifactReference(
+            new ArtifactReference("artifact.json", "application/json", "a".repeat(64), 1),
+            AnalysisArtifactCategory.STATIC,
+            "producer",
+            "schema",
+            AnalysisCompleteness.COMPLETE,
+            byteAccess
+        );
+
+        assertEquals(byteAccess, artifact.byteAccess());
+        assertThrows(NullPointerException.class, () -> new AnalysisArtifactReference(null, AnalysisArtifactCategory.STATIC, "producer", "schema", AnalysisCompleteness.COMPLETE, byteAccess));
+        assertThrows(NullPointerException.class, () -> new AnalysisArtifactReference(
+            new ArtifactReference("artifact.json", "application/json", "a".repeat(64), 1),
+            AnalysisArtifactCategory.STATIC,
+            "producer",
+            "schema",
+            AnalysisCompleteness.COMPLETE,
+            null
+        ));
+        assertThrows(IllegalArgumentException.class, () -> new ArtifactByteAccess("producer", "analysis-job.v1.ArtifactBytes", "/tmp/source-facts.json", ArtifactByteCustody.PRODUCER_RETAINED));
+        assertThrows(IllegalArgumentException.class, () -> new ArtifactByteAccess("producer", "file:/private", "java-ast/source-facts.json", ArtifactByteCustody.PRODUCER_RETAINED));
+        assertThrows(IllegalArgumentException.class, () -> new ArtifactByteAccess("producer", "analysis-job.v1.ArtifactBytes", "java-ast/../source-facts.json", ArtifactByteCustody.PRODUCER_RETAINED));
+        assertThrows(IllegalArgumentException.class, () -> new ArtifactByteAccess("producer", "analysis-job.v1.ArtifactBytes", "java-ast//source-facts.json", ArtifactByteCustody.PRODUCER_RETAINED));
+        assertEquals(ArtifactByteCustody.SCOPED_OBJECT_ACCESS, new ArtifactByteAccess(
+            "java-ast-analysis-service",
+            "analysis-job.v1.ArtifactBytes",
+            "java-ast/source-facts.json",
+            ArtifactByteCustody.SCOPED_OBJECT_ACCESS
+        ).byteCustody());
+        assertEquals(ArtifactByteCustody.EXPLICIT_HANDOFF, new ArtifactByteAccess(
+            "java-ast-analysis-service",
+            "analysis-job.v1.ArtifactBytes",
+            "java-ast/source-facts.json",
+            ArtifactByteCustody.EXPLICIT_HANDOFF
+        ).byteCustody());
     }
 
     @Test
@@ -122,8 +164,32 @@ class JavaAstAnalysisDomainTest {
 
         assertThrows(IllegalArgumentException.class, () -> new SourceLocation("A.java", "a.A", "run", 0, 1));
         assertThrows(IllegalArgumentException.class, () -> new SourceLocation("A.java", "a.A", "run", 1, 0));
+        assertThrows(IllegalArgumentException.class, () -> new SourceLocation("src/main/java/a/\tA.java", "a.A", "run", 1, 1));
+        assertThrows(IllegalArgumentException.class, () -> new SourceLocation("src/main/java/a/\u0000A.java", "a.A", "run", 1, 1));
         assertEquals("", JavaAstDiagnostic.info(snapshotId, "INFO", "ok").sourcePath());
+        assertEquals(
+            "",
+            new JavaAstDiagnostic("INFO", "ok", DiagnosticSeverity.INFO, snapshotId, null, 0, 0, false, false).sourcePath()
+        );
         assertEquals("diagnostic details redacted", JavaAstDiagnostic.info(snapshotId, "INFO", "file:/tmp/secret").message());
+        assertEquals("diagnostic details redacted", JavaAstDiagnostic.info(snapshotId, "INFO", "FILE:/tmp/source.java").message());
+        assertEquals("diagnostic details redacted", JavaAstDiagnostic.info(snapshotId, "INFO", "see /tmp/source.java").message());
+        assertEquals("diagnostic details redacted", JavaAstDiagnostic.info(snapshotId, "INFO", "C:/repo/source.java").message());
+        assertEquals("diagnostic details redacted", JavaAstDiagnostic.info(snapshotId, "INFO", "https://example.test/source.java").message());
+        assertEquals("diagnostic details redacted", JavaAstDiagnostic.info(snapshotId, "INFO", "token leaked").message());
+        assertEquals("diagnostic details redacted", JavaAstDiagnostic.info(snapshotId, "INFO", "password leaked").message());
+        assertEquals("diagnostic details redacted", JavaAstDiagnostic.info(snapshotId, "INFO", "secret leaked").message());
+        assertEquals("diagnostic details redacted", JavaAstDiagnostic.info(snapshotId, "INFO", "credential leaked").message());
+        assertEquals("diagnostic details redacted", JavaAstDiagnostic.info(snapshotId, "INFO", "authorization leaked").message());
+        assertEquals("diagnostic details redacted", JavaAstDiagnostic.info(snapshotId, "INFO", "line\tone").message());
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> JavaAstDiagnostic.warning(snapshotId, "BAD", "bad", "src/main/java/a/\tA.java", 1, 1, false)
+        );
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> JavaAstDiagnostic.warning(snapshotId, "BAD", "bad", "src/main/java/a/\u0000A.java", 1, 1, false)
+        );
         assertThrows(
             IllegalArgumentException.class,
             () -> new JavaAstDiagnostic("BAD", "bad", DiagnosticSeverity.ERROR, snapshotId, "A.java", -1, 0, false, true)
@@ -133,6 +199,18 @@ class JavaAstAnalysisDomainTest {
             () -> new JavaAstDiagnostic("BAD", "bad", DiagnosticSeverity.ERROR, snapshotId, "A.java", 0, -1, false, true)
         );
         assertThrows(IllegalArgumentException.class, () -> new ScanSummary(-1, 0, 0, 0, 0, "JavaParser", "3.27.1"));
+        assertThrows(IllegalArgumentException.class, () -> new ScanSummary(0, -1, 0, 0, 0, "JavaParser", "3.27.1"));
+        assertThrows(IllegalArgumentException.class, () -> new ScanSummary(0, 0, -1, 0, 0, "JavaParser", "3.27.1"));
+        assertThrows(IllegalArgumentException.class, () -> new ScanSummary(0, 0, 0, -1, 0, "JavaParser", "3.27.1"));
+        assertThrows(IllegalArgumentException.class, () -> new ScanSummary(0, 0, 0, 0, -1, "JavaParser", "3.27.1"));
+        assertThrows(NullPointerException.class, () -> new JavaSourceFact(
+            "fact-2",
+            "java-method",
+            null,
+            "a.A#run()",
+            "summary",
+            EvidenceKind.STATIC_SOURCE_FACT
+        ));
     }
 
     private static RequestMetadata metadata() {

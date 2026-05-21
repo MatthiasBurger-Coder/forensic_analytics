@@ -8,6 +8,7 @@ import de.burger.forensics.analytics.services.repositoryanalysis.domain.Reposito
 import de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.CheckoutResult;
 import de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.CheckoutStatus;
 import de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.Diagnostic;
+import de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.BuildOutputProducer;
 import de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.RepositoryReference;
 import de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.RepositoryWorkspaceStatus;
 import de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.RevisionSelector;
@@ -69,6 +70,13 @@ class RepositoryAnalysisApplicationServiceTest {
         assertEquals(prepared, loaded);
         assertEquals("source-snapshot-", prepared.sourceSnapshotId().value().substring(0, 16));
         assertEquals("snapshots/" + prepared.sourceSnapshotId().value() + "/manifest.json", prepared.sourceSnapshot().manifestArtifact().reference());
+        assertEquals("repository-analysis-service", prepared.sourceSnapshot().sourcePackage().byteAccess().ownerService());
+        assertEquals("build-artifact-worker-service", prepared.sourceSnapshot().buildOutputPackage().byteAccess().ownerService());
+        assertEquals(List.of("ARTIFACT_STORE", "ARTIFACTORY", "JENKINS", "BUILD_ARTIFACT_WORKER"), prepared.sourceSnapshot().buildOutputPackage().resolution().candidates().stream()
+            .map(candidate -> candidate.producer().name())
+            .toList());
+        assertEquals(BuildOutputProducer.UNSPECIFIED, prepared.sourceSnapshot().buildOutputPackage().resolution().selectedProducer());
+        assertEquals("auto-detect", prepared.sourceSnapshot().buildOutputPackage().buildSystem());
         assertEquals(RepositoryWorkspaceStatus.CLEANED, cleaned.workspaceStatus());
         assertSame(cleaned, sameCleaned);
         assertEquals(1, workspacePort.cleaned);

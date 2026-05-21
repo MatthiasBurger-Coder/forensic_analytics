@@ -7,11 +7,12 @@
 | Service boundaries | Senior System Architect | Microservice Senior Expert |
 | Contract governance | Contract-First API Steward | Senior gRPC Proto Specialist, Contract Governance Expert |
 | Repository checkout and workspaces | Senior Git Workspace Specialist | Security Sandbox Engineer |
+| Build-output artifact production | Senior Java Backend Developer | Senior DevOps, Security Sandbox Engineer |
 | Backend service implementation | Senior Java Backend Developer | Architecture and ArchUnit reviewers |
 | Analysis Store and artifact ownership | Senior Analysis Storage Architect | Data Ownership and Persistence Steward |
 | Joern CPG analysis | Senior Joern CPG Specialist | Joern Semantic Analysis reviewer |
 | BTM generation | Senior Java Backend Developer | gRPC Proto Specialist, Quality reviewer |
-| Gateway and orchestration | Senior Java Backend Developer | Senior System Architect |
+| Gateway facade and orchestration owner API | Senior System Architect | Contract-First API Steward, Senior Java Backend Developer |
 | Frontend/API integration | Senior React Frontend Developer | Senior UX Designer |
 | Docker and deployment | Senior DevOps Engineer | Microservice Runtime Readiness Expert |
 | Testing and quality gates | Senior Tester | Quality Gate Orchestrator |
@@ -41,13 +42,17 @@
 | 04 | Senior Java Backend, Senior DevOps, Microservice Runtime Readiness |
 | 05 | Senior Git Workspace Specialist, Security Sandbox Engineer, Senior Tester |
 | 06 | Contract-First API Steward, Senior gRPC Proto Specialist, Senior Java Backend, Source Analysis reviewer, Quality ArchUnit reviewer |
-| 07 | Contract-First API Steward, Senior gRPC Proto Specialist, Senior Joern CPG Specialist, Joern Semantics reviewer, Senior Tester |
-| 08 | Senior System Architect, Senior Java Backend, Evidence integrity review |
-| 09 | Senior gRPC Proto Specialist, Senior Java Backend, BTM determinism tests |
-| 10 | Senior Swarm Orchestrator, Senior Java Backend, Senior Tester |
-| 11 | Senior DevOps, Microservice Runtime Readiness, Security review |
-| 12 | Senior System Architect, Replay/Graph/LLM reviewer |
-| 13 | Senior React Frontend, Senior UX Designer, frontend test owner |
-| 14 | Senior System Architect, Senior Java Backend, Release governance |
-| 15 | Senior DevOps, Build Gradle, Architecture validation |
-| 16 | Senior Tester, Quality Gate Orchestrator, Documentation reviewer |
+| 07 | Senior System Architect, Contract-First API Steward, Senior gRPC Proto Specialist, Senior Analysis Storage Architect, Senior Security Sandbox Engineer, Senior DevOps, Senior Tester |
+| 08 | Contract-First API Steward, Senior gRPC Proto Specialist, Senior Joern CPG Specialist, Joern Semantics reviewer, Senior Tester |
+| 09 | Senior System Architect, Senior Java Backend, Evidence integrity review |
+| 10 | Senior gRPC Proto Specialist, Senior Java Backend, BTM determinism tests |
+| 11 | Senior System Architect, Contract-First API Steward, Senior gRPC Proto Specialist, Security Sandbox Engineer, Senior Java Backend, Senior Tester |
+| 12 | Contract-First API Steward, Senior gRPC Proto Specialist, Senior Java Backend, Senior Analysis Storage Architect, Security Sandbox Engineer, Senior Tester |
+| 13 | Contract-First API Steward, Senior gRPC Proto Specialist, Security Sandbox Engineer, Senior Java Backend, Senior Tester |
+| 14 | Senior Swarm Orchestrator, Senior Java Backend, Senior Tester |
+| 15 | Senior DevOps, Microservice Runtime Readiness, Security review |
+| 16 | Senior System Architect, Replay/Graph/LLM reviewer |
+| 17 | Senior React Frontend, Senior UX Designer, frontend test owner |
+| 18 | Senior System Architect, Senior Java Backend, Release governance |
+| 19 | Senior DevOps, Build Gradle, Architecture validation |
+| 20 | Senior Tester, Quality Gate Orchestrator, Documentation reviewer |

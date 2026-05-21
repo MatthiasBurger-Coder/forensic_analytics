@@ -18,7 +18,7 @@ Verified from:
 - root and module `build.gradle.kts` files
 - `QUALITY.md`
 - `docs/workflow/workflow.md`
-- `docs/workflow/current-state-baseline.md`
+- `docs/workflow/execution-report.md`
 - `docs/architecture/microservice-governance.md`
 - `docs/arc42/**`
 - `docs/adr/**`
@@ -44,7 +44,7 @@ the current state.
 | REST API | `forensic-analytics-rest` | JDK HTTP server adapter |
 | Persistence | `forensic-analytics-persistence` | In-memory stores and repositories |
 | Docker | `docker/boot-app`, `docker/joern`, `forensic-ui/Dockerfile` | Existing container material, not a service ecosystem |
-| Service roots | `services/` | Six registered service projects and three README-only planned service roots |
+| Service roots | `services/` | Seven registered service projects, two README-only planned service roots and one planned build-artifact worker target without a root |
 | External contracts root | `contracts/` | Present with gRPC, OpenAPI and event contract documentation |
 | Deployment roots | `deployment/`, Kubernetes, Swarm, Helm roots | Not present |
 
@@ -104,6 +104,12 @@ current Docker Boot app image packages the Boot jar, exposes REST and gRPC
 ports, and documents that no healthcheck is present because no accepted
 Actuator endpoint exists.
 
+Slice 18 keeps these Boot, Bootstrap, REST, CLI, engine, ingestion-request and
+testbed paths isolated as legacy in-process and rollback evidence. They are
+not the accepted repository-to-BTM runtime path and are not removed until a
+later slice proves replacement ownership, caller removal and parity or explicit
+deprecation tests.
+
 ## Current Frontend
 
 The verified frontend root is `forensic-ui`.
@@ -118,7 +124,7 @@ Verified scripts from `forensic-ui/package.json`:
 
 `forensic-ui/Dockerfile` builds the frontend with `npm ci` and
 `npm run build`, then serves the built assets with nginx. The planned
-`frontend/frontend-web-app` root exists only as a Slice 02 placeholder. It has
+`frontend/frontend-web-app` root exists only as a planned placeholder. It has
 no frontend implementation, package metadata, build configuration or tests.
 
 ## Current Deployment Material
@@ -131,17 +137,19 @@ Verified existing deployment-related material:
 - `docker/joern/docker-compose.joern.yml`
 - `docker/joern/scripts/**`
 - `forensic-ui/Dockerfile`
+- `deployment/docker-compose/repository-to-btm.local.yml`
 
 Missing target material:
 
-- `deployment/docker-compose/**`
+- production-wide `deployment/docker-compose/docker-compose.yml`
 - `deployment/docker-swarm/**`
 - `deployment/kubernetes/**`
 - Helm or chart roots
 - CI workflow files under `.github/workflows`
 
-Docker Compose currently exists for Joern tooling only. There is no verified
-local microservices compose landscape, Swarm stack, Kubernetes manifest set or
+Docker Compose is verified for Joern tooling and for the Slice 15 local
+repository-to-BTM service path only. There is no verified production-wide
+compose landscape, Swarm stack, Kubernetes manifest set or complete
 service-by-service container readiness evidence.
 
 ## Microservice Readiness Baseline
@@ -157,13 +165,15 @@ The current repository has limited platform-level runtime evidence:
 The current repository does not have verified per-service:
 
 - service-private databases;
-- Docker Compose service landscape;
+- production-wide Docker Compose service landscape;
 - Docker Swarm or Kubernetes deployment manifests.
 
-The six registered service projects have service-local READMEs, tests and
-Dockerfiles where verified in `services/**`. Gateway, graph-replay and
-report-generation remain README-only planned roots. Health check and production
-runtime readiness evidence remains incomplete unless a service-specific README
+Seven registered service projects have service-local READMEs, tests and
+Dockerfiles where verified in `services/**`, including the Gateway service.
+Graph-replay and report-generation remain README-only planned roots. The
+build-artifact worker is a planned target with no service root yet. Health
+check and production runtime readiness evidence remains incomplete outside the
+verified local repository-to-BTM Compose path unless a service-specific README
 states otherwise.
 
 Future slices must treat README-only service roots as planned targets. Registered

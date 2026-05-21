@@ -2,11 +2,12 @@
 
 ## Status
 
-Slice 03 initial contract-test plan.
+Contract-test plan for the active microservice workflow.
 
-No service-level contract test task exists yet. This document defines the test
-expectations that later service slices must implement before claiming runtime
-contract readiness.
+Service-local `*ContractTest` classes exist for several gRPC contracts, but no
+dedicated service-level `contractTest` Gradle task exists yet. This document
+defines the executable contract checks that workflow slices must run before
+claiming contract readiness.
 
 ## Required Contract Test Areas
 
@@ -15,16 +16,24 @@ contract readiness.
 | gRPC ingestion | `contracts/grpc/forensic-ingestion.proto` | Schema compatibility, current RPC shape, deprecated field 6 preservation, required-at-application validation, streaming upload deduplication |
 | Analysis jobs | `contracts/grpc/analysis-job.proto` | Job state transitions, lease idempotency, retryable failure, dead-letter semantics, artifact reference completeness |
 | Repository analysis | `contracts/grpc/repository-analysis.proto` | HTTPS-only URL validation, no credentials/userinfo/query secrets/fragments, branch-or-commit requirement, safe ref validation, source snapshot response without private workspace paths, cleanup by opaque workspace ID, safe-attributes policy, opaque or snapshot-relative artifact references |
-| Gateway REST | `contracts/openapi/gateway-api.yaml` | Request/response schema validation, error envelope shape, correlation header, idempotency key behavior, planned-operation implementation status, repository URL and workspace policy alignment with repository-analysis gRPC |
+| Gateway REST | `contracts/openapi/gateway-api.yaml` | Executable OpenAPI file contract test, request/response schema presence, error envelope shape, mutation correlation header, required idempotency key behavior, planned-operation implementation status, repository URL and workspace policy alignment with repository-analysis gRPC |
 | Events | `contracts/events/analysis-events.md` | Envelope completeness, event id deduplication, required payload fields, at-least-once consumer behavior, unknown-field tolerance |
 | Generated code boundaries | all contracts | Generated classes stay inside service-local build output and do not become shared Java modules |
 
-## Minimum Slice 03 Verification
+## Minimum Slice 02 Verification
 
-Slice 03 is documentation and contract-only. Required verification:
+Slice 02 is contract and contract-test only. Required verification:
 
 ```bash
 git diff --check
+./gradlew :forensic-analytics-rest:test --tests '*GatewayOpenApiContractTest' --dependency-verification strict --console=plain --stacktrace
+./gradlew :services:btm-generation-service:generateProto --dependency-verification strict --console=plain --stacktrace
+./gradlew :services:btm-generation-service:test --tests '*BtmGenerationContractTest' --dependency-verification strict --console=plain --stacktrace
+```
+
+When Slice 02 is ready for checkpoint commit, run the repository minimum gate:
+
+```bash
 ./gradlew test --dependency-verification strict --console=plain --stacktrace
 ```
 

@@ -28,7 +28,8 @@ class JoernCpgAnalysisServiceArchitectureTest {
                 "com.google.protobuf..",
                 "io.joern..",
                 "de.burger.forensics.analytics.analysisjob.v1..",
-                "de.burger.forensics.analytics.joerncpganalysis.v1.."
+                "de.burger.forensics.analytics.joerncpganalysis.v1..",
+                "de.burger.forensics.analytics.repositoryanalysis.v1.."
             );
 
     @ArchTest

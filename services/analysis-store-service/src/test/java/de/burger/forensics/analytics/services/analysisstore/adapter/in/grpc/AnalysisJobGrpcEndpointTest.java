@@ -8,15 +8,29 @@ import de.burger.forensics.analytics.analysisjob.v1.AnalysisJobServiceGrpc;
 import de.burger.forensics.analytics.analysisjob.v1.AnalysisJobState;
 import de.burger.forensics.analytics.analysisjob.v1.AnalysisRunId;
 import de.burger.forensics.analytics.analysisjob.v1.AnalysisWorkerKind;
+import de.burger.forensics.analytics.analysisjob.v1.ArtifactByteAccess;
+import de.burger.forensics.analytics.analysisjob.v1.ArtifactByteCustody;
 import de.burger.forensics.analytics.analysisjob.v1.ArtifactReference;
 import de.burger.forensics.analytics.analysisjob.v1.CompleteAnalysisJobRequest;
 import de.burger.forensics.analytics.analysisjob.v1.FailAnalysisJobRequest;
 import de.burger.forensics.analytics.analysisjob.v1.GetAnalysisJobRequest;
 import de.burger.forensics.analytics.analysisjob.v1.LeaseAnalysisJobRequest;
 import de.burger.forensics.analytics.analysisjob.v1.ListAnalysisJobsRequest;
+import de.burger.forensics.analytics.analysisjob.v1.AcceptedStaticSourceFact;
+import de.burger.forensics.analytics.analysisjob.v1.InstrumentationProbeKind;
+import de.burger.forensics.analytics.analysisjob.v1.InstrumentationTargetPolicy;
+import de.burger.forensics.analytics.analysisjob.v1.PlanInstrumentationTargetsRequest;
 import de.burger.forensics.analytics.analysisjob.v1.RegisterAnalysisArtifactsRequest;
+import de.burger.forensics.analytics.analysisjob.v1.GetRepositoryToBtmStatusRequest;
+import de.burger.forensics.analytics.analysisjob.v1.RepositoryToBtmBuildContext;
+import de.burger.forensics.analytics.analysisjob.v1.RepositoryToBtmRepositoryReference;
+import de.burger.forensics.analytics.analysisjob.v1.RepositoryToBtmRevision;
+import de.burger.forensics.analytics.analysisjob.v1.RepositoryToBtmWorkspacePolicy;
 import de.burger.forensics.analytics.analysisjob.v1.ReportAnalysisJobProgressRequest;
+import de.burger.forensics.analytics.analysisjob.v1.RequestedRepositoryToBtmOutput;
 import de.burger.forensics.analytics.analysisjob.v1.SourceSnapshotId;
+import de.burger.forensics.analytics.analysisjob.v1.StaticSourceLocation;
+import de.burger.forensics.analytics.analysisjob.v1.StartRepositoryToBtmRequest;
 import de.burger.forensics.analytics.analysisjob.v1.SubmitAnalysisJobRequest;
 import de.burger.forensics.analytics.services.analysisstore.adapter.out.memory.InMemoryAnalysisJobRepository;
 import de.burger.forensics.analytics.services.analysisstore.application.AnalysisJobApplicationService;
@@ -113,6 +127,7 @@ class AnalysisJobGrpcEndpointTest {
         assertEquals("schema-v1", submitted.getJob().getSchemaVersion());
         assertEquals("correlation-1", submitted.getJob().getCorrelationId());
         assertEquals("demo", submitted.getJob().getAttributesMap().get("repository"));
+        assertEquals("analysis-store-test", submitted.getJob().getInputArtifacts(0).getByteAccess().getOwnerService());
         assertEquals(AnalysisJobState.ANALYSIS_JOB_STATE_RUNNING, leased.getJobs(0).getState());
         assertEquals("worker-a", leased.getJobs(0).getLeaseOwner());
         assertEquals("scanner running", progressed.getDiagnostics(0));
@@ -120,7 +135,55 @@ class AnalysisJobGrpcEndpointTest {
         assertEquals(AnalysisJobState.ANALYSIS_JOB_STATE_COMPLETED, completed.getState());
         assertEquals(AnalysisCompleteness.ANALYSIS_COMPLETENESS_COMPLETE, completed.getCompleteness());
         assertEquals(100, completed.getPercentComplete());
+        assertEquals("artifacts/output.json", completed.getOutputArtifacts(0).getByteAccess().getRetrievalReference());
         assertEquals(2, registered.getArtifactsCount());
+        assertEquals("artifacts/report.json", registered.getArtifacts(1).getByteAccess().getRetrievalReference());
+    }
+
+    @Test
+    void registersBtmGeneratedArtifactsWithProducerRetainedByteAccess() {
+        stub.submitAnalysisJob(submitRequest("submit-btm", "job-btm", AnalysisWorkerKind.ANALYSIS_WORKER_KIND_BTM_GENERATION));
+
+        var registered = stub.registerAnalysisArtifacts(RegisterAnalysisArtifactsRequest.newBuilder()
+            .setRequestId("request-register-btm")
+            .setIdempotencyKey("register-btm")
+            .setCorrelationId("correlation-1")
+            .setAnalysisRunId(runId())
+            .setJobId(jobId("job-btm"))
+            .addArtifacts(btmGeneratedArtifact(
+                "btm/snapshot-1-job-btm-rules.btm",
+                "application/vnd.forensic-analytics.btm-rules.v1+btm"
+            ))
+            .addArtifacts(btmGeneratedArtifact(
+                "btm/snapshot-1-job-btm-rule-manifest.json",
+                "application/vnd.forensic-analytics.btm-rule-manifest.v1+json"
+            ))
+            .build());
+
+        assertEquals(2, registered.getArtifactsCount());
+        assertEquals("btm-generation-service", registered.getArtifacts(0).getProducerService());
+        assertEquals("btm-generation-service", registered.getArtifacts(0).getByteAccess().getOwnerService());
+        assertEquals(
+            "de.burger.forensics.analytics.btmgeneration.v1.BtmArtifactDeliveryService.DownloadBtmArtifacts",
+            registered.getArtifacts(0).getByteAccess().getRetrievalContract()
+        );
+        assertEquals("btm/snapshot-1-job-btm-rules.btm", registered.getArtifacts(0).getByteAccess().getRetrievalReference());
+        assertEquals(ArtifactByteCustody.ARTIFACT_BYTE_CUSTODY_PRODUCER_RETAINED, registered.getArtifacts(0).getByteAccess().getByteCustody());
+
+        var missingByteAccess = assertThrows(StatusRuntimeException.class, () -> stub.registerAnalysisArtifacts(
+            RegisterAnalysisArtifactsRequest.newBuilder()
+                .setRequestId("request-register-btm-invalid")
+                .setIdempotencyKey("register-btm-invalid")
+                .setCorrelationId("correlation-1")
+                .setAnalysisRunId(runId())
+                .setJobId(jobId("job-btm"))
+                .addArtifacts(btmGeneratedArtifact(
+                    "btm/missing-byte-access.btm",
+                    "application/vnd.forensic-analytics.btm-rules.v1+btm"
+                ).toBuilder().clearByteAccess())
+                .build()
+        ));
+        assertEquals(Status.Code.INVALID_ARGUMENT, missingByteAccess.getStatus().getCode());
     }
 
     @Test
@@ -238,6 +301,135 @@ class AnalysisJobGrpcEndpointTest {
         assertEquals(0, empty.getJobsCount());
     }
 
+    @Test
+    void plansInstrumentationTargetsThroughGrpcBoundary() {
+        registerTargetPlanningArtifacts();
+
+        var response = stub.planInstrumentationTargets(targetPlanRequest().build());
+
+        assertEquals("TARGETS_PLANNED", response.getStatus().getCode());
+        assertEquals("analysis-store-service", response.getTargetSelection().getOwnerService());
+        assertEquals("target-policy-v1", response.getTargetSelection().getPolicyVersion());
+        assertEquals("correlation-1", response.getTargetSelection().getCorrelationId());
+        assertEquals(1, response.getTargetSelection().getTargetCount());
+        assertEquals(1, response.getTargetsCount());
+        assertEquals("fact-1", response.getTargets(0).getSourceFactId());
+        assertEquals("src/main/java/a/A.java", response.getTargets(0).getRelativePath());
+        assertEquals("java-ast/source-facts.json", response.getTargets(0).getSourceFactArtifactReference());
+        assertEquals(InstrumentationProbeKind.INSTRUMENTATION_PROBE_KIND_METHOD_ENTRY, response.getTargets(0).getProbeKind());
+        assertEquals("demo", response.getAttributesOrThrow("tenant"));
+    }
+
+    @Test
+    void mapsIncompleteTargetPlanningAndInvalidRequests() {
+        registerTargetPlanningArtifacts();
+
+        var incomplete = stub.planInstrumentationTargets(targetPlanRequest()
+            .setPolicy(InstrumentationTargetPolicy.newBuilder()
+                .setMaxTargets(10)
+                .addProbeKinds(InstrumentationProbeKind.INSTRUMENTATION_PROBE_KIND_METHOD_ENTRY)
+                .setRequireSemanticArtifacts(true)
+                .setSensitivity("source-code"))
+            .build());
+        var invalid = assertThrows(
+            StatusRuntimeException.class,
+            () -> stub.planInstrumentationTargets(targetPlanRequest()
+                .setPolicy(InstrumentationTargetPolicy.newBuilder()
+                    .setMaxTargets(10)
+                    .addProbeKinds(InstrumentationProbeKind.INSTRUMENTATION_PROBE_KIND_UNSPECIFIED)
+                    .setSensitivity("source-code"))
+                .build())
+        );
+        var unsafeAttributes = assertThrows(
+            StatusRuntimeException.class,
+            () -> stub.planInstrumentationTargets(targetPlanRequest()
+                .setIdempotencyKey("plan-unsafe")
+                .putAttributes("workspace", "/tmp/repository")
+                .build())
+        );
+
+        assertEquals("TARGETS_PLANNED_INCOMPLETE", incomplete.getStatus().getCode());
+        assertEquals(1, incomplete.getDiagnosticsCount());
+        assertEquals("SEMANTIC_NODE_MAPPING_UNAVAILABLE", incomplete.getDiagnostics(0).getCode());
+        assertEquals("", incomplete.getTargets(0).getSemanticNodeId());
+        assertEquals(Status.Code.INVALID_ARGUMENT, invalid.getStatus().getCode());
+        assertEquals(Status.Code.INVALID_ARGUMENT, unsafeAttributes.getStatus().getCode());
+    }
+
+    @Test
+    void ownsRepositoryToBtmOrchestrationReadinessAndSkipsJoernUntilPackagesAreAvailable() {
+        var started = stub.startRepositoryToBtm(repositoryToBtmRequest().build());
+        var replayed = stub.startRepositoryToBtm(repositoryToBtmRequest().build());
+        var loaded = stub.getRepositoryToBtmStatus(GetRepositoryToBtmStatusRequest.newBuilder()
+            .setRequestId("request-status")
+            .setCorrelationId("correlation-1")
+            .setAnalysisRunId(runId())
+            .build());
+        var jobs = stub.listAnalysisJobs(ListAnalysisJobsRequest.newBuilder()
+            .setRequestId("request-list-orchestration")
+            .setCorrelationId("correlation-1")
+            .setAnalysisRunId(runId())
+            .setWorkerKind(AnalysisWorkerKind.ANALYSIS_WORKER_KIND_REPOSITORY_ANALYSIS)
+            .build());
+
+        assertEquals(started, replayed);
+        assertEquals("REPOSITORY_TO_BTM_ACCEPTED", started.getStatus().getCode());
+        assertEquals(AnalysisCompleteness.ANALYSIS_COMPLETENESS_INCOMPLETE, started.getCompleteness());
+        assertEquals(1, jobs.getJobsCount());
+        assertEquals(started.getRepositoryAnalysisJobId(), jobs.getJobs(0).getJobId());
+        assertEquals("DISPATCHABLE", started.getAttributesOrThrow("repositoryAnalysisJobState"));
+        assertEquals("REPOSITORY_SOURCE_PACKAGE_UNAVAILABLE", started.getDiagnostics(0).getCode());
+        assertEquals("JOERN_SKIPPED_UNAVAILABLE_PACKAGE", started.getDiagnostics(2).getCode());
+        assertEquals(true, started.getJoernSkipped());
+        assertEquals(0, started.getAcceptedGeneratedArtifactsCount());
+        assertEquals(started.getRepositoryAnalysisJobId(), loaded.getRepositoryAnalysisJobId());
+
+        var conflict = assertThrows(
+            StatusRuntimeException.class,
+            () -> stub.startRepositoryToBtm(repositoryToBtmRequest()
+                .setRepository(RepositoryToBtmRepositoryReference.newBuilder()
+                    .setRemoteUrl("https://example.com/acme/other.git")
+                    .setProvider("github"))
+                .build())
+        );
+        var invalidOutput = assertThrows(
+            StatusRuntimeException.class,
+            () -> stub.startRepositoryToBtm(repositoryToBtmRequest()
+                .clearRequestedOutputs()
+                .addRequestedOutputs(RequestedRepositoryToBtmOutput.REQUESTED_REPOSITORY_TO_BTM_OUTPUT_UNSPECIFIED)
+                .setIdempotencyKey("repository-to-btm-invalid")
+                .build())
+        );
+
+        assertEquals(Status.Code.ALREADY_EXISTS, conflict.getStatus().getCode());
+        assertEquals(Status.Code.INVALID_ARGUMENT, invalidOutput.getStatus().getCode());
+    }
+
+    void registerTargetPlanningArtifacts() {
+        stub.submitAnalysisJob(submitRequest(
+            "submit-target-planning",
+            "job-1",
+            AnalysisWorkerKind.ANALYSIS_WORKER_KIND_BTM_GENERATION
+        ));
+        stub.registerAnalysisArtifacts(RegisterAnalysisArtifactsRequest.newBuilder()
+            .setRequestId("request-register-target-planning")
+            .setIdempotencyKey("register-target-planning")
+            .setCorrelationId("correlation-1")
+            .setAnalysisRunId(runId())
+            .setJobId(jobId("job-1"))
+            .addArtifacts(completeArtifact(
+                "java-ast/source-facts.json",
+                "source-sha",
+                AnalysisArtifactCategory.ANALYSIS_ARTIFACT_CATEGORY_STATIC
+            ))
+            .addArtifacts(completeArtifact(
+                "joern/semantic.json",
+                "semantic-sha",
+                AnalysisArtifactCategory.ANALYSIS_ARTIFACT_CATEGORY_STATIC
+            ))
+            .build());
+    }
+
     static SubmitAnalysisJobRequest submitRequest(String idempotencyKey, String jobId, AnalysisWorkerKind workerKind) {
         return SubmitAnalysisJobRequest.newBuilder()
             .setRequestId("request-" + jobId)
@@ -273,6 +465,106 @@ class AnalysisJobGrpcEndpointTest {
             .setProducerService("analysis-store-test")
             .setSchemaVersion("schema-v1")
             .setCompleteness(AnalysisCompleteness.ANALYSIS_COMPLETENESS_UNKNOWN)
+            .setByteAccess(ArtifactByteAccess.newBuilder()
+                .setOwnerService("analysis-store-test")
+                .setRetrievalContract("analysis-job.v1.ArtifactBytes")
+                .setRetrievalReference("artifacts/" + path)
+                .setByteCustody(ArtifactByteCustody.ARTIFACT_BYTE_CUSTODY_PRODUCER_RETAINED))
+            .build();
+    }
+
+    static AnalysisArtifactReference btmGeneratedArtifact(String path, String type) {
+        return AnalysisArtifactReference.newBuilder()
+            .setArtifact(ArtifactReference.newBuilder()
+                .setPath(path)
+                .setType(type)
+                .setSha256("a".repeat(64))
+                .setSizeBytes(42))
+            .setCategory(AnalysisArtifactCategory.ANALYSIS_ARTIFACT_CATEGORY_GENERATED)
+            .setProducerService("btm-generation-service")
+            .setSchemaVersion("btm-rule-v1")
+            .setCompleteness(AnalysisCompleteness.ANALYSIS_COMPLETENESS_COMPLETE)
+            .setByteAccess(ArtifactByteAccess.newBuilder()
+                .setOwnerService("btm-generation-service")
+                .setRetrievalContract(
+                    "de.burger.forensics.analytics.btmgeneration.v1.BtmArtifactDeliveryService.DownloadBtmArtifacts"
+                )
+                .setRetrievalReference(path)
+                .setByteCustody(ArtifactByteCustody.ARTIFACT_BYTE_CUSTODY_PRODUCER_RETAINED))
+            .build();
+    }
+
+    static PlanInstrumentationTargetsRequest.Builder targetPlanRequest() {
+        return PlanInstrumentationTargetsRequest.newBuilder()
+            .setRequestId("request-plan")
+            .setIdempotencyKey("plan-1")
+            .setSchemaVersion("schema-v1")
+            .setCorrelationId("correlation-1")
+            .setAnalysisRunId(runId())
+            .setAnalysisJobId(jobId("job-1"))
+            .setSourceSnapshotId(SourceSnapshotId.newBuilder().setValue("snapshot-1"))
+            .setPolicyVersion("target-policy-v1")
+            .setPolicy(InstrumentationTargetPolicy.newBuilder()
+                .setMaxTargets(10)
+                .addProbeKinds(InstrumentationProbeKind.INSTRUMENTATION_PROBE_KIND_METHOD_ENTRY)
+                .setSensitivity("source-code"))
+            .addStaticFacts(AcceptedStaticSourceFact.newBuilder()
+                .setFactId("fact-1")
+                .setFactType("java-method")
+                .setLocation(StaticSourceLocation.newBuilder()
+                    .setSourcePath("src/main/java/a/A.java")
+                    .setFullyQualifiedClassName("a.A")
+                    .setMethodName("run")
+                    .setLineNumber(12)
+                    .setColumnNumber(1))
+                .setSignature("a.A#run()")
+                .setSourceFactArtifactReference("java-ast/source-facts.json")
+                .setCompleteness(AnalysisCompleteness.ANALYSIS_COMPLETENESS_COMPLETE))
+            .addSourceFactArtifacts(completeArtifact(
+                "java-ast/source-facts.json",
+                "source-sha",
+                AnalysisArtifactCategory.ANALYSIS_ARTIFACT_CATEGORY_STATIC
+            ))
+            .addSemanticArtifacts(completeArtifact(
+                "joern/semantic.json",
+                "semantic-sha",
+                AnalysisArtifactCategory.ANALYSIS_ARTIFACT_CATEGORY_STATIC
+            ))
+            .putAttributes("tenant", "demo");
+    }
+
+    static StartRepositoryToBtmRequest.Builder repositoryToBtmRequest() {
+        return StartRepositoryToBtmRequest.newBuilder()
+            .setRequestId("request-repository-to-btm")
+            .setIdempotencyKey("repository-to-btm-1")
+            .setSchemaVersion("repository-to-btm-orchestration-v1")
+            .setCorrelationId("correlation-1")
+            .setAnalysisRunId(runId())
+            .setRepository(RepositoryToBtmRepositoryReference.newBuilder()
+                .setRemoteUrl("https://example.com/acme/demo.git")
+                .setProvider("github"))
+            .setRevision(RepositoryToBtmRevision.newBuilder()
+                .setBranch("main"))
+            .setWorkspacePolicy(RepositoryToBtmWorkspacePolicy.newBuilder()
+                .setEphemeral(false)
+                .setAllowShallowClone(true)
+                .setAllowPartialClone(false)
+                .setAllowSparseCheckout(false)
+                .setTimeoutSeconds(60)
+                .setMaxWorkspaceBytes(100_000))
+            .setBuildContext(RepositoryToBtmBuildContext.newBuilder()
+                .setBuildTool("gradle")
+                .setBuildId("build-1")
+                .setRootProjectName("demo")
+                .addDeclaredModules(":app")
+                .putAttributes("tenant", "demo"))
+            .addRequestedOutputs(RequestedRepositoryToBtmOutput.REQUESTED_REPOSITORY_TO_BTM_OUTPUT_BTM_RULES)
+            .putAttributes("tenant", "demo");
+    }
+
+    static AnalysisArtifactReference completeArtifact(String path, String sha256, AnalysisArtifactCategory category) {
+        return artifact(path, sha256, category).toBuilder()
+            .setCompleteness(AnalysisCompleteness.ANALYSIS_COMPLETENESS_COMPLETE)
             .build();
     }
 }

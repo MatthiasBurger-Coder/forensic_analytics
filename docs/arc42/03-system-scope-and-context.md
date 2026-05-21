@@ -32,6 +32,7 @@ Forensics Platform
 | Plugin gRPC Client | inbound | Sends repository-analysis requests with repository, branch, commit, build and execution context |
 | Gradle Plugin | inbound/outbound | Triggers server-side analysis and binds server-generated BTM files to the target runtime through the agent when debugging requires instrumentation |
 | Maven Plugin | inbound/outbound | Triggers server-side analysis and binds server-generated BTM files to the target runtime through the agent when debugging requires instrumentation |
+| Optional Artifact Store / Jenkins | external producer | Provides or produces complete build-output packages for a commit-pinned source snapshot when configured |
 | Joern | outbound | Runs as a server-side Analytics adapter for semantic code analysis, data-flow and control-flow information |
 | Runtime Application | inbound | Emits runtime events produced by server-generated BTM instrumentation |
 | Byteman Agent | outbound/inbound | Executes server-generated BTM files bound by the plugin for debugging/runtime collection |
@@ -62,6 +63,11 @@ Incident Context Package
         v
 LLM Root-Cause Analysis
 ```
+
+Repository branch input is resolved to a concrete commit before analysis. Build
+output used by semantic analysis is represented as an explicit artifact with
+provenance, checksums, completeness and `ArtifactByteAccess`; optional external
+producers do not become canonical evidence stores.
 
 ## 3.4 gRPC Ingestion Context
 

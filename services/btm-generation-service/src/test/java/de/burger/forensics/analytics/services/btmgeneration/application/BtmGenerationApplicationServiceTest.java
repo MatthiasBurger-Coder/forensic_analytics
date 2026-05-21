@@ -7,6 +7,8 @@ import de.burger.forensics.analytics.services.btmgeneration.domain.BtmGeneration
 import de.burger.forensics.analytics.services.btmgeneration.domain.BtmGenerationDomain.AnalysisCompleteness;
 import de.burger.forensics.analytics.services.btmgeneration.domain.BtmGenerationDomain.AnalysisJobId;
 import de.burger.forensics.analytics.services.btmgeneration.domain.BtmGenerationDomain.AnalysisRunId;
+import de.burger.forensics.analytics.services.btmgeneration.domain.BtmGenerationDomain.ArtifactByteAccess;
+import de.burger.forensics.analytics.services.btmgeneration.domain.BtmGenerationDomain.ArtifactByteCustody;
 import de.burger.forensics.analytics.services.btmgeneration.domain.BtmGenerationDomain.ArtifactReference;
 import de.burger.forensics.analytics.services.btmgeneration.domain.BtmGenerationDomain.BtmArtifactWriteRequest;
 import de.burger.forensics.analytics.services.btmgeneration.domain.BtmGenerationDomain.BtmGenerationPolicy;
@@ -17,12 +19,14 @@ import de.burger.forensics.analytics.services.btmgeneration.domain.BtmGeneration
 import de.burger.forensics.analytics.services.btmgeneration.domain.BtmGenerationDomain.RequestMetadata;
 import de.burger.forensics.analytics.services.btmgeneration.domain.BtmGenerationDomain.RuleTarget;
 import de.burger.forensics.analytics.services.btmgeneration.domain.BtmGenerationDomain.SourceSnapshotId;
+import de.burger.forensics.analytics.services.btmgeneration.domain.BtmGenerationDomain.TargetSelection;
 import org.junit.jupiter.api.Test;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 
+import static de.burger.forensics.analytics.services.btmgeneration.domain.BtmGenerationDomain.BTM_DELIVERY_CONTRACT;
 import static de.burger.forensics.analytics.services.btmgeneration.domain.BtmGenerationDomain.PRODUCER_SERVICE;
 import static de.burger.forensics.analytics.services.btmgeneration.domain.BtmGenerationDomain.sha256;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -49,6 +53,9 @@ class BtmGenerationApplicationServiceTest {
         assertEquals(List.of("a-target", "b-target"), first.generatedRules().stream().map(rule -> rule.target().targetId()).toList());
         assertTrue(firstContent.contains("AT ENTRY\n"));
         assertTrue(firstContent.contains("AT EXIT\n"));
+        assertTrue(firstContent.contains("Source fact artifact: source-facts.json"));
+        assertTrue(firstContent.contains("Semantic artifact: semantic.json"));
+        assertTrue(firstContent.contains("Policy fingerprint: "));
         assertEquals(-1, firstContent.indexOf("\r"));
     }
 
@@ -56,7 +63,7 @@ class BtmGenerationApplicationServiceTest {
     void marksIncompleteTargetsAndUnknownProbeKindsWithoutFabricatingRules() {
         var writer = new RecordingWriter();
         var service = new BtmGenerationApplicationService(writer);
-        var incomplete = new RuleTarget("missing", "fact-missing", "", "", "", "", "", 0, ProbeKind.METHOD_ENTRY);
+        var incomplete = new RuleTarget("missing", "fact-missing", "", "", "", "", "", 0, ProbeKind.METHOD_ENTRY, "source-facts.json", "semantic.json", 0, AnalysisCompleteness.INCOMPLETE, "internal");
         var unknown = target("unknown", ProbeKind.UNKNOWN);
 
         var result = service.generate(command(List.of(incomplete, unknown)));
@@ -84,6 +91,21 @@ class BtmGenerationApplicationServiceTest {
         assertEquals(AnalysisCompleteness.INCOMPLETE, open.completeness());
         assertEquals(0, closed.generatedRules().size());
         assertEquals("INPUT_FACTS_INCOMPLETE", closed.diagnostics().getFirst().code());
+    }
+
+    @Test
+    void rejectsTargetsThatReferenceUnacceptedArtifacts() {
+        var service = new BtmGenerationApplicationService(new RecordingWriter());
+
+        var unacceptedSource = assertThrows(IllegalArgumentException.class, () -> service.generate(
+            command(List.of(target("target", ProbeKind.METHOD_ENTRY, "not-accepted.json", "semantic.json")))
+        ));
+        var unacceptedSemantic = assertThrows(IllegalArgumentException.class, () -> service.generate(
+            command(List.of(target("target", ProbeKind.METHOD_ENTRY, "source-facts.json", "not-accepted.json")))
+        ));
+
+        assertEquals("target source fact artifact reference is not accepted", unacceptedSource.getMessage());
+        assertEquals("target semantic artifact reference is not accepted", unacceptedSemantic.getMessage());
     }
 
     @Test
@@ -156,7 +178,7 @@ class BtmGenerationApplicationServiceTest {
         return new GenerateBtmRulesCommand(
             metadata(),
             policy,
-            new DeliveredFacts(List.of(artifact("source-facts.json")), List.of(artifact("semantic.json")), targets, completeness)
+            new DeliveredFacts(List.of(artifact("source-facts.json")), List.of(artifact("semantic.json")), targets, completeness, selection(targets.size()))
         );
     }
 
@@ -175,6 +197,15 @@ class BtmGenerationApplicationServiceTest {
     }
 
     private static RuleTarget target(String targetId, ProbeKind probeKind) {
+        return target(targetId, probeKind, "source-facts.json", "semantic.json");
+    }
+
+    private static RuleTarget target(
+        String targetId,
+        ProbeKind probeKind,
+        String sourceFactArtifactReference,
+        String semanticArtifactReference
+    ) {
         return new RuleTarget(
             targetId,
             "fact-" + targetId,
@@ -184,7 +215,12 @@ class BtmGenerationApplicationServiceTest {
             "run",
             "a.A#run()",
             12,
-            probeKind
+            probeKind,
+            sourceFactArtifactReference,
+            semanticArtifactReference,
+            0,
+            AnalysisCompleteness.COMPLETE,
+            "internal"
         );
     }
 
@@ -194,7 +230,32 @@ class BtmGenerationApplicationServiceTest {
             AnalysisArtifactCategory.STATIC,
             "analysis-store-service",
             "source-facts-v1",
-            AnalysisCompleteness.COMPLETE
+            AnalysisCompleteness.COMPLETE,
+            byteAccess("analysis-store-service", path)
+        );
+    }
+
+    private static ArtifactByteAccess byteAccess(String ownerService, String reference) {
+        return new ArtifactByteAccess(
+            ownerService,
+            ownerService.equals(PRODUCER_SERVICE)
+                ? BTM_DELIVERY_CONTRACT
+                : "analysis-job.v1.ArtifactBytes",
+            reference,
+            ArtifactByteCustody.PRODUCER_RETAINED
+        );
+    }
+
+    private static TargetSelection selection(int targetCount) {
+        return new TargetSelection(
+            "selection-1",
+            "analysis-store-service",
+            "target-policy-v1",
+            "selection-fingerprint",
+            AnalysisCompleteness.COMPLETE,
+            "target_id_probe_kind_ascending",
+            "correlation-1",
+            targetCount
         );
     }
 
@@ -210,7 +271,8 @@ class BtmGenerationApplicationServiceTest {
                 AnalysisArtifactCategory.GENERATED,
                 PRODUCER_SERVICE,
                 request.summary().ruleSchemaVersion(),
-                request.completeness()
+                request.completeness(),
+                byteAccess(PRODUCER_SERVICE, "btm/rules.btm")
             )), bytes.length);
         }
     }

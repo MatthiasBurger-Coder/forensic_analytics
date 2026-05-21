@@ -4,9 +4,10 @@
 
 Build strategy for service roots.
 
-Six service build files are now registered in the root Gradle build. Gateway,
-graph-replay and report-generation remain README-only planned roots until their
-service build files are created and registered.
+Seven service build files are now registered in the root Gradle build,
+including Gateway. Graph-replay and report-generation remain README-only
+planned roots, and the build-artifact worker remains a planned target without a
+service root until its service build file is created and registered.
 
 ## Decision
 
@@ -27,9 +28,9 @@ Rationale:
 This strategy does not allow shared Java runtime implementation modules between
 services.
 
-## Slice 02 Build Rule
+## Contract-Only Slice Build Rule
 
-Slice 02 must not edit:
+Contract-only workflow slices must not edit:
 
 - `settings.gradle.kts`;
 - root `build.gradle.kts`;
@@ -91,7 +92,7 @@ successfully.
 
 ## Quality Gate Impact
 
-For Slice 02 documentation and placeholder scaffolding:
+For documentation and placeholder scaffolding:
 
 ```bash
 git diff --check

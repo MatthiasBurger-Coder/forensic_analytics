@@ -35,6 +35,15 @@ service AnalysisJobService {
 
   rpc RegisterAnalysisArtifacts(RegisterAnalysisArtifactsRequest)
       returns (RegisterAnalysisArtifactsResponse);
+
+  rpc PlanInstrumentationTargets(PlanInstrumentationTargetsRequest)
+      returns (PlanInstrumentationTargetsResponse);
+
+  rpc StartRepositoryToBtm(StartRepositoryToBtmRequest)
+      returns (RepositoryToBtmOrchestrationStatus);
+
+  rpc GetRepositoryToBtmStatus(GetRepositoryToBtmStatusRequest)
+      returns (RepositoryToBtmOrchestrationStatus);
 }
 
 message SubmitAnalysisJobRequest {
@@ -142,6 +151,166 @@ message RegisterAnalysisArtifactsResponse {
   OperationStatus status = 2;
 }
 
+message PlanInstrumentationTargetsRequest {
+  string request_id = 1;
+  string idempotency_key = 2;
+  string schema_version = 3;
+  string correlation_id = 4;
+  AnalysisRunId analysis_run_id = 5;
+  AnalysisJobId analysis_job_id = 6;
+  SourceSnapshotId source_snapshot_id = 7;
+  string policy_version = 8;
+  InstrumentationTargetPolicy policy = 9;
+  repeated AcceptedStaticSourceFact static_facts = 10;
+  repeated AnalysisArtifactReference source_fact_artifacts = 11;
+  repeated AnalysisArtifactReference semantic_artifacts = 12;
+  map<string, string> attributes = 13;
+}
+
+message PlanInstrumentationTargetsResponse {
+  OperationStatus status = 1;
+  AnalysisRunId analysis_run_id = 2;
+  AnalysisJobId analysis_job_id = 3;
+  SourceSnapshotId source_snapshot_id = 4;
+  AnalysisCompleteness completeness = 5;
+  InstrumentationTargetSelection target_selection = 6;
+  repeated InstrumentationTarget targets = 7;
+  repeated TargetPlanningDiagnostic diagnostics = 8;
+  map<string, string> attributes = 9;
+}
+
+message StartRepositoryToBtmRequest {
+  string request_id = 1;
+  string idempotency_key = 2;
+  string schema_version = 3;
+  string correlation_id = 4;
+  AnalysisRunId analysis_run_id = 5;
+  RepositoryToBtmRepositoryReference repository = 6;
+  RepositoryToBtmRevision revision = 7;
+  RepositoryToBtmWorkspacePolicy workspace_policy = 8;
+  RepositoryToBtmBuildContext build_context = 9;
+  repeated RequestedRepositoryToBtmOutput requested_outputs = 10;
+  map<string, string> attributes = 11;
+}
+
+message GetRepositoryToBtmStatusRequest {
+  string request_id = 1;
+  string correlation_id = 2;
+  AnalysisRunId analysis_run_id = 3;
+}
+
+message RepositoryToBtmOrchestrationStatus {
+  OperationStatus status = 1;
+  AnalysisRunId analysis_run_id = 2;
+  AnalysisJobId repository_analysis_job_id = 3;
+  SourceSnapshotId source_snapshot_id = 4;
+  AnalysisCompleteness completeness = 5;
+  RepositoryToBtmOrchestrationState state = 6;
+  BtmDeliveryReadiness btm_delivery_readiness = 7;
+  bool joern_skipped = 8;
+  repeated RepositoryToBtmDiagnostic diagnostics = 9;
+  repeated AnalysisArtifactReference accepted_generated_artifacts = 10;
+  map<string, string> attributes = 11;
+}
+
+message RepositoryToBtmRepositoryReference {
+  string remote_url = 1;
+  string provider = 2;
+}
+
+message RepositoryToBtmRevision {
+  string branch = 1;
+  string commit = 2;
+}
+
+message RepositoryToBtmWorkspacePolicy {
+  bool ephemeral = 1;
+  bool allow_shallow_clone = 2;
+  bool allow_partial_clone = 3;
+  bool allow_sparse_checkout = 4;
+  int64 timeout_seconds = 5;
+  int64 max_workspace_bytes = 6;
+}
+
+message RepositoryToBtmBuildContext {
+  string build_tool = 1;
+  string build_id = 2;
+  string root_project_name = 3;
+  repeated string declared_modules = 4;
+  map<string, string> attributes = 5;
+}
+
+message RepositoryToBtmDiagnostic {
+  string code = 1;
+  string message = 2;
+  RepositoryToBtmDiagnosticSeverity severity = 3;
+  bool retryable = 4;
+  bool affects_completeness = 5;
+}
+
+message InstrumentationTargetPolicy {
+  int32 max_targets = 1;
+  repeated InstrumentationProbeKind probe_kinds = 2;
+  bool require_semantic_artifacts = 3;
+  string sensitivity = 4;
+}
+
+message AcceptedStaticSourceFact {
+  string fact_id = 1;
+  string fact_type = 2;
+  StaticSourceLocation location = 3;
+  string signature = 4;
+  string source_fact_artifact_reference = 5;
+  AnalysisCompleteness completeness = 6;
+}
+
+message StaticSourceLocation {
+  string source_path = 1;
+  string fully_qualified_class_name = 2;
+  string method_name = 3;
+  int32 line_number = 4;
+  int32 column_number = 5;
+}
+
+message InstrumentationTargetSelection {
+  string selection_id = 1;
+  string owner_service = 2;
+  string policy_version = 3;
+  string selection_fingerprint = 4;
+  AnalysisCompleteness completeness = 5;
+  string deterministic_order = 6;
+  string correlation_id = 7;
+  int32 target_count = 8;
+}
+
+message InstrumentationTarget {
+  string target_id = 1;
+  string source_fact_id = 2;
+  string semantic_node_id = 3;
+  string relative_path = 4;
+  string fully_qualified_class_name = 5;
+  string method_name = 6;
+  string signature = 7;
+  int32 line_number = 8;
+  InstrumentationProbeKind probe_kind = 9;
+  string source_fact_artifact_reference = 10;
+  string semantic_artifact_reference = 11;
+  int32 order_index = 12;
+  AnalysisCompleteness completeness = 13;
+  string sensitivity = 14;
+}
+
+message TargetPlanningDiagnostic {
+  string code = 1;
+  string message = 2;
+  TargetPlanningDiagnosticSeverity severity = 3;
+  string source_snapshot_id = 4;
+  string source_fact_id = 5;
+  string artifact_path = 6;
+  bool retryable = 7;
+  bool affects_completeness = 8;
+}
+
 message AnalysisJob {
   AnalysisRunId analysis_run_id = 1;
   AnalysisJobId job_id = 2;
@@ -182,13 +351,23 @@ message AnalysisArtifactReference {
   string producer_service = 3;
   string schema_version = 4;
   AnalysisCompleteness completeness = 5;
+  ArtifactByteAccess byte_access = 6;
 }
 
 message ArtifactReference {
+  // Opaque artifact key or owner-relative artifact path. Private filesystem
+  // paths, file URIs and shared object-store prefixes are forbidden.
   string path = 1;
   string type = 2;
   string sha256 = 3;
   int64 size_bytes = 4;
+}
+
+message ArtifactByteAccess {
+  string owner_service = 1;
+  string retrieval_contract = 2;
+  string retrieval_reference = 3;
+  ArtifactByteCustody byte_custody = 4;
 }
 
 message AnalysisJobFailure {
@@ -244,4 +423,54 @@ enum AnalysisArtifactCategory {
   ANALYSIS_ARTIFACT_CATEGORY_RUNTIME = 2;
   ANALYSIS_ARTIFACT_CATEGORY_PROJECTION = 3;
   ANALYSIS_ARTIFACT_CATEGORY_GENERATED = 4;
+}
+
+enum ArtifactByteCustody {
+  ARTIFACT_BYTE_CUSTODY_UNSPECIFIED = 0;
+  ARTIFACT_BYTE_CUSTODY_PRODUCER_RETAINED = 1;
+  ARTIFACT_BYTE_CUSTODY_SCOPED_OBJECT_ACCESS = 2;
+  ARTIFACT_BYTE_CUSTODY_EXPLICIT_HANDOFF = 3;
+}
+
+enum InstrumentationProbeKind {
+  INSTRUMENTATION_PROBE_KIND_UNSPECIFIED = 0;
+  INSTRUMENTATION_PROBE_KIND_METHOD_ENTRY = 1;
+  INSTRUMENTATION_PROBE_KIND_METHOD_EXIT = 2;
+  INSTRUMENTATION_PROBE_KIND_THROW = 3;
+}
+
+enum TargetPlanningDiagnosticSeverity {
+  TARGET_PLANNING_DIAGNOSTIC_SEVERITY_UNSPECIFIED = 0;
+  TARGET_PLANNING_DIAGNOSTIC_SEVERITY_INFO = 1;
+  TARGET_PLANNING_DIAGNOSTIC_SEVERITY_WARNING = 2;
+  TARGET_PLANNING_DIAGNOSTIC_SEVERITY_ERROR = 3;
+}
+
+enum RequestedRepositoryToBtmOutput {
+  REQUESTED_REPOSITORY_TO_BTM_OUTPUT_UNSPECIFIED = 0;
+  REQUESTED_REPOSITORY_TO_BTM_OUTPUT_BTM_RULES = 1;
+}
+
+enum RepositoryToBtmOrchestrationState {
+  REPOSITORY_TO_BTM_ORCHESTRATION_STATE_UNSPECIFIED = 0;
+  REPOSITORY_TO_BTM_ORCHESTRATION_STATE_ACCEPTED = 1;
+  REPOSITORY_TO_BTM_ORCHESTRATION_STATE_WAITING_FOR_REPOSITORY = 2;
+  REPOSITORY_TO_BTM_ORCHESTRATION_STATE_READY_FOR_BTM_DELIVERY = 3;
+  REPOSITORY_TO_BTM_ORCHESTRATION_STATE_INCOMPLETE = 4;
+  REPOSITORY_TO_BTM_ORCHESTRATION_STATE_FAILED = 5;
+}
+
+enum BtmDeliveryReadiness {
+  BTM_DELIVERY_READINESS_UNSPECIFIED = 0;
+  BTM_DELIVERY_READINESS_NOT_READY = 1;
+  BTM_DELIVERY_READINESS_READY = 2;
+  BTM_DELIVERY_READINESS_UNAVAILABLE = 3;
+  BTM_DELIVERY_READINESS_UNKNOWN = 4;
+}
+
+enum RepositoryToBtmDiagnosticSeverity {
+  REPOSITORY_TO_BTM_DIAGNOSTIC_SEVERITY_UNSPECIFIED = 0;
+  REPOSITORY_TO_BTM_DIAGNOSTIC_SEVERITY_INFO = 1;
+  REPOSITORY_TO_BTM_DIAGNOSTIC_SEVERITY_WARNING = 2;
+  REPOSITORY_TO_BTM_DIAGNOSTIC_SEVERITY_ERROR = 3;
 }

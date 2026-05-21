@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package de.burger.forensics.analytics.repositoryanalysis.v1;
 
+import "analysis-job.proto";
+
 option java_multiple_files = true;
 option java_package = "de.burger.forensics.analytics.repositoryanalysis.v1";
 option java_outer_classname = "RepositoryAnalysisProto";
@@ -23,6 +25,9 @@ service RepositoryAnalysisService {
 
   rpc GetRepositoryPreparation(GetRepositoryPreparationRequest)
       returns (RepositoryPreparation);
+
+  rpc AnalyzeSourceSnapshotWithJavaAst(AnalyzeSourceSnapshotWithJavaAstRequest)
+      returns (JavaAstHandoffResponse);
 
   rpc CleanupRepositoryWorkspace(CleanupRepositoryWorkspaceRequest)
       returns (CleanupRepositoryWorkspaceResponse);
@@ -63,6 +68,46 @@ message GetRepositoryPreparationRequest {
   string analysis_run_id = 3;
   // Required, non-blank.
   string source_snapshot_id = 4;
+}
+
+message AnalyzeSourceSnapshotWithJavaAstRequest {
+  string request_id = 1;
+  string idempotency_key = 2;
+  string schema_version = 3;
+  string correlation_id = 4;
+  string analysis_run_id = 5;
+  string analysis_job_id = 6;
+  string source_snapshot_id = 7;
+  SourceSnapshotHandoffPolicy handoff_policy = 8;
+  map<string, string> safe_attributes = 9;
+}
+
+message SourceSnapshotHandoffPolicy {
+  int32 max_files = 1;
+  int64 max_source_bytes = 2;
+  int64 timeout_seconds = 3;
+}
+
+message JavaAstHandoffResponse {
+  OperationStatus status = 1;
+  string analysis_run_id = 2;
+  string analysis_job_id = 3;
+  string source_snapshot_id = 4;
+  SourceSnapshotCompleteness completeness = 5;
+  de.burger.forensics.analytics.analysisjob.v1.AnalysisArtifactReference source_fact_artifact = 6;
+  JavaAstScanSummary summary = 7;
+  repeated Diagnostic diagnostics = 8;
+  map<string, string> safe_attributes = 9;
+}
+
+message JavaAstScanSummary {
+  int32 received_file_count = 1;
+  int32 parsed_file_count = 2;
+  int32 skipped_file_count = 3;
+  int32 parse_error_count = 4;
+  int32 source_fact_count = 5;
+  string parser = 6;
+  string parser_version = 7;
 }
 
 message CleanupRepositoryWorkspaceRequest {
@@ -158,6 +203,8 @@ message SourceSnapshot {
   repeated SourceRoot source_roots = 3;
   ArtifactReference manifest_artifact = 4;
   repeated string limitations = 5;
+  SourcePackageDescriptor source_package = 6;
+  BuildOutputPackageDescriptor build_output_package = 7;
 }
 
 message SourceRoot {
@@ -174,6 +221,42 @@ message ArtifactReference {
   string type = 2;
   string sha256 = 3;
   int64 size_bytes = 4;
+}
+
+message SourcePackageDescriptor {
+  PackageAvailability availability = 1;
+  ArtifactReference manifest_artifact = 2;
+  ArtifactReference package_artifact = 3;
+  string schema_version = 4;
+  string producer_service = 5;
+  de.burger.forensics.analytics.analysisjob.v1.ArtifactByteAccess byte_access = 6;
+  SourceSnapshotCompleteness completeness = 7;
+}
+
+message BuildOutputPackageDescriptor {
+  PackageAvailability availability = 1;
+  ArtifactReference manifest_artifact = 2;
+  ArtifactReference package_artifact = 3;
+  string schema_version = 4;
+  string producer_service = 5;
+  de.burger.forensics.analytics.analysisjob.v1.ArtifactByteAccess byte_access = 6;
+  SourceSnapshotCompleteness completeness = 7;
+  BuildOutputResolution resolution = 8;
+  string build_system = 9;
+}
+
+message BuildOutputResolution {
+  repeated BuildOutputProducerCandidate candidates = 1;
+  BuildOutputProducer selected_producer = 2;
+  bool terminal_integrity_failure = 3;
+  repeated Diagnostic diagnostics = 4;
+}
+
+message BuildOutputProducerCandidate {
+  BuildOutputProducer producer = 1;
+  BuildOutputProducerStatus status = 2;
+  string reference = 3;
+  repeated Diagnostic diagnostics = 4;
 }
 
 message Diagnostic {
@@ -211,6 +294,31 @@ enum SourceSnapshotCompleteness {
   SOURCE_SNAPSHOT_COMPLETENESS_COMPLETE = 1;
   SOURCE_SNAPSHOT_COMPLETENESS_INCOMPLETE = 2;
   SOURCE_SNAPSHOT_COMPLETENESS_UNKNOWN = 3;
+}
+
+enum PackageAvailability {
+  PACKAGE_AVAILABILITY_UNSPECIFIED = 0;
+  PACKAGE_AVAILABILITY_AVAILABLE = 1;
+  PACKAGE_AVAILABILITY_PENDING = 2;
+  PACKAGE_AVAILABILITY_UNAVAILABLE = 3;
+  PACKAGE_AVAILABILITY_FAILED_INTEGRITY = 4;
+}
+
+enum BuildOutputProducer {
+  BUILD_OUTPUT_PRODUCER_UNSPECIFIED = 0;
+  BUILD_OUTPUT_PRODUCER_ARTIFACT_STORE = 1;
+  BUILD_OUTPUT_PRODUCER_ARTIFACTORY = 2;
+  BUILD_OUTPUT_PRODUCER_JENKINS = 3;
+  BUILD_OUTPUT_PRODUCER_BUILD_ARTIFACT_WORKER = 4;
+}
+
+enum BuildOutputProducerStatus {
+  BUILD_OUTPUT_PRODUCER_STATUS_UNSPECIFIED = 0;
+  BUILD_OUTPUT_PRODUCER_STATUS_AVAILABLE = 1;
+  BUILD_OUTPUT_PRODUCER_STATUS_NOT_CONFIGURED = 2;
+  BUILD_OUTPUT_PRODUCER_STATUS_MISSING = 3;
+  BUILD_OUTPUT_PRODUCER_STATUS_FALLBACK_PLANNED = 4;
+  BUILD_OUTPUT_PRODUCER_STATUS_TERMINAL_INTEGRITY_FAILURE = 5;
 }
 
 enum DiagnosticSeverity {

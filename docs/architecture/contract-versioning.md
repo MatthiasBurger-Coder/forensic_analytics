@@ -2,22 +2,36 @@
 
 ## Status
 
-Slice 03 initial contract versioning rules for the microservices ecosystem
-conversion workflow.
+Contract versioning rules for the microservices ecosystem conversion workflow.
 
-The contracts introduced in Slice 03 are design artifacts unless their
-operation explicitly says `current-verified`. The user approved logical initial
-contracts for not-yet-implemented service communication on 2026-05-16. That
-approval allows planned endpoint, RPC and event design, but it does not turn
-planned contracts into implemented runtime evidence.
+The active workflow assigns Gateway HTTP and public gRPC BTM delivery contract
+work to Slice 02, artifact-byte and instrumentation-target ownership contracts
+to Slice 03, and source-package, complete build-output package and Joern
+materialization contracts to Slice 07. Slice 11 owns the repository-to-BTM
+orchestration owner API refinement, Gateway public diagnostic model and
+artifact-readiness bridge. Slice 12 owns Java AST source-fact byte retrieval,
+Repository Analysis to Java AST handoff closure and deterministic local fixture
+readiness before end-to-end orchestration can resume. Existing
+planned contracts remain design artifacts unless their operation explicitly says
+`current-verified`. The user approved logical initial contracts for
+not-yet-implemented service communication on 2026-05-16. That approval allows
+planned endpoint, RPC and event design, but it does not turn planned contracts
+into implemented runtime evidence.
 
 ## Contract Authorities
 
 | Contract | Authority | Status |
 |---|---|---|
 | `contracts/grpc/forensic-ingestion.proto` | gRPC ingestion compatibility contract | Current v1 shape extracted from implementation evidence |
-| `contracts/grpc/analysis-job.proto` | Worker handoff and analysis-job state contract | Planned initial contract |
-| `contracts/openapi/gateway-api.yaml` | Public Gateway REST contract | Mixed current verified and planned initial operations |
+| `contracts/grpc/analysis-job.proto` | Worker handoff, analysis-job state, instrumentation target planning and repository-to-BTM orchestration owner API | Current verified for Analysis Store service-local gRPC implementation |
+| `contracts/grpc/repository-analysis.proto` | Repository checkout, source-snapshot preparation and Java AST handoff contract | Current verified for Repository Analysis preparation and Slice 12 Java AST handoff surface |
+| planned `contracts/grpc/build-artifact-worker.proto` or approved owner API | Complete build-output package production contract | Planned by workflow v2 and retained by v3/v4; no file exists until a slice verifies the name and service boundary |
+| repository-to-BTM orchestration owner API | Worker-dispatch/job-graph owner contract between Gateway and Analysis Store | Implemented by workflow v3 Slice 11 in `contracts/grpc/analysis-job.proto`; end-to-end orchestration may only use this owner API and readiness bridge |
+| `contracts/grpc/java-ast-analysis.proto` | Java AST source-fact worker and source-fact byte retrieval contract | Current verified for Java AST source snapshot analysis and Slice 12 source-fact byte owner retrieval |
+| `contracts/grpc/java-ast-source-facts-v1.schema.json` | Java AST source-fact artifact payload contract | Slice 13 contract for `application/vnd.forensic-analytics.java-ast-source-facts.v1+json`; consumed by Analysis Store adapter parsing without shared Java DTOs |
+| `contracts/grpc/joern-cpg-analysis.proto` | Joern CPG/CFG/DFG semantic artifact worker contract | Planned initial contract |
+| `contracts/grpc/btm-generation.proto` | BTM generation, generated artifact metadata and public BTM artifact delivery contract | Planned initial contract |
+| `contracts/openapi/gateway-api.yaml` | Public Gateway REST contract | Mixed current verified and planned initial operations; repository-to-BTM submission is planned initial |
 | `contracts/events/analysis-events.md` | Analysis event contract | Planned initial contract |
 
 Contracts in `contracts/` are interface descriptions only. They must not contain
@@ -73,7 +87,7 @@ or delayed events must be visible as incomplete, unknown or unavailable state.
 
 ## Retry, Deadline And Idempotency Rules
 
-- REST mutation operations accept `Idempotency-Key`.
+- REST mutation operations require `Idempotency-Key`.
 - gRPC mutation requests include `idempotency_key`.
 - Client-streaming ingestion retries are tied to stable `session_id` and
   `AnalysisPayloadDescriptor.payload_id`.

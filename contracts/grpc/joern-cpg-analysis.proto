@@ -3,6 +3,7 @@ syntax = "proto3";
 package de.burger.forensics.analytics.joerncpganalysis.v1;
 
 import "analysis-job.proto";
+import "repository-analysis.proto";
 
 option java_multiple_files = true;
 option java_package = "de.burger.forensics.analytics.joerncpganalysis.v1";
@@ -15,8 +16,36 @@ option java_outer_classname = "JoernCpgAnalysisProto";
 // persistence or confirmed findings. CPG/CFG/DFG output is static semantic
 // analysis evidence and incomplete mappings remain explicit diagnostics.
 service JoernCpgAnalysisService {
+  rpc MaterializeSourceSnapshot(MaterializeJoernWorkspaceRequest)
+      returns (MaterializeJoernWorkspaceResponse);
+
   rpc AnalyzeSourceSnapshot(AnalyzeJoernCpgRequest)
       returns (AnalyzeJoernCpgResponse);
+}
+
+message MaterializeJoernWorkspaceRequest {
+  string request_id = 1;
+  string idempotency_key = 2;
+  string schema_version = 3;
+  string correlation_id = 4;
+  de.burger.forensics.analytics.analysisjob.v1.AnalysisRunId analysis_run_id = 5;
+  de.burger.forensics.analytics.analysisjob.v1.AnalysisJobId analysis_job_id = 6;
+  de.burger.forensics.analytics.analysisjob.v1.SourceSnapshotId source_snapshot_id = 7;
+  repeated SourceRoot source_roots = 8;
+  de.burger.forensics.analytics.repositoryanalysis.v1.SourcePackageDescriptor source_package = 9;
+  de.burger.forensics.analytics.repositoryanalysis.v1.BuildOutputPackageDescriptor build_output_package = 10;
+  JoernMaterializationPolicy policy = 11;
+  map<string, string> safe_attributes = 12;
+}
+
+message MaterializeJoernWorkspaceResponse {
+  OperationStatus status = 1;
+  de.burger.forensics.analytics.analysisjob.v1.AnalysisRunId analysis_run_id = 2;
+  de.burger.forensics.analytics.analysisjob.v1.AnalysisJobId analysis_job_id = 3;
+  de.burger.forensics.analytics.analysisjob.v1.SourceSnapshotId source_snapshot_id = 4;
+  SourceWorkspace workspace = 5;
+  repeated JoernCpgDiagnostic diagnostics = 6;
+  map<string, string> safe_attributes = 7;
 }
 
 message AnalyzeJoernCpgRequest {
@@ -47,8 +76,9 @@ message AnalyzeJoernCpgResponse {
 }
 
 message SourceWorkspace {
-  // Opaque service-local workspace identifier. Absolute paths, file URIs and
-  // parent traversal are forbidden on the public contract.
+  // Opaque Joern-owned workspace identifier. Repository Analysis workspace
+  // identifiers, absolute paths, file URIs and parent traversal are forbidden
+  // on the public contract.
   string workspace_id = 1;
   repeated SourceRoot source_roots = 2;
   repeated de.burger.forensics.analytics.analysisjob.v1.AnalysisArtifactReference input_artifacts = 3;
@@ -73,6 +103,17 @@ message JoernCpgPolicy {
   bool require_callgraph = 7;
   bool require_controlflow = 8;
   bool require_dataflow = 9;
+}
+
+message JoernMaterializationPolicy {
+  int32 max_source_roots = 1;
+  int64 max_workspace_bytes = 2;
+  int64 max_artifact_bytes = 3;
+  int64 max_archive_depth = 4;
+  bool reject_symlinks = 5;
+  bool reject_hardlinks = 6;
+  bool reject_device_files = 7;
+  bool reject_duplicate_paths = 8;
 }
 
 message JoernCpgSummary {

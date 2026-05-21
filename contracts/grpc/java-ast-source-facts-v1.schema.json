@@ -1,0 +1,269 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://forensic-analytics.local/contracts/java-ast-source-facts-v1.schema.json",
+  "title": "Java AST Source Fact Artifact v1",
+  "description": "Payload contract for application/vnd.forensic-analytics.java-ast-source-facts.v1+json artifacts returned through the Java AST owner byte API.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "analysisRunId",
+    "analysisJobId",
+    "sourceSnapshotId",
+    "summary",
+    "sourceFacts",
+    "diagnostics"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "minLength": 1
+    },
+    "analysisRunId": {
+      "$ref": "#/$defs/nonBlankText"
+    },
+    "analysisJobId": {
+      "$ref": "#/$defs/nonBlankText"
+    },
+    "sourceSnapshotId": {
+      "$ref": "#/$defs/nonBlankText"
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "receivedFileCount",
+        "parsedFileCount",
+        "skippedFileCount",
+        "parseErrorCount",
+        "sourceFactCount",
+        "parser",
+        "parserVersion"
+      ],
+      "properties": {
+        "receivedFileCount": {
+          "$ref": "#/$defs/nonNegativeInteger"
+        },
+        "parsedFileCount": {
+          "$ref": "#/$defs/nonNegativeInteger"
+        },
+        "skippedFileCount": {
+          "$ref": "#/$defs/nonNegativeInteger"
+        },
+        "parseErrorCount": {
+          "$ref": "#/$defs/nonNegativeInteger"
+        },
+        "sourceFactCount": {
+          "$ref": "#/$defs/nonNegativeInteger"
+        },
+        "parser": {
+          "$ref": "#/$defs/nonBlankText"
+        },
+        "parserVersion": {
+          "$ref": "#/$defs/nonBlankText"
+        }
+      }
+    },
+    "sourceFacts": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/sourceFact"
+      }
+    },
+    "diagnostics": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/diagnostic"
+      }
+    }
+  },
+  "$defs": {
+    "nonBlankText": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": ".*\\S.*"
+    },
+    "safeDiagnosticMessage": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": ".*\\S.*",
+      "not": {
+        "anyOf": [
+          {
+            "pattern": "[\\x00-\\x1F\\x7F]"
+          },
+          {
+            "pattern": "[Ff][Ii][Ll][Ee]:"
+          },
+          {
+            "pattern": "://"
+          },
+          {
+            "pattern": "([Tt][Oo][Kk][Ee][Nn]|[Pp][Aa][Ss][Ss][Ww][Oo][Rr][Dd]|[Ss][Ee][Cc][Rr][Ee][Tt]|[Cc][Rr][Ee][Dd][Ee][Nn][Tt][Ii][Aa][Ll]|[Aa][Uu][Tt][Hh][Oo][Rr][Ii][Zz][Aa][Tt][Ii][Oo][Nn])"
+          },
+          {
+            "pattern": "(^|\\s)/[^\\s]+"
+          },
+          {
+            "pattern": "(^|\\s)[A-Za-z]:[\\\\/][^\\s]+"
+          }
+        ]
+      }
+    },
+    "nonNegativeInteger": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "positiveInteger": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "safeRelativePath": {
+      "type": "string",
+      "minLength": 1,
+      "not": {
+        "anyOf": [
+          {
+            "pattern": "^/"
+          },
+          {
+            "pattern": "^[A-Za-z]:"
+          },
+          {
+            "pattern": "^[Ff][Ii][Ll][Ee]:"
+          },
+          {
+            "pattern": "://"
+          },
+          {
+            "pattern": "\\\\"
+          },
+          {
+            "pattern": "(^|/)\\.\\.?(?:/|$)"
+          },
+          {
+            "pattern": "(^|/)(?:\\s*)($|/)"
+          },
+          {
+            "pattern": "[\\x00-\\x1F\\x7F]"
+          }
+        ]
+      }
+    },
+    "sourceFact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "factId",
+        "factType",
+        "location",
+        "signature",
+        "summary",
+        "evidenceKind"
+      ],
+      "properties": {
+        "factId": {
+          "$ref": "#/$defs/nonBlankText"
+        },
+        "factType": {
+          "const": "java-method"
+        },
+        "location": {
+          "$ref": "#/$defs/sourceLocation"
+        },
+        "signature": {
+          "$ref": "#/$defs/nonBlankText"
+        },
+        "summary": {
+          "$ref": "#/$defs/nonBlankText"
+        },
+        "evidenceKind": {
+          "const": "STATIC_SOURCE_FACT"
+        }
+      }
+    },
+    "sourceLocation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sourcePath",
+        "fullyQualifiedClassName",
+        "methodName",
+        "lineNumber",
+        "columnNumber"
+      ],
+      "properties": {
+        "sourcePath": {
+          "$ref": "#/$defs/safeRelativePath"
+        },
+        "fullyQualifiedClassName": {
+          "$ref": "#/$defs/nonBlankText"
+        },
+        "methodName": {
+          "$ref": "#/$defs/nonBlankText"
+        },
+        "lineNumber": {
+          "$ref": "#/$defs/positiveInteger"
+        },
+        "columnNumber": {
+          "$ref": "#/$defs/positiveInteger"
+        }
+      }
+    },
+    "diagnostic": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "code",
+        "message",
+        "severity",
+        "sourceSnapshotId",
+        "sourcePath",
+        "lineNumber",
+        "columnNumber",
+        "retryable",
+        "affectsCompleteness"
+      ],
+      "properties": {
+        "code": {
+          "$ref": "#/$defs/nonBlankText"
+        },
+        "message": {
+          "$ref": "#/$defs/safeDiagnosticMessage"
+        },
+        "severity": {
+          "enum": [
+            "INFO",
+            "WARNING",
+            "ERROR"
+          ]
+        },
+        "sourceSnapshotId": {
+          "$ref": "#/$defs/nonBlankText"
+        },
+        "sourcePath": {
+          "anyOf": [
+            {
+              "const": ""
+            },
+            {
+              "$ref": "#/$defs/safeRelativePath"
+            }
+          ]
+        },
+        "lineNumber": {
+          "$ref": "#/$defs/nonNegativeInteger"
+        },
+        "columnNumber": {
+          "$ref": "#/$defs/nonNegativeInteger"
+        },
+        "retryable": {
+          "type": "boolean"
+        },
+        "affectsCompleteness": {
+          "type": "boolean"
+        }
+      }
+    }
+  }
+}

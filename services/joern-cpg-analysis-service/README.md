@@ -38,7 +38,7 @@ Slice 08 verified:
 ./gradlew --no-daemon :services:joern-cpg-analysis-service:test :services:joern-cpg-analysis-service:jacocoTestReport :services:joern-cpg-analysis-service:jacocoTestCoverageVerification --dependency-verification strict --console=plain --stacktrace
 ./gradlew --no-daemon clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace
 ./gradlew --no-daemon :services:joern-cpg-analysis-service:bootJar --dependency-verification strict --console=plain --stacktrace
-docker build -f services/joern-cpg-analysis-service/Dockerfile -t joern-cpg-analysis-service:slice08 .
+docker build -f services/joern-cpg-analysis-service/Dockerfile --build-arg SERVICE_JAR=services/joern-cpg-analysis-service/build/libs/joern-cpg-analysis-service-0.1.0-SNAPSHOT.jar -t forensic-analytics/joern-cpg-analysis-service:local .
 ```
 
 Docker image:
@@ -57,3 +57,9 @@ sha256:ad3af3eb7811543f26e6f7a84818e04f13c92d6aa03bf497882d160475d80b91
   incompleteness diagnostics.
 - Durable artifact indexing and Analysis Store registration remain later
   integration work.
+
+When started through `deployment/docker-compose/repository-to-btm.local.yml`,
+the health endpoint is published on `127.0.0.1:18085` and the service gRPC port
+is published on `127.0.0.1:19094` for local diagnostics. The runtime may need
+network access to pull the digest-pinned Joern base image before the local
+container can be built.

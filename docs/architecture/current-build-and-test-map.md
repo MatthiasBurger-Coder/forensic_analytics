@@ -51,10 +51,13 @@ Verified from `settings.gradle.kts`:
 - `services:repository-analysis-service`
 - `services:analysis-store-service`
 - `services:forensic-ingestion-service`
+- `services:forensic-gateway-service`
 
-Six service-specific Gradle projects under `services/**` are now registered.
-Gateway, graph-replay and report-generation remain README-only planned service
-roots.
+Seven service-specific Gradle projects under `services/**` are now registered.
+Graph-replay and report-generation remain README-only planned service roots
+and are explicitly deferred from repository-to-BTM acceptance by Slice 16. The
+build-artifact worker is planned by workflow v2 and retained by workflow v3;
+it has no service root yet.
 
 ## Quality Commands
 
@@ -132,7 +135,7 @@ npm run test:watch
 Frontend tests use Vitest with jsdom and Testing Library. No frontend lint,
 coverage, Playwright or Cypress command was verified.
 
-The planned `frontend/frontend-web-app` root exists only as a Slice 02
+The planned `frontend/frontend-web-app` root exists only as a
 placeholder. It has no frontend implementation, package metadata, build
 configuration or tests.
 
@@ -146,6 +149,7 @@ Existing Docker material:
 - `docker/joern/docker-compose.joern.yml`
 - `docker/joern/scripts/**`
 - `forensic-ui/Dockerfile`
+- `deployment/docker-compose/repository-to-btm.local.yml`
 
 The DevOps review verified Joern Compose configuration with:
 
@@ -155,6 +159,12 @@ docker compose --env-file docker/joern/.env -f docker/joern/docker-compose.joern
 
 No Boot jar build, Boot Docker image build, frontend image build, Swarm command
 or Kubernetes command was executed as part of Slice 00.
+
+Slice 15 later verified the local repository-to-BTM Compose descriptor with
+six service `bootJar` tasks, `docker compose config`, `docker compose build`,
+Compose startup, Gateway plus service health checks and Compose cleanup. This
+is local repository-to-BTM readiness only and does not claim production-wide
+Compose, Swarm or Kubernetes readiness.
 
 Missing deployment material:
 
@@ -180,19 +190,31 @@ deployment behavior, run the minimum `QUALITY.md` command before continuing:
 ./gradlew test --dependency-verification strict --console=plain --stacktrace
 ```
 
-Service-specific test commands exist for the six registered service projects.
-Gateway, graph-replay and report-generation still have no service-local Gradle
-test task because they remain README-only planned service roots.
+Service-specific test commands exist for the seven registered service projects.
+Graph-replay and report-generation still have no service-local Gradle test task
+because they remain README-only planned service roots and are deferred from
+repository-to-BTM acceptance. The build-artifact worker has no Gradle task
+until a later slice creates the service root.
+
+Slice 18 does not remove any `forensic-analytics-*` module from the Gradle
+build. Those modules remain part of the current quality gate as legacy
+in-process and rollback paths until a later slice proves caller removal,
+replacement parity and rollback evidence.
+
+Slice 19 also leaves the Gradle module list unchanged. Removal is blocked
+until caller-verification searches prove that a module has no remaining
+production or test caller and parity or explicit deprecation tests exist.
 
 ## Residual Risks
 
 - CI workflow evidence is absent.
-- Service-specific test tasks exist only for the six registered service
+- Service-specific test tasks exist only for the seven registered service
   projects.
 - Contract tests exist for implemented service contracts, but coverage is not
   complete for every planned service interaction.
 - Frontend coverage and end-to-end test gates are not configured.
 - Boot container healthcheck evidence is absent.
 - Swarm and Kubernetes readiness is absent.
-- Full local quality gate has not been run for Slice 00 because this slice is
-  documentation-only and requires `git diff --check`.
+- Full local quality gate was not required for the baseline documentation
+  review because the baseline was documentation-only and required
+  `git diff --check`.

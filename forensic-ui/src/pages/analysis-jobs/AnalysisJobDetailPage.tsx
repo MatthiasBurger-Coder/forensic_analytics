@@ -3,6 +3,10 @@ import { useParams } from "react-router-dom";
 
 import { useAnalysisJob } from "@/application/hooks/useAnalysisJob";
 import { DiagnosticList } from "@/widgets/DiagnosticList";
+import {
+  EvidenceClassGrid,
+  type EvidenceClassItem
+} from "@/widgets/EvidenceClassGrid";
 import { StatusBadge } from "@/widgets/StatusBadge";
 import { ErrorPanel, LoadingPanel, StaleNotice } from "@/widgets/StatePanels";
 
@@ -102,6 +106,16 @@ export const AnalysisJobDetailPage = () => {
           <section className="panel">
             <div className="panel-header">
               <div>
+                <span className="eyebrow">Evidence classes</span>
+                <h2>Gateway public status</h2>
+              </div>
+            </div>
+            <EvidenceClassGrid items={evidenceClassItems(data)} />
+          </section>
+
+          <section className="panel">
+            <div className="panel-header">
+              <div>
                 <span className="eyebrow">Evidence gaps</span>
                 <h2>Diagnostics</h2>
               </div>
@@ -117,3 +131,44 @@ export const AnalysisJobDetailPage = () => {
     </section>
   );
 };
+
+const evidenceClassItems = (data: {
+  sourceSnapshotStatus: string | null;
+  resolvedCommit: string | null;
+  sourceRoots: string[];
+  btmDeliveryStatus: string | null;
+  btmDeliveryService: string | null;
+  diagnostics: unknown[];
+  workflow: string | null;
+}): EvidenceClassItem[] => [
+  {
+    label: "Confirmed evidence",
+    value: data.resolvedCommit ?? data.sourceSnapshotStatus ?? "Unavailable"
+  },
+  {
+    label: "Derived analysis",
+    value: data.sourceRoots.length
+      ? `${data.sourceRoots.length} source roots`
+      : data.workflow ?? "Unavailable"
+  },
+  {
+    label: "Generated BTM artifacts",
+    value: data.btmDeliveryStatus ?? "Unavailable"
+  },
+  {
+    label: "Diagnostics",
+    value: `${data.diagnostics.length} messages`
+  },
+  {
+    label: "Unresolved gaps",
+    value: data.diagnostics.length ? "See diagnostics" : "Not reported"
+  },
+  {
+    label: "Hypotheses",
+    value: "Not provided"
+  },
+  {
+    label: "Suggested fixes",
+    value: data.btmDeliveryService ?? "Not provided"
+  }
+];

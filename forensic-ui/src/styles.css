@@ -397,7 +397,15 @@ td {
   margin: 16px 0 0;
 }
 
-.detail-grid div {
+.evidence-class-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+  margin: 0;
+}
+
+.detail-grid div,
+.evidence-class-grid div {
   min-width: 0;
 }
 

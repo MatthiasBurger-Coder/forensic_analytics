@@ -2,8 +2,21 @@
 
 ## Status
 
-Planned deployment root for the target microservices ecosystem.
+Deployment root for the target microservices ecosystem.
 
-This directory contains planning placeholders only. No Docker Compose, Docker
-Swarm or Kubernetes readiness is claimed until service Dockerfiles,
-healthchecks and validation evidence exist.
+`docker-compose/repository-to-btm.local.yml` is the first verified local
+runtime descriptor for the repository-to-BTM path. It covers only:
+
+- `forensic-gateway-service`
+- `analysis-store-service`
+- `repository-analysis-service`
+- `java-ast-analysis-service`
+- `joern-cpg-analysis-service`
+- `btm-generation-service`
+
+The descriptor assumes the service `bootJar` tasks have already produced the
+jar files copied by the service Dockerfiles.
+
+Docker Swarm and Kubernetes remain planning roots. No Swarm or Kubernetes
+runtime readiness is claimed until stack files or manifests, health/readiness
+probes and validation commands exist.

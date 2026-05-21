@@ -12,20 +12,40 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.LinkOption;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 
 import static de.burger.forensics.analytics.services.joerncpganalysis.adapter.out.filesystem.FileSystemJoernArtifactCollector.CALLGRAPH;
 import static de.burger.forensics.analytics.services.joerncpganalysis.adapter.out.filesystem.FileSystemJoernArtifactCollector.CONTROLFLOW;
 import static de.burger.forensics.analytics.services.joerncpganalysis.adapter.out.filesystem.FileSystemJoernArtifactCollector.CPG;
 import static de.burger.forensics.analytics.services.joerncpganalysis.adapter.out.filesystem.FileSystemJoernArtifactCollector.DATAFLOW;
+import static de.burger.forensics.analytics.services.joerncpganalysis.adapter.out.filesystem.FileSystemJoernArtifactCollector.SLICES;
 import static de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.requireSha256ImageReference;
 import static de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.sha256;
 
 public final class ProcessJoernRuntimeAdapter implements JoernRuntimePort {
+    private static final Pattern PRIVATE_PATH = Pattern.compile("(^|\\s)(/[A-Za-z0-9._-]+)+");
+    private static final Pattern WINDOWS_PATH = Pattern.compile("(?i)(^|\\s)[a-z]:[/\\\\][^\\s]+");
+    private static final Pattern URI = Pattern.compile("(?i)\\b[a-z][a-z0-9+.-]*://\\S+");
+    private static final Pattern SOURCE_DECLARATION = Pattern.compile("(?i)(^|\\s)(class|interface|enum|record)\\s+[A-Za-z_$][A-Za-z0-9_$]*\\b");
+    private static final Pattern SAFE_VERSION = Pattern.compile("(?i)^(joern[\\w .+\\-]*\\d[\\w .+\\-]*|v?\\d+(\\.\\d+){0,5}([-+][A-Za-z0-9._-]+)?)$");
+    private static final List<String> SENSITIVE_TOKENS = List.of(
+        "authorization",
+        "credential",
+        "password",
+        "secret",
+        "token",
+        "apikey",
+        "api_key"
+    );
+
     private final Path artifactRoot;
     private final Path queryScriptsRoot;
     private final String joernExecutable;
@@ -59,11 +79,7 @@ public final class ProcessJoernRuntimeAdapter implements JoernRuntimePort {
             throw new JoernRuntimeUnavailableException("Configured Joern runtime image does not match request policy.");
         }
         var artifactDirectory = artifactDirectory(command);
-        try {
-            Files.createDirectories(artifactRoot.resolve(artifactDirectory));
-        } catch (IOException error) {
-            throw new JoernRuntimeUnavailableException("Failed to create Joern artifact directory.", error);
-        }
+        prepareArtifactDirectory(artifactDirectory);
 
         var timeout = Duration.ofSeconds(command.policy().timeoutSeconds());
         var diagnostics = new ArrayList<JoernCpgDiagnostic>();
@@ -73,6 +89,7 @@ public final class ProcessJoernRuntimeAdapter implements JoernRuntimePort {
         runOptionalQuery(command, artifactDirectory, "callgraph.sc", CALLGRAPH, command.policy().requireCallgraph(), diagnostics, timeout);
         runOptionalQuery(command, artifactDirectory, "controlflow.sc", CONTROLFLOW, command.policy().requireControlflow(), diagnostics, timeout);
         runOptionalQuery(command, artifactDirectory, "dataflow.sc", DATAFLOW, command.policy().requireDataflow(), diagnostics, timeout);
+        runOptionalQuery(command, artifactDirectory, "slices.sc", SLICES, command.policy().requireDataflow(), diagnostics, timeout);
 
         return new JoernRuntimeResult(version.value(), runtimeImageReference, artifactDirectory, diagnostics);
     }
@@ -83,7 +100,8 @@ public final class ProcessJoernRuntimeAdapter implements JoernRuntimePort {
             return unknownVersion(command);
         }
         var output = result.stdout().isBlank() ? result.stderr() : result.stdout();
-        return output.isBlank() ? unknownVersion(command) : new VersionProbe(output.strip(), List.of());
+        var version = safeVersion(output);
+        return version.isBlank() ? unknownVersion(command) : new VersionProbe(version, List.of());
     }
 
     private VersionProbe unknownVersion(AnalyzeJoernCpgCommand command) {
@@ -171,11 +189,12 @@ public final class ProcessJoernRuntimeAdapter implements JoernRuntimePort {
         try {
             stdout = Files.createTempFile(artifactRoot, "joern-stdout-", ".log");
             stderr = Files.createTempFile(artifactRoot, "joern-stderr-", ".log");
-            var process = new ProcessBuilder(arguments)
+            var builder = new ProcessBuilder(arguments)
                 .directory(workingDirectory.toFile())
                 .redirectOutput(stdout.toFile())
-                .redirectError(stderr.toFile())
-                .start();
+                .redirectError(stderr.toFile());
+            configureEnvironment(builder, workingDirectory);
+            var process = builder.start();
             var completed = process.waitFor(timeout.toMillis(), TimeUnit.MILLISECONDS);
             if (!completed) {
                 process.destroyForcibly();
@@ -209,6 +228,58 @@ public final class ProcessJoernRuntimeAdapter implements JoernRuntimePort {
         return "joern-cpg/" + fingerprint;
     }
 
+    private void prepareArtifactDirectory(String relativeDirectory) {
+        var directory = artifactRoot.resolve(relativeDirectory).normalize();
+        if (!directory.startsWith(artifactRoot)) {
+            throw new JoernRuntimeUnavailableException("Joern artifact directory resolves outside service artifact root");
+        }
+        try {
+            createServiceOwnedDirectory(artifactRoot, directory);
+            clearDirectoryContents(directory);
+        } catch (IOException error) {
+            throw new JoernRuntimeUnavailableException("Failed to prepare Joern artifact directory.", error);
+        }
+    }
+
+    private static void createServiceOwnedDirectory(Path root, Path directory) throws IOException {
+        Files.createDirectories(root);
+        var normalizedRoot = root.toAbsolutePath().normalize();
+        var normalizedDirectory = directory.toAbsolutePath().normalize();
+        if (!normalizedDirectory.startsWith(normalizedRoot)) {
+            throw new JoernRuntimeUnavailableException("Joern artifact directory resolves outside service artifact root");
+        }
+        requireDirectoryWithoutLinks(normalizedRoot);
+        var current = normalizedRoot;
+        for (var part : normalizedRoot.relativize(normalizedDirectory)) {
+            current = current.resolve(part);
+            if (Files.exists(current, LinkOption.NOFOLLOW_LINKS)) {
+                requireDirectoryWithoutLinks(current);
+            } else {
+                Files.createDirectory(current);
+            }
+        }
+    }
+
+    private static void clearDirectoryContents(Path directory) throws IOException {
+        requireDirectoryWithoutLinks(directory);
+        try (var stream = Files.walk(directory)) {
+            var paths = stream
+                .filter(path -> !path.equals(directory))
+                .sorted(Comparator.reverseOrder())
+                .toList();
+            for (var path : paths) {
+                Files.delete(path);
+            }
+        }
+    }
+
+    private static void requireDirectoryWithoutLinks(Path directory) throws IOException {
+        var attributes = Files.readAttributes(directory, BasicFileAttributes.class, LinkOption.NOFOLLOW_LINKS);
+        if (!attributes.isDirectory()) {
+            throw new JoernRuntimeUnavailableException("Joern artifact directory is not service-owned");
+        }
+    }
+
     private static String requireText(String value, String fieldName) {
         if (value == null || value.isBlank()) {
             throw new IllegalArgumentException(fieldName + " must not be blank");
@@ -218,7 +289,41 @@ public final class ProcessJoernRuntimeAdapter implements JoernRuntimePort {
 
     private static String sanitize(String output) {
         var text = output == null ? "" : output.replace('\r', ' ').replace('\n', ' ').replace('\\', '/').strip();
-        return text.length() > 240 ? text.substring(0, 240) : text;
+        if (containsSensitiveToken(text) || PRIVATE_PATH.matcher(text).find() || WINDOWS_PATH.matcher(text).find()) {
+            return "diagnostic details redacted";
+        }
+        var sanitized = URI.matcher(text).replaceAll("[redacted-uri]");
+        return sanitized.length() > 240 ? sanitized.substring(0, 240) : sanitized;
+    }
+
+    private static String safeVersion(String output) {
+        var sanitized = sanitize(output);
+        if (sanitized.equals("diagnostic details redacted") || sanitized.contains("[redacted-uri]")) {
+            return "";
+        }
+        return SAFE_VERSION.matcher(sanitized).matches() ? sanitized : "";
+    }
+
+    private static void configureEnvironment(ProcessBuilder builder, Path workingDirectory) {
+        var environment = builder.environment();
+        var path = environment.get("PATH");
+        environment.clear();
+        if (path != null && !path.isBlank()) {
+            environment.put("PATH", path);
+        }
+        environment.put("HOME", workingDirectory.toString());
+        environment.put("LANG", "C.UTF-8");
+        environment.put("LC_ALL", "C.UTF-8");
+    }
+
+    private static boolean containsSensitiveToken(String value) {
+        var normalized = value.toLowerCase(java.util.Locale.ROOT).replace("-", "").replace("_", "");
+        var compact = normalized.replace(" ", "");
+        return SENSITIVE_TOKENS.stream().anyMatch(normalized::contains)
+            || compact.contains("publicclass")
+            || SOURCE_DECLARATION.matcher(normalized).find()
+            || normalized.contains("package ")
+            || normalized.contains("import ");
     }
 
     private static void deleteIfPresent(Path file) {

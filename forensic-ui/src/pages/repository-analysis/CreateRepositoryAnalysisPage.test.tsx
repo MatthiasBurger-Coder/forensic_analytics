@@ -55,6 +55,9 @@ describe("CreateRepositoryAnalysisPage", () => {
       services.repositoryAnalysis.startRepositoryAnalysis
     ).mock.calls[0] as [StartRepositoryAnalysisCommand, AbortSignal];
     expect(command).toMatchObject({
+      correlationId: expect.stringMatching(/^ui-correlation-/),
+      idempotencyKey: expect.stringMatching(/^ui-idempotency-/),
+      requestedOutputs: ["BTM_RULES"],
       repositoryUrl: WILDFLY_REPOSITORY_URL,
       provider: "github",
       branch: "main",
@@ -72,7 +75,7 @@ describe("CreateRepositoryAnalysisPage", () => {
         allowPartialClone: false,
         allowSparseCheckout: false,
         timeoutSeconds: 1200,
-        maxWorkspaceBytes: 0
+        maxWorkspaceBytes: 1073741824
       }
     });
   });
@@ -103,6 +106,13 @@ const analysis = (): RepositoryAnalysis => ({
   commit: null,
   resolvedCommit: null,
   checkoutStatus: "CHECKED_OUT",
+  sourceSnapshotStatus: null,
+  workflow: null,
+  statusUrl: null,
+  jobsUrl: null,
+  btmDeliveryStatus: null,
+  btmDeliveryService: null,
+  correlationId: null,
   status: createStatusState("REGISTERED", "REGISTERED"),
   sourceRoots: [],
   diagnostics: [],

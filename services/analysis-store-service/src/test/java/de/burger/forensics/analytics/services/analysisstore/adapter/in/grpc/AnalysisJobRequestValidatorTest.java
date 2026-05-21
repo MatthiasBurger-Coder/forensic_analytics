@@ -7,12 +7,15 @@ import de.burger.forensics.analytics.analysisjob.v1.AnalysisWorkerKind;
 import de.burger.forensics.analytics.analysisjob.v1.LeaseAnalysisJobRequest;
 import de.burger.forensics.analytics.analysisjob.v1.ListAnalysisJobsRequest;
 import de.burger.forensics.analytics.analysisjob.v1.ReportAnalysisJobProgressRequest;
+import de.burger.forensics.analytics.analysisjob.v1.RequestedRepositoryToBtmOutput;
 import de.burger.forensics.analytics.analysisjob.v1.SubmitAnalysisJobRequest;
 import org.junit.jupiter.api.Test;
 
 import static de.burger.forensics.analytics.services.analysisstore.adapter.in.grpc.AnalysisJobGrpcEndpointTest.artifact;
 import static de.burger.forensics.analytics.services.analysisstore.adapter.in.grpc.AnalysisJobGrpcEndpointTest.jobId;
+import static de.burger.forensics.analytics.services.analysisstore.adapter.in.grpc.AnalysisJobGrpcEndpointTest.repositoryToBtmRequest;
 import static de.burger.forensics.analytics.services.analysisstore.adapter.in.grpc.AnalysisJobGrpcEndpointTest.submitRequest;
+import static de.burger.forensics.analytics.services.analysisstore.adapter.in.grpc.AnalysisJobGrpcEndpointTest.targetPlanRequest;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -74,6 +77,114 @@ class AnalysisJobRequestValidatorTest {
             .build();
 
         assertThrows(ValidationException.class, () -> validator.validate(invalidArtifact));
+        assertThrows(ValidationException.class, () -> validator.validate(submitRequest(
+            "submit-private-artifact-path",
+            "job-private-artifact-path",
+            AnalysisWorkerKind.ANALYSIS_WORKER_KIND_AST_ANALYSIS
+        ).toBuilder()
+            .clearInputArtifacts()
+            .addInputArtifacts(artifact(
+                "file:/tmp/private/artifact.json",
+                "sha",
+                AnalysisArtifactCategory.ANALYSIS_ARTIFACT_CATEGORY_STATIC
+            ))
+            .build()));
+        assertThrows(ValidationException.class, () -> validator.validate(submitRequest(
+            "submit-current-directory-artifact-path",
+            "job-current-directory-artifact-path",
+            AnalysisWorkerKind.ANALYSIS_WORKER_KIND_AST_ANALYSIS
+        ).toBuilder()
+            .clearInputArtifacts()
+            .addInputArtifacts(artifact(
+                "artifact/./path.json",
+                "sha",
+                AnalysisArtifactCategory.ANALYSIS_ARTIFACT_CATEGORY_STATIC
+            ))
+            .build()));
+        assertThrows(ValidationException.class, () -> validator.validate(submitRequest(
+            "submit-missing-byte-access",
+            "job-missing-byte-access",
+            AnalysisWorkerKind.ANALYSIS_WORKER_KIND_AST_ANALYSIS
+        ).toBuilder()
+            .clearInputArtifacts()
+            .addInputArtifacts(artifact(
+                "artifact.json",
+                "sha",
+                AnalysisArtifactCategory.ANALYSIS_ARTIFACT_CATEGORY_STATIC
+            ).toBuilder().clearByteAccess())
+            .build()));
+        assertThrows(ValidationException.class, () -> validator.validate(submitRequest(
+            "submit-unspecified-byte-custody",
+            "job-unspecified-byte-custody",
+            AnalysisWorkerKind.ANALYSIS_WORKER_KIND_AST_ANALYSIS
+        ).toBuilder()
+            .clearInputArtifacts()
+            .addInputArtifacts(artifact(
+                "artifact.json",
+                "sha",
+                AnalysisArtifactCategory.ANALYSIS_ARTIFACT_CATEGORY_STATIC
+            ).toBuilder()
+                .setByteAccess(artifact(
+                    "artifact.json",
+                    "sha",
+                    AnalysisArtifactCategory.ANALYSIS_ARTIFACT_CATEGORY_STATIC
+                ).getByteAccess().toBuilder()
+                    .setByteCustody(de.burger.forensics.analytics.analysisjob.v1.ArtifactByteCustody.ARTIFACT_BYTE_CUSTODY_UNSPECIFIED)))
+            .build()));
+        assertThrows(ValidationException.class, () -> validator.validate(submitRequest(
+            "submit-private-byte-reference",
+            "job-private-byte-reference",
+            AnalysisWorkerKind.ANALYSIS_WORKER_KIND_AST_ANALYSIS
+        ).toBuilder()
+            .clearInputArtifacts()
+            .addInputArtifacts(artifact(
+                "artifact.json",
+                "sha",
+                AnalysisArtifactCategory.ANALYSIS_ARTIFACT_CATEGORY_STATIC
+            ).toBuilder()
+                .setByteAccess(artifact(
+                    "artifact.json",
+                    "sha",
+                    AnalysisArtifactCategory.ANALYSIS_ARTIFACT_CATEGORY_STATIC
+                ).getByteAccess().toBuilder()
+                    .setRetrievalReference("file:/tmp/private/artifact")))
+            .build()));
+        assertThrows(ValidationException.class, () -> validator.validate(submitRequest(
+            "submit-current-directory-byte-reference",
+            "job-current-directory-byte-reference",
+            AnalysisWorkerKind.ANALYSIS_WORKER_KIND_AST_ANALYSIS
+        ).toBuilder()
+            .clearInputArtifacts()
+            .addInputArtifacts(artifact(
+                "artifact.json",
+                "sha",
+                AnalysisArtifactCategory.ANALYSIS_ARTIFACT_CATEGORY_STATIC
+            ).toBuilder()
+                .setByteAccess(artifact(
+                    "artifact.json",
+                    "sha",
+                    AnalysisArtifactCategory.ANALYSIS_ARTIFACT_CATEGORY_STATIC
+                ).getByteAccess().toBuilder()
+                    .setRetrievalReference("artifacts/./artifact")))
+            .build()));
+        assertThrows(ValidationException.class, () -> validator.validate(submitRequest(
+            "submit-control-character-byte-reference",
+            "job-control-character-byte-reference",
+            AnalysisWorkerKind.ANALYSIS_WORKER_KIND_AST_ANALYSIS
+        ).toBuilder()
+            .clearInputArtifacts()
+            .addInputArtifacts(artifact(
+                "artifact.json",
+                "sha",
+                AnalysisArtifactCategory.ANALYSIS_ARTIFACT_CATEGORY_STATIC
+            ).toBuilder()
+                .setByteAccess(artifact(
+                    "artifact.json",
+                    "sha",
+                    AnalysisArtifactCategory.ANALYSIS_ARTIFACT_CATEGORY_STATIC
+                ).getByteAccess().toBuilder()
+                    .setRetrievalReference("artifacts/\u0000artifact")))
+            .build()));
         assertThrows(ValidationException.class, () -> validator.validate(invalidProgress));
         assertThrows(ValidationException.class, () -> validator.validate(LeaseAnalysisJobRequest.newBuilder()
             .setRequestId("request-lease")
@@ -100,5 +211,69 @@ class AnalysisJobRequestValidatorTest {
             .setCorrelationId("correlation-1")
             .setPageToken("not-a-number")
             .build()));
+    }
+
+    @Test
+    void validatesRepositoryToBtmOwnerRequests() {
+        assertDoesNotThrow(() -> validator.validate(repositoryToBtmRequest().build()));
+
+        assertThrows(ValidationException.class, () -> validator.validate(repositoryToBtmRequest()
+            .clearRepository()
+            .build()));
+        assertThrows(ValidationException.class, () -> validator.validate(repositoryToBtmRequest()
+            .clearRequestedOutputs()
+            .build()));
+        assertThrows(ValidationException.class, () -> validator.validate(repositoryToBtmRequest()
+            .clearRequestedOutputs()
+            .addRequestedOutputs(RequestedRepositoryToBtmOutput.REQUESTED_REPOSITORY_TO_BTM_OUTPUT_UNSPECIFIED)
+            .build()));
+        assertThrows(ValidationException.class, () -> validator.validate(repositoryToBtmRequest()
+            .clearRevision()
+            .build()));
+        assertThrows(ValidationException.class, () -> validator.validate(repositoryToBtmRequest()
+            .setWorkspacePolicy(repositoryToBtmRequest().getWorkspacePolicyBuilder()
+                .setTimeoutSeconds(0))
+            .build()));
+        assertThrows(ValidationException.class, () -> validator.validate(repositoryToBtmRequest()
+            .setWorkspacePolicy(repositoryToBtmRequest().getWorkspacePolicyBuilder()
+                .setMaxWorkspaceBytes(0))
+            .build()));
+        assertThrows(ValidationException.class, () -> validator.validate(repositoryToBtmRequest()
+            .setBuildContext(repositoryToBtmRequest().getBuildContextBuilder()
+                .setBuildTool(" "))
+            .build()));
+        assertThrows(ValidationException.class, () -> validator.validate(repositoryToBtmRequest()
+            .setBuildContext(repositoryToBtmRequest().getBuildContextBuilder()
+                .setBuildId(" "))
+            .build()));
+        assertThrows(ValidationException.class, () -> validator.validate(repositoryToBtmRequest()
+            .putAttributes("tenant", " ")
+            .build()));
+    }
+
+    @Test
+    void rejectsControlCharactersInTargetPlanningSourcePaths() {
+        var tabPathRequest = targetPlanRequest();
+        tabPathRequest.setStaticFacts(0, tabPathRequest.getStaticFacts(0).toBuilder()
+            .setLocation(tabPathRequest.getStaticFacts(0).getLocation().toBuilder()
+                .setSourcePath("src/main/java/a/\tA.java")));
+
+        var nulPathRequest = targetPlanRequest();
+        nulPathRequest.setStaticFacts(0, nulPathRequest.getStaticFacts(0).toBuilder()
+            .setLocation(nulPathRequest.getStaticFacts(0).getLocation().toBuilder()
+                .setSourcePath("src/main/java/a/\u0000A.java")));
+        var leadingControlPathRequest = targetPlanRequest();
+        leadingControlPathRequest.setStaticFacts(0, leadingControlPathRequest.getStaticFacts(0).toBuilder()
+            .setLocation(leadingControlPathRequest.getStaticFacts(0).getLocation().toBuilder()
+                .setSourcePath("\tsrc/main/java/a/A.java")));
+        var trailingControlPathRequest = targetPlanRequest();
+        trailingControlPathRequest.setStaticFacts(0, trailingControlPathRequest.getStaticFacts(0).toBuilder()
+            .setLocation(trailingControlPathRequest.getStaticFacts(0).getLocation().toBuilder()
+                .setSourcePath("src/main/java/a/A.java\n")));
+
+        assertThrows(ValidationException.class, () -> validator.validate(tabPathRequest.build()));
+        assertThrows(ValidationException.class, () -> validator.validate(nulPathRequest.build()));
+        assertThrows(ValidationException.class, () -> validator.validate(leadingControlPathRequest.build()));
+        assertThrows(ValidationException.class, () -> validator.validate(trailingControlPathRequest.build()));
     }
 }

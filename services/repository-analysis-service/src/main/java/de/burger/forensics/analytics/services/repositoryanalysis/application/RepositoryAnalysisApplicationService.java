@@ -4,12 +4,21 @@ import de.burger.forensics.analytics.services.repositoryanalysis.application.por
 import de.burger.forensics.analytics.services.repositoryanalysis.application.port.RepositoryPreparationRepository;
 import de.burger.forensics.analytics.services.repositoryanalysis.application.port.RepositoryWorkspacePort;
 import de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.AnalysisRunId;
+import de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.ArtifactByteAccess;
+import de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.ArtifactByteCustody;
 import de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.ArtifactReference;
+import de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.BuildOutputPackageDescriptor;
+import de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.BuildOutputProducer;
+import de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.BuildOutputProducerCandidate;
+import de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.BuildOutputProducerStatus;
+import de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.BuildOutputResolution;
 import de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.Diagnostic;
+import de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.PackageAvailability;
 import de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.RepositoryPreparation;
 import de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.RepositoryReference;
 import de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.RepositoryWorkspaceStatus;
 import de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.RevisionSelector;
+import de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.SourcePackageDescriptor;
 import de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.SourceSnapshot;
 import de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.SourceSnapshotCompleteness;
 import de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.SourceSnapshotId;
@@ -90,7 +99,9 @@ public final class RepositoryAnalysisApplicationService {
             SourceSnapshotCompleteness.COMPLETE,
             checkout.sourceRoots(),
             manifest,
-            List.of()
+            List.of(),
+            sourcePackage(sourceSnapshotId, manifest),
+            buildOutputPackage(sourceSnapshotId)
         );
         var now = clock.instant();
         var preparation = repository.save(new RepositoryPreparation(
@@ -205,6 +216,57 @@ public final class RepositoryAnalysisApplicationService {
             revision.commit(),
             resolvedCommit,
             sourceRoots.toString()
+        );
+    }
+
+    private static SourcePackageDescriptor sourcePackage(SourceSnapshotId sourceSnapshotId, ArtifactReference manifest) {
+        return new SourcePackageDescriptor(
+            PackageAvailability.PENDING,
+            manifest,
+            null,
+            "source-package-descriptor-v1",
+            "repository-analysis-service",
+            new ArtifactByteAccess(
+                "repository-analysis-service",
+                "repository-analysis.v1.SourcePackage",
+                "source-snapshot/" + sourceSnapshotId.value(),
+                ArtifactByteCustody.PRODUCER_RETAINED
+            ),
+            SourceSnapshotCompleteness.COMPLETE
+        );
+    }
+
+    private static BuildOutputPackageDescriptor buildOutputPackage(SourceSnapshotId sourceSnapshotId) {
+        return new BuildOutputPackageDescriptor(
+            PackageAvailability.PENDING,
+            null,
+            null,
+            "build-output-package-descriptor-v1",
+            "build-artifact-worker-service",
+            new ArtifactByteAccess(
+                "build-artifact-worker-service",
+                "build-artifact-worker.v1.BuildOutputPackage",
+                "source-snapshot/" + sourceSnapshotId.value(),
+                ArtifactByteCustody.PRODUCER_RETAINED
+            ),
+            SourceSnapshotCompleteness.UNKNOWN,
+            new BuildOutputResolution(
+                List.of(
+                    new BuildOutputProducerCandidate(BuildOutputProducer.ARTIFACT_STORE, BuildOutputProducerStatus.NOT_CONFIGURED, "", List.of()),
+                    new BuildOutputProducerCandidate(BuildOutputProducer.ARTIFACTORY, BuildOutputProducerStatus.NOT_CONFIGURED, "", List.of()),
+                    new BuildOutputProducerCandidate(BuildOutputProducer.JENKINS, BuildOutputProducerStatus.NOT_CONFIGURED, "", List.of()),
+                    new BuildOutputProducerCandidate(
+                        BuildOutputProducer.BUILD_ARTIFACT_WORKER,
+                        BuildOutputProducerStatus.FALLBACK_PLANNED,
+                        "source-snapshot/" + sourceSnapshotId.value(),
+                        List.of(Diagnostic.info("BUILD_ARTIFACT_WORKER_FALLBACK_PLANNED", "Build artifact worker fallback is planned"))
+                    )
+                ),
+                BuildOutputProducer.UNSPECIFIED,
+                false,
+                List.of()
+            ),
+            "auto-detect"
         );
     }
 

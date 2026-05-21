@@ -14,6 +14,7 @@ import de.burger.forensics.analytics.services.btmgeneration.domain.BtmGeneration
 import de.burger.forensics.analytics.services.btmgeneration.domain.BtmGenerationDomain.RuleTarget;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
@@ -73,6 +74,7 @@ public final class BtmGenerationApplicationService {
         if (command.facts().inputCompleteness() != AnalysisCompleteness.COMPLETE) {
             diagnostics.add(diagnostic(command, "", "INPUT_FACTS_INCOMPLETE", "Delivered analysis facts are incomplete."));
         }
+        validateTargetArtifactReferences(command);
 
         var rules = command.facts().targets().stream()
             .map(target -> ruleOrDiagnostic(command, target, diagnostics))
@@ -110,7 +112,8 @@ public final class BtmGenerationApplicationService {
             diagnostics,
             summary,
             reproducibility,
-            completeness
+            completeness,
+            command.facts().targetSelection()
         ));
         return new GenerateBtmRulesResult(
             command.metadata(),
@@ -119,8 +122,32 @@ public final class BtmGenerationApplicationService {
             rules,
             summary,
             reproducibility,
-            diagnostics
+            diagnostics,
+            command.facts().targetSelection()
         );
+    }
+
+    private static void validateTargetArtifactReferences(GenerateBtmRulesCommand command) {
+        var sourceArtifacts = command.facts().sourceFactArtifacts().stream()
+            .map(artifact -> artifact.artifact().path())
+            .collect(java.util.stream.Collectors.toCollection(HashSet::new));
+        var semanticArtifacts = command.facts().semanticArtifacts().stream()
+            .map(artifact -> artifact.artifact().path())
+            .collect(java.util.stream.Collectors.toCollection(HashSet::new));
+        command.facts().targets().forEach(target -> validateTargetArtifactReference(target, sourceArtifacts, semanticArtifacts));
+    }
+
+    private static void validateTargetArtifactReference(
+        RuleTarget target,
+        HashSet<String> sourceArtifacts,
+        HashSet<String> semanticArtifacts
+    ) {
+        if (!sourceArtifacts.contains(target.sourceFactArtifactReference())) {
+            throw new IllegalArgumentException("target source fact artifact reference is not accepted");
+        }
+        if (!target.semanticArtifactReference().isBlank() && !semanticArtifacts.contains(target.semanticArtifactReference())) {
+            throw new IllegalArgumentException("target semantic artifact reference is not accepted");
+        }
     }
 
     private static List<GeneratedRule> ruleOrDiagnostic(

@@ -25,6 +25,13 @@ export interface RepositoryAnalysisDto {
   commit?: unknown;
   resolvedCommit?: unknown;
   checkoutStatus?: unknown;
+  sourceSnapshotStatus?: unknown;
+  workflow?: unknown;
+  statusUrl?: unknown;
+  jobsUrl?: unknown;
+  btmDeliveryStatus?: unknown;
+  btmDeliveryService?: unknown;
+  correlationId?: unknown;
   status?: unknown;
   sourceRoots?: unknown;
   diagnostics?: unknown;

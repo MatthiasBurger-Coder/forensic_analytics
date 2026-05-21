@@ -5,6 +5,7 @@ plugins {
 }
 
 dependencies {
+    implementation(libs.gson)
     implementation(libs.grpc.netty.shaded)
     implementation(libs.grpc.protobuf)
     implementation(libs.grpc.stub)
@@ -26,11 +27,11 @@ sourceSets {
         proto {
             srcDir(rootProject.file("contracts/grpc"))
             include("**/analysis-job.proto")
-            exclude("**/btm-generation.proto")
+            include("**/java-ast-analysis.proto")
+            include("**/btm-generation.proto")
             exclude("**/forensic-ingestion.proto")
-            exclude("**/java-ast-analysis.proto")
-            exclude("**/joern-cpg-analysis.proto")
-            exclude("**/repository-analysis.proto")
+            include("**/joern-cpg-analysis.proto")
+            include("**/repository-analysis.proto")
         }
     }
 }

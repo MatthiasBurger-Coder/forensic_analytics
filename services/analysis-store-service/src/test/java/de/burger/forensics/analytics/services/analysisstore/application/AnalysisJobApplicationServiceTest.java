@@ -1,6 +1,7 @@
 package de.burger.forensics.analytics.services.analysisstore.application;
 
 import de.burger.forensics.analytics.services.analysisstore.adapter.out.memory.InMemoryAnalysisJobRepository;
+import de.burger.forensics.analytics.services.analysisstore.application.port.SourceFactArtifactByteVerifierPort;
 import de.burger.forensics.analytics.services.analysisstore.domain.AnalysisArtifactCategory;
 import de.burger.forensics.analytics.services.analysisstore.domain.AnalysisArtifactReference;
 import de.burger.forensics.analytics.services.analysisstore.domain.AnalysisCompleteness;
@@ -8,6 +9,8 @@ import de.burger.forensics.analytics.services.analysisstore.domain.AnalysisJobId
 import de.burger.forensics.analytics.services.analysisstore.domain.AnalysisJobState;
 import de.burger.forensics.analytics.services.analysisstore.domain.AnalysisRunId;
 import de.burger.forensics.analytics.services.analysisstore.domain.AnalysisWorkerKind;
+import de.burger.forensics.analytics.services.analysisstore.domain.ArtifactByteAccess;
+import de.burger.forensics.analytics.services.analysisstore.domain.ArtifactByteCustody;
 import de.burger.forensics.analytics.services.analysisstore.domain.ArtifactReference;
 import de.burger.forensics.analytics.services.analysisstore.domain.SourceSnapshotId;
 import org.junit.jupiter.api.Test;
@@ -210,6 +213,206 @@ class AnalysisJobApplicationServiceTest {
     }
 
     @Test
+    void verifiesJavaAstSourceFactBytesBeforeSubmittingInputArtifacts() {
+        var verifier = new CapturingSourceFactByteVerifier();
+        var verifiedService = new AnalysisJobApplicationService(
+            new InMemoryAnalysisJobRepository(),
+            FIXED_CLOCK,
+            verifier
+        );
+
+        var submit = verifiedService.submit(
+            "submit-key",
+            "correlation-1",
+            runId("run-1"),
+            jobId("job-1"),
+            "schema-v1",
+            AnalysisWorkerKind.AST_ANALYSIS,
+            snapshotId("snapshot-1"),
+            List.of(javaAstSourceFactArtifact()),
+            AnalysisCompleteness.UNKNOWN,
+            Map.of("tenant", "demo")
+        );
+
+        assertEquals("run-1", verifier.analysisRunId.value());
+        assertEquals("job-1", verifier.analysisJobId.value());
+        assertEquals("snapshot-1", verifier.sourceSnapshotId.value());
+        assertEquals("verify-source-fact-bytes:java-ast/source-facts.json", verifier.requestId);
+        assertEquals("correlation-1", verifier.correlationId);
+        assertEquals("java-ast/source-facts.json", verifier.artifact.path());
+        assertEquals(Map.of("tenant", "demo"), verifier.safeAttributes);
+        assertEquals("java-ast-owner-schema", submit.job().inputArtifacts().getFirst().schemaVersion());
+    }
+
+    @Test
+    void verifiesJavaAstSourceFactBytesBeforeCompletingOutputArtifacts() {
+        var verifier = new CapturingSourceFactByteVerifier();
+        var verifiedService = new AnalysisJobApplicationService(
+            new InMemoryAnalysisJobRepository(),
+            FIXED_CLOCK,
+            verifier
+        );
+        verifiedService.submit(
+            "submit-key",
+            "correlation-1",
+            runId("run-1"),
+            jobId("job-1"),
+            "schema-v1",
+            AnalysisWorkerKind.AST_ANALYSIS,
+            snapshotId("snapshot-1"),
+            List.of(),
+            AnalysisCompleteness.UNKNOWN,
+            Map.of("tenant", "demo")
+        );
+        verifiedService.lease("lease-key", "correlation-1", "worker-a", AnalysisWorkerKind.AST_ANALYSIS, 60, 1);
+
+        var completed = verifiedService.complete(
+            "complete-key",
+            "correlation-1",
+            jobId("job-1"),
+            1,
+            "worker-a",
+            List.of(javaAstSourceFactArtifact()),
+            AnalysisCompleteness.COMPLETE,
+            List.of("done")
+        );
+
+        assertEquals("run-1", verifier.analysisRunId.value());
+        assertEquals("job-1", verifier.analysisJobId.value());
+        assertEquals("snapshot-1", verifier.sourceSnapshotId.value());
+        assertEquals("verify-source-fact-bytes:java-ast/source-facts.json", verifier.requestId);
+        assertEquals("correlation-1", verifier.correlationId);
+        assertEquals("java-ast/source-facts.json", verifier.artifact.path());
+        assertEquals(Map.of("tenant", "demo"), verifier.safeAttributes);
+        assertEquals("java-ast-owner-schema", completed.outputArtifacts().getFirst().schemaVersion());
+    }
+
+    @Test
+    void verifiesJavaAstSourceFactBytesBeforeRegisteringArtifacts() {
+        var verifier = new CapturingSourceFactByteVerifier();
+        var verifiedService = new AnalysisJobApplicationService(
+            new InMemoryAnalysisJobRepository(),
+            FIXED_CLOCK,
+            verifier
+        );
+        verifiedService.submit(
+            "submit-key",
+            "correlation-1",
+            runId("run-1"),
+            jobId("job-1"),
+            "schema-v1",
+            AnalysisWorkerKind.AST_ANALYSIS,
+            snapshotId("snapshot-1"),
+            List.of(),
+            AnalysisCompleteness.UNKNOWN,
+            Map.of("tenant", "demo")
+        );
+
+        var registered = verifiedService.registerArtifacts(
+            "register-key",
+            "correlation-1",
+            runId("run-1"),
+            jobId("job-1"),
+            List.of(javaAstSourceFactArtifact())
+        );
+
+        assertEquals("run-1", verifier.analysisRunId.value());
+        assertEquals("job-1", verifier.analysisJobId.value());
+        assertEquals("snapshot-1", verifier.sourceSnapshotId.value());
+        assertEquals("verify-source-fact-bytes:java-ast/source-facts.json", verifier.requestId);
+        assertEquals("correlation-1", verifier.correlationId);
+        assertEquals("java-ast/source-facts.json", verifier.artifact.path());
+        assertEquals(Map.of("tenant", "demo"), verifier.safeAttributes);
+        assertEquals("java-ast-owner-schema", registered.artifacts().getFirst().schemaVersion());
+    }
+
+    @Test
+    void unavailableSourceFactByteVerifierRejectsDirectVerification() {
+        var unavailable = SourceFactArtifactByteVerifierPort.unavailable();
+
+        var failure = assertThrows(IllegalStateException.class, () -> unavailable.verify(
+            runId("run-1"),
+            jobId("job-1"),
+            snapshotId("snapshot-1"),
+            "request-1",
+            "correlation-1",
+            javaAstSourceFactArtifact(),
+            Map.of()
+        ));
+
+        assertTrue(unavailable.supports(javaAstSourceFactArtifact()));
+        assertFalse(unavailable.supports(artifact("diagnostic.json", "diagnostic-hash", AnalysisArtifactCategory.PROJECTION)));
+        assertEquals("Source fact artifact byte verifier is not available", failure.getMessage());
+    }
+
+    @Test
+    void defaultVerifierRejectsJavaAstSourceFactArtifactsInsteadOfSkippingVerification() {
+        assertThrows(IllegalStateException.class, () -> service.submit(
+            "submit-source-fact-key",
+            "correlation-1",
+            runId("run-1"),
+            jobId("job-source-fact"),
+            "schema-v1",
+            AnalysisWorkerKind.AST_ANALYSIS,
+            snapshotId("snapshot-1"),
+            List.of(javaAstSourceFactArtifact()),
+            AnalysisCompleteness.UNKNOWN,
+            Map.of()
+        ));
+        service.submit(
+            "submit-complete-key",
+            "correlation-1",
+            runId("run-1"),
+            jobId("job-complete"),
+            "schema-v1",
+            AnalysisWorkerKind.BTM_GENERATION,
+            snapshotId("snapshot-1"),
+            List.of(),
+            AnalysisCompleteness.UNKNOWN,
+            Map.of()
+        );
+        service.lease("lease-complete-key", "correlation-1", "worker-a", AnalysisWorkerKind.BTM_GENERATION, 60, 1);
+        var completeFailure = assertThrows(IllegalStateException.class, () -> service.complete(
+            "complete-source-fact-key",
+            "correlation-1",
+            jobId("job-complete"),
+            1,
+            "worker-a",
+            List.of(javaAstSourceFactArtifact()),
+            AnalysisCompleteness.COMPLETE,
+            List.of("done")
+        ));
+        var afterCompleteFailure = service.get(jobId("job-complete"));
+
+        assertEquals("Source fact artifact byte verifier is not available", completeFailure.getMessage());
+        assertEquals(AnalysisJobState.RUNNING, afterCompleteFailure.state());
+        assertTrue(afterCompleteFailure.outputArtifacts().isEmpty());
+
+        service.submit(
+            "submit-key",
+            "correlation-1",
+            runId("run-1"),
+            jobId("job-1"),
+            "schema-v1",
+            AnalysisWorkerKind.AST_ANALYSIS,
+            snapshotId("snapshot-1"),
+            List.of(),
+            AnalysisCompleteness.UNKNOWN,
+            Map.of()
+        );
+
+        var failure = assertThrows(IllegalStateException.class, () -> service.registerArtifacts(
+            "register-key",
+            "correlation-1",
+            runId("run-1"),
+            jobId("job-1"),
+            List.of(javaAstSourceFactArtifact())
+        ));
+
+        assertEquals("Source fact artifact byte verifier is not available", failure.getMessage());
+    }
+
+    @Test
     void concurrentWorkersLeaseAJobOnlyOnceAndRetryableJobsCanBeLeasedAgain() throws Exception {
         service.submit(
             "submit-key",
@@ -294,7 +497,76 @@ class AnalysisJobApplicationServiceTest {
             category,
             "analysis-store-test",
             "schema-v1",
-            AnalysisCompleteness.UNKNOWN
+            AnalysisCompleteness.UNKNOWN,
+            new ArtifactByteAccess(
+                "analysis-store-test",
+                "analysis-job.v1.ArtifactBytes",
+                "artifacts/" + path,
+                ArtifactByteCustody.PRODUCER_RETAINED
+            )
         );
+    }
+
+    static AnalysisArtifactReference javaAstSourceFactArtifact() {
+        return new AnalysisArtifactReference(
+            new ArtifactReference(
+                "java-ast/source-facts.json",
+                "application/vnd.forensic-analytics.java-ast-source-facts.v1+json",
+                "a".repeat(64),
+                42
+            ),
+            AnalysisArtifactCategory.STATIC,
+            "java-ast-analysis-service",
+            "java-ast-analysis-v1",
+            AnalysisCompleteness.COMPLETE,
+            new ArtifactByteAccess(
+                "java-ast-analysis-service",
+                "java-ast-analysis.v1.JavaAstAnalysisService.GetSourceFactArtifactBytes",
+                "java-ast/source-facts.json",
+                ArtifactByteCustody.PRODUCER_RETAINED
+            )
+        );
+    }
+
+    private static final class CapturingSourceFactByteVerifier implements SourceFactArtifactByteVerifierPort {
+        private AnalysisRunId analysisRunId;
+        private AnalysisJobId analysisJobId;
+        private SourceSnapshotId sourceSnapshotId;
+        private String requestId;
+        private String correlationId;
+        private AnalysisArtifactReference artifact;
+        private Map<String, String> safeAttributes;
+
+        @Override
+        public boolean supports(AnalysisArtifactReference artifact) {
+            return "java-ast-analysis-service".equals(artifact.byteAccess().ownerService());
+        }
+
+        @Override
+        public AnalysisArtifactReference verify(
+            AnalysisRunId analysisRunId,
+            AnalysisJobId analysisJobId,
+            SourceSnapshotId sourceSnapshotId,
+            String requestId,
+            String correlationId,
+            AnalysisArtifactReference artifact,
+            Map<String, String> safeAttributes
+        ) {
+            this.analysisRunId = analysisRunId;
+            this.analysisJobId = analysisJobId;
+            this.sourceSnapshotId = sourceSnapshotId;
+            this.requestId = requestId;
+            this.correlationId = correlationId;
+            this.artifact = artifact;
+            this.safeAttributes = Map.copyOf(safeAttributes);
+            return new AnalysisArtifactReference(
+                artifact.artifact(),
+                artifact.category(),
+                artifact.producerService(),
+                "java-ast-owner-schema",
+                artifact.completeness(),
+                artifact.byteAccess()
+            );
+        }
     }
 }

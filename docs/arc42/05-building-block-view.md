@@ -109,9 +109,10 @@ Automatic logging records operation name, phase, duration, correlation ID and ex
 ## 5.9 Target Microservices Ecosystem
 
 ADR-0017 defines the active target service landscape for service-split work.
-The landscape is partially implemented: ingestion, repository-analysis,
-analysis-store, Java AST, Joern CPG and BTM generation have service slices.
-Gateway, graph-replay, report-generation and frontend migration remain planned:
+The landscape is partially implemented: gateway, ingestion,
+repository-analysis, analysis-store, Java AST, Joern CPG and BTM generation
+have service slices. The build-artifact worker, graph-replay,
+report-generation and frontend migration remain planned:
 
 ```text
 frontend-web-app
@@ -123,6 +124,7 @@ frontend-web-app
     -> report-generation-service
 
 repository-analysis-service
+  -> build-artifact-worker-service
   -> java-ast-analysis-service
   -> joern-cpg-analysis-service
 
@@ -144,6 +146,32 @@ configuration, tests, health checks and Dockerfile before production readiness
 is claimed. Service communication is limited to REST/OpenAPI, gRPC/protobuf or
 approved event contracts. Shared Java implementation modules between
 independently deployable services are forbidden.
+
+Repository-to-BTM worker-dispatch and job-graph readiness state is owned by
+Analysis Store through the Slice 11 `analysis-job.proto` owner API. Gateway
+remains a facade and must not own worker orchestration logic.
+
+Source-fact artifact bytes are owned by Java AST Analysis until a verified
+handoff or object-store contract transfers custody. Slice 12 verifies
+`GetSourceFactArtifactBytes` as the Java AST owner API and adds an Analysis
+Store service-local gRPC client for that RPC. Analysis Store retrieves those
+bytes through generated Java AST stubs with checksum and size validation, never
+by reading Java AST private files, Repository Analysis workspaces or another
+service's implementation classes.
+
+The v5 prerequisite requires the Java AST source-fact artifact media type
+`application/vnd.forensic-analytics.java-ast-source-facts.v1+json` to be
+formalized as an external payload contract before Analysis Store parses it for
+target planning. Analysis Store may consume that payload only in a
+service-local adapter boundary and map it into Analysis Store-owned fact
+models. Java AST and BTM artifact filesystem adapters must reject symlinked
+directories and files before artifact byte read/write verification.
+
+The build-artifact worker is a planned byte-owner service for complete
+build-output packages. It does not own Repository Analysis workspaces,
+canonical Analysis Store facts or Joern execution. Artifactory and Jenkins are
+optional external producers and must be represented through verified artifact
+metadata, checksums and `ArtifactByteAccess`.
 
 ADR-0018 accepts initial logical contracts for target service communication.
 Contracts marked as planned are design artifacts only; they do not prove that a

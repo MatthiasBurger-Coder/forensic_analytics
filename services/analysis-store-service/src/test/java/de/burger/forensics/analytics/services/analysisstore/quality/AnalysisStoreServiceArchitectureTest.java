@@ -53,6 +53,21 @@ class AnalysisStoreServiceArchitectureTest {
             );
 
     @ArchTest
+    static final ArchRule service_does_not_import_other_service_implementation_classes =
+        noClasses()
+            .that()
+            .resideInAPackage("de.burger.forensics.analytics.services.analysisstore..")
+            .should()
+            .dependOnClassesThat()
+            .resideInAnyPackage(
+                "de.burger.forensics.analytics.services.javaastanalysis..",
+                "de.burger.forensics.analytics.services.repositoryanalysis..",
+                "de.burger.forensics.analytics.services.btmgeneration..",
+                "de.burger.forensics.analytics.services.joerncpganalysis..",
+                "de.burger.forensics.analytics.services.gateway.."
+            );
+
+    @ArchTest
     static final ArchRule domain_does_not_depend_on_application_adapters_or_bootstrap =
         noClasses()
             .that()

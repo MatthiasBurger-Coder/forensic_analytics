@@ -67,7 +67,7 @@ public final class JoernCpgAnalysisDomain {
 
     public record SourceSnapshotId(String value) {
         public SourceSnapshotId {
-            value = requireText(value, "source snapshot id");
+            value = requireIdentifier(value, "source snapshot id");
         }
     }
 
@@ -84,7 +84,7 @@ public final class JoernCpgAnalysisDomain {
         List<AnalysisArtifactReference> inputArtifacts
     ) {
         public SourceWorkspace {
-            workspaceId = requireIdentifier(workspaceId, "workspace id");
+            workspaceId = requireJoernWorkspaceId(workspaceId);
             sourceRoots = List.copyOf(Objects.requireNonNull(sourceRoots, "source roots must not be null")).stream()
                 .sorted(Comparator.comparing(SourceRoot::relativePath))
                 .toList();
@@ -93,6 +93,9 @@ public final class JoernCpgAnalysisDomain {
                 .toList();
             if (sourceRoots.isEmpty()) {
                 throw new IllegalArgumentException("source roots must not be empty");
+            }
+            if (inputArtifacts.isEmpty()) {
+                throw new IllegalArgumentException("source workspace input artifacts must not be empty");
             }
         }
     }
@@ -126,6 +129,121 @@ public final class JoernCpgAnalysisDomain {
         }
     }
 
+    public record JoernMaterializationPolicy(
+        int maxSourceRoots,
+        long maxWorkspaceBytes,
+        long maxArtifactBytes,
+        long maxArchiveDepth,
+        boolean rejectSymlinks,
+        boolean rejectHardlinks,
+        boolean rejectDeviceFiles,
+        boolean rejectDuplicatePaths
+    ) {
+        public JoernMaterializationPolicy {
+            if (maxSourceRoots < 1) {
+                throw new IllegalArgumentException("max source roots must be positive");
+            }
+            if (maxWorkspaceBytes < 1) {
+                throw new IllegalArgumentException("max workspace bytes must be positive");
+            }
+            if (maxArtifactBytes < 1) {
+                throw new IllegalArgumentException("max artifact bytes must be positive");
+            }
+            if (maxArchiveDepth < 1) {
+                throw new IllegalArgumentException("max archive depth must be positive");
+            }
+            if (!rejectSymlinks || !rejectHardlinks || !rejectDeviceFiles || !rejectDuplicatePaths) {
+                throw new IllegalArgumentException("Joern materialization must reject unsafe archive entries");
+            }
+        }
+    }
+
+    public record MaterializationMetadata(
+        String requestId,
+        String idempotencyKey,
+        String schemaVersion,
+        String correlationId,
+        AnalysisRunId analysisRunId,
+        AnalysisJobId analysisJobId,
+        SourceSnapshotId sourceSnapshotId,
+        Map<String, String> safeAttributes
+    ) {
+        public MaterializationMetadata {
+            requestId = requireText(requestId, "request id");
+            idempotencyKey = requireText(idempotencyKey, "idempotency key");
+            schemaVersion = requireText(schemaVersion, "schema version");
+            correlationId = requireText(correlationId, "correlation id");
+            analysisRunId = Objects.requireNonNull(analysisRunId, "analysis run id must not be null");
+            analysisJobId = Objects.requireNonNull(analysisJobId, "analysis job id must not be null");
+            sourceSnapshotId = Objects.requireNonNull(sourceSnapshotId, "source snapshot id must not be null");
+            safeAttributes = safeAttributeMap(safeAttributes);
+        }
+    }
+
+    public record MaterializedPackageDescriptor(
+        String packageName,
+        PackageAvailability availability,
+        ArtifactReference manifestArtifact,
+        ArtifactReference packageArtifact,
+        String producerService,
+        String schemaVersion,
+        AnalysisCompleteness completeness,
+        ArtifactByteAccess byteAccess
+    ) {
+        public MaterializedPackageDescriptor {
+            packageName = requireText(packageName, "package name");
+            availability = Objects.requireNonNull(availability, "package availability must not be null");
+            manifestArtifact = Objects.requireNonNull(manifestArtifact, "manifest artifact must not be null");
+            packageArtifact = Objects.requireNonNull(packageArtifact, "package artifact must not be null");
+            producerService = requireText(producerService, "producer service");
+            schemaVersion = requireText(schemaVersion, "schema version");
+            completeness = Objects.requireNonNull(completeness, "package completeness must not be null");
+            byteAccess = Objects.requireNonNull(byteAccess, "artifact byte access must not be null");
+            if (availability != PackageAvailability.AVAILABLE) {
+                throw new IllegalArgumentException(packageName + " must be available before Joern materialization");
+            }
+            if (completeness != AnalysisCompleteness.COMPLETE) {
+                throw new IllegalArgumentException(packageName + " must be complete before Joern materialization");
+            }
+            if (manifestArtifact.sizeBytes() < 1) {
+                throw new IllegalArgumentException(packageName + " manifest artifact must contain manifest bytes");
+            }
+            if (packageArtifact.sizeBytes() < 1) {
+                throw new IllegalArgumentException(packageName + " package artifact must contain package bytes");
+            }
+        }
+    }
+
+    public record MaterializeJoernWorkspaceCommand(
+        MaterializationMetadata metadata,
+        List<SourceRoot> sourceRoots,
+        MaterializedPackageDescriptor sourcePackage,
+        MaterializedPackageDescriptor buildOutputPackage,
+        JoernMaterializationPolicy policy
+    ) {
+        public MaterializeJoernWorkspaceCommand {
+            metadata = Objects.requireNonNull(metadata, "metadata must not be null");
+            sourceRoots = List.copyOf(Objects.requireNonNull(sourceRoots, "source roots must not be null")).stream()
+                .sorted(Comparator.comparing(SourceRoot::relativePath))
+                .toList();
+            if (sourceRoots.isEmpty()) {
+                throw new IllegalArgumentException("source roots must not be empty");
+            }
+            sourcePackage = Objects.requireNonNull(sourcePackage, "source package must not be null");
+            buildOutputPackage = Objects.requireNonNull(buildOutputPackage, "build-output package must not be null");
+            policy = Objects.requireNonNull(policy, "materialization policy must not be null");
+            if (sourceRoots.size() > policy.maxSourceRoots()) {
+                throw new IllegalArgumentException("source root count exceeds materialization policy");
+            }
+            if (sourcePackage.packageArtifact().sizeBytes() > policy.maxArtifactBytes()
+                || sourcePackage.manifestArtifact().sizeBytes() > policy.maxArtifactBytes()
+                || buildOutputPackage.packageArtifact().sizeBytes() > policy.maxArtifactBytes()
+                || buildOutputPackage.manifestArtifact().sizeBytes() > policy.maxArtifactBytes()) {
+                throw new IllegalArgumentException("package artifact size exceeds materialization policy");
+            }
+        }
+    }
+
     public record AnalyzeJoernCpgCommand(
         RequestMetadata metadata,
         JoernCpgPolicy policy,
@@ -135,6 +253,9 @@ public final class JoernCpgAnalysisDomain {
             metadata = Objects.requireNonNull(metadata, "metadata must not be null");
             policy = Objects.requireNonNull(policy, "policy must not be null");
             workspace = Objects.requireNonNull(workspace, "workspace must not be null");
+            if (!workspace.workspaceId().equals("joern-workspace-" + metadata.sourceSnapshotId().value())) {
+                throw new IllegalArgumentException("workspace id must match the requested source snapshot");
+            }
             if (workspace.sourceRoots().size() > policy.maxSourceRoots()) {
                 throw new IllegalArgumentException("source root count exceeds scan policy");
             }
@@ -157,7 +278,8 @@ public final class JoernCpgAnalysisDomain {
         AnalysisArtifactCategory category,
         String producerService,
         String schemaVersion,
-        AnalysisCompleteness completeness
+        AnalysisCompleteness completeness,
+        ArtifactByteAccess byteAccess
     ) {
         public AnalysisArtifactReference {
             artifact = Objects.requireNonNull(artifact, "artifact must not be null");
@@ -165,9 +287,24 @@ public final class JoernCpgAnalysisDomain {
             producerService = requireText(producerService, "producer service");
             schemaVersion = requireText(schemaVersion, "schema version");
             completeness = Objects.requireNonNull(completeness, "completeness must not be null");
+            byteAccess = Objects.requireNonNull(byteAccess, "artifact byte access must not be null");
             if (category != AnalysisArtifactCategory.STATIC) {
                 throw new IllegalArgumentException("Joern CPG artifacts must be static semantic artifacts");
             }
+        }
+    }
+
+    public record ArtifactByteAccess(
+        String ownerService,
+        String retrievalContract,
+        String retrievalReference,
+        ArtifactByteCustody byteCustody
+    ) {
+        public ArtifactByteAccess {
+            ownerService = requireText(ownerService, "artifact byte owner service");
+            retrievalContract = requireText(retrievalContract, "artifact byte retrieval contract");
+            retrievalReference = requirePublicReference(retrievalReference, "artifact byte retrieval reference");
+            byteCustody = Objects.requireNonNull(byteCustody, "artifact byte custody must not be null");
         }
     }
 
@@ -298,6 +435,18 @@ public final class JoernCpgAnalysisDomain {
         }
     }
 
+    public record MaterializeJoernWorkspaceResult(
+        MaterializationMetadata metadata,
+        SourceWorkspace workspace,
+        List<JoernCpgDiagnostic> diagnostics
+    ) {
+        public MaterializeJoernWorkspaceResult {
+            metadata = Objects.requireNonNull(metadata, "metadata must not be null");
+            workspace = Objects.requireNonNull(workspace, "workspace must not be null");
+            diagnostics = sortedDiagnostics(diagnostics);
+        }
+    }
+
     public enum AnalysisArtifactCategory {
         STATIC
     }
@@ -308,6 +457,19 @@ public final class JoernCpgAnalysisDomain {
         UNKNOWN
     }
 
+    public enum ArtifactByteCustody {
+        PRODUCER_RETAINED,
+        SCOPED_OBJECT_ACCESS,
+        EXPLICIT_HANDOFF
+    }
+
+    public enum PackageAvailability {
+        AVAILABLE,
+        PENDING,
+        UNAVAILABLE,
+        FAILED_INTEGRITY
+    }
+
     public enum DiagnosticSeverity {
         INFO,
         WARNING,
@@ -316,15 +478,16 @@ public final class JoernCpgAnalysisDomain {
 
     public static String requireRelativePath(String value, String fieldName) {
         var text = requireText(value, fieldName).replace('\\', '/');
+        var lower = text.toLowerCase(Locale.ROOT);
         if (text.startsWith("/")
-            || text.startsWith("file:")
+            || lower.startsWith("file:")
             || WINDOWS_DRIVE_PATH.matcher(text).matches()
             || text.contains("://")) {
             throw new IllegalArgumentException(fieldName + " must be a relative path");
         }
         var parts = List.of(text.split("/"));
-        if (parts.stream().anyMatch(part -> part.equals("..") || part.isBlank())) {
-            throw new IllegalArgumentException(fieldName + " must not contain parent traversal or blank segments");
+        if (parts.stream().anyMatch(part -> part.equals(".") || part.equals("..") || part.isBlank())) {
+            throw new IllegalArgumentException(fieldName + " must not contain traversal, current-directory or blank segments");
         }
         return String.join("/", parts);
     }
@@ -383,6 +546,30 @@ public final class JoernCpgAnalysisDomain {
         return text;
     }
 
+    private static String requireJoernWorkspaceId(String value) {
+        var text = requireIdentifier(value, "workspace id");
+        if (!text.startsWith("joern-workspace-")) {
+            throw new IllegalArgumentException("workspace id must be owned by Joern");
+        }
+        return text;
+    }
+
+    private static String requirePublicReference(String value, String fieldName) {
+        var text = requireText(value, fieldName).replace('\\', '/');
+        var lower = text.toLowerCase(Locale.ROOT);
+        if (text.startsWith("/")
+            || lower.startsWith("file:")
+            || WINDOWS_DRIVE_PATH.matcher(text).matches()
+            || text.contains("://")) {
+            throw new IllegalArgumentException(fieldName + " must not be a private path or URI");
+        }
+        var parts = List.of(text.split("/"));
+        if (parts.stream().anyMatch(part -> part.equals(".") || part.equals("..") || part.isBlank())) {
+            throw new IllegalArgumentException(fieldName + " must not contain traversal, current-directory or blank segments");
+        }
+        return String.join("/", parts);
+    }
+
     private static Map<String, String> safeAttributeMap(Map<String, String> attributes) {
         var values = Map.copyOf(Objects.requireNonNull(attributes, "safe attributes must not be null"));
         values.forEach((key, value) -> {
@@ -391,9 +578,7 @@ public final class JoernCpgAnalysisDomain {
                 throw new IllegalArgumentException("safe attributes must not contain sensitive keys");
             }
             var normalizedValue = requireText(value, "safe attribute value");
-            if (normalizedValue.startsWith("file:")
-                || normalizedValue.contains("://")
-                || WINDOWS_DRIVE_PATH.matcher(normalizedValue).matches()) {
+            if (looksLikePrivatePathOrUri(normalizedValue)) {
                 throw new IllegalArgumentException("safe attributes must not contain local paths or URIs");
             }
         });
@@ -405,9 +590,39 @@ public final class JoernCpgAnalysisDomain {
             .replace('\r', ' ')
             .replace('\n', ' ')
             .replace('\\', '/');
-        if (text.startsWith("file:") || WINDOWS_DRIVE_PATH.matcher(text).matches()) {
+        if (looksLikePrivatePathOrUri(text) || containsSensitiveToken(text) || looksLikeSourceSnippet(text)) {
             return "diagnostic details redacted";
         }
         return text;
+    }
+
+    private static boolean looksLikePrivatePathOrUri(String value) {
+        var text = value.strip().replace('\\', '/');
+        var lower = text.toLowerCase(Locale.ROOT);
+        return lower.startsWith("file:")
+            || lower.contains("://")
+            || text.startsWith("/")
+            || text.startsWith("//")
+            || WINDOWS_DRIVE_PATH.matcher(text).matches()
+            || lower.contains("/mnt/")
+            || lower.contains("/home/")
+            || lower.contains("/users/")
+            || lower.contains("/var/")
+            || lower.contains("/tmp/")
+            || lower.contains("/root/");
+    }
+
+    private static boolean containsSensitiveToken(String value) {
+        var normalized = value.toLowerCase(Locale.ROOT).replace("-", "").replace("_", "");
+        return SENSITIVE_KEYS.stream().anyMatch(normalized::contains);
+    }
+
+    private static boolean looksLikeSourceSnippet(String value) {
+        var text = value.toLowerCase(Locale.ROOT);
+        return text.contains("public class ")
+            || text.contains("private class ")
+            || text.contains("protected class ")
+            || text.contains("import ")
+            || text.contains("package ");
     }
 }

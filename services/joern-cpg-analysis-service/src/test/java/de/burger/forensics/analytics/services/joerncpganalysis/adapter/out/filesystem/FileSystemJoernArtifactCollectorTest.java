@@ -2,10 +2,17 @@ package de.burger.forensics.analytics.services.joerncpganalysis.adapter.out.file
 
 import com.google.gson.JsonParser;
 import de.burger.forensics.analytics.services.joerncpganalysis.application.JoernCpgArtifactException;
+import de.burger.forensics.analytics.services.joerncpganalysis.application.port.ResolvedJoernWorkspace;
 import de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.AnalysisCompleteness;
+import de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.AnalysisArtifactCategory;
+import de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.AnalysisArtifactReference;
 import de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.AnalysisJobId;
 import de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.AnalysisRunId;
 import de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.AnalyzeJoernCpgCommand;
+import de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.ArtifactByteAccess;
+import de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.ArtifactByteCustody;
+import de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.ArtifactReference;
+import de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.JoernCpgDiagnostic;
 import de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.JoernCpgPolicy;
 import de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.JoernRuntimeResult;
 import de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.RequestMetadata;
@@ -105,6 +112,113 @@ class FileSystemJoernArtifactCollectorTest {
     }
 
     @Test
+    void rejectsSymlinkedExpectedArtifacts() throws Exception {
+        var artifactDirectory = artifactDirectory();
+        Files.writeString(tempDir.resolve("outside-cpg.bin.zip"), "cpg");
+        try {
+            Files.createSymbolicLink(artifactDirectory.resolve(CPG), tempDir.resolve("outside-cpg.bin.zip"));
+        } catch (UnsupportedOperationException ignored) {
+            return;
+        }
+
+        var collector = new FileSystemJoernArtifactCollector(tempDir);
+
+        assertThrows(JoernCpgArtifactException.class, () -> collector.collect(
+            command(false, false, false, 1_000_000),
+            runtimeResult()
+        ));
+    }
+
+    @Test
+    void rejectsSymlinkedProvenanceArtifactWithoutOverwritingTarget() throws Exception {
+        var artifactDirectory = artifactDirectory();
+        Files.writeString(artifactDirectory.resolve(CPG), "cpg");
+        var outside = tempDir.resolve("outside-provenance.json");
+        Files.writeString(outside, "outside");
+        try {
+            Files.createSymbolicLink(artifactDirectory.resolve(PROVENANCE), outside);
+        } catch (UnsupportedOperationException | java.io.IOException ignored) {
+            return;
+        }
+
+        var collector = new FileSystemJoernArtifactCollector(tempDir);
+
+        assertThrows(JoernCpgArtifactException.class, () -> collector.collect(
+            command(false, false, false, 1_000_000),
+            runtimeResult()
+        ));
+        assertEquals("outside", Files.readString(outside));
+    }
+
+    @Test
+    void rejectsSymlinkedArtifactParentDirectories() throws Exception {
+        var outside = tempDir.resolve("outside-artifacts");
+        Files.createDirectories(outside);
+        try {
+            Files.createSymbolicLink(tempDir.resolve("joern-cpg"), outside);
+        } catch (UnsupportedOperationException | java.io.IOException ignored) {
+            return;
+        }
+
+        var collector = new FileSystemJoernArtifactCollector(tempDir);
+
+        assertThrows(JoernCpgArtifactException.class, () -> collector.collect(
+            command(false, false, false, 1_000_000),
+            runtimeResult()
+        ));
+    }
+
+    @Test
+    void writesUnavailableProvenanceArtifactAsUnknownCompleteness() throws Exception {
+        var collector = new FileSystemJoernArtifactCollector(tempDir);
+
+        var result = collector.collectUnavailable(
+            command(true, true, true, 1_000_000),
+            workspace(),
+            JoernCpgDiagnostic.error(new SourceSnapshotId("snapshot-1"), "JOERN_RUNTIME_UNAVAILABLE", "Joern unavailable.", true)
+        );
+
+        assertEquals(1, result.artifacts().size());
+        assertEquals(5, result.missingArtifactCount());
+        assertEquals(List.of("JOERN_RUNTIME_UNAVAILABLE"), result.diagnostics().stream()
+            .map(JoernCpgDiagnostic::code)
+            .toList());
+        assertTrue(result.artifacts().getFirst().artifact().path().endsWith(PROVENANCE));
+        assertEquals(AnalysisCompleteness.UNKNOWN, result.artifacts().getFirst().completeness());
+
+        var provenance = JsonParser.parseString(Files.readString(tempDir.resolve(result.artifacts().getFirst().artifact().path()))).getAsJsonObject();
+        assertEquals("UNKNOWN", provenance.get("completeness").getAsString());
+        assertEquals("JOERN_RUNTIME_UNAVAILABLE", provenance.getAsJsonArray("diagnostics").get(0).getAsString());
+    }
+
+    @Test
+    void rejectsSymlinkedUnavailableProvenanceArtifactWithoutOverwritingTarget() throws Exception {
+        var command = command(true, true, true, 1_000_000);
+        var artifactDirectory = tempDir.resolve("joern-cpg").resolve(
+            de.burger.forensics.analytics.services.joerncpganalysis.domain.JoernCpgAnalysisDomain.sha256(
+                "run-1|job-1|snapshot-1"
+            ).substring(0, 24)
+        );
+        Files.createDirectories(artifactDirectory);
+        var outside = tempDir.resolve("outside-unavailable-provenance.json");
+        Files.writeString(outside, "outside");
+        try {
+            Files.createSymbolicLink(artifactDirectory.resolve(PROVENANCE), outside);
+        } catch (UnsupportedOperationException | java.io.IOException ignored) {
+            return;
+        }
+
+        var collector = new FileSystemJoernArtifactCollector(tempDir);
+
+        assertThrows(JoernCpgArtifactException.class, () -> collector.collectUnavailable(
+            command,
+            workspace(),
+            JoernCpgDiagnostic.error(new SourceSnapshotId("snapshot-1"), "JOERN_RUNTIME_UNAVAILABLE", "Joern unavailable.", true)
+        ));
+        assertEquals("outside", Files.readString(outside));
+    }
+
+    @Test
     void includesProvenanceArtifactInArtifactBytePolicy() throws Exception {
         var artifactDirectory = artifactDirectory();
         Files.writeString(artifactDirectory.resolve(CPG), "cpg");
@@ -125,6 +239,16 @@ class FileSystemJoernArtifactCollectorTest {
 
     private static JoernRuntimeResult runtimeResult() {
         return new JoernRuntimeResult("joern-test-1", image(), "joern-cpg/run-1", List.of());
+    }
+
+    private ResolvedJoernWorkspace workspace() {
+        return new ResolvedJoernWorkspace(
+            new SourceSnapshotId("snapshot-1"),
+            "joern-workspace-snapshot-1",
+            tempDir.resolve("workspace"),
+            List.of(tempDir.resolve("workspace/src/main/java")),
+            100
+        );
     }
 
     private static AnalyzeJoernCpgCommand command(
@@ -156,7 +280,23 @@ class FileSystemJoernArtifactCollectorTest {
                 controlflow,
                 dataflow
             ),
-            new SourceWorkspace("workspace-1", List.of(new SourceRoot("src/main/java", "java")), List.of())
+            new SourceWorkspace("joern-workspace-snapshot-1", List.of(new SourceRoot("src/main/java", "java")), List.of(inputArtifact()))
+        );
+    }
+
+    private static AnalysisArtifactReference inputArtifact() {
+        return new AnalysisArtifactReference(
+            new ArtifactReference("source-package.zip", "application/zip", "a".repeat(64), 1),
+            AnalysisArtifactCategory.STATIC,
+            "repository-analysis-service",
+            "source-package-v1",
+            AnalysisCompleteness.COMPLETE,
+            new ArtifactByteAccess(
+                "repository-analysis-service",
+                "repository-analysis.v1.GetRepositoryPreparation",
+                "source-snapshot/snapshot-1",
+                ArtifactByteCustody.PRODUCER_RETAINED
+            )
         );
     }
 

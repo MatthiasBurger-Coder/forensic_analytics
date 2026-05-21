@@ -6,6 +6,8 @@ import de.burger.forensics.analytics.analysisjob.v1.AnalysisCompleteness;
 import de.burger.forensics.analytics.analysisjob.v1.AnalysisJobId;
 import de.burger.forensics.analytics.analysisjob.v1.AnalysisRunId;
 import de.burger.forensics.analytics.analysisjob.v1.AnalysisWorkerKind;
+import de.burger.forensics.analytics.analysisjob.v1.ArtifactByteAccess;
+import de.burger.forensics.analytics.analysisjob.v1.ArtifactByteCustody;
 import de.burger.forensics.analytics.analysisjob.v1.ArtifactReference;
 import de.burger.forensics.analytics.analysisjob.v1.SourceSnapshotId;
 import de.burger.forensics.analytics.btmgeneration.v1.BtmDiagnostic;
@@ -16,6 +18,7 @@ import de.burger.forensics.analytics.btmgeneration.v1.DiagnosticSeverity;
 import de.burger.forensics.analytics.btmgeneration.v1.GenerateBtmRulesRequest;
 import de.burger.forensics.analytics.btmgeneration.v1.GenerateBtmRulesResponse;
 import de.burger.forensics.analytics.btmgeneration.v1.InstrumentationTarget;
+import de.burger.forensics.analytics.btmgeneration.v1.InstrumentationTargetSelection;
 import de.burger.forensics.analytics.btmgeneration.v1.OperationStatus;
 import de.burger.forensics.analytics.btmgeneration.v1.ProbeKind;
 import de.burger.forensics.analytics.btmgeneration.v1.ReproducibilityMetadata;
@@ -62,6 +65,24 @@ public final class BtmGenerationGrpcEndpoint extends BtmGenerationServiceGrpc.Bt
             de.burger.forensics.analytics.services.btmgeneration.domain.BtmGenerationDomain.AnalysisArtifactCategory.PROJECTION,
             AnalysisArtifactCategory.ANALYSIS_ARTIFACT_CATEGORY_GENERATED,
             de.burger.forensics.analytics.services.btmgeneration.domain.BtmGenerationDomain.AnalysisArtifactCategory.GENERATED
+        );
+    private static final Map<ArtifactByteCustody, de.burger.forensics.analytics.services.btmgeneration.domain.BtmGenerationDomain.ArtifactByteCustody> BYTE_CUSTODY_TO_DOMAIN =
+        Map.of(
+            ArtifactByteCustody.ARTIFACT_BYTE_CUSTODY_PRODUCER_RETAINED,
+            de.burger.forensics.analytics.services.btmgeneration.domain.BtmGenerationDomain.ArtifactByteCustody.PRODUCER_RETAINED,
+            ArtifactByteCustody.ARTIFACT_BYTE_CUSTODY_SCOPED_OBJECT_ACCESS,
+            de.burger.forensics.analytics.services.btmgeneration.domain.BtmGenerationDomain.ArtifactByteCustody.SCOPED_OBJECT_ACCESS,
+            ArtifactByteCustody.ARTIFACT_BYTE_CUSTODY_EXPLICIT_HANDOFF,
+            de.burger.forensics.analytics.services.btmgeneration.domain.BtmGenerationDomain.ArtifactByteCustody.EXPLICIT_HANDOFF
+        );
+    private static final Map<de.burger.forensics.analytics.services.btmgeneration.domain.BtmGenerationDomain.ArtifactByteCustody, ArtifactByteCustody> BYTE_CUSTODY_FROM_DOMAIN =
+        Map.of(
+            de.burger.forensics.analytics.services.btmgeneration.domain.BtmGenerationDomain.ArtifactByteCustody.PRODUCER_RETAINED,
+            ArtifactByteCustody.ARTIFACT_BYTE_CUSTODY_PRODUCER_RETAINED,
+            de.burger.forensics.analytics.services.btmgeneration.domain.BtmGenerationDomain.ArtifactByteCustody.SCOPED_OBJECT_ACCESS,
+            ArtifactByteCustody.ARTIFACT_BYTE_CUSTODY_SCOPED_OBJECT_ACCESS,
+            de.burger.forensics.analytics.services.btmgeneration.domain.BtmGenerationDomain.ArtifactByteCustody.EXPLICIT_HANDOFF,
+            ArtifactByteCustody.ARTIFACT_BYTE_CUSTODY_EXPLICIT_HANDOFF
         );
     private static final Map<ProbeKind, de.burger.forensics.analytics.services.btmgeneration.domain.BtmGenerationDomain.ProbeKind> PROBE_TO_DOMAIN =
         Map.of(
@@ -125,6 +146,9 @@ public final class BtmGenerationGrpcEndpoint extends BtmGenerationServiceGrpc.Bt
         if (!request.hasFacts()) {
             throw new IllegalArgumentException("delivered facts are required");
         }
+        if (!request.getFacts().hasTargetSelection()) {
+            throw new IllegalArgumentException("target selection is required");
+        }
     }
 
     private static GenerateBtmRulesCommand command(GenerateBtmRulesRequest request) {
@@ -171,7 +195,8 @@ public final class BtmGenerationGrpcEndpoint extends BtmGenerationServiceGrpc.Bt
             facts.getSourceFactArtifactsList().stream().map(BtmGenerationGrpcEndpoint::artifact).toList(),
             facts.getSemanticArtifactsList().stream().map(BtmGenerationGrpcEndpoint::artifact).toList(),
             facts.getTargetsList().stream().map(BtmGenerationGrpcEndpoint::target).toList(),
-            completeness(facts.getInputCompleteness())
+            completeness(facts.getInputCompleteness()),
+            targetSelection(facts.getTargetSelection())
         );
     }
 
@@ -187,13 +212,21 @@ public final class BtmGenerationGrpcEndpoint extends BtmGenerationServiceGrpc.Bt
             target.getMethodName(),
             target.getSignature(),
             target.getLineNumber(),
-            probeKind(target.getProbeKind())
+            probeKind(target.getProbeKind()),
+            target.getSourceFactArtifactReference(),
+            target.getSemanticArtifactReference(),
+            target.getOrderIndex(),
+            completeness(target.getCompleteness()),
+            target.getSensitivity()
         );
     }
 
     private static de.burger.forensics.analytics.services.btmgeneration.domain.BtmGenerationDomain.AnalysisArtifactReference artifact(
         AnalysisArtifactReference reference
     ) {
+        if (!reference.hasByteAccess()) {
+            throw new IllegalArgumentException("artifact byte access is required");
+        }
         return new de.burger.forensics.analytics.services.btmgeneration.domain.BtmGenerationDomain.AnalysisArtifactReference(
             new de.burger.forensics.analytics.services.btmgeneration.domain.BtmGenerationDomain.ArtifactReference(
                 reference.getArtifact().getPath(),
@@ -204,7 +237,37 @@ public final class BtmGenerationGrpcEndpoint extends BtmGenerationServiceGrpc.Bt
             category(reference.getCategory()),
             reference.getProducerService(),
             reference.getSchemaVersion(),
-            completeness(reference.getCompleteness())
+            completeness(reference.getCompleteness()),
+            byteAccess(reference.getByteAccess())
+        );
+    }
+
+    private static de.burger.forensics.analytics.services.btmgeneration.domain.BtmGenerationDomain.TargetSelection targetSelection(
+        InstrumentationTargetSelection selection
+    ) {
+        return new de.burger.forensics.analytics.services.btmgeneration.domain.BtmGenerationDomain.TargetSelection(
+            selection.getSelectionId(),
+            selection.getOwnerService(),
+            selection.getPolicyVersion(),
+            selection.getSelectionFingerprint(),
+            completeness(selection.getCompleteness()),
+            selection.getDeterministicOrder(),
+            selection.getCorrelationId(),
+            selection.getTargetCount()
+        );
+    }
+
+    private static de.burger.forensics.analytics.services.btmgeneration.domain.BtmGenerationDomain.ArtifactByteAccess byteAccess(
+        ArtifactByteAccess byteAccess
+    ) {
+        return new de.burger.forensics.analytics.services.btmgeneration.domain.BtmGenerationDomain.ArtifactByteAccess(
+            byteAccess.getOwnerService(),
+            byteAccess.getRetrievalContract(),
+            byteAccess.getRetrievalReference(),
+            BYTE_CUSTODY_TO_DOMAIN.getOrDefault(
+                byteAccess.getByteCustody(),
+                de.burger.forensics.analytics.services.btmgeneration.domain.BtmGenerationDomain.ArtifactByteCustody.UNKNOWN
+            )
         );
     }
 
@@ -217,6 +280,7 @@ public final class BtmGenerationGrpcEndpoint extends BtmGenerationServiceGrpc.Bt
             .setCompleteness(completeness(result.completeness()))
             .setSummary(summary(result.summary()))
             .setReproducibility(reproducibility(result.reproducibility()))
+            .setTargetSelection(targetSelection(result.targetSelection()))
             .putAllSafeAttributes(result.metadata().safeAttributes());
         result.generatedArtifacts().forEach(artifact -> builder.addGeneratedArtifacts(artifact(artifact)));
         result.generatedRules().forEach(rule -> builder.addGeneratedRules(rule(rule)));
@@ -250,6 +314,33 @@ public final class BtmGenerationGrpcEndpoint extends BtmGenerationServiceGrpc.Bt
             .setProducerService(artifact.producerService())
             .setSchemaVersion(artifact.schemaVersion())
             .setCompleteness(completeness(artifact.completeness()))
+            .setByteAccess(byteAccess(artifact.byteAccess()))
+            .build();
+    }
+
+    private static ArtifactByteAccess byteAccess(
+        de.burger.forensics.analytics.services.btmgeneration.domain.BtmGenerationDomain.ArtifactByteAccess byteAccess
+    ) {
+        return ArtifactByteAccess.newBuilder()
+            .setOwnerService(byteAccess.ownerService())
+            .setRetrievalContract(byteAccess.retrievalContract())
+            .setRetrievalReference(byteAccess.retrievalReference())
+            .setByteCustody(BYTE_CUSTODY_FROM_DOMAIN.get(byteAccess.byteCustody()))
+            .build();
+    }
+
+    private static InstrumentationTargetSelection targetSelection(
+        de.burger.forensics.analytics.services.btmgeneration.domain.BtmGenerationDomain.TargetSelection selection
+    ) {
+        return InstrumentationTargetSelection.newBuilder()
+            .setSelectionId(selection.selectionId())
+            .setOwnerService(selection.ownerService())
+            .setPolicyVersion(selection.policyVersion())
+            .setSelectionFingerprint(selection.selectionFingerprint())
+            .setCompleteness(completeness(selection.completeness()))
+            .setDeterministicOrder(selection.deterministicOrder())
+            .setCorrelationId(selection.correlationId())
+            .setTargetCount(selection.targetCount())
             .build();
     }
 

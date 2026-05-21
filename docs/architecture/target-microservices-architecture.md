@@ -5,8 +5,8 @@
 Slice 01 target architecture baseline for the microservices ecosystem
 conversion workflow.
 
-This document defines the target service landscape. Six service slices are now
-registered Gradle projects with service-local documentation, tests and
+This document defines the target service landscape. Seven service slices are
+now registered Gradle projects with service-local documentation, tests and
 Dockerfiles. This does not claim that the full landscape is independently
 deployable, health-checkable, containerized for production or complete.
 
@@ -17,6 +17,7 @@ The target service landscape is the active workflow landscape:
 - `forensic-gateway-service`
 - `forensic-ingestion-service`
 - `repository-analysis-service`
+- `build-artifact-worker-service`
 - `java-ast-analysis-service`
 - `joern-cpg-analysis-service`
 - `btm-generation-service`
@@ -42,8 +43,9 @@ The current platform has:
 - a separate `forensic-ui` frontend;
 - Boot, Joern and frontend Docker material.
 
-The current platform has six implemented service slices:
+The current platform has seven implemented service slices:
 
+- `forensic-gateway-service`;
 - `forensic-ingestion-service`;
 - `repository-analysis-service`;
 - `analysis-store-service`;
@@ -53,11 +55,16 @@ The current platform has six implemented service slices:
 
 The current platform still does not have:
 
-- implemented gateway, graph-replay or report-generation services;
+- implemented graph-replay, report-generation or build-artifact-worker
+  executable services;
 - service-private databases;
-- fully verified service-local health checks;
-- Docker Compose service landscape;
+- fully verified service-local health checks for the full target landscape;
+- production-wide Docker Compose service landscape;
 - Docker Swarm or Kubernetes manifests.
+
+Slice 15 verifies a local Docker Compose landscape for the repository-to-BTM
+service path only. That evidence does not claim full target-landscape,
+Docker Swarm or Kubernetes readiness.
 
 ## Target Principles
 
@@ -105,6 +112,7 @@ services/
   forensic-gateway-service/
   forensic-ingestion-service/
   repository-analysis-service/
+  build-artifact-worker-service/
   java-ast-analysis-service/
   joern-cpg-analysis-service/
   btm-generation-service/
@@ -123,21 +131,24 @@ deployment/
   kubernetes/
 ```
 
-Most target roots now exist. Gateway, graph-replay, report-generation,
-frontend migration and deployment roots still require later implementation
-slices before they can be treated as executable runtime paths.
+Most target roots now exist. Graph-replay and report-generation are README-only
+planned roots and are explicitly deferred from repository-to-BTM pipeline
+acceptance by Slice 16. Build-artifact-worker, frontend migration and
+production deployment roots still require later implementation slices before
+they can be treated as executable runtime paths.
 
 ## Target Service Responsibilities
 
 | Service | Planned Responsibility | Primary Ownership |
 |---|---|---|
-| `forensic-gateway-service` | External API and UI/CLI facade; analysis-job orchestration facade | Public API surface and orchestration state, not analysis facts |
+| `forensic-gateway-service` | External API, UI/CLI facade, public request/status facade and public BTM delivery facade | Public facade state only, not worker orchestration state, analysis facts or artifact bytes |
 | `forensic-ingestion-service` | gRPC intake and validation of plugin, scanner and runtime evidence packages | Raw ingestion intake and upload-session lifecycle |
 | `repository-analysis-service` | Repository checkout, branch resolution, workspace preparation and source snapshot preparation | Repository workspaces, leases and checkout diagnostics |
-| `java-ast-analysis-service` | JavaParser source scanning, stable source identifiers and unresolved-symbol diagnostics | AST execution output until accepted by Analysis Store |
+| `build-artifact-worker-service` | Optional sandboxed production of complete build-output packages for pinned source snapshots | Build-output package bytes, manifests, checksums and retrieval references when introduced |
+| `java-ast-analysis-service` | JavaParser source scanning, stable source identifiers, source-fact artifact byte retrieval and unresolved-symbol diagnostics | AST execution output and produced source-fact bytes until accepted or transferred through an explicit byte-handoff contract |
 | `joern-cpg-analysis-service` | Joern runtime, CPG/CFG/DFG analysis and semantic artifact mapping | Joern execution artifacts and semantic worker output |
 | `btm-generation-service` | Deterministic Byteman/BTM artifacts from delivered analysis facts | Generated BTM rule artifacts |
-| `analysis-store-service` | Authoritative normalized facts, analysis sessions, jobs, incidents, correlations and artifact catalog | Canonical evidence and one-writer analysis state |
+| `analysis-store-service` | Authoritative normalized facts, analysis sessions, jobs, Slice 11 repository-to-BTM orchestration readiness state, Slice 12 source-fact retrieval readiness, incidents, correlations and artifact catalog | Canonical evidence, worker-dispatch/job-graph state and one-writer analysis state |
 | `graph-replay-service` | Graph/runtime overlays and exception-centered replay | Rebuildable graph/replay projections |
 | `report-generation-service` | Reports, incident context packages and LLM-ready/generated packages | Report artifacts and generated analysis packages |
 | `frontend-web-app` | React user interface through Gateway/public APIs only | UI state only, no forensic data ownership |
@@ -149,9 +160,11 @@ Planned analysis flow:
 ```text
 Frontend / CLI / external client
   -> Gateway
-  -> Ingestion / analysis job APIs
+  -> Analysis Store orchestration owner API
   -> Repository Analysis
+  -> Build Artifact Worker or verified external artifact producer
   -> Java AST Analysis
+  -> Java AST owner source-fact byte retrieval
   -> Joern CPG Analysis
   -> Analysis Store
   -> Graph Replay

@@ -4,6 +4,8 @@ import de.burger.forensics.analytics.analysisjob.v1.AnalysisWorkerKind;
 import de.burger.forensics.analytics.javaastanalysis.v1.AnalyzeSourceSnapshotRequest;
 import de.burger.forensics.analytics.javaastanalysis.v1.AnalyzeSourceSnapshotResponse;
 import de.burger.forensics.analytics.javaastanalysis.v1.EvidenceKind;
+import de.burger.forensics.analytics.javaastanalysis.v1.GetSourceFactArtifactBytesRequest;
+import de.burger.forensics.analytics.javaastanalysis.v1.GetSourceFactArtifactBytesResponse;
 import de.burger.forensics.analytics.javaastanalysis.v1.JavaAstAnalysisServiceGrpc;
 import de.burger.forensics.analytics.javaastanalysis.v1.JavaAstDiagnostic;
 import de.burger.forensics.analytics.javaastanalysis.v1.JavaSourceFact;
@@ -16,11 +18,19 @@ class JavaAstAnalysisContractTest {
     @Test
     void generatedContractPreservesProvisionalRpcSurfaceAndKeyFields() {
         assertNotNull(JavaAstAnalysisServiceGrpc.getAnalyzeSourceSnapshotMethod());
+        assertNotNull(JavaAstAnalysisServiceGrpc.getGetSourceFactArtifactBytesMethod());
 
         assertEquals(5, AnalyzeSourceSnapshotRequest.getDescriptor().findFieldByName("worker_kind").getNumber());
         assertEquals(12, AnalyzeSourceSnapshotRequest.getDescriptor().findFieldByName("source_files").getNumber());
         assertEquals(6, AnalyzeSourceSnapshotResponse.getDescriptor().findFieldByName("source_fact_artifact").getNumber());
         assertEquals(9, AnalyzeSourceSnapshotResponse.getDescriptor().findFieldByName("safe_attributes").getNumber());
+        assertEquals(6, GetSourceFactArtifactBytesRequest.getDescriptor().findFieldByName("retrieval_reference").getNumber());
+        assertEquals(7, GetSourceFactArtifactBytesRequest.getDescriptor().findFieldByName("expected_sha256").getNumber());
+        assertEquals(8, GetSourceFactArtifactBytesRequest.getDescriptor().findFieldByName("expected_size_bytes").getNumber());
+        assertEquals(10, GetSourceFactArtifactBytesRequest.getDescriptor().findFieldByName("schema_version").getNumber());
+        assertEquals(5, GetSourceFactArtifactBytesResponse.getDescriptor().findFieldByName("source_fact_artifact").getNumber());
+        assertEquals(6, GetSourceFactArtifactBytesResponse.getDescriptor().findFieldByName("content").getNumber());
+        assertEquals(7, GetSourceFactArtifactBytesResponse.getDescriptor().findFieldByName("sha256").getNumber());
         assertEquals(2, AnalysisWorkerKind.ANALYSIS_WORKER_KIND_AST_ANALYSIS.getNumber());
         assertEquals(6, JavaSourceFact.getDescriptor().findFieldByName("evidence_kind").getNumber());
         assertEquals(1, EvidenceKind.EVIDENCE_KIND_STATIC_SOURCE_FACT.getNumber());

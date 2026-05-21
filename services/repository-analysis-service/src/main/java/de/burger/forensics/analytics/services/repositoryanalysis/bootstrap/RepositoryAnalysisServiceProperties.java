@@ -6,12 +6,14 @@ import java.util.Objects;
 public record RepositoryAnalysisServiceProperties(
     Grpc grpc,
     Health health,
-    Workspace workspace
+    Workspace workspace,
+    JavaAstAnalysis javaAstAnalysis
 ) {
     public RepositoryAnalysisServiceProperties {
         Objects.requireNonNull(grpc, "grpc must not be null");
         Objects.requireNonNull(health, "health must not be null");
         Objects.requireNonNull(workspace, "workspace must not be null");
+        Objects.requireNonNull(javaAstAnalysis, "java ast analysis must not be null");
     }
 
     public record Grpc(boolean enabled, String host, int port) {
@@ -31,6 +33,22 @@ public record RepositoryAnalysisServiceProperties(
     public record Workspace(Path root) {
         public Workspace {
             Objects.requireNonNull(root, "workspace root must not be null");
+        }
+    }
+
+    public record JavaAstAnalysis(ClientGrpc grpc) {
+        public JavaAstAnalysis {
+            Objects.requireNonNull(grpc, "java ast analysis gRPC must not be null");
+        }
+    }
+
+    public record ClientGrpc(String host, int port, long deadlineSeconds) {
+        public ClientGrpc {
+            requireHost(host, "client gRPC host");
+            requirePort(port, "client gRPC port");
+            if (deadlineSeconds < 1 || deadlineSeconds > 3_600) {
+                throw new IllegalArgumentException("client gRPC deadline must be between 1 and 3600 seconds");
+            }
         }
     }
 

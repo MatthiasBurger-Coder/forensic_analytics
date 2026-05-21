@@ -75,6 +75,44 @@ Graph DB and Vector DB are projections from the canonical analysis model. They a
 
 Ambiguous mappings between JavaParser, Joern, Byteman rules and runtime events must be marked with confidence levels. Unclear mappings must not be silently accepted.
 
+Source snapshots for cross-service analysis are commit-pinned. A moving branch
+name is resolved once during Repository Analysis and later branch movement
+creates a new snapshot instead of mutating existing analysis input.
+
+Complete build-output packages are explicit artifacts, not inferred runtime
+facts. Artifact resolution tries a verified Artifact Store/Artifactory
+reference first, optional Jenkins second, and a sandboxed build-artifact worker
+fallback only when the earlier options are absent. Manifest or checksum
+mismatch is an integrity failure and must not trigger fallback.
+
+Joern materialization creates a Joern-owned workspace from validated
+source/build packages. It rejects private Repository Analysis workspace IDs,
+absolute paths, `file:` URIs, traversal, symlinks, hardlinks, device files,
+duplicate normalized paths and quota overruns before Docker mounting.
+
+The v3 repository-to-BTM readiness bridge requires Java AST source-fact
+artifacts to carry valid `ArtifactByteAccess` before Analysis Store accepts
+them for target planning. If Repository Analysis cannot provide available and
+complete source/build package descriptors, Joern must be skipped with explicit
+incomplete diagnostics instead of receiving invalid package metadata. Public
+Gateway diagnostics must be allow-listed or redacted before downstream messages
+cross the external API boundary.
+
+The v4 source-fact retrieval bridge requires `ArtifactByteAccess` to resolve to
+a verified Java AST owner API before Analysis Store consumes source-fact bytes.
+Repository Analysis to Java AST handoff completion must be represented through
+a reviewed service contract, and deterministic local fixtures must avoid
+external Git network access, Docker, Jenkins, Artifactory, credentials, private
+workspace paths and raw source content by default.
+
+The v5 artifact-contract prerequisite requires the Java AST source-fact JSON
+payload to be an explicit external contract before Analysis Store turns source
+facts into target-planning input. Parsing belongs in Analysis Store adapters,
+not in shared Java DTOs or Java AST implementation imports. Java AST and BTM
+artifact filesystem adapters must use no-follow symlink checks for directory
+segments and files before reading, writing or accepting existing artifact
+bytes.
+
 ## 8.7 Replay Uncertainty
 
 The replay must explicitly show missing, incomplete or uncertain event chains.

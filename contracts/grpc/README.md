@@ -4,21 +4,23 @@
 
 Planned gRPC contract root.
 
-Slice 03 introduces:
+The active workflow uses these gRPC contract files for the microservice
+boundary plan:
 
 - `forensic-ingestion.proto`: extracted v1 ingestion compatibility contract,
   preserving current package, service methods, field numbers and enum numbers.
-- `analysis-job.proto`: planned initial worker handoff and analysis-job
-  contract.
-- `repository-analysis.proto`: provisional Slice 06 repository checkout,
-  workspace preparation and source-snapshot handoff contract.
-- `java-ast-analysis.proto`: provisional Slice 07 JavaParser source-scanning
-  contract for bounded source snapshot input, deterministic source-fact
-  artifacts, counts and diagnostics.
+- `analysis-job.proto`: worker handoff, analysis-job state,
+  instrumentation-target planning and Slice 11 repository-to-BTM
+  orchestration owner contract.
+- `repository-analysis.proto`: repository checkout, workspace preparation and
+  Java AST source-snapshot handoff contract.
+- `java-ast-analysis.proto`: JavaParser source-scanning and Java AST-owned
+  source-fact artifact byte retrieval contract.
 - `joern-cpg-analysis.proto`: provisional Slice 08 Joern CPG/CFG/DFG
   semantic artifact worker contract.
-- `btm-generation.proto`: provisional Slice 09 server-side Byteman/BTM
-  generation contract for deterministic rules from delivered analysis facts.
+- `btm-generation.proto`: provisional server-side Byteman/BTM generation and
+  public BTM artifact delivery contract for deterministic rules from delivered
+  analysis facts and completed `.btm` file retrieval.
 
 Generated Java classes from these contracts must be service-local build output.
 They must not become shared Java DTO or domain modules.
@@ -45,11 +47,35 @@ enables them. Source snapshot IDs are deterministic for the sanitized repository
 URL, requested revision, resolved commit and manifest artifact checksum.
 
 `java-ast-analysis.proto` is intentionally limited to static Java source
-analysis. It accepts bounded source files through the service boundary and
-returns source-fact artifact metadata instead of unbounded inline facts.
+analysis. Slice 06 uses it for producer-pushed, bounded inline source-file
+handoff from Repository Analysis to Java AST Analysis. It accepts bounded source
+files through the service boundary and returns source-fact artifact metadata
+instead of unbounded inline facts.
 Diagnostics distinguish parse errors, skipped or unsupported source roots and
 the current `SYMBOL_RESOLUTION_NOT_CONFIGURED` limitation. Static AST output
 must not be presented as runtime execution evidence.
+
+Slice 12 adds the verified Java AST owner API
+`GetSourceFactArtifactBytes`. `ArtifactByteAccess.retrieval_contract` for Java
+AST source-fact artifacts names this RPC, and consumers such as Analysis Store
+must retrieve bytes through service-local generated Java AST stubs with
+expected checksum, expected size and bounded `max_bytes`. Repository Analysis
+also exposes `AnalyzeSourceSnapshotWithJavaAst` so Java AST handoff completion,
+artifact metadata, byte access, completeness and diagnostics cross the
+Repository Analysis boundary through its gRPC contract rather than through
+workspace paths or implementation imports.
+
+The Java AST source-fact artifact payload media type is
+`application/vnd.forensic-analytics.java-ast-source-facts.v1+json`. Its v1
+payload contract is documented in `java-ast-source-facts-v1.schema.json`.
+The byte transport remains `GetSourceFactArtifactBytes`; the schema defines
+the JSON document carried in the returned bytes, not a duplicate protobuf fact
+stream. Analysis Store may parse this payload only inside service-local
+adapter code and must map it into Analysis Store-owned fact models. The JSON
+payload must preserve analysis identity, source snapshot identity, scan
+summary, source facts and diagnostics, use safe relative source paths only and
+must not contain workspace paths, `file:` URIs, repository URLs, credentials or
+raw source content.
 
 `joern-cpg-analysis.proto` is intentionally limited to static semantic Joern
 analysis. It accepts opaque workspace IDs, source snapshot IDs, relative source
@@ -58,9 +84,32 @@ CPG/CFG/DFG artifact metadata, provenance and diagnostics; missing or partial
 artifact mappings remain explicit incompleteness. Static semantic output must
 not be presented as runtime execution evidence.
 
+`analysis-job.proto` also exposes Analysis Store-owned instrumentation target
+planning. The planning RPC accepts bounded accepted static source facts,
+accepted static artifact metadata and accepted semantic artifact references,
+then returns deterministic target snapshots with selection fingerprints,
+correlation, completeness and diagnostics. It must not fetch workspace paths,
+run JavaParser or Joern, infer runtime execution or invent semantic-node
+mappings when no verified semantic schema is available.
+
+Slice 11 adds the Analysis Store-owned repository-to-BTM orchestration bridge
+to `analysis-job.proto`. Gateway submits public repository-to-BTM requests to
+`StartRepositoryToBtm` and reads status through `GetRepositoryToBtmStatus`.
+The response is deliberately a readiness state: unavailable source/build
+packages keep Joern skipped with explicit incomplete diagnostics, and completed
+BTM bytes remain owned by BTM Generation until the public delivery path returns
+them.
+
 `btm-generation.proto` is intentionally limited to generated instrumentation
 artifacts. It accepts accepted fact artifact references and bounded inline
-instrumentation targets through the service boundary. It must not expose
-repository URLs, workspace paths, source content or runtime trace claims. Stable
-rule IDs are derived from source snapshot, target, probe kind and rule schema
-version so identical inputs produce reproducible rules.
+instrumentation targets through the service boundary. Slice 03 records Analysis
+Store as the target-selection metadata owner and BTM Generation as a bounded
+target snapshot consumer. The contract also carries artifact byte-access
+metadata so registered artifact metadata does not imply byte-custody transfer.
+It must not expose repository URLs, workspace paths, source content or runtime
+trace claims. Stable rule IDs are derived from source snapshot, target, probe
+kind and rule schema version so identical inputs produce reproducible rules.
+
+The public BTM artifact delivery RPC is additive. It streams a manifest and
+bounded file chunks after Analysis Store metadata identifies accepted generated
+artifacts. Gateway is a public facade and must not store canonical BTM bytes.

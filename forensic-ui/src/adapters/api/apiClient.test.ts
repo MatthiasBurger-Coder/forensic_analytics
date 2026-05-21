@@ -5,7 +5,7 @@ import { createApiClient } from "@/adapters/api/apiClient";
 import type { StartRepositoryAnalysisCommand } from "@/domain/repositoryAnalysis";
 
 describe("API client resilience", () => {
-  it("retries idempotent GET requests with a bounded budget", async () => {
+  it("retries idempotent Gateway status reads with a bounded budget", async () => {
     const fetcher = vi
       .fn()
       .mockResolvedValueOnce(
@@ -19,14 +19,12 @@ describe("API client resilience", () => {
         )
       )
       .mockResolvedValueOnce(
-        jsonResponse([
+        jsonResponse(
           {
             analysisRunId: "run-1",
-            workspaceId: "workspace-1",
-            repositoryUrl: "https://example.invalid/project.git",
             status: "REGISTERED"
           }
-        ])
+        )
       );
 
     const client = createApiClient({
@@ -39,11 +37,86 @@ describe("API client resilience", () => {
       fetcher
     });
 
-    const analyses =
-      await client.repositoryAnalysis.listRepositoryAnalyses();
+    const analysis = await client.repositoryAnalysis.getAnalysisJob("run-1");
 
     expect(fetcher).toHaveBeenCalledTimes(2);
-    expect(analyses[0].status.backendStatus).toBe("REGISTERED");
+    expect(analysis.status.backendStatus).toBe("REGISTERED");
+  });
+
+  it("does not call planned Gateway list and workspace routes", async () => {
+    const fetcher = vi.fn();
+    const client = createApiClient({
+      baseUrl: "https://backend.invalid/api",
+      timeoutMs: 1000,
+      maxGetAttempts: 1,
+      baseRetryDelayMs: 1,
+      fetcher
+    });
+
+    await expect(
+      client.repositoryAnalysis.listRepositoryAnalyses()
+    ).resolves.toEqual([]);
+    await expect(client.workspaces.listWorkspaces()).resolves.toEqual([]);
+    await expect(client.diagnostics.collectDiagnostics()).resolves.toEqual([]);
+    await expect(client.workspaces.getWorkspace("workspace-1")).rejects.toMatchObject({
+      category: "VALIDATION_ERROR"
+    });
+
+    expect(fetcher).not.toHaveBeenCalled();
+  });
+
+  it("sends required Gateway correlation metadata for status reads", async () => {
+    const fetcher = vi.fn().mockResolvedValue(
+      jsonResponse({
+        analysisRunId: "run-1",
+        status: "ACCEPTED",
+        diagnostics: []
+      })
+    );
+    const client = createApiClient({
+      baseUrl: "https://backend.invalid/api",
+      timeoutMs: 1000,
+      maxGetAttempts: 1,
+      baseRetryDelayMs: 1,
+      fetcher
+    });
+
+    await client.repositoryAnalysis.getAnalysisJob("run-1");
+
+    expect((fetcher.mock.calls[0][1] as RequestInit).headers).toMatchObject({
+      "X-Correlation-Id": expect.stringMatching(/^ui-status-/)
+    });
+  });
+
+  it("keeps submitted repository context when Gateway accepts a BTM request", async () => {
+    const fetcher = vi.fn().mockResolvedValue(
+      jsonResponse(
+        {
+          analysisRunId: "run-1",
+          status: "ACCEPTED",
+          btmDeliveryStatus: "BTM_DELIVERY_NOT_READY",
+          correlationId: "correlation-1",
+          diagnostics: []
+        },
+        202
+      )
+    );
+    const client = createApiClient({
+      baseUrl: "https://backend.invalid/api",
+      timeoutMs: 1000,
+      maxGetAttempts: 1,
+      baseRetryDelayMs: 1,
+      fetcher
+    });
+
+    const analysis = await client.repositoryAnalysis.startRepositoryAnalysis(
+      command()
+    );
+
+    expect(analysis.repositoryUrl).toBe("https://example.invalid/project.git");
+    expect(analysis.branch).toBe("main");
+    expect(analysis.btmDeliveryStatus).toBe("BTM_DELIVERY_NOT_READY");
+    expect(analysis.correlationId).toBe("correlation-1");
   });
 
   it("times out a backend request", async () => {
@@ -65,7 +138,7 @@ describe("API client resilience", () => {
       fetcher
     });
 
-    const request = client.repositoryAnalysis.listRepositoryAnalyses();
+    const request = client.repositoryAnalysis.getAnalysisJob("run-1");
     const assertion = expect(request).rejects.toMatchObject({
       category: "TIMEOUT"
     });
@@ -104,9 +177,14 @@ describe("API client resilience", () => {
     expect(fetcher).toHaveBeenCalledTimes(1);
     const [, init] = fetcher.mock.calls[0];
     expect((init as RequestInit).method).toBe("POST");
+    expect((init as RequestInit).headers).toMatchObject({
+      "X-Correlation-Id": "correlation-1",
+      "Idempotency-Key": "idem-1"
+    });
     expect(JSON.parse(String((init as RequestInit).body))).toEqual({
       requestId: "request-1",
       schemaVersion: "schema-v1",
+      requestedOutputs: ["BTM_RULES"],
       repositoryUrl: "https://example.invalid/project.git",
       provider: "git",
       branch: "main",
@@ -124,9 +202,34 @@ describe("API client resilience", () => {
         allowPartialClone: false,
         allowSparseCheckout: false,
         timeoutSeconds: 60,
-        maxWorkspaceBytes: 0
+        maxWorkspaceBytes: 100000
       }
     });
+  });
+
+  it.each([
+    ["correlationId", { correlationId: " " }],
+    ["idempotencyKey", { idempotencyKey: " " }]
+  ])("rejects missing Gateway %s metadata before POST", async (_field, patch) => {
+    const fetcher = vi.fn();
+    const client = createApiClient({
+      baseUrl: "https://backend.invalid/api",
+      timeoutMs: 1000,
+      maxGetAttempts: 1,
+      baseRetryDelayMs: 1,
+      fetcher
+    });
+
+    await expect(
+      client.repositoryAnalysis.startRepositoryAnalysis({
+        ...command(),
+        ...patch
+      })
+    ).rejects.toMatchObject({
+      category: "VALIDATION_ERROR"
+    });
+
+    expect(fetcher).not.toHaveBeenCalled();
   });
 });
 
@@ -140,7 +243,10 @@ const jsonResponse = (body: unknown, status = 200) =>
 
 const command = (): StartRepositoryAnalysisCommand => ({
   requestId: "request-1",
+  correlationId: "correlation-1",
+  idempotencyKey: "idem-1",
   schemaVersion: "schema-v1",
+  requestedOutputs: ["BTM_RULES"],
   repositoryUrl: "https://example.invalid/project.git",
   provider: "git",
   branch: "main",
@@ -158,6 +264,6 @@ const command = (): StartRepositoryAnalysisCommand => ({
     allowPartialClone: false,
     allowSparseCheckout: false,
     timeoutSeconds: 60,
-    maxWorkspaceBytes: 0
+    maxWorkspaceBytes: 100000
   }
 });

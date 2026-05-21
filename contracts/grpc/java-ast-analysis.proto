@@ -8,7 +8,7 @@ option java_multiple_files = true;
 option java_package = "de.burger.forensics.analytics.javaastanalysis.v1";
 option java_outer_classname = "JavaAstAnalysisProto";
 
-// Provisional Slice 07 contract for JavaParser-based AST analysis.
+// Provisional Slice 06 contract for JavaParser-based AST analysis.
 //
 // The service owns static Java source scanning only. It must not claim runtime
 // execution, reachability, branch execution, observed values, graph edges, BTM
@@ -18,6 +18,9 @@ option java_outer_classname = "JavaAstAnalysisProto";
 service JavaAstAnalysisService {
   rpc AnalyzeSourceSnapshot(AnalyzeSourceSnapshotRequest)
       returns (AnalyzeSourceSnapshotResponse);
+
+  rpc GetSourceFactArtifactBytes(GetSourceFactArtifactBytesRequest)
+      returns (GetSourceFactArtifactBytesResponse);
 }
 
 message AnalyzeSourceSnapshotRequest {
@@ -45,6 +48,32 @@ message AnalyzeSourceSnapshotResponse {
   de.burger.forensics.analytics.analysisjob.v1.AnalysisArtifactReference source_fact_artifact = 6;
   ScanSummary summary = 7;
   repeated JavaAstDiagnostic diagnostics = 8;
+  map<string, string> safe_attributes = 9;
+}
+
+message GetSourceFactArtifactBytesRequest {
+  string request_id = 1;
+  string correlation_id = 2;
+  de.burger.forensics.analytics.analysisjob.v1.AnalysisRunId analysis_run_id = 3;
+  de.burger.forensics.analytics.analysisjob.v1.AnalysisJobId analysis_job_id = 4;
+  de.burger.forensics.analytics.analysisjob.v1.SourceSnapshotId source_snapshot_id = 5;
+  string retrieval_reference = 6;
+  string expected_sha256 = 7;
+  int64 expected_size_bytes = 8;
+  int64 max_bytes = 9;
+  string schema_version = 10;
+  map<string, string> safe_attributes = 11;
+}
+
+message GetSourceFactArtifactBytesResponse {
+  OperationStatus status = 1;
+  de.burger.forensics.analytics.analysisjob.v1.AnalysisRunId analysis_run_id = 2;
+  de.burger.forensics.analytics.analysisjob.v1.AnalysisJobId analysis_job_id = 3;
+  de.burger.forensics.analytics.analysisjob.v1.SourceSnapshotId source_snapshot_id = 4;
+  de.burger.forensics.analytics.analysisjob.v1.AnalysisArtifactReference source_fact_artifact = 5;
+  bytes content = 6;
+  string sha256 = 7;
+  int64 size_bytes = 8;
   map<string, string> safe_attributes = 9;
 }
 

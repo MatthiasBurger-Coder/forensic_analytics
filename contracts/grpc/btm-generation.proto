@@ -8,7 +8,8 @@ option java_multiple_files = true;
 option java_package = "de.burger.forensics.analytics.btmgeneration.v1";
 option java_outer_classname = "BtmGenerationProto";
 
-// Provisional Slice 09 contract for server-side Byteman/BTM generation.
+// Provisional contract for server-side Byteman/BTM generation and public BTM
+// artifact delivery.
 //
 // The service owns deterministic generated rule artifacts only. It must not
 // scan repositories, execute JavaParser or Joern, access graph storage, invent
@@ -17,6 +18,17 @@ option java_outer_classname = "BtmGenerationProto";
 service BtmGenerationService {
   rpc GenerateBtmRules(GenerateBtmRulesRequest)
       returns (GenerateBtmRulesResponse);
+}
+
+// Public facade contract for completed BTM artifact delivery.
+//
+// Gateway exposes this contract to plugins or external clients only after
+// Analysis Store metadata identifies accepted generated artifacts. BTM
+// Generation remains the byte owner until an explicit byte-handoff,
+// object-store ownership or delivery contract transfers byte custody.
+service BtmArtifactDeliveryService {
+  rpc DownloadBtmArtifacts(DownloadBtmArtifactsRequest)
+      returns (stream BtmArtifactDeliveryMessage);
 }
 
 message GenerateBtmRulesRequest {
@@ -46,6 +58,66 @@ message GenerateBtmRulesResponse {
   ReproducibilityMetadata reproducibility = 9;
   repeated BtmDiagnostic diagnostics = 10;
   map<string, string> safe_attributes = 11;
+  InstrumentationTargetSelection target_selection = 12;
+}
+
+message DownloadBtmArtifactsRequest {
+  string request_id = 1;
+  string idempotency_key = 2;
+  string schema_version = 3;
+  string correlation_id = 4;
+  de.burger.forensics.analytics.analysisjob.v1.AnalysisRunId analysis_run_id = 5;
+  de.burger.forensics.analytics.analysisjob.v1.AnalysisJobId analysis_job_id = 6;
+  // Maximum accepted chunk size. Slice 02 target maximum is 1 MiB.
+  int32 max_chunk_bytes = 7;
+  // Maximum accepted total delivery size. Slice 02 target maximum is 1 GiB.
+  int64 max_total_bytes = 8;
+  repeated string artifact_references = 9;
+  map<string, string> safe_attributes = 10;
+  repeated de.burger.forensics.analytics.analysisjob.v1.AnalysisArtifactReference accepted_generated_artifacts = 11;
+}
+
+message BtmArtifactDeliveryMessage {
+  oneof payload {
+    BtmArtifactManifest manifest = 1;
+    BtmArtifactChunk chunk = 2;
+    OperationStatus status = 3;
+  }
+}
+
+message BtmArtifactManifest {
+  string manifest_id = 1;
+  de.burger.forensics.analytics.analysisjob.v1.AnalysisRunId analysis_run_id = 2;
+  de.burger.forensics.analytics.analysisjob.v1.AnalysisJobId analysis_job_id = 3;
+  de.burger.forensics.analytics.analysisjob.v1.SourceSnapshotId source_snapshot_id = 4;
+  de.burger.forensics.analytics.analysisjob.v1.AnalysisCompleteness completeness = 5;
+  repeated BtmArtifactDescriptor artifacts = 6;
+  int64 total_size_bytes = 7;
+  string manifest_sha256 = 8;
+  string delivery_order = 9;
+  ReproducibilityMetadata reproducibility = 10;
+  InstrumentationTargetSelection target_selection = 11;
+}
+
+message BtmArtifactDescriptor {
+  string artifact_reference = 1;
+  BtmArtifactKind artifact_kind = 2;
+  string relative_path = 3;
+  string sha256 = 4;
+  int64 size_bytes = 5;
+  int32 chunk_count = 6;
+  string content_type = 7;
+}
+
+message BtmArtifactChunk {
+  string artifact_reference = 1;
+  BtmArtifactKind artifact_kind = 2;
+  string relative_path = 3;
+  int32 chunk_index = 4;
+  int64 byte_offset = 5;
+  bytes data = 6;
+  string chunk_sha256 = 7;
+  bool final_chunk = 8;
 }
 
 message DeliveredAnalysisFacts {
@@ -53,9 +125,22 @@ message DeliveredAnalysisFacts {
   repeated de.burger.forensics.analytics.analysisjob.v1.AnalysisArtifactReference source_fact_artifacts = 1;
   // Accepted semantic artifacts, such as Joern CPG/CFG/DFG outputs.
   repeated de.burger.forensics.analytics.analysisjob.v1.AnalysisArtifactReference semantic_artifacts = 2;
-  // Bounded inline targets selected from accepted facts.
+  // Bounded inline targets selected by analysis-store-service from accepted
+  // facts. BTM Generation must not infer runtime execution from these targets.
   repeated InstrumentationTarget targets = 3;
   de.burger.forensics.analytics.analysisjob.v1.AnalysisCompleteness input_completeness = 4;
+  InstrumentationTargetSelection target_selection = 5;
+}
+
+message InstrumentationTargetSelection {
+  string selection_id = 1;
+  string owner_service = 2;
+  string policy_version = 3;
+  string selection_fingerprint = 4;
+  de.burger.forensics.analytics.analysisjob.v1.AnalysisCompleteness completeness = 5;
+  string deterministic_order = 6;
+  string correlation_id = 7;
+  int32 target_count = 8;
 }
 
 message InstrumentationTarget {
@@ -70,6 +155,11 @@ message InstrumentationTarget {
   string signature = 7;
   int32 line_number = 8;
   ProbeKind probe_kind = 9;
+  string source_fact_artifact_reference = 10;
+  string semantic_artifact_reference = 11;
+  int32 order_index = 12;
+  de.burger.forensics.analytics.analysisjob.v1.AnalysisCompleteness completeness = 13;
+  string sensitivity = 14;
 }
 
 message BtmGenerationPolicy {
@@ -137,6 +227,12 @@ enum ProbeKind {
   PROBE_KIND_METHOD_ENTRY = 1;
   PROBE_KIND_METHOD_EXIT = 2;
   PROBE_KIND_THROW = 3;
+}
+
+enum BtmArtifactKind {
+  BTM_ARTIFACT_KIND_UNSPECIFIED = 0;
+  BTM_ARTIFACT_KIND_RULE_FILE = 1;
+  BTM_ARTIFACT_KIND_MANIFEST = 2;
 }
 
 enum DiagnosticSeverity {

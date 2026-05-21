@@ -1,6 +1,7 @@
 package de.burger.forensics.analytics.services.analysisstore.application;
 
 import de.burger.forensics.analytics.services.analysisstore.application.port.AnalysisJobRepository;
+import de.burger.forensics.analytics.services.analysisstore.application.port.SourceFactArtifactByteVerifierPort;
 import de.burger.forensics.analytics.services.analysisstore.application.result.LeaseAnalysisJobResult;
 import de.burger.forensics.analytics.services.analysisstore.application.result.OperationOutcome;
 import de.burger.forensics.analytics.services.analysisstore.application.result.RegisterAnalysisArtifactsResult;
@@ -25,11 +26,24 @@ import java.util.function.Supplier;
 public final class AnalysisJobApplicationService {
     private final AnalysisJobRepository jobs;
     private final Clock clock;
+    private final SourceFactArtifactByteVerifierPort sourceFactArtifactByteVerifier;
     private final Map<String, StoredOperation> idempotentResults = new java.util.concurrent.ConcurrentHashMap<>();
 
     public AnalysisJobApplicationService(AnalysisJobRepository jobs, Clock clock) {
+        this(jobs, clock, SourceFactArtifactByteVerifierPort.unavailable());
+    }
+
+    public AnalysisJobApplicationService(
+        AnalysisJobRepository jobs,
+        Clock clock,
+        SourceFactArtifactByteVerifierPort sourceFactArtifactByteVerifier
+    ) {
         this.jobs = Objects.requireNonNull(jobs, "jobs must not be null");
         this.clock = Objects.requireNonNull(clock, "clock must not be null");
+        this.sourceFactArtifactByteVerifier = Objects.requireNonNull(
+            sourceFactArtifactByteVerifier,
+            "sourceFactArtifactByteVerifier must not be null"
+        );
     }
 
     public synchronized SubmitAnalysisJobResult submit(
@@ -60,6 +74,16 @@ public final class AnalysisJobApplicationService {
             jobs.findById(jobId).ifPresent(existing -> {
                 throw new IllegalArgumentException("analysis job already exists: " + jobId.value());
             });
+            var verifiedInputArtifacts = inputArtifacts.stream()
+                .map(artifact -> verifiedSourceFactArtifact(
+                    analysisRunId,
+                    jobId,
+                    sourceSnapshotId,
+                    correlationId,
+                    attributes,
+                    artifact
+                ))
+                .toList();
             var job = AnalysisJob.submitted(
                 analysisRunId,
                 jobId,
@@ -67,7 +91,7 @@ public final class AnalysisJobApplicationService {
                 correlationId,
                 workerKind,
                 sourceSnapshotId,
-                inputArtifacts,
+                verifiedInputArtifacts,
                 inputCompleteness,
                 clock.instant(),
                 attributes
@@ -140,13 +164,45 @@ public final class AnalysisJobApplicationService {
     ) {
         var fingerprint = List.of("complete", correlationId, jobId, attempt, workerId, outputArtifacts, outputCompleteness, diagnostics).toString();
         return idempotent("complete", idempotencyKey, fingerprint, AnalysisJob.class, () -> {
-            var completed = job(jobId).completed(
+            var existing = job(jobId);
+            var transition = existing.completed(
                 workerId,
                 attempt,
-                outputArtifacts,
+                List.of(),
                 outputCompleteness,
                 diagnostics,
                 clock.instant()
+            );
+            var verifiedOutputArtifacts = outputArtifacts.stream()
+                .map(artifact -> verifiedSourceFactArtifact(
+                    existing.analysisRunId(),
+                    existing.jobId(),
+                    existing.sourceSnapshotId(),
+                    correlationId,
+                    existing.attributes(),
+                    artifact
+                ))
+                .toList();
+            var completed = new AnalysisJob(
+                transition.analysisRunId(),
+                transition.jobId(),
+                transition.schemaVersion(),
+                transition.correlationId(),
+                transition.workerKind(),
+                transition.sourceSnapshotId(),
+                transition.inputArtifacts(),
+                mergeArtifacts(existing.outputArtifacts(), verifiedOutputArtifacts),
+                transition.completeness(),
+                transition.state(),
+                transition.attempt(),
+                transition.percentComplete(),
+                transition.failures(),
+                transition.leaseOwner(),
+                transition.leaseExpiresAt(),
+                transition.createdAt(),
+                transition.updatedAt(),
+                transition.diagnostics(),
+                transition.attributes()
             );
             jobs.save(completed);
             return completed;
@@ -185,6 +241,15 @@ public final class AnalysisJobApplicationService {
             if (!existing.analysisRunId().equals(analysisRunId)) {
                 throw new IllegalArgumentException("analysisRunId does not match existing job");
             }
+            var verifiedArtifacts = artifacts.stream()
+                .map(artifact -> verifiedSourceFactArtifact(
+                    analysisRunId,
+                    jobId,
+                    correlationId,
+                    existing,
+                    artifact
+                ))
+                .toList();
             var registered = new AnalysisJob(
                 existing.analysisRunId(),
                 existing.jobId(),
@@ -193,7 +258,7 @@ public final class AnalysisJobApplicationService {
                 existing.workerKind(),
                 existing.sourceSnapshotId(),
                 existing.inputArtifacts(),
-                mergeArtifacts(existing.outputArtifacts(), artifacts),
+                mergeArtifacts(existing.outputArtifacts(), verifiedArtifacts),
                 existing.completeness(),
                 existing.state(),
                 existing.attempt(),
@@ -212,6 +277,45 @@ public final class AnalysisJobApplicationService {
                 OperationOutcome.accepted(correlationId, "Analysis artifacts registered")
             );
         });
+    }
+
+    private AnalysisArtifactReference verifiedSourceFactArtifact(
+        AnalysisRunId analysisRunId,
+        AnalysisJobId jobId,
+        SourceSnapshotId sourceSnapshotId,
+        String correlationId,
+        Map<String, String> safeAttributes,
+        AnalysisArtifactReference artifact
+    ) {
+        if (!sourceFactArtifactByteVerifier.supports(artifact)) {
+            return artifact;
+        }
+        return sourceFactArtifactByteVerifier.verify(
+            analysisRunId,
+            jobId,
+            sourceSnapshotId,
+            "verify-source-fact-bytes:" + artifact.path(),
+            correlationId,
+            artifact,
+            safeAttributes
+        );
+    }
+
+    private AnalysisArtifactReference verifiedSourceFactArtifact(
+        AnalysisRunId analysisRunId,
+        AnalysisJobId jobId,
+        String correlationId,
+        AnalysisJob existing,
+        AnalysisArtifactReference artifact
+    ) {
+        return verifiedSourceFactArtifact(
+            analysisRunId,
+            jobId,
+            existing.sourceSnapshotId(),
+            correlationId,
+            existing.attributes(),
+            artifact
+        );
     }
 
     private AnalysisJob job(AnalysisJobId jobId) {

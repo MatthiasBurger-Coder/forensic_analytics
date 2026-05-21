@@ -1,14 +1,23 @@
 package de.burger.forensics.analytics.services.repositoryanalysis.domain;
 
 import de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.AnalysisRunId;
+import de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.ArtifactByteAccess;
+import de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.ArtifactByteCustody;
 import de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.ArtifactReference;
+import de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.BuildOutputPackageDescriptor;
+import de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.BuildOutputProducer;
+import de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.BuildOutputProducerCandidate;
+import de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.BuildOutputProducerStatus;
+import de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.BuildOutputResolution;
 import de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.CheckoutResult;
 import de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.CheckoutStatus;
 import de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.Diagnostic;
+import de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.PackageAvailability;
 import de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.RepositoryPreparation;
 import de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.RepositoryReference;
 import de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.RepositoryWorkspaceStatus;
 import de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.RevisionSelector;
+import de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.SourcePackageDescriptor;
 import de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.SourceRoot;
 import de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.SourceSnapshot;
 import de.burger.forensics.analytics.services.repositoryanalysis.domain.RepositoryAnalysisDomain.SourceSnapshotCompleteness;
@@ -44,7 +53,9 @@ class RepositoryAnalysisDomainTest {
             SourceSnapshotCompleteness.COMPLETE,
             List.of(SOURCE_ROOT),
             new ArtifactReference("snapshots/demo/manifest.json", "application/json", SHA, 100),
-            List.of()
+            List.of(),
+            sourcePackage(),
+            buildOutputPackage()
         );
         var preparation = new RepositoryPreparation(
             new AnalysisRunId("run-1"),
@@ -120,6 +131,18 @@ class RepositoryAnalysisDomainTest {
             SourceSnapshotCompleteness.COMPLETE,
             List.of(),
             new ArtifactReference("manifest.json", "application/json", SHA, 1),
+            List.of(),
+            sourcePackage(),
+            buildOutputPackage()
+        ));
+        assertThrows(IllegalArgumentException.class, () -> new BuildOutputResolution(
+            List.of(
+                new BuildOutputProducerCandidate(BuildOutputProducer.ARTIFACTORY, BuildOutputProducerStatus.TERMINAL_INTEGRITY_FAILURE, "", List.of()),
+                new BuildOutputProducerCandidate(BuildOutputProducer.JENKINS, BuildOutputProducerStatus.FALLBACK_PLANNED, "source-snapshot/1", List.of()),
+                new BuildOutputProducerCandidate(BuildOutputProducer.BUILD_ARTIFACT_WORKER, BuildOutputProducerStatus.FALLBACK_PLANNED, "source-snapshot/1", List.of())
+            ),
+            BuildOutputProducer.BUILD_ARTIFACT_WORKER,
+            true,
             List.of()
         ));
         assertThrows(IllegalArgumentException.class, () -> new RepositoryPreparation(
@@ -134,7 +157,9 @@ class RepositoryAnalysisDomainTest {
                 SourceSnapshotCompleteness.COMPLETE,
                 List.of(SOURCE_ROOT),
                 new ArtifactReference("manifest.json", "application/json", SHA, 1),
-                List.of()
+                List.of(),
+                sourcePackage(),
+                buildOutputPackage()
             ),
             RepositoryWorkspaceStatus.CHECKED_OUT,
             Instant.EPOCH,
@@ -142,6 +167,165 @@ class RepositoryAnalysisDomainTest {
             List.of(),
             Map.of()
         ));
+    }
+
+    @Test
+    void validatesBuildOutputResolutionPackageDescriptorsAndHandoffBoundaries() {
+        assertEquals("root/App.java", new RepositoryAnalysisDomain.SourceSnapshotSourceFile(
+            "root",
+            "App.java",
+            "class App {}",
+            SHA,
+            12
+        ).sourcePath());
+        assertEquals("App.java", new RepositoryAnalysisDomain.SourceSnapshotSourceFile(
+            ".",
+            "App.java",
+            "class App {}",
+            SHA,
+            12
+        ).sourcePath());
+        assertThrows(IllegalArgumentException.class, () -> new RepositoryAnalysisDomain.JavaAstScanSummary(-1, 0, 0, 0, 0, "parser", "1"));
+        assertThrows(IllegalArgumentException.class, () -> new RepositoryAnalysisDomain.JavaAstScanSummary(0, -1, 0, 0, 0, "parser", "1"));
+        assertThrows(IllegalArgumentException.class, () -> new RepositoryAnalysisDomain.JavaAstScanSummary(0, 0, -1, 0, 0, "parser", "1"));
+        assertThrows(IllegalArgumentException.class, () -> new RepositoryAnalysisDomain.JavaAstScanSummary(0, 0, 0, -1, 0, "parser", "1"));
+        assertThrows(IllegalArgumentException.class, () -> new RepositoryAnalysisDomain.JavaAstScanSummary(0, 0, 0, 0, -1, "parser", "1"));
+        assertThrows(IllegalArgumentException.class, () -> new RepositoryAnalysisDomain.SourceSnapshotSourceFile(
+            ".",
+            "App.java",
+            "class App {}",
+            SHA,
+            -1
+        ));
+        assertThrows(IllegalArgumentException.class, () -> new RepositoryAnalysisDomain.SourceSnapshotHandoffPolicy(0, 100, 60));
+        assertThrows(IllegalArgumentException.class, () -> new RepositoryAnalysisDomain.SourceSnapshotHandoffPolicy(100_001, 100, 60));
+        assertThrows(IllegalArgumentException.class, () -> new RepositoryAnalysisDomain.SourceSnapshotHandoffPolicy(1, 0, 60));
+        assertThrows(IllegalArgumentException.class, () -> new RepositoryAnalysisDomain.SourceSnapshotHandoffPolicy(1, 1_073_741_825L, 60));
+        assertThrows(IllegalArgumentException.class, () -> new RepositoryAnalysisDomain.SourceSnapshotHandoffPolicy(1, 100, 0));
+        assertThrows(IllegalArgumentException.class, () -> new RepositoryAnalysisDomain.SourceSnapshotHandoffPolicy(1, 100, 86_401));
+        assertThrows(IllegalArgumentException.class, () -> new BuildOutputResolution(List.of(), BuildOutputProducer.UNSPECIFIED, false, List.of()));
+        assertEquals(BuildOutputProducer.UNSPECIFIED, new BuildOutputResolution(
+            List.of(
+                new BuildOutputProducerCandidate(BuildOutputProducer.ARTIFACT_STORE, BuildOutputProducerStatus.TERMINAL_INTEGRITY_FAILURE, "", List.of()),
+                new BuildOutputProducerCandidate(BuildOutputProducer.ARTIFACTORY, BuildOutputProducerStatus.NOT_CONFIGURED, "", List.of()),
+                new BuildOutputProducerCandidate(BuildOutputProducer.JENKINS, BuildOutputProducerStatus.NOT_CONFIGURED, "", List.of()),
+                new BuildOutputProducerCandidate(BuildOutputProducer.BUILD_ARTIFACT_WORKER, BuildOutputProducerStatus.FALLBACK_PLANNED, "", List.of())
+            ),
+            BuildOutputProducer.UNSPECIFIED,
+            true,
+            List.of()
+        ).selectedProducer());
+        assertThrows(IllegalArgumentException.class, () -> new BuildOutputResolution(
+            List.of(
+                new BuildOutputProducerCandidate(BuildOutputProducer.ARTIFACTORY, BuildOutputProducerStatus.NOT_CONFIGURED, "", List.of()),
+                new BuildOutputProducerCandidate(BuildOutputProducer.ARTIFACT_STORE, BuildOutputProducerStatus.NOT_CONFIGURED, "", List.of()),
+                new BuildOutputProducerCandidate(BuildOutputProducer.JENKINS, BuildOutputProducerStatus.NOT_CONFIGURED, "", List.of()),
+                new BuildOutputProducerCandidate(BuildOutputProducer.BUILD_ARTIFACT_WORKER, BuildOutputProducerStatus.FALLBACK_PLANNED, "source-snapshot/demo", List.of())
+            ),
+            BuildOutputProducer.UNSPECIFIED,
+            false,
+            List.of()
+        ));
+        assertEquals(BuildOutputProducer.BUILD_ARTIFACT_WORKER, new BuildOutputResolution(
+            List.of(
+                new BuildOutputProducerCandidate(BuildOutputProducer.ARTIFACT_STORE, BuildOutputProducerStatus.NOT_CONFIGURED, "", List.of()),
+                new BuildOutputProducerCandidate(BuildOutputProducer.ARTIFACTORY, BuildOutputProducerStatus.NOT_CONFIGURED, "", List.of()),
+                new BuildOutputProducerCandidate(BuildOutputProducer.JENKINS, BuildOutputProducerStatus.NOT_CONFIGURED, "", List.of()),
+                new BuildOutputProducerCandidate(BuildOutputProducer.BUILD_ARTIFACT_WORKER, BuildOutputProducerStatus.AVAILABLE, "source-snapshot/demo", List.of())
+            ),
+            BuildOutputProducer.BUILD_ARTIFACT_WORKER,
+            false,
+            List.of()
+        ).selectedProducer());
+        assertThrows(IllegalArgumentException.class, () -> new BuildOutputResolution(
+            List.of(
+                new BuildOutputProducerCandidate(BuildOutputProducer.ARTIFACT_STORE, BuildOutputProducerStatus.TERMINAL_INTEGRITY_FAILURE, "", List.of()),
+                new BuildOutputProducerCandidate(BuildOutputProducer.ARTIFACTORY, BuildOutputProducerStatus.NOT_CONFIGURED, "", List.of()),
+                new BuildOutputProducerCandidate(BuildOutputProducer.JENKINS, BuildOutputProducerStatus.NOT_CONFIGURED, "", List.of()),
+                new BuildOutputProducerCandidate(BuildOutputProducer.BUILD_ARTIFACT_WORKER, BuildOutputProducerStatus.FALLBACK_PLANNED, "", List.of())
+            ),
+            BuildOutputProducer.BUILD_ARTIFACT_WORKER,
+            true,
+            List.of()
+        ));
+        assertThrows(IllegalArgumentException.class, () -> new BuildOutputResolution(
+            List.of(
+                new BuildOutputProducerCandidate(BuildOutputProducer.ARTIFACT_STORE, BuildOutputProducerStatus.NOT_CONFIGURED, "", List.of()),
+                new BuildOutputProducerCandidate(BuildOutputProducer.ARTIFACTORY, BuildOutputProducerStatus.NOT_CONFIGURED, "", List.of()),
+                new BuildOutputProducerCandidate(BuildOutputProducer.JENKINS, BuildOutputProducerStatus.NOT_CONFIGURED, "", List.of()),
+                new BuildOutputProducerCandidate(BuildOutputProducer.BUILD_ARTIFACT_WORKER, BuildOutputProducerStatus.FALLBACK_PLANNED, "source-snapshot/demo", List.of())
+            ),
+            BuildOutputProducer.BUILD_ARTIFACT_WORKER,
+            false,
+            List.of()
+        ));
+        assertThrows(IllegalArgumentException.class, () -> new BuildOutputResolution(
+            List.of(
+                new BuildOutputProducerCandidate(BuildOutputProducer.ARTIFACT_STORE, BuildOutputProducerStatus.NOT_CONFIGURED, "", List.of()),
+                new BuildOutputProducerCandidate(BuildOutputProducer.ARTIFACTORY, BuildOutputProducerStatus.NOT_CONFIGURED, "", List.of()),
+                new BuildOutputProducerCandidate(BuildOutputProducer.JENKINS, BuildOutputProducerStatus.NOT_CONFIGURED, "", List.of()),
+                new BuildOutputProducerCandidate(BuildOutputProducer.BUILD_ARTIFACT_WORKER, BuildOutputProducerStatus.FALLBACK_PLANNED, "source-snapshot/demo", List.of())
+            ),
+            BuildOutputProducer.UNSPECIFIED,
+            true,
+            List.of()
+        ));
+        assertThrows(IllegalArgumentException.class, () -> new BuildOutputPackageDescriptor(
+            PackageAvailability.AVAILABLE,
+            null,
+            null,
+            "schema",
+            "producer",
+            new ArtifactByteAccess("producer", "contract", "reference", ArtifactByteCustody.PRODUCER_RETAINED),
+            SourceSnapshotCompleteness.COMPLETE,
+            buildOutputPackage().resolution(),
+            "gradle"
+        ));
+        assertThrows(IllegalArgumentException.class, () -> new BuildOutputPackageDescriptor(
+            PackageAvailability.AVAILABLE,
+            null,
+            new ArtifactReference("build/output.zip", "application/zip", SHA, 1),
+            "schema",
+            "producer",
+            new ArtifactByteAccess("producer", "contract", "reference", ArtifactByteCustody.PRODUCER_RETAINED),
+            SourceSnapshotCompleteness.COMPLETE,
+            buildOutputPackage().resolution(),
+            "gradle"
+        ));
+        assertThrows(IllegalArgumentException.class, () -> new BuildOutputPackageDescriptor(
+            PackageAvailability.FAILED_INTEGRITY,
+            null,
+            new ArtifactReference("build/output.zip", "application/zip", SHA, 1),
+            "schema",
+            "producer",
+            new ArtifactByteAccess("producer", "contract", "reference", ArtifactByteCustody.PRODUCER_RETAINED),
+            SourceSnapshotCompleteness.COMPLETE,
+            buildOutputPackage().resolution(),
+            "gradle"
+        ));
+        assertEquals("", new BuildOutputProducerCandidate(
+            BuildOutputProducer.ARTIFACT_STORE,
+            BuildOutputProducerStatus.NOT_CONFIGURED,
+            null,
+            List.of()
+        ).reference());
+        assertEquals("", new BuildOutputProducerCandidate(
+            BuildOutputProducer.ARTIFACT_STORE,
+            BuildOutputProducerStatus.NOT_CONFIGURED,
+            " ",
+            List.of()
+        ).reference());
+        assertThrows(IllegalArgumentException.class, () -> new BuildOutputProducerCandidate(
+            BuildOutputProducer.ARTIFACT_STORE,
+            BuildOutputProducerStatus.AVAILABLE,
+            "https://artifact.example/private",
+            List.of()
+        ));
+        assertThrows(IllegalArgumentException.class, () -> new ArtifactByteAccess("producer", "contract", "/absolute", ArtifactByteCustody.PRODUCER_RETAINED));
+        assertThrows(IllegalArgumentException.class, () -> new ArtifactByteAccess("producer", "contract", "\\absolute", ArtifactByteCustody.PRODUCER_RETAINED));
+        assertThrows(IllegalArgumentException.class, () -> new ArtifactByteAccess("producer", "contract", "C:/absolute", ArtifactByteCustody.PRODUCER_RETAINED));
+        assertThrows(IllegalArgumentException.class, () -> new ArtifactByteAccess("producer", "contract", "a/../b", ArtifactByteCustody.PRODUCER_RETAINED));
+        assertThrows(IllegalArgumentException.class, () -> new ArtifactByteAccess("producer", "contract", "line\nbreak", ArtifactByteCustody.PRODUCER_RETAINED));
     }
 
     private static CheckoutResult checkout() {
@@ -157,6 +341,52 @@ class RepositoryAnalysisDomainTest {
             false,
             false,
             List.of(SOURCE_ROOT)
+        );
+    }
+
+    private static SourcePackageDescriptor sourcePackage() {
+        return new SourcePackageDescriptor(
+            PackageAvailability.PENDING,
+            new ArtifactReference("snapshots/demo/manifest.json", "application/json", SHA, 1),
+            null,
+            "source-package-descriptor-v1",
+            "repository-analysis-service",
+            new ArtifactByteAccess(
+                "repository-analysis-service",
+                "repository-analysis.v1.SourcePackage",
+                "source-snapshot/demo",
+                ArtifactByteCustody.PRODUCER_RETAINED
+            ),
+            SourceSnapshotCompleteness.COMPLETE
+        );
+    }
+
+    private static BuildOutputPackageDescriptor buildOutputPackage() {
+        return new BuildOutputPackageDescriptor(
+            PackageAvailability.PENDING,
+            null,
+            null,
+            "build-output-package-descriptor-v1",
+            "build-artifact-worker-service",
+            new ArtifactByteAccess(
+                "build-artifact-worker-service",
+                "build-artifact-worker.v1.BuildOutputPackage",
+                "source-snapshot/demo",
+                ArtifactByteCustody.PRODUCER_RETAINED
+            ),
+            SourceSnapshotCompleteness.UNKNOWN,
+            new BuildOutputResolution(
+                List.of(
+                    new BuildOutputProducerCandidate(BuildOutputProducer.ARTIFACT_STORE, BuildOutputProducerStatus.NOT_CONFIGURED, "", List.of()),
+                    new BuildOutputProducerCandidate(BuildOutputProducer.ARTIFACTORY, BuildOutputProducerStatus.NOT_CONFIGURED, "", List.of()),
+                    new BuildOutputProducerCandidate(BuildOutputProducer.JENKINS, BuildOutputProducerStatus.NOT_CONFIGURED, "", List.of()),
+                    new BuildOutputProducerCandidate(BuildOutputProducer.BUILD_ARTIFACT_WORKER, BuildOutputProducerStatus.FALLBACK_PLANNED, "source-snapshot/demo", List.of())
+                ),
+                BuildOutputProducer.UNSPECIFIED,
+                false,
+                List.of()
+            ),
+            "auto-detect"
         );
     }
 

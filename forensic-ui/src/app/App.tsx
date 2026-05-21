@@ -12,10 +12,7 @@ import { AppShell } from "@/layouts/AppShell";
 import { AnalysisJobDetailPage } from "@/pages/analysis-jobs/AnalysisJobDetailPage";
 import { BackendUnavailablePage } from "@/pages/backend-unavailable/BackendUnavailablePage";
 import { CreateRepositoryAnalysisPage } from "@/pages/repository-analysis/CreateRepositoryAnalysisPage";
-import { DashboardPage } from "@/pages/dashboard/DashboardPage";
-import { DiagnosticsPage } from "@/pages/diagnostics/DiagnosticsPage";
 import { SettingsPage } from "@/pages/settings/SettingsPage";
-import { WorkspaceListPage } from "@/pages/workspaces/WorkspaceListPage";
 
 export const App = ({ services }: { services: ApplicationServices }) => (
   <ApplicationServicesProvider services={services}>
@@ -25,19 +22,11 @@ export const App = ({ services }: { services: ApplicationServices }) => (
           <Route element={<AppShell />}>
             <Route
               index
-              element={
-                <RouteBoundary>
-                  <DashboardPage />
-                </RouteBoundary>
-              }
+              element={<Navigate to="/repository-analyses/new" replace />}
             />
             <Route
               path="workspaces"
-              element={
-                <RouteBoundary>
-                  <WorkspaceListPage />
-                </RouteBoundary>
-              }
+              element={<Navigate to="/repository-analyses/new" replace />}
             />
             <Route
               path="repository-analyses/new"
@@ -57,11 +46,7 @@ export const App = ({ services }: { services: ApplicationServices }) => (
             />
             <Route
               path="diagnostics"
-              element={
-                <RouteBoundary>
-                  <DiagnosticsPage />
-                </RouteBoundary>
-              }
+              element={<Navigate to="/repository-analyses/new" replace />}
             />
             <Route
               path="backend-unavailable"

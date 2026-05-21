@@ -4,8 +4,8 @@ info:
   version: 1.0.0
   summary: Initial planned Gateway contract for the microservices ecosystem.
   description: >
-    This Slice 03 contract defines the target Gateway API. Existing repository
-    analysis and workspace routes are verified from the current REST adapter.
+    This contract defines the target Gateway API. Existing repository
+    analysis submission routes are verified from the current Gateway adapter.
     Results, replay, reports and health/status routes are planned initial
     contracts approved for logical service communication design on 2026-05-16.
     This file does not claim that planned routes are implemented yet.
@@ -14,7 +14,6 @@ servers:
   - url: /api
 tags:
   - name: RepositoryAnalyses
-  - name: Workspaces
   - name: Jobs
   - name: Results
   - name: Replay
@@ -26,7 +25,7 @@ paths:
       tags: [RepositoryAnalyses]
       summary: List repository analysis runs.
       operationId: listRepositoryAnalyses
-      x-implementation-status: current-verified
+      x-implementation-status: planned-initial
       parameters:
         - $ref: '#/components/parameters/CorrelationId'
       responses:
@@ -43,11 +42,11 @@ paths:
           $ref: '#/components/responses/Error'
     post:
       tags: [RepositoryAnalyses]
-      summary: Start a repository analysis run.
-      operationId: startRepositoryAnalysis
+      summary: Start an asynchronous repository-to-BTM analysis run.
+      operationId: startRepositoryToBtmAnalysis
       x-implementation-status: current-verified
       parameters:
-        - $ref: '#/components/parameters/CorrelationId'
+        - $ref: '#/components/parameters/MutationCorrelationId'
         - $ref: '#/components/parameters/IdempotencyKey'
       requestBody:
         required: true
@@ -56,15 +55,15 @@ paths:
             schema:
               $ref: '#/components/schemas/StartRepositoryAnalysisRequest'
       responses:
-        '201':
-          description: Repository analysis run accepted.
+        '202':
+          description: Accepted repository-to-BTM analysis request.
           headers:
             X-Correlation-Id:
               $ref: '#/components/headers/CorrelationId'
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RepositoryAnalysis'
+                $ref: '#/components/schemas/RepositoryToBtmSubmission'
         default:
           $ref: '#/components/responses/Error'
   /repository-analyses/{analysisRunId}:
@@ -74,7 +73,7 @@ paths:
       operationId: getRepositoryAnalysis
       x-implementation-status: current-verified
       parameters:
-        - $ref: '#/components/parameters/CorrelationId'
+        - $ref: '#/components/parameters/RequiredCorrelationId'
         - $ref: '#/components/parameters/AnalysisRunId'
       responses:
         '200':
@@ -85,7 +84,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RepositoryAnalysis'
+                $ref: '#/components/schemas/RepositoryToBtmStatus'
         default:
           $ref: '#/components/responses/Error'
   /repository-analyses/{analysisRunId}/jobs:
@@ -193,7 +192,7 @@ paths:
       operationId: requestReport
       x-implementation-status: planned-initial
       parameters:
-        - $ref: '#/components/parameters/CorrelationId'
+        - $ref: '#/components/parameters/MutationCorrelationId'
         - $ref: '#/components/parameters/IdempotencyKey'
         - $ref: '#/components/parameters/AnalysisRunId'
       requestBody:
@@ -238,52 +237,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Report'
-        default:
-          $ref: '#/components/responses/Error'
-  /workspaces:
-    get:
-      tags: [Workspaces]
-      summary: List workspaces.
-      operationId: listWorkspaces
-      x-implementation-status: current-verified
-      parameters:
-        - $ref: '#/components/parameters/CorrelationId'
-      responses:
-        '200':
-          description: Workspaces.
-          headers:
-            X-Correlation-Id:
-              $ref: '#/components/headers/CorrelationId'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/WorkspaceList'
-        default:
-          $ref: '#/components/responses/Error'
-  /workspaces/{workspaceId}:
-    get:
-      tags: [Workspaces]
-      summary: Get a workspace.
-      operationId: getWorkspace
-      x-implementation-status: current-verified
-      parameters:
-        - $ref: '#/components/parameters/CorrelationId'
-        - name: workspaceId
-          in: path
-          required: true
-          schema:
-            type: string
-            minLength: 1
-      responses:
-        '200':
-          description: Workspace.
-          headers:
-            X-Correlation-Id:
-              $ref: '#/components/headers/CorrelationId'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Workspace'
         default:
           $ref: '#/components/responses/Error'
   /status:
@@ -339,10 +292,30 @@ components:
       schema:
         type: string
         minLength: 1
+    RequiredCorrelationId:
+      name: X-Correlation-Id
+      in: header
+      required: true
+      description: Required caller correlation id for current-verified Gateway read operations.
+      schema:
+        type: string
+        minLength: 1
+    MutationCorrelationId:
+      name: X-Correlation-Id
+      in: header
+      required: true
+      description: Required caller correlation id for Gateway mutations.
+      schema:
+        type: string
+        minLength: 1
     IdempotencyKey:
       name: Idempotency-Key
       in: header
-      required: false
+      required: true
+      description: >
+        Required for every Gateway mutation. Reusing the same key with the
+        same request fingerprint returns the same accepted response; reusing
+        the same key with a different request fingerprint returns CONFLICT.
       schema:
         type: string
         minLength: 1
@@ -366,7 +339,7 @@ components:
   schemas:
     StartRepositoryAnalysisRequest:
       type: object
-      required: [repositoryUrl, requestId, schemaVersion, buildContext, workspacePolicy]
+      required: [repositoryUrl, requestId, schemaVersion, requestedOutputs, buildContext, workspacePolicy]
       properties:
         requestId:
           type: string
@@ -374,6 +347,11 @@ components:
         schemaVersion:
           type: string
           pattern: '.*\S.*'
+        requestedOutputs:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/RequestedAnalysisOutput'
         repositoryUrl:
           type: string
           format: uri
@@ -384,9 +362,6 @@ components:
           type: string
         commit:
           type: string
-        workspaceName:
-          type: [string, 'null']
-          pattern: '^\s*$'
         buildContext:
           $ref: '#/components/schemas/BuildContext'
         workspacePolicy:
@@ -464,34 +439,23 @@ components:
         items:
           type: array
           items:
-            $ref: '#/components/schemas/RepositoryAnalysis'
-    RepositoryAnalysis:
+            $ref: '#/components/schemas/RepositoryToBtmStatus'
+    RepositoryToBtmStatus:
       type: object
       required:
         - analysisRunId
-        - repositoryUrl
         - status
         - diagnostics
-        - sourceRoots
       properties:
         analysisRunId:
           type: string
-        workspaceId:
-          type: [string, 'null']
-        repositoryUrl:
-          type: string
-          format: uri
-          pattern: '^https://(?![^/?#]*@)(?!(?:[Ll][Oo][Cc][Aa][Ll][Hh][Oo][Ss][Tt]|[^/?#@]*\.[Ll][Oo][Cc][Aa][Ll][Hh][Oo][Ss][Tt])(?::[0-9]+)?(?:/|$))(?!(?:0|127|10)(?:\.[0-9]{1,3}){3}(?::[0-9]+)?(?:/|$))(?!(?:192\.168|169\.254)(?:\.[0-9]{1,3}){2}(?::[0-9]+)?(?:/|$))(?!172\.(?:1[6-9]|2[0-9]|3[0-1])(?:\.[0-9]{1,3}){2}(?::[0-9]+)?(?:/|$))(?!\[(?:(?:::)|(?:::1)|(?:0:0:0:0:0:0:0:[01])|(?:::[Ff][Ff][Ff][Ff]:[0-9.]+)|(?:0:0:0:0:0:[Ff][Ff][Ff][Ff]:[0-9.]+)|(?:[Ff][CcDd][0-9A-Fa-f:]*|[Ff][Ee]80:[0-9A-Fa-f:]*))\](?::[0-9]+)?(?:/|$))[^/?#\s]+(?:/[^?#\s]*)?$'
         branch:
           type: [string, 'null']
         commit:
           type: [string, 'null']
-        resolvedRemoteUrl:
-          type: [string, 'null']
-          pattern: '^https://(?![^/?#]*@)(?!(?:[Ll][Oo][Cc][Aa][Ll][Hh][Oo][Ss][Tt]|[^/?#@]*\.[Ll][Oo][Cc][Aa][Ll][Hh][Oo][Ss][Tt])(?::[0-9]+)?(?:/|$))(?!(?:0|127|10)(?:\.[0-9]{1,3}){3}(?::[0-9]+)?(?:/|$))(?!(?:192\.168|169\.254)(?:\.[0-9]{1,3}){2}(?::[0-9]+)?(?:/|$))(?!172\.(?:1[6-9]|2[0-9]|3[0-1])(?:\.[0-9]{1,3}){2}(?::[0-9]+)?(?:/|$))(?!\[(?:(?:::)|(?:::1)|(?:0:0:0:0:0:0:0:[01])|(?:::[Ff][Ff][Ff][Ff]:[0-9.]+)|(?:0:0:0:0:0:[Ff][Ff][Ff][Ff]:[0-9.]+)|(?:[Ff][CcDd][0-9A-Fa-f:]*|[Ff][Ee]80:[0-9A-Fa-f:]*))\](?::[0-9]+)?(?:/|$))[^/?#\s]+(?:/[^?#\s]*)?$'
         resolvedCommit:
           type: [string, 'null']
-        checkoutStatus:
+        sourceSnapshotStatus:
           type: [string, 'null']
         status:
           $ref: '#/components/schemas/RepositoryAnalysisStatus'
@@ -500,42 +464,42 @@ components:
         createdAt:
           type: [string, 'null']
           format: date-time
-        sourceRoots:
-          type: array
-          items:
-            type: string
         diagnostics:
           type: array
           items:
-            type: string
-    WorkspaceList:
+            $ref: '#/components/schemas/PublicDiagnostic'
+    RepositoryToBtmSubmission:
       type: object
-      required: [items]
+      required:
+        - analysisRunId
+        - status
+        - statusUrl
+        - jobsUrl
+        - correlationId
+        - btmDeliveryStatus
+        - diagnostics
       properties:
-        items:
-          type: array
-          items:
-            $ref: '#/components/schemas/Workspace'
-    Workspace:
-      type: object
-      required: [workspaceId, repositoryAnalyses]
-      properties:
-        workspaceId:
+        analysisRunId:
           type: string
-        name:
-          type: [string, 'null']
         status:
-          type: [string, 'null']
-        createdAt:
-          type: [string, 'null']
-          format: date-time
-        updatedAt:
-          type: [string, 'null']
-          format: date-time
-        repositoryAnalyses:
+          $ref: '#/components/schemas/RepositoryAnalysisStatus'
+        statusUrl:
+          type: string
+          pattern: '^/repository-analyses/[^/?#]+$'
+        jobsUrl:
+          type: string
+          pattern: '^/repository-analyses/[^/?#]+/jobs$'
+        btmDeliveryStatus:
+          $ref: '#/components/schemas/BtmDeliveryStatus'
+        btmDeliveryService:
+          type: string
+          enum: [BtmArtifactDeliveryService]
+        correlationId:
+          type: string
+        diagnostics:
           type: array
           items:
-            $ref: '#/components/schemas/RepositoryAnalysis'
+            $ref: '#/components/schemas/PublicDiagnostic'
     AnalysisJobList:
       type: object
       required: [items]
@@ -742,24 +706,21 @@ components:
           type: integer
           format: int64
           minimum: 0
-    Diagnostic:
+    PublicDiagnostic:
       type: object
-      required: [message]
+      required: [severity, code, message]
       properties:
-        id:
-          type: string
         severity:
           type: string
           enum: [INFO, WARNING, ERROR, UNKNOWN]
         code:
           type: string
+          pattern: '^(?!.*(?:TOKEN|SECRET|PASSWORD|CREDENTIAL|AUTHORIZATION))[A-Z0-9_:-]{1,96}$'
         message:
           type: string
-        source:
-          type: string
-        observedAt:
-          type: string
-          format: date-time
+          pattern: '^(?!(?i:.*(?:file:|https?://\S+|/tmp|/mnt/|/home/|/users/|/var/lib/forensic-analytics|workspace-|repository-workspaces|token|password|secret|credential|authorization|git clone|raw stdout|raw stderr))).+$'
+    Diagnostic:
+      $ref: '#/components/schemas/PublicDiagnostic'
     ErrorEnvelope:
       type: object
       required: [code, message, retryable, correlationId, diagnostics]
@@ -782,7 +743,7 @@ components:
         diagnostics:
           type: array
           items:
-            type: string
+            $ref: '#/components/schemas/PublicDiagnostic'
     AnalysisWorkerKind:
       type: string
       enum:
@@ -793,6 +754,17 @@ components:
         - GRAPH_ANALYSIS
         - REPORT
         - LLM_PROJECTION
+    RequestedAnalysisOutput:
+      type: string
+      enum:
+        - BTM_RULES
+    BtmDeliveryStatus:
+      type: string
+      enum:
+        - BTM_DELIVERY_NOT_READY
+        - BTM_DELIVERY_READY
+        - BTM_DELIVERY_UNAVAILABLE
+        - BTM_DELIVERY_UNKNOWN
     AnalysisJobState:
       type: string
       enum:

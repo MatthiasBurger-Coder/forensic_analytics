@@ -61,6 +61,9 @@ class BtmGenerationServiceArchitectureTest {
             .should()
             .dependOnClassesThat()
             .resideInAnyPackage(
+                "de.burger.forensics.analytics.services.analysisstore..",
+                "de.burger.forensics.analytics.services.gateway..",
+                "de.burger.forensics.analytics.services.ingestion..",
                 "de.burger.forensics.analytics.services.repositoryanalysis..",
                 "de.burger.forensics.analytics.services.javaastanalysis..",
                 "de.burger.forensics.analytics.services.joerncpganalysis..",

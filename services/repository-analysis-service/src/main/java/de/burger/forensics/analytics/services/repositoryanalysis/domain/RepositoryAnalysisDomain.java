@@ -5,6 +5,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -35,6 +36,12 @@ public final class RepositoryAnalysisDomain {
     public record AnalysisRunId(String value) {
         public AnalysisRunId {
             value = requireText(value, "analysis run id");
+        }
+    }
+
+    public record AnalysisJobId(String value) {
+        public AnalysisJobId {
+            value = requireText(value, "analysis job id");
         }
     }
 
@@ -136,6 +143,126 @@ public final class RepositoryAnalysisDomain {
         }
     }
 
+    public record ArtifactByteAccess(
+        String ownerService,
+        String retrievalContract,
+        String retrievalReference,
+        ArtifactByteCustody byteCustody
+    ) {
+        public ArtifactByteAccess {
+            ownerService = requireText(ownerService, "artifact byte owner service");
+            retrievalContract = requireText(retrievalContract, "artifact byte retrieval contract");
+            retrievalReference = requirePublicReference(retrievalReference, "artifact byte retrieval reference");
+            byteCustody = Objects.requireNonNull(byteCustody, "artifact byte custody must not be null");
+        }
+    }
+
+    public record SourcePackageDescriptor(
+        PackageAvailability availability,
+        ArtifactReference manifestArtifact,
+        ArtifactReference packageArtifact,
+        String schemaVersion,
+        String producerService,
+        ArtifactByteAccess byteAccess,
+        SourceSnapshotCompleteness completeness
+    ) {
+        public SourcePackageDescriptor {
+            availability = Objects.requireNonNull(availability, "source package availability must not be null");
+            Objects.requireNonNull(manifestArtifact, "source package manifest artifact must not be null");
+            schemaVersion = requireText(schemaVersion, "source package schema version");
+            producerService = requireText(producerService, "source package producer service");
+            Objects.requireNonNull(byteAccess, "source package byte access must not be null");
+            completeness = Objects.requireNonNullElse(completeness, SourceSnapshotCompleteness.UNKNOWN);
+            requirePackageArtifactWhenAvailable(availability, packageArtifact, "source package");
+        }
+    }
+
+    public record BuildOutputPackageDescriptor(
+        PackageAvailability availability,
+        ArtifactReference manifestArtifact,
+        ArtifactReference packageArtifact,
+        String schemaVersion,
+        String producerService,
+        ArtifactByteAccess byteAccess,
+        SourceSnapshotCompleteness completeness,
+        BuildOutputResolution resolution,
+        String buildSystem
+    ) {
+        public BuildOutputPackageDescriptor {
+            availability = Objects.requireNonNull(availability, "build-output package availability must not be null");
+            schemaVersion = requireText(schemaVersion, "build-output package schema version");
+            producerService = requireText(producerService, "build-output package producer service");
+            Objects.requireNonNull(byteAccess, "build-output package byte access must not be null");
+            completeness = Objects.requireNonNullElse(completeness, SourceSnapshotCompleteness.UNKNOWN);
+            resolution = Objects.requireNonNull(resolution, "build-output resolution must not be null");
+            buildSystem = requireText(buildSystem, "build system");
+            requirePackageArtifactWhenAvailable(availability, packageArtifact, "build-output package");
+            if (availability == PackageAvailability.AVAILABLE && manifestArtifact == null) {
+                throw new IllegalArgumentException("build-output package manifest artifact is required when available");
+            }
+        }
+    }
+
+    public record BuildOutputResolution(
+        List<BuildOutputProducerCandidate> candidates,
+        BuildOutputProducer selectedProducer,
+        boolean terminalIntegrityFailure,
+        List<Diagnostic> diagnostics
+    ) {
+        public BuildOutputResolution {
+            candidates = List.copyOf(Objects.requireNonNull(candidates, "build-output candidates must not be null"));
+            selectedProducer = Objects.requireNonNullElse(selectedProducer, BuildOutputProducer.UNSPECIFIED);
+            diagnostics = List.copyOf(Objects.requireNonNullElse(diagnostics, List.of()));
+            if (candidates.isEmpty()) {
+                throw new IllegalArgumentException("build-output resolution candidates must not be empty");
+            }
+            var order = candidates.stream().map(BuildOutputProducerCandidate::producer).toList();
+            var expected = List.of(
+                BuildOutputProducer.ARTIFACT_STORE,
+                BuildOutputProducer.ARTIFACTORY,
+                BuildOutputProducer.JENKINS,
+                BuildOutputProducer.BUILD_ARTIFACT_WORKER
+            );
+            if (!order.equals(expected)) {
+                throw new IllegalArgumentException(
+                    "build-output resolution order must be Artifact Store, Artifactory, Jenkins, build-artifact-worker"
+                );
+            }
+            var hasIntegrityFailure = candidates.stream()
+                .anyMatch(candidate -> candidate.status() == BuildOutputProducerStatus.TERMINAL_INTEGRITY_FAILURE);
+            if (hasIntegrityFailure != terminalIntegrityFailure) {
+                throw new IllegalArgumentException("terminal integrity failure must match producer candidate status");
+            }
+            if (terminalIntegrityFailure && selectedProducer != BuildOutputProducer.UNSPECIFIED) {
+                throw new IllegalArgumentException("terminal integrity failure must not select a fallback producer");
+            }
+            if (selectedProducer != BuildOutputProducer.UNSPECIFIED) {
+                var producerToSelect = selectedProducer;
+                var selectedCandidate = candidates.stream()
+                    .filter(candidate -> candidate.producer() == producerToSelect)
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalArgumentException("selected build-output producer must be part of candidates"));
+                if (selectedCandidate.status() != BuildOutputProducerStatus.AVAILABLE) {
+                    throw new IllegalArgumentException("selected build-output producer must be available");
+                }
+            }
+        }
+    }
+
+    public record BuildOutputProducerCandidate(
+        BuildOutputProducer producer,
+        BuildOutputProducerStatus status,
+        String reference,
+        List<Diagnostic> diagnostics
+    ) {
+        public BuildOutputProducerCandidate {
+            producer = Objects.requireNonNull(producer, "build-output producer must not be null");
+            status = Objects.requireNonNull(status, "build-output producer status must not be null");
+            reference = reference == null || reference.isBlank() ? "" : requirePublicReference(reference, "build-output producer reference");
+            diagnostics = List.copyOf(Objects.requireNonNullElse(diagnostics, List.of()));
+        }
+    }
+
     public record SourceRoot(String relativePath, String language) {
         public SourceRoot {
             relativePath = requireRelativeReference(relativePath, "source root");
@@ -194,7 +321,9 @@ public final class RepositoryAnalysisDomain {
         SourceSnapshotCompleteness completeness,
         List<SourceRoot> sourceRoots,
         ArtifactReference manifestArtifact,
-        List<String> limitations
+        List<String> limitations,
+        SourcePackageDescriptor sourcePackage,
+        BuildOutputPackageDescriptor buildOutputPackage
     ) {
         public SourceSnapshot {
             Objects.requireNonNull(sourceSnapshotId, "source snapshot id must not be null");
@@ -205,6 +334,131 @@ public final class RepositoryAnalysisDomain {
             }
             Objects.requireNonNull(manifestArtifact, "manifest artifact must not be null");
             limitations = List.copyOf(Objects.requireNonNullElse(limitations, List.of()));
+            Objects.requireNonNull(sourcePackage, "source package must not be null");
+            Objects.requireNonNull(buildOutputPackage, "build-output package must not be null");
+        }
+    }
+
+    public record SourceSnapshotHandoffPolicy(
+        int maxFiles,
+        long maxSourceBytes,
+        long timeoutSeconds
+    ) {
+        public SourceSnapshotHandoffPolicy {
+            if (maxFiles < 1 || maxFiles > 100_000) {
+                throw new IllegalArgumentException("max files must be between 1 and 100000");
+            }
+            if (maxSourceBytes < 1 || maxSourceBytes > 1_073_741_824L) {
+                throw new IllegalArgumentException("max source bytes must be between 1 and 1073741824");
+            }
+            if (timeoutSeconds < 1 || timeoutSeconds > 86_400) {
+                throw new IllegalArgumentException("timeout seconds must be between 1 and 86400");
+            }
+        }
+    }
+
+    public record SourceSnapshotSourceFile(
+        String sourceRoot,
+        String relativePath,
+        String contentUtf8,
+        String sha256,
+        long sizeBytes
+    ) {
+        public SourceSnapshotSourceFile {
+            sourceRoot = requireRelativeReference(sourceRoot, "source root");
+            relativePath = requireRelativeReference(relativePath, "source file path");
+            contentUtf8 = Objects.requireNonNull(contentUtf8, "source content must not be null");
+            sha256 = requireSha256(sha256, "source file sha256");
+            if (sizeBytes < 0) {
+                throw new IllegalArgumentException("source file size must not be negative");
+            }
+        }
+
+        public String sourcePath() {
+            return ".".equals(sourceRoot) ? relativePath : sourceRoot + "/" + relativePath;
+        }
+    }
+
+    public record JavaAstScanSummary(
+        int receivedFileCount,
+        int parsedFileCount,
+        int skippedFileCount,
+        int parseErrorCount,
+        int sourceFactCount,
+        String parser,
+        String parserVersion
+    ) {
+        public JavaAstScanSummary {
+            if (receivedFileCount < 0 || parsedFileCount < 0 || skippedFileCount < 0
+                || parseErrorCount < 0 || sourceFactCount < 0) {
+                throw new IllegalArgumentException("scan counts must not be negative");
+            }
+            parser = requireText(parser, "parser");
+            parserVersion = requireText(parserVersion, "parser version");
+        }
+    }
+
+    public record JavaAstAnalysisHandoffCommand(
+        String requestId,
+        String idempotencyKey,
+        String schemaVersion,
+        String correlationId,
+        AnalysisRunId analysisRunId,
+        AnalysisJobId analysisJobId,
+        SourceSnapshotId sourceSnapshotId,
+        String workerVersion,
+        SourceSnapshotHandoffPolicy policy,
+        List<SourceRoot> sourceRoots,
+        List<SourceSnapshotSourceFile> sourceFiles,
+        Map<String, String> safeAttributes
+    ) {
+        public JavaAstAnalysisHandoffCommand {
+            requestId = requireText(requestId, "request id");
+            idempotencyKey = requireText(idempotencyKey, "idempotency key");
+            schemaVersion = requireText(schemaVersion, "schema version");
+            correlationId = requireText(correlationId, "correlation id");
+            Objects.requireNonNull(analysisRunId, "analysis run id must not be null");
+            Objects.requireNonNull(analysisJobId, "analysis job id must not be null");
+            Objects.requireNonNull(sourceSnapshotId, "source snapshot id must not be null");
+            workerVersion = requireText(workerVersion, "worker version");
+            Objects.requireNonNull(policy, "handoff policy must not be null");
+            sourceRoots = List.copyOf(Objects.requireNonNull(sourceRoots, "source roots must not be null"));
+            sourceFiles = List.copyOf(Objects.requireNonNull(sourceFiles, "source files must not be null"));
+            if (sourceRoots.isEmpty()) {
+                throw new IllegalArgumentException("source roots must not be empty");
+            }
+            if (sourceFiles.isEmpty()) {
+                throw new IllegalArgumentException("source files must not be empty");
+            }
+            safeAttributes = RepositoryAnalysisDomain.safeAttributes(safeAttributes);
+        }
+    }
+
+    public record JavaAstAnalysisHandoffResult(
+        AnalysisRunId analysisRunId,
+        AnalysisJobId analysisJobId,
+        SourceSnapshotId sourceSnapshotId,
+        SourceSnapshotCompleteness completeness,
+        ArtifactReference sourceFactArtifact,
+        String sourceFactArtifactProducerService,
+        String sourceFactArtifactSchemaVersion,
+        ArtifactByteAccess sourceFactArtifactByteAccess,
+        JavaAstScanSummary summary,
+        List<Diagnostic> diagnostics,
+        Map<String, String> safeAttributes
+    ) {
+        public JavaAstAnalysisHandoffResult {
+            Objects.requireNonNull(analysisRunId, "analysis run id must not be null");
+            Objects.requireNonNull(analysisJobId, "analysis job id must not be null");
+            Objects.requireNonNull(sourceSnapshotId, "source snapshot id must not be null");
+            completeness = Objects.requireNonNullElse(completeness, SourceSnapshotCompleteness.UNKNOWN);
+            Objects.requireNonNull(sourceFactArtifact, "source fact artifact must not be null");
+            sourceFactArtifactProducerService = requireText(sourceFactArtifactProducerService, "source fact artifact producer service");
+            sourceFactArtifactSchemaVersion = requireText(sourceFactArtifactSchemaVersion, "source fact artifact schema version");
+            Objects.requireNonNull(sourceFactArtifactByteAccess, "source fact artifact byte access must not be null");
+            Objects.requireNonNull(summary, "scan summary must not be null");
+            diagnostics = List.copyOf(Objects.requireNonNullElse(diagnostics, List.of()));
+            safeAttributes = RepositoryAnalysisDomain.safeAttributes(safeAttributes);
         }
     }
 
@@ -276,6 +530,35 @@ public final class RepositoryAnalysisDomain {
         COMPLETE,
         INCOMPLETE,
         UNKNOWN
+    }
+
+    public enum PackageAvailability {
+        AVAILABLE,
+        PENDING,
+        UNAVAILABLE,
+        FAILED_INTEGRITY
+    }
+
+    public enum ArtifactByteCustody {
+        PRODUCER_RETAINED,
+        SCOPED_OBJECT_ACCESS,
+        EXPLICIT_HANDOFF
+    }
+
+    public enum BuildOutputProducer {
+        UNSPECIFIED,
+        ARTIFACT_STORE,
+        ARTIFACTORY,
+        JENKINS,
+        BUILD_ARTIFACT_WORKER
+    }
+
+    public enum BuildOutputProducerStatus {
+        AVAILABLE,
+        NOT_CONFIGURED,
+        MISSING,
+        FALLBACK_PLANNED,
+        TERMINAL_INTEGRITY_FAILURE
     }
 
     public enum DiagnosticSeverity {
@@ -387,11 +670,37 @@ public final class RepositoryAnalysisDomain {
         var lower = reference.toLowerCase(Locale.ROOT);
         if (reference.startsWith("/") || reference.startsWith("\\") || reference.contains("\\")
             || lower.startsWith("file:") || reference.matches("^[A-Za-z]:.*")
-            || reference.contains("../") || reference.contains("/..") || "..".equals(reference)
+            || Arrays.asList(reference.split("/")).contains("..")
             || reference.contains("\n") || reference.contains("\r")) {
             throw new IllegalArgumentException(name + " must be relative and service-owned");
         }
         return reference;
+    }
+
+    private static String requirePublicReference(String value, String name) {
+        var reference = requireText(value, name);
+        var lower = reference.toLowerCase(Locale.ROOT);
+        if (reference.startsWith("/") || reference.startsWith("\\") || reference.contains("\\")
+            || lower.startsWith("file:") || reference.matches("^[A-Za-z]:.*")
+            || reference.contains("://")
+            || Arrays.asList(reference.split("/")).contains("..")
+            || reference.contains("\n") || reference.contains("\r")) {
+            throw new IllegalArgumentException(name + " must be an opaque public reference");
+        }
+        return reference;
+    }
+
+    private static void requirePackageArtifactWhenAvailable(
+        PackageAvailability availability,
+        ArtifactReference packageArtifact,
+        String name
+    ) {
+        if (availability == PackageAvailability.AVAILABLE && packageArtifact == null) {
+            throw new IllegalArgumentException(name + " artifact is required when available");
+        }
+        if (availability == PackageAvailability.FAILED_INTEGRITY && packageArtifact != null) {
+            throw new IllegalArgumentException(name + " artifact must be omitted after integrity failure");
+        }
     }
 
     private static String requireSha256(String value, String name) {

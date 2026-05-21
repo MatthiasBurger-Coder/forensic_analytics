@@ -7,6 +7,8 @@ import de.burger.forensics.analytics.services.btmgeneration.application.port.Btm
 import de.burger.forensics.analytics.services.btmgeneration.domain.BtmGenerationDomain.AnalysisArtifactCategory;
 import de.burger.forensics.analytics.services.btmgeneration.domain.BtmGenerationDomain.AnalysisArtifactReference;
 import de.burger.forensics.analytics.services.btmgeneration.domain.BtmGenerationDomain.ArtifactReference;
+import de.burger.forensics.analytics.services.btmgeneration.domain.BtmGenerationDomain.ArtifactByteAccess;
+import de.burger.forensics.analytics.services.btmgeneration.domain.BtmGenerationDomain.ArtifactByteCustody;
 import de.burger.forensics.analytics.services.btmgeneration.domain.BtmGenerationDomain.BtmArtifactWriteRequest;
 import de.burger.forensics.analytics.services.btmgeneration.domain.BtmGenerationDomain.BtmDiagnostic;
 import de.burger.forensics.analytics.services.btmgeneration.domain.BtmGenerationDomain.BtmGenerationSummary;
@@ -16,18 +18,26 @@ import de.burger.forensics.analytics.services.btmgeneration.domain.BtmGeneration
 import de.burger.forensics.analytics.services.btmgeneration.domain.BtmGenerationDomain.RequestMetadata;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 
+import static de.burger.forensics.analytics.services.btmgeneration.domain.BtmGenerationDomain.BTM_DELIVERY_CONTRACT;
+import static de.burger.forensics.analytics.services.btmgeneration.domain.BtmGenerationDomain.BTM_MANIFEST_ARTIFACT_TYPE;
+import static de.burger.forensics.analytics.services.btmgeneration.domain.BtmGenerationDomain.BTM_RULE_ARTIFACT_TYPE;
 import static de.burger.forensics.analytics.services.btmgeneration.domain.BtmGenerationDomain.PRODUCER_SERVICE;
 import static de.burger.forensics.analytics.services.btmgeneration.domain.BtmGenerationDomain.sha256;
 
 public final class FileSystemBtmArtifactWriter implements BtmArtifactWriterPort {
-    private static final String BTM_ARTIFACT_TYPE = "application/vnd.forensic-analytics.btm-rules.v1+btm";
-    private static final String MANIFEST_ARTIFACT_TYPE = "application/vnd.forensic-analytics.btm-rule-manifest.v1+json";
     private static final Gson GSON = new GsonBuilder()
         .disableHtmlEscaping()
         .setPrettyPrinting()
@@ -43,23 +53,24 @@ public final class FileSystemBtmArtifactWriter implements BtmArtifactWriterPort 
 
     @Override
     public GeneratedBtmArtifacts write(BtmArtifactWriteRequest request) {
+        var btmPath = artifactPath(request.metadata(), "rules.btm");
+        var manifestPath = artifactPath(request.metadata(), "rule-manifest.json");
         var btmContent = renderBtm(request);
-        var manifestContent = renderManifest(request);
         var btmBytes = btmContent.getBytes(StandardCharsets.UTF_8);
+        var generatedArtifacts = List.of(generatedArtifact(btmPath, BTM_RULE_ARTIFACT_TYPE, btmBytes));
+        var manifestContent = renderManifest(request, generatedArtifacts);
         var manifestBytes = manifestContent.getBytes(StandardCharsets.UTF_8);
         var totalBytes = (long) btmBytes.length + manifestBytes.length;
         if (totalBytes > request.policy().maxArtifactBytes()) {
             throw new BtmArtifactException("Generated BTM artifacts exceed configured output limit.");
         }
 
-        var btmPath = artifactPath(request.metadata(), "rules.btm");
-        var manifestPath = artifactPath(request.metadata(), "rule-manifest.json");
         writeFile(btmPath, btmBytes);
         writeFile(manifestPath, manifestBytes);
 
         return new GeneratedBtmArtifacts(List.of(
-            reference(btmPath, BTM_ARTIFACT_TYPE, btmBytes, request),
-            reference(manifestPath, MANIFEST_ARTIFACT_TYPE, manifestBytes, request)
+            reference(btmPath, BTM_RULE_ARTIFACT_TYPE, btmBytes, request),
+            reference(manifestPath, BTM_MANIFEST_ARTIFACT_TYPE, manifestBytes, request)
         ), totalBytes);
     }
 
@@ -70,6 +81,13 @@ public final class FileSystemBtmArtifactWriter implements BtmArtifactWriterPort 
             .append("# Analysis run: ").append(request.metadata().analysisRunId().value()).append('\n')
             .append("# Analysis job: ").append(request.metadata().analysisJobId().value()).append('\n')
             .append("# Source snapshot: ").append(request.metadata().sourceSnapshotId().value()).append('\n')
+            .append("# Target selection: ").append(request.targetSelection().selectionId()).append('\n')
+            .append("# Selection fingerprint: ").append(request.targetSelection().selectionFingerprint()).append('\n')
+            .append("# Policy fingerprint: ").append(request.reproducibility().policyFingerprint()).append('\n')
+            .append("# Policy max targets: ").append(request.policy().maxTargets()).append('\n')
+            .append("# Policy max artifact bytes: ").append(request.policy().maxArtifactBytes()).append('\n')
+            .append("# Policy timeout seconds: ").append(request.policy().timeoutSeconds()).append('\n')
+            .append("# Policy fail on incomplete facts: ").append(request.policy().failOnIncompleteFacts()).append('\n')
             .append("# This file is generated instrumentation, not observed runtime evidence.").append('\n');
         for (var rule : request.rules()) {
             appendRule(builder, rule);
@@ -81,6 +99,12 @@ public final class FileSystemBtmArtifactWriter implements BtmArtifactWriterPort 
         var target = rule.target();
         builder.append('\n')
             .append("RULE ").append(rule.ruleId()).append('\n')
+            .append("# Target id: ").append(target.targetId()).append('\n')
+            .append("# Source fact id: ").append(target.sourceFactId()).append('\n')
+            .append("# Source fact artifact: ").append(target.sourceFactArtifactReference()).append('\n')
+            .append("# Semantic artifact: ").append(target.semanticArtifactReference()).append('\n')
+            .append("# Target completeness: ").append(target.completeness()).append('\n')
+            .append("# Target sensitivity: ").append(target.sensitivity()).append('\n')
             .append("CLASS ").append(target.fullyQualifiedClassName()).append('\n')
             .append("METHOD ").append(target.methodName()).append('\n')
             .append(atClause(rule)).append('\n')
@@ -91,6 +115,10 @@ public final class FileSystemBtmArtifactWriter implements BtmArtifactWriterPort 
             .append(escape(target.targetId()))
             .append(" sourceFactId=")
             .append(escape(target.sourceFactId()))
+            .append(" sourceFactArtifact=")
+            .append(escape(target.sourceFactArtifactReference()))
+            .append(" semanticArtifact=")
+            .append(escape(target.semanticArtifactReference()))
             .append("\")").append('\n')
             .append("END").append('\n');
     }
@@ -108,30 +136,48 @@ public final class FileSystemBtmArtifactWriter implements BtmArtifactWriterPort 
         return value.replace("\\", "\\\\").replace("\"", "\\\"");
     }
 
-    private static String renderManifest(BtmArtifactWriteRequest request) {
+    private static String renderManifest(BtmArtifactWriteRequest request, List<GeneratedArtifactDocument> generatedArtifacts) {
         return GSON.toJson(new ManifestDocument(
             request.metadata().schemaVersion(),
             request.metadata().analysisRunId().value(),
             request.metadata().analysisJobId().value(),
             request.metadata().sourceSnapshotId().value(),
             request.summary(),
+            request.policy(),
+            request.targetSelection(),
             request.reproducibility(),
             request.completeness().name(),
+            generatedArtifacts,
             request.rules(),
             request.diagnostics()
         ));
     }
 
     private void writeFile(Path relativePath, byte[] bytes) {
-        var target = artifactRoot.resolve(relativePath).normalize();
+        var safeRelativePath = relativePath(relativePath.toString(), "BTM artifact path");
+        var target = artifactRoot.resolve(safeRelativePath).normalize();
         if (!target.startsWith(artifactRoot)) {
             throw new BtmArtifactException("Generated BTM artifact path escapes artifact root.");
         }
         try {
-            Files.createDirectories(target.getParent());
-            Files.write(target, bytes);
+            createArtifactDirectories(safeRelativePath.getParent());
+            writeNewFile(target, bytes);
+        } catch (FileAlreadyExistsException error) {
+            keepExistingIdenticalArtifact(target, bytes);
         } catch (IOException error) {
             throw new BtmArtifactException("Failed to write BTM artifact.", error);
+        }
+    }
+
+    private void keepExistingIdenticalArtifact(Path target, byte[] expectedBytes) {
+        try {
+            if (!target.startsWith(artifactRoot)
+                || !isRegularFileNoFollow(target)
+                || !sha256(readBytes(target)).equals(sha256(expectedBytes))) {
+                throw new BtmArtifactException("Generated BTM artifact already exists with different bytes.");
+            }
+        } catch (IOException error) {
+            throw new BtmArtifactException("Failed to verify existing BTM artifact.", error);
         }
     }
 
@@ -146,7 +192,13 @@ public final class FileSystemBtmArtifactWriter implements BtmArtifactWriterPort 
             AnalysisArtifactCategory.GENERATED,
             PRODUCER_SERVICE,
             request.summary().ruleSchemaVersion(),
-            request.completeness()
+            request.completeness(),
+            new ArtifactByteAccess(
+                PRODUCER_SERVICE,
+                BTM_DELIVERY_CONTRACT,
+                path.toString().replace('\\', '/'),
+                ArtifactByteCustody.PRODUCER_RETAINED
+            )
         );
     }
 
@@ -157,8 +209,96 @@ public final class FileSystemBtmArtifactWriter implements BtmArtifactWriterPort 
         );
     }
 
+    private void createArtifactDirectories(Path relativeDirectory) throws IOException {
+        ensureRootDirectory();
+        if (relativeDirectory == null) {
+            return;
+        }
+        var current = artifactRoot;
+        for (var segment : relativeDirectory) {
+            current = current.resolve(segment);
+            if (Files.exists(current, LinkOption.NOFOLLOW_LINKS)) {
+                ensureDirectory(current);
+            } else {
+                Files.createDirectory(current);
+            }
+        }
+    }
+
+    private void ensureRootDirectory() throws IOException {
+        if (!Files.exists(artifactRoot, LinkOption.NOFOLLOW_LINKS)) {
+            Files.createDirectories(artifactRoot);
+        }
+        ensureDirectory(artifactRoot);
+    }
+
+    private static void ensureDirectory(Path path) throws IOException {
+        if (Files.isSymbolicLink(path) || !Files.isDirectory(path, LinkOption.NOFOLLOW_LINKS)) {
+            throw new IOException("Artifact directory must not be a symbolic link or non-directory.");
+        }
+    }
+
+    private static void writeNewFile(Path target, byte[] bytes) throws IOException {
+        try (var channel = Files.newByteChannel(
+            target,
+            StandardOpenOption.WRITE,
+            StandardOpenOption.CREATE_NEW,
+            LinkOption.NOFOLLOW_LINKS
+        )) {
+            channel.write(ByteBuffer.wrap(bytes));
+        }
+    }
+
+    private static boolean isRegularFileNoFollow(Path target) throws IOException {
+        if (!Files.exists(target, LinkOption.NOFOLLOW_LINKS) || Files.isSymbolicLink(target)) {
+            return false;
+        }
+        return Files.readAttributes(target, BasicFileAttributes.class, LinkOption.NOFOLLOW_LINKS).isRegularFile();
+    }
+
+    private static byte[] readBytes(Path target) throws IOException {
+        try (var channel = Files.newByteChannel(target, StandardOpenOption.READ, LinkOption.NOFOLLOW_LINKS);
+             var output = new java.io.ByteArrayOutputStream()) {
+            var buffer = ByteBuffer.allocate(8192);
+            while (channel.read(buffer) != -1) {
+                buffer.flip();
+                output.write(buffer.array(), 0, buffer.limit());
+                buffer.clear();
+            }
+            return output.toByteArray();
+        }
+    }
+
+    private static Path relativePath(String value, String fieldName) {
+        var reference = Objects.requireNonNull(value, fieldName + " must not be null").replace('\\', '/');
+        var lower = reference.toLowerCase(Locale.ROOT);
+        if (reference.isBlank()
+            || reference.startsWith("/")
+            || lower.startsWith("file:")
+            || reference.contains("://")
+            || reference.matches("^[A-Za-z]:.*")) {
+            throw new BtmArtifactException(fieldName + " must be a safe relative path.");
+        }
+        if (Arrays.stream(reference.split("/")).anyMatch(part -> part.isBlank() || part.equals(".") || part.equals(".."))) {
+            throw new BtmArtifactException(fieldName + " must not contain traversal, current-directory or blank path segments.");
+        }
+        return Path.of(reference).normalize();
+    }
+
     private static String safeName(String value) {
         return value.replaceAll("[^A-Za-z0-9._-]", "_");
+    }
+
+    private static GeneratedArtifactDocument generatedArtifact(Path path, String type, byte[] bytes) {
+        return new GeneratedArtifactDocument(path.toString().replace('\\', '/'), type, sha256(bytes), bytes.length);
+    }
+
+    private record GeneratedArtifactDocument(
+        String path,
+        String type,
+        String sha256,
+        long sizeBytes
+    ) {
     }
 
     private record ManifestDocument(
@@ -167,8 +307,11 @@ public final class FileSystemBtmArtifactWriter implements BtmArtifactWriterPort 
         String analysisJobId,
         String sourceSnapshotId,
         BtmGenerationSummary summary,
+        de.burger.forensics.analytics.services.btmgeneration.domain.BtmGenerationDomain.BtmGenerationPolicy policy,
+        de.burger.forensics.analytics.services.btmgeneration.domain.BtmGenerationDomain.TargetSelection targetSelection,
         ReproducibilityMetadata reproducibility,
         String completeness,
+        List<GeneratedArtifactDocument> generatedArtifacts,
         List<GeneratedRule> rules,
         List<BtmDiagnostic> diagnostics
     ) {

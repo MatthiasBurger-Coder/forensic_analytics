@@ -58,6 +58,39 @@ must not report imports from another service package root.
 The third command must remain empty for forbidden local path leakage. The
 fourth command must remain empty for obvious inline secret assignments.
 
+## Source Package And Build Artifact Gates
+
+Use for the Slice 07 source snapshot, build-output package and Joern
+materialization contract:
+
+```bash
+./gradlew :services:repository-analysis-service:generateProto :services:analysis-store-service:generateProto :services:joern-cpg-analysis-service:generateProto --dependency-verification strict --console=plain --stacktrace
+./gradlew :services:repository-analysis-service:test :services:analysis-store-service:test :services:joern-cpg-analysis-service:test --dependency-verification strict --console=plain --stacktrace
+./gradlew test --dependency-verification strict --console=plain --stacktrace
+```
+
+When implementation code changes artifact validation or materialization, also
+run the full local gate from `QUALITY.md`.
+
+Default local tests must not require real Jenkins, Artifactory, external
+artifact repositories or Docker. Use fakes or deterministic fixtures for
+Jenkins and Artifactory behavior. Docker checks are opt-in unless the slice
+changes Docker files or the workflow explicitly verifies Docker availability.
+
+Slice 07 tests must cover:
+
+- deterministic commit-pinned source snapshot identity;
+- complete build-output package metadata and manifest checksums;
+- artifact resolution order: existing Artifact Store/Artifactory, optional
+  Jenkins, then build-artifact-worker fallback;
+- terminal failure on manifest or checksum mismatch;
+- `ArtifactByteAccess` validation and roundtrip through service mappings;
+- rejection of Repository Analysis private workspace IDs in Joern requests;
+- archive traversal, symlink, hardlink, device-file, duplicate-path and quota
+  rejection before materialization;
+- diagnostics without local paths, raw command arguments, URLs with secret
+  coordinates, source content or raw stderr.
+
 ## Contract-Test Stop Rule
 
 If a slice changes `contracts/**` and the repository still has no executable
@@ -65,6 +98,75 @@ service-level contract-test task for that contract type, the slice must add the
 contract-test command and execute it before claiming readiness.
 `docs/contracts/contract-test-plan.md` records that service-level contract test
 tasks are not yet generally available.
+
+## Repository-To-BTM Orchestration Readiness Gates
+
+Use for the Slice 11 orchestration contract and artifact-readiness bridge:
+
+```bash
+./gradlew :services:forensic-gateway-service:generateProto :services:analysis-store-service:generateProto :services:java-ast-analysis-service:generateProto --dependency-verification strict --console=plain --stacktrace
+./gradlew :services:forensic-gateway-service:test :services:analysis-store-service:test :services:java-ast-analysis-service:test --dependency-verification strict --console=plain --stacktrace
+./gradlew :forensic-analytics-rest:test --tests '*GatewayOpenApiContractTest' --dependency-verification strict --console=plain --stacktrace
+```
+
+When Slice 11 changes BTM delivery or Joern contract mappings, include the
+affected service tests in the same readiness gate before claiming the bridge is
+ready for end-to-end orchestration.
+
+Slice 11 readiness tests must cover:
+
+- Gateway public diagnostics redact or allow-list downstream messages so local
+  paths, workspace IDs, raw command output, secrets, token assignments and
+  `file:` references do not reach public HTTP or gRPC responses;
+- Gateway public OpenAPI no longer presents Repository Analysis private
+  workspace IDs or paths as the active repository-to-BTM API model;
+- Analysis Store or another explicitly approved owner owns repository-to-BTM
+  orchestration state and worker dispatch decisions;
+- Java AST source-fact artifacts preserve valid `ArtifactByteAccess` through
+  service-local gRPC mapping and Analysis Store registration;
+- Joern receives only available and complete source/build package descriptors,
+  or the readiness path returns explicit incomplete diagnostics and skips Joern;
+- the deterministic local readiness command uses fakes, in-process gRPC or
+  local fixtures and does not require external network services, Jenkins,
+  Artifactory, Docker or credentials by default.
+
+## Source-Fact Byte Retrieval And Local E2E Fixture Gates
+
+Use for the Slice 12 source-fact byte retrieval and Java AST handoff contract:
+
+```bash
+./gradlew :services:repository-analysis-service:generateProto :services:java-ast-analysis-service:generateProto :services:analysis-store-service:generateProto --dependency-verification strict --console=plain --stacktrace
+./gradlew :services:repository-analysis-service:test :services:java-ast-analysis-service:test :services:analysis-store-service:test --dependency-verification strict --console=plain --stacktrace
+./gradlew test --dependency-verification strict --console=plain --stacktrace
+git diff --check
+```
+
+When Slice 12 adds deterministic repository-to-BTM fixture consumers for
+Gateway, Joern or BTM Generation, include the affected service-local `test`
+tasks in the same readiness gate before claiming the fixture command is
+complete.
+
+Slice 12 readiness tests must cover:
+
+- `ArtifactByteAccess.retrieval_contract` names a real Java AST owner API or
+  returns an explicit unavailable state that blocks end-to-end orchestration;
+- Java AST source-fact bytes are retrieved only through the owner API with
+  checksum and size validation;
+- Analysis Store consumes source-fact bytes through the Java AST owner API
+  using service-local generated client stubs only, with no direct filesystem
+  access and no Java implementation imports from another service;
+- Repository Analysis exposes Java AST handoff completion through a reviewed
+  gRPC service contract; if that contract is missing or insufficient, the slice
+  stops for contract refinement;
+- the versioned synthetic fixture shape in
+  `docs/workflow/fixtures/repository-to-btm-v1.md` and service-local
+  `src/test/resources/repository-to-btm/v1/**` fixture files contain no local
+  paths, private repository coordinates, credentials, raw source content, host
+  workspace details, Jenkins URLs, Artifactory URLs or Docker assumptions;
+- default local tests use fakes, in-process gRPC or local fixtures and do not
+  require external Git network access, Docker, Jenkins, Artifactory or
+  credentials;
+- missing build-output or Joern inputs remain explicit incomplete diagnostics.
 
 ## Frontend Gate
 

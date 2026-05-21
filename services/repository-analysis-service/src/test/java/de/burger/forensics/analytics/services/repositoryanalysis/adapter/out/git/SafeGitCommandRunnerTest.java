@@ -26,6 +26,7 @@ class SafeGitCommandRunnerTest {
         assertTrue(result.output().contains("credential.helper="));
         assertTrue(result.output().contains("protocol.file.allow=never"));
         assertTrue(result.output().contains("protocol.ext.allow=never"));
+        assertTrue(result.output().contains("http.followRedirects=false"));
         assertTrue(result.output().contains("GIT_TERMINAL_PROMPT=0"));
         assertTrue(result.output().contains("GIT_CONFIG_NOSYSTEM=1"));
     }

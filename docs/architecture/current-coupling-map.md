@@ -138,7 +138,8 @@ The following current couplings block microservice claims:
   implemented or tested;
 - no service-private persistence ownership exists;
 - no per-service health checks exist;
-- gateway, graph-replay and report-generation remain README-only planned roots;
+- graph-replay and report-generation remain README-only planned roots, and the
+  build-artifact worker is planned without a service root;
 - no Docker Swarm or Kubernetes manifests exist;
 - no service-specific CI workflow exists.
 
@@ -153,3 +154,15 @@ repository build. They must not be renamed or described as implemented
 microservices until later slices produce runtime evidence for independent
 build, start, test, configuration, healthcheck, container and deployment
 behavior.
+
+## Slice 18 Isolation Result
+
+Slice 18 keeps the remaining `forensic-analytics-*` runtime paths registered
+and isolated as legacy in-process or rollback evidence. Caller verification
+still finds active dependencies for CLI, REST, bootstrap, Boot, engine,
+ingestion-request and testbed behavior, so removal would break verified current
+behavior.
+
+The accepted repository-to-BTM path is the service-owned Gateway and worker
+path, not these legacy modules. Later removal requires the preconditions in
+`docs/architecture/monolith-runtime-isolation.md`.

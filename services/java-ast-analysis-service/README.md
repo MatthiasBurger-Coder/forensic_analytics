@@ -10,7 +10,7 @@ its own Gradle project and maps them into service-owned models.
 
 ## Contract
 
-The provisional inbound API is `JavaAstAnalysisService.AnalyzeSourceSnapshot`
+The provisional Slice 06 inbound API is `JavaAstAnalysisService.AnalyzeSourceSnapshot`
 from `contracts/grpc/java-ast-analysis.proto`.
 
 Inputs are immutable source snapshot identifiers, declared Java source roots,
@@ -31,5 +31,9 @@ requested.
 ```bash
 ./gradlew :services:java-ast-analysis-service:test --dependency-verification strict --console=plain --stacktrace
 ./gradlew :services:java-ast-analysis-service:bootJar --dependency-verification strict --console=plain --stacktrace
-docker build -f services/java-ast-analysis-service/Dockerfile -t java-ast-analysis-service:slice07 .
+docker build -f services/java-ast-analysis-service/Dockerfile --build-arg SERVICE_JAR=services/java-ast-analysis-service/build/libs/java-ast-analysis-service-0.1.0-SNAPSHOT.jar -t forensic-analytics/java-ast-analysis-service:local .
 ```
+
+When started through `deployment/docker-compose/repository-to-btm.local.yml`,
+the health endpoint is published on `127.0.0.1:18084` and the service gRPC port
+is published on `127.0.0.1:19093` for local diagnostics.

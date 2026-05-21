@@ -26,7 +26,9 @@ class RepositoryAnalysisServiceArchitectureTest {
                 "org.springframework..",
                 "io.grpc..",
                 "com.google.protobuf..",
-                "de.burger.forensics.analytics.repositoryanalysis.v1.."
+                "de.burger.forensics.analytics.repositoryanalysis.v1..",
+                "de.burger.forensics.analytics.javaastanalysis.v1..",
+                "de.burger.forensics.analytics.analysisjob.v1.."
             );
 
     @ArchTest

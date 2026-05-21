@@ -42,7 +42,7 @@ Slice 09 verification commands:
 ```bash
 ./gradlew --no-daemon :services:btm-generation-service:test :services:btm-generation-service:jacocoTestReport :services:btm-generation-service:jacocoTestCoverageVerification --dependency-verification strict --console=plain --stacktrace
 ./gradlew --no-daemon :services:btm-generation-service:bootJar --dependency-verification strict --console=plain --stacktrace
-docker build -f services/btm-generation-service/Dockerfile --build-arg SERVICE_JAR=services/btm-generation-service/build/libs/btm-generation-service-0.1.0-SNAPSHOT.jar -t btm-generation-service:slice09 .
+docker build -f services/btm-generation-service/Dockerfile --build-arg SERVICE_JAR=services/btm-generation-service/build/libs/btm-generation-service-0.1.0-SNAPSHOT.jar -t forensic-analytics/btm-generation-service:local .
 ```
 
 The full repository quality gate remains defined by `QUALITY.md`.
@@ -55,3 +55,7 @@ The full repository quality gate remains defined by `QUALITY.md`.
   targets instead of a final canonical fact schema.
 - Docker Compose, Swarm and Kubernetes runtime readiness are not claimed in
   this slice.
+
+When started through `deployment/docker-compose/repository-to-btm.local.yml`,
+the health endpoint is published on `127.0.0.1:18086` and the service gRPC port
+is published on `127.0.0.1:19095` for local diagnostics.

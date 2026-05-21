@@ -1,6 +1,6 @@
 # Forensic UI
 
-Standalone React, TypeScript and Vite operator UI for the Forensic Analytics REST MVP.
+Standalone React, TypeScript and Vite operator UI for the Forensic Analytics Gateway REST API.
 
 ## Local Development
 
@@ -43,4 +43,8 @@ The nginx image serves the static Vite build with SPA fallback. It returns a JSO
 
 ## Current Scope
 
-The UI registers and prepares repository analysis sessions through HTTP/REST. It does not call gRPC, WebSocket, SSE or gRPC-Web from the browser, and it does not claim that the full repository analysis pipeline has completed.
+The UI starts repository-to-BTM sessions through Gateway `/api/repository-analyses`, including the required `X-Correlation-Id` and `Idempotency-Key` headers. It does not call internal worker services, gRPC, WebSocket, SSE or gRPC-Web from the browser.
+
+Dashboard, workspace and aggregate diagnostics views stay isolated until the
+Gateway exposes verified public list/query routes. The active frontend path
+uses only the verified Gateway submission and status endpoints.

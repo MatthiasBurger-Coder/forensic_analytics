@@ -37,7 +37,7 @@ Plugin / external client
 |---|---|
 | Senior Requirement Engineer | EPIC v0.2 supports the requested direction. Producers are request and runtime-binding adapters; Analytics owns server-side analysis and BTM generation. |
 | Senior System Architect | ADR-0017 defines the service landscape. ADR-0009 and ADR-0010 block shared Java service modules and require contract-first service communication. |
-| Senior Java Backend Developer | Service-local implementations exist for repository analysis and BTM generation, but Gateway orchestration, artifact delivery and worker-chain integration are missing. |
+| Senior Java Backend Developer | Service-local implementations exist for repository analysis and BTM generation, but Gateway facade integration, artifact delivery and worker-chain integration are missing. |
 | Senior React Frontend Developer | Frontend impact waits for Gateway readiness. The UI must not call internal worker services directly. |
 | Senior Tester | Acceptance requires incremental tests: contract tests first, then service-local tests, then end-to-end repository-to-BTM verification and full quality gate. |
 
@@ -78,9 +78,10 @@ in `docs/architecture/contract-versioning.md`.
 
 Analysis Store owns canonical job state and accepted artifact metadata.
 Repository Analysis owns workspaces and source snapshots. BTM Generation owns
-generated BTM bytes until registration or delivery through an approved owner
-path. No service may read another service's private database, private
-filesystem paths or generated classes.
+generated BTM bytes until an explicit byte-handoff, object-store ownership or
+delivery contract transfers byte custody. Analysis Store registration transfers
+accepted artifact metadata only. No service may read another service's private
+database, private filesystem paths or generated classes.
 
 ## Test Impact
 
@@ -155,3 +156,39 @@ preflight starts clean.
 ## Final Decision
 
 `READY_FOR_WORKFLOW`
+
+## v3 Refinement Decision
+
+During `workflow execute`, the former v2 Slice 11 end-to-end
+repository-to-BTM orchestration review returned `REQUIRES_REFINEMENT`. The
+Root Architect escalation stopped implementation before product changes because
+Gateway would otherwise have to sequence worker business logic, public Gateway
+contracts still exposed workspace concepts, Java AST artifact byte access was
+not preserved and the orchestration owner API was not verified.
+
+Decision: insert v3 Slice 11,
+`Repository-to-BTM orchestration contract and artifact-readiness bridge`, before
+end-to-end orchestration resumes. The accepted direction remains EPIC-aligned:
+Gateway stays facade-only, Analysis Store is the preferred orchestration owner
+unless Slice 11 records another reviewed owner, incomplete Joern/build-artifact
+inputs remain explicit diagnostics, and deterministic local readiness tests
+must not require external services or credentials.
+
+## v4 Refinement Decision
+
+During the v3 Slice 12 end-to-end orchestration precheck, the mandatory
+workflow roles found that implementation would still require guessing the Java
+AST source-fact byte retrieval path, the Repository Analysis to Java AST
+handoff signal and the deterministic local fixture contract. Continuing inside
+the previous Slice 12 would risk private workspace coupling, service
+implementation imports or unverified artifact-byte access.
+
+Decision: insert v4 Slice 12,
+`Source-fact byte retrieval and Java AST handoff contract`, before end-to-end
+orchestration resumes. Java AST remains the source-fact byte owner until an
+explicit handoff or object-store contract transfers custody. Analysis Store may
+consume source-fact bytes only through the verified Java AST owner API using
+service-local generated client stubs. Repository Analysis must expose handoff
+completion through a reviewed gRPC service contract, and the local readiness
+path must use deterministic fixtures, fakes or in-process gRPC without external
+Git network access, Docker, Jenkins, Artifactory or credentials by default.
