@@ -487,7 +487,9 @@ affected_files:
   - forensic-analytics-adapter-repository-source/**
   - settings.gradle.kts
   - contracts/**
+  - docs/arc42/**
   - docs/architecture/**
+  - docs/workflow/execution-report.md
 affected_modules:
   - services:repository-source-service
   - forensic-analytics-adapter-repository-source
@@ -501,6 +503,9 @@ file_locks:
   - services/repository-source-service/**
   - forensic-analytics-adapter-repository-source/**
   - settings.gradle.kts
+  - docs/arc42/**
+  - docs/architecture/**
+  - docs/workflow/execution-report.md
 contract_locks:
   - repository-source-service
 architecture_locks:
