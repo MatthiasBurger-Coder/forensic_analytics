@@ -32,7 +32,7 @@
 | S02 | COMPLETED | Added WildFly hardening runbook and documented opt-in external evidence; targeted skip/default gate passed. |
 | S03 | COMPLETED | Added explicit planned CLI-to-Gateway contract, OpenAPI markers and contract tests; REST and CLI module gates passed. |
 | S04 | COMPLETED | Strengthened separate Swarm/Kubernetes workflow handoff; no manifests, stack files or readiness claims added. |
-| S05 | PENDING | Monolith caller inventory. |
+| S05 | COMPLETED | Added monolith caller inventory and retirement gates; no legacy path removed. |
 | S06 | PENDING | CLI first caller-free migration. |
 | S07 | PENDING | Conditional legacy runtime path retirement. |
 | S08 | PENDING | Final documentation and quality gate. |
@@ -228,3 +228,36 @@ Notes:
 - No Docker Swarm stack file was added.
 - No Kubernetes manifest or chart was added.
 - No deployment readiness claim was added.
+
+## S05 Legacy Monolith Caller Inventory And Retirement Gates
+
+| Field | Result |
+|---|---|
+| Owner | Microservice Senior Expert |
+| Secondary reviewers | Senior System Architect, Senior Java Backend, Senior Tester |
+| Changed files | `docs/architecture/monolith-caller-retirement-plan.md`; `docs/architecture/service-migration-map.md`; `docs/workflow/execution-report.md` |
+| Decision | COMPLETED |
+
+Role-review checklist:
+
+| Role | Result |
+|---|---|
+| Microservice Senior Expert | PASS, every listed legacy path is classified as active caller, migration candidate or blocked, with target owner, contract, parity test and rollback/deprecation expectations. |
+| Senior System Architect | PASS, no module removal or architecture migration is performed before caller-free evidence exists. |
+| Senior Java Backend | PASS, caller evidence is tied to concrete production or test imports, wiring classes and Gradle dependencies. |
+| Senior Tester | PASS, the retirement gates require parity or explicit deprecation tests before deletion or dependency removal. |
+
+Verification:
+
+| Command | Result |
+|---|---|
+| `rg -n 'RunRepositoryAnalysisUseCase|DefaultRepositoryAnalysisIngestionUseCase|forensic-analytics-application|forensic-analytics-domain' forensic-analytics-* services docs` | PASS, workflow-required inventory command found active callers and module dependencies. |
+| `rg -n "RunRepositoryAnalysisUseCase|RunRepositoryAnalysisCommand|DefaultRepositoryAnalysisIngestionUseCase|RepositoryAnalysisIngestionUseCase" forensic-analytics-cli forensic-analytics-rest forensic-analytics-bootstrap forensic-analytics-boot-app forensic-analytics-engine forensic-analytics-ingestion-request forensic-analytics-testbed services docs -S` | PASS, active callers found and recorded. |
+| `rg -n "forensic-analytics-application|forensic-analytics-domain" forensic-analytics-cli forensic-analytics-rest forensic-analytics-bootstrap forensic-analytics-boot-app forensic-analytics-engine forensic-analytics-ingestion-request forensic-analytics-testbed services docs settings.gradle.kts build.gradle.kts -S` | PASS, active project dependencies found and recorded. |
+| `git diff --check` | PASS |
+
+Notes:
+
+- No module, package, class or runtime path was removed in S05.
+- No current path is caller-free.
+- The CLI boundary is the only near-term candidate, and only through an explicit Gateway mode or Gateway command.

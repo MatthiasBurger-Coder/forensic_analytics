@@ -81,6 +81,13 @@ Slice 19 reviewed the same module set for removal and did not remove any
 module from `settings.gradle.kts`. No current module is both replaced and
 caller-free.
 
+Workflow `e2e-wildfly-cli-deploy-20260521-v1` Slice 05 records the current
+caller inventory and retirement gates in
+`docs/architecture/monolith-caller-retirement-plan.md`. The inventory finds
+active production or test callers for CLI, REST, Bootstrap, Boot App, Engine,
+Ingestion Request, Testbed and shared application/domain modules. No path is
+caller-free in Slice 05.
+
 ## Migration Sequencing
 
 1. Keep current modules unchanged.
