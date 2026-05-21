@@ -2,7 +2,7 @@
 
 ## Status
 
-Checked during workflow creation on `2026-05-21`.
+Checked during workflow creation and final workflow execution on `2026-05-21`.
 
 ## Files Checked
 
@@ -15,16 +15,28 @@ Checked during workflow creation on `2026-05-21`.
 
 ## Result
 
-No direct arc42 edit is required for workflow creation.
+Final S08 synchronization updated:
 
-The checked arc42 files already document:
+- `docs/arc42/06-runtime-view.md`, to record the implemented CLI
+  `gateway-submit` Gateway submission path while keeping local `analyze` as a
+  legacy in-process path.
+- `docs/arc42/07-deployment-view.md`, to record that the Swarm and Kubernetes
+  deployment work is a separate workflow handoff and not deployment readiness
+  evidence.
+
+The checked arc42 files now document:
 
 - repository analysis, Gateway, runtime and microservice target flows;
+- the implemented explicit CLI Gateway submission path and the remaining
+  local in-process `analyze` path;
 - the target service landscape and service-autonomy constraints;
 - local repository-to-BTM Docker Compose evidence;
 - absence of Docker Swarm and Kubernetes readiness;
 - large legacy codebase quality concerns;
 - governance and workflow quality scenarios.
+
+No ADR update is required by S08 because no accepted architecture decision,
+service boundary, deployment target or quality policy changed.
 
 ## Required Future Updates
 

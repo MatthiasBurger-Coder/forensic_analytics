@@ -35,7 +35,7 @@
 | S05 | COMPLETED | Added monolith caller inventory and retirement gates; no legacy path removed. |
 | S06 | COMPLETED | Added explicit CLI `gateway-submit` path through Gateway contract; local `analyze` remains documented legacy. |
 | S07 | NO_REMOVAL_SAFE | Caller evidence still blocks legacy runtime removal; no module or path removed. |
-| S08 | PENDING | Final documentation and quality gate. |
+| S08 | COMPLETED | Final documentation synchronization and quality gate passed. |
 
 ## Commands Executed During Creation
 
@@ -235,7 +235,7 @@ Notes:
 |---|---|
 | Owner | Microservice Senior Expert |
 | Secondary reviewers | Senior System Architect, Senior Java Backend, Senior Tester |
-| Changed files | `docs/architecture/monolith-caller-retirement-plan.md`; `docs/architecture/service-migration-map.md`; `docs/workflow/execution-report.md`; `forensic-analytics-cli/src/test/java/de/burger/forensics/analytics/cli/GatewaySubmissionHttpClientTest.java` |
+| Changed files | `docs/architecture/monolith-caller-retirement-plan.md`; `docs/architecture/service-migration-map.md`; `docs/workflow/execution-report.md` |
 | Decision | COMPLETED |
 
 Role-review checklist:
@@ -330,3 +330,35 @@ Notes:
 - No legacy module, package, class or runtime path was removed.
 - The new `gateway-submit` command does not make local `analyze`, REST, Bootstrap, Boot, Engine, Ingestion Request or Testbed caller-free.
 - The CLI test change is a S06 quality remediation discovered by the S07 full-gate coverage check.
+
+## S08 Final Documentation And Quality Gate
+
+| Field | Result |
+|---|---|
+| Owner | Senior Documentation Engineer |
+| Secondary reviewers | Senior Workflow Architect, Senior System Architect, Senior Tester |
+| Changed files | `docs/workflow/execution-report.md`; `docs/workflow/arc42-check-status.md`; `docs/architecture/current-build-and-test-map.md`; `docs/arc42/06-runtime-view.md`; `docs/arc42/07-deployment-view.md` |
+| Checked but unchanged | `docs/architecture/service-migration-map.md`; `docs/arc42/05-building-block-view.md`; `docs/arc42/10-quality-requirements.md`; `docs/arc42/11-risks-and-technical-debt.md` |
+| Decision | COMPLETED |
+
+Role-review checklist:
+
+| Role | Result |
+|---|---|
+| Senior Documentation Engineer | PASS, workflow results, changed files, blockers and deployment handoff status are synchronized without turning planned deployment work into readiness evidence. |
+| Senior Workflow Architect | PASS, S08 remains in the checked workflow scope and depends on completed S01 through S07. |
+| Senior System Architect | PASS, arc42 runtime and deployment views now distinguish the implemented CLI Gateway submission path from the remaining legacy local runtime paths. |
+| Senior Tester | PASS, final verification uses the workflow-required `./gradlew test` command and `git diff --check`. |
+
+Verification:
+
+| Command | Result |
+|---|---|
+| `./gradlew test --dependency-verification strict --console=plain --stacktrace` | PASS |
+| `git diff --check` | PASS |
+
+Notes:
+
+- `docs/workflow/arc42-check-status.md` records the final arc42 synchronization state.
+- Swarm and Kubernetes deployment remain assigned to `docs/workflow/deployment-workflow-request.md` and are not claimed as ready.
+- `docs/architecture/service-migration-map.md` already records S07 `NO_REMOVAL_SAFE` status, so S08 checked it without further changes.
