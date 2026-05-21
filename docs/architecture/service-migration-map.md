@@ -29,6 +29,11 @@ delivery readiness. Graph/replay and report services remain planned projection
 and generated-artifact services until later contracts, owner-query APIs,
 storage decisions and tests are approved.
 
+Slice 18 isolates the remaining `forensic-analytics-*` runtime paths as
+legacy in-process and rollback paths. No current monolith module is retired in
+Slice 18 because caller verification still finds active CLI, REST, Bootstrap,
+Boot, engine, ingestion-request and testbed dependencies.
+
 ## Mapping
 
 | Target Service | Current Source Evidence | Current Coupling | Planned Migration Path | Required Contract First | Data Owner | Forbidden Moves | Verification Needed |
@@ -66,6 +71,11 @@ logic or register service builds.
 | `forensic-analytics-ingestion-request` | Map request-import behavior to Gateway or Ingestion contract path after Slice 02 clarifies public submission semantics |
 | `forensic-analytics-bootstrap` | Retire after service runtime path and deployment readiness are verified |
 | `forensic-analytics-boot-app` | Retire after implemented services cover the accepted runtime path and rollback evidence exists |
+
+Slice 18 records the current isolation decision in
+`docs/architecture/monolith-runtime-isolation.md`: all rows above remain
+registered until a later slice proves replacement ownership, caller removal,
+parity or explicit deprecation tests and rollback instructions.
 
 ## Migration Sequencing
 

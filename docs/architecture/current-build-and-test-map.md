@@ -189,6 +189,11 @@ because they remain README-only planned service roots and are deferred from
 repository-to-BTM acceptance. The build-artifact worker has no Gradle task
 until a later slice creates the service root.
 
+Slice 18 does not remove any `forensic-analytics-*` module from the Gradle
+build. Those modules remain part of the current quality gate as legacy
+in-process and rollback paths until a later slice proves caller removal,
+replacement parity and rollback evidence.
+
 ## Residual Risks
 
 - CI workflow evidence is absent.

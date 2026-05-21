@@ -104,6 +104,12 @@ current Docker Boot app image packages the Boot jar, exposes REST and gRPC
 ports, and documents that no healthcheck is present because no accepted
 Actuator endpoint exists.
 
+Slice 18 keeps these Boot, Bootstrap, REST, CLI, engine, ingestion-request and
+testbed paths isolated as legacy in-process and rollback evidence. They are
+not the accepted repository-to-BTM runtime path and are not removed until a
+later slice proves replacement ownership, caller removal and parity or explicit
+deprecation tests.
+
 ## Current Frontend
 
 The verified frontend root is `forensic-ui`.
