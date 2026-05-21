@@ -6,189 +6,103 @@
 
 ## Requirement Summary
 
-Create a controlled workflow for completing the Forensic Analytics
-microservice migration and the first repository-to-BTM pipeline. The target
-behavior is:
+Create an executable governance workflow for reducing repeated full governance
+cost while preserving strict repository safety. The workflow covers:
 
-```text
-Plugin / external client
-  -> Gateway HTTP API with a Git repository request
-  -> service-owned repository workspace and source snapshot
-  -> analysis worker services
-  -> generated BTM files
-  -> gRPC delivery of completed BTM files
-```
+- execution profile routing;
+- quality-impact classification;
+- workflow context packs;
+- machine-readable slice metadata;
+- dedicated S3D execution orchestration;
+- persistent skill registry evidence;
+- branch strategy unification;
+- flowchart integrity auditing;
+- workflow-executor resolution cleanup;
+- process-performance profiling.
 
 ## Requirement Classification
 
 | Type | Classification |
 |---|---|
-| Functional requirement | Submit external Git repositories, create workspaces, generate BTM rules, deliver BTM files over gRPC. |
-| Architecture constraint | Complete microservice migration without shared Java implementation modules. |
-| Security requirement | Reject unsafe Git remotes and prevent workspace path leakage. |
-| Resilience requirement | Use idempotency, bounded timeouts, size limits and explicit incomplete states. |
-| Quality requirement | Run service-local tests, contract tests, ArchUnit checks and `QUALITY.md` gates. |
-| UX/API requirement | Plugin and frontend use Gateway/public API surfaces only. |
-| Evidence requirement | Generated rules remain generated instrumentation, not runtime evidence. |
+| Functional requirement | Add process capabilities that classify requests, gates and workflow metadata. |
+| Architecture constraint | Preserve three process strands, branch-first workflow creation, workflow-execute S3/S3D safety and `QUALITY.md` authority. |
+| Quality requirement | Reduce unnecessary checks only when affected files cannot influence product build, runtime behavior, contracts, tests, architecture or quality rules. |
+| Documentation requirement | Keep AGENTS, QUALITY, routing, process docs, skill registry, workflow docs, arc42 and ADR references synchronized. |
+| Security requirement | Do not allow context packs, caches or metrics to record secrets, raw evidence, prompt content or source payloads. |
+| Observability requirement | Add process metrics as diagnostics, not as evidence that a workflow is correct. |
+| Non-goal | Product runtime behavior, product APIs, persistence, Docker/runtime, Java source and frontend source are out of scope. |
 
 ## Mandatory Role Findings
 
 | Role | Finding |
 |---|---|
-| Senior Requirement Engineer | EPIC v0.2 supports the requested direction. Producers are request and runtime-binding adapters; Analytics owns server-side analysis and BTM generation. |
-| Senior System Architect | ADR-0017 defines the service landscape. ADR-0009 and ADR-0010 block shared Java service modules and require contract-first service communication. |
-| Senior Java Backend Developer | Service-local implementations exist for repository analysis and BTM generation, but Gateway facade integration, artifact delivery and worker-chain integration are missing. |
-| Senior React Frontend Developer | Frontend impact waits for Gateway readiness. The UI must not call internal worker services directly. |
-| Senior Tester | Acceptance requires incremental tests: contract tests first, then service-local tests, then end-to-end repository-to-BTM verification and full quality gate. |
+| Senior Requirement Engineer | The request is clear and process-governance scoped. It does not change the product EPIC. Acceptance criteria can be expressed as verified skills, routing rules, documentation synchronization and quality checks. |
+| Senior System Architect | The workflow targets accepted governance architecture in ADR-0015, ADR-0016, ADR-0020 and ADR-0021. The main risks are accidental weakening of gates, project-specific leakage into `.codex`, and branch-rule conflicts. |
+| Senior Java Backend Developer | Backend product impact is N/A. Any Java source, contract, build or product test change is outside this workflow and must stop unless the workflow is refined. |
+| Senior React Frontend Developer | Frontend product impact is N/A. Any React source or frontend adapter change is outside this workflow and must stop unless the workflow is refined. |
+| Senior Tester | The workflow is testable through diff checks, JSON validation, targeted registry/routing inspections, flowchart integrity review and quality-impact rules. Gradle is required only if a slice affects build-influencing files, which this workflow forbids by default. |
 
-## Subagent Review Integration
+## Dependency And Deadlock Review
 
-Callable subagents were used for the mandatory workflow-create perspectives.
-Their blockers were integrated before release: workflow history restoration,
-slice-scoped checkpoint governance, Gateway idempotency, BTM byte delivery
-ownership, frontend Gateway-only gates, contract-test stop rules, runtime
-readiness gates and stale slice-number cleanup.
+The request contains multiple governance slices with shared files. The workflow
+therefore requires concrete slice IDs, file locks, architecture locks and
+serial final synchronization.
 
-## Service Boundary Decision
+Primary dependency controls:
 
-| Field | Decision |
-|---|---|
-| Candidate boundary | Existing ADR-0017 target landscape. |
-| Primary target services | Gateway, Repository Analysis, Java AST Analysis, Joern CPG Analysis, Analysis Store, BTM Generation. |
-| Business capability | Server-side repository analysis and BTM artifact generation for plugin-triggered instrumentation. |
-| Owned data | See `docs/workflow/workflow.md` data ownership table. |
-| Allowed communication | REST/OpenAPI, gRPC/protobuf and approved events only. |
-| Forbidden coupling | Shared Java implementation, DTO, domain, mapper, repository, fixture or error-model modules. |
-| Decision | Approved for workflow slices, not approved for big-bang implementation. |
+- S01 `execution-profile-router` precedes quality-impact and most routing work.
+- S02 `quality-impact-classifier` precedes quality matrix updates.
+- S03 `context-pack` and S04 `slice metadata` precede the dedicated S3D split.
+- S05 `S3D execution orchestrator` waits for machine-readable metadata.
+- S11 final synchronization waits for all governance slices.
 
-## Contract Impact
+Potential deadlocks are controlled by S3D file locks and by the rule that
+`workflow execute` must not rewrite `workflow create` artifacts during
+execution.
 
-The workflow must define or update:
+## Architecture And Evidence Integrity Validation
 
-- Gateway HTTP route for plugin/external Git repository submission.
-- Job/status model for long-running BTM generation.
-- gRPC BTM file delivery with bounded transfer semantics.
-- Artifact metadata and byte ownership contracts.
-- Error, retry, idempotency, timeout and cancellation behavior.
+This is not evidence-processing code. The forensic evidence principle still
+applies to process artifacts:
 
-Contract changes must preserve existing field numbers and compatibility rules
-in `docs/architecture/contract-versioning.md`.
+- Context packs and registry caches are summaries, not source-of-truth files.
+- Metrics are operational diagnostics, not proof of correctness.
+- Planned skills and routes must not be described as implemented until their
+  slices are executed.
+- Unknown or stale hashes stop reuse and require rereading governing files.
 
-## Data Ownership Impact
+## Quality And Verification Validation
 
-Analysis Store owns canonical job state and accepted artifact metadata.
-Repository Analysis owns workspaces and source snapshots. BTM Generation owns
-generated BTM bytes until an explicit byte-handoff, object-store ownership or
-delivery contract transfers byte custody. Analysis Store registration transfers
-accepted artifact metadata only. No service may read another service's private
-database, private filesystem paths or generated classes.
+`QUALITY.md` remains authoritative.
 
-## Test Impact
+Verified commands:
 
-Expected test layers:
+- Minimum:
+  `./gradlew test --dependency-verification strict --console=plain --stacktrace`
+- Full local:
+  `./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace`
 
-- contract tests for OpenAPI and gRPC semantics;
-- service-local domain and application tests;
-- gRPC endpoint tests;
-- ArchUnit service-boundary tests;
-- repository-workspace security tests;
-- BTM determinism and artifact byte delivery tests;
-- end-to-end repository-to-BTM integration tests;
-- full `QUALITY.md` gate before migration acceptance.
-
-## Risk Level
-
-`HIGH`
-
-Reasons:
-
-- multi-service runtime flow;
-- public API and gRPC contract changes;
-- external Git repository handling;
-- generated artifact delivery;
-- eventual removal of modular-monolith modules;
-- deployment and rollback implications.
-
-## Rollback And Strangler Strategy
-
-Keep current modular-monolith paths available until each replacement service
-path has verified parity. Retire or remove legacy modules only after:
-
-- the service replacement is implemented;
-- targeted and full quality gates pass;
-- consumers are migrated;
-- rollback or deprecation behavior is documented.
-
-## Acceptance Criteria
-
-- Gateway HTTP accepts a clean HTTPS Git repository request with idempotency and
-  correlation metadata.
-- Repository Analysis creates a service-owned workspace and source snapshot
-  without exposing private paths.
-- Worker services produce accepted artifacts or explicit incomplete states.
-- BTM Generation produces deterministic `.btm` and manifest bytes.
-- The plugin-facing gRPC contract returns completed BTM files or explicit
-  unavailable state.
-- Service implementation modules are autonomous and do not share Java runtime
-  code.
-- Obsolete modular-monolith modules are removed only after verified service
-  parity.
-- Documentation, arc42 and ADRs match implementation status.
-- The workflow version is recorded in `docs/workflow/workflow.history.md`.
-- Every successful execution slice records a CP_RECORD entry, creates a
-  slice-scoped checkpoint commit and pushes the workflow branch before the next
-  slice starts.
+For this governance-only workflow, every slice requires `git diff --check`.
+JSON-producing slices also require `python3 -m json.tool`. Product build gates
+are not required unless the workflow scope changes into source, tests, build
+logic, contracts or `QUALITY.md`.
 
 ## Open Questions
 
-No blocking question remains for workflow creation. Non-blocking decisions are
-assigned to early contract-first slices:
+No blocking question remains for workflow creation.
 
-- exact gRPC BTM file delivery shape;
-- artifact byte owner API;
-- instrumentation target owner;
-- final local deployment topology.
+Non-blocking decisions are assigned to slices:
 
-`workflow execute` is intentionally not started by this decision. It requires
-the regenerated workflow-create package to be committed first, so the execution
-preflight starts clean.
+- whether workflow-executor front-matter renaming is safe or whether explicit
+  resolution text is safer;
+- whether root `AGENTS.md` must change for branch unification or whether a
+  narrower cross-reference is enough;
+- whether closing Flowchart Integrity Audit requires a new ADR or only arc42
+  risk-status synchronization.
 
 ## Final Decision
 
 `READY_FOR_WORKFLOW`
 
-## v3 Refinement Decision
-
-During `workflow execute`, the former v2 Slice 11 end-to-end
-repository-to-BTM orchestration review returned `REQUIRES_REFINEMENT`. The
-Root Architect escalation stopped implementation before product changes because
-Gateway would otherwise have to sequence worker business logic, public Gateway
-contracts still exposed workspace concepts, Java AST artifact byte access was
-not preserved and the orchestration owner API was not verified.
-
-Decision: insert v3 Slice 11,
-`Repository-to-BTM orchestration contract and artifact-readiness bridge`, before
-end-to-end orchestration resumes. The accepted direction remains EPIC-aligned:
-Gateway stays facade-only, Analysis Store is the preferred orchestration owner
-unless Slice 11 records another reviewed owner, incomplete Joern/build-artifact
-inputs remain explicit diagnostics, and deterministic local readiness tests
-must not require external services or credentials.
-
-## v4 Refinement Decision
-
-During the v3 Slice 12 end-to-end orchestration precheck, the mandatory
-workflow roles found that implementation would still require guessing the Java
-AST source-fact byte retrieval path, the Repository Analysis to Java AST
-handoff signal and the deterministic local fixture contract. Continuing inside
-the previous Slice 12 would risk private workspace coupling, service
-implementation imports or unverified artifact-byte access.
-
-Decision: insert v4 Slice 12,
-`Source-fact byte retrieval and Java AST handoff contract`, before end-to-end
-orchestration resumes. Java AST remains the source-fact byte owner until an
-explicit handoff or object-store contract transfers custody. Analysis Store may
-consume source-fact bytes only through the verified Java AST owner API using
-service-local generated client stubs. Repository Analysis must expose handoff
-completion through a reviewed gRPC service contract, and the local readiness
-path must use deterministic fixtures, fakes or in-process gRPC without external
-Git network access, Docker, Jenkins, Artifactory or credentials by default.
+The workflow may be handed to `workflow execute` after the workflow package is
+accepted on branch `architecture/workflow-governance-performance-20260521`.

@@ -25,6 +25,7 @@ flowchart TD
   Incorporate["Incorporate answers"]
   Escalate["STOP: Root Architect escalation"]
   Gate["Three Amigos Requirement Gate"]
+  Profile["Execution Profile Routing"]
   Branch["Branch Governance / Branch Verification"]
   Req["Senior Requirement Engineer review"]
   Arch["Senior System Architect review"]
@@ -44,7 +45,7 @@ flowchart TD
   Blocking -->|yes| Retry
   Retry -->|yes| Ask --> Incorporate --> Clarify
   Retry -->|no| Escalate
-  Blocking -->|no| Gate --> Branch --> Req --> Arch --> Java --> React --> Tester --> Workflow --> WorkflowCheck --> Arc42 --> Arc42Check --> Docs --> Final --> Approved
+  Blocking -->|no| Gate --> Profile --> Branch --> Req --> Arch --> Java --> React --> Tester --> Workflow --> WorkflowCheck --> Arc42 --> Arc42Check --> Docs --> Final --> Approved
   Gate --> Stop
   WorkflowCheck --> Stop
   Arc42Check --> Stop
@@ -100,6 +101,27 @@ When blocking questions remain:
 
 Non-blocking uncertainty may be documented as an assumption only when it does not affect architecture boundaries, testability, data ownership, service boundaries, APIs, contracts, runtime behavior or scope.
 
+## Execution Profile Routing
+
+After the Three Amigos gate and before specialist role depth is selected,
+classify the request through
+`.agents/skills/execution-profile-router/SKILL.md`.
+
+Profiles decide review depth:
+
+- `FAST_PATH`: documentation-only changes with no behavior, branch, quality,
+  routing, ownership or process-authority impact.
+- `NORMAL_PATH`: isolated changes with verified owner, disjoint locks and no
+  architecture, contract, persistence, runtime, deployment or quality-policy
+  impact.
+- `FULL_PATH`: workflow governance, skills, roles, routing, branch rules,
+  quality rules, architecture-sensitive work or unclear impact.
+
+The profile may reduce unaffected roles to N/A impact checks. It must not
+remove Five-Role Three Amigos participation, branch-first workflow creation,
+arc42 validation, Documentation Governance, STOP rules or required quality
+gates.
+
 ## Five Mandatory Three Amigos Roles
 
 `workflow create` must use these five roles:
@@ -135,3 +157,20 @@ Classic labels such as Requirement Analyst, Architecture Validator and Quality V
 - Definition of Done
 - Handoff to workflow execute
 - arc42 Check Status
+
+`workflow create` should also create `docs/workflow/context-pack.md` and
+`docs/workflow/context-pack.json` when the workflow needs repeated role,
+routing or quality decisions. The context pack is a secondary navigation aid
+with hash provenance. It must not replace `AGENTS.md`, `QUALITY.md`, ADRs,
+arc42, routing rules, workflow files or skill files.
+
+## Machine-Readable Slice Metadata
+
+Every executable workflow slice must include a fenced `yaml` metadata block
+with concrete fields for slice ID, profile, owner, reviewers, affected files,
+affected modules, affected contracts, dependencies, parallel group, file locks,
+contract locks, architecture locks, quality gates, documentation duties and
+stop conditions.
+
+Dependencies must be concrete slice IDs. Ranges and prose-only dependencies are
+not executable.

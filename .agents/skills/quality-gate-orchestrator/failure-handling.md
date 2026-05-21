@@ -26,7 +26,7 @@ these router types before retry or escalation:
 | `BUILD_FAILURE` | responsible Backend or Frontend Agent, Senior DevOps, `build-gradle` for Gradle-specific failures |
 | `TEST_FAILURE` | Senior Tester, responsible Slice Agent |
 | `DOC_GOVERNANCE_FAILURE` | Senior Documentation Engineer, Requirement Engineer |
-| `LOCK_CONFLICT` | Senior Swarm Orchestrator, Root Architect |
+| `LOCK_CONFLICT` | Senior Execution Orchestrator, Senior Swarm Orchestrator, Root Architect |
 | `UNKNOWN_FAILURE` | Root Architect |
 
 `UNKNOWN_FAILURE` is a valid classification only when the cause cannot be

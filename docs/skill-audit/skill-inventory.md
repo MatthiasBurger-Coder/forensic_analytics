@@ -17,6 +17,14 @@
 | Testing Documentation Maintainer | `workflow execute` | Senior Tester | added |
 | Execution Report Maintainer | `workflow execute` | Workflow Executor | added |
 | Governance Flowchart V2 capability linkage | `workflow execute` | Skill Registry Conflict Auditor / Senior Documentation Engineer | added |
+| Execution Profile Router | `workflow create`, `workflow execute` | Senior System Architect / Workflow Executor | added |
+| Quality Impact Classifier | `workflow execute` | Senior Tester / Quality Gate Orchestrator | added |
+| S3D Execution Orchestrator | `workflow execute` | Senior Execution Orchestrator | added |
+| Persistent Skill Registry Matrix | all strands | Skill Registry Conflict Auditor / Senior Documentation Engineer | added |
+| Branch Strategy Matrix | all strands | Release Branch Governance / Git Branch Strategy | added |
+| Flowchart Integrity Auditor | workflow governance | Senior Documentation Engineer / Senior System Architect | added |
+| Workflow Executor Resolution | `workflow execute` | Workflow Executor / Skill Registry Conflict Auditor | added |
+| Process Performance Profiler | `workflow execute` | Senior Performance Engineer / Workflow Executor | added |
 
 | Skill name | File path | Purpose | Architecture zone | Slices/workflows | Possible overlaps | Status |
 |---|---|---|---|---|---|---|
@@ -30,6 +38,11 @@
 | distributed-systems-architect | `.agents/skills/distributed-systems-architect/SKILL.md` | Distributed jobs, worker leasing, retries, backpressure and consistency. | Application orchestration, infrastructure adapters | Worker/job orchestration | agent-swarm-coordination-specialist | added |
 | documentation-sync | `.agents/skills/documentation-sync/SKILL.md` | Keeps documentation, ADRs, examples and workflows consistent. | Documentation | Skill audit, workflow, README/ADR review | workflow-slice | kept |
 | engineering-governance | `.agents/skills/engineering-governance/SKILL.md` | Umbrella governance for EPIC, requirements, arc42, ADR references, workflows, quality, resilience, skills and roles. | Governance | Governance checkpoints, consistency checks, role/skill synchronization | requirement-engineering, workflow-authoring, arc42-architecture-governance | added |
+| execution-profile-router | `.agents/skills/execution-profile-router/SKILL.md` | Classifies workflow create and workflow execute requests as `FAST_PATH`, `NORMAL_PATH` or `FULL_PATH` without weakening mandatory gates. | Governance routing | Workflow create/execute intake | three-amigos-requirement-gatekeeper, workflow-executor | added |
+| flowchart-integrity-auditor | `.agents/skills/flowchart-integrity-auditor/SKILL.md` | Audits Governance Flowchart V2 diagrams for decision paths, STOP paths, terminals, self-loops, backward jumps and Level 1 / Level 2 consistency. | Documentation governance | Governance flowchart review | documentation-sync, skill-registry-conflict-auditor | added |
+| process-performance-profiler | `.agents/skills/process-performance-profiler/SKILL.md` | Records workflow process diagnostics such as repeated governance reads, quality commands, retries, blockers and critical path without replacing gates. | Process observability | Workflow-execute metrics | performance-scalability-engineer, workflow-executor | added |
+| quality-impact-classifier | `.agents/skills/quality-impact-classifier/SKILL.md` | Classifies changed files as `DOC_ONLY`, `GOVERNANCE_METADATA`, `PRODUCT_BUILD_AFFECTING` or `UNKNOWN` before quality command selection. | Quality governance | Workflow-execute quality planning | quality-gate-orchestrator, quality-gate-governance | added |
+| s3d-execution-orchestrator | `.agents/skills/s3d-execution-orchestrator/SKILL.md` | Builds workflow slice dependency graphs, topological groups and file/contract/module/architecture locks. | Workflow execution governance | S3D planning and lock validation | senior-execution-orchestrator, agent-swarm-coordination-specialist | added |
 | architecture-archunit-hexagonal | `.agents/skills/architecture-archunit-hexagonal/SKILL.md` | ArchUnit rules for hexagonal architecture. | Quality architecture | Boundary tests | quality-architecture-validation | renamed |
 | architecture-hexagonal | `.agents/skills/architecture-hexagonal/SKILL.md` | Preserves ports/adapters, domain isolation and evidence semantics. | Architecture | All architecture-sensitive slices | architecture-modular-monorepo | renamed |
 | architecture-modular-monorepo | `.agents/skills/architecture-modular-monorepo/SKILL.md` | Module-boundary and Gradle project dependency work. | Architecture, build | Multi-project module changes | build-gradle | renamed |
@@ -94,4 +107,4 @@ Detailed capability evidence is recorded in
 | Rollback Governance | VERIFIED |
 | Documentation Governance | VERIFIED |
 | Quality Gate Classification | VERIFIED |
-| Flowchart Integrity Audit | MAPPED_WITH_GAP |
+| Flowchart Integrity Audit | VERIFIED |

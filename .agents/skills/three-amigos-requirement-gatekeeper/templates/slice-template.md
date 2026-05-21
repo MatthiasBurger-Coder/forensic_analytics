@@ -1,5 +1,27 @@
 # Slice
 
+```yaml
+slice_id:
+profile:
+owner:
+secondary_reviewers: []
+affected_files: []
+affected_modules: []
+affected_contracts: []
+dependencies: []
+parallel_group:
+file_locks: []
+contract_locks: []
+architecture_locks: []
+quality_gates:
+  targeted: []
+  required: []
+documentation:
+  arc42:
+  adr:
+stop_conditions: []
+```
+
 ## Slice ID
 
 ## Goal

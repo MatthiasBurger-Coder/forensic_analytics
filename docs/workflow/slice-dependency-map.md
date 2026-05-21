@@ -2,89 +2,62 @@
 
 ```mermaid
 flowchart TD
-  S00["Slice 00: execution preflight"]
-  S01["Slice 01: boundary and contract gap freeze"]
-  S02["Slice 02: Gateway HTTP and gRPC BTM contracts"]
-  S03["Slice 03: artifact and target ownership"]
-  S04["Slice 04: Gateway service bootstrap"]
-  S05["Slice 05: external Git repository workspace flow"]
-  S06["Slice 06: Java AST worker handoff"]
-  S07["Slice 07: repository snapshot and build artifact worker contract"]
-  S08["Slice 08: Joern worker handoff"]
-  S09["Slice 09: instrumentation target planning"]
-  S10["Slice 10: BTM gRPC file delivery"]
-  S11["Slice 11: orchestration contract and artifact-readiness bridge"]
-  S12["Slice 12: source-fact byte retrieval and Java AST handoff contract"]
-  S13["Slice 13: source-fact artifact contract and artifact IO hardening"]
-  S14["Slice 14: end-to-end repository-to-BTM orchestration"]
-  S15["Slice 15: runtime readiness and local service landscape"]
-  S16["Slice 16: graph replay and report service decision"]
-  S17["Slice 17: frontend and CLI Gateway integration"]
-  S18["Slice 18: retire or isolate replaced monolith paths"]
-  S19["Slice 19: remove obsolete shared implementation modules"]
-  S20["Slice 20: full quality gate and migration acceptance"]
+  S00["Slice 00: execution preflight and context freeze"]
+  S01["Slice 01: execution profile router"]
+  S02["Slice 02: quality impact classifier"]
+  S03["Slice 03: workflow context pack"]
+  S04["Slice 04: machine-readable slice metadata"]
+  S05["Slice 05: dedicated S3D execution orchestrator"]
+  S06["Slice 06: persistent skill registry matrix"]
+  S07["Slice 07: branch strategy unification"]
+  S08["Slice 08: flowchart integrity auditor"]
+  S09["Slice 09: workflow-executor resolution"]
+  S10["Slice 10: process performance profiler"]
+  S11["Slice 11: final governance synchronization"]
 
-  S00 --> S01 --> S02
+  S00 --> S01
+  S01 --> S02
+  S01 --> S03
   S02 --> S03
-  S02 --> S04
+  S03 --> S04
   S04 --> S05
-  S05 --> S06
-  S03 --> S07
-  S05 --> S07
-  S06 --> S07
-  S07 --> S08
+  S01 --> S06
+  S01 --> S07
+  S01 --> S08
+  S01 --> S09
   S06 --> S09
-  S08 --> S09
   S03 --> S10
-  S09 --> S10
-  S02 --> S11
-  S03 --> S11
+  S04 --> S10
   S05 --> S11
   S06 --> S11
   S07 --> S11
   S08 --> S11
   S09 --> S11
   S10 --> S11
-  S11 --> S12
-  S12 --> S13
-  S13 --> S14
-  S14 --> S15
-  S14 --> S16
-  S14 --> S17
-  S15 --> S18
-  S16 --> S18
-  S17 --> S18
-  S18 --> S19 --> S20
 ```
 
 ## Parallelization Notes
 
-- Slices 00 through 03 are serial because they stabilize contracts and
-  ownership.
-- Slice 04 can proceed after Slice 02.
-- Slice 07 is serial after Slices 03, 05 and 06 because it creates the
-  source-package, complete build-output package, byte-access and Joern
-  materialization contract required by Joern handoff.
-- Slice 08 waits for Slice 07 and must not receive Repository Analysis private
-  workspace identifiers.
-- Slice 10 waits for artifact ownership and target planning.
-- Slice 11 closes the orchestration owner, Gateway public API security,
-  Java AST byte-access and deterministic readiness preconditions found during
-  the blocked end-to-end review.
-- Slice 12 waits for Slice 11 and verifies source-fact byte retrieval,
-  Repository Analysis to Java AST handoff closure and deterministic local
-  fixture readiness.
-- Slice 13 waits for Slice 12 and hardens the source-fact artifact payload
-  contract plus artifact IO before end-to-end orchestration consumes produced
-  bytes.
-- Slice 14 waits for Slice 13 and implements the end-to-end owner-API
-  orchestration path.
-- Slice 15 waits for Gateway behavior from Slice 14 and proves local runtime
-  evidence for the implemented service path.
-- Slice 16 waits for Slice 14 and either creates graph/report roots or records
-  explicit deferral.
-- Slice 17 waits for Slice 14 and verifies frontend/CLI calls through
-  Gateway/public APIs only.
-- Module retirement and removal are serial and late by design.
-- Checkpoint commits and pushes are not a separate terminal slice. They run
-  after every successful `workflow execute` slice.
+| Group | Slices | Rule |
+|---|---|---|
+| G00 | S00 | Always first and serial. |
+| G01 | S01 | Serial because downstream routing semantics depend on it. |
+| G02 | S02 | Serial after S01 because quality impact depends on profile classification. |
+| G03 | S03 | Serial after S01 and S02 because context packs summarize profile and quality authority. |
+| G04 | S04 | Serial after S03 because metadata rules reference context-pack fields. |
+| G05 | S05 | Serial after S04 because S3D consumes slice metadata. |
+| G06 | S06 | May run after S01 when file locks do not overlap with active slices. |
+| G07 | S07 | May run after S01 but must not overlap with S09 or S11 because branch and executor docs share process files. |
+| G08 | S08 | May run after S01 when governance-flowchart files are isolated. |
+| G09 | S09 | Waits for S06 and must not overlap with branch or workflow-execute process edits. |
+| G10 | S10 | Waits for S03 and S04. |
+| G11 | S11 | Always final and serial. |
+
+## Lock Summary
+
+- Routing locks: S01, S05, S08.
+- Quality-gate locks: S02.
+- Workflow context and metadata locks: S03, S04, S10.
+- Skill registry locks: S06, S09.
+- Branch-governance locks: S07.
+- Final documentation locks: S11.

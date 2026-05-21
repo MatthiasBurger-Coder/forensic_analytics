@@ -16,8 +16,8 @@
 | unclassified workflow slice executes | A slice without a verified owner might change files outside the checked workflow | Route `none of the above` to `S3_UNCLASSIFIED` and Root Architect escalation |
 | generic quality failure retry | A build, test, architecture, documentation or lock failure might be retried by the wrong role | Route failures through the Typed Error Router before retry |
 | rollback path is unclear | Failed quality gates or push failures might lead to unsafe history rewriting | Use `CP_ROLLBACK` as a decision node and forbid blind `git reset --hard` |
-| flowchart becomes unreviewable | Large diagrams can hide dead nodes, missing paths and wrong backward jumps | Maintain Level 1 overview and Level 2 subgraphs in `docs/governance/workflow/` |
-| governance role remains bootstrap-only | Root Architect and Flowchart Integrity Audit are mapped but lack dedicated artifacts | Keep bootstrap owners documented and create dedicated artifacts only through a future `skills-agents` slice |
+| flowchart becomes unreviewable | Large diagrams can hide dead nodes, missing paths and wrong backward jumps | Maintain Level 1 overview and Level 2 subgraphs in `docs/governance/workflow/` and audit them through `flowchart-integrity-auditor` |
+| governance role remains bootstrap-only | Root Architect is mapped but lacks a dedicated role artifact | Keep bootstrap owners documented and create dedicated artifacts only through a future governance slice |
 
 ## 11.1 Technical Debt Candidates
 

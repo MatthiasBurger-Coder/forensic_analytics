@@ -19,13 +19,15 @@ Coordinate small implementation slices across roles while preserving architectur
 1. Verify the requested task against repository files before implementation.
 2. Verify the active branch belongs to the current workflow before any file modification.
 3. Identify affected modules, documentation and quality checks.
-4. Apply engineering governance when EPIC, arc42, requirements, resilience, quality expectations or workflows may drift.
-5. For `workflow execute`, run S3D orchestration: extract slice metadata, build the dependency graph, run topological sort and verify file, contract, module and architecture-boundary locks.
-6. Select the smallest set of roles needed for the slice.
-7. Assign non-overlapping file ownership when multiple workers are explicitly requested.
-8. Keep implementation slices small enough to test and review independently.
-9. Run targeted checks first, then the applicable quality gate from `QUALITY.md`.
-10. Record blockers instead of guessing missing symbols, commands, contracts or evidence.
+4. Classify the request through `skills/execution-profile-router/SKILL.md` as
+   `FAST_PATH`, `NORMAL_PATH` or `FULL_PATH`.
+5. Apply engineering governance when EPIC, arc42, requirements, resilience, quality expectations or workflows may drift.
+6. For `workflow execute`, run S3D orchestration: extract slice metadata, build the dependency graph, run topological sort and verify file, contract, module and architecture-boundary locks.
+7. Select the smallest set of roles needed for the slice.
+8. Assign non-overlapping file ownership when multiple workers are explicitly requested.
+9. Keep implementation slices small enough to test and review independently.
+10. Run targeted checks first, then the applicable quality gate from `QUALITY.md`.
+11. Record blockers instead of guessing missing symbols, commands, contracts or evidence.
 
 ## Process Strand Routing
 
@@ -35,12 +37,31 @@ Coordinate small implementation slices across roles while preserving architectur
 
 The strands must not be mixed. Slice checkpoint push is not `push auto`, and `push auto` belongs only to `skills-agents`.
 
+## Execution Profile Routing
+
+Execution profiles reduce unnecessary full-review work only when the affected
+scope is verified:
+
+- `FAST_PATH`: documentation-only changes that cannot affect product build,
+  runtime behavior, contracts, tests, architecture, branch, publication,
+  quality or process authority.
+- `NORMAL_PATH`: isolated changes with verified owner, disjoint locks and no
+  architecture, contract, persistence, runtime, deployment or quality-policy
+  impact.
+- `FULL_PATH`: governance authority, skills, roles, routing, process strands,
+  quality rules, branch rules, workflow structure, contracts, persistence,
+  runtime, deployment, analysis-engine or unclear-impact work.
+
+Profiles may reduce unaffected roles to N/A impact checks. They must not
+remove mandatory authority, required STOP paths or required quality gates.
+
 ## S3D Execution Orchestration
 
-S3D belongs to the `workflow execute` strand. It reads the checked workflow
-metadata, validates dependencies, rejects cycles, forms topological execution
-groups and allows parallel write-capable work only when file, contract, module
-and architecture-boundary locks are disjoint.
+S3D belongs to the `workflow execute` strand. The Senior Execution Orchestrator
+and `skills/s3d-execution-orchestrator/SKILL.md` own the technical dependency
+graph, topological sort, execution groups and lock validation. The Senior Swarm
+Orchestrator remains responsible for coordination, handoffs and conflict
+communication across roles.
 
 If S3D finds missing metadata, ambiguous dependency ranges, unknown slice IDs,
 cycles or overlapping locks, it stops before implementation. Lock conflicts

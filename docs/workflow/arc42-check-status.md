@@ -1,96 +1,44 @@
 # arc42 Check Status
 
-## Checked Files
+## Workflow
 
-- `docs/arc42/03-system-scope-and-context.md`
-- `docs/arc42/04-solution-strategy.md`
-- `docs/arc42/05-building-block-view.md`
-- `docs/arc42/06-runtime-view.md`
-- `docs/arc42/07-deployment-view.md`
-- `docs/arc42/08-crosscutting-concepts.md`
-- `docs/arc42/09-architecture-decisions.md`
+| Field | Value |
+|---|---|
+| Workflow version | `governance-performance-20260521-v1` |
+| Workflow branch | `architecture/workflow-governance-performance-20260521` |
+| Check status | Checked during `workflow create` |
 
 ## Result
 
-## v4 Workflow-Governance Check
+The workflow affects agent and process governance. It does not change product
+runtime architecture, service boundaries, contracts, persistence ownership,
+deployment topology or evidence semantics.
 
-The v4 workflow-governance refinement checked and updated the runtime and
-ownership documentation for the new Slice 12 source-fact byte retrieval and
-Java AST handoff contract:
+## Checked Sections
 
-- `docs/arc42/05-building-block-view.md`
-- `docs/arc42/06-runtime-view.md`
-- `docs/arc42/08-crosscutting-concepts.md`
-- `docs/architecture/contract-versioning.md`
-- `docs/architecture/data-ownership.md`
-- `docs/architecture/service-boundaries.md`
-- `docs/architecture/service-communication-matrix.md`
-- `docs/architecture/service-migration-map.md`
-- `docs/architecture/target-microservices-architecture.md`
+| arc42 section | Result |
+|---|---|
+| 01 Introduction and Goals | No product goal change. |
+| 02 Architecture Constraints | Checked for process-strand separation, branch-first workflow creation and quality authority. |
+| 03 System Scope and Context | No product system boundary change. |
+| 04 Solution Strategy | Checked for profile-aware governance routing. |
+| 05 Building Block View | Checked for skills, roles, routing and workflow governance ownership. |
+| 06 Runtime View | No product runtime flow change. |
+| 07 Deployment View | No deployment topology change. |
+| 08 Crosscutting Concepts | Checked for context-pack, registry-cache and process-metrics provenance. |
+| 09 Architecture Decisions | Checked against ADR-0015, ADR-0016, ADR-0020 and ADR-0021. |
+| 10 Quality Requirements | Checked for quality-impact classification and mandatory STOP behavior. |
+| 11 Risks and Technical Debt | Checked for S3D ownership and Flowchart Integrity Audit gaps. |
+| 12 Glossary | No glossary update required during workflow creation. |
 
-The v4 check records that Java AST owns produced source-fact bytes until a
-verified handoff or object-store contract transfers custody, Analysis Store
-must retrieve source-fact bytes through the Java AST owner API using
-service-local generated client stubs, Repository Analysis must expose Java AST
-handoff completion through a reviewed gRPC service contract and deterministic
-local fixtures must not require external Git network access, Docker, Jenkins,
-Artifactory or credentials by default.
+## Follow-Up Rules
 
-## v3 Workflow-Governance Check
+Later workflow-execute slices must update arc42 when they:
 
-The v3 workflow-governance refinement checked and updated the runtime and
-ownership documentation for the new Slice 11 orchestration contract and
-artifact-readiness bridge:
+- close the Flowchart Integrity Audit gap;
+- move S3D ownership to a dedicated role;
+- change accepted branch, quality, routing or context-pack governance;
+- change documented process-governance risks or quality scenarios.
 
-- `docs/arc42/05-building-block-view.md`
-- `docs/arc42/06-runtime-view.md`
-- `docs/arc42/08-crosscutting-concepts.md`
-- `docs/architecture/contract-versioning.md`
-- `docs/architecture/data-ownership.md`
-- `docs/architecture/service-boundaries.md`
-- `docs/architecture/service-communication-matrix.md`
-- `docs/architecture/service-migration-map.md`
-- `docs/architecture/target-microservices-architecture.md`
-
-The v3 check records that Gateway remains a public facade, Analysis Store is
-the preferred repository-to-BTM orchestration owner unless Slice 11 records a
-stricter reviewed decision, Java AST source-fact artifacts require
-`ArtifactByteAccess`, invalid Joern package descriptors produce incomplete
-diagnostics, and public Gateway diagnostics must be allow-listed or redacted.
-
-## v2 Workflow-Governance Check
-
-No arc42 file required a production-claim update during `workflow create`.
-Several arc42 and supporting architecture documents were checked for stale
-slice-number references and aligned with the active workflow where the
-references described current or future migration sequencing rather than
-historical implementation evidence.
-
-The checked arc42 material already records:
-
-- plugins as producers and runtime binders;
-- server-side repository analysis;
-- server-side BTM generation;
-- target microservice runtime flow;
-- Gateway as a public facade that must not own repository-to-BTM worker
-  orchestration state;
-- no shared implementation modules between services;
-- workflow create and workflow execute governance;
-- planned-versus-implemented distinction for microservice paths.
-
-## Supporting Architecture Documents Updated
-
-- `docs/arc42/05-building-block-view.md`
-- `docs/arc42/06-runtime-view.md`
-- `docs/arc42/07-deployment-view.md`
-- `docs/architecture/target-microservices-architecture.md`
-- `docs/architecture/service-migration-map.md`
-- `docs/architecture/data-ownership.md`
-- `docs/architecture/service-communication-matrix.md`
-- `docs/architecture/service-boundaries.md`
-
-## Follow-Up Rule
-
-Later `workflow execute` slices must update arc42 when implementation changes
-verified runtime behavior, service boundaries, deployment topology or
-architecture decisions.
+If a slice changes an accepted decision rather than implementing it, it must
+also update or add an ADR.

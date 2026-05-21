@@ -7,6 +7,16 @@ description: Reusable entrypoint for executing repository workflows when the use
 
 Use this skill only when the user writes `workflow execute` or explicitly asks to execute the active repository workflow.
 
+## Resolution Rule
+
+This file is the reusable base workflow-executor protocol.
+
+When a repository provides a project-specific executor such as
+`.agents/skills/workflow-executor/SKILL.md`, that project-specific executor is
+the active execution protocol for that repository. Use this `.codex` file for
+portable baseline context and conflict detection, not as a competing second
+execution protocol.
+
 ## Authoritative Sources
 
 Read, when present:

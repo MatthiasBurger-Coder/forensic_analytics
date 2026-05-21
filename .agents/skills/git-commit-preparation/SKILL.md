@@ -84,18 +84,20 @@ When only drafting or validating the commit message, use `.agents/skills/git-com
 
 Always verify the current branch before staging, committing, pushing, creating a pull request, merging a pull request, deleting a remote branch, or running cleanup.
 
-If the current branch is `main`, create a new work branch before continuing with commit preparation or publication. This prevents `push` and `push auto` from stopping only because the work started on `main`.
+If the current branch is `main`, create the branch required by the active process strand before continuing with commit preparation or publication. This prevents `push` and `push auto` from stopping only because the work started on `main`, while keeping branch names aligned with repository governance.
 
-The work branch rule is mandatory:
+The branch matrix rule is mandatory:
 
 1. Inspect the current branch with `git status --short --branch` or `git branch --show-current`.
-2. When the branch is exactly `main`, create a non-`main` work branch from the current `HEAD` before staging or committing.
-3. Use a descriptive work branch name derived from the current task, for example `work/<task-slug>`.
+2. When the branch is exactly `main`, identify the active strand: `skills update`, `workflow create`, `workflow execute`, exact `push`, exact `push auto`, or ad-hoc implementation.
+3. Create the non-`main` branch required by `docs/process/branch-governance.md`.
 4. If the branch name already exists, choose the next clear unique suffix after checking local and remote branch names.
 5. Preserve existing unstaged or staged task changes when switching to the new branch.
 6. Rerun `git status --short --branch` after branch creation and continue only from the new branch.
 
-Stop and report only when the work branch cannot be created, the branch state is detached or unclear, the branch name would collide with unrelated work, or switching branches would risk losing local changes.
+Do not create a generic `work/<task-slug>` branch when a process strand or active workflow branch rule applies.
+
+Stop and report only when the required branch cannot be created, the branch state is detached or unclear, the branch name would collide with unrelated work, the active strand cannot be determined, or switching branches would risk losing local changes.
 
 Never push directly to `main`.
 
@@ -407,7 +409,7 @@ Use the minimum and full quality commands documented in `QUALITY.md` when verifi
 6. Read .codex/agents/git_commit_operator.toml when mutating execution is requested
 7. Read .agents/skills/git-clean/SKILL.md when `push auto` is requested
 8. Inspect branch, git status, and diffs
-9. If the branch is main, create a work branch before staging, committing, pushing, or running push auto
+9. If the branch is main, create the branch required by the active strand before staging, committing, pushing, or running push auto
 10. Ask git_commit_reviewer to review commit readiness, or reproduce the same read-only review locally when subagents are not explicitly authorized
 11. Route only clear, in-scope blockers to the appropriate repair role
 12. Rerun commit-readiness review after repairs

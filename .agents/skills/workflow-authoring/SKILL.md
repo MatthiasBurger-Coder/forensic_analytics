@@ -144,6 +144,23 @@ Every workflow should include:
 - Handoff to workflow execute
 - arc42 Check Status
 
+## Workflow Context Pack
+
+When a workflow is created or regenerated, create or update:
+
+- `docs/workflow/context-pack.md`
+- `docs/workflow/context-pack.json`
+
+The context pack is a workflow-local navigation aid. It must record the active
+workflow version, branch, process strand, execution profile, affected areas,
+forbidden areas, required roles, conditional roles, quality commands and hashes
+for governing files used during creation.
+
+The context pack must not replace root `AGENTS.md`, `QUALITY.md`, ADRs, arc42,
+routing rules, active workflow files or skill files. It is stale when any
+recorded hash changes, when the task touches governance files, or when a
+conflict is detected.
+
 Workflow creation is complete only when both of these artifacts have been checked:
 
 1. complete checked `docs/workflow/workflow.md`
@@ -163,14 +180,47 @@ For each slice define:
 
 - purpose
 - prerequisites
+- machine-readable YAML metadata
 - affected files
+- affected modules
+- affected contracts
 - owner role
 - allowed write scope
 - dependencies
+- parallel group
+- file, contract and architecture locks
 - parallelization status
 - done criteria
 - verification commands
 - stop conditions
+
+Each slice must include a fenced `yaml` metadata block with these fields:
+
+```yaml
+slice_id:
+profile:
+owner:
+secondary_reviewers: []
+affected_files: []
+affected_modules: []
+affected_contracts: []
+dependencies: []
+parallel_group:
+file_locks: []
+contract_locks: []
+architecture_locks: []
+quality_gates:
+  targeted: []
+  required: []
+documentation:
+  arc42:
+  adr:
+stop_conditions: []
+```
+
+Use empty arrays for none. Dependencies must be concrete slice IDs, not ranges
+or prose. Missing metadata blocks future `workflow execute` until the workflow
+is corrected.
 
 Parallelize only when write scopes are disjoint, shared contracts are stable and verification can be run independently.
 

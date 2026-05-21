@@ -9,6 +9,16 @@ description: Use when the user writes workflow execute or asks to execute the ac
 
 Execute repository workflows through the configured subagent-based workflow while preserving `AGENTS.md`, `QUALITY.md`, architecture boundaries, evidence integrity, and commit restrictions.
 
+## Resolution Rule
+
+This file is the active workflow executor for Forensic Analytics.
+
+- `.agents/skills/workflow-executor/SKILL.md` is the project-specific execution protocol.
+- `.codex/skills/workflow-executor/SKILL.md` is the reusable base protocol.
+- During Forensic Analytics `workflow execute`, use this `.agents` file as the active executor.
+- Read the `.codex` base only for reusable baseline context or conflict detection, not as a second full execution protocol.
+- If this rule conflicts with root `AGENTS.md`, root `AGENTS.md` wins and the conflict must be reported.
+
 ## Trigger
 
 Use this skill whenever the user writes:
@@ -30,6 +40,11 @@ Read these files before implementation:
 5. `.agents/orchestrator/swarm-orchestrator.md`.
 6. Relevant `.agents/roles` files for the slice.
 7. Relevant `.agents/skills` files for the slice.
+
+When `docs/workflow/context-pack.md` or
+`docs/workflow/context-pack.json` exists, read it first for orientation and
+hash provenance. Reopen the authoritative files above when a recorded hash
+changed, the slice touches governance files, or any conflict is detected.
 
 ## Active Workflow Discovery
 
@@ -94,19 +109,28 @@ workflow-execute Execution Orchestrator. S3D is not a fourth strand.
 
 S3D must extract these fields from the checked active workflow:
 
-- slice ID
-- slice goal
-- affected files
-- affected modules
-- affected contracts
-- responsible subagents or roles
-- dependencies
-- quality gates
-- documentation duties
+- `slice_id`
+- slice goal or purpose
+- `profile`
+- `owner`
+- `secondary_reviewers`
+- `affected_files`
+- `affected_modules`
+- `affected_contracts`
+- `dependencies`
+- `parallel_group`
+- `file_locks`
+- `contract_locks`
+- `architecture_locks`
+- `quality_gates.targeted`
+- `quality_gates.required`
+- `documentation.arc42`
+- `documentation.adr`
+- `stop_conditions`
 
 Use explicit `none` or `not applicable` values when a field has no content.
-Missing fields, ambiguous dependency ranges, unknown slice IDs and dependency
-cycles stop execution before implementation.
+Missing fields, dependency ranges that are not concrete slice IDs, unknown
+slice IDs and dependency cycles stop execution before implementation.
 
 S3D builds a directed dependency graph, runs topological sort, forms
 independent parallelization groups and acquires file, contract, module and
@@ -118,6 +142,27 @@ Route lock conflicts as `LOCK_CONFLICT` through the Typed Error Router. S3D may
 stop, report, escalate or recommend manual workflow refinement, but it must not
 call `workflow create`, rewrite the active workflow from S3 or expand scope
 automatically.
+
+## Context Pack Validation
+
+Before the first write-capable slice and whenever a slice depends on cached
+governance context, verify `docs/workflow/context-pack.json` against the
+current files it hashes. A stale context pack is not a failure when the active
+slice is responsible for refreshing it; otherwise it is a S3/S3D blocker and
+the executor must reread the authoritative files directly.
+
+## Process Performance Metrics
+
+When `.agents/skills/process-performance-profiler/SKILL.md` exists, use it to
+record workflow-process diagnostics under `docs/workflow/metrics/**` when the
+active workflow requests metrics. Metrics may include phase timing, role count,
+file-read count, quality command count, repeated governance reads, retry count,
+blocker count, longest critical path and unused parallelization opportunities.
+
+Metrics are diagnostic only. They must not record secrets, prompt content or
+raw forensic evidence payloads, and they must not delay, skip, downgrade or
+replace S3/S3D checks, D8 quality decisions, required role reviews,
+checkpoint commits or `QUALITY.md` commands.
 
 ## Core Rule
 
@@ -162,7 +207,7 @@ starting any retry or targeted fix:
 | `BUILD_FAILURE` | responsible Backend or Frontend Agent, Senior DevOps, `build-gradle` for Gradle-specific failures |
 | `TEST_FAILURE` | Senior Tester and responsible Slice Agent |
 | `DOC_GOVERNANCE_FAILURE` | Senior Documentation Engineer, Requirement Engineer |
-| `LOCK_CONFLICT` | Senior Swarm Orchestrator, Workflow Executor, Root Architect |
+| `LOCK_CONFLICT` | Senior Execution Orchestrator, Senior Swarm Orchestrator, Workflow Executor, Root Architect |
 | `UNKNOWN_FAILURE` | Root Architect escalation |
 
 Every failure report must include the error type, owner, retry count, next

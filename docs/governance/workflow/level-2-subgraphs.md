@@ -4,6 +4,12 @@ Each subgraph is small enough to review independently. The diagrams describe
 governance flow only; they do not authorize product implementation or invent
 repository behavior outside the referenced process documents.
 
+Flowchart integrity for these subgraphs is audited through
+`.agents/skills/flowchart-integrity-auditor/SKILL.md`. The audit checks
+decision labels, STOP paths, fallback paths, terminal nodes, accidental
+self-loops, forbidden `workflow execute` to `workflow create` jumps and Level 1
+/ Level 2 consistency.
+
 ## S1 Skills And Agents
 
 ```mermaid

@@ -54,6 +54,8 @@ flowchart TD
 
 ## Level 1 Checks
 
+- Flowchart integrity is audited through
+  `.agents/skills/flowchart-integrity-auditor/SKILL.md`.
 - ROOT, commands, S1, S2, S3, hard boundaries, publication modes and global
   governance nodes are visible.
 - S1, S2 and S3 remain separate process strands.

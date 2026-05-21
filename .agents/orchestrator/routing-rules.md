@@ -10,6 +10,17 @@ Use these rules to select roles for a slice. Prefer the smallest set that covers
 - Exact `workflow create` routes to workflow create.
 - Exact `workflow execute` routes to workflow execute.
 
+Before assigning specialist roles, route every `workflow create` and
+`workflow execute` request through
+`skills/execution-profile-router/SKILL.md`.
+
+The selected execution profile decides which gates are mandatory, which role
+reviews are full reviews, and which reviews may be reduced to N/A impact
+checks. Profile routing must not bypass root `AGENTS.md`, `QUALITY.md`, ADRs,
+active workflow STOP rules, Five-Role Three Amigos participation, S3/S3D
+preflight, Typed Error Router ownership, branch rules or required quality
+gates. Unclear impact defaults to `FULL_PATH`.
+
 - Backend domain, application, persistence, static analysis, runtime ingestion, gRPC or Protobuf work routes to `roles/senior-java-backend.md`.
 - React, frontend state, API client integration or UI component work routes to `roles/senior-react-frontend.md`.
 - Information architecture, accessibility, visualization UX or user-flow work routes to `roles/senior-ux-designer.md`.
@@ -25,14 +36,14 @@ Use these rules to select roles for a slice. Prefer the smallest set that covers
   - `BUILD_FAILURE` routes to the responsible backend or frontend owner plus `roles/senior-devops.md`; Gradle-specific failures also route to `skills/build-gradle/SKILL.md`.
   - `TEST_FAILURE` routes to `roles/senior-tester.md` and the responsible slice agent.
   - `DOC_GOVERNANCE_FAILURE` routes to `roles/senior-documentation-engineer.md` and `roles/senior-requirement-engineer/SKILL.md`.
-  - `LOCK_CONFLICT` routes to `roles/senior-swarm-orchestrator.md` and Root Architect escalation.
+  - `LOCK_CONFLICT` routes to `roles/senior-execution-orchestrator.md`, `skills/s3d-execution-orchestrator/SKILL.md`, Senior Swarm Orchestrator coordination and Root Architect escalation.
   - `UNKNOWN_FAILURE` routes to Root Architect escalation.
 - Gradle, Docker, Kubernetes, CI, observability or deployment work routes to `roles/senior-devops.md`.
 - New workflow creation, full `docs/workflow` regeneration, slice dependency planning or planning-risk review routes to `roles/senior-workflow-architect/SKILL.md`.
 - EPIC consistency, requirement drift, requirement classification, assumption tracking or requirement-to-architecture synchronization routes to `roles/senior-requirement-engineer/SKILL.md`.
 - Incoming requirement gatekeeping before workflow authoring, Three Amigos review, acceptance-criteria validation, dependency/deadlock checks or `READY_FOR_WORKFLOW` versus `REQUIRES_REFINEMENT` decisions route to `skills/three-amigos-requirement-gatekeeper/SKILL.md`.
 - Multi-role coordination, conflict resolution or slice planning routes to `roles/senior-swarm-orchestrator.md`.
-- S3D execution orchestration, dependency graph construction, topological sorting, parallelization grouping or file/contract/module/architecture-boundary conflict locks route to `roles/senior-swarm-orchestrator.md`.
+- S3D execution orchestration, dependency graph construction, topological sorting, parallelization grouping or file/contract/module/architecture-boundary conflict locks route to `roles/senior-execution-orchestrator.md` and `skills/s3d-execution-orchestrator/SKILL.md`.
 - Protobuf contracts, streaming RPC design, request validation or gRPC compatibility route to `roles/senior-grpc-proto-specialist.md`.
 - Repository checkout, workspace lifecycle, source-root preparation or large Git repositories route to `roles/senior-git-workspace-specialist.md`.
 - Plugin producer handoff, plugin-side request construction or plugin-to-server communication routes to `roles/senior-plugin-integration-developer.md`.
@@ -49,9 +60,10 @@ Use these rules to select roles for a slice. Prefer the smallest set that covers
 - Quality gate classification routes to
   `skills/quality-gate-orchestrator/SKILL.md`, `skills/quality-gate/SKILL.md`
   and `roles/senior-tester.md`.
-- Flowchart integrity audit routes to `roles/senior-documentation-engineer.md`
-  and `roles/senior-system-architect.md` using the review rules in
-  `docs/governance/workflow/README.md` until a dedicated skill exists.
+- Flowchart integrity audit routes to
+  `skills/flowchart-integrity-auditor/SKILL.md`; Senior Documentation
+  Engineer owns documentation synchronization and Senior System Architect owns
+  architecture-governance escalation when the auditor reports a blocker.
 
 ## Escalation
 

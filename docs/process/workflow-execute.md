@@ -4,6 +4,13 @@
 
 It executes a checked `docs/workflow/workflow.md` slice by slice through the configured subagent workflow, required role reviews, tests, documentation updates, quality gates and slice checkpoint pushes.
 
+## Workflow Executor Resolution
+
+For Forensic Analytics, `.agents/skills/workflow-executor/SKILL.md` is the
+active project-specific executor. `.codex/skills/workflow-executor/SKILL.md`
+remains the reusable base protocol and is read only for portable context or
+conflict detection. It is not a competing second execution protocol.
+
 The local documentation node for this strand is `S3_DOC`. `S3_DOC` updates
 concrete workflow-execute artifacts such as slice execution notes, quality-gate
 evidence, rollback decisions, commit results and execution reports. `DOCROOT`
@@ -19,6 +26,12 @@ documentation step.
 
 Stop when either artifact is missing or contradicts `AGENTS.md`, `QUALITY.md`, ADRs or verified repository state.
 
+When present, `docs/workflow/context-pack.md` and
+`docs/workflow/context-pack.json` are read first for orientation. They remain
+secondary artifacts. If their hashes are stale, governing files are touched, or
+a conflict is detected, the executor must reopen the authoritative files before
+continuing.
+
 ## S3 Safety Preflight
 
 `workflow execute` must pass these safety nodes before any slice is routed or
@@ -30,7 +43,8 @@ flowchart TD
   S3_STATUS -->|dirty working tree| S3_STOP_STATUS["STOP: Dirty working tree - report only"]
   S3_BRANCH -->|valid workflow branch| S3_SCOPE["S3_SCOPE: Check workflow scope"]
   S3_BRANCH -->|wrong branch| S3_STOP_BRANCH["STOP: Wrong branch - report only"]
-  S3_SCOPE -->|scope valid| S3_CLASSIFY["S3_CLASSIFY: Classify slice"]
+  S3_SCOPE -->|scope valid| S3_PROFILE["Execution Profile Router"]
+  S3_PROFILE --> S3_CLASSIFY["S3_CLASSIFY: Classify slice"]
   S3_SCOPE -->|scope conflict| S3_STOP_SCOPE["STOP: Scope conflict - escalate"]
   S3_CLASSIFY -->|backend| S3D["S3D: Execution Orchestrator"]
   S3_CLASSIFY -->|frontend| S3D
@@ -54,22 +68,106 @@ Explicitly declared governance, metadata and documentation-only slices may route
 through `S3_DOC` only when the active workflow declares that scope. Otherwise
 they are unclassified and must escalate.
 
+## Execution Profile Routing
+
+After `S3_SCOPE` and before specialist routing, classify the active slice
+through `.agents/skills/execution-profile-router/SKILL.md`.
+
+The profile controls review depth only:
+
+- `FAST_PATH` may use documentation and N/A impact checks when the workflow
+  explicitly declares documentation-only scope.
+- `NORMAL_PATH` may use focused role review when owner, locks and quality
+  impact are verified.
+- `FULL_PATH` is mandatory for governance authority, skills, roles, routing,
+  branch rules, quality rules, contracts, runtime, deployment or unclear
+  impact.
+
+Profile routing must not bypass S3 preflight, S3D lock checks, Typed Error
+Router ownership, checkpoint rules, `QUALITY.md` commands or active workflow
+STOP conditions.
+
+## Quality Impact Classification
+
+Before selecting quality commands, route the slice through
+`.agents/skills/quality-impact-classifier/SKILL.md`.
+
+The classifier returns one of:
+
+- `DOC_ONLY`
+- `GOVERNANCE_METADATA`
+- `PRODUCT_BUILD_AFFECTING`
+- `UNKNOWN`
+
+`DOC_ONLY` and `GOVERNANCE_METADATA` may use targeted documentation,
+structured-format, registry, routing or flowchart checks when the file set
+cannot influence product build, runtime behavior, contracts, tests,
+architecture or quality rules.
+
+`PRODUCT_BUILD_AFFECTING` requires the applicable `QUALITY.md` Gradle gate.
+`UNKNOWN` stops and escalates instead of guessing. A failed required gate must
+never be downgraded by classification.
+
+## Persistent Skill Registry Reuse
+
+When `docs/skill-audit/skill-registry.md` and
+`docs/skill-audit/skill-registry.json` exist, workflow execution may use them
+as routing and conflict-audit cache evidence only after hash validation.
+
+Reuse is allowed only when the registry hashes still match the repository files
+and no file under `.agents/**`, `.codex/**`, `AGENTS.md`, `QUALITY.md`,
+`docs/workflow/**`, `docs/skill-audit/**`, `docs/agents/**`,
+`docs/process/**` or `docs/governance/**` changed since the registry was
+verified. If a slice touches those paths, the executor must reopen the
+authoritative files and route through `skill-registry-conflict-auditor`.
+
+The persistent registry is secondary evidence. It must never mark unresolved
+owner conflicts, incompatible STOP rules, quality authority conflicts or
+architecture authority conflicts as ready. Stale registry reuse is a
+`DOC_GOVERNANCE_FAILURE`.
+
+## Process Performance Metrics
+
+When `.agents/skills/process-performance-profiler/SKILL.md` exists and the
+active workflow requests metrics, `workflow execute` may write diagnostic run
+reports under `docs/workflow/metrics/**`.
+
+Metrics may record phase timing, role count, file-read count, quality command
+count, repeated governance reads, Typed Error Router retries, blocker count,
+longest critical path and unused parallelization opportunities.
+
+Metrics must not record secrets, credentials, prompt content, raw evidence
+payloads, source-code excerpts or runtime trace payloads. Metrics must not
+delay, skip, downgrade or replace S3/S3D checks, D8 quality decisions,
+required role reviews, checkpoint commits or `QUALITY.md` commands.
+
 ## S3D Execution Orchestrator
 
-S3D runs after `S3_CLASSIFY` and before write-capable slice execution. It is the
-Execution Orchestrator for `workflow execute`, not a fourth process strand.
+S3D runs after `S3_CLASSIFY` and before write-capable slice execution. The
+Senior Execution Orchestrator and `s3d-execution-orchestrator` skill own S3D
+technical planning for `workflow execute`. S3D is not a fourth process strand.
+Senior Swarm Orchestrator remains the coordination owner around S3D output.
 
 S3D reads the checked `docs/workflow/workflow.md` and extracts:
 
-- slice ID
-- slice goal
-- affected files
-- affected modules
-- affected contracts
-- responsible subagents or roles
-- dependencies
-- quality gates
-- documentation duties
+- `slice_id`
+- slice goal or purpose
+- `profile`
+- `owner`
+- `secondary_reviewers`
+- `affected_files`
+- `affected_modules`
+- `affected_contracts`
+- `dependencies`
+- `parallel_group`
+- `file_locks`
+- `contract_locks`
+- `architecture_locks`
+- `quality_gates.targeted`
+- `quality_gates.required`
+- `documentation.arc42`
+- `documentation.adr`
+- `stop_conditions`
 
 S3D then builds a directed dependency graph, runs topological sort, forms
 independent parallelization groups and checks file, contract, module and
@@ -98,7 +196,7 @@ flowchart TD
   R -->|BUILD_FAILURE| B["Slice-assigned Backend or Frontend Agent / Senior DevOps / build-gradle"]
   R -->|TEST_FAILURE| T["Senior Tester / slice-assigned implementation agent"]
   R -->|DOC_GOVERNANCE_FAILURE| D["Senior Documentation Engineer / Senior Requirement Engineer"]
-  R -->|LOCK_CONFLICT| L["Senior Swarm Orchestrator / Root Architect"]
+  R -->|LOCK_CONFLICT| L["Senior Execution Orchestrator / Senior Swarm Orchestrator / Root Architect"]
   R -->|UNKNOWN_FAILURE| X["Root Architect Escalation"]
   A --> RC{"Retry <= 3?"}
   B --> RC
@@ -119,7 +217,7 @@ The router categories are:
 | `BUILD_FAILURE` | slice-assigned Backend or Frontend Agent, Senior DevOps, `build-gradle` for Gradle-specific failures |
 | `TEST_FAILURE` | Senior Tester, slice-assigned implementation agent |
 | `DOC_GOVERNANCE_FAILURE` | Senior Documentation Engineer, Senior Requirement Engineer |
-| `LOCK_CONFLICT` | Senior Swarm Orchestrator, Root Architect |
+| `LOCK_CONFLICT` | Senior Execution Orchestrator, Senior Swarm Orchestrator, Root Architect |
 | `UNKNOWN_FAILURE` | Root Architect |
 
 Automatic fix attempts are capped at `maxRetries = 3`. Retry exhaustion,
