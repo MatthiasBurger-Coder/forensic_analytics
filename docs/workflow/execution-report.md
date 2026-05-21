@@ -34,7 +34,7 @@ Workflow execution has started. Slice results are recorded below.
 | Slice | Status | Commit | Push |
 |---|---|---|---|
 | S00 | Completed | pending checkpoint | pending checkpoint |
-| S01 | Pending | n/a | n/a |
+| S01 | Completed | pending checkpoint | pending checkpoint |
 | S02 | Pending | n/a | n/a |
 | S03 | Pending | n/a | n/a |
 | S04 | Pending | n/a | n/a |
@@ -107,3 +107,41 @@ blockers=none
 | Architecture locks | `workflow-execute-preflight` |
 | Lock result | no conflict |
 | Context pack | current |
+
+## Slice S01 - Add Execution Profile Router
+
+```text
+workflowVersion=governance-performance-20260521-v1
+sliceId=S01
+sliceTitle=Add Execution Profile Router
+responsibleAgent=Senior System Architect
+changedFiles=.agents/skills/execution-profile-router/SKILL.md; .agents/orchestrator/routing-rules.md; .agents/orchestrator/swarm-orchestrator.md; docs/agents/skill-registry.md; docs/process/workflow-create.md; docs/process/workflow-execute.md; docs/governance/README.md; docs/workflow/execution-report.md
+qualityGateCommands=git diff --check; rg -n "execution-profile-router|FAST_PATH|NORMAL_PATH|FULL_PATH" .agents docs
+qualityGateResult=PASS
+commitHash=pending
+rollbackReference=pending checkpoint commit
+arc42Updated=checked, no update required for S01
+adrUpdated=checked, no update required for S01
+pushResult=pending checkpoint push
+blockers=none
+```
+
+### S01 Role Review
+
+| Role | Result |
+|---|---|
+| Senior System Architect | Profile routing is governance-only and defaults unclear impact to `FULL_PATH`; it does not weaken root authority or STOP rules. |
+| Senior Requirement Engineer | The slice implements the accepted workflow requirement and does not change the product EPIC. |
+| Senior Documentation Engineer | Routing, swarm orchestration, process docs, governance docs and skill registry were synchronized. |
+| Senior Tester | S01 requires documentation/governance checks only. Gradle is not required because no product source, tests, build logic, contracts or `QUALITY.md` changed. |
+
+### S01 S3D Summary
+
+| Field | Value |
+|---|---|
+| Classification | documentation / governance / metadata |
+| Dependencies | S00 completed |
+| File locks | `.agents/skills/execution-profile-router/**`, `.agents/orchestrator/**`, `docs/agents/skill-registry.md`, `docs/process/workflow-create.md`, `docs/process/workflow-execute.md`, `docs/governance/README.md`, `docs/workflow/execution-report.md` |
+| Contract locks | none |
+| Architecture locks | `agent-governance-routing` |
+| Lock result | no conflict |

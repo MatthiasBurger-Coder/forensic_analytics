@@ -25,6 +25,7 @@ flowchart TD
   Incorporate["Incorporate answers"]
   Escalate["STOP: Root Architect escalation"]
   Gate["Three Amigos Requirement Gate"]
+  Profile["Execution Profile Routing"]
   Branch["Branch Governance / Branch Verification"]
   Req["Senior Requirement Engineer review"]
   Arch["Senior System Architect review"]
@@ -44,7 +45,7 @@ flowchart TD
   Blocking -->|yes| Retry
   Retry -->|yes| Ask --> Incorporate --> Clarify
   Retry -->|no| Escalate
-  Blocking -->|no| Gate --> Branch --> Req --> Arch --> Java --> React --> Tester --> Workflow --> WorkflowCheck --> Arc42 --> Arc42Check --> Docs --> Final --> Approved
+  Blocking -->|no| Gate --> Profile --> Branch --> Req --> Arch --> Java --> React --> Tester --> Workflow --> WorkflowCheck --> Arc42 --> Arc42Check --> Docs --> Final --> Approved
   Gate --> Stop
   WorkflowCheck --> Stop
   Arc42Check --> Stop
@@ -99,6 +100,27 @@ When blocking questions remain:
 - return `REQUIRES_REFINEMENT`
 
 Non-blocking uncertainty may be documented as an assumption only when it does not affect architecture boundaries, testability, data ownership, service boundaries, APIs, contracts, runtime behavior or scope.
+
+## Execution Profile Routing
+
+After the Three Amigos gate and before specialist role depth is selected,
+classify the request through
+`.agents/skills/execution-profile-router/SKILL.md`.
+
+Profiles decide review depth:
+
+- `FAST_PATH`: documentation-only changes with no behavior, branch, quality,
+  routing, ownership or process-authority impact.
+- `NORMAL_PATH`: isolated changes with verified owner, disjoint locks and no
+  architecture, contract, persistence, runtime, deployment or quality-policy
+  impact.
+- `FULL_PATH`: workflow governance, skills, roles, routing, branch rules,
+  quality rules, architecture-sensitive work or unclear impact.
+
+The profile may reduce unaffected roles to N/A impact checks. It must not
+remove Five-Role Three Amigos participation, branch-first workflow creation,
+arc42 validation, Documentation Governance, STOP rules or required quality
+gates.
 
 ## Five Mandatory Three Amigos Roles
 

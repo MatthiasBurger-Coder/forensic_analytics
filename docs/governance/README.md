@@ -46,6 +46,7 @@ User request
   -> requirement classification
   -> EPIC drift check
   -> arc42 and ADR impact check
+  -> execution profile routing
   -> dedicated workflow branch creation and checkout
   -> workflow regeneration or update
   -> slice execution
@@ -64,6 +65,11 @@ The repository uses three process strands:
 - `workflow execute`
 
 `skills update` activates `skills-agents`. `workflow create` performs requirement clarification, workflow authoring and arc42 validation. `workflow execute` executes checked slices and performs slice checkpoint pushes after successful quality gates.
+
+Execution profile routing runs before specialist assignment for workflow
+creation and execution. It classifies requests as `FAST_PATH`, `NORMAL_PATH`
+or `FULL_PATH` so unaffected roles can provide N/A impact checks while
+mandatory gates and STOP rules remain intact.
 
 Before creating a new workflow:
 

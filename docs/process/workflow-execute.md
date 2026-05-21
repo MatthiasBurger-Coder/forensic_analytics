@@ -30,7 +30,8 @@ flowchart TD
   S3_STATUS -->|dirty working tree| S3_STOP_STATUS["STOP: Dirty working tree - report only"]
   S3_BRANCH -->|valid workflow branch| S3_SCOPE["S3_SCOPE: Check workflow scope"]
   S3_BRANCH -->|wrong branch| S3_STOP_BRANCH["STOP: Wrong branch - report only"]
-  S3_SCOPE -->|scope valid| S3_CLASSIFY["S3_CLASSIFY: Classify slice"]
+  S3_SCOPE -->|scope valid| S3_PROFILE["Execution Profile Router"]
+  S3_PROFILE --> S3_CLASSIFY["S3_CLASSIFY: Classify slice"]
   S3_SCOPE -->|scope conflict| S3_STOP_SCOPE["STOP: Scope conflict - escalate"]
   S3_CLASSIFY -->|backend| S3D["S3D: Execution Orchestrator"]
   S3_CLASSIFY -->|frontend| S3D
@@ -53,6 +54,25 @@ Unclassifiable slices must not execute automatically.
 Explicitly declared governance, metadata and documentation-only slices may route
 through `S3_DOC` only when the active workflow declares that scope. Otherwise
 they are unclassified and must escalate.
+
+## Execution Profile Routing
+
+After `S3_SCOPE` and before specialist routing, classify the active slice
+through `.agents/skills/execution-profile-router/SKILL.md`.
+
+The profile controls review depth only:
+
+- `FAST_PATH` may use documentation and N/A impact checks when the workflow
+  explicitly declares documentation-only scope.
+- `NORMAL_PATH` may use focused role review when owner, locks and quality
+  impact are verified.
+- `FULL_PATH` is mandatory for governance authority, skills, roles, routing,
+  branch rules, quality rules, contracts, runtime, deployment or unclear
+  impact.
+
+Profile routing must not bypass S3 preflight, S3D lock checks, Typed Error
+Router ownership, checkpoint rules, `QUALITY.md` commands or active workflow
+STOP conditions.
 
 ## S3D Execution Orchestrator
 

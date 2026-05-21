@@ -10,6 +10,17 @@ Use these rules to select roles for a slice. Prefer the smallest set that covers
 - Exact `workflow create` routes to workflow create.
 - Exact `workflow execute` routes to workflow execute.
 
+Before assigning specialist roles, route every `workflow create` and
+`workflow execute` request through
+`skills/execution-profile-router/SKILL.md`.
+
+The selected execution profile decides which gates are mandatory, which role
+reviews are full reviews, and which reviews may be reduced to N/A impact
+checks. Profile routing must not bypass root `AGENTS.md`, `QUALITY.md`, ADRs,
+active workflow STOP rules, Five-Role Three Amigos participation, S3/S3D
+preflight, Typed Error Router ownership, branch rules or required quality
+gates. Unclear impact defaults to `FULL_PATH`.
+
 - Backend domain, application, persistence, static analysis, runtime ingestion, gRPC or Protobuf work routes to `roles/senior-java-backend.md`.
 - React, frontend state, API client integration or UI component work routes to `roles/senior-react-frontend.md`.
 - Information architecture, accessibility, visualization UX or user-flow work routes to `roles/senior-ux-designer.md`.
