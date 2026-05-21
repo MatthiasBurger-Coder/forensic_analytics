@@ -58,9 +58,13 @@ The current platform still does not have:
 - implemented graph-replay, report-generation or build-artifact-worker
   executable services;
 - service-private databases;
-- fully verified service-local health checks;
-- Docker Compose service landscape;
+- fully verified service-local health checks for the full target landscape;
+- production-wide Docker Compose service landscape;
 - Docker Swarm or Kubernetes manifests.
+
+Slice 15 verifies a local Docker Compose landscape for the repository-to-BTM
+service path only. That evidence does not claim full target-landscape,
+Docker Swarm or Kubernetes readiness.
 
 ## Target Principles
 

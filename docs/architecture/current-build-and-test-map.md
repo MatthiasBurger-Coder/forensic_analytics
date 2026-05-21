@@ -149,6 +149,7 @@ Existing Docker material:
 - `docker/joern/docker-compose.joern.yml`
 - `docker/joern/scripts/**`
 - `forensic-ui/Dockerfile`
+- `deployment/docker-compose/repository-to-btm.local.yml`
 
 The DevOps review verified Joern Compose configuration with:
 
@@ -158,6 +159,12 @@ docker compose --env-file docker/joern/.env -f docker/joern/docker-compose.joern
 
 No Boot jar build, Boot Docker image build, frontend image build, Swarm command
 or Kubernetes command was executed as part of Slice 00.
+
+Slice 15 later verified the local repository-to-BTM Compose descriptor with
+six service `bootJar` tasks, `docker compose config`, `docker compose build`,
+Compose startup, Gateway plus service health checks and Compose cleanup. This
+is local repository-to-BTM readiness only and does not claim production-wide
+Compose, Swarm or Kubernetes readiness.
 
 Missing deployment material:
 

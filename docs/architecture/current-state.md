@@ -137,17 +137,19 @@ Verified existing deployment-related material:
 - `docker/joern/docker-compose.joern.yml`
 - `docker/joern/scripts/**`
 - `forensic-ui/Dockerfile`
+- `deployment/docker-compose/repository-to-btm.local.yml`
 
 Missing target material:
 
-- `deployment/docker-compose/**`
+- production-wide `deployment/docker-compose/docker-compose.yml`
 - `deployment/docker-swarm/**`
 - `deployment/kubernetes/**`
 - Helm or chart roots
 - CI workflow files under `.github/workflows`
 
-Docker Compose currently exists for Joern tooling only. There is no verified
-local microservices compose landscape, Swarm stack, Kubernetes manifest set or
+Docker Compose is verified for Joern tooling and for the Slice 15 local
+repository-to-BTM service path only. There is no verified production-wide
+compose landscape, Swarm stack, Kubernetes manifest set or complete
 service-by-service container readiness evidence.
 
 ## Microservice Readiness Baseline
@@ -163,15 +165,16 @@ The current repository has limited platform-level runtime evidence:
 The current repository does not have verified per-service:
 
 - service-private databases;
-- Docker Compose service landscape;
+- production-wide Docker Compose service landscape;
 - Docker Swarm or Kubernetes deployment manifests.
 
 Seven registered service projects have service-local READMEs, tests and
 Dockerfiles where verified in `services/**`, including the Gateway service.
 Graph-replay and report-generation remain README-only planned roots. The
 build-artifact worker is a planned target with no service root yet. Health
-check and production runtime readiness evidence remains incomplete unless a
-service-specific README states otherwise.
+check and production runtime readiness evidence remains incomplete outside the
+verified local repository-to-BTM Compose path unless a service-specific README
+states otherwise.
 
 Future slices must treat README-only service roots as planned targets. Registered
 service projects still need explicit start, healthcheck, orchestration and
