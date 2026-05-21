@@ -111,6 +111,11 @@ fixture as a local Git repository, pins a commit, sends a plugin-style in-proces
 gRPC request and verifies checkout, source-root detection, session storage and
 workspace cleanup without external network access or target build execution.
 
+WildFly large-repository hardening is available as an opt-in testbed scenario
+through `WildFlyRepositoryHardeningTest`. It is skipped by default unless
+`FORENSIC_ANALYTICS_WILDFLY_HARDENING=true` and an explicit WildFly branch or
+commit is provided. The runbook is `docs/testing/wildfly-hardening.md`.
+
 Architecture tests were verified in these areas:
 
 - application contract architecture;
@@ -222,6 +227,8 @@ production or test caller and parity or explicit deprecation tests exist.
 - Frontend coverage and end-to-end test gates are not configured.
 - Boot container healthcheck evidence is absent.
 - Swarm and Kubernetes readiness is absent.
+- WildFly hardening is optional external evidence and is not part of the
+  default Gradle quality gate.
 - Full local quality gate was not required for the baseline documentation
   review because the baseline was documentation-only and required
   `git diff --check`.

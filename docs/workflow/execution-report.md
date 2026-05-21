@@ -29,7 +29,7 @@
 |---|---|---|
 | S00 | COMPLETED | Branch, local ref, clean working tree, context-pack hashes, S3D metadata and diff check passed. |
 | S01 | COMPLETED | Added deterministic local real repository E2E fixture and test; targeted and module test gates passed. |
-| S02 | PENDING | WildFly hardening preparation. |
+| S02 | COMPLETED | Added WildFly hardening runbook and documented opt-in external evidence; targeted skip/default gate passed. |
 | S03 | PENDING | CLI Gateway contract. |
 | S04 | PENDING | Separate deployment workflow handoff. |
 | S05 | PENDING | Monolith caller inventory. |
@@ -133,3 +133,34 @@ Notes:
 - The fixture is materialized from `src/test/resources/repository-e2e/real-repository-template`.
 - The test initializes a local Git repository with fixed author and committer dates, checks out the pinned commit through the existing gRPC ingestion path, verifies two detected Java source roots and then cleans the workspace.
 - No target repository build script is executed.
+
+## S02 WildFly Hardening Preparation
+
+| Field | Result |
+|---|---|
+| Owner | Senior Performance Engineer |
+| Secondary reviewers | Git Large Repository Specialist, Senior DevOps, Senior Tester, Security Sandbox Specialist |
+| Changed files | `docs/testing/wildfly-hardening.md`; `docs/architecture/current-build-and-test-map.md`; `docs/workflow/execution-report.md` |
+| Decision | COMPLETED |
+
+Role-review checklist:
+
+| Role | Result |
+|---|---|
+| Senior Performance Engineer | PASS, the runbook defines measurable checkout, source-root, size and cleanup metrics without brittle timing assertions. |
+| Git Large Repository Specialist | PASS, WildFly remains limited to clone, explicit branch or commit checkout, commit resolution, source-root detection and cleanup. |
+| Senior DevOps | PASS, the external scenario stays optional and outside the default quality gate. |
+| Senior Tester | PASS, the targeted test command passes by default without running an external checkout. |
+| Security Sandbox Specialist | PASS, the runbook forbids target build execution and requires explicit branch or commit input. |
+
+Verification:
+
+| Command | Result |
+|---|---|
+| `./gradlew :forensic-analytics-testbed:test --tests '*WildFlyRepositoryHardeningTest' --dependency-verification strict --console=plain --stacktrace` | PASS, hardening scenario skipped by default because `FORENSIC_ANALYTICS_WILDFLY_HARDENING` was not set to `true`. |
+
+Optional external hardening:
+
+| Check | Result |
+|---|---|
+| Live WildFly checkout | SKIPPED, no explicit WildFly branch or commit was provided for this workflow execution turn. |
