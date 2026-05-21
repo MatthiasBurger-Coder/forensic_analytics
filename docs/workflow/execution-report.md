@@ -1614,3 +1614,92 @@ Slice 19 is `D8_PASS` as a no-removal checkpoint. The slice explicitly did not
 edit `settings.gradle.kts`, delete source roots or weaken tests. Caller
 verification, `git diff --check`, `git diff --cached --check`, checkpoint
 commit and branch push completed successfully.
+
+## Slice 20 Execution - Full Quality Gate And Migration Acceptance
+
+Slice 20 ran the final repository validation and reconciled the remaining
+architecture documentation with the implemented workflow state.
+
+Final verification:
+
+- Full local quality gate passed:
+  `./gradlew --no-daemon --max-workers=1 clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace`
+- Final git verification passed:
+  `git status --short --branch`, `git diff --stat`, `git diff --name-status`
+  and `git diff --check`.
+- Slice 17 frontend gate had already passed with:
+  `cd forensic-ui && npm ci && npm test && npm run build`.
+- Optional external checks are skipped: no Sonar, CI, Swarm or Kubernetes
+  credentials/commands are documented for this local workflow gate.
+
+Implemented final documentation alignment:
+
+- `docs/architecture/current-state.md`,
+  `docs/architecture/current-build-and-test-map.md` and
+  `docs/architecture/target-microservices-architecture.md` now distinguish the
+  verified Slice 15 local repository-to-BTM Docker Compose path from missing
+  production-wide Compose, Docker Swarm and Kubernetes readiness.
+- The final acceptance decision keeps graph/replay and report generation
+  deferred by Slice 16, keeps CLI Gateway migration deferred by Slice 17, and
+  keeps monolith runtime paths isolated rather than removed by Slices 18 and
+  19.
+
+### Final Acceptance
+
+The workflow is accepted for the implemented repository-to-BTM service path:
+
+- external Git repository submission is exposed through the Gateway HTTP API;
+- repository workspace preparation is owned by Repository Analysis service;
+- Analysis Store owns repository-to-BTM orchestration state and accepted
+  metadata;
+- Java AST, optional Joern CPG and BTM Generation are invoked through owner
+  service APIs without shared Java implementation modules between services;
+- deterministic BTM artifacts are generated and delivery readiness is exposed
+  through the approved contracts;
+- the active frontend uses verified Gateway/public routes for submission and
+  status, with idempotency and correlation metadata;
+- legacy `forensic-analytics-*` runtime paths remain documented as
+  in-process rollback/compatibility paths, not target microservices.
+
+Residual non-acceptance items remain explicit and do not invalidate the
+repository-to-BTM acceptance:
+
+- Docker Swarm and Kubernetes readiness are not claimed.
+- Production-wide Compose readiness is not claimed beyond the local Slice 15
+  repository-to-BTM landscape.
+- CLI migration to Gateway requires a future public command contract.
+- Build-artifact worker, graph-replay and report-generation services remain
+  planned/deferred as documented.
+
+### Slice 20 Reviews
+
+- Final quality review initially blocked stale architecture wording that still
+  implied no Docker Compose service landscape after Slice 15.
+- The documentation was corrected to distinguish local repository-to-BTM
+  Compose readiness from production-wide Compose, Swarm and Kubernetes
+  readiness.
+
+### Slice 20 CP_RECORD
+
+```text
+workflowVersion=microservices-btm-pipeline-20260517-v5
+sliceId=20
+sliceTitle=Full Quality Gate And Migration Acceptance
+responsibleAgent=Workflow Executor with final quality/documentation review
+changedFiles=docs/architecture/current-state.md; docs/architecture/current-build-and-test-map.md; docs/architecture/target-microservices-architecture.md; docs/workflow/execution-report.md
+qualityGateCommands=./gradlew --no-daemon --max-workers=1 clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace; git status --short --branch; git diff --stat; git diff --name-status; git diff --check; git diff --cached --check
+qualityGateResult=PASS
+checkpointCommitHash=0a8f1f94a322224c1313f2e95bbe46d7ab869352
+pushResult=PUB_DONE to origin/feature/workflow-microservices-btm-pipeline-20260517
+rollbackReference=a87999bdc61159d6a8148eccd5ac8ac2ddca358c
+arc42Updated=checked; no arc42 change required after deployment-readiness wording correction in architecture docs
+adrUpdated=not required in this slice
+```
+
+### Slice 20 D8 Decision
+
+Slice 20 is `D8_PASS`. The full local `QUALITY.md` gate completed
+successfully, final git checks passed, architecture documentation was aligned
+with Slice 15 local Compose evidence, and the repository-to-BTM workflow
+acceptance is recorded with explicit residual non-claims for production
+deployment, CLI migration and deferred services.
