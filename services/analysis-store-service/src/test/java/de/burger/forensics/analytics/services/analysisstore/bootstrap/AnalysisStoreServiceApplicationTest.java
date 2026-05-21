@@ -67,16 +67,49 @@ class AnalysisStoreServiceApplicationTest {
         assertThrows(NullPointerException.class, () -> new AnalysisStoreServiceProperties(
             null,
             new AnalysisStoreServiceProperties.Health(true, "127.0.0.1", 0),
-            javaAstAnalysis()
+            javaAstAnalysis(),
+            repositoryAnalysis(),
+            joernCpgAnalysis(),
+            btmGeneration()
         ));
         assertThrows(NullPointerException.class, () -> new AnalysisStoreServiceProperties(
             new AnalysisStoreServiceProperties.Grpc(true, "127.0.0.1", 0),
             null,
-            javaAstAnalysis()
+            javaAstAnalysis(),
+            repositoryAnalysis(),
+            joernCpgAnalysis(),
+            btmGeneration()
         ));
         assertThrows(NullPointerException.class, () -> new AnalysisStoreServiceProperties(
             new AnalysisStoreServiceProperties.Grpc(true, "127.0.0.1", 0),
             new AnalysisStoreServiceProperties.Health(true, "127.0.0.1", 0),
+            null,
+            repositoryAnalysis(),
+            joernCpgAnalysis(),
+            btmGeneration()
+        ));
+        assertThrows(NullPointerException.class, () -> new AnalysisStoreServiceProperties(
+            new AnalysisStoreServiceProperties.Grpc(true, "127.0.0.1", 0),
+            new AnalysisStoreServiceProperties.Health(true, "127.0.0.1", 0),
+            javaAstAnalysis(),
+            null,
+            joernCpgAnalysis(),
+            btmGeneration()
+        ));
+        assertThrows(NullPointerException.class, () -> new AnalysisStoreServiceProperties(
+            new AnalysisStoreServiceProperties.Grpc(true, "127.0.0.1", 0),
+            new AnalysisStoreServiceProperties.Health(true, "127.0.0.1", 0),
+            javaAstAnalysis(),
+            repositoryAnalysis(),
+            null,
+            btmGeneration()
+        ));
+        assertThrows(NullPointerException.class, () -> new AnalysisStoreServiceProperties(
+            new AnalysisStoreServiceProperties.Grpc(true, "127.0.0.1", 0),
+            new AnalysisStoreServiceProperties.Health(true, "127.0.0.1", 0),
+            javaAstAnalysis(),
+            repositoryAnalysis(),
+            joernCpgAnalysis(),
             null
         ));
         assertThrows(IllegalArgumentException.class, () -> new AnalysisStoreServiceProperties.Grpc(true, " ", 0));
@@ -84,14 +117,34 @@ class AnalysisStoreServiceApplicationTest {
         assertThrows(IllegalArgumentException.class, () -> new AnalysisStoreServiceProperties.Health(true, "127.0.0.1", -1));
         assertThrows(IllegalArgumentException.class, () -> new AnalysisStoreServiceProperties.Health(true, "127.0.0.1", 65_536));
         assertThrows(IllegalArgumentException.class, () -> new AnalysisStoreServiceProperties.ClientGrpc(" ", 9093, 30, 1));
+        assertThrows(IllegalArgumentException.class, () -> new AnalysisStoreServiceProperties.ClientGrpc("example.com", 9093, 30, 1));
         assertThrows(IllegalArgumentException.class, () -> new AnalysisStoreServiceProperties.ClientGrpc("127.0.0.1", -1, 30, 1));
         assertThrows(IllegalArgumentException.class, () -> new AnalysisStoreServiceProperties.ClientGrpc("127.0.0.1", 9093, 0, 1));
         assertThrows(IllegalArgumentException.class, () -> new AnalysisStoreServiceProperties.ClientGrpc("127.0.0.1", 9093, 30, 0));
+        assertThrows(IllegalArgumentException.class, () -> new AnalysisStoreServiceProperties.OwnerGrpc(" ", 9092, 30));
+        assertThrows(IllegalArgumentException.class, () -> new AnalysisStoreServiceProperties.OwnerGrpc("repo.example.test", 9092, 30));
+        assertThrows(IllegalArgumentException.class, () -> new AnalysisStoreServiceProperties.OwnerGrpc("127.0.0.1", -1, 30));
+        assertThrows(IllegalArgumentException.class, () -> new AnalysisStoreServiceProperties.OwnerGrpc("127.0.0.1", 9092, 0));
+        assertThrows(IllegalArgumentException.class, () -> new AnalysisStoreServiceProperties.JoernGrpc("127.0.0.1", 9094, 30, " ", "bundle-v1"));
+        assertThrows(IllegalArgumentException.class, () -> new AnalysisStoreServiceProperties.JoernGrpc("127.0.0.1", 9094, 30, "joern:latest", "bundle-v1"));
+        assertThrows(IllegalArgumentException.class, () -> new AnalysisStoreServiceProperties.JoernGrpc("127.0.0.1", 9094, 30, "https://registry.example/joern@sha256:" + "a".repeat(64), "bundle-v1"));
+        assertThrows(IllegalArgumentException.class, () -> new AnalysisStoreServiceProperties.JoernGrpc("127.0.0.1", 9094, 30, pinnedJoernImage(), " "));
+        assertThrows(IllegalArgumentException.class, () -> new AnalysisStoreServiceProperties.JoernGrpc("127.0.0.1", 9094, 30, pinnedJoernImage(), "bundle/v1"));
+        assertThrows(IllegalArgumentException.class, () -> new AnalysisStoreServiceProperties.JoernGrpc("127.0.0.1", 9094, 30, pinnedJoernImage(), "secret-bundle"));
+        assertThrows(IllegalArgumentException.class, () -> new AnalysisStoreServiceProperties.JoernGrpc("127.0.0.1", 9094, 30, pinnedJoernImage(), "token-bundle"));
+        assertThrows(IllegalArgumentException.class, () -> new AnalysisStoreServiceProperties.JoernGrpc("127.0.0.1", 9094, 30, pinnedJoernImage(), "password-bundle"));
+        assertThrows(IllegalArgumentException.class, () -> new AnalysisStoreServiceProperties.JoernGrpc("127.0.0.1", 9094, 30, pinnedJoernImage(), "ghp_bundle"));
+        assertThrows(IllegalArgumentException.class, () -> new AnalysisStoreServiceProperties.JoernGrpc("127.0.0.1", 9094, 30, pinnedJoernImage(), "sk-bundle"));
+        assertThrows(IllegalArgumentException.class, () -> new AnalysisStoreServiceProperties.BtmGrpc("btm.example.test", 9095, 30, 1));
+        assertThrows(IllegalArgumentException.class, () -> new AnalysisStoreServiceProperties.BtmGrpc("127.0.0.1", 9095, 30, 0));
 
         var properties = new AnalysisStoreServiceProperties(
             new AnalysisStoreServiceProperties.Grpc(false, "127.0.0.1", 0),
             new AnalysisStoreServiceProperties.Health(false, "127.0.0.1", 0),
-            javaAstAnalysis()
+            javaAstAnalysis(),
+            repositoryAnalysis(),
+            joernCpgAnalysis(),
+            btmGeneration()
         );
         var grpc = new GrpcServerLifecycle(properties, null);
         var health = new HealthHttpServerLifecycle(properties, grpc);
@@ -114,7 +167,10 @@ class AnalysisStoreServiceApplicationTest {
         var properties = new AnalysisStoreServiceProperties(
             new AnalysisStoreServiceProperties.Grpc(true, "127.0.0.1", 0),
             new AnalysisStoreServiceProperties.Health(true, "127.0.0.1", 0),
-            javaAstAnalysis()
+            javaAstAnalysis(),
+            repositoryAnalysis(),
+            joernCpgAnalysis(),
+            btmGeneration()
         );
         var grpc = new GrpcServerLifecycle(properties, null);
         var health = new HealthHttpServerLifecycle(properties, grpc);
@@ -173,5 +229,27 @@ class AnalysisStoreServiceApplicationTest {
         return new AnalysisStoreServiceProperties.JavaAstAnalysis(
             new AnalysisStoreServiceProperties.ClientGrpc("127.0.0.1", 9093, 30, 104_857_600)
         );
+    }
+
+    private static AnalysisStoreServiceProperties.RepositoryAnalysis repositoryAnalysis() {
+        return new AnalysisStoreServiceProperties.RepositoryAnalysis(
+            new AnalysisStoreServiceProperties.OwnerGrpc("127.0.0.1", 9092, 30)
+        );
+    }
+
+    private static AnalysisStoreServiceProperties.JoernCpgAnalysis joernCpgAnalysis() {
+        return new AnalysisStoreServiceProperties.JoernCpgAnalysis(
+            new AnalysisStoreServiceProperties.JoernGrpc("127.0.0.1", 9094, 30, pinnedJoernImage(), "bundle-v1")
+        );
+    }
+
+    private static AnalysisStoreServiceProperties.BtmGeneration btmGeneration() {
+        return new AnalysisStoreServiceProperties.BtmGeneration(
+            new AnalysisStoreServiceProperties.BtmGrpc("127.0.0.1", 9095, 30, 104_857_600)
+        );
+    }
+
+    private static String pinnedJoernImage() {
+        return "ghcr.io/joernio/joern@sha256:" + "a".repeat(64);
     }
 }

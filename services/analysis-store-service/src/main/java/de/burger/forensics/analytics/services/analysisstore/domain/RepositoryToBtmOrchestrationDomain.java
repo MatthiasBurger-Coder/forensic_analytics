@@ -232,6 +232,18 @@ public final class RepositoryToBtmOrchestrationDomain {
         return new AnalysisJobId("repository-analysis-" + digest(analysisRunId.value()).substring(0, 24));
     }
 
+    public static AnalysisJobId astAnalysisJobId(AnalysisRunId analysisRunId) {
+        return new AnalysisJobId("java-ast-analysis-" + digest(analysisRunId.value()).substring(0, 24));
+    }
+
+    public static AnalysisJobId joernAnalysisJobId(AnalysisRunId analysisRunId) {
+        return new AnalysisJobId("joern-analysis-" + digest(analysisRunId.value()).substring(0, 24));
+    }
+
+    public static AnalysisJobId btmGenerationJobId(AnalysisRunId analysisRunId) {
+        return new AnalysisJobId("btm-generation-" + digest(analysisRunId.value()).substring(0, 24));
+    }
+
     public static SourceSnapshotId pendingSourceSnapshotId(AnalysisRunId analysisRunId) {
         return new SourceSnapshotId("source-snapshot-pending-" + digest(analysisRunId.value()).substring(0, 16));
     }

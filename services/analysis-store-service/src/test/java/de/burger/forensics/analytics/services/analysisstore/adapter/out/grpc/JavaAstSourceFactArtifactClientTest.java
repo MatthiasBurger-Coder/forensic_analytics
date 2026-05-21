@@ -411,7 +411,7 @@ class JavaAstSourceFactArtifactClientTest {
             Map.of()
         ));
 
-        assertEquals("Java AST source fact artifact retrieval failed with status UNAVAILABLE", failure.getMessage());
+        assertEquals("Java AST source fact artifact reader owner API is unavailable with status UNAVAILABLE", failure.getMessage());
     }
 
     @Test
