@@ -1,0 +1,395 @@
+package de.burger.forensics.analytics.services.analysisorchestrator.adapter.in.grpc;
+
+import de.burger.forensics.analytics.analysisjob.v1.AnalysisArtifactCategory;
+import de.burger.forensics.analytics.analysisjob.v1.AnalysisArtifactReference;
+import de.burger.forensics.analytics.analysisjob.v1.AnalysisCompleteness;
+import de.burger.forensics.analytics.analysisjob.v1.AnalysisJobId;
+import de.burger.forensics.analytics.analysisjob.v1.AnalysisJobServiceGrpc;
+import de.burger.forensics.analytics.analysisjob.v1.AnalysisJobState;
+import de.burger.forensics.analytics.analysisjob.v1.AnalysisRunId;
+import de.burger.forensics.analytics.analysisjob.v1.AnalysisWorkerKind;
+import de.burger.forensics.analytics.analysisjob.v1.ArtifactByteAccess;
+import de.burger.forensics.analytics.analysisjob.v1.ArtifactByteCustody;
+import de.burger.forensics.analytics.analysisjob.v1.ArtifactReference;
+import de.burger.forensics.analytics.analysisjob.v1.CompleteAnalysisJobRequest;
+import de.burger.forensics.analytics.analysisjob.v1.FailAnalysisJobRequest;
+import de.burger.forensics.analytics.analysisjob.v1.GetAnalysisJobRequest;
+import de.burger.forensics.analytics.analysisjob.v1.GetRepositoryToBtmStatusRequest;
+import de.burger.forensics.analytics.analysisjob.v1.LeaseAnalysisJobRequest;
+import de.burger.forensics.analytics.analysisjob.v1.ListAnalysisJobsRequest;
+import de.burger.forensics.analytics.analysisjob.v1.PlanInstrumentationTargetsRequest;
+import de.burger.forensics.analytics.analysisjob.v1.RegisterAnalysisArtifactsRequest;
+import de.burger.forensics.analytics.analysisjob.v1.ReportAnalysisJobProgressRequest;
+import de.burger.forensics.analytics.analysisjob.v1.SourceSnapshotId;
+import de.burger.forensics.analytics.analysisjob.v1.StartRepositoryToBtmRequest;
+import de.burger.forensics.analytics.analysisjob.v1.SubmitAnalysisJobRequest;
+import de.burger.forensics.analytics.services.analysisorchestrator.adapter.out.memory.InMemoryAnalysisJobRepository;
+import de.burger.forensics.analytics.services.analysisorchestrator.application.AnalysisJobApplicationService;
+import io.grpc.ManagedChannel;
+import io.grpc.Server;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
+import io.grpc.inprocess.InProcessChannelBuilder;
+import io.grpc.inprocess.InProcessServerBuilder;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import java.io.IOException;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.util.concurrent.atomic.AtomicReference;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+class AnalysisJobGrpcEndpointTest {
+    private Server server;
+    private ManagedChannel channel;
+    private AnalysisJobServiceGrpc.AnalysisJobServiceBlockingStub stub;
+    private MutableClock clock;
+
+    @BeforeEach
+    void startServer() throws IOException {
+        var serverName = InProcessServerBuilder.generateName();
+        clock = new MutableClock(Instant.parse("2026-05-16T10:15:30Z"));
+        var applicationService = new AnalysisJobApplicationService(
+            new InMemoryAnalysisJobRepository(),
+            clock
+        );
+        server = InProcessServerBuilder.forName(serverName)
+            .directExecutor()
+            .addService(new AnalysisJobGrpcEndpoint(applicationService))
+            .build()
+            .start();
+        channel = InProcessChannelBuilder.forName(serverName).directExecutor().build();
+        stub = AnalysisJobServiceGrpc.newBlockingStub(channel);
+    }
+
+    @AfterEach
+    void stopServer() {
+        channel.shutdownNow();
+        server.shutdownNow();
+    }
+
+    @Test
+    void supportsJobLifecycleAndJobToArtifactReferences() {
+        var submitted = stub.submitAnalysisJob(submitRequest("submit-1", "job-1", AnalysisWorkerKind.ANALYSIS_WORKER_KIND_AST_ANALYSIS));
+        var leased = stub.leaseAnalysisJob(LeaseAnalysisJobRequest.newBuilder()
+            .setRequestId("request-lease")
+            .setIdempotencyKey("lease-1")
+            .setCorrelationId("correlation-1")
+            .setWorkerId("worker-a")
+            .setWorkerKind(AnalysisWorkerKind.ANALYSIS_WORKER_KIND_AST_ANALYSIS)
+            .setLeaseSeconds(60)
+            .setMaxJobs(1)
+            .build());
+        var progressed = stub.reportAnalysisJobProgress(ReportAnalysisJobProgressRequest.newBuilder()
+            .setRequestId("request-progress")
+            .setIdempotencyKey("progress-1")
+            .setCorrelationId("correlation-1")
+            .setJobId(jobId("job-1"))
+            .setAttempt(1)
+            .setWorkerId("worker-a")
+            .setPercentComplete(40)
+            .addDiagnostics("worker still running")
+            .build());
+        var completed = stub.completeAnalysisJob(CompleteAnalysisJobRequest.newBuilder()
+            .setRequestId("request-complete")
+            .setIdempotencyKey("complete-1")
+            .setCorrelationId("correlation-1")
+            .setJobId(jobId("job-1"))
+            .setAttempt(1)
+            .setWorkerId("worker-a")
+            .addOutputArtifacts(artifact("facts/output.json", "output-sha", AnalysisArtifactCategory.ANALYSIS_ARTIFACT_CATEGORY_STATIC))
+            .setOutputCompleteness(AnalysisCompleteness.ANALYSIS_COMPLETENESS_COMPLETE)
+            .addDiagnostics("done")
+            .build());
+        var registered = stub.registerAnalysisArtifacts(RegisterAnalysisArtifactsRequest.newBuilder()
+            .setRequestId("request-register")
+            .setIdempotencyKey("register-1")
+            .setCorrelationId("correlation-1")
+            .setAnalysisRunId(runId())
+            .setJobId(jobId("job-1"))
+            .addArtifacts(artifact("reports/run-1.json", "report-sha", AnalysisArtifactCategory.ANALYSIS_ARTIFACT_CATEGORY_GENERATED))
+            .build());
+
+        assertEquals("ACCEPTED", submitted.getStatus().getCode());
+        assertEquals(AnalysisJobState.ANALYSIS_JOB_STATE_DISPATCHABLE, submitted.getJob().getState());
+        assertEquals("schema-v1", submitted.getJob().getSchemaVersion());
+        assertEquals("demo", submitted.getJob().getAttributesMap().get("repository"));
+        assertEquals(AnalysisJobState.ANALYSIS_JOB_STATE_RUNNING, leased.getJobs(0).getState());
+        assertEquals("worker-a", leased.getJobs(0).getLeaseOwner());
+        assertEquals("2026-05-16T10:16:30Z", leased.getJobs(0).getLeaseExpiresAt());
+        assertEquals("worker still running", progressed.getDiagnostics(0));
+        assertEquals(40, progressed.getPercentComplete());
+        assertEquals(AnalysisJobState.ANALYSIS_JOB_STATE_COMPLETED, completed.getState());
+        assertEquals(AnalysisCompleteness.ANALYSIS_COMPLETENESS_COMPLETE, completed.getCompleteness());
+        assertEquals(100, completed.getPercentComplete());
+        assertEquals("facts/output.json", completed.getOutputArtifacts(0).getByteAccess().getRetrievalReference());
+        assertEquals(2, registered.getArtifactsCount());
+        assertEquals("reports/run-1.json", registered.getArtifacts(1).getByteAccess().getRetrievalReference());
+    }
+
+    @Test
+    void supportsListPaginationAndStatusLookup() {
+        stub.submitAnalysisJob(submitRequest("submit-a", "job-a", AnalysisWorkerKind.ANALYSIS_WORKER_KIND_AST_ANALYSIS));
+        stub.submitAnalysisJob(submitRequest("submit-b", "job-b", AnalysisWorkerKind.ANALYSIS_WORKER_KIND_AST_ANALYSIS));
+
+        var firstPage = stub.listAnalysisJobs(ListAnalysisJobsRequest.newBuilder()
+            .setRequestId("request-list-1")
+            .setCorrelationId("correlation-1")
+            .setAnalysisRunId(runId())
+            .setWorkerKind(AnalysisWorkerKind.ANALYSIS_WORKER_KIND_AST_ANALYSIS)
+            .setState(AnalysisJobState.ANALYSIS_JOB_STATE_DISPATCHABLE)
+            .setPageSize(1)
+            .build());
+        var secondPage = stub.listAnalysisJobs(ListAnalysisJobsRequest.newBuilder()
+            .setRequestId("request-list-2")
+            .setCorrelationId("correlation-1")
+            .setAnalysisRunId(runId())
+            .setWorkerKind(AnalysisWorkerKind.ANALYSIS_WORKER_KIND_AST_ANALYSIS)
+            .setState(AnalysisJobState.ANALYSIS_JOB_STATE_DISPATCHABLE)
+            .setPageSize(1)
+            .setPageToken(firstPage.getNextPageToken())
+            .build());
+        var lookedUp = stub.getAnalysisJob(GetAnalysisJobRequest.newBuilder()
+            .setRequestId("request-get")
+            .setCorrelationId("correlation-1")
+            .setJobId(jobId("job-a"))
+            .build());
+
+        assertEquals("job-a", firstPage.getJobs(0).getJobId().getValue());
+        assertEquals("1", firstPage.getNextPageToken());
+        assertEquals("job-b", secondPage.getJobs(0).getJobId().getValue());
+        assertEquals("", secondPage.getNextPageToken());
+        assertEquals("job-a", lookedUp.getJobId().getValue());
+    }
+
+    @Test
+    void mapsRetryableFailureAndDeadLetterFailure() {
+        stub.submitAnalysisJob(submitRequest("submit-retry", "job-retry", AnalysisWorkerKind.ANALYSIS_WORKER_KIND_JOERN_ANALYSIS));
+        stub.leaseAnalysisJob(leaseRequest("lease-retry", "worker-a", AnalysisWorkerKind.ANALYSIS_WORKER_KIND_JOERN_ANALYSIS));
+
+        var retryable = stub.failAnalysisJob(FailAnalysisJobRequest.newBuilder()
+            .setRequestId("request-fail-retry")
+            .setIdempotencyKey("fail-retry")
+            .setCorrelationId("correlation-1")
+            .setJobId(jobId("job-retry"))
+            .setAttempt(1)
+            .setWorkerId("worker-a")
+            .setReason("temporary downstream timeout")
+            .addDiagnostics("timeout")
+            .setCompleteness(AnalysisCompleteness.ANALYSIS_COMPLETENESS_UNKNOWN)
+            .setRetryable(true)
+            .build());
+
+        stub.submitAnalysisJob(submitRequest("submit-dead", "job-dead", AnalysisWorkerKind.ANALYSIS_WORKER_KIND_REPOSITORY_ANALYSIS));
+        stub.leaseAnalysisJob(leaseRequest("lease-dead", "worker-b", AnalysisWorkerKind.ANALYSIS_WORKER_KIND_REPOSITORY_ANALYSIS));
+        var deadLettered = stub.failAnalysisJob(FailAnalysisJobRequest.newBuilder()
+            .setRequestId("request-fail-dead")
+            .setIdempotencyKey("fail-dead")
+            .setCorrelationId("correlation-1")
+            .setJobId(jobId("job-dead"))
+            .setAttempt(1)
+            .setWorkerId("worker-b")
+            .setReason("invalid immutable request")
+            .addDiagnostics("not retryable")
+            .setCompleteness(AnalysisCompleteness.ANALYSIS_COMPLETENESS_INCOMPLETE)
+            .setRetryable(false)
+            .build());
+
+        assertEquals(AnalysisJobState.ANALYSIS_JOB_STATE_RETRYABLE, retryable.getState());
+        assertEquals(AnalysisJobState.ANALYSIS_JOB_STATE_DEAD_LETTERED, deadLettered.getState());
+    }
+
+    @Test
+    void mapsStaleWorkerCallsAfterLeaseTimeoutToFailedPrecondition() {
+        stub.submitAnalysisJob(submitRequest("submit-timeout", "job-timeout", AnalysisWorkerKind.ANALYSIS_WORKER_KIND_JOERN_ANALYSIS));
+        stub.leaseAnalysisJob(LeaseAnalysisJobRequest.newBuilder()
+            .setRequestId("request-lease-timeout")
+            .setIdempotencyKey("lease-timeout")
+            .setCorrelationId("correlation-1")
+            .setWorkerId("worker-a")
+            .setWorkerKind(AnalysisWorkerKind.ANALYSIS_WORKER_KIND_JOERN_ANALYSIS)
+            .setLeaseSeconds(1)
+            .setMaxJobs(1)
+            .build());
+
+        clock.set(Instant.parse("2026-05-16T10:15:32Z"));
+        var staleProgress = assertThrows(StatusRuntimeException.class, () -> stub.reportAnalysisJobProgress(ReportAnalysisJobProgressRequest.newBuilder()
+            .setRequestId("request-stale-progress")
+            .setIdempotencyKey("stale-progress")
+            .setCorrelationId("correlation-1")
+            .setJobId(jobId("job-timeout"))
+            .setAttempt(1)
+            .setWorkerId("worker-a")
+            .setPercentComplete(75)
+            .build()));
+        var timedOut = stub.getAnalysisJob(GetAnalysisJobRequest.newBuilder()
+            .setRequestId("request-get-timeout")
+            .setCorrelationId("correlation-1")
+            .setJobId(jobId("job-timeout"))
+            .build());
+        var staleComplete = assertThrows(StatusRuntimeException.class, () -> stub.completeAnalysisJob(CompleteAnalysisJobRequest.newBuilder()
+            .setRequestId("request-stale-complete")
+            .setIdempotencyKey("stale-complete")
+            .setCorrelationId("correlation-1")
+            .setJobId(jobId("job-timeout"))
+            .setAttempt(1)
+            .setWorkerId("worker-a")
+            .setOutputCompleteness(AnalysisCompleteness.ANALYSIS_COMPLETENESS_INCOMPLETE)
+            .build()));
+        var staleFail = assertThrows(StatusRuntimeException.class, () -> stub.failAnalysisJob(FailAnalysisJobRequest.newBuilder()
+            .setRequestId("request-stale-fail")
+            .setIdempotencyKey("stale-fail")
+            .setCorrelationId("correlation-1")
+            .setJobId(jobId("job-timeout"))
+            .setAttempt(1)
+            .setWorkerId("worker-a")
+            .setReason("late failure report")
+            .setCompleteness(AnalysisCompleteness.ANALYSIS_COMPLETENESS_INCOMPLETE)
+            .setRetryable(true)
+            .build()));
+        var leasedAgain = stub.leaseAnalysisJob(leaseRequest(
+            "lease-timeout-again",
+            "worker-b",
+            AnalysisWorkerKind.ANALYSIS_WORKER_KIND_JOERN_ANALYSIS
+        ));
+
+        assertEquals(Status.Code.FAILED_PRECONDITION, staleProgress.getStatus().getCode());
+        assertEquals(Status.Code.FAILED_PRECONDITION, staleComplete.getStatus().getCode());
+        assertEquals(Status.Code.FAILED_PRECONDITION, staleFail.getStatus().getCode());
+        assertEquals(AnalysisJobState.ANALYSIS_JOB_STATE_RETRYABLE, timedOut.getState());
+        assertEquals(1, timedOut.getFailuresCount());
+        assertTrue(timedOut.getFailures(0).getDiagnosticsList().contains("worker lease expired before completion"));
+        assertEquals(AnalysisJobState.ANALYSIS_JOB_STATE_RUNNING, leasedAgain.getJobs(0).getState());
+        assertEquals(2, leasedAgain.getJobs(0).getAttempt());
+        assertEquals("worker-b", leasedAgain.getJobs(0).getLeaseOwner());
+    }
+
+    @Test
+    void rejectsInvalidInputAndDoesNotExposeWorkerOrReportExecutionAsOwnedBehavior() {
+        var invalid = assertThrows(StatusRuntimeException.class, () -> stub.submitAnalysisJob(
+            SubmitAnalysisJobRequest.newBuilder()
+                .setRequestId("request-invalid")
+                .setIdempotencyKey("invalid")
+                .setCorrelationId("correlation-1")
+                .setSchemaVersion("schema-v1")
+                .setAnalysisRunId(runId())
+                .setJobId(jobId("job-invalid"))
+                .setWorkerKind(AnalysisWorkerKind.ANALYSIS_WORKER_KIND_AST_ANALYSIS)
+                .setSourceSnapshotId(SourceSnapshotId.newBuilder().setValue("snapshot-1"))
+                .setInputCompleteness(AnalysisCompleteness.ANALYSIS_COMPLETENESS_UNKNOWN)
+                .addInputArtifacts(artifact("/private/output.json", "bad-sha", AnalysisArtifactCategory.ANALYSIS_ARTIFACT_CATEGORY_STATIC))
+                .build()
+        ));
+        var planning = assertThrows(
+            StatusRuntimeException.class,
+            () -> stub.planInstrumentationTargets(PlanInstrumentationTargetsRequest.newBuilder().build())
+        );
+        var start = assertThrows(
+            StatusRuntimeException.class,
+            () -> stub.startRepositoryToBtm(StartRepositoryToBtmRequest.newBuilder().build())
+        );
+        var status = assertThrows(
+            StatusRuntimeException.class,
+            () -> stub.getRepositoryToBtmStatus(GetRepositoryToBtmStatusRequest.newBuilder().build())
+        );
+
+        assertEquals(Status.Code.INVALID_ARGUMENT, invalid.getStatus().getCode());
+        assertEquals(Status.Code.UNIMPLEMENTED, planning.getStatus().getCode());
+        assertTrue(planning.getStatus().getDescription().contains("not owned"));
+        assertEquals(Status.Code.UNIMPLEMENTED, start.getStatus().getCode());
+        assertEquals(Status.Code.UNIMPLEMENTED, status.getStatus().getCode());
+    }
+
+    private static SubmitAnalysisJobRequest submitRequest(String idempotencyKey, String jobId, AnalysisWorkerKind workerKind) {
+        return SubmitAnalysisJobRequest.newBuilder()
+            .setRequestId("request-" + jobId)
+            .setIdempotencyKey(idempotencyKey)
+            .setSchemaVersion("schema-v1")
+            .setCorrelationId("correlation-1")
+            .setAnalysisRunId(runId())
+            .setJobId(jobId(jobId))
+            .setWorkerKind(workerKind)
+            .setSourceSnapshotId(SourceSnapshotId.newBuilder().setValue("snapshot-1"))
+            .setInputCompleteness(AnalysisCompleteness.ANALYSIS_COMPLETENESS_UNKNOWN)
+            .addInputArtifacts(artifact("inputs/source.json", "input-sha", AnalysisArtifactCategory.ANALYSIS_ARTIFACT_CATEGORY_STATIC))
+            .putAttributes("repository", "demo")
+            .build();
+    }
+
+    private static LeaseAnalysisJobRequest leaseRequest(String idempotencyKey, String workerId, AnalysisWorkerKind workerKind) {
+        return LeaseAnalysisJobRequest.newBuilder()
+            .setRequestId("request-" + idempotencyKey)
+            .setIdempotencyKey(idempotencyKey)
+            .setCorrelationId("correlation-1")
+            .setWorkerId(workerId)
+            .setWorkerKind(workerKind)
+            .setLeaseSeconds(60)
+            .setMaxJobs(1)
+            .build();
+    }
+
+    private static AnalysisRunId runId() {
+        return AnalysisRunId.newBuilder().setValue("run-1").build();
+    }
+
+    private static AnalysisJobId jobId(String value) {
+        return AnalysisJobId.newBuilder().setValue(value).build();
+    }
+
+    private static AnalysisArtifactReference artifact(
+        String path,
+        String sha256,
+        AnalysisArtifactCategory category
+    ) {
+        return AnalysisArtifactReference.newBuilder()
+            .setArtifact(ArtifactReference.newBuilder()
+                .setPath(path)
+                .setType("application/json")
+                .setSha256(sha256)
+                .setSizeBytes(42))
+            .setCategory(category)
+            .setProducerService("producer-service")
+            .setSchemaVersion("schema-v1")
+            .setCompleteness(AnalysisCompleteness.ANALYSIS_COMPLETENESS_COMPLETE)
+            .setByteAccess(ArtifactByteAccess.newBuilder()
+                .setOwnerService("query-report-api-service")
+                .setRetrievalContract("query-report-api-service.generated-reports.v1")
+                .setRetrievalReference(path)
+                .setByteCustody(ArtifactByteCustody.ARTIFACT_BYTE_CUSTODY_PRODUCER_RETAINED))
+            .build();
+    }
+
+    private static final class MutableClock extends Clock {
+        private final AtomicReference<Instant> instant;
+
+        private MutableClock(Instant instant) {
+            this.instant = new AtomicReference<>(instant);
+        }
+
+        private void set(Instant nextInstant) {
+            instant.set(nextInstant);
+        }
+
+        @Override
+        public ZoneId getZone() {
+            return ZoneOffset.UTC;
+        }
+
+        @Override
+        public Clock withZone(ZoneId zone) {
+            return this;
+        }
+
+        @Override
+        public Instant instant() {
+            return instant.get();
+        }
+    }
+}

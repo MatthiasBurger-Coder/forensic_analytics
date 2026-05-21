@@ -352,6 +352,7 @@ Outbound communication:
 
 Current evidence:
 
+- `services/analysis-orchestrator-service`;
 - `forensic-analytics-engine`;
 - orchestration portions of `forensic-analytics-application`;
 - orchestration/status portions of `services/analysis-store-service`.

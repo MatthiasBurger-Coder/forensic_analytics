@@ -42,6 +42,7 @@ include(
     "services:java-ast-analysis-service",
     "services:repository-source-service",
     "services:repository-analysis-service",
+    "services:analysis-orchestrator-service",
     "services:analysis-store-service",
     "services:ingestion-service",
     "services:forensic-ingestion-service",

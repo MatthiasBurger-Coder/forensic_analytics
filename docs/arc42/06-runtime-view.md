@@ -217,6 +217,23 @@ private workspace paths, and CPG/CFG/DFG artifacts remain static semantic
 evidence rather than observed runtime execution. Joern unavailable, timeout
 and missing mapping states stay explicit diagnostics.
 
+Slice S09 verifies a local orchestration runtime boundary:
+
+```text
+AnalysisJobService gRPC request
+  -> services/analysis-orchestrator-service inbound adapter
+  -> service-local analysis job application service
+  -> service-local orchestration repository
+  -> lifecycle/status/lease/retry/failure/dead-letter state
+  -> job-to-artifact references only
+```
+
+The S09 service does not call repository checkout, JavaParser, Joern, report or
+artifact-byte implementations. Transitional `analysis-job.proto` RPC names for
+instrumentation planning and repository-to-BTM orchestration remain generated
+transport methods, but this service returns `UNIMPLEMENTED` for them so worker
+or report behavior is not absorbed into orchestration.
+
 ADR-0018 allows the initial runtime communication contracts to describe planned
 API, worker, replay, report and event flows before each runtime path exists.
 Those flows remain contract design until a slice implements and verifies

@@ -57,6 +57,7 @@ query API responsibility moves first to `query-report-api-service`.
 - `ingestion-service`
 - `java-parser-analysis-service`
 - `joern-analysis-service`
+- `analysis-orchestrator-service`
 
 These target-name service roots are additive migration evidence. Their
 predecessor service directories and legacy modules remain rollback/current

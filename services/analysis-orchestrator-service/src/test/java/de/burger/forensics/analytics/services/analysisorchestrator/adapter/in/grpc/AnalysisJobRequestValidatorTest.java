@@ -1,0 +1,151 @@
+package de.burger.forensics.analytics.services.analysisorchestrator.adapter.in.grpc;
+
+import de.burger.forensics.analytics.analysisjob.v1.AnalysisArtifactCategory;
+import de.burger.forensics.analytics.analysisjob.v1.AnalysisArtifactReference;
+import de.burger.forensics.analytics.analysisjob.v1.AnalysisCompleteness;
+import de.burger.forensics.analytics.analysisjob.v1.AnalysisJobId;
+import de.burger.forensics.analytics.analysisjob.v1.AnalysisRunId;
+import de.burger.forensics.analytics.analysisjob.v1.AnalysisWorkerKind;
+import de.burger.forensics.analytics.analysisjob.v1.ArtifactByteAccess;
+import de.burger.forensics.analytics.analysisjob.v1.ArtifactByteCustody;
+import de.burger.forensics.analytics.analysisjob.v1.ArtifactReference;
+import de.burger.forensics.analytics.analysisjob.v1.LeaseAnalysisJobRequest;
+import de.burger.forensics.analytics.analysisjob.v1.ListAnalysisJobsRequest;
+import de.burger.forensics.analytics.analysisjob.v1.RegisterAnalysisArtifactsRequest;
+import de.burger.forensics.analytics.analysisjob.v1.SourceSnapshotId;
+import de.burger.forensics.analytics.analysisjob.v1.SubmitAnalysisJobRequest;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
+class AnalysisJobRequestValidatorTest {
+    private final AnalysisJobRequestValidator validator = new AnalysisJobRequestValidator();
+
+    @Test
+    void validatesJobSubmissionAndRejectsPrivateArtifactReferences() {
+        assertDoesNotThrow(() -> validator.validate(submitRequest("jobs/input.json").build()));
+
+        assertThrows(ValidationException.class, () -> validator.validate(submitRequest("/private/input.json").build()));
+        assertThrows(ValidationException.class, () -> validator.validate(submitRequest("file:/tmp/input.json").build()));
+        assertThrows(ValidationException.class, () -> validator.validate(submitRequest("../input.json").build()));
+        assertThrows(ValidationException.class, () -> validator.validate(submitRequest(artifact(
+            "jobs/input.json",
+            "analysis-orchestrator-service",
+            "producer-service",
+            ArtifactByteCustody.ARTIFACT_BYTE_CUSTODY_PRODUCER_RETAINED
+        )).build()));
+        assertThrows(ValidationException.class, () -> validator.validate(submitRequest(artifact(
+            "jobs/input.json",
+            "producer-service",
+            "analysis-orchestrator-service",
+            ArtifactByteCustody.ARTIFACT_BYTE_CUSTODY_EXPLICIT_HANDOFF
+        )).build()));
+        assertThrows(ValidationException.class, () -> validator.validate(submitRequest("jobs/input.json")
+            .setWorkerKind(AnalysisWorkerKind.ANALYSIS_WORKER_KIND_UNSPECIFIED)
+            .build()));
+        assertThrows(ValidationException.class, () -> validator.validate(submitRequest("jobs/input.json")
+            .setInputCompleteness(AnalysisCompleteness.ANALYSIS_COMPLETENESS_UNSPECIFIED)
+            .build()));
+    }
+
+    @Test
+    void validatesLeasePaginationAndArtifactRegistration() {
+        assertDoesNotThrow(() -> validator.validate(LeaseAnalysisJobRequest.newBuilder()
+            .setRequestId("request-lease")
+            .setIdempotencyKey("lease-key")
+            .setCorrelationId("correlation-1")
+            .setWorkerId("worker-a")
+            .setWorkerKind(AnalysisWorkerKind.ANALYSIS_WORKER_KIND_AST_ANALYSIS)
+            .setLeaseSeconds(60)
+            .setMaxJobs(1)
+            .build()));
+        assertDoesNotThrow(() -> validator.validate(ListAnalysisJobsRequest.newBuilder()
+            .setRequestId("request-list")
+            .setCorrelationId("correlation-1")
+            .setPageToken("0")
+            .build()));
+        assertDoesNotThrow(() -> validator.validate(RegisterAnalysisArtifactsRequest.newBuilder()
+            .setRequestId("request-register")
+            .setIdempotencyKey("register-key")
+            .setCorrelationId("correlation-1")
+            .setAnalysisRunId(runId())
+            .setJobId(jobId("job-1"))
+            .addArtifacts(artifact("reports/run-1.json"))
+            .build()));
+
+        assertThrows(ValidationException.class, () -> validator.validate(LeaseAnalysisJobRequest.newBuilder()
+            .setRequestId("request-lease")
+            .setIdempotencyKey("lease-key")
+            .setCorrelationId("correlation-1")
+            .setWorkerId("worker-a")
+            .setWorkerKind(AnalysisWorkerKind.ANALYSIS_WORKER_KIND_AST_ANALYSIS)
+            .setLeaseSeconds(0)
+            .setMaxJobs(1)
+            .build()));
+        assertThrows(ValidationException.class, () -> validator.validate(ListAnalysisJobsRequest.newBuilder()
+            .setRequestId("request-list")
+            .setCorrelationId("correlation-1")
+            .setPageToken("not-a-number")
+            .build()));
+    }
+
+    private static SubmitAnalysisJobRequest.Builder submitRequest(String artifactPath) {
+        return submitRequest(artifact(artifactPath));
+    }
+
+    private static SubmitAnalysisJobRequest.Builder submitRequest(AnalysisArtifactReference artifact) {
+        return SubmitAnalysisJobRequest.newBuilder()
+            .setRequestId("request-submit")
+            .setIdempotencyKey("submit-key")
+            .setSchemaVersion("schema-v1")
+            .setCorrelationId("correlation-1")
+            .setAnalysisRunId(runId())
+            .setJobId(jobId("job-1"))
+            .setWorkerKind(AnalysisWorkerKind.ANALYSIS_WORKER_KIND_AST_ANALYSIS)
+            .setSourceSnapshotId(SourceSnapshotId.newBuilder().setValue("snapshot-1"))
+            .setInputCompleteness(AnalysisCompleteness.ANALYSIS_COMPLETENESS_UNKNOWN)
+            .addInputArtifacts(artifact);
+    }
+
+    private static AnalysisRunId runId() {
+        return AnalysisRunId.newBuilder().setValue("run-1").build();
+    }
+
+    private static AnalysisJobId jobId(String value) {
+        return AnalysisJobId.newBuilder().setValue(value).build();
+    }
+
+    private static AnalysisArtifactReference artifact(String path) {
+        return artifact(
+            path,
+            "producer-service",
+            "producer-service",
+            ArtifactByteCustody.ARTIFACT_BYTE_CUSTODY_PRODUCER_RETAINED
+        );
+    }
+
+    private static AnalysisArtifactReference artifact(
+        String path,
+        String producerService,
+        String ownerService,
+        ArtifactByteCustody byteCustody
+    ) {
+        return AnalysisArtifactReference.newBuilder()
+            .setArtifact(ArtifactReference.newBuilder()
+                .setPath(path)
+                .setType("application/json")
+                .setSha256("sha")
+                .setSizeBytes(42))
+            .setCategory(AnalysisArtifactCategory.ANALYSIS_ARTIFACT_CATEGORY_STATIC)
+            .setProducerService(producerService)
+            .setSchemaVersion("schema-v1")
+            .setCompleteness(AnalysisCompleteness.ANALYSIS_COMPLETENESS_UNKNOWN)
+            .setByteAccess(ArtifactByteAccess.newBuilder()
+                .setOwnerService(ownerService)
+                .setRetrievalContract("producer-service.artifacts.v1")
+                .setRetrievalReference(path)
+                .setByteCustody(byteCustody))
+            .build();
+    }
+}

@@ -206,8 +206,23 @@ unchanged and generated transport classes stay inside the service build.
 rollback evidence. They are not compatibility aliases for
 `joern-analysis-service` and are not removed by S08.
 
+Slice S09 adds `services/analysis-orchestrator-service` as target-service
+implementation evidence for the FA-MSA-001 orchestration boundary. It is
+registered as its own Gradle project and owns service-local domain,
+application ports, inbound gRPC adapter, in-memory orchestration repository,
+bootstrap, configuration, tests, README and Dockerfile. The service uses
+`analysis-job.proto` as a service-local generated transport input and maps it
+to service-owned job lifecycle, lease, retry, failure, dead-letter,
+correlation and job-to-artifact reference models.
+
+`forensic-analytics-engine`, orchestration portions of
+`forensic-analytics-application` and `services/analysis-store-service` remain
+current-state predecessor and rollback evidence. They are not compatibility
+aliases for `analysis-orchestrator-service` and are not removed by S09.
+
 The orchestrator coordinates workflow state only. It must not own repository
-checkout, JavaParser scanning, Joern execution, report rendering or private
+checkout, JavaParser scanning, Joern execution, report rendering, artifact byte
+custody, producer-local artifact catalogs, canonical analysis facts or private
 persistence owned by another service.
 
 The query/report API service is the public facade for status, query and report

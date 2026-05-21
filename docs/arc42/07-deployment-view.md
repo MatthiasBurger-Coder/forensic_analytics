@@ -242,6 +242,37 @@ deployment descriptors. Docker image build and Joern runtime smoke testing are
 optional external checks because they may pull the Joern base image or create
 local container state.
 
+Slice S09 adds `services/analysis-orchestrator-service` as target-service
+deployment evidence. The service owns:
+
+- `services/analysis-orchestrator-service/build.gradle.kts`;
+- `services/analysis-orchestrator-service/Dockerfile`;
+- `services/analysis-orchestrator-service/src/main/resources/application.properties`;
+- `services/analysis-orchestrator-service/src/main/resources/application-docker.properties`;
+- a service-local health HTTP endpoint on port `8089`;
+- a service-local gRPC endpoint on port `9098`.
+
+The service can be packaged independently with:
+
+```bash
+./gradlew :services:analysis-orchestrator-service:bootJar --dependency-verification strict --console=plain --stacktrace
+```
+
+The local operator start command is:
+
+```bash
+./gradlew :services:analysis-orchestrator-service:bootRun --dependency-verification strict --console=plain --stacktrace
+```
+
+S09 records this as the service-local start command, but the S09 verification
+run does not execute `bootRun` or a live health probe. Runtime smoke evidence
+must be recorded separately before claiming a verified running Analysis
+Orchestrator Service instance.
+
+The service Dockerfile is service-owned, but S09 does not add target-service
+Docker Compose, Docker Swarm or Kubernetes deployment descriptors. Those
+readiness claims require later repository tooling and validation commands.
+
 ## 7.7 Local Repository-to-BTM Transitional Landscape
 
 The repository currently contains a local Docker Compose descriptor for the

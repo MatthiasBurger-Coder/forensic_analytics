@@ -34,7 +34,7 @@
 | S06 | COMPLETED | Ingestion service extracted as target-name service; Java backend race remediation, service test, service packaging, root test and staged whitespace gate passed. |
 | S07 | COMPLETED | JavaParser analysis service extracted as target-name service; source-analysis remediation, service build, service tests, root test, specialist reviews and staged whitespace gate passed. |
 | S08 | COMPLETED | Joern analysis service extracted as target-name service; target service tests, packaging, build, root test, identity scans, specialist reviews and staged whitespace gate passed. |
-| S09 | PENDING | Analysis orchestrator service boundary; initial scope and target-project blockers found before product implementation. |
+| S09 | COMPLETED | Analysis orchestrator service extracted as target-name service; artifact-boundary and timeout remediations, target service tests/build, root test, specialist re-reviews and staged whitespace gate passed. |
 | S10 | PENDING | Query report API service boundary |
 | S11 | PENDING | CLI client decoupling |
 | S12 | PENDING | Observability stack and logging decoupling |
@@ -128,6 +128,19 @@
 | S09 | S09 workflow-scope review | BLOCKED: S09 required arc42, architecture, workflow report and services README updates but omitted those paths from `affected_files` and `file_locks`; contract scope also used broad `contracts/**` instead of concrete orchestration contract locks. |
 | S09 | `./gradlew :services:analysis-orchestrator-service:test --dependency-verification strict --console=plain --stacktrace` | FAILED before implementation: Gradle could not find project `:services:analysis-orchestrator-service`; the target module must be created and registered before this required S09 gate can pass. |
 | S09 | `git diff --check` for S09 workflow-scope remediation | PASS: no whitespace errors after adding S09 documentation, architecture, workflow report, services README and concrete orchestration contract locks. No protobuf or event wire/schema change is intended by this remediation. |
+| S09 | stale implementation-scope scan over `services/analysis-orchestrator-service` | PASS: no copied repository checkout, source-fact byte reader, JavaParser, Joern, report-generation, private workspace or private database adapter remains in the target service; transitional RPC names are present only through `analysis-job.proto` generated transport and explicit `UNIMPLEMENTED` handlers. |
+| S09 | `./gradlew :services:analysis-orchestrator-service:test --dependency-verification strict --console=plain --stacktrace` | FAILED before test remediation: contract field-number assertion expected `lease_expires_at` as field `14` while the checked proto defines field `12`; domain test expected non-retryable failure state `FAILED` while S09 dead-letter ownership uses `DEAD_LETTERED`. |
+| S09 | `./gradlew :services:analysis-orchestrator-service:test --dependency-verification strict --console=plain --stacktrace` | PASS after test remediation: build successful in 42s after aligning assertions to the verified proto field number and dead-letter state semantics. |
+| S09 | `./gradlew :services:analysis-orchestrator-service:build --dependency-verification strict --console=plain --stacktrace` | PASS: build successful in 35s; service assembled, packaged and tested independently. |
+| S09 | service dependency scan over `services/analysis-orchestrator-service` | PASS: no direct Gradle `project(...)` dependency, monolith project dependency or production import of another service implementation package was found; ArchUnit now also forbids imports from newly extracted target service packages and `analysisstore`. |
+| S09 | `./gradlew test --dependency-verification strict --console=plain --stacktrace` | PASS before final review remediation: build successful in 32s after registering `services:analysis-orchestrator-service`; 208 actionable tasks up-to-date. |
+| S09 | Senior System Architect artifact-boundary remediation | PASS locally after adding a service-local invariant that rejects `analysis-orchestrator-service` as artifact producer or byte owner, including explicit handoff metadata. |
+| S09 | Senior Java Backend and Senior Tester timeout remediation | PASS locally after adding deterministic lease-expiry behavior, retryable timeout failure state, re-lease attempt coverage and gRPC stale progress/complete/fail `FAILED_PRECONDITION` assertions. |
+| S09 | `./gradlew :services:analysis-orchestrator-service:test --dependency-verification strict --console=plain --stacktrace` | PASS after artifact-boundary and timeout remediation: build successful in 47s. |
+| S09 | `./gradlew :services:analysis-orchestrator-service:build --dependency-verification strict --console=plain --stacktrace` | PASS after artifact-boundary and timeout remediation: build successful in 36s; service assembled, packaged and tested independently. |
+| S09 | `./gradlew test --dependency-verification strict --console=plain --stacktrace` | PASS after artifact-boundary and timeout remediation: build successful in 25s; 208 actionable tasks up-to-date. |
+| S09 | `git diff --check` | PASS: no whitespace errors after S09 implementation and remediation updates. |
+| S09 | `git diff --cached --check` | PASS after staging S09 files: no whitespace errors in tracked and newly added target service files. |
 
 ## Subagent Review Log
 
@@ -198,10 +211,19 @@
 | S09 | Senior Analysis Storage Architect subagent | PASS_WITH_PLAN: orchestrator ownership is limited to job lifecycle, workflow status, worker leases/attempts, retry/timeout/failure/dead-letter state, correlation references and job-to-artifact references; artifact bytes, producer catalogs, canonical facts, private DBs and private workspaces remain out of scope. |
 | S09 | Microservice Senior Expert subagent | PASS_WITH_PLAN: create a new independent target service root with service-local domain/application/adapters/bootstrap/tests/Dockerfile/README, retain predecessor modules as rollback evidence, use distinct ports `9098`/`8089` and avoid direct service/project dependencies or hidden-monolith behavior. |
 | S09 | Senior Tester subagent | BLOCKED before target service creation: the required `:services:analysis-orchestrator-service:test` target cannot run until the target module exists; predecessor tests are diagnostic only and required post-implementation coverage includes job lifecycle, status transitions, leases, attempts, retries, timeouts, failures, dead-letter state, correlation references, job-to-artifact references, architecture and independent boot/build evidence. |
+| S09 | Senior Analysis Storage Architect subagent | PASS after implementation: no storage/data ownership blocker; artifact handling is reference-only, no private DB/workspace or persistence coupling was found, and generic attributes are a non-blocking future durable-persistence allow-list concern. |
+| S09 | Microservice Senior Expert subagent | PASS after implementation: target service is independent, registered, owns build/bootstrap/config/Dockerfile/README/tests, uses ports `9098`/`8089`, has no shared Java module dependency and does not overclaim runtime readiness. |
+| S09 | Senior System Architect subagent | BLOCKED before artifact-boundary remediation: the service accepted `analysis-orchestrator-service` as artifact producer or byte owner, which violated the reference-only artifact ownership rule. |
+| S09 | Senior Java Backend subagent | BLOCKED before timeout remediation: timeout behavior was implemented but not covered by deterministic lease-expiry and stale worker gRPC status tests. |
+| S09 | Senior Tester subagent | BLOCKED before final remediation: root gate evidence was missing from the report, timeout coverage was incomplete, and untracked service files still needed staged or equivalent whitespace validation. |
+| S09 | Senior System Architect subagent | PASS after artifact-boundary remediation: artifact producer and byte-owner guards now reject `analysis-orchestrator-service`, including explicit handoff metadata, and no hidden-monolith ownership was found. |
+| S09 | Senior Java Backend subagent | PASS after timeout remediation: expired running leases become retryable failures, can be leased again with incremented attempts, stale worker gRPC calls map to `FAILED_PRECONDITION`, and no forbidden dependency/import was found. |
+| S09 | Senior Tester subagent | BLOCKED after remediation only on final staging: target/root gate and coverage evidence are present, but staged whitespace validation over new service files is required before closure. |
+| S09 | Senior Tester subagent | PASS after final staging: S09 files are staged and `git diff --cached --check` passed over tracked and newly added target service files. |
 
 ## Blockers
 
-No active blocker for S00, S01, S02, S03, S04, S05, S06, S07 or S08 as completed workflow slices.
+No active blocker for S00, S01, S02, S03, S04, S05, S06, S07, S08 or S09 as completed workflow slices.
 Production implementation migration remains gated by the later service
 extraction slices. Legacy module removal remains blocked until a later slice
 proves caller-free evidence, replacement parity or explicit deprecation,

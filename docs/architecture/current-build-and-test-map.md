@@ -49,6 +49,7 @@ Verified from `settings.gradle.kts`:
 - `services:btm-generation-service`
 - `services:joern-cpg-analysis-service`
 - `services:joern-analysis-service`
+- `services:analysis-orchestrator-service`
 - `services:java-parser-analysis-service`
 - `services:java-ast-analysis-service`
 - `services:repository-source-service`
@@ -58,10 +59,11 @@ Verified from `settings.gradle.kts`:
 - `services:forensic-ingestion-service`
 - `services:forensic-gateway-service`
 
-Eleven service-specific Gradle projects under `services/**` are now registered.
+Twelve service-specific Gradle projects under `services/**` are now registered.
 `services:repository-source-service`, `services:ingestion-service` and
-`services:java-parser-analysis-service` and `services:joern-analysis-service`
-are FA-MSA-001 target-name service projects introduced by this workflow.
+`services:java-parser-analysis-service`, `services:joern-analysis-service` and
+`services:analysis-orchestrator-service` are FA-MSA-001 target-name service
+projects introduced by this workflow.
 `services:repository-analysis-service`, `services:forensic-ingestion-service`,
 `services:java-ast-analysis-service` and `services:joern-cpg-analysis-service`
 remain predecessor services and rollback inputs, not compatibility aliases.
@@ -176,6 +178,7 @@ Existing Docker material:
 - `services/ingestion-service/Dockerfile`
 - `services/java-parser-analysis-service/Dockerfile`
 - `services/joern-analysis-service/Dockerfile`
+- `services/analysis-orchestrator-service/Dockerfile`
 - `deployment/docker-compose/repository-to-btm.local.yml`
 
 The DevOps review verified Joern Compose configuration with:
@@ -212,6 +215,14 @@ port `9096` and health port `8087`, distinct from predecessor Joern and
 JavaParser target ports. Docker image build or Joern runtime smoke testing is
 optional external verification because it may pull the digest-pinned Joern base
 image or create local container state.
+
+Slice 09 adds a service-local Dockerfile for
+`services/analysis-orchestrator-service`. This is target-service container
+packaging evidence only; Compose, Swarm and Kubernetes readiness for the
+FA-MSA-001 target landscape remains future work until descriptors and
+validation commands exist. The service uses local gRPC port `9098` and health
+port `8089`, distinct from predecessor Analysis Store and earlier target
+service ports.
 
 Slice 15 later verified the local repository-to-BTM Compose descriptor with
 six service `bootJar` tasks, `docker compose config`, `docker compose build`,

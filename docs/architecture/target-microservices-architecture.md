@@ -162,7 +162,7 @@ slice explicitly introduces them.
 | `services/ingestion-service` plus predecessors `forensic-analytics-ingestion-grpc`, `forensic-analytics-ingestion-request`, `services/forensic-ingestion-service` | `ingestion-service` |
 | `services/java-parser-analysis-service` plus predecessors `forensic-analytics-adapter-javaparser`, `services/java-ast-analysis-service` | `java-parser-analysis-service` |
 | `services/joern-analysis-service` plus predecessors `forensic-analytics-adapter-joern-docker`, `services/joern-cpg-analysis-service` | `joern-analysis-service` |
-| `forensic-analytics-engine`, orchestration portions of current application code and applicable `analysis-store-service` coordination state | `analysis-orchestrator-service` for job lifecycle, worker leases, retries, failures, correlation references and job-to-artifact references |
+| `services/analysis-orchestrator-service` plus predecessors `forensic-analytics-engine`, orchestration portions of current application code and applicable `analysis-store-service` coordination state | `analysis-orchestrator-service` for job lifecycle, worker leases, retries, failures, dead-letter state, correlation references and job-to-artifact references |
 | `forensic-analytics-rest`, public API portions of `forensic-gateway-service` and report/query API behavior | `query-report-api-service` |
 | `forensic-analytics-cli` | `cli-client` |
 | `forensic-analytics-observability`, `forensic-analytics-logging`, deployment observability docs | `observability-stack` |
@@ -189,7 +189,8 @@ producer / scanner / runtime collector
 ```
 
 The orchestrator coordinates only. It does not own repository checkout,
-JavaParser scanning, Joern execution, public report rendering or another
+JavaParser scanning, Joern execution, public report rendering, artifact byte
+custody, producer-local artifact catalogs, canonical analysis facts or another
 service's private persistence.
 
 LLM output, reports and graph/replay projections remain generated analysis or
