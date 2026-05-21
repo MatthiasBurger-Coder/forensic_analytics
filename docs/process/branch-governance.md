@@ -13,6 +13,23 @@ Root `AGENTS.md` remains authoritative for exact command handling. This document
 - Do not force-push.
 - Do not push directly to `main`.
 
+## Branch Matrix
+
+This matrix is the shared branch naming reference for repository process
+strands. Root `AGENTS.md` remains authoritative for exact command behavior, and
+this document is the process cross-reference for branch names.
+
+| Work type | Branch rule | Notes |
+|---|---|---|
+| `skills update` | `docs/skills-<short-topic>-<yyyyMMdd>` or `architecture/agents-<short-topic>-<yyyyMMdd>` | Use `docs/skills-*` for documentation and registry-only changes. Use `architecture/agents-*` when role, routing or process structure changes. |
+| `workflow create` | `feature/workflow-<short-topic>-<yyyyMMdd>`, `fix/workflow-<short-topic>-<yyyyMMdd>`, `docs/workflow-<short-topic>-<yyyyMMdd>` or `architecture/workflow-<short-topic>-<yyyyMMdd>` | Matches ADR-0016. Use `feature/` unless the workflow is clearly bugfix, documentation-only or architecture/agent-structure work. |
+| `workflow execute` | use the branch declared by the active checked workflow | Do not create a replacement branch during execution. Wrong branch stops before implementation. |
+| Ad-hoc implementation | `feature/<short-topic>-<yyyyMMdd>` or `fix/<short-topic>-<yyyyMMdd>` | Use only for work outside the three exact process commands and outside checked workflow execution. |
+| Commit preparation on `main` | create the branch required by the active strand | Do not create a generic `work/<task-slug>` branch when a process strand or workflow branch rule applies. |
+
+Before creating any branch, check local and remote branch-name collisions and
+choose the next clear unique suffix when needed.
+
 ## Process Strand Branch Expectations
 
 `skills-agents`:

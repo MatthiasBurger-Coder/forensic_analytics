@@ -39,8 +39,8 @@ Workflow execution has started. Slice results are recorded below.
 | S03 | Completed | `954bdf7` | pushed |
 | S04 | Completed | `80d4d21` | pushed |
 | S05 | Completed | `c2859a3` | pushed |
-| S06 | Completed | pending checkpoint | pending checkpoint |
-| S07 | Pending | n/a | n/a |
+| S06 | Completed | `3b77583` | pushed |
+| S07 | Completed | pending checkpoint | pending checkpoint |
 | S08 | Pending | n/a | n/a |
 | S09 | Pending | n/a | n/a |
 | S10 | Pending | n/a | n/a |
@@ -105,6 +105,44 @@ blockers=none
 | File locks | `.agents/skills/skill-registry-conflict-auditor/**`, `docs/agents/skill-registry.md`, `docs/skill-audit/**`, `docs/process/skills-update.md`, `docs/process/workflow-execute.md`, `docs/workflow/execution-report.md` |
 | Contract locks | none |
 | Architecture locks | `skill-registry-governance` |
+| Lock result | no conflict |
+
+## Slice S07 - Unify Branch Strategy Rules
+
+```text
+workflowVersion=governance-performance-20260521-v1
+sliceId=S07
+sliceTitle=Unify Branch Strategy Rules
+responsibleAgent=Senior System Architect
+changedFiles=AGENTS.md; .agents/skills/git-branch-strategy/SKILL.md; .agents/skills/release-branch-governance/branch-rules.md; .agents/skills/git-commit-preparation/SKILL.md; docs/process/branch-governance.md; docs/agents/skill-registry.md; docs/workflow/context-pack.json; docs/workflow/execution-report.md
+qualityGateCommands=git diff --check; rg -n "workflow create|workflow execute|skills update|work/" AGENTS.md .agents docs; python3 -m json.tool docs/workflow/context-pack.json
+qualityGateResult=PASS
+commitHash=pending
+rollbackReference=pending checkpoint commit
+arc42Updated=checked, no update required for S07
+adrUpdated=checked against ADR-0016; no ADR update required
+pushResult=pending checkpoint push
+blockers=none
+```
+
+### S07 Role Review
+
+| Role | Result |
+|---|---|
+| Senior System Architect | Branch naming now has one process matrix and commit preparation no longer uses generic `work/<task-slug>` when a strand rule applies. |
+| Senior Documentation Engineer | `AGENTS.md`, branch governance docs, branch skills and the agent registry now cross-reference the same branch matrix. |
+| Senior Tester | S07 remains governance metadata only; JSON validation is required for the refreshed context pack and Gradle is not required. |
+| Release Branch Governance | Shared-branch protection, ADR-0016 workflow branch names and workflow-execute branch adherence remain intact. |
+
+### S07 S3D Summary
+
+| Field | Value |
+|---|---|
+| Classification | documentation / governance / metadata |
+| Dependencies | S01 completed |
+| File locks | `.agents/skills/git-branch-strategy/SKILL.md`, `.agents/skills/release-branch-governance/**`, `.agents/skills/git-commit-preparation/**`, `docs/process/branch-governance.md`, `docs/agents/skill-registry.md`, `AGENTS.md`, `docs/workflow/context-pack.json`, `docs/workflow/execution-report.md` |
+| Contract locks | none |
+| Architecture locks | `branch-governance` |
 | Lock result | no conflict |
 
 ## Slice S00 - Execution Preflight And Workflow Context Freeze

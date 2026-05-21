@@ -76,6 +76,7 @@ Must not change:
 | Quality Impact Classifier | `workflow execute` | Senior Tester / Quality Gate Orchestrator | classify changed files as `DOC_ONLY`, `GOVERNANCE_METADATA`, `PRODUCT_BUILD_AFFECTING` or `UNKNOWN` before quality command selection |
 | Machine-Readable Slice Metadata | `workflow create`, `workflow execute` | Senior Workflow Architect / Workflow Executor / S3D | require concrete YAML slice metadata for dependency graph, lock and quality-gate validation |
 | Persistent Registry Reuse | all strands | Skill Registry Conflict Auditor | allow registry-cache reuse only when hashes match and no governing files changed |
+| Branch Strategy Matrix | all strands | Release Branch Governance / Git Branch Strategy | centralize `skills update`, `workflow create`, `workflow execute`, ad-hoc implementation and commit-preparation branch naming |
 
 ## Governance Flowchart V2 Capability Linkage
 
@@ -91,6 +92,7 @@ Must not change:
 | Execution Profile Routing | `skills/execution-profile-router/SKILL.md`, routing rules, Swarm Orchestrator | VERIFIED |
 | Flowchart Integrity Audit | Senior Documentation Engineer and Senior System Architect using `docs/governance/workflow/` rules | MAPPED_WITH_GAP: no dedicated flowchart-integrity skill exists |
 | Persistent Skill Registry Matrix | `docs/skill-audit/skill-registry.md`, `docs/skill-audit/skill-registry.json`, `skill-registry-conflict-auditor` | VERIFIED |
+| Branch Strategy Matrix | `docs/process/branch-governance.md`, `AGENTS.md`, `git-branch-strategy`, `release-branch-governance`, `git-commit-preparation` | VERIFIED |
 
 Detailed evidence is recorded in
 [`../skill-audit/governance-flowchart-v2-linkage.md`](../skill-audit/governance-flowchart-v2-linkage.md).

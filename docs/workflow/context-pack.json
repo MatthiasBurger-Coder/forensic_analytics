@@ -51,7 +51,7 @@
     "full": "./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace"
   },
   "sourceHashes": {
-    "AGENTS.md": "1c7620d12dcc89cf7236e03c12e9bb85fa657ddea20ab59eeea18e1ac8ce2f51",
+        "AGENTS.md": "318d6bb0c2b54d3ff42827692f0c8afa9c7a8846356a57eb8d4e98947c435c7a",
     "QUALITY.md": "9df68c96dbdd9bf36e139cfdb2cc91c341a5c08c928f03d8fe24392281fcb848",
     ".agents/orchestrator/routing-rules.md": "7c0ce783f506e83287015cf4674b9f2c2b9b59821b715c5d9be4af587a562c76",
     ".agents/orchestrator/swarm-orchestrator.md": "ae501a9e61ec0a9cf4acaad7fb7fd5d6167309b722370ed5d21d1991e49c09fc",

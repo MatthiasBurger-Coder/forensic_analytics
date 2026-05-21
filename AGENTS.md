@@ -213,6 +213,33 @@ architecture/workflow-<short-topic>-<yyyyMMdd>
 
 Use `feature/` unless the workflow is clearly a bugfix, documentation-only change, or architecture/agent-structure change.
 
+Repository branch naming uses this strand matrix:
+
+```text
+skills update:
+  docs/skills-<short-topic>-<yyyyMMdd>
+  architecture/agents-<short-topic>-<yyyyMMdd>
+
+workflow create:
+  feature/workflow-<short-topic>-<yyyyMMdd>
+  fix/workflow-<short-topic>-<yyyyMMdd>
+  docs/workflow-<short-topic>-<yyyyMMdd>
+  architecture/workflow-<short-topic>-<yyyyMMdd>
+
+workflow execute:
+  use the branch declared by the active checked workflow
+
+ad-hoc implementation:
+  feature/<short-topic>-<yyyyMMdd>
+  fix/<short-topic>-<yyyyMMdd>
+
+commit preparation on main:
+  create the branch required by the active strand
+```
+
+Commit preparation must not create a generic `work/<task-slug>` branch when a
+process strand or active workflow branch rule applies.
+
 Never create or modify workflow artifacts on `main`, `master`, `develop`, or any shared branch. If the branch cannot be created, checked out, or verified as active, stop and report:
 
 ```text
