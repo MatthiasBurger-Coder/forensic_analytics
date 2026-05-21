@@ -4,6 +4,13 @@
 
 It executes a checked `docs/workflow/workflow.md` slice by slice through the configured subagent workflow, required role reviews, tests, documentation updates, quality gates and slice checkpoint pushes.
 
+## Workflow Executor Resolution
+
+For Forensic Analytics, `.agents/skills/workflow-executor/SKILL.md` is the
+active project-specific executor. `.codex/skills/workflow-executor/SKILL.md`
+remains the reusable base protocol and is read only for portable context or
+conflict detection. It is not a competing second execution protocol.
+
 The local documentation node for this strand is `S3_DOC`. `S3_DOC` updates
 concrete workflow-execute artifacts such as slice execution notes, quality-gate
 evidence, rollback decisions, commit results and execution reports. `DOCROOT`

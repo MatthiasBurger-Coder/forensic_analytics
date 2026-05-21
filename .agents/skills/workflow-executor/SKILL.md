@@ -9,6 +9,16 @@ description: Use when the user writes workflow execute or asks to execute the ac
 
 Execute repository workflows through the configured subagent-based workflow while preserving `AGENTS.md`, `QUALITY.md`, architecture boundaries, evidence integrity, and commit restrictions.
 
+## Resolution Rule
+
+This file is the active workflow executor for Forensic Analytics.
+
+- `.agents/skills/workflow-executor/SKILL.md` is the project-specific execution protocol.
+- `.codex/skills/workflow-executor/SKILL.md` is the reusable base protocol.
+- During Forensic Analytics `workflow execute`, use this `.agents` file as the active executor.
+- Read the `.codex` base only for reusable baseline context or conflict detection, not as a second full execution protocol.
+- If this rule conflicts with root `AGENTS.md`, root `AGENTS.md` wins and the conflict must be reported.
+
 ## Trigger
 
 Use this skill whenever the user writes:

@@ -73,11 +73,11 @@ decision is explicit.
 
 | Conflict | Status | Decision |
 |---|---|---|
-| Duplicate front-matter name `workflow-executor` in `.agents/skills/workflow-executor/SKILL.md` and `.codex/skills/workflow-executor/SKILL.md` | `OPEN_PLANNED_S09` | Non-blocking for S06 because root `AGENTS.md` and the active workflow explicitly require the project-specific `.agents` executor for `workflow execute`; S09 owns the resolution cleanup. |
+| Duplicate front-matter name `workflow-executor` in `.agents/skills/workflow-executor/SKILL.md` and `.codex/skills/workflow-executor/SKILL.md` | `RESOLVED_BY_S09` | Front-matter names remain unchanged. `.agents/skills/workflow-executor/SKILL.md` is the active Forensic Analytics executor and `.codex/skills/workflow-executor/SKILL.md` is the reusable base protocol. |
 
-The open conflict is not marked resolved. Any route that depends on executor
-identity must keep reading the project-specific executor until S09 records the
-resolution rule.
+Any route that depends on executor identity must use the project-specific
+executor during Forensic Analytics `workflow execute` and may read the `.codex`
+executor only for reusable baseline context or conflict detection.
 
 ## Blocking Rules
 

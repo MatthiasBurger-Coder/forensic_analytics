@@ -43,7 +43,10 @@ Root `AGENTS.md` and `QUALITY.md`, when present, remain authoritative for projec
 
 ## Workflow Execute Protocol
 
-When the active command is `workflow execute`, use `.codex/skills/workflow-executor/SKILL.md` first, then use any discovered project-specific workflow-executor skill.
+When the active command is `workflow execute`, use a discovered
+project-specific workflow-executor skill as the active execution protocol. Use
+`.codex/skills/workflow-executor/SKILL.md` as the reusable base protocol for
+portable context and conflict detection.
 
 Execution order:
 

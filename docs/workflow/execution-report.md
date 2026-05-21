@@ -41,8 +41,8 @@ Workflow execution has started. Slice results are recorded below.
 | S05 | Completed | `c2859a3` | pushed |
 | S06 | Completed | `3b77583` | pushed |
 | S07 | Completed | `b948465` | pushed |
-| S08 | Completed | pending checkpoint | pending checkpoint |
-| S09 | Pending | n/a | n/a |
+| S08 | Completed | `c04b54b` | pushed |
+| S09 | Completed | pending checkpoint | pending checkpoint |
 | S10 | Pending | n/a | n/a |
 | S11 | Pending | n/a | n/a |
 
@@ -181,6 +181,44 @@ blockers=none
 | File locks | `.agents/skills/flowchart-integrity-auditor/**`, `.agents/orchestrator/routing-rules.md`, `docs/governance/workflow/**`, `docs/agents/skill-registry.md`, `docs/arc42/**`, `docs/workflow/context-pack.json`, `docs/workflow/execution-report.md` |
 | Contract locks | none |
 | Architecture locks | `governance-flowchart-integrity` |
+| Lock result | no conflict |
+
+## Slice S09 - Clarify Workflow Executor Resolution
+
+```text
+workflowVersion=governance-performance-20260521-v1
+sliceId=S09
+sliceTitle=Clarify Workflow Executor Resolution
+responsibleAgent=Senior Workflow Architect
+changedFiles=.codex/skills/workflow-executor/SKILL.md; .agents/skills/workflow-executor/SKILL.md; .codex/AGENTS.md; .codex/workflow/workflow-execution-rules.md; docs/agents/skill-registry.md; docs/process/workflow-execute.md; docs/skill-audit/skill-registry.md; docs/skill-audit/skill-registry.json; docs/workflow/context-pack.json; docs/workflow/execution-report.md
+qualityGateCommands=git diff --check; rg -n "workflow-executor|project-specific|reusable base|override" .codex .agents docs; python3 -m json.tool docs/workflow/context-pack.json; python3 -m json.tool docs/skill-audit/skill-registry.json
+qualityGateResult=PASS
+commitHash=pending
+rollbackReference=pending checkpoint commit
+arc42Updated=checked, no update required for S09
+adrUpdated=checked, no ADR update required
+pushResult=pending checkpoint push
+blockers=none
+```
+
+### S09 Role Review
+
+| Role | Result |
+|---|---|
+| Senior Workflow Architect | Front-matter names are left unchanged; explicit resolution text removes executor ambiguity without risking skill discovery. |
+| Senior System Architect | `.agents/skills/workflow-executor/SKILL.md` is active for Forensic Analytics and `.codex/skills/workflow-executor/SKILL.md` remains a reusable base. |
+| Skill Registry Conflict Auditor | The persistent registry now marks the executor name overlap as `RESOLVED_BY_S09`. |
+| Senior Documentation Engineer | `.codex/AGENTS.md`, workflow-execute docs and registry docs now carry the same resolution rule. |
+
+### S09 S3D Summary
+
+| Field | Value |
+|---|---|
+| Classification | documentation / governance / metadata |
+| Dependencies | S01 and S06 completed |
+| File locks | `.codex/skills/workflow-executor/SKILL.md`, `.agents/skills/workflow-executor/SKILL.md`, `.codex/AGENTS.md`, `.codex/workflow/workflow-execution-rules.md`, `docs/agents/skill-registry.md`, `docs/process/workflow-execute.md`, `docs/skill-audit/**`, `docs/workflow/context-pack.json`, `docs/workflow/execution-report.md` |
+| Contract locks | none |
+| Architecture locks | `workflow-executor-resolution` |
 | Lock result | no conflict |
 
 ## Slice S00 - Execution Preflight And Workflow Context Freeze

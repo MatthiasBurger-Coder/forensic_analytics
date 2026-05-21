@@ -51,17 +51,19 @@
     ".agents/skills/execution-profile-router/SKILL.md": "40b7a5c9a2d8896b3e2f8c384300979a13d7d35986a5bd4bc4d3b5760a7d52b7",
     ".agents/skills/quality-impact-classifier/SKILL.md": "8eb85b0a24d5798e15d9e1ba826fc8d6d64074060f2f8650258c0e1cd353dbab",
     ".agents/skills/s3d-execution-orchestrator/SKILL.md": "4dd73b432d96177fa9e162ac87b0a5652db9ce6f1598741a1e6ccc5e1bd6cb8e",
-    ".agents/skills/workflow-executor/SKILL.md": "bbb4c1405b8d8d049fc67557e7f0606befa9218596efcfe2ca522af17e6401f7",
-    ".codex/skills/workflow-executor/SKILL.md": "33a9171dd2995e8d4d73f5e0e042b4d2ac7e85384f4cb4746abc97b180f9670f",
+    ".agents/skills/workflow-executor/SKILL.md": "a207a2cc70380f741ebd06435cd46e541b02011cdc286e1d2e331e65982777b3",
+    ".codex/AGENTS.md": "d43bc1ea9ca10deb8a6553c7c21208e8020d751f674a8cb824959b666bd01aec",
+    ".codex/skills/workflow-executor/SKILL.md": "e1c13cf8f13a271d875b11d6d23702358e90650a03958127ba84fc9297267166",
+    ".codex/workflow/workflow-execution-rules.md": "6d2ea74943f8ff4187a371d6e263fcf7f179d7250868086f4ba294e6f5fa122a",
     ".agents/orchestrator/routing-rules.md": "7c0ce783f506e83287015cf4674b9f2c2b9b59821b715c5d9be4af587a562c76",
     ".agents/orchestrator/swarm-orchestrator.md": "ae501a9e61ec0a9cf4acaad7fb7fd5d6167309b722370ed5d21d1991e49c09fc",
-    "docs/agents/skill-registry.md": "e992b481075238dd4e0dd033bab93c78fbb724b13ad7acf9a562377ed9bffb8b",
+    "docs/agents/skill-registry.md": "9fa3a4709f21b62b5d17752a7087d3729aa2da7c231cc175f4d59b8619d71e6d",
     "docs/process/skills-update.md": "627db53915479fcf4d3d77475fd158784d40d18db2d59f513b8399465168797b",
-    "docs/process/workflow-execute.md": "91f454b717b1bb21aed715bad5bbb474da80036f12501ee40e38dbc766cbd08a",
+    "docs/process/workflow-execute.md": "1a3625c7261e01532f7d3f16e868a617456e48908d996a1a83303a9dab6e3e20",
     "docs/workflow/workflow.md": "4874a0e64468f6673f795a9e946733c58ad3fb2119630788202f98671f72ca88",
-    "docs/workflow/execution-report.md": "0e41d5b1da26115f99c5c385bae1793cec08c47802eccd21eee8106135e7a295",
+    "docs/workflow/execution-report.md": "e9986c65bd5ae017fabcd67da7f86c8472f0a0e6b5c273b0d96a396b6543a55d",
     "docs/skill-audit/README.md": "cd50e21b3497bde2fa3514dcca85534a0043bfb869541c5d949c15e716395919",
-    "docs/skill-audit/skill-registry.md": "d7fd6438b8b8552aba30a4a34e17478cebbf714dd57085b6600bbfdece7dfe89"
+    "docs/skill-audit/skill-registry.md": "a6c66863aabd5299603b8da02edb7c581afc2d7d263c3a31d64492e2e989265b"
   },
   "skills": [
     {
@@ -73,7 +75,7 @@
       "conflictsWith": [
         ".codex/skills/workflow-executor/SKILL.md"
       ],
-      "status": "ACTIVE_WITH_S09_RESOLUTION_PENDING"
+      "status": "ACTIVE_PROJECT_SPECIFIC_EXECUTOR"
     },
     {
       "name": "workflow-executor",
@@ -84,7 +86,7 @@
       "conflictsWith": [
         ".agents/skills/workflow-executor/SKILL.md"
       ],
-      "status": "REUSABLE_BASE_REQUIRES_RESOLUTION_RULE"
+      "status": "REUSABLE_BASE_PROTOCOL"
     },
     {
       "name": "execution-profile-router",
@@ -159,15 +161,15 @@
   "knownConflicts": [
     {
       "id": "workflow-executor-name-overlap",
-      "status": "OPEN_PLANNED_S09",
+      "status": "RESOLVED_BY_S09",
       "blocking": false,
-      "manualReviewRequired": true,
+      "manualReviewRequired": false,
       "paths": [
         ".agents/skills/workflow-executor/SKILL.md",
         ".codex/skills/workflow-executor/SKILL.md"
       ],
-      "decision": "For Forensic Analytics workflow execution, root AGENTS.md and the active workflow require the project-specific .agents executor. S09 owns naming or resolution cleanup.",
-      "mustNotMarkReady": true
+      "decision": "For Forensic Analytics workflow execution, .agents/skills/workflow-executor/SKILL.md is the active project-specific executor and .codex/skills/workflow-executor/SKILL.md is the reusable base protocol.",
+      "mustNotMarkReady": false
     }
   ]
 }

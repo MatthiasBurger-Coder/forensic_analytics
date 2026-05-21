@@ -82,6 +82,13 @@ Codex must:
 
 If a project-specific workflow-executor skill exists, use it after reading this reusable workflow.
 
+## Workflow Executor Resolution
+
+`.codex/skills/workflow-executor/SKILL.md` is the reusable base protocol.
+When a project-specific executor exists under `.agents/skills/workflow-executor/SKILL.md`,
+the project-specific file is the active executor for that repository. Read the
+`.codex` base for portable context and conflict detection only.
+
 ## Team Hierarchy
 
 ```text
