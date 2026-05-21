@@ -78,5 +78,9 @@ Package the service:
 Build the container image:
 
 ```bash
-docker build -f services/analysis-store-service/Dockerfile -t analysis-store-service:slice05 .
+docker build -f services/analysis-store-service/Dockerfile --build-arg SERVICE_JAR=services/analysis-store-service/build/libs/analysis-store-service-0.1.0-SNAPSHOT.jar -t forensic-analytics/analysis-store-service:local .
 ```
+
+When started through `deployment/docker-compose/repository-to-btm.local.yml`,
+the health endpoint is published on `127.0.0.1:18082` and the service gRPC port
+is published on `127.0.0.1:19091` for local diagnostics.

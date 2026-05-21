@@ -33,3 +33,11 @@ containerizable without shared Java implementation modules.
 Each service must own its domain, application behavior, adapters, configuration,
 tests, README, Dockerfile and health checks before runtime readiness is claimed.
 Services must not share Java implementation modules.
+
+## Local Runtime Path
+
+The verified local repository-to-BTM service landscape is documented in
+`deployment/docker-compose/repository-to-btm.local.yml`. It starts only the
+Gateway, Analysis Store, Repository Analysis, Java AST Analysis, Joern CPG
+Analysis and BTM Generation services. Swarm and Kubernetes service landscapes
+remain unclaimed until their deployment files and validation commands exist.

@@ -1,0 +1,97 @@
+name: forensic-analytics-repository-to-btm
+
+services:
+  forensic-gateway-service:
+    image: forensic-analytics/forensic-gateway-service:local
+    build:
+      context: ../..
+      dockerfile: services/forensic-gateway-service/Dockerfile
+      args:
+        SERVICE_JAR: services/forensic-gateway-service/build/libs/forensic-gateway-service-0.1.0-SNAPSHOT.jar
+    depends_on:
+      analysis-store-service:
+        condition: service_healthy
+      repository-analysis-service:
+        condition: service_healthy
+      java-ast-analysis-service:
+        condition: service_healthy
+      joern-cpg-analysis-service:
+        condition: service_healthy
+      btm-generation-service:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:18080:8080"
+
+  analysis-store-service:
+    image: forensic-analytics/analysis-store-service:local
+    build:
+      context: ../..
+      dockerfile: services/analysis-store-service/Dockerfile
+      args:
+        SERVICE_JAR: services/analysis-store-service/build/libs/analysis-store-service-0.1.0-SNAPSHOT.jar
+    ports:
+      - "127.0.0.1:18082:8082"
+      - "127.0.0.1:19091:9091"
+
+  repository-analysis-service:
+    image: forensic-analytics/repository-analysis-service:local
+    build:
+      context: ../..
+      dockerfile: services/repository-analysis-service/Dockerfile
+      args:
+        SERVICE_JAR: services/repository-analysis-service/build/libs/repository-analysis-service-0.1.0-SNAPSHOT.jar
+    depends_on:
+      java-ast-analysis-service:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:18083:8083"
+      - "127.0.0.1:19092:9092"
+    volumes:
+      - repository-workspaces:/var/lib/forensic-analytics/repository-workspaces
+
+  java-ast-analysis-service:
+    image: forensic-analytics/java-ast-analysis-service:local
+    build:
+      context: ../..
+      dockerfile: services/java-ast-analysis-service/Dockerfile
+      args:
+        SERVICE_JAR: services/java-ast-analysis-service/build/libs/java-ast-analysis-service-0.1.0-SNAPSHOT.jar
+    ports:
+      - "127.0.0.1:18084:8084"
+      - "127.0.0.1:19093:9093"
+    volumes:
+      - java-ast-artifacts:/var/lib/forensic-analytics/java-ast-artifacts
+
+  joern-cpg-analysis-service:
+    image: forensic-analytics/joern-cpg-analysis-service:local
+    build:
+      context: ../..
+      dockerfile: services/joern-cpg-analysis-service/Dockerfile
+      args:
+        SERVICE_JAR: services/joern-cpg-analysis-service/build/libs/joern-cpg-analysis-service-0.1.0-SNAPSHOT.jar
+    ports:
+      - "127.0.0.1:18085:8085"
+      - "127.0.0.1:19094:9094"
+    volumes:
+      - joern-cpg-workspaces:/var/lib/forensic-analytics/joern-cpg-workspaces
+      - joern-cpg-artifacts:/var/lib/forensic-analytics/joern-cpg-artifacts
+
+  btm-generation-service:
+    image: forensic-analytics/btm-generation-service:local
+    build:
+      context: ../..
+      dockerfile: services/btm-generation-service/Dockerfile
+      args:
+        SERVICE_JAR: services/btm-generation-service/build/libs/btm-generation-service-0.1.0-SNAPSHOT.jar
+    ports:
+      - "127.0.0.1:18086:8086"
+      - "127.0.0.1:19095:9095"
+    volumes:
+      - btm-artifacts:/var/lib/forensic-analytics/btm-artifacts
+
+volumes:
+  repository-workspaces:
+  java-ast-artifacts:
+  joern-cpg-workspaces:
+  joern-cpg-artifacts:
+  btm-artifacts:

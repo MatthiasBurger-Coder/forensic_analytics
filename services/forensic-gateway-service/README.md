@@ -41,3 +41,21 @@ Configuration keys:
 - `forensics.gateway.service.analysis-store.grpc.host`
 - `forensics.gateway.service.analysis-store.grpc.port`
 - `forensics.gateway.service.analysis-store.grpc.deadline-seconds`
+
+## Local Runtime
+
+Package and build this service for the local repository-to-BTM Compose
+landscape:
+
+```bash
+./gradlew --no-daemon :services:forensic-gateway-service:bootJar --dependency-verification strict --console=plain --stacktrace
+docker build -f services/forensic-gateway-service/Dockerfile --build-arg SERVICE_JAR=services/forensic-gateway-service/build/libs/forensic-gateway-service-0.1.0-SNAPSHOT.jar -t forensic-analytics/forensic-gateway-service:local .
+```
+
+When started through `deployment/docker-compose/repository-to-btm.local.yml`,
+the public HTTP facade is published on `127.0.0.1:18080` and the local health
+check is:
+
+```bash
+curl -fsS http://127.0.0.1:18080/api/health
+```

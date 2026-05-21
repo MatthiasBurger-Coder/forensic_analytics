@@ -129,5 +129,42 @@ on port `8082`, and can be packaged with:
 ```
 
 Its Dockerfile builds a standalone runtime image for the service jar. Docker
-Compose, Docker Swarm and Kubernetes deployment descriptors are still future
-slice material.
+Swarm and Kubernetes deployment descriptors are still future slice material.
+The first local Docker Compose descriptor is limited to the repository-to-BTM
+service landscape described below.
+
+## 7.7 Local Repository-to-BTM Service Landscape
+
+Slice 15 adds the first local Docker Compose descriptor for the implemented
+repository-to-BTM path:
+
+```text
+deployment/docker-compose/repository-to-btm.local.yml
+```
+
+The descriptor covers only the service path that Slice 14 proved through owner
+APIs:
+
+```text
+forensic-gateway-service
+analysis-store-service
+repository-analysis-service
+java-ast-analysis-service
+joern-cpg-analysis-service
+btm-generation-service
+```
+
+It uses service-owned Dockerfiles, Docker profile configuration, service-local
+health checks and named volumes for repository workspaces plus generated Java
+AST, Joern and BTM artifacts. Gateway is the only public HTTP facade in this
+local landscape. Analysis Store remains the repository-to-BTM orchestration
+owner and calls worker owner APIs over gRPC.
+
+The local descriptor does not introduce external databases, Graph DB, Vector
+DB, brokers, Jenkins, Artifactory or live credentials. Docker Swarm and
+Kubernetes remain explicitly not ready until stack files or manifests,
+readiness/liveness probes, resource policies and validation commands are added
+by a later slice.
+
+Verified commands for the local descriptor are recorded in
+`deployment/docker-compose/README.md`.
