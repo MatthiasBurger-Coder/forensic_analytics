@@ -83,6 +83,8 @@
 | S05 | `./gradlew test --dependency-verification strict --console=plain --stacktrace` | PASS: build successful in 19s after registering `services:repository-source-service` and applying Security remediation; 163 actionable tasks up-to-date. |
 | S05 | `git diff --check` | PASS: no whitespace errors in tracked S05 diffs before staging. |
 | S05 | `git diff --cached --check` | PASS: no whitespace errors after staging tracked and newly added S05 files. |
+| S06 | S06 workflow-scope review | BLOCKED: S06 required arc42 documentation and execution-report updates, but `docs/arc42/**`, `docs/architecture/**`, `docs/workflow/execution-report.md` and `contracts/grpc/**` file locks were incomplete before implementation. |
+| S06 | `git diff --check` for S06 workflow-scope remediation | PASS: no whitespace errors before the S06 scope-remediation commit. |
 
 ## Subagent Review Log
 
@@ -114,6 +116,10 @@
 | S05 | Senior Security/Sandbox subagent | PASS after remediation: repository-owned `.git-home/.gitconfig` no longer influences Git process configuration; the real-git regression test proves a malicious filter marker is not created. |
 | S05 | Senior DevOps subagent | PASS: service Gradle build, Dockerfile, local/Docker properties, gRPC port `9092`, health port `8083` and docs are aligned; S05 does not claim Docker Compose, Swarm or Kubernetes readiness. |
 | S05 | Senior Tester subagent | PASS: changed files are inside S05 scope, service-local tests and ArchUnit coverage are adequate, required Gradle gates passed and final whitespace validation must include new files through `git diff --cached --check`. |
+| S06 | Senior Workflow Architect subagent | BLOCKED before remediation: S06 documentation and contract locks did not include required `docs/arc42/**`, `docs/architecture/**`, `docs/workflow/execution-report.md` and `contracts/grpc/**`; implementation must wait until workflow scope is corrected. |
+| S06 | Senior gRPC/Proto Specialist subagent | BLOCKED before remediation: product implementation must wait until S06 workflow-scope remediation is finalized; after that, create `services/ingestion-service`, preserve `contracts/grpc/forensic-ingestion.proto` wire shape and keep `AnalyzeRepository` compatibility-only and `UNIMPLEMENTED`. |
+| S06 | Microservice Senior Expert subagent | PASS_WITH_PLAN: use `services/forensic-ingestion-service` as source evidence for a new target-owned `services/ingestion-service`; retain predecessor service and legacy ingestion modules as rollback/current paths, not aliases. |
+| S06 | Senior Tester subagent | BLOCKED before target service creation: do not substitute `services:forensic-ingestion-service` for the S06 target `services:ingestion-service`; once created, run the target service test, root test and final whitespace checks. |
 
 ## Blockers
 

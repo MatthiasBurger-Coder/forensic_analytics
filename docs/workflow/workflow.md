@@ -546,6 +546,9 @@ affected_files:
   - forensic-analytics-ingestion-request/**
   - settings.gradle.kts
   - contracts/grpc/**
+  - docs/arc42/**
+  - docs/architecture/**
+  - docs/workflow/execution-report.md
 affected_modules:
   - services:ingestion-service
   - forensic-analytics-ingestion-grpc
@@ -561,6 +564,10 @@ file_locks:
   - forensic-analytics-ingestion-grpc/**
   - forensic-analytics-ingestion-request/**
   - settings.gradle.kts
+  - contracts/grpc/**
+  - docs/arc42/**
+  - docs/architecture/**
+  - docs/workflow/execution-report.md
 contract_locks:
   - ingestion-service
 architecture_locks:
