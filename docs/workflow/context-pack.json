@@ -1,68 +1,84 @@
 {
-  "repository": "forensic_analytics",
-  "workflowVersion": "governance-performance-20260521-v1",
-  "workflowBranch": "architecture/workflow-governance-performance-20260521",
-  "activeStrand": "workflow execute",
-  "generationMode": "workflow-execute context-pack formalization",
-  "automationStatus": "defined by slice S03",
-  "createdDate": "2026-05-21",
+  "workflowVersion": "e2e-wildfly-cli-deploy-20260521-v1",
+  "workflowBranch": "feature/workflow-e2e-wildfly-cli-deploy-20260521",
+  "processStrand": "workflow create",
+  "nextProcessStrand": "workflow execute",
   "executionProfile": "FULL_PATH",
+  "createdDate": "2026-05-21",
   "affectedAreas": [
-    "agent-governance",
-    "workflow-governance",
-    "quality-governance",
-    "branch-governance",
-    "documentation-governance",
-    "skill-registry"
+    "repository-to-btm-e2e-tests",
+    "large-repository-checkout-hardening",
+    "gateway-openapi-contract",
+    "cli-gateway-contract",
+    "legacy-monolith-caller-retirement",
+    "deployment-workflow-handoff"
   ],
   "forbiddenAreas": [
-    "product-backend",
-    "product-frontend",
-    "docker-runtime",
-    "grpc-protobuf-contract-implementation",
-    "persistence",
-    "analysis-engine",
-    "joern",
-    "javaparser",
-    "btm-generator"
+    "default-external-wildfly-network-test",
+    "swarm-stack-in-this-workflow",
+    "kubernetes-manifest-in-this-workflow",
+    "production-deployment-readiness-claim",
+    "shared-java-implementation-between-services",
+    "module-removal-without-caller-free-evidence",
+    "live-llm-graph-replay-report-implementation"
   ],
   "requiredRoles": [
     "senior-workflow-architect",
     "senior-requirement-engineer",
     "senior-system-architect",
-    "senior-documentation-engineer",
+    "senior-java-backend",
+    "senior-react-frontend",
     "senior-tester"
   ],
   "conditionalRoles": [
-    "senior-java-backend",
-    "senior-react-frontend",
-    "senior-swarm-orchestrator",
+    "senior-devops",
+    "microservice-senior-expert",
+    "contract-governance-expert",
+    "git-large-repository-specialist",
+    "security-sandbox-specialist",
     "senior-performance-engineer",
-    "skill-registry-conflict-auditor"
+    "senior-documentation-engineer"
   ],
   "qualityCommands": {
-    "targeted": [
-      "git diff --check"
-    ],
-    "json": [
-      "python3 -m json.tool docs/workflow/context-pack.json"
-    ],
     "minimum": "./gradlew test --dependency-verification strict --console=plain --stacktrace",
-    "full": "./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace"
+    "fullLocalGate": "./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace",
+    "diffCheck": "git diff --check"
   },
-  "sourceHashes": {
-        "AGENTS.md": "318d6bb0c2b54d3ff42827692f0c8afa9c7a8846356a57eb8d4e98947c435c7a",
+  "governingFileHashes": {
+    "AGENTS.md": "318d6bb0c2b54d3ff42827692f0c8afa9c7a8846356a57eb8d4e98947c435c7a",
     "QUALITY.md": "9df68c96dbdd9bf36e139cfdb2cc91c341a5c08c928f03d8fe24392281fcb848",
-        ".agents/orchestrator/routing-rules.md": "30cd2a044746ab97f798425dd8f8125a98c6ed50d2d70a1b0778dca353c325bf",
+    ".codex/AGENTS.md": "d43bc1ea9ca10deb8a6553c7c21208e8020d751f674a8cb824959b666bd01aec",
+    ".codex/workflow/workflow-execution-rules.md": "6d2ea74943f8ff4187a371d6e263fcf7f179d7250868086f4ba294e6f5fa122a",
+    ".agents/orchestrator/routing-rules.md": "30cd2a044746ab97f798425dd8f8125a98c6ed50d2d70a1b0778dca353c325bf",
     ".agents/orchestrator/swarm-orchestrator.md": "ae501a9e61ec0a9cf4acaad7fb7fd5d6167309b722370ed5d21d1991e49c09fc",
     ".agents/skills/workflow-authoring/SKILL.md": "d87950d6d9ca831a4201b660c6bef373cb85be829f21694a323dbb9b8544d801",
-        ".agents/skills/workflow-executor/SKILL.md": "bd03febb154db36562d812779bc180d1b65ce1394ba09ecdb61a30c3460dfe44",
-        ".agents/skills/process-performance-profiler/SKILL.md": "62c7efb050dbf142e664978efaa9d2c7b74fcd79a0baf3d9cf518ac7ce6aa842",
-        "docs/arc42/README.md": "cd12dd742f9bc33d128973ad36079b6c1aac834f2207e9637883ee36be5cef0c",
-    "docs/workflow/arc42-check-status.md": "a3df489e0a6c242b8507215e8305ce062f046b811e7920a2d5054a8cad738bfe",
-    "docs/workflow/workflow.md": "4874a0e64468f6673f795a9e946733c58ad3fb2119630788202f98671f72ca88",
-    "docs/workflow/slice-dependency-map.md": "9fc8e84232e86315e4ecdd5640c5255500d28e43edca5bff4e6b55caf2613e77",
-    "docs/workflow/quality-and-leakage-gates.md": "5cf871504bbd9f28e32e4455a115bcf721fbfcc31cfbc2962379330c66c50f4f"
+    ".agents/skills/execution-profile-router/SKILL.md": "40b7a5c9a2d8896b3e2f8c384300979a13d7d35986a5bd4bc4d3b5760a7d52b7",
+    ".agents/roles/senior-workflow-architect/SKILL.md": "8eb9ed618bccd40b6de778bfe7a59351faaef37dfc7bb9bbe4592522c5e13686",
+    ".agents/roles/senior-requirement-engineer/SKILL.md": "425160e925ccf0edb8983133d95e0fe17bad80ddcc78b8f51d0908ea59ecd1c0",
+    ".agents/roles/senior-system-architect.md": "539aae00df27747eeed03903e8da2292ff1f90dab454ecea0dcd06ea80830f20",
+    ".agents/roles/senior-java-backend.md": "e31fac45f7ee50fcbbdefe228ba47fe0d45db042bfb06d677270962663d5a6da",
+    ".agents/roles/senior-react-frontend.md": "7f894e01a66154878dc6b6076f7f71e820507bcb1236f241de1309ca0d7eed77",
+    ".agents/roles/senior-tester.md": "335c9ca022d653114cfb5ab6e62b9222a835c8328ac18700ca520690c91b6086",
+    ".agents/roles/senior-devops.md": "f47c83cf528697779a4e4e6fdde266a23dc6df3c2dd21337c91909000bd7fce1",
+    ".agents/roles/microservice-senior-expert.md": "4c0e6de783f9617716711767e58cb778ba8cad9b5aaa11a61e5b41b8dc1bb3b0",
+    "docs/epics/forensics-platform-runtime-replay-llm-analysis-v0.2.md": "54ff246b4359e1eb92c7e80058db42faa079ff5ffd3db0d71170cfaa3dbb68fe",
+    "docs/arc42/03-system-scope-and-context.md": "77ae6036dcdd63141134481a2d0de9f80f057018d724028396a2b80bfbe6262e",
+    "docs/arc42/05-building-block-view.md": "4795bbfb6a626cb34a6ef6778b29044652f3de68b1ca0e9e7fb19eecbe1c9e76",
+    "docs/arc42/06-runtime-view.md": "e3c9af5bf67c2abcba03a5fec3591ad4afcf9ab78bab91214eebb33ea16dc116",
+    "docs/arc42/07-deployment-view.md": "f44f9a650f6be526651b5ff332250ca08b17882de4b226497034503ea4c1eacf",
+    "docs/arc42/10-quality-requirements.md": "46c314bce75744931315901b403d5f4367f2ec48c92fb1e7a00ebab0442003c1",
+    "docs/arc42/11-risks-and-technical-debt.md": "4eeca8d8eda3719fef17458efbca986b23a37b7689f6daf79c3a01b52d74eba9",
+    "docs/adr/ADR-0016-branch-first-workflow-creation.md": "13e8e922831c0a7ffe95ee8fae9247bf39b9f47ecf30dd9f685e9fe447fb95e2",
+    "docs/adr/ADR-0017-target-microservices-service-landscape.md": "18ce4805a028d443b68140139b93345c3d9b720986738ef95c0669580bcca50c",
+    "docs/adr/ADR-0018-initial-logical-contracts.md": "3d8fd3080d07d4aaca26812aa15d688b5758d9a0936586b148f8dd436fbf96ca",
+    "docs/architecture/service-migration-map.md": "848036a6e14f2ec6d85fe98d11dc5e661c205be67df59c3c10bedb5008a4475b",
+    "docs/architecture/current-build-and-test-map.md": "b35105238a9c087a1ad345e71be2518ecd03fc4854fa9a69620e14146bf74ab5"
   },
-  "reuseRule": "Subagents may use this context pack as a navigation aid only. They must reopen governing files when a hash changed, the task touches governance files, or any conflict is detected."
+  "staleWhen": [
+    "any governing file hash changes",
+    "active branch differs from workflowBranch",
+    "scope changes to include Swarm or Kubernetes manifests in this workflow",
+    "legacy module removal is attempted without caller-free evidence",
+    "Gateway contract changes affect frontend without frontend impact review"
+  ]
 }

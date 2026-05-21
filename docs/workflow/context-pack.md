@@ -1,80 +1,87 @@
 # Workflow Context Pack
 
-This context pack is a workflow-local navigation aid for
-`governance-performance-20260521-v1`.
-
-It is not the source of truth. Root `AGENTS.md`, `QUALITY.md`, ADRs, arc42,
-routing rules, workflow files and skill files remain authoritative.
-
-## Scope
+## Identity
 
 | Field | Value |
 |---|---|
-| Repository | `forensic_analytics` |
-| Workflow branch | `architecture/workflow-governance-performance-20260521` |
-| Active strand | `workflow execute` |
+| Workflow version | `e2e-wildfly-cli-deploy-20260521-v1` |
+| Workflow branch | `feature/workflow-e2e-wildfly-cli-deploy-20260521` |
+| Process strand | `workflow create` now; `workflow execute` later |
 | Execution profile | `FULL_PATH` |
-| Automation status | Defined by Slice S03 |
+| Created | `2026-05-21` |
+
+## Purpose
+
+This context pack is a navigation aid for the workflow. It does not replace
+root `AGENTS.md`, `QUALITY.md`, ADRs, arc42, routing rules, role files or the
+active workflow.
+
+## Affected Areas
+
+- Repository-to-BTM E2E tests.
+- Large-repository Git checkout hardening.
+- Gateway OpenAPI and CLI-to-Gateway contract.
+- CLI adapter boundary.
+- Legacy monolith caller inventory and caller-free retirement gates.
+- Deployment workflow handoff for Docker Swarm and Kubernetes.
+
+## Forbidden Areas
+
+- No default external WildFly network test.
+- No Swarm stack, Kubernetes manifest or Helm chart in this workflow.
+- No production deployment readiness claim.
+- No shared Java implementation or DTO module between services.
+- No legacy module removal without caller-free evidence and replacement parity.
+- No live LLM, graph-replay or report-generation implementation.
 
 ## Required Roles
 
 - Senior Workflow Architect
 - Senior Requirement Engineer
 - Senior System Architect
-- Senior Documentation Engineer
+- Senior Java Backend Developer
+- Senior React Frontend Developer
 - Senior Tester
 
-Conditional roles:
+## Conditional Roles
 
-- Senior Java Backend Developer for N/A impact checks unless product backend
-  scope appears.
-- Senior React Frontend Developer for N/A impact checks unless frontend scope
-  appears.
-- Senior Swarm Orchestrator until the dedicated S3D role exists.
-- Senior Performance Engineer for the process profiler slice.
-- Skill Registry Conflict Auditor for skills, roles and routing changes.
+- Senior DevOps Engineer
+- Microservice Senior Expert
+- Contract Governance Expert
+- Git Large Repository Specialist
+- Security Sandbox Specialist
+- Senior Performance Engineer
+- Senior Documentation Engineer
 
 ## Quality Commands
 
-Default governance-only command:
-
-```bash
-git diff --check
-```
-
-JSON validation command:
-
-```bash
-python3 -m json.tool docs/workflow/context-pack.json
-```
-
-Minimum Gradle command from `QUALITY.md`, required only if scope is refined into
-build-influencing files:
+Minimum quality command:
 
 ```bash
 ./gradlew test --dependency-verification strict --console=plain --stacktrace
 ```
 
-Full local gate from `QUALITY.md`, required only if scope expands to broad
-product/build influence or final release requires it:
+Full local quality gate:
 
 ```bash
 ./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace
 ```
 
-## Reuse Rule
+Slice-level checks must also run:
 
-Read this pack first for orientation. Reopen the authoritative source files
-when:
+```bash
+git diff --check
+```
 
-- any recorded hash changed;
-- the slice touches governance files;
-- a conflict, missing owner, missing role, missing skill, missing route or
-  unclear quality command is detected.
+## Staleness Rules
 
-## Hash Record
+This context pack is stale when:
 
-The machine-readable hash record is
-[`context-pack.json`](context-pack.json). Slice S03 owns the initial formal
-definition; later workflow slices refresh hashes when their governing files
-change.
+- any governing-file hash in `context-pack.json` changes;
+- root `AGENTS.md`, `QUALITY.md`, routing rules, ADRs, arc42 or role files are
+  modified by a slice;
+- the active branch differs from
+  `feature/workflow-e2e-wildfly-cli-deploy-20260521`;
+- a slice changes product behavior outside the workflow write scope;
+- deployment manifests are added without starting the separate deployment
+  workflow.
