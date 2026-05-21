@@ -151,6 +151,19 @@ current files it hashes. A stale context pack is not a failure when the active
 slice is responsible for refreshing it; otherwise it is a S3/S3D blocker and
 the executor must reread the authoritative files directly.
 
+## Process Performance Metrics
+
+When `.agents/skills/process-performance-profiler/SKILL.md` exists, use it to
+record workflow-process diagnostics under `docs/workflow/metrics/**` when the
+active workflow requests metrics. Metrics may include phase timing, role count,
+file-read count, quality command count, repeated governance reads, retry count,
+blocker count, longest critical path and unused parallelization opportunities.
+
+Metrics are diagnostic only. They must not record secrets, prompt content or
+raw forensic evidence payloads, and they must not delay, skip, downgrade or
+replace S3/S3D checks, D8 quality decisions, required role reviews,
+checkpoint commits or `QUALITY.md` commands.
+
 ## Core Rule
 
 Never implement a workflow slice directly before the relevant subagent or role has reviewed the slice.

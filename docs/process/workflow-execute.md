@@ -126,6 +126,21 @@ owner conflicts, incompatible STOP rules, quality authority conflicts or
 architecture authority conflicts as ready. Stale registry reuse is a
 `DOC_GOVERNANCE_FAILURE`.
 
+## Process Performance Metrics
+
+When `.agents/skills/process-performance-profiler/SKILL.md` exists and the
+active workflow requests metrics, `workflow execute` may write diagnostic run
+reports under `docs/workflow/metrics/**`.
+
+Metrics may record phase timing, role count, file-read count, quality command
+count, repeated governance reads, Typed Error Router retries, blocker count,
+longest critical path and unused parallelization opportunities.
+
+Metrics must not record secrets, credentials, prompt content, raw evidence
+payloads, source-code excerpts or runtime trace payloads. Metrics must not
+delay, skip, downgrade or replace S3/S3D checks, D8 quality decisions,
+required role reviews, checkpoint commits or `QUALITY.md` commands.
+
 ## S3D Execution Orchestrator
 
 S3D runs after `S3_CLASSIFY` and before write-capable slice execution. The

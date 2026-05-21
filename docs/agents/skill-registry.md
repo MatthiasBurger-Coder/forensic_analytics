@@ -79,6 +79,7 @@ Must not change:
 | Branch Strategy Matrix | all strands | Release Branch Governance / Git Branch Strategy | centralize `skills update`, `workflow create`, `workflow execute`, ad-hoc implementation and commit-preparation branch naming |
 | Flowchart Integrity Auditor | `workflow create`, `workflow execute`, governance docs | Senior Documentation Engineer / `flowchart-integrity-auditor` | audit Level 1 and Level 2 governance diagrams for STOP paths, terminals, self-loops, fallback paths and forbidden backward jumps |
 | Workflow Executor Resolution | `workflow execute` | Workflow Executor / Skill Registry Conflict Auditor | treat `.agents/skills/workflow-executor/SKILL.md` as active Forensic Analytics executor and `.codex/skills/workflow-executor/SKILL.md` as reusable base |
+| Process Performance Profiler | `workflow execute` | Senior Performance Engineer / Workflow Executor | record process-performance diagnostics under `docs/workflow/metrics/**` without replacing gates or reviews |
 
 ## Governance Flowchart V2 Capability Linkage
 
@@ -96,6 +97,7 @@ Must not change:
 | Persistent Skill Registry Matrix | `docs/skill-audit/skill-registry.md`, `docs/skill-audit/skill-registry.json`, `skill-registry-conflict-auditor` | VERIFIED |
 | Branch Strategy Matrix | `docs/process/branch-governance.md`, `AGENTS.md`, `git-branch-strategy`, `release-branch-governance`, `git-commit-preparation` | VERIFIED |
 | Workflow Executor Resolution | `.agents/skills/workflow-executor/SKILL.md`, `.codex/skills/workflow-executor/SKILL.md`, `.codex/AGENTS.md`, `.codex/workflow/workflow-execution-rules.md`, `docs/process/workflow-execute.md` | VERIFIED |
+| Process Performance Profiling | `skills/process-performance-profiler/SKILL.md`, `docs/workflow/metrics/README.md`, Workflow Executor | VERIFIED |
 
 Detailed evidence is recorded in
 [`../skill-audit/governance-flowchart-v2-linkage.md`](../skill-audit/governance-flowchart-v2-linkage.md).

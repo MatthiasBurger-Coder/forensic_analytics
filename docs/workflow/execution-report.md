@@ -42,8 +42,8 @@ Workflow execution has started. Slice results are recorded below.
 | S06 | Completed | `3b77583` | pushed |
 | S07 | Completed | `b948465` | pushed |
 | S08 | Completed | `c04b54b` | pushed |
-| S09 | Completed | pending checkpoint | pending checkpoint |
-| S10 | Pending | n/a | n/a |
+| S09 | Completed | `264bd48` | pushed |
+| S10 | Completed | pending checkpoint | pending checkpoint |
 | S11 | Pending | n/a | n/a |
 
 ## Slice Reporting Template
@@ -219,6 +219,44 @@ blockers=none
 | File locks | `.codex/skills/workflow-executor/SKILL.md`, `.agents/skills/workflow-executor/SKILL.md`, `.codex/AGENTS.md`, `.codex/workflow/workflow-execution-rules.md`, `docs/agents/skill-registry.md`, `docs/process/workflow-execute.md`, `docs/skill-audit/**`, `docs/workflow/context-pack.json`, `docs/workflow/execution-report.md` |
 | Contract locks | none |
 | Architecture locks | `workflow-executor-resolution` |
+| Lock result | no conflict |
+
+## Slice S10 - Add Process Performance Profiler
+
+```text
+workflowVersion=governance-performance-20260521-v1
+sliceId=S10
+sliceTitle=Add Process Performance Profiler
+responsibleAgent=Senior Performance Engineer
+changedFiles=.agents/skills/process-performance-profiler/SKILL.md; .agents/skills/workflow-executor/SKILL.md; docs/process/workflow-execute.md; docs/workflow/metrics/README.md; docs/agents/skill-registry.md; docs/workflow/context-pack.json; docs/workflow/execution-report.md
+qualityGateCommands=git diff --check; rg -n "process-performance-profiler|metrics|critical path|repeated reads" .agents docs; python3 -m json.tool docs/workflow/context-pack.json
+qualityGateResult=PASS
+commitHash=pending
+rollbackReference=pending checkpoint commit
+arc42Updated=checked, no update required for S10
+adrUpdated=checked, no ADR update required
+pushResult=pending checkpoint push
+blockers=none
+```
+
+### S10 Role Review
+
+| Role | Result |
+|---|---|
+| Senior Performance Engineer | Profiler records process diagnostics only and avoids brittle timing assertions or telemetry dependencies. |
+| Senior Workflow Architect | Metrics live under `docs/workflow/metrics/**` and remain part of workflow-execute documentation, not a new process strand. |
+| Senior Documentation Engineer | Metrics README, workflow-execute docs, workflow executor and skill registry are synchronized. |
+| Senior Tester | Metrics cannot delay, skip, downgrade or replace D8 quality gates or `QUALITY.md` commands. |
+
+### S10 S3D Summary
+
+| Field | Value |
+|---|---|
+| Classification | documentation / governance / metadata |
+| Dependencies | S03 and S04 completed |
+| File locks | `.agents/skills/process-performance-profiler/**`, `.agents/skills/workflow-executor/SKILL.md`, `docs/process/workflow-execute.md`, `docs/workflow/metrics/**`, `docs/agents/skill-registry.md`, `docs/workflow/context-pack.json`, `docs/workflow/execution-report.md` |
+| Contract locks | none |
+| Architecture locks | `process-performance-observability` |
 | Lock result | no conflict |
 
 ## Slice S00 - Execution Preflight And Workflow Context Freeze
