@@ -200,6 +200,23 @@ RPC from the transitional predecessor contract is intentionally not implemented
 in this service slice; a later contract migration must replace or retire that
 predecessor wire shape explicitly.
 
+Slice S08 verifies a local Joern analysis runtime boundary:
+
+```text
+JoernCpgAnalysisService gRPC request
+  -> services/joern-analysis-service inbound adapter
+  -> service-local Joern analysis application service
+  -> service-local Joern-owned workspace materialization
+  -> service-local Joern runtime and semantic artifact adapters
+  -> semantic artifact references, completeness and diagnostics
+```
+
+The S08 service consumes only validated source/build package descriptors or
+Joern-owned materialized workspaces. It must not receive Repository Source
+private workspace paths, and CPG/CFG/DFG artifacts remain static semantic
+evidence rather than observed runtime execution. Joern unavailable, timeout
+and missing mapping states stay explicit diagnostics.
+
 ADR-0018 allows the initial runtime communication contracts to describe planned
 API, worker, replay, report and event flows before each runtime path exists.
 Those flows remain contract design until a slice implements and verifies

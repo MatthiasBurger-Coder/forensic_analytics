@@ -37,6 +37,7 @@ include(
     "forensic-analytics-boot-app",
     "services:btm-generation-service",
     "services:joern-cpg-analysis-service",
+    "services:joern-analysis-service",
     "services:java-parser-analysis-service",
     "services:java-ast-analysis-service",
     "services:repository-source-service",

@@ -161,7 +161,7 @@ slice explicitly introduces them.
 | `services/repository-source-service` plus predecessors `forensic-analytics-adapter-repository-source`, `services/repository-analysis-service` | `repository-source-service` |
 | `services/ingestion-service` plus predecessors `forensic-analytics-ingestion-grpc`, `forensic-analytics-ingestion-request`, `services/forensic-ingestion-service` | `ingestion-service` |
 | `services/java-parser-analysis-service` plus predecessors `forensic-analytics-adapter-javaparser`, `services/java-ast-analysis-service` | `java-parser-analysis-service` |
-| `forensic-analytics-adapter-joern-docker`, `services/joern-cpg-analysis-service` | `joern-analysis-service` |
+| `services/joern-analysis-service` plus predecessors `forensic-analytics-adapter-joern-docker`, `services/joern-cpg-analysis-service` | `joern-analysis-service` |
 | `forensic-analytics-engine`, orchestration portions of current application code and applicable `analysis-store-service` coordination state | `analysis-orchestrator-service` for job lifecycle, worker leases, retries, failures, correlation references and job-to-artifact references |
 | `forensic-analytics-rest`, public API portions of `forensic-gateway-service` and report/query API behavior | `query-report-api-service` |
 | `forensic-analytics-cli` | `cli-client` |

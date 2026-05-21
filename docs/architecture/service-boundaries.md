@@ -278,10 +278,32 @@ Outbound communication:
 
 Current evidence:
 
+- `services/joern-analysis-service`;
 - `forensic-analytics-adapter-joern-docker`;
 - `services/joern-cpg-analysis-service`;
 - `contracts/grpc/joern-cpg-analysis.proto`;
 - `docker/joern/**`.
+
+S08 implementation state:
+
+- registered Gradle project `services:joern-analysis-service`;
+- service-local package `de.burger.forensics.analytics.services.joernanalysis`;
+- service-local domain, application ports, inbound gRPC adapter, outbound
+  filesystem, Joern runtime and artifact-registry adapters, bootstrap,
+  configuration, tests, README and Dockerfile;
+- local gRPC port `9096` and health port `8087`;
+- unchanged `contracts/grpc/joern-cpg-analysis.proto` wire shape and generated
+  transport classes kept service-local;
+- Joern runtime unavailable, timeout and missing semantic artifact mappings
+  remain explicit diagnostics with unknown or incomplete analysis state;
+- Docker/Joern runtime remains optional for the default Gradle gate. S08
+  validates the Joern Docker Compose model but does not claim Docker Compose,
+  Docker Swarm or Kubernetes deployment readiness for the target landscape.
+
+`services/joern-cpg-analysis-service` and
+`forensic-analytics-adapter-joern-docker` remain predecessor and rollback
+evidence. S08 does not remove them and does not route production callers to the
+new service.
 
 Stop conditions:
 

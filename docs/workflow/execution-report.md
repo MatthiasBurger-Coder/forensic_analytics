@@ -33,7 +33,7 @@
 | S05 | COMPLETED | Repository source service extracted as first FA-MSA-001 target-name service; security remediation, service test, service packaging, root test and staged whitespace gate passed. |
 | S06 | COMPLETED | Ingestion service extracted as target-name service; Java backend race remediation, service test, service packaging, root test and staged whitespace gate passed. |
 | S07 | COMPLETED | JavaParser analysis service extracted as target-name service; source-analysis remediation, service build, service tests, root test, specialist reviews and staged whitespace gate passed. |
-| S08 | PENDING | Joern analysis service extraction; S3D scope remediation completed before product implementation. |
+| S08 | COMPLETED | Joern analysis service extracted as target-name service; target service tests, packaging, build, root test, identity scans, specialist reviews and staged whitespace gate passed. |
 | S09 | PENDING | Analysis orchestrator service boundary |
 | S10 | PENDING | Query report API service boundary |
 | S11 | PENDING | CLI client decoupling |
@@ -117,6 +117,14 @@
 | S08 | `./gradlew :services:joern-cpg-analysis-service:test --dependency-verification strict --console=plain --stacktrace` | PASS as tester diagnostic only: predecessor service tests pass, but this cannot substitute for the required S08 target service gate. |
 | S08 | `docker compose -f docker/joern/docker-compose.joern.yml config` | PASS as Docker model validation: compose configuration rendered without starting containers or pulling images. |
 | S08 | `git diff --check` for S08 workflow-scope remediation | PASS: no whitespace errors after adding S08 documentation, contract, architecture and Docker-model locks before product implementation. |
+| S08 | S08 coupling and identity scan over `services/joern-analysis-service` | PASS: no production direct Gradle `project(...)` dependency, forbidden shared implementation package reference, stale target-service identity, stale target-service property prefix or conflicting S07/S08 port value was found inside the new service. |
+| S08 | `./gradlew :services:joern-analysis-service:test --dependency-verification strict --console=plain --stacktrace` | PASS: build successful in 1m 35s after creating and registering the target service. Gradle emitted protobuf Unsafe and gRPC native-access warnings, but no task failed. |
+| S08 | `./gradlew :services:joern-analysis-service:bootJar --dependency-verification strict --console=plain --stacktrace` | PASS: build successful in 5s; service Boot jar packaged independently. |
+| S08 | `./gradlew :services:joern-analysis-service:build --dependency-verification strict --console=plain --stacktrace` | PASS: build successful in 35s; service assembled, packaged and tested independently. |
+| S08 | `./gradlew test --dependency-verification strict --console=plain --stacktrace` | PASS: build successful in 27s after registering `services:joern-analysis-service`; 197 actionable tasks up-to-date. |
+| S08 | `git diff --check` | PASS: no whitespace errors after S08 implementation and documentation updates. |
+| S08 | `git diff --check` after DevOps documentation remediation | PASS: no whitespace errors after correcting Joern Analysis Service bind-address wording and unexecuted `bootRun` evidence. |
+| S08 | `git diff --cached --check` | PASS after staging S08 files: no whitespace errors in tracked and newly added target service files. |
 
 ## Subagent Review Log
 
@@ -174,6 +182,13 @@
 | S08 | Microservice Senior Expert subagent | PASS_WITH_PLAN: create and register the target service, retain predecessor paths as rollback evidence, use distinct ports and do not claim Compose, Swarm or Kubernetes readiness without verified deployment files and commands. |
 | S08 | Senior DevOps subagent | PASS_WITH_PLAN: keep Joern runtime optional outside the default Gradle gate, validate Docker/Compose models when Docker files change, skip image builds/runs unless explicitly verified, and avoid committing generated Joern runtime artifacts. |
 | S08 | Senior Tester subagent | BLOCKED before target service creation: the required `:services:joern-analysis-service:test` target cannot run until the target module exists; predecessor tests are diagnostic only and required post-implementation coverage includes Joern unavailable, timeout, incomplete artifacts, Docker/workspace boundaries, autonomy and architecture tests. |
+| S08 | Senior Joern/CPG Specialist subagent | PASS after implementation: Joern execution stays in the outbound adapter, the existing `joern-cpg-analysis.proto` wire/package contract remains unchanged as service-local generated transport, diagnostics/provenance/completeness are preserved and static semantic artifacts are not presented as runtime execution. |
+| S08 | Senior Java Backend subagent | PASS after implementation: the target service is registered, production packages are service-local under `de.burger.forensics.analytics.services.joernanalysis`, no Gradle `project(...)` dependency or forbidden shared module import was found, and generated proto/gRPC usage is confined to adapters and tests. |
+| S08 | Microservice Senior Expert subagent | PASS after implementation: `services:joern-analysis-service` is an independent target-name service root with own build, Dockerfile, README, bootstrap, domain/application/adapters/tests, distinct ports `9096`/`8087`, retained predecessor evidence and no unverified Compose, Swarm or Kubernetes readiness claim. |
+| S08 | Senior DevOps subagent | BLOCKED before remediation: README claimed `127.0.0.1` listener defaults although service defaults bind `0.0.0.0`, and arc42 described `bootRun` in a way that could be read as verified runtime evidence. |
+| S08 | Senior DevOps subagent | PASS after remediation: README now distinguishes default bind address from local client/health-probe access, arc42 records `bootRun` as an operator command rather than executed smoke evidence, and no required DevOps remediation remains. |
+| S08 | Senior Tester subagent | BLOCKED before final staging: target tests and command evidence cover unavailable runtime, timeout, incomplete artifacts, workspace boundaries, autonomy, architecture and boot/health behavior, but newly added target service files must be staged before final `git diff --cached --check`. |
+| S08 | Senior Tester subagent | PASS after final staging: S08 files are staged and `git diff --cached --check` passed over tracked and newly added target service files. |
 
 ## Blockers
 

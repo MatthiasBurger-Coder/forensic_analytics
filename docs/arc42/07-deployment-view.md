@@ -207,6 +207,41 @@ Docker Swarm or Kubernetes deployment descriptors for the target landscape.
 Those readiness claims require later repository tooling and validation
 commands.
 
+Slice S08 adds `services/joern-analysis-service` as target-service deployment
+evidence. The service owns:
+
+- `services/joern-analysis-service/build.gradle.kts`;
+- `services/joern-analysis-service/Dockerfile`;
+- `services/joern-analysis-service/src/main/resources/application.properties`;
+- `services/joern-analysis-service/src/main/resources/application-docker.properties`;
+- a service-local health HTTP endpoint on port `8087`;
+- a service-local gRPC endpoint on port `9096`.
+
+The service can be packaged independently with:
+
+```bash
+./gradlew :services:joern-analysis-service:bootJar --dependency-verification strict --console=plain --stacktrace
+```
+
+The local operator start command is:
+
+```bash
+./gradlew :services:joern-analysis-service:bootRun --dependency-verification strict --console=plain --stacktrace
+```
+
+S08 records this as the service-local start command, but the S08 verification
+run did not execute `bootRun` or a live health probe. Runtime smoke evidence
+must be recorded separately before claiming a verified running Joern Analysis
+Service instance.
+
+The service Dockerfile is service-owned and based on the digest-pinned Joern
+runtime plus a copied Java 25 runtime. S08 validates the Joern Docker Compose
+model with `docker compose -f docker/joern/docker-compose.joern.yml config`,
+but it does not add target-service Docker Compose, Docker Swarm or Kubernetes
+deployment descriptors. Docker image build and Joern runtime smoke testing are
+optional external checks because they may pull the Joern base image or create
+local container state.
+
 ## 7.7 Local Repository-to-BTM Transitional Landscape
 
 The repository currently contains a local Docker Compose descriptor for the
