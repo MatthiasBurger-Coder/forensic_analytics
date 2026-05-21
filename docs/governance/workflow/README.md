@@ -31,6 +31,11 @@ The governing architecture decision is
 
 ## Diagram Review Rules
 
+Flowchart integrity audits route through
+`.agents/skills/flowchart-integrity-auditor/SKILL.md`. Senior Documentation
+Engineer owns the documentation updates that follow the audit, and Senior
+System Architect owns architecture-governance escalation for blocking findings.
+
 Each Level 2 subgraph must be reviewed for:
 
 - dead nodes

@@ -65,6 +65,12 @@ Slice S05 closes the S3D ownership gap for this workflow branch by introducing
 the dedicated Senior Execution Orchestrator and `s3d-execution-orchestrator`
 skill. Senior Swarm Orchestrator remains the coordination owner.
 
+Slice S08 closes the Flowchart Integrity Audit gap for this workflow branch by
+introducing `flowchart-integrity-auditor` and routing flowchart integrity
+checks through that dedicated skill. Senior Documentation Engineer remains the
+documentation synchronization owner and Senior System Architect remains the
+architecture-governance escalation owner.
+
 The three-strand agent and workflow governance model was checked and
 synchronized for Governance Flowchart V2 workflow execution on branch
 `architecture/workflow-governance-flowchart-v2-20260517`. That branch is now

@@ -40,8 +40,8 @@ Workflow execution has started. Slice results are recorded below.
 | S04 | Completed | `80d4d21` | pushed |
 | S05 | Completed | `c2859a3` | pushed |
 | S06 | Completed | `3b77583` | pushed |
-| S07 | Completed | pending checkpoint | pending checkpoint |
-| S08 | Pending | n/a | n/a |
+| S07 | Completed | `b948465` | pushed |
+| S08 | Completed | pending checkpoint | pending checkpoint |
 | S09 | Pending | n/a | n/a |
 | S10 | Pending | n/a | n/a |
 | S11 | Pending | n/a | n/a |
@@ -143,6 +143,44 @@ blockers=none
 | File locks | `.agents/skills/git-branch-strategy/SKILL.md`, `.agents/skills/release-branch-governance/**`, `.agents/skills/git-commit-preparation/**`, `docs/process/branch-governance.md`, `docs/agents/skill-registry.md`, `AGENTS.md`, `docs/workflow/context-pack.json`, `docs/workflow/execution-report.md` |
 | Contract locks | none |
 | Architecture locks | `branch-governance` |
+| Lock result | no conflict |
+
+## Slice S08 - Add Flowchart Integrity Auditor
+
+```text
+workflowVersion=governance-performance-20260521-v1
+sliceId=S08
+sliceTitle=Add Flowchart Integrity Auditor
+responsibleAgent=Senior Documentation Engineer
+changedFiles=.agents/skills/flowchart-integrity-auditor/SKILL.md; .agents/orchestrator/routing-rules.md; docs/governance/workflow/README.md; docs/governance/workflow/level-1-overview.md; docs/governance/workflow/level-2-subgraphs.md; docs/agents/skill-registry.md; docs/arc42/README.md; docs/arc42/11-risks-and-technical-debt.md; docs/workflow/context-pack.json; docs/workflow/execution-report.md
+qualityGateCommands=git diff --check; rg -n "flowchart-integrity-auditor|STOP|CP_FINAL|PUB_PUSH" .agents docs/governance docs/agents; python3 -m json.tool docs/workflow/context-pack.json
+qualityGateResult=PASS
+commitHash=pending
+rollbackReference=pending checkpoint commit
+arc42Updated=docs/arc42/README.md and docs/arc42/11-risks-and-technical-debt.md updated for closed flowchart audit gap
+adrUpdated=checked against ADR-0021; no ADR update required
+pushResult=pending checkpoint push
+blockers=none
+```
+
+### S08 Role Review
+
+| Role | Result |
+|---|---|
+| Senior Documentation Engineer | Flowchart integrity now has a dedicated skill and the diagram package points to it. |
+| Senior System Architect | The auditor forbids workflow-execute backward jumps, publication self-reference and ambiguous STOP paths. |
+| Senior Tester | S08 uses documentation and JSON checks only; no product, build or test files changed. |
+| Flowchart Integrity Auditor | Level 1 and Level 2 expectations now include decision labels, STOP paths, fallback paths, terminals, self-loops and cross-level consistency. |
+
+### S08 S3D Summary
+
+| Field | Value |
+|---|---|
+| Classification | documentation / governance / metadata |
+| Dependencies | S01 completed |
+| File locks | `.agents/skills/flowchart-integrity-auditor/**`, `.agents/orchestrator/routing-rules.md`, `docs/governance/workflow/**`, `docs/agents/skill-registry.md`, `docs/arc42/**`, `docs/workflow/context-pack.json`, `docs/workflow/execution-report.md` |
+| Contract locks | none |
+| Architecture locks | `governance-flowchart-integrity` |
 | Lock result | no conflict |
 
 ## Slice S00 - Execution Preflight And Workflow Context Freeze

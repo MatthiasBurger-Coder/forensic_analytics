@@ -77,6 +77,7 @@ Must not change:
 | Machine-Readable Slice Metadata | `workflow create`, `workflow execute` | Senior Workflow Architect / Workflow Executor / S3D | require concrete YAML slice metadata for dependency graph, lock and quality-gate validation |
 | Persistent Registry Reuse | all strands | Skill Registry Conflict Auditor | allow registry-cache reuse only when hashes match and no governing files changed |
 | Branch Strategy Matrix | all strands | Release Branch Governance / Git Branch Strategy | centralize `skills update`, `workflow create`, `workflow execute`, ad-hoc implementation and commit-preparation branch naming |
+| Flowchart Integrity Auditor | `workflow create`, `workflow execute`, governance docs | Senior Documentation Engineer / `flowchart-integrity-auditor` | audit Level 1 and Level 2 governance diagrams for STOP paths, terminals, self-loops, fallback paths and forbidden backward jumps |
 
 ## Governance Flowchart V2 Capability Linkage
 
@@ -90,7 +91,7 @@ Must not change:
 | Documentation Governance | Senior Documentation Engineer, Documentation Sync, `DOCROOT` | VERIFIED |
 | Quality Gate Classification | Senior Tester, Quality Gate Orchestrator, Quality Gate skill, `skills/quality-impact-classifier/SKILL.md` | VERIFIED |
 | Execution Profile Routing | `skills/execution-profile-router/SKILL.md`, routing rules, Swarm Orchestrator | VERIFIED |
-| Flowchart Integrity Audit | Senior Documentation Engineer and Senior System Architect using `docs/governance/workflow/` rules | MAPPED_WITH_GAP: no dedicated flowchart-integrity skill exists |
+| Flowchart Integrity Audit | `skills/flowchart-integrity-auditor/SKILL.md`, Senior Documentation Engineer, Senior System Architect escalation | VERIFIED |
 | Persistent Skill Registry Matrix | `docs/skill-audit/skill-registry.md`, `docs/skill-audit/skill-registry.json`, `skill-registry-conflict-auditor` | VERIFIED |
 | Branch Strategy Matrix | `docs/process/branch-governance.md`, `AGENTS.md`, `git-branch-strategy`, `release-branch-governance`, `git-commit-preparation` | VERIFIED |
 

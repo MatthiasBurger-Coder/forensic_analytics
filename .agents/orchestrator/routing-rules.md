@@ -60,9 +60,10 @@ gates. Unclear impact defaults to `FULL_PATH`.
 - Quality gate classification routes to
   `skills/quality-gate-orchestrator/SKILL.md`, `skills/quality-gate/SKILL.md`
   and `roles/senior-tester.md`.
-- Flowchart integrity audit routes to `roles/senior-documentation-engineer.md`
-  and `roles/senior-system-architect.md` using the review rules in
-  `docs/governance/workflow/README.md` until a dedicated skill exists.
+- Flowchart integrity audit routes to
+  `skills/flowchart-integrity-auditor/SKILL.md`; Senior Documentation
+  Engineer owns documentation synchronization and Senior System Architect owns
+  architecture-governance escalation when the auditor reports a blocker.
 
 ## Escalation
 
