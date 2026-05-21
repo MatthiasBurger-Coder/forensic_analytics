@@ -2,7 +2,7 @@
 
 ## Status
 
-FA-MSA-001 Slice 03 contract-first communication baseline.
+FA-MSA-001 Slice 04 contract-first communication and data-ownership baseline.
 
 This document records target communication ownership. It does not define
 database schemas and does not claim that the target services or endpoints are
@@ -17,7 +17,7 @@ renamed, split or superseded by later contract slices.
 | repository source and source snapshot preparation | `contracts/grpc/repository-analysis.proto`, predecessor filename with authority `repository-source-service` |
 | JavaParser analysis and source facts | `contracts/grpc/java-ast-analysis.proto` and `contracts/grpc/java-ast-source-facts-v1.schema.json`, predecessor filenames with authority `java-parser-analysis-service` |
 | Joern semantic analysis | `contracts/grpc/joern-cpg-analysis.proto`, predecessor filename with authority `joern-analysis-service` |
-| orchestration and job status | `contracts/grpc/analysis-job.proto` plus `contracts/events/analysis-events.md`, authority `analysis-orchestrator-service`; S04 still confirms canonical state ownership |
+| orchestration and job status | `contracts/grpc/analysis-job.proto` plus `contracts/events/analysis-events.md`, authority `analysis-orchestrator-service` for job lifecycle, worker leases, retries, failures, dead-letter state, correlation references and job-to-artifact references |
 | public query and report API | `contracts/openapi/gateway-api.yaml`, transitional filename with authority `query-report-api-service` |
 | CLI public API behavior | `contracts/cli/gateway-cli-contract.md`, transitional filename with authority `cli-client` |
 | analysis events | `contracts/events/analysis-events.md`, authority per event producer/consumer table |
@@ -32,13 +32,14 @@ implementation code or service-shared runtime classes.
 | UI, CLI or external client | `query-report-api-service` | REST/OpenAPI | `contracts/openapi/gateway-api.yaml` transitional public OpenAPI file | Submit analysis requests, query status and retrieve reports | Public responses must redact private paths, secrets and internal diagnostics |
 | `query-report-api-service` | `analysis-orchestrator-service` | REST/gRPC/event | `contracts/grpc/analysis-job.proto` and `contracts/events/analysis-events.md` | Start or observe analysis workflows | API service remains facade-only |
 | producer, scanner or runtime collector | `ingestion-service` | gRPC/REST/message | `contracts/grpc/forensic-ingestion.proto` and `contracts/events/analysis-events.md` | Upload analysis or runtime data | Preserve provenance, schema version and correlation |
-| `ingestion-service` | `analysis-orchestrator-service` or S04-approved owner | gRPC/event/file | `contracts/grpc/forensic-ingestion.proto`, `contracts/events/analysis-events.md` or a later explicit handoff file contract | Handoff accepted or rejected intake | Canonical data ownership is resolved by S04 |
+| `ingestion-service` | `analysis-orchestrator-service` | gRPC/event/file | `contracts/grpc/forensic-ingestion.proto`, `contracts/events/analysis-events.md` or a later explicit handoff file contract | Notify accepted or rejected intake and make raw payload references available for workflow coordination | `ingestion-service` owns raw intake/session state and raw payload byte custody until an explicit handoff transfers custody |
 | `analysis-orchestrator-service` | `repository-source-service` | gRPC/REST/file | `contracts/grpc/repository-analysis.proto` transitional repository-source contract | Prepare repository source snapshots | Workspaces remain private to repository source service |
 | `analysis-orchestrator-service` | `java-parser-analysis-service` | gRPC/file | `contracts/grpc/java-ast-analysis.proto` and `contracts/grpc/java-ast-source-facts-v1.schema.json` | Request AST/source-fact analysis from source snapshots | Static facts are not runtime execution evidence |
 | `analysis-orchestrator-service` | `joern-analysis-service` | gRPC/file | `contracts/grpc/joern-cpg-analysis.proto` | Request CPG/CFG/DFG semantic analysis | Joern receives explicit materialization or artifact references only |
-| `java-parser-analysis-service` | S04-approved canonical fact owner | gRPC/event/file | `contracts/grpc/java-ast-analysis.proto`, `contracts/grpc/java-ast-source-facts-v1.schema.json` and `contracts/events/analysis-events.md` | Publish source-fact metadata and diagnostics | Generated transport classes stay service-local |
-| `joern-analysis-service` | S04-approved canonical fact owner | gRPC/event/file | `contracts/grpc/joern-cpg-analysis.proto` and `contracts/events/analysis-events.md` | Publish semantic artifact metadata and diagnostics | Incomplete mappings remain explicit |
-| S04-approved report owner | `query-report-api-service` | REST/gRPC/file | `contracts/openapi/gateway-api.yaml` and `contracts/events/analysis-events.md` report events | Provide report data to clients | Reports separate evidence, gaps, derived facts and hypotheses |
+| `java-parser-analysis-service` | `analysis-orchestrator-service` and owner-authorized readers | gRPC/event/file | `contracts/grpc/java-ast-analysis.proto`, `contracts/grpc/java-ast-source-facts-v1.schema.json` and `contracts/events/analysis-events.md` | Publish source-fact metadata, diagnostics and retrievable artifact references | `java-parser-analysis-service` owns canonical static Java facts and producer-local artifact metadata; generated transport classes stay service-local |
+| `joern-analysis-service` | `analysis-orchestrator-service` and owner-authorized readers | gRPC/event/file | `contracts/grpc/joern-cpg-analysis.proto` and `contracts/events/analysis-events.md` | Publish semantic artifact metadata, diagnostics and retrievable artifact references | `joern-analysis-service` owns canonical semantic facts and producer-local artifact metadata; incomplete mappings remain explicit |
+| owner services | `query-report-api-service` | REST/gRPC/event/file | owner contracts plus `contracts/openapi/gateway-api.yaml` and `contracts/events/analysis-events.md` report events | Provide evidence, status, artifact references and projection inputs for public responses and generated report packages | Query/report reads through owner APIs and must not read private databases, workspaces or object prefixes |
+| `query-report-api-service` | UI, CLI or external client | REST/OpenAPI | `contracts/openapi/gateway-api.yaml` and `contracts/cli/gateway-cli-contract.md` transitional public API files | Provide public status, reports and LLM-ready or generated packages | Reports separate evidence, gaps, derived facts and hypotheses; LLM output remains labeled generated analysis |
 | `cli-client` | `query-report-api-service` | REST/OpenAPI | `contracts/cli/gateway-cli-contract.md` and `contracts/openapi/gateway-api.yaml` transitional public API files | Start jobs, read status and retrieve reports | CLI has no business logic or service implementation dependency |
 | `observability-stack` | productive services | deployment/configuration | observability configuration | Logging, metrics, tracing and dashboards | Not a shared Java library |
 | `testbed` | productive services | Compose, REST, gRPC or test contracts | test environment docs | Integration and end-to-end tests | No production service may depend on testbed code |

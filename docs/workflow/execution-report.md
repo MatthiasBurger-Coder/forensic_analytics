@@ -29,7 +29,7 @@
 | S01 | COMPLETED | ADR, arc42, architecture docs and services README aligned to the FA-MSA-001 target service landscape. |
 | S02 | COMPLETED | Caller and coupling inventory refreshed; legacy module removal remains blocked because active callers and shared Gradle dependencies remain. |
 | S03 | COMPLETED | Contract authorities aligned to FA-MSA-001 target services; wire/schema shapes unchanged; required Gradle test gate passed. |
-| S04 | PENDING | Data ownership and persistence split |
+| S04 | COMPLETED | Data ownership, artifact custody, orchestration state and query/report ownership assigned; reviewer-required consistency docs included through S04 scope updates. |
 | S05 | PENDING | Repository source service extraction |
 | S06 | PENDING | Ingestion service extraction |
 | S07 | PENDING | JavaParser analysis service extraction |
@@ -66,6 +66,14 @@
 | S03 | `find contracts -type f \( -name "*.java" -o -name "*.class" -o -name "*.jar" -o -name "*.kt" \) -print` | PASS: no Java, class, jar or Kotlin implementation artifacts exist under `contracts`. |
 | S03 | `git diff --check` | PASS: no whitespace errors after contract authority edits. |
 | S03 | `./gradlew test --dependency-verification strict --console=plain --stacktrace` | PASS: build successful in 6m 32s; 152 actionable tasks, 31 executed, 121 up-to-date. Gradle emitted dependency warnings for protobuf/grpc Java/native access but no task failed. |
+| S04 | `git commit -m 'docs(workflow): expand S04 ownership scope'` | PASS: created scope-governance commit `d8c8436` after tester/workflow-architect lock conflict showed S04 ownership remediation required contract governance docs and predecessor service READMEs. |
+| S04 | `git commit -m 'docs(workflow): include target architecture in S04 scope'` | PASS: created scope-governance commit `4cebabe` after security review found stale S04 ownership wording in `docs/architecture/target-microservices-architecture.md`. |
+| S04 | `git status --short --branch --untracked-files=all` | PASS: active workflow branch verified; current S04 diff is Markdown-only and there are no untracked files. |
+| S04 | `git ls-files --others --exclude-standard` | PASS: no untracked files remain after removing an accidental root file created by a malformed local shell-check command. |
+| S04 | `git diff --name-status HEAD` | PASS: changed files are limited to the updated S04 affected files and file locks. |
+| S04 | S04 placeholder scan over `docs/architecture` and `services` | PASS: no unresolved `S04-approved`, `pending S04`, `resolved by S04`, `service-owned storage path after S04` or equivalent owner placeholders remain; the remaining S04 text is the explicit ownership matrix reference. |
+| S04 | `git diff --check` | PASS: no whitespace errors after S04 ownership edits. |
+| S04 | `./gradlew test --dependency-verification strict --console=plain --stacktrace` | NOT RUN: S04 has `quality_gates.required: []` and the final diff is documentation-only Markdown; Gradle remains required if production Java, tests, Gradle, contracts, runtime wiring, persistence code, plugin metadata or adapter implementation changes. |
 
 ## Subagent Review Log
 
@@ -82,18 +90,23 @@
 | S02 | Senior System Architect subagent | PASS after remediation: FA-MSA-001 target owners replaced predecessor target-owner wording and central module retirement gates now require caller-free proof, parity/deprecation, rollback/operator notes and quality gates. |
 | S02 | Microservice Senior Expert subagent | PASS for S02 commit: central modules remain active and therefore block production migration/removal, while service build evidence and `NO_REMOVAL_SAFE` are documented. |
 | S02 | Senior Tester subagent | PASS: docs-only S02 requires `git diff --check`, scoped diff inspection and recorded inventory commands; Gradle tests are not required unless Java, Gradle, contracts or runtime wiring changes. |
-| S03 | Contract-First API Steward subagent | PASS after remediation: contract authorities align to FA-MSA-001 names, transitional Gateway filenames are documented, Analysis Store ownership is deferred to S04 and required Gradle test is the only closure gate. |
+| S03 | Contract-First API Steward subagent | PASS after remediation: contract authorities align to FA-MSA-001 names, transitional Gateway filenames are documented, Analysis Store ownership was left for S04 and the S03 required Gradle test was the closure gate. |
 | S03 | Senior gRPC/Proto Specialist subagent | PASS: gRPC/protobuf edits are comments and README authority wording only; no wire-compatible fields, enums, services, RPCs, packages or Java options changed. |
 | S03 | Senior Java Backend subagent | PASS: no Java source, generated code or Gradle build file changed; generated-code boundary remains service-local. |
 | S03 | Senior Tester subagent | PASS for diff content; required S03 Gradle test gate must pass before commit. |
+| S04 | Senior Analysis Storage Architect subagent | PASS after remediation: one-writer ownership, producer-owned artifact bytes/catalog metadata, current/predecessor Analysis Store wording, no guessed schema/table/topic/bucket/graph labels and projection/source-of-truth separation verified. |
+| S04 | Senior System Architect subagent | PASS after remediation: S04 placeholders resolved, orchestrator remains coordination-only, query/report scope remains public/generated and predecessor services are documented as current evidence rather than FA-MSA target aliases. |
+| S04 | Senior Security/Sandbox subagent | PASS after remediation: runtime/trace byte custody is explicit, target flow uses owner APIs/events/artifact references/handoff contracts instead of direct storage paths, and no private DB/workspace/object-prefix coupling was found. |
+| S04 | Senior Tester subagent | PASS after workflow-scope updates: no untracked files, Markdown-only diff, changed files inside S04 locks, `git diff --check` passed and Gradle is not required for S04. |
+| S04 | Senior Workflow Architect subagent | STOP before remediation: original S04 locks did not include required consistency docs; resolved by explicit workflow-scope commits `d8c8436` and `4cebabe` before S04 closure. |
 
 ## Blockers
 
-No active blocker for S00, S01, S02 or S03 as completed workflow slices.
-Production migration remains blocked until S04 resolves data ownership. Legacy
-module removal remains blocked until a later slice proves caller-free evidence,
-replacement parity or explicit deprecation, rollback or operator notes and the
-required quality gate.
+No active blocker for S00, S01, S02, S03 or S04 as completed workflow slices.
+Production implementation migration remains gated by the later service
+extraction slices. Legacy module removal remains blocked until a later slice
+proves caller-free evidence, replacement parity or explicit deprecation,
+rollback or operator notes and the required quality gate.
 
 ## Final Acceptance
 

@@ -2,7 +2,10 @@
 
 ## Status
 
-Slice 11 Gateway-to-Analysis-Store repository-to-BTM facade.
+Slice 11 current/predecessor Gateway-to-Analysis-Store repository-to-BTM
+facade. FA-MSA-001 target public API ownership moves to
+`query-report-api-service`, and target orchestration ownership moves to
+`analysis-orchestrator-service`.
 
 This service is the external API and UI/CLI facade shell. It currently exposes
 Gateway-local health/status endpoints and an HTTP repository-analysis
@@ -16,11 +19,11 @@ submission endpoint:
 
 `POST /api/repository-analyses` requires `X-Correlation-Id` and
 `Idempotency-Key`, validates a clean external HTTPS Git repository request,
-maps it to the Analysis Store-owned repository-to-BTM orchestration contract
-and returns an accepted public submission envelope. The Gateway does not
-sequence workers and does not return repository workspace identifiers, local
-paths, raw command output or unredacted downstream diagnostics.
-`GET /api/repository-analyses/{analysisRunId}` reads the Analysis Store-owned
+maps it to the current predecessor repository-to-BTM orchestration contract and
+returns an accepted public submission envelope. The Gateway does not sequence
+workers and does not return repository workspace identifiers, local paths, raw
+command output or unredacted downstream diagnostics.
+`GET /api/repository-analyses/{analysisRunId}` reads the current predecessor
 repository-to-BTM readiness state through the same owner contract and returns
 the public, redacted status envelope.
 

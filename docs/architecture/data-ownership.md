@@ -2,12 +2,12 @@
 
 ## Status
 
-FA-MSA-001 Slice 01 data-ownership baseline.
+FA-MSA-001 Slice 04 data-ownership and persistence split baseline.
 
-This document assigns target ownership candidates and identifies decisions that
-must be completed in Slice 04 before persistence is split or
-`forensic-analytics-persistence` is retired. It does not create schemas,
-tables, migrations, topics, buckets or database clients.
+This document assigns target ownership for FA-MSA-001 persistent data areas
+before persistence is split or `forensic-analytics-persistence` is retired. It
+does not create schemas, tables, migrations, topics, buckets, object prefixes,
+graph labels, vector stores or database clients.
 
 ## Ownership Rules
 
@@ -36,18 +36,18 @@ Forbidden:
 | Data Area | Target Owner / One Writer | Non-Owner Access Path | Status |
 |---|---|---|---|
 | Repository workspaces | `repository-source-service` | Source snapshot IDs, artifact references and owner APIs | Target owner clear |
-| Source snapshots | `repository-source-service` for workspace/source package; S04-approved canonical owner for accepted metadata | AST, Joern and orchestrator receive explicit references | Target owner partly clear; accepted metadata owner requires S04 |
-| Raw ingestion payload intake | `ingestion-service` | Handoff contract or owner API | Target owner clear |
-| Upload session state | `ingestion-service` | Query/report or orchestrator reads through owner API after contracts exist | Target owner clear |
-| JavaParser AST/source-fact worker output | `java-parser-analysis-service` until accepted or transferred | S04-approved owner reads through service-owned retrieval API or artifact contract | Target owner clear for worker output |
-| Joern CPG/CFG/DFG artifacts | `joern-analysis-service` until accepted or transferred | S04-approved owner reads through service-owned retrieval API or artifact contract | Target owner clear for worker output |
-| Analysis job orchestration state | `analysis-orchestrator-service` if S04 confirms it | Query/report API reads through orchestrator API | Requires S04 confirmation |
-| Canonical normalized analysis facts | S04 decision required | Owner APIs, query interfaces or events | Open until S04 |
-| Artifact catalog metadata | S04 decision required | Owner APIs | Open until S04 |
-| Incident records | Optional future `incident-analysis-service` or S04-approved owner | Owner APIs | Deferred unless made mandatory |
-| Graph/replay projections | Optional future `graph-replay-service` or S04-approved projection owner | Query/report APIs | Deferred unless made mandatory |
-| Reports and LLM-ready packages | `query-report-api-service` for public aggregation; standalone report owner optional later | Public APIs | Target owner partly clear; generated package ownership requires later decision |
-| LLM-generated output | S04 or later report/LLM decision | Public APIs with generated-output labeling | Deferred |
+| Source snapshots | `repository-source-service` owns workspace state, source package bytes, source snapshot descriptors and accepted source metadata | AST, Joern, orchestrator and query/report consumers receive source snapshot IDs, artifact references and diagnostics through owner APIs or file contracts | S04 owner assigned |
+| Raw ingestion payload intake | `ingestion-service` owns raw payload intake, intake diagnostics and raw runtime or analysis payload byte custody until an explicit handoff transfers custody | Handoff contracts, owner APIs or accepted/rejected intake events | S04 owner assigned |
+| Upload session state | `ingestion-service` | Query/report or orchestrator reads through owner API after contracts exist | S04 owner assigned |
+| JavaParser AST/source-fact worker output | `java-parser-analysis-service` owns canonical static Java source facts it produces, source-fact artifact bytes and producer-local artifact metadata | Orchestrator and query/report consumers read through service-owned retrieval APIs, artifact contracts or events | S04 owner assigned |
+| Joern CPG/CFG/DFG artifacts | `joern-analysis-service` owns canonical semantic CPG/CFG/DFG facts it produces, semantic artifact bytes and producer-local artifact metadata | Orchestrator and query/report consumers read through service-owned retrieval APIs, artifact contracts or events | S04 owner assigned |
+| Analysis job orchestration state | `analysis-orchestrator-service` owns job lifecycle, workflow status, worker leases, worker attempts, retries, timeout state, failure/dead-letter state, correlation references and job-to-artifact references | Query/report API and clients read through orchestrator APIs or events | S04 owner assigned |
+| Canonical normalized analysis facts | No single shared canonical fact store. Ownership is service-local by evidence category: repository source metadata by `repository-source-service`; raw/runtime intake records by `ingestion-service`; static Java facts by `java-parser-analysis-service`; semantic graph facts by `joern-analysis-service`; orchestration facts by `analysis-orchestrator-service`; public report projections by `query-report-api-service` | Owner APIs, query interfaces, events or documented projections | S04 owner assigned by category |
+| Artifact catalog metadata | The producer that owns artifact bytes owns producer-local catalog metadata. `analysis-orchestrator-service` owns only job-to-artifact references. `query-report-api-service` owns generated report or LLM-ready package metadata. | Owner APIs or scoped object access approved by the byte owner | S04 owner assigned |
+| Incident records | Optional future `incident-analysis-service`; no mandatory FA-MSA-001 owner | Owner APIs after a later requirement approves the service | Deferred and blocked until a later requirement |
+| Graph/replay projections | Optional future `graph-replay-service` projection owner | Query/report APIs or owner APIs after a later requirement approves the service | Deferred projection only |
+| Reports and LLM-ready packages | `query-report-api-service` owns public read models, generated report package state, LLM-ready package state and public cache state. Canonical evidence remains owned by the producing services. | Public APIs and owner APIs for source evidence | S04 owner assigned for mandatory query/report scope; standalone report service remains optional later |
+| LLM-generated output | `query-report-api-service` owns stored LLM-generated output only as generated analysis or hypotheses, never verified evidence. No live LLM-output persistence is approved until redaction, retention, access and indexing rules are documented and tested. | Public APIs with generated-output labeling and evidence-owner references | S04 owner assigned; persistence blocked until security rules exist |
 | CLI state | `cli-client` | Local only | No forensic evidence ownership |
 | Observability data | `observability-stack` for operational configuration and dashboards | Logs/metrics/traces through operational tools | Diagnostics only, not forensic evidence |
 | Test data | `testbed` | Test-only | Non-production only |
@@ -55,23 +55,59 @@ Forbidden:
 ## Transitional Ownership Evidence
 
 The current `analysis-store-service` implementation owns a transitional job
-lifecycle and artifact metadata subset. It is not automatically the
-FA-MSA-001 canonical owner. S04 must decide whether orchestration state,
-canonical facts, artifact catalog metadata or report/query state belong to
-`analysis-orchestrator-service`, `query-report-api-service`, service-local
-persistence, or a later explicit service.
+lifecycle and artifact metadata subset. It is current implementation evidence,
+not the FA-MSA-001 canonical owner.
+
+FA-MSA-001 target ownership splits that predecessor responsibility as follows:
+
+- job lifecycle, worker leases, retry state, failure state, readiness and
+  correlation references move to `analysis-orchestrator-service`;
+- repository workspaces, source package bytes and source snapshot metadata move
+  to `repository-source-service`;
+- raw ingestion sessions, raw runtime payload intake and rejected-intake
+  diagnostics move to `ingestion-service`;
+- static Java source facts and source-fact artifacts move to
+  `java-parser-analysis-service`;
+- Joern CPG/CFG/DFG semantic facts and semantic artifacts move to
+  `joern-analysis-service`;
+- generated report packages, LLM-ready packages and public read models move to
+  `query-report-api-service`;
+- artifact catalog metadata stays producer-local, while the orchestrator keeps
+  only job-to-artifact references.
 
 The current `forensic-analytics-persistence` module is a monolith persistence
-adapter. It remains current implementation evidence until S04 and later
-service slices provide one-writer ownership, replacement tests and caller-free
-proof.
+adapter. It remains current implementation evidence until later service slices
+provide service-local persistence, replacement tests and caller-free proof.
+
+## Artifact Byte Custody Rules
+
+Artifact bytes stay with the producer service that created or accepted them
+unless a later explicit contract transfers custody. A consumer may receive only
+an owner-issued artifact reference, a bounded response from an owner API, or
+scoped object access approved by the owner.
+
+Every artifact handoff must preserve:
+
+- producer service;
+- artifact type and schema or media type;
+- deterministic identifier or checksum when the contract defines one;
+- correlation and source snapshot references where applicable;
+- completeness or unavailable state;
+- sensitivity classification when known;
+- maximum size or chunking policy before large payload transfer;
+- retention and cleanup owner;
+- redaction obligations before public report or LLM package use.
+
+The orchestrator may persist job-to-artifact references for coordination, but
+it must not become the artifact byte owner, producer catalog owner or canonical
+fact store.
 
 ## Store Types
 
 | Store Type | Owner Rule |
 |---|---|
-| Relational or transactional store | Owned by the service that owns the canonical data |
-| File/object store | Owned by the service responsible for the artifact bytes or exposed through scoped object access |
+| Relational or transactional store | Owned by the service that owns the canonical data or orchestration state |
+| File/object store | Owned by the service responsible for the artifact bytes or exposed through owner-approved scoped object access |
 | Event store | Owned by the producer or broker governance decision recorded in the contract slice |
 | Graph store | Projection owner only; never source of truth |
 | Vector store | Projection only; owner depends on a later LLM/context decision |

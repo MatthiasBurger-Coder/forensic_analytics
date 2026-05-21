@@ -2,7 +2,7 @@
 
 ## Status
 
-FA-MSA-001 Slice 01 service-boundary baseline.
+FA-MSA-001 Slice 04 service-boundary and data-ownership baseline.
 
 These are target boundaries. Current `services/**` directories and
 `forensic-analytics-*` modules are implementation evidence and migration
@@ -34,6 +34,8 @@ Forbidden:
   persistence or internal error-model modules;
 - direct cross-service database access;
 - private workspace, filesystem or object-prefix coupling;
+- artifact byte custody outside the producing or accepting owner service
+  without an explicit handoff or scoped-access contract;
 - treating generated transport classes as shared domain models.
 
 ## `repository-source-service`
@@ -46,7 +48,9 @@ Owns:
 - branch and commit resolution;
 - checkout, clone and fetch;
 - workspace leases and cleanup;
+- source package byte custody;
 - source snapshot descriptors;
+- accepted source snapshot metadata;
 - checkout diagnostics.
 
 Non-scope:
@@ -56,7 +60,7 @@ Non-scope:
 - BTM generation;
 - report generation;
 - incident analysis;
-- canonical evidence persistence outside explicitly owned repository metadata.
+- canonical evidence persistence outside repository source metadata.
 
 Inbound communication:
 
@@ -66,7 +70,8 @@ Inbound communication:
 Outbound communication:
 
 - immutable source snapshot IDs, relative source roots, artifact references,
-  completeness markers and diagnostics through explicit contracts.
+  source package retrieval contracts, completeness markers and diagnostics
+  through explicit contracts.
 
 Current evidence:
 
@@ -92,7 +97,10 @@ Owns:
 - upload-session lifecycle;
 - request validation;
 - rejected-ingestion diagnostics;
-- handoff to the approved owner through explicit contracts.
+- raw runtime or analysis payload byte custody before explicit handoff;
+- accepted/rejected intake descriptors;
+- handoff to the orchestrator or producing service owner through explicit
+  contracts.
 
 Non-scope:
 
@@ -100,7 +108,10 @@ Non-scope:
 - JavaParser scanning;
 - Joern execution;
 - report generation;
-- canonical normalized fact ownership unless S04 assigns it explicitly.
+- canonical static Java source facts;
+- canonical Joern semantic facts;
+- orchestration state;
+- generated report or LLM package state.
 
 Inbound communication:
 
@@ -109,7 +120,8 @@ Inbound communication:
 
 Outbound communication:
 
-- handoff to `analysis-orchestrator-service` or another owner chosen by S04.
+- handoff to `analysis-orchestrator-service` for workflow coordination, or to
+  the producing service owner named by an explicit contract.
 
 Current evidence:
 
@@ -135,8 +147,8 @@ Owns:
 - stable source identifiers;
 - source locations;
 - unresolved-symbol diagnostics;
-- JavaParser analysis output until accepted or transferred through an explicit
-  handoff contract.
+- canonical static Java source facts produced by the service;
+- source-fact artifact bytes and producer-local catalog metadata.
 
 Non-scope:
 
@@ -144,6 +156,8 @@ Non-scope:
 - Joern execution;
 - runtime execution truth;
 - global orchestration;
+- canonical Joern semantic facts;
+- artifact byte custody for other services;
 - UI/report APIs.
 
 Inbound communication:
@@ -153,7 +167,7 @@ Inbound communication:
 Outbound communication:
 
 - source-fact metadata, diagnostics and retrievable artifacts through
-  service-owned APIs or documented artifact contracts.
+  service-owned APIs, events or documented artifact contracts.
 
 Current evidence:
 
@@ -178,8 +192,8 @@ Owns:
 - Docker-based Joern integration when Docker is available and documented;
 - CPG/CFG/DFG analysis;
 - semantic artifact mapping and diagnostics;
-- Joern output until accepted or transferred through an explicit handoff
-  contract.
+- canonical Joern semantic facts produced by the service;
+- Joern artifact bytes and producer-local catalog metadata.
 
 Non-scope:
 
@@ -187,6 +201,8 @@ Non-scope:
 - repository checkout;
 - central API behavior;
 - UI query models;
+- canonical static Java source facts;
+- artifact byte custody for other services;
 - runtime trace truth.
 
 Inbound communication:
@@ -221,8 +237,11 @@ Owns:
 
 - analysis job coordination;
 - workflow status;
+- worker leases and attempts;
 - retry and timeout orchestration;
 - failure categorization;
+- dead-letter and unavailable-state coordination;
+- job-to-artifact references;
 - correlation of service results through explicit contracts.
 
 Non-scope:
@@ -232,6 +251,10 @@ Non-scope:
 - Joern execution;
 - report rendering;
 - public query API ownership;
+- canonical source, static analysis, semantic analysis or runtime evidence
+  facts;
+- artifact bytes and producer-local artifact catalogs;
+- generated report packages or LLM-ready packages;
 - private persistence owned by another service.
 
 Inbound communication:
@@ -242,7 +265,7 @@ Inbound communication:
 Outbound communication:
 
 - REST/gRPC/messaging/file-contract calls to repository source, ingestion,
-  JavaParser, Joern and persistence owners after S03 and S04.
+  JavaParser, Joern and query/report owners.
 
 Current evidence:
 
@@ -266,6 +289,9 @@ Owns:
 - REST/OpenAPI facade;
 - client-facing status and error translation;
 - report/query response assembly from owner APIs;
+- public read models and cache state;
+- generated report package state;
+- LLM-ready package state;
 - public response redaction.
 
 Non-scope:
@@ -274,7 +300,10 @@ Non-scope:
 - repository checkout;
 - JavaParser or Joern processing;
 - private persistence access;
-- canonical fact ownership unless S04 assigns a narrow facade state.
+- canonical repository, ingestion, static analysis, semantic analysis or
+  orchestration facts;
+- artifact bytes outside generated report or LLM-ready packages;
+- treating LLM output as verified evidence.
 
 Inbound communication:
 

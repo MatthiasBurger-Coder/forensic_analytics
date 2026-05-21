@@ -2,14 +2,22 @@
 
 ## Status
 
-Slice 11 Analysis Store-owned job and repository-to-BTM orchestration
-readiness implementation.
+Slice 11 current/predecessor Analysis Store job and repository-to-BTM
+orchestration readiness implementation. FA-MSA-001 Slice 04 does not make this
+service a target canonical owner.
 
 This service currently implements the service-local `AnalysisJobService` gRPC
-contract from `contracts/grpc/analysis-job.proto`. It owns analysis job
-lifecycle state, worker leasing, progress persistence, completion/failure state
-analysis artifact metadata registration, bounded instrumentation target
-selection metadata and the repository-to-BTM orchestration readiness bridge.
+contract from `contracts/grpc/analysis-job.proto`. In the current predecessor
+implementation it owns analysis job lifecycle state, worker leasing, progress
+persistence, completion/failure state, analysis artifact metadata registration,
+bounded instrumentation target selection metadata and the repository-to-BTM
+orchestration readiness bridge.
+
+Under FA-MSA-001 Slice 04, those target responsibilities split into
+`analysis-orchestrator-service` for job lifecycle, worker leasing, retries,
+failure state, readiness and job-to-artifact references; producer services for
+artifact bytes and producer-local artifact metadata; and
+`query-report-api-service` for public report packages and read models.
 
 The current persistence adapter is intentionally service-local and non-durable
 in-memory storage. Durable database selection, migrations, normalized fact
@@ -44,19 +52,20 @@ metadata. Concurrent in-memory lifecycle mutations are serialized by the
 application service so a dispatchable or retryable job is leased to only one
 worker at a time.
 
-Instrumentation target planning is Analysis Store-owned. It accepts bounded
-static source facts and accepted static semantic artifact references, produces
-stable target IDs, deterministic ordering, a selection fingerprint and explicit
-completeness diagnostics. Missing semantic-node mappings are reported as
-incomplete rather than invented, and generated targets are not runtime
-execution evidence.
+Instrumentation target planning is implemented in this current Analysis Store
+slice. It accepts bounded static source facts and accepted static semantic
+artifact references, produces stable target IDs, deterministic ordering, a
+selection fingerprint and explicit completeness diagnostics. Missing
+semantic-node mappings are reported as incomplete rather than invented, and
+generated targets are not runtime execution evidence.
 
-Repository-to-BTM orchestration readiness is Analysis Store-owned. Gateway
-submits public requests through the `StartRepositoryToBtm` gRPC method instead
-of calling worker services directly. The current bridge creates deterministic
-repository-analysis dispatch state, keeps BTM delivery unavailable until
-accepted package metadata exists, and reports unavailable source/build packages
-with explicit incomplete diagnostics so Joern is skipped safely.
+Repository-to-BTM orchestration readiness is implemented in this current
+Analysis Store slice. Gateway submits public requests through the
+`StartRepositoryToBtm` gRPC method instead of calling worker services directly.
+The current bridge creates deterministic repository-analysis dispatch state,
+keeps BTM delivery unavailable until accepted package metadata exists, and
+reports unavailable source/build packages with explicit incomplete diagnostics
+so Joern is skipped safely.
 
 ## Verification
 

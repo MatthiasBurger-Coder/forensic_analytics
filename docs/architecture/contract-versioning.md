@@ -2,7 +2,7 @@
 
 ## Status
 
-FA-MSA-001 Slice 03 contract versioning baseline for workflow
+FA-MSA-001 Slice 04 contract versioning and data-ownership baseline for workflow
 `fa-msa-001-microservice-decomposition-20260521-v1`.
 
 This document aligns existing contract files with the FA-MSA-001 target service
@@ -18,12 +18,12 @@ tests.
 | Contract | FA-MSA-001 authority | Status |
 |---|---|---|
 | `contracts/grpc/forensic-ingestion.proto` | `ingestion-service` intake and session contract | Current v1 shape extracted from implementation evidence; repository checkout ownership moves to `repository-source-service`. |
-| `contracts/grpc/analysis-job.proto` | `analysis-orchestrator-service` job orchestration and worker handoff contract | Current/predecessor implementation evidence exists; S04 must still confirm canonical state and artifact metadata ownership. |
+| `contracts/grpc/analysis-job.proto` | `analysis-orchestrator-service` job orchestration and worker handoff contract | Current/predecessor implementation evidence exists; target ownership is job lifecycle, worker leases, retries, failures, dead-letter state, correlation references and job-to-artifact references. |
 | `contracts/grpc/repository-analysis.proto` | `repository-source-service` repository checkout, workspace preparation and source-snapshot contract | Current predecessor filename and package remain until a later compatibility slice changes them. |
 | `contracts/grpc/java-ast-analysis.proto` | `java-parser-analysis-service` source-fact analysis and source-fact artifact byte retrieval contract | Current predecessor filename remains until renamed or superseded. |
 | `contracts/grpc/java-ast-source-facts-v1.schema.json` | `java-parser-analysis-service` source-fact artifact payload contract | Defines `application/vnd.forensic-analytics.java-ast-source-facts.v1+json`; consumers must map it into service-owned models. |
 | `contracts/grpc/joern-cpg-analysis.proto` | `joern-analysis-service` CPG/CFG/DFG semantic artifact contract | Planned initial contract with predecessor filename until renamed or superseded. |
-| `contracts/grpc/btm-generation.proto` | Optional later `btm-generation-service` contract | Not mandatory for FA-MSA-001 closure; metadata ownership must use the S04-approved owner. |
+| `contracts/grpc/btm-generation.proto` | Optional later `btm-generation-service` contract | Not mandatory for FA-MSA-001 closure; generated artifact bytes and producer metadata stay with the producing service unless an explicit handoff contract transfers custody. |
 | `contracts/openapi/gateway-api.yaml` | `query-report-api-service` public REST/OpenAPI contract | Transitional filename. Current verified operations remain documented; planned operations are not runtime evidence. |
 | `contracts/cli/gateway-cli-contract.md` | `cli-client` public API consumption contract | Transitional filename and command vocabulary. CLI must remain a public API consumer, not a business-logic owner. |
 | `contracts/events/analysis-events.md` | Event contract for FA-MSA-001 services | Planned initial message contract; no broker/runtime implementation is implied. |
@@ -72,9 +72,9 @@ Spring configuration or shared runtime libraries.
   version.
 - Consumers must deduplicate by `eventId`.
 - Events are at-least-once notifications, not owner database read models.
-- Event producer and consumer names must use FA-MSA-001 service names or an
-  explicit S04-approved owner placeholder when data ownership is intentionally
-  unresolved.
+- Event producer and consumer names must use FA-MSA-001 service names. If data
+  ownership is unresolved, the event flow remains deferred instead of using a
+  placeholder owner.
 
 ## Error And Status Models
 
@@ -122,13 +122,19 @@ or unavailable state.
 - Service implementations must map transport messages into service-owned domain
   models.
 - Domain and application code must not depend on generated transport classes.
-- `query-report-api-service` is a public API facade and must not own analysis
-  execution, repository checkout, JavaParser processing, Joern processing or
-  canonical persistence unless S04 assigns a narrow owner explicitly.
-- `analysis-orchestrator-service` coordinates jobs and worker handoffs, but it
-  must not become a hidden monolith.
-- S04 owns the decision for canonical analysis state, normalized facts and
-  artifact metadata ownership.
-- Graph, replay and report outputs are projections or generated artifacts, not
-  primary evidence stores unless a later data-ownership decision says so.
+- `query-report-api-service` is a public API facade. It owns public read
+  models, generated report packages, LLM-ready packages and stored
+  LLM-generated output only as labeled generated analysis or hypotheses. It
+  must not own analysis execution, repository checkout, JavaParser processing,
+  Joern processing or canonical evidence.
+- `analysis-orchestrator-service` coordinates jobs and worker handoffs. It
+  owns job lifecycle, worker leases, retries, failures, dead-letter state,
+  correlation references and job-to-artifact references, but it must not become
+  a hidden monolith, artifact byte owner, producer catalog owner or canonical
+  fact store.
+- Canonical analysis facts and artifact metadata ownership follow the S04
+  service-local ownership matrix in `docs/architecture/data-ownership.md`.
+- Graph and replay outputs are projections, and report outputs are generated
+  artifacts. They are not primary evidence stores without a later approved
+  requirement and ADR.
 - Contract changes require contract-governance review before implementation.

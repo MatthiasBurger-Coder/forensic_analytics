@@ -55,8 +55,10 @@ sha256:ad3af3eb7811543f26e6f7a84818e04f13c92d6aa03bf497882d160475d80b91
 - Joern query bundle scripts are mounted or copied into the configured query
   root by later runtime packaging; missing required scripts currently produce
   incompleteness diagnostics.
-- Durable artifact indexing and Analysis Store registration remain later
-  integration work.
+- Durable artifact indexing and target owner registration remain later
+  integration work. Current predecessor integration may involve
+  `analysis-store-service`, but FA-MSA-001 target ownership requires an
+  explicit owner API or handoff contract.
 
 When started through `deployment/docker-compose/repository-to-btm.local.yml`,
 the health endpoint is published on `127.0.0.1:18085` and the service gRPC port

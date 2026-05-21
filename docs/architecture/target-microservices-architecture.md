@@ -154,7 +154,7 @@ slice explicitly introduces them.
 | `forensic-analytics-ingestion-grpc`, `forensic-analytics-ingestion-request`, `services/forensic-ingestion-service` | `ingestion-service` |
 | `forensic-analytics-adapter-javaparser`, `services/java-ast-analysis-service` | `java-parser-analysis-service` |
 | `forensic-analytics-adapter-joern-docker`, `services/joern-cpg-analysis-service` | `joern-analysis-service` |
-| `forensic-analytics-engine`, orchestration portions of current application code and applicable `analysis-store-service` coordination state | `analysis-orchestrator-service`, pending S04 ownership review |
+| `forensic-analytics-engine`, orchestration portions of current application code and applicable `analysis-store-service` coordination state | `analysis-orchestrator-service` for job lifecycle, worker leases, retries, failures, correlation references and job-to-artifact references |
 | `forensic-analytics-rest`, public API portions of `forensic-gateway-service` and report/query API behavior | `query-report-api-service` |
 | `forensic-analytics-cli` | `cli-client` |
 | `forensic-analytics-observability`, `forensic-analytics-logging`, deployment observability docs | `observability-stack` |
@@ -176,7 +176,8 @@ CLI / UI / external client
 
 producer / scanner / runtime collector
   -> ingestion-service
-  -> analysis-orchestrator-service or service-owned storage path after S04
+  -> analysis-orchestrator-service for workflow coordination
+  -> producer-owned APIs, events, artifact references or explicit handoff contracts
 ```
 
 The orchestrator coordinates only. It does not own repository checkout,
