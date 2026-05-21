@@ -413,6 +413,7 @@ affected_files:
   - docs/architecture/service-boundaries.md
   - docs/architecture/service-communication-matrix.md
   - docs/architecture/service-migration-map.md
+  - docs/architecture/target-microservices-architecture.md
   - docs/workflow/execution-report.md
   - services/analysis-store-service/README.md
   - services/btm-generation-service/README.md
@@ -438,6 +439,7 @@ file_locks:
   - docs/architecture/service-boundaries.md
   - docs/architecture/service-communication-matrix.md
   - docs/architecture/service-migration-map.md
+  - docs/architecture/target-microservices-architecture.md
   - docs/workflow/execution-report.md
   - services/analysis-store-service/README.md
   - services/btm-generation-service/README.md
