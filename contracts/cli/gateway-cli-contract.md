@@ -1,19 +1,22 @@
-# CLI To Gateway Contract
+# CLI Public API Contract
 
 ## Status
 
-CLI consumer contract for Gateway repository-to-BTM submission.
+CLI consumer contract for public repository-to-BTM submission.
 
 `forensic-analytics-cli gateway-submit` is the explicit Gateway command for this
-contract. The local-path `forensic-analytics-cli analyze` command remains a
-legacy in-process adapter and is not silently routed to Gateway.
+transitional contract. The local-path `forensic-analytics-cli analyze` command
+remains a legacy in-process adapter and is not silently routed to Gateway.
+Under FA-MSA-001 the target CLI is `cli-client` and the public API authority is
+`query-report-api-service`; Gateway naming is retained only as current command
+and file compatibility evidence.
 
 ## Producer And Consumer
 
 | Field | Value |
 |---|---|
-| Consumer | `forensic-analytics-cli` |
-| Producer | `forensic-gateway-service` |
+| Consumer | `cli-client` target; current predecessor implementation is `forensic-analytics-cli` |
+| Producer | `query-report-api-service` target; current predecessor implementation evidence is `forensic-gateway-service` |
 | Protocol | HTTP JSON through `contracts/openapi/gateway-api.yaml` |
 | Gateway operations | `startRepositoryToBtmAnalysis`, `getRepositoryAnalysis` |
 | Contract version | `gateway-cli-v1` |
@@ -24,7 +27,7 @@ The current CLI `analyze` command is an in-process legacy adapter. It accepts
 local paths or file URIs and does not require branch, commit, correlation ID or
 idempotency key inputs.
 
-Gateway repository-to-BTM submission requires:
+Public repository-to-BTM submission requires:
 
 - an HTTPS repository URL without user information;
 - explicit branch or commit input;
@@ -35,13 +38,15 @@ Gateway repository-to-BTM submission requires:
 
 Therefore, the implemented Gateway path is `gateway-submit`. The implementation
 must not silently route the existing local-path `analyze` command to Gateway.
+Later FA-MSA-001 client work may rename or supersede this command only with a
+contract compatibility decision and tests.
 
 ## Planned CLI Request Mapping
 
 The `gateway-submit` command must collect these values before sending the
 request:
 
-| CLI concept | Gateway field or header |
+| CLI concept | Public API field or header |
 |---|---|
 | `--repo-url` | `StartRepositoryAnalysisRequest.repositoryUrl` |
 | `--branch` | `StartRepositoryAnalysisRequest.branch` |
@@ -58,13 +63,13 @@ request:
 | `--correlation-id` | `X-Correlation-Id` |
 | `--idempotency-key` | `Idempotency-Key` |
 
-At least one of branch or commit is required. If both are provided, Gateway
-must preserve both in the request and downstream services must resolve the
+At least one of branch or commit is required. If both are provided, the public
+API must preserve both in the request and downstream services must resolve the
 actual commit before analysis.
 
 ## Planned CLI Response Mapping
 
-For `202 Accepted`, CLI output may include only public Gateway fields:
+For `202 Accepted`, CLI output may include only public API fields:
 
 - `analysisRunId`;
 - `status`;
@@ -86,24 +91,25 @@ CLI output must not include:
 - internal service exception messages;
 - credentials, tokens, authorization headers or secret-like values;
 - generated Java DTO class names;
-- Gateway implementation package names.
+- public API implementation package names.
 
 ## Error Mapping
 
-The CLI must map Gateway `ErrorEnvelope` values without changing their meaning:
+The CLI must map public API `ErrorEnvelope` values without changing their
+meaning:
 
-| Gateway code | CLI behavior |
+| Public API code | CLI behavior |
 |---|---|
 | `VALIDATION_ERROR` | Exit non-zero and print a redacted validation failure. |
 | `CONFLICT` | Exit non-zero and state that the idempotency key conflicts with another request. |
-| `BACKEND_UNAVAILABLE` | Exit non-zero and report a retryable Gateway backend failure when `retryable=true`. |
+| `BACKEND_UNAVAILABLE` | Exit non-zero and report a retryable public API backend failure when `retryable=true`. |
 | `TIMEOUT` | Exit non-zero and report timeout without retrying unless a later retry policy is explicitly approved. |
 | `NOT_FOUND` | Exit non-zero and report missing public analysis status. |
-| `UNEXPECTED_ERROR` | Exit non-zero and report an unexpected redacted Gateway failure. |
+| `UNEXPECTED_ERROR` | Exit non-zero and report an unexpected redacted public API failure. |
 
 ## Retry, Timeout And Idempotency
 
-- CLI Gateway submission must send an idempotency key for every mutation.
+- CLI public API submission must send an idempotency key for every mutation.
 - Automatic retries are not part of this contract version.
 - A future retry slice must preserve the same idempotency key for retried
   submission attempts.
@@ -122,7 +128,8 @@ and this file.
 
 Required contract tests:
 
-- `GatewayOpenApiContractTest` verifies Gateway route, schema, idempotency and
+- `GatewayOpenApiContractTest` verifies the transitional public API route,
+  schema, idempotency and
   redaction contract markers.
 - `ForensicAnalyticsCliTest` verifies that `gateway-submit` uses a Gateway
   client instead of the in-process `RunRepositoryAnalysisUseCase`, preserves the
@@ -132,9 +139,9 @@ Required contract tests:
 
 Stop a later implementation slice when:
 
-- a CLI option cannot be mapped to a Gateway field or header;
-- Gateway OpenAPI lacks a required request, response or error field;
+- a CLI option cannot be mapped to a public API field or header;
+- public OpenAPI lacks a required request, response or error field;
 - local-path analysis would be silently routed to Gateway;
 - public CLI output would expose private workspace or checkout data;
-- implementation requires shared Java DTOs or Gateway implementation classes;
+- implementation requires shared Java DTOs or public API implementation classes;
 - retry or polling behavior is needed but not explicitly approved.

@@ -2,37 +2,31 @@
 
 ## Status
 
-Contract versioning rules for the microservices ecosystem conversion workflow.
+FA-MSA-001 Slice 03 contract versioning baseline for workflow
+`fa-msa-001-microservice-decomposition-20260521-v1`.
 
-The active workflow assigns Gateway HTTP and public gRPC BTM delivery contract
-work to Slice 02, artifact-byte and instrumentation-target ownership contracts
-to Slice 03, and source-package, complete build-output package and Joern
-materialization contracts to Slice 07. Slice 11 owns the repository-to-BTM
-orchestration owner API refinement, Gateway public diagnostic model and
-artifact-readiness bridge. Slice 12 owns Java AST source-fact byte retrieval,
-Repository Analysis to Java AST handoff closure and deterministic local fixture
-readiness before end-to-end orchestration can resume. Existing
-planned contracts remain design artifacts unless their operation explicitly says
-`current-verified`. The user approved logical initial contracts for
-not-yet-implemented service communication on 2026-05-16. That approval allows
-planned endpoint, RPC and event design, but it does not turn planned contracts
-into implemented runtime evidence.
+This document aligns existing contract files with the FA-MSA-001 target service
+names. It does not rename contract files, change protobuf field numbers, change
+REST paths, change event names or claim that planned operations are implemented.
+Filenames that still contain predecessor vocabulary, such as
+`gateway-api.yaml` and `gateway-cli-contract.md`, are transitional contract
+file names until a later compatibility slice renames or supersedes them with
+tests.
 
 ## Contract Authorities
 
-| Contract | Authority | Status |
+| Contract | FA-MSA-001 authority | Status |
 |---|---|---|
-| `contracts/grpc/forensic-ingestion.proto` | gRPC ingestion compatibility contract | Current v1 shape extracted from implementation evidence |
-| `contracts/grpc/analysis-job.proto` | Worker handoff, analysis-job state, instrumentation target planning and repository-to-BTM orchestration owner API | Current verified for Analysis Store service-local gRPC implementation |
-| `contracts/grpc/repository-analysis.proto` | Repository checkout, source-snapshot preparation and Java AST handoff contract | Current verified for Repository Analysis preparation and Slice 12 Java AST handoff surface |
-| planned `contracts/grpc/build-artifact-worker.proto` or approved owner API | Complete build-output package production contract | Planned by workflow v2 and retained by v3/v4; no file exists until a slice verifies the name and service boundary |
-| repository-to-BTM orchestration owner API | Worker-dispatch/job-graph owner contract between Gateway and Analysis Store | Implemented by workflow v3 Slice 11 in `contracts/grpc/analysis-job.proto`; end-to-end orchestration may only use this owner API and readiness bridge |
-| `contracts/grpc/java-ast-analysis.proto` | Java AST source-fact worker and source-fact byte retrieval contract | Current verified for Java AST source snapshot analysis and Slice 12 source-fact byte owner retrieval |
-| `contracts/grpc/java-ast-source-facts-v1.schema.json` | Java AST source-fact artifact payload contract | Slice 13 contract for `application/vnd.forensic-analytics.java-ast-source-facts.v1+json`; consumed by Analysis Store adapter parsing without shared Java DTOs |
-| `contracts/grpc/joern-cpg-analysis.proto` | Joern CPG/CFG/DFG semantic artifact worker contract | Planned initial contract |
-| `contracts/grpc/btm-generation.proto` | BTM generation, generated artifact metadata and public BTM artifact delivery contract | Planned initial contract |
-| `contracts/openapi/gateway-api.yaml` | Public Gateway REST contract | Mixed current verified and planned initial operations; repository-to-BTM submission is planned initial |
-| `contracts/events/analysis-events.md` | Analysis event contract | Planned initial contract |
+| `contracts/grpc/forensic-ingestion.proto` | `ingestion-service` intake and session contract | Current v1 shape extracted from implementation evidence; repository checkout ownership moves to `repository-source-service`. |
+| `contracts/grpc/analysis-job.proto` | `analysis-orchestrator-service` job orchestration and worker handoff contract | Current/predecessor implementation evidence exists; S04 must still confirm canonical state and artifact metadata ownership. |
+| `contracts/grpc/repository-analysis.proto` | `repository-source-service` repository checkout, workspace preparation and source-snapshot contract | Current predecessor filename and package remain until a later compatibility slice changes them. |
+| `contracts/grpc/java-ast-analysis.proto` | `java-parser-analysis-service` source-fact analysis and source-fact artifact byte retrieval contract | Current predecessor filename remains until renamed or superseded. |
+| `contracts/grpc/java-ast-source-facts-v1.schema.json` | `java-parser-analysis-service` source-fact artifact payload contract | Defines `application/vnd.forensic-analytics.java-ast-source-facts.v1+json`; consumers must map it into service-owned models. |
+| `contracts/grpc/joern-cpg-analysis.proto` | `joern-analysis-service` CPG/CFG/DFG semantic artifact contract | Planned initial contract with predecessor filename until renamed or superseded. |
+| `contracts/grpc/btm-generation.proto` | Optional later `btm-generation-service` contract | Not mandatory for FA-MSA-001 closure; metadata ownership must use the S04-approved owner. |
+| `contracts/openapi/gateway-api.yaml` | `query-report-api-service` public REST/OpenAPI contract | Transitional filename. Current verified operations remain documented; planned operations are not runtime evidence. |
+| `contracts/cli/gateway-cli-contract.md` | `cli-client` public API consumption contract | Transitional filename and command vocabulary. CLI must remain a public API consumer, not a business-logic owner. |
+| `contracts/events/analysis-events.md` | Event contract for FA-MSA-001 services | Planned initial message contract; no broker/runtime implementation is implied. |
 
 Contracts in `contracts/` are interface descriptions only. They must not contain
 or generate shared Java implementation modules, shared DTO modules, shared
@@ -44,7 +38,8 @@ Spring configuration or shared runtime libraries.
 ### Protobuf
 
 - Keep existing package names, service names, RPC names, field names and field
-  numbers for active v1 contracts.
+  numbers for active v1 contracts unless a later slice explicitly approves a
+  breaking contract change.
 - Do not reuse a field number or enum number.
 - If a field is removed in a future major version, reserve its number and name.
 - `AnalysisDataEnvelope.payload_type = 6` remains deprecated in
@@ -63,7 +58,11 @@ Spring configuration or shared runtime libraries.
   experimental and consumers were versioned away from it.
 - Public error envelopes must keep `code`, `message`, `retryable`,
   `correlationId` and `diagnostics`.
-- Planned operations must remain marked as planned until implemented and tested.
+- Planned operations must remain marked as planned until implemented and
+  tested.
+- The transitional `gateway-api.yaml` filename does not make
+  `forensic-gateway-service` the FA-MSA-001 authority; public query and report
+  behavior belongs to `query-report-api-service`.
 
 ### Events
 
@@ -73,10 +72,13 @@ Spring configuration or shared runtime libraries.
   version.
 - Consumers must deduplicate by `eventId`.
 - Events are at-least-once notifications, not owner database read models.
+- Event producer and consumer names must use FA-MSA-001 service names or an
+  explicit S04-approved owner placeholder when data ownership is intentionally
+  unresolved.
 
 ## Error And Status Models
 
-REST Gateway errors use the OpenAPI `ErrorEnvelope`.
+Public REST errors use the OpenAPI `ErrorEnvelope`.
 
 gRPC methods use transport status for infrastructure-level failures and
 `OperationStatus` messages for business-level acceptance, retry and diagnostic
@@ -94,10 +96,10 @@ or delayed events must be visible as incomplete, unknown or unavailable state.
 - Worker job leasing retries are tied to `worker_id`, `worker_kind` and
   `idempotency_key`.
 - Consumers must treat duplicate events as duplicates when `eventId` repeats.
-- Default synchronous Gateway reads should complete within 30 seconds unless a
-  later service slice records a tighter timeout.
+- Default synchronous public API reads should complete within 30 seconds unless
+  a later service slice records a tighter timeout.
 - Long-running work must be represented as jobs, reports or replay requests
-  with explicit status instead of blocking Gateway calls indefinitely.
+  with explicit status instead of blocking public API calls indefinitely.
 
 ## Evidence Boundaries
 
@@ -111,17 +113,22 @@ Contracts must preserve evidence category boundaries:
 - reports;
 - LLM-generated hypotheses or text.
 
-Contracts must not present missing data as observed evidence. Unknown or partial
-state must be represented as `UNKNOWN`, `INCOMPLETE`, diagnostics, gaps or
-unavailable state.
+Contracts must not present missing data as observed evidence. Unknown or
+partial state must be represented as `UNKNOWN`, `INCOMPLETE`, diagnostics, gaps
+or unavailable state.
 
 ## Implementation Rules For Later Slices
 
 - Service implementations must map transport messages into service-owned domain
   models.
 - Domain and application code must not depend on generated transport classes.
-- Gateway is a facade and must not own analysis business logic.
-- Analysis Store owns canonical analysis state and normalized facts.
-- Graph/replay and reports are projections or generated artifacts, not primary
-  evidence stores.
+- `query-report-api-service` is a public API facade and must not own analysis
+  execution, repository checkout, JavaParser processing, Joern processing or
+  canonical persistence unless S04 assigns a narrow owner explicitly.
+- `analysis-orchestrator-service` coordinates jobs and worker handoffs, but it
+  must not become a hidden monolith.
+- S04 owns the decision for canonical analysis state, normalized facts and
+  artifact metadata ownership.
+- Graph, replay and report outputs are projections or generated artifacts, not
+  primary evidence stores unless a later data-ownership decision says so.
 - Contract changes require contract-governance review before implementation.

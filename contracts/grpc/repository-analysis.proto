@@ -8,7 +8,7 @@ option java_multiple_files = true;
 option java_package = "de.burger.forensics.analytics.repositoryanalysis.v1";
 option java_outer_classname = "RepositoryAnalysisProto";
 
-// Provisional Slice 06 contract for repository checkout and source snapshot
+// FA-MSA-001 contract for repository checkout and source snapshot
 // preparation. The contract is intentionally strict for a networked service:
 // repository URLs must be clean HTTPS URLs without userinfo, credentials,
 // query secrets or fragments. Local paths, file URLs, SSH, SCP-style remotes,
@@ -154,7 +154,7 @@ message RevisionSelector {
 
 message WorkspacePolicy {
   // Required policy. Implementations must reject missing-equivalent defaults
-  // where a bounded value is required. Slice 06 supports ephemeral workspaces,
+  // where a bounded value is required. The current contract supports ephemeral workspaces,
   // optional shallow clone, and rejects partial/sparse clone until later slices.
   bool ephemeral = 1;
   bool allow_shallow_clone = 2;

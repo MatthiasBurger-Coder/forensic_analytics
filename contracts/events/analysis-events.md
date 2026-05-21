@@ -2,7 +2,7 @@
 
 ## Status
 
-Slice 03 initial planned event contract.
+FA-MSA-001 Slice 03 initial planned event contract.
 
 The user approved logical initial contracts for service communication on
 2026-05-16. These events are design artifacts for future service slices. They
@@ -56,9 +56,9 @@ runtime method parameters, method return values or LLM prompt content.
 
 ### `analysis.run.requested`
 
-Producer: `forensic-gateway-service`
+Producer: `query-report-api-service`
 
-Consumers: `forensic-ingestion-service`, `analysis-store-service`
+Consumers: `ingestion-service`, `analysis-orchestrator-service`
 
 Payload:
 
@@ -74,9 +74,11 @@ Either `branch` or `commit` must be present.
 
 ### `analysis.job.accepted`
 
-Producer: `analysis-store-service`
+Producer: `analysis-orchestrator-service`
 
-Consumers: worker services, `forensic-gateway-service`
+Consumers: `repository-source-service`, `java-parser-analysis-service`,
+`joern-analysis-service`, optional later worker services and
+`query-report-api-service` status projections
 
 Payload:
 
@@ -89,9 +91,10 @@ Payload:
 
 ### `analysis.job.dispatchable`
 
-Producer: `analysis-store-service`
+Producer: `analysis-orchestrator-service`
 
-Consumers: worker services
+Consumers: `repository-source-service`, `java-parser-analysis-service`,
+`joern-analysis-service` and optional later worker services
 
 Payload fields match `analysis.job.accepted` and add:
 
@@ -104,7 +107,7 @@ Payload fields match `analysis.job.accepted` and add:
 
 Producer: worker service that leased the job
 
-Consumers: `analysis-store-service`, `forensic-gateway-service`
+Consumers: `analysis-orchestrator-service`, `query-report-api-service`
 
 Payload:
 
@@ -119,7 +122,7 @@ Payload:
 
 Producer: worker service
 
-Consumers: `analysis-store-service`, `forensic-gateway-service`
+Consumers: `analysis-orchestrator-service`, `query-report-api-service`
 
 Payload:
 
@@ -134,7 +137,7 @@ Payload:
 
 Producer: worker service
 
-Consumers: `analysis-store-service`, `forensic-gateway-service`
+Consumers: `analysis-orchestrator-service`, `query-report-api-service`
 
 Payload:
 
@@ -150,7 +153,7 @@ Payload:
 
 Producer: worker service
 
-Consumers: `analysis-store-service`, `forensic-gateway-service`
+Consumers: `analysis-orchestrator-service`, `query-report-api-service`
 
 Payload:
 
@@ -165,9 +168,9 @@ Payload:
 
 ### `analysis.job.dead-lettered`
 
-Producer: `analysis-store-service`
+Producer: `analysis-orchestrator-service`
 
-Consumers: `forensic-gateway-service`, operations tooling
+Consumers: `query-report-api-service`, operations tooling
 
 Payload fields match `analysis.job.failed` and add:
 
@@ -180,7 +183,8 @@ Payload fields match `analysis.job.failed` and add:
 
 Producer: service that owns produced artifact bytes
 
-Consumers: `analysis-store-service`, downstream worker services
+Consumers: S04-approved canonical artifact metadata owner and downstream
+worker services
 
 Payload:
 
@@ -193,15 +197,17 @@ Payload:
 | `byteCustody` | enum | yes | `PRODUCER_RETAINED`, `SCOPED_OBJECT_ACCESS` or `EXPLICIT_HANDOFF`. |
 | `completeness` | enum | yes | Completeness of artifact set. |
 
-Analysis Store acceptance registers canonical artifact metadata only. It does
-not transfer byte custody unless a later explicit handoff or object-access
-contract records that transfer.
+The S04-approved canonical artifact metadata owner registers accepted artifact
+metadata only. It does not transfer byte custody unless a later explicit
+handoff or object-access contract records that transfer.
 
 ### `analysis.report.requested`
 
-Producer: `forensic-gateway-service`
+Producer: `query-report-api-service`
 
-Consumers: `report-generation-service`, `analysis-store-service`
+Consumers: `query-report-api-service` service-local report adapter, optional
+later `report-generation-service` only if a later requirement approves it, and
+the S04-approved report artifact owner
 
 Payload:
 
@@ -212,9 +218,10 @@ Payload:
 
 ### `analysis.report.completed`
 
-Producer: `report-generation-service`
+Producer: `query-report-api-service` service-local report adapter or optional
+later `report-generation-service` only if a later requirement approves it
 
-Consumers: `forensic-gateway-service`, `analysis-store-service`
+Consumers: `query-report-api-service` and the S04-approved report artifact owner
 
 Payload:
 

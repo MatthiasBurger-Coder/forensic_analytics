@@ -16,9 +16,9 @@ option java_outer_classname = "ForensicIngestionProto";
 //
 // AnalyzeRepository is retained as current compatibility surface only. The
 // target microservice landscape assigns repository checkout and workspace
-// preparation to repository-analysis-service, so new service-to-service
-// interactions must use the analysis-job contracts instead of extending this
-// RPC.
+// preparation to repository-source-service, so new service-to-service
+// interactions must use repository-source and orchestration contracts instead
+// of extending this RPC.
 service ForensicIngestionService {
   rpc AnalyzeRepository(AnalyzeRepositoryRequest)
       returns (AnalyzeRepositoryResponse);

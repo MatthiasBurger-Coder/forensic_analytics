@@ -4,10 +4,11 @@
 
 Planned OpenAPI contract root.
 
-`gateway-api.yaml` is the Gateway API contract. The active workflow assigned
-the initial Gateway HTTP and public BTM delivery contract updates to Slice 02,
-and Slice 05 implemented the repository-to-BTM submission mutation in
-`forensic-gateway-service`.
+`gateway-api.yaml` is a transitional predecessor filename for the public REST
+contract. Under FA-MSA-001 its target authority is
+`query-report-api-service`. Existing Gateway wording in command names, tests or
+file names remains compatibility evidence only; it does not make
+`forensic-gateway-service` the target service.
 
 Operations marked `current-verified` are based on the current REST adapter.
 Operations marked `planned-initial` are logical target contracts and are not
