@@ -52,6 +52,19 @@ A later slice may retire or disable one of these paths only after it records:
 - rollback instructions for restoring the current module registration and
   runtime entrypoint.
 
+## Slice 19 Removal Review
+
+Slice 19 did not remove shared implementation modules. The caller review still
+finds active module registrations and dependencies in `settings.gradle.kts`,
+`forensic-analytics-testbed`, `forensic-analytics-boot-app`,
+`forensic-analytics-bootstrap`, `forensic-analytics-cli`,
+`forensic-analytics-rest`, `forensic-analytics-engine` and
+`forensic-analytics-ingestion-request`.
+
+Because no module is both replaced and caller-free, deleting source roots or
+editing Gradle registrations would violate the workflow stop condition for
+Slice 19.
+
 ## Rollback
 
 Rollback for Slice 18 is documentation-only: revert the Slice 18 documentation

@@ -194,6 +194,10 @@ build. Those modules remain part of the current quality gate as legacy
 in-process and rollback paths until a later slice proves caller removal,
 replacement parity and rollback evidence.
 
+Slice 19 also leaves the Gradle module list unchanged. Removal is blocked
+until caller-verification searches prove that a module has no remaining
+production or test caller and parity or explicit deprecation tests exist.
+
 ## Residual Risks
 
 - CI workflow evidence is absent.

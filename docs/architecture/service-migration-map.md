@@ -77,6 +77,10 @@ Slice 18 records the current isolation decision in
 registered until a later slice proves replacement ownership, caller removal,
 parity or explicit deprecation tests and rollback instructions.
 
+Slice 19 reviewed the same module set for removal and did not remove any
+module from `settings.gradle.kts`. No current module is both replaced and
+caller-free.
+
 ## Migration Sequencing
 
 1. Keep current modules unchanged.
