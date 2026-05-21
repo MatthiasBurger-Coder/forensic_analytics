@@ -673,13 +673,20 @@ affected_files:
   - services/joern-analysis-service/**
   - forensic-analytics-adapter-joern-docker/**
   - settings.gradle.kts
-  - contracts/**
+  - contracts/grpc/joern-cpg-analysis.proto
+  - contracts/grpc/README.md
+  - contracts/events/analysis-events.md
   - docker/joern/**
+  - docs/arc42/**
+  - docs/architecture/**
+  - docs/workflow/execution-report.md
+  - services/README.md
 affected_modules:
   - services:joern-analysis-service
   - forensic-analytics-adapter-joern-docker
 affected_contracts:
-  - joern-analysis-service contracts
+  - contracts/grpc/joern-cpg-analysis.proto
+  - contracts/events/analysis-events.md
 dependencies:
   - S03
   - S04
@@ -688,15 +695,27 @@ file_locks:
   - services/joern-analysis-service/**
   - forensic-analytics-adapter-joern-docker/**
   - settings.gradle.kts
+  - contracts/grpc/joern-cpg-analysis.proto
+  - contracts/grpc/README.md
+  - contracts/events/analysis-events.md
   - docker/joern/**
+  - docs/arc42/**
+  - docs/architecture/**
+  - docs/workflow/execution-report.md
+  - services/README.md
 contract_locks:
   - joern-analysis-service
+  - contracts/grpc/joern-cpg-analysis.proto
+  - contracts/events/analysis-events.md
 architecture_locks:
   - joern-runtime-isolation
+  - joern-semantic-artifact-ownership
+  - static-semantic-evidence-boundary
 quality_gates:
   targeted:
     - ./gradlew :services:joern-analysis-service:test --dependency-verification strict --console=plain --stacktrace
     - git diff --check
+    - docker compose -f docker/joern/docker-compose.joern.yml config when docker/joern/** changes; otherwise record SKIPPED
   required:
     - ./gradlew test --dependency-verification strict --console=plain --stacktrace
 documentation:
@@ -710,6 +729,12 @@ stop_conditions:
 
 Purpose: move Joern Docker control and semantic graph fact production into
 `services/joern-analysis-service`.
+
+`services/joern-cpg-analysis-service` remains predecessor and rollback
+evidence during S08 unless a later scope update explicitly adds it as writable
+scope. S08 must create and register the target service and must not substitute
+`:services:joern-cpg-analysis-service:test` for the required
+`:services:joern-analysis-service:test` quality gate.
 
 ### Slice 09 - Analysis Orchestrator Service Boundary
 

@@ -33,7 +33,7 @@
 | S05 | COMPLETED | Repository source service extracted as first FA-MSA-001 target-name service; security remediation, service test, service packaging, root test and staged whitespace gate passed. |
 | S06 | COMPLETED | Ingestion service extracted as target-name service; Java backend race remediation, service test, service packaging, root test and staged whitespace gate passed. |
 | S07 | COMPLETED | JavaParser analysis service extracted as target-name service; source-analysis remediation, service build, service tests, root test, specialist reviews and staged whitespace gate passed. |
-| S08 | PENDING | Joern analysis service extraction |
+| S08 | PENDING | Joern analysis service extraction; S3D scope remediation completed before product implementation. |
 | S09 | PENDING | Analysis orchestrator service boundary |
 | S10 | PENDING | Query report API service boundary |
 | S11 | PENDING | CLI client decoupling |
@@ -112,6 +112,11 @@
 | S07 | `./gradlew :services:java-parser-analysis-service:test --dependency-verification strict --console=plain --stacktrace` | PASS after tester remediation: build successful in 58s; Gradle emitted protobuf Unsafe and gRPC native-access warnings, but no task failed. |
 | S07 | `git diff --cached --check` | PASS after staging S07 files: no whitespace errors in tracked and newly added target service files. |
 | S07 | `./gradlew test --dependency-verification strict --console=plain --stacktrace` | PASS after tester remediation: build successful in 28s; 186 actionable tasks up-to-date. |
+| S08 | S08 workflow-scope review | BLOCKED: S08 required arc42, architecture, workflow report and services README updates but omitted those paths from `affected_files` and `file_locks`; contract scope also used broad `contracts/**` instead of concrete Joern contract locks. |
+| S08 | `./gradlew :services:joern-analysis-service:test --dependency-verification strict --console=plain --stacktrace` | FAILED before implementation: Gradle could not find project `:services:joern-analysis-service`; the target module must be created and registered before this required S08 gate can pass. |
+| S08 | `./gradlew :services:joern-cpg-analysis-service:test --dependency-verification strict --console=plain --stacktrace` | PASS as tester diagnostic only: predecessor service tests pass, but this cannot substitute for the required S08 target service gate. |
+| S08 | `docker compose -f docker/joern/docker-compose.joern.yml config` | PASS as Docker model validation: compose configuration rendered without starting containers or pulling images. |
+| S08 | `git diff --check` for S08 workflow-scope remediation | PASS: no whitespace errors after adding S08 documentation, contract, architecture and Docker-model locks before product implementation. |
 
 ## Subagent Review Log
 
@@ -163,6 +168,12 @@
 | S07 | Microservice Senior Expert subagent | PASS after implementation: `services:java-parser-analysis-service` is registered, independently buildable/startable, containerized with distinct ports and documented without overclaiming predecessor removal. |
 | S07 | Senior Tester subagent | BLOCKED before final remediation: new service files were still untracked for staged whitespace validation, and the gRPC test lacked direct top-level `AnalyzeSourceSnapshotResponse.getCompleteness()` assertions. |
 | S07 | Senior Tester subagent | PASS after final remediation: S07 files are staged, `git diff --cached --check` passed, direct top-level gRPC completeness assertions are present, and no remaining coverage or command blocker was found. |
+| S08 | Senior Workflow Architect subagent | BLOCKED before scope remediation: S08 documentation locks omitted `docs/arc42/**`, `docs/architecture/**`, `docs/workflow/execution-report.md` and `services/README.md`; contract locks must be concrete and include Joern semantic artifact ownership/static-semantic evidence boundaries. |
+| S08 | Senior Joern/CPG Specialist subagent | BLOCKED before implementation: product implementation must wait for S08 workflow-scope correction; after that, create `services/joern-analysis-service` from predecessor evidence, keep `joern-cpg-analysis.proto` as service-local generated transport input and preserve Joern unavailable, timeout and incomplete mapping diagnostics. |
+| S08 | Senior Java Backend subagent | PASS_WITH_PLAN: use `services/joern-cpg-analysis-service` as primary source evidence, keep the legacy Joern Docker adapter as behavior reference only, avoid monolith module dependencies and do not invent canonical semantic fact extraction beyond verified artifact metadata and diagnostics. |
+| S08 | Microservice Senior Expert subagent | PASS_WITH_PLAN: create and register the target service, retain predecessor paths as rollback evidence, use distinct ports and do not claim Compose, Swarm or Kubernetes readiness without verified deployment files and commands. |
+| S08 | Senior DevOps subagent | PASS_WITH_PLAN: keep Joern runtime optional outside the default Gradle gate, validate Docker/Compose models when Docker files change, skip image builds/runs unless explicitly verified, and avoid committing generated Joern runtime artifacts. |
+| S08 | Senior Tester subagent | BLOCKED before target service creation: the required `:services:joern-analysis-service:test` target cannot run until the target module exists; predecessor tests are diagnostic only and required post-implementation coverage includes Joern unavailable, timeout, incomplete artifacts, Docker/workspace boundaries, autonomy and architecture tests. |
 
 ## Blockers
 
