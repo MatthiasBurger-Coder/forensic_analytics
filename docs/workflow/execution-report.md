@@ -1510,3 +1510,57 @@ test && npm run build`, `git diff --check`, `git diff --cached --check`,
 read-only post-implementation review, checkpoint commit and branch push
 completed successfully. CLI migration remains explicitly deferred because the
 required public CLI-to-Gateway command contract has not been defined.
+
+## Slice 18 Execution - Retire Or Isolate Replaced Monolith Runtime Paths
+
+Slice 18 reviewed the remaining `forensic-analytics-*` in-process runtime
+paths after the Gateway, worker-service and frontend integration slices. The
+safe decision is isolation, not retirement: caller verification still finds
+active CLI, REST, Bootstrap, Boot, engine, ingestion-request and testbed
+dependencies.
+
+Implemented behavior:
+
+- Added `docs/architecture/monolith-runtime-isolation.md` to record the legacy
+  runtime isolation and rollback decision.
+- Updated the service migration map, current-state map, current-coupling map
+  and current-build/test map to make the legacy path status explicit.
+- Confirmed that no `forensic-analytics-*` module, source root, Gradle
+  registration or runtime entrypoint is removed in Slice 18.
+- Recorded that Slice 19 cannot remove shared implementation modules without
+  additional caller-removal and parity proof.
+
+### Slice 18 Reviews
+
+- Senior architecture read-only precheck returned `READY` only for
+  documentation/isolation. It was not ready for retiring, disabling or removing
+  any old in-process monolith runtime path.
+- Review evidence confirmed active Boot, Bootstrap, REST, CLI, engine,
+  ingestion-request and testbed couplings through Gradle dependencies,
+  runtime wiring and tests.
+
+### Slice 18 CP_RECORD
+
+```text
+workflowVersion=microservices-btm-pipeline-20260517-v5
+sliceId=18
+sliceTitle=Retire Or Isolate Replaced Monolith Runtime Paths
+responsibleAgent=Workflow Executor with Senior Architecture read-only review
+changedFiles=docs/architecture/monolith-runtime-isolation.md; docs/architecture/service-migration-map.md; docs/architecture/current-state.md; docs/architecture/current-coupling-map.md; docs/architecture/current-build-and-test-map.md
+qualityGateCommands=caller verification searches for remaining forensic-analytics-* runtime dependencies; git diff --check; git diff --cached --check
+qualityGateResult=PASS
+checkpointCommitHash=980c9fa2b4de2aae601dbe8488cbff9f8e018137
+pushResult=PUB_DONE to origin/feature/workflow-microservices-btm-pipeline-20260517
+rollbackReference=da10822006e96b2cb84f70c94dc930974b1830f3
+arc42Updated=not changed in this slice
+adrUpdated=not required in this slice
+```
+
+### Slice 18 D8 Decision
+
+Slice 18 is `D8_PASS` for documentation-only isolation. No runtime code or
+Gradle registration changed, caller searches confirm that retirement would
+break verified current behavior, `git diff --check`, `git diff --cached
+--check`, checkpoint commit and branch push completed successfully. Module
+removal is blocked until a later slice provides explicit replacement parity,
+caller-removal evidence and rollback instructions.
