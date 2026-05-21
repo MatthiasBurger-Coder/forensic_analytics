@@ -1200,3 +1200,67 @@ before Analysis Store parses source-fact bytes, keeps Analysis Store parsing
 inside a service-local adapter boundary and requires Java AST plus BTM
 artifact filesystem adapters to reject symlinked directories and files before
 read/write verification.
+
+## Slice 13 Execution - Source-Fact Artifact Contract And Artifact IO Hardening
+
+Slice 13 implements the v5 prerequisite that unblocks the deterministic
+repository-to-BTM orchestration slice without requiring Analysis Store to infer
+Java AST private implementation details.
+
+Implemented behavior:
+
+- The Java AST source-fact artifact payload is documented as
+  `application/vnd.forensic-analytics.java-ast-source-facts.v1+json` with the
+  external JSON schema `contracts/grpc/java-ast-source-facts-v1.schema.json`.
+- Analysis Store parses Java AST source-fact bytes only in a service-local
+  adapter and maps accepted entries into Analysis Store-owned static source
+  fact models.
+- Analysis Store fails closed when the Java AST payload violates the v1
+  contract or when payload-derived completeness does not match owner metadata.
+- Public artifact references and source paths reject private paths, URIs,
+  traversal, blank segments, sensitive coordinates and control characters.
+- Java AST and BTM filesystem artifact adapters reject symlinked roots,
+  directories and final files before artifact read/write verification.
+- Java AST producer diagnostics are redacted when they contain private paths,
+  URIs, credentials or control characters.
+- The existing `GetSourceFactArtifactBytes` gRPC owner API remains the byte
+  retrieval contract; no duplicate inline source-fact RPC fields were added.
+
+### Slice 13 Reviews
+
+- Quality Reviewer: final read-only re-review returned `READY`; retryable
+  validation, diagnostic serialization, package coverage and ArchUnit service
+  boundary concerns were resolved.
+- Security Reviewer: final read-only re-review returned `READY`; source-path
+  control characters, original-value validation before stripping, diagnostic
+  leakage sanitization and no-follow artifact IO hardening were resolved.
+- Architecture Reviewer: final read-only re-review returned `READY`; payload
+  completeness is derived only from payload diagnostics, metadata mismatch
+  fails closed, schema and parser rules are aligned and no cross-service Java
+  implementation coupling was introduced.
+
+### Slice 13 CP_RECORD
+
+```text
+workflowVersion=microservices-btm-pipeline-20260517-v5
+sliceId=13
+sliceTitle=Source-Fact Artifact Contract And Artifact IO Hardening
+responsibleAgent=Workflow Executor with Quality Reviewer, Security Reviewer and Architecture Reviewer
+changedFiles=contracts/grpc/**; docs/architecture/contract-versioning.md; docs/workflow/fixtures/repository-to-btm-v1.md; services/analysis-store-service/**; services/java-ast-analysis-service/**; services/btm-generation-service/**
+qualityGateCommands=JSON.parse contracts/grpc/java-ast-source-facts-v1.schema.json; ./gradlew --no-daemon --max-workers=1 :services:analysis-store-service:cleanTest :services:java-ast-analysis-service:cleanTest :services:analysis-store-service:test --tests "*JavaAstSourceFactArtifactPayloadParserTest" --tests "*JavaAstSourceFactArtifactClientTest" --tests "*AnalysisStoreDomainModelTest" --tests "*InstrumentationTargetPlanningDomainTest" --tests "*AnalysisJobRequestValidatorTest" :services:java-ast-analysis-service:test --tests "*JavaAstAnalysisDomainTest" --dependency-verification strict --console=plain --stacktrace; ./gradlew --no-daemon --max-workers=1 :services:java-ast-analysis-service:test :services:analysis-store-service:test :services:btm-generation-service:test jacocoTestReport checkPackageCoverage --dependency-verification strict --console=plain --stacktrace; ./gradlew --no-daemon --max-workers=1 clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace; git diff --check; git diff --cached --check
+qualityGateResult=PASS
+checkpointCommitHash=ecc471e6774ed06bf118f468dbc9a8de3e228184
+pushResult=PUB_DONE to origin/feature/workflow-microservices-btm-pipeline-20260517
+rollbackReference=aa7b752fa2b4f16a4c3cf024430939dcf3abf74d
+arc42Updated=contract versioning updated
+adrUpdated=not required in this slice
+```
+
+### Slice 13 D8 Decision
+
+Slice 13 is `D8_PASS`. Targeted parser, client, domain, validator and
+filesystem adapter regression tests, affected service tests, package coverage,
+full local quality gate with strict dependency verification, JSON schema parse
+check, quality review, security review, architecture review, `git diff
+--check`, `git diff --cached --check`, checkpoint commit and branch push
+completed successfully.
