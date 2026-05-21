@@ -104,6 +104,13 @@ The test suite covers domain, application, adapters, gRPC ingestion,
 persistence, REST, CLI, bootstrap, Boot, logging, observability and testbed
 scenarios.
 
+`forensic-analytics-testbed` now includes a deterministic local real
+repository E2E fixture under `src/test/resources/repository-e2e/`. The
+corresponding `RepositoryAnalysisRealRepositoryEndToEndTest` materializes that
+fixture as a local Git repository, pins a commit, sends a plugin-style in-process
+gRPC request and verifies checkout, source-root detection, session storage and
+workspace cleanup without external network access or target build execution.
+
 Architecture tests were verified in these areas:
 
 - application contract architecture;

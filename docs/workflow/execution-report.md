@@ -28,7 +28,7 @@
 | Slice | Status | Notes |
 |---|---|---|
 | S00 | COMPLETED | Branch, local ref, clean working tree, context-pack hashes, S3D metadata and diff check passed. |
-| S01 | PENDING | Real repository E2E test. |
+| S01 | COMPLETED | Added deterministic local real repository E2E fixture and test; targeted and module test gates passed. |
 | S02 | PENDING | WildFly hardening preparation. |
 | S03 | PENDING | CLI Gateway contract. |
 | S04 | PENDING | Separate deployment workflow handoff. |
@@ -102,3 +102,34 @@ S00 role-review checklist:
 | Senior Requirement Engineer | PASS, S00 does not change requirements and preserves the workflow scope. |
 | Senior System Architect | PASS, S00 is execution governance only and does not touch product architecture. |
 | Senior Tester | PASS, S00 uses the workflow-required `git status --short --branch` and `git diff --check` gates. |
+
+## S01 Real Repository End-To-End Test
+
+| Field | Result |
+|---|---|
+| Owner | Senior Tester |
+| Secondary reviewers | Senior Java Backend, Senior System Architect, Security Sandbox Specialist |
+| Changed files | `forensic-analytics-testbed/src/test/java/de/burger/forensics/analytics/testbed/RepositoryAnalysisRealRepositoryEndToEndTest.java`; `forensic-analytics-testbed/src/test/resources/repository-e2e/**`; `docs/architecture/current-build-and-test-map.md`; `docs/workflow/execution-report.md` |
+| Decision | COMPLETED |
+
+Role-review checklist:
+
+| Role | Result |
+|---|---|
+| Senior Tester | PASS, the new test is deterministic by default and runs through the existing Gradle/JUnit 6 testbed. |
+| Senior Java Backend | PASS, the test uses existing gRPC ingestion, workspace preparation, Git checkout and in-memory persistence paths without changing production code. |
+| Senior System Architect | PASS, no architecture boundary is moved; the fixture exercises existing inbound adapter and application use-case composition. |
+| Security Sandbox Specialist | PASS, the fixture is local, no external network is used, and the target repository `gradlew` marker proves checkout does not execute target build scripts. |
+
+Verification:
+
+| Command | Result |
+|---|---|
+| `./gradlew :forensic-analytics-testbed:test --tests '*RepositoryAnalysisRealRepositoryEndToEndTest' --dependency-verification strict --console=plain --stacktrace` | PASS |
+| `./gradlew :forensic-analytics-testbed:test --dependency-verification strict --console=plain --stacktrace` | PASS |
+
+Notes:
+
+- The fixture is materialized from `src/test/resources/repository-e2e/real-repository-template`.
+- The test initializes a local Git repository with fixed author and committer dates, checks out the pinned commit through the existing gRPC ingestion path, verifies two detected Java source roots and then cleans the workspace.
+- No target repository build script is executed.
