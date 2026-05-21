@@ -34,7 +34,7 @@
 | S06 | COMPLETED | Ingestion service extracted as target-name service; Java backend race remediation, service test, service packaging, root test and staged whitespace gate passed. |
 | S07 | COMPLETED | JavaParser analysis service extracted as target-name service; source-analysis remediation, service build, service tests, root test, specialist reviews and staged whitespace gate passed. |
 | S08 | COMPLETED | Joern analysis service extracted as target-name service; target service tests, packaging, build, root test, identity scans, specialist reviews and staged whitespace gate passed. |
-| S09 | PENDING | Analysis orchestrator service boundary |
+| S09 | PENDING | Analysis orchestrator service boundary; initial scope and target-project blockers found before product implementation. |
 | S10 | PENDING | Query report API service boundary |
 | S11 | PENDING | CLI client decoupling |
 | S12 | PENDING | Observability stack and logging decoupling |
@@ -125,6 +125,9 @@
 | S08 | `git diff --check` | PASS: no whitespace errors after S08 implementation and documentation updates. |
 | S08 | `git diff --check` after DevOps documentation remediation | PASS: no whitespace errors after correcting Joern Analysis Service bind-address wording and unexecuted `bootRun` evidence. |
 | S08 | `git diff --cached --check` | PASS after staging S08 files: no whitespace errors in tracked and newly added target service files. |
+| S09 | S09 workflow-scope review | BLOCKED: S09 required arc42, architecture, workflow report and services README updates but omitted those paths from `affected_files` and `file_locks`; contract scope also used broad `contracts/**` instead of concrete orchestration contract locks. |
+| S09 | `./gradlew :services:analysis-orchestrator-service:test --dependency-verification strict --console=plain --stacktrace` | FAILED before implementation: Gradle could not find project `:services:analysis-orchestrator-service`; the target module must be created and registered before this required S09 gate can pass. |
+| S09 | `git diff --check` for S09 workflow-scope remediation | PASS: no whitespace errors after adding S09 documentation, architecture, workflow report, services README and concrete orchestration contract locks. No protobuf or event wire/schema change is intended by this remediation. |
 
 ## Subagent Review Log
 
@@ -189,10 +192,16 @@
 | S08 | Senior DevOps subagent | PASS after remediation: README now distinguishes default bind address from local client/health-probe access, arc42 records `bootRun` as an operator command rather than executed smoke evidence, and no required DevOps remediation remains. |
 | S08 | Senior Tester subagent | BLOCKED before final staging: target tests and command evidence cover unavailable runtime, timeout, incomplete artifacts, workspace boundaries, autonomy, architecture and boot/health behavior, but newly added target service files must be staged before final `git diff --cached --check`. |
 | S08 | Senior Tester subagent | PASS after final staging: S08 files are staged and `git diff --cached --check` passed over tracked and newly added target service files. |
+| S09 | Senior Workflow Architect subagent | BLOCKED before scope remediation: S09 locks omitted `docs/arc42/**`, `docs/architecture/**`, `docs/workflow/execution-report.md` and `services/README.md`; broad `contracts/**` must be replaced by concrete orchestration contracts. |
+| S09 | Senior System Architect subagent | BLOCKED before scope remediation: product implementation must wait until S09 locks include required documentation and concrete orchestration contract files, and central modules are constrained to source evidence unless exact changes are named. |
+| S09 | Senior Java Backend subagent | PASS_WITH_PLAN: create/register `services:analysis-orchestrator-service` without dependencies on monolith or service Java modules, map `analysis-job.proto` generated transport to service-owned models and avoid copying monolith repository checkout, scanning, semantic analysis, rule generation or result storage behavior. |
+| S09 | Senior Analysis Storage Architect subagent | PASS_WITH_PLAN: orchestrator ownership is limited to job lifecycle, workflow status, worker leases/attempts, retry/timeout/failure/dead-letter state, correlation references and job-to-artifact references; artifact bytes, producer catalogs, canonical facts, private DBs and private workspaces remain out of scope. |
+| S09 | Microservice Senior Expert subagent | PASS_WITH_PLAN: create a new independent target service root with service-local domain/application/adapters/bootstrap/tests/Dockerfile/README, retain predecessor modules as rollback evidence, use distinct ports `9098`/`8089` and avoid direct service/project dependencies or hidden-monolith behavior. |
+| S09 | Senior Tester subagent | BLOCKED before target service creation: the required `:services:analysis-orchestrator-service:test` target cannot run until the target module exists; predecessor tests are diagnostic only and required post-implementation coverage includes job lifecycle, status transitions, leases, attempts, retries, timeouts, failures, dead-letter state, correlation references, job-to-artifact references, architecture and independent boot/build evidence. |
 
 ## Blockers
 
-No active blocker for S00, S01, S02, S03, S04, S05 or S06 as completed workflow slices.
+No active blocker for S00, S01, S02, S03, S04, S05, S06, S07 or S08 as completed workflow slices.
 Production implementation migration remains gated by the later service
 extraction slices. Legacy module removal remains blocked until a later slice
 proves caller-free evidence, replacement parity or explicit deprecation,

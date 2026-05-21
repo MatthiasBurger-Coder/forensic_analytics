@@ -752,13 +752,21 @@ affected_files:
   - forensic-analytics-engine/**
   - forensic-analytics-application/**
   - settings.gradle.kts
-  - contracts/**
+  - contracts/README.md
+  - contracts/grpc/README.md
+  - contracts/grpc/analysis-job.proto
+  - contracts/events/analysis-events.md
+  - docs/arc42/**
+  - docs/architecture/**
+  - docs/workflow/execution-report.md
+  - services/README.md
 affected_modules:
   - services:analysis-orchestrator-service
   - forensic-analytics-engine
   - forensic-analytics-application
 affected_contracts:
-  - analysis orchestration contracts
+  - contracts/grpc/analysis-job.proto
+  - contracts/events/analysis-events.md
 dependencies:
   - S03
   - S04
@@ -772,8 +780,17 @@ file_locks:
   - forensic-analytics-engine/**
   - forensic-analytics-application/**
   - settings.gradle.kts
+  - contracts/README.md
+  - contracts/grpc/README.md
+  - contracts/grpc/analysis-job.proto
+  - contracts/events/analysis-events.md
+  - docs/arc42/**
+  - docs/architecture/**
+  - docs/workflow/execution-report.md
+  - services/README.md
 contract_locks:
-  - analysis-orchestrator-service
+  - contracts/grpc/analysis-job.proto
+  - contracts/events/analysis-events.md
 architecture_locks:
   - orchestration-without-hidden-monolith
 quality_gates:
@@ -793,6 +810,11 @@ stop_conditions:
 
 Purpose: create `analysis-orchestrator-service` as coordinator without turning
 it into a new monolith.
+
+S09 locks concrete orchestration contract files so authority, documentation and
+service-local generated-code boundaries can be verified. It must not change
+protobuf or event wire/schema shape unless a Contract-First/gRPC review is
+explicitly added before implementation.
 
 ### Slice 10 - Query Report API Service Boundary
 
