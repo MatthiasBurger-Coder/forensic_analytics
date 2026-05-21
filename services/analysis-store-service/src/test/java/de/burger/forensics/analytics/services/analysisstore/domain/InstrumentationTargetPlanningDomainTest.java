@@ -49,6 +49,20 @@ class InstrumentationTargetPlanningDomainTest {
             1,
             1
         ));
+        assertThrows(IllegalArgumentException.class, () -> new StaticSourceLocation(
+            "src/main/java/a/\tA.java",
+            "a.A",
+            "run",
+            1,
+            1
+        ));
+        assertThrows(IllegalArgumentException.class, () -> new StaticSourceLocation(
+            "src/main/java/a/\u0000A.java",
+            "a.A",
+            "run",
+            1,
+            1
+        ));
         assertThrows(IllegalArgumentException.class, () -> new InstrumentationTargetPolicy(
             10,
             List.of(ProbeKind.UNKNOWN),

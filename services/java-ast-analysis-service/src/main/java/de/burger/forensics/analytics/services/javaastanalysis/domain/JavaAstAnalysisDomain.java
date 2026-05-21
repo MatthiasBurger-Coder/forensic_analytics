@@ -40,6 +40,7 @@ public final class JavaAstAnalysisDomain {
             || text.startsWith("file:")
             || text.contains(":")
             || text.contains("//")
+            || text.chars().anyMatch(Character::isISOControl)
             || WINDOWS_DRIVE_PATH.matcher(text).matches()
             || Arrays.asList(text.split("/")).contains("..")) {
             throw new IllegalArgumentException(name + " must be a safe relative path");
@@ -328,7 +329,17 @@ public final class JavaAstAnalysisDomain {
                 .replace('\r', ' ')
                 .replace('\n', ' ')
                 .replace('\\', '/');
-            if (text.startsWith("file:") || WINDOWS_DRIVE_PATH.matcher(text).matches()) {
+            var lower = text.toLowerCase(Locale.ROOT);
+            if (text.chars().anyMatch(Character::isISOControl)
+                || lower.contains("file:")
+                || text.contains("://")
+                || lower.contains("token")
+                || lower.contains("password")
+                || lower.contains("secret")
+                || lower.contains("credential")
+                || lower.contains("authorization")
+                || text.matches(".*(^|\\s)/[^\\s]+.*")
+                || text.matches(".*(^|\\s)[A-Za-z]:[\\\\/][^\\s]+.*")) {
                 return "diagnostic details redacted";
             }
             return text;

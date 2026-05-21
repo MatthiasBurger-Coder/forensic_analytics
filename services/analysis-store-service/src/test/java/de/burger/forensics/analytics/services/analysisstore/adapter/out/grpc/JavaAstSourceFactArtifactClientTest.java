@@ -4,7 +4,7 @@ import com.google.protobuf.ByteString;
 import de.burger.forensics.analytics.javaastanalysis.v1.GetSourceFactArtifactBytesRequest;
 import de.burger.forensics.analytics.javaastanalysis.v1.GetSourceFactArtifactBytesResponse;
 import de.burger.forensics.analytics.javaastanalysis.v1.JavaAstAnalysisServiceGrpc;
-import de.burger.forensics.analytics.javaastanalysis.v1.OperationStatus;
+import de.burger.forensics.analytics.services.analysisstore.adapter.out.javaast.JavaAstSourceFactArtifactPayloadParser;
 import de.burger.forensics.analytics.services.analysisstore.domain.AnalysisArtifactCategory;
 import de.burger.forensics.analytics.services.analysisstore.domain.AnalysisArtifactReference;
 import de.burger.forensics.analytics.services.analysisstore.domain.AnalysisCompleteness;
@@ -17,391 +17,561 @@ import de.burger.forensics.analytics.services.analysisstore.domain.SourceSnapsho
 import io.grpc.ManagedChannel;
 import io.grpc.Server;
 import io.grpc.Status;
-import io.grpc.StatusRuntimeException;
 import io.grpc.inprocess.InProcessChannelBuilder;
 import io.grpc.inprocess.InProcessServerBuilder;
 import io.grpc.stub.StreamObserver;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
 import java.util.Map;
+import java.util.function.UnaryOperator;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class JavaAstSourceFactArtifactClientTest {
     private Server server;
     private ManagedChannel channel;
+    private GetSourceFactArtifactBytesRequest capturedRequest;
 
     @AfterEach
-    void stopServer() {
+    void stopGrpc() {
         if (channel != null) {
             channel.shutdownNow();
+            channel = null;
         }
         if (server != null) {
             server.shutdownNow();
+            server = null;
         }
     }
 
     @Test
-    void retrievesSourceFactBytesThroughJavaAstOwnerApi() throws Exception {
-        var content = "{\"sourceFacts\":[]}".getBytes(StandardCharsets.UTF_8);
-        var service = new CapturingJavaAstArtifactService(content, sha256(content), content.length);
-        var client = startClient(service);
+    void verifiesSourceFactPayloadContractBeforeAcceptingRetrievedBytes() throws Exception {
+        var content = validPayload().getBytes(StandardCharsets.UTF_8);
+        var artifact = artifact(content);
+        var client = clientReturning(artifact, content);
 
         var bytes = client.read(
-            new AnalysisRunId("run-1"),
-            new AnalysisJobId("job-ast-1"),
-            new SourceSnapshotId("snapshot-1"),
-            "request-bytes",
+            runId(),
+            jobId(),
+            snapshotId(),
+            "request-1",
             "correlation-1",
-            artifact(sha256(content), content.length),
+            artifact,
             Map.of("tenant", "demo")
         );
 
-        assertEquals("request-bytes", service.request.getRequestId());
-        assertEquals("run-1", service.request.getAnalysisRunId().getValue());
-        assertEquals("job-ast-1", service.request.getAnalysisJobId().getValue());
-        assertEquals("snapshot-1", service.request.getSourceSnapshotId().getValue());
-        assertEquals("java-ast/snapshot-1-source-facts.json", service.request.getRetrievalReference());
-        assertEquals(1_000, service.request.getMaxBytes());
-        assertEquals("demo", service.request.getSafeAttributesMap().get("tenant"));
-        assertEquals("java-ast/snapshot-1-source-facts.json", bytes.artifact().path());
-        assertEquals("java-ast-analysis-service", bytes.artifact().producerService());
+        assertEquals("request-1", capturedRequest.getRequestId());
+        assertEquals("run-1", capturedRequest.getAnalysisRunId().getValue());
+        assertEquals("job-1", capturedRequest.getAnalysisJobId().getValue());
+        assertEquals("snapshot-1", capturedRequest.getSourceSnapshotId().getValue());
+        assertEquals("java-ast/snapshot-1-source-facts.json", capturedRequest.getRetrievalReference());
+        assertEquals(1_048_576, capturedRequest.getMaxBytes());
+        assertEquals("demo", capturedRequest.getSafeAttributesMap().get("tenant"));
+        assertEquals(artifact, bytes.artifact());
         assertArrayEquals(content, bytes.content());
     }
 
     @Test
-    void rejectsMismatchedChecksumAndSanitizesGrpcFailures() throws Exception {
-        var content = "{\"sourceFacts\":[]}".getBytes(StandardCharsets.UTF_8);
-        var mismatch = startClient(new CapturingJavaAstArtifactService(content, "b".repeat(64), content.length));
+    void rejectsContractInvalidRetrievedPayloadDespiteMatchingMetadataAndChecksum() throws Exception {
+        var content = validPayload()
+            .replace("\"factType\": \"java-method\"", "\"factType\": \"java-field\"")
+            .getBytes(StandardCharsets.UTF_8);
+        var artifact = artifact(content);
+        var client = clientReturning(artifact, content);
 
-        var checksumFailure = assertThrows(
-            IllegalStateException.class,
-            () -> mismatch.read(
-                new AnalysisRunId("run-1"),
-                new AnalysisJobId("job-ast-1"),
-                new SourceSnapshotId("snapshot-1"),
-                "request-bytes",
-                "correlation-1",
-                artifact(sha256(content), content.length),
-                Map.of()
-            )
-        );
-        assertEquals("Java AST source fact artifact checksum mismatch", checksumFailure.getMessage());
+        var failure = assertThrows(IllegalStateException.class, () -> client.verify(
+            runId(),
+            jobId(),
+            snapshotId(),
+            "request-1",
+            "correlation-1",
+            artifact,
+            Map.of("tenant", "demo")
+        ));
 
-        stopServer();
-        var original = "source-facts-1".getBytes(StandardCharsets.UTF_8);
-        var tampered = "source-facts-2".getBytes(StandardCharsets.UTF_8);
-        var tamperedClient = startClient(new CapturingJavaAstArtifactService(tampered, sha256(original), original.length));
-        var tamperedFailure = assertThrows(
-            IllegalStateException.class,
-            () -> tamperedClient.read(
-                new AnalysisRunId("run-1"),
-                new AnalysisJobId("job-ast-1"),
-                new SourceSnapshotId("snapshot-1"),
-                "request-bytes",
-                "correlation-1",
-                artifact(sha256(original), original.length),
-                Map.of()
-            )
-        );
-        assertEquals("Java AST source fact artifact checksum mismatch", tamperedFailure.getMessage());
-
-        stopServer();
-        var failing = startClient(new FailingJavaAstArtifactService());
-        var grpcFailure = assertThrows(
-            IllegalStateException.class,
-            () -> failing.read(
-                new AnalysisRunId("run-1"),
-                new AnalysisJobId("job-ast-1"),
-                new SourceSnapshotId("snapshot-1"),
-                "request-bytes",
-                "correlation-1",
-                artifact(sha256(content), content.length),
-                Map.of()
-            )
-        );
-        assertEquals("Java AST source fact artifact retrieval failed with status UNAVAILABLE", grpcFailure.getMessage());
+        assertEquals("Java AST source fact artifact payload violates the v1 contract.", failure.getMessage());
     }
 
     @Test
-    void supportsOnlyJavaAstStaticSourceFactArtifacts() throws Exception {
-        var client = startClient(new CapturingJavaAstArtifactService(new byte[] {1}, "a".repeat(64), 1));
+    void rejectsSchemaInvalidRetrievedPayloadDespiteMatchingMetadataAndChecksum() throws Exception {
+        var content = "{}".getBytes(StandardCharsets.UTF_8);
+        var artifact = artifact(content);
+        var client = clientReturning(artifact, content);
 
-        assertTrue(client.supports(artifact("a".repeat(64), 1)));
-        assertTrue(client.supports(artifact(
-            "a".repeat(64),
-            1,
+        var failure = assertThrows(IllegalStateException.class, () -> client.verify(
+            runId(),
+            jobId(),
+            snapshotId(),
+            "request-1",
+            "correlation-1",
+            artifact,
+            Map.of("tenant", "demo")
+        ));
+
+        assertEquals("Java AST source fact artifact payload violates the v1 contract.", failure.getMessage());
+    }
+
+    @Test
+    void rejectsPayloadCompletenessThatDoesNotMatchReturnedMetadata() throws Exception {
+        var content = validPayload().replace("\"diagnostics\": []", """
+            "diagnostics": [
+                {
+                  "code": "SYMBOL_RESOLUTION_NOT_CONFIGURED",
+                  "message": "symbol solving is not configured",
+                  "severity": "WARNING",
+                  "sourceSnapshotId": "snapshot-1",
+                  "sourcePath": "",
+                  "lineNumber": 0,
+                  "columnNumber": 0,
+                  "retryable": false,
+                  "affectsCompleteness": true
+                }
+              ]""").getBytes(StandardCharsets.UTF_8);
+        var artifact = artifact(content);
+        var client = clientReturning(artifact, content);
+
+        var failure = assertThrows(IllegalStateException.class, () -> client.verify(
+            runId(),
+            jobId(),
+            snapshotId(),
+            "request-1",
+            "correlation-1",
+            artifact,
+            Map.of("tenant", "demo")
+        ));
+
+        assertEquals("Java AST source fact artifact payload completeness does not match metadata.", failure.getMessage());
+    }
+
+    @Test
+    void rejectsArtifactMetadataIncompleteWhenPayloadHasNoCompletenessDiagnostic() throws Exception {
+        var content = validPayload().getBytes(StandardCharsets.UTF_8);
+        var artifact = artifact(
+            sha256(content),
+            content.length,
             AnalysisArtifactCategory.STATIC,
-            "other-service",
+            JavaAstSourceFactArtifactClient.OWNER_SERVICE,
             JavaAstSourceFactArtifactClient.OWNER_SERVICE,
             JavaAstSourceFactArtifactClient.RETRIEVAL_CONTRACT,
-            AnalysisCompleteness.COMPLETE
+            AnalysisCompleteness.INCOMPLETE
+        );
+        var client = clientReturning(artifact, content);
+
+        var failure = assertThrows(IllegalStateException.class, () -> client.verify(
+            runId(),
+            jobId(),
+            snapshotId(),
+            "request-1",
+            "correlation-1",
+            artifact,
+            Map.of("tenant", "demo")
+        ));
+
+        assertEquals("Java AST source fact artifact payload completeness does not match metadata.", failure.getMessage());
+    }
+
+    @Test
+    void supportsOnlyStaticArtifactsOwnedByJavaAstByteApi() {
+        var content = validPayload().getBytes(StandardCharsets.UTF_8);
+        var client = clientWithoutServer();
+
+        assertTrue(client.supports(artifact(content)));
+        assertTrue(client.supports(artifact(
+            content,
+            AnalysisArtifactCategory.STATIC,
+            "other-service",
+            JavaAstSourceFactArtifactClient.OWNER_SERVICE,
+            JavaAstSourceFactArtifactClient.RETRIEVAL_CONTRACT
         )));
-        assertFalse(client.supports(artifact(
-            "a".repeat(64),
-            1,
+        assertTrue(!client.supports(artifact(
+            content,
             AnalysisArtifactCategory.RUNTIME,
             JavaAstSourceFactArtifactClient.OWNER_SERVICE,
+            JavaAstSourceFactArtifactClient.OWNER_SERVICE,
             JavaAstSourceFactArtifactClient.RETRIEVAL_CONTRACT
         )));
-        assertFalse(client.supports(artifact(
-            "a".repeat(64),
-            1,
+        assertTrue(!client.supports(artifact(
+            content,
             AnalysisArtifactCategory.STATIC,
+            "other-service",
             "other-service",
             JavaAstSourceFactArtifactClient.RETRIEVAL_CONTRACT
         )));
-        assertFalse(client.supports(artifact(
-            "a".repeat(64),
-            1,
+        assertTrue(!client.supports(artifact(
+            content,
             AnalysisArtifactCategory.STATIC,
             JavaAstSourceFactArtifactClient.OWNER_SERVICE,
-            "other.v1.Bytes"
+            JavaAstSourceFactArtifactClient.OWNER_SERVICE,
+            "other.contract"
         )));
     }
 
     @Test
-    void rejectsMismatchedResponseSizeAndInvalidClientSettings() throws Exception {
-        var content = "source-facts".getBytes(StandardCharsets.UTF_8);
-        var reportedSizeMismatch = startClient(new CapturingJavaAstArtifactService(content, sha256(content), content.length + 1));
+    void rejectsArtifactsOutsideJavaAstOwnerApiBeforeGrpcCall() {
+        var content = validPayload().getBytes(StandardCharsets.UTF_8);
+        var client = clientWithoutServer();
 
-        var reportedSizeFailure = assertThrows(
-            IllegalStateException.class,
-            () -> reportedSizeMismatch.read(
-                new AnalysisRunId("run-1"),
-                new AnalysisJobId("job-ast-1"),
-                new SourceSnapshotId("snapshot-1"),
-                "request-bytes",
-                "correlation-1",
-                artifact(sha256(content), content.length),
-                Map.of()
-            )
-        );
-        assertEquals("Java AST source fact artifact size mismatch", reportedSizeFailure.getMessage());
+        assertThrows(IllegalArgumentException.class, () -> client.verify(
+            runId(),
+            jobId(),
+            snapshotId(),
+            "request-1",
+            "correlation-1",
+            artifact(
+                content,
+                AnalysisArtifactCategory.RUNTIME,
+                JavaAstSourceFactArtifactClient.OWNER_SERVICE,
+                JavaAstSourceFactArtifactClient.OWNER_SERVICE,
+                JavaAstSourceFactArtifactClient.RETRIEVAL_CONTRACT
+            ),
+            Map.of()
+        ));
+        assertThrows(IllegalArgumentException.class, () -> client.verify(
+            runId(),
+            jobId(),
+            snapshotId(),
+            "request-1",
+            "correlation-1",
+            artifact(
+                content,
+                AnalysisArtifactCategory.STATIC,
+                "other-service",
+                JavaAstSourceFactArtifactClient.OWNER_SERVICE,
+                JavaAstSourceFactArtifactClient.RETRIEVAL_CONTRACT
+            ),
+            Map.of()
+        ));
+        assertThrows(IllegalArgumentException.class, () -> client.verify(
+            runId(),
+            jobId(),
+            snapshotId(),
+            "request-1",
+            "correlation-1",
+            artifact(
+                content,
+                AnalysisArtifactCategory.STATIC,
+                JavaAstSourceFactArtifactClient.OWNER_SERVICE,
+                JavaAstSourceFactArtifactClient.OWNER_SERVICE,
+                "other.contract"
+            ),
+            Map.of()
+        ));
+    }
 
-        stopServer();
-        var largerContent = "source-facts-with-extra-byte".getBytes(StandardCharsets.UTF_8);
-        var contentSizeMismatch = startClient(
-            new CapturingJavaAstArtifactService(largerContent, sha256(largerContent), content.length)
+    @Test
+    void rejectsGrpcChecksumSizeAndMetadataMismatches() throws Exception {
+        var content = validPayload().getBytes(StandardCharsets.UTF_8);
+        var artifact = artifact(content);
+        var checksumMismatch = clientReturning(
+            artifact,
+            content,
+            response -> response.setSha256("b".repeat(64))
         );
-        var contentSizeFailure = assertThrows(
-            IllegalStateException.class,
-            () -> contentSizeMismatch.read(
-                new AnalysisRunId("run-1"),
-                new AnalysisJobId("job-ast-1"),
-                new SourceSnapshotId("snapshot-1"),
-                "request-bytes",
-                "correlation-1",
-                artifact(sha256(largerContent), content.length),
-                Map.of()
-            )
-        );
-        assertEquals("Java AST source fact artifact size mismatch", contentSizeFailure.getMessage());
+        assertThrows(IllegalStateException.class, () -> checksumMismatch.verify(
+            runId(),
+            jobId(),
+            snapshotId(),
+            "request-1",
+            "correlation-1",
+            artifact,
+            Map.of()
+        ));
+        stopGrpc();
 
-        stopServer();
-        channel = InProcessChannelBuilder.forName(InProcessServerBuilder.generateName()).directExecutor().build();
+        var expectedContent = validPayload().getBytes(StandardCharsets.UTF_8);
+        var tamperedContent = validPayload().replace("\"factId\": \"fact-1\"", "\"factId\": \"fact-2\"")
+            .getBytes(StandardCharsets.UTF_8);
+        var contentHashMismatchArtifact = artifact(sha256(expectedContent), expectedContent.length);
+        var contentHashMismatch = clientReturning(
+            contentHashMismatchArtifact,
+            tamperedContent,
+            response -> response
+                .setSourceFactArtifact(protoArtifact(contentHashMismatchArtifact))
+                .setSha256(contentHashMismatchArtifact.artifact().sha256())
+                .setSizeBytes(expectedContent.length)
+        );
+        assertThrows(IllegalStateException.class, () -> contentHashMismatch.verify(
+            runId(),
+            jobId(),
+            snapshotId(),
+            "request-1",
+            "correlation-1",
+            contentHashMismatchArtifact,
+            Map.of()
+        ));
+        stopGrpc();
+
+        var sizeMismatch = clientReturning(
+            artifact,
+            content,
+            response -> response.setSizeBytes(content.length + 1)
+        );
+        assertThrows(IllegalStateException.class, () -> sizeMismatch.verify(
+            runId(),
+            jobId(),
+            snapshotId(),
+            "request-1",
+            "correlation-1",
+            artifact,
+            Map.of()
+        ));
+        stopGrpc();
+
+        var largerContent = (validPayload() + "\n").getBytes(StandardCharsets.UTF_8);
+        var contentSizeMismatchArtifact = artifact(sha256(largerContent), content.length);
+        var contentSizeMismatch = clientReturning(
+            contentSizeMismatchArtifact,
+            largerContent,
+            response -> response
+                .setSourceFactArtifact(protoArtifact(contentSizeMismatchArtifact))
+                .setSha256(contentSizeMismatchArtifact.artifact().sha256())
+                .setSizeBytes(content.length)
+        );
+        assertThrows(IllegalStateException.class, () -> contentSizeMismatch.verify(
+            runId(),
+            jobId(),
+            snapshotId(),
+            "request-1",
+            "correlation-1",
+            contentSizeMismatchArtifact,
+            Map.of()
+        ));
+        stopGrpc();
+
+        var metadataMismatch = clientReturning(
+            artifact,
+            content,
+            response -> response.setSourceFactArtifact(protoArtifact(artifact).toBuilder().setSchemaVersion("java-ast-analysis-v2"))
+        );
+        assertThrows(IllegalStateException.class, () -> metadataMismatch.verify(
+            runId(),
+            jobId(),
+            snapshotId(),
+            "request-1",
+            "correlation-1",
+            artifact,
+            Map.of()
+        ));
+        stopGrpc();
+
+        var producerMismatch = clientReturning(
+            artifact,
+            content,
+            response -> response.setSourceFactArtifact(protoArtifact(artifact).toBuilder().setProducerService("other-service"))
+        );
+        assertThrows(IllegalStateException.class, () -> producerMismatch.verify(
+            runId(),
+            jobId(),
+            snapshotId(),
+            "request-1",
+            "correlation-1",
+            artifact,
+            Map.of()
+        ));
+        stopGrpc();
+
+        var completenessMismatch = clientReturning(
+            artifact,
+            content,
+            response -> response.setSourceFactArtifact(protoArtifact(artifact).toBuilder()
+                .setCompleteness(de.burger.forensics.analytics.analysisjob.v1.AnalysisCompleteness.ANALYSIS_COMPLETENESS_INCOMPLETE))
+        );
+        assertThrows(IllegalStateException.class, () -> completenessMismatch.verify(
+            runId(),
+            jobId(),
+            snapshotId(),
+            "request-1",
+            "correlation-1",
+            artifact,
+            Map.of()
+        ));
+    }
+
+    @Test
+    void reportsGrpcStatusFailuresWithoutAcceptingBytes() throws Exception {
+        var artifact = artifact(validPayload().getBytes(StandardCharsets.UTF_8));
+        var client = clientFailingWith(Status.UNAVAILABLE.asRuntimeException());
+
+        var failure = assertThrows(IllegalStateException.class, () -> client.verify(
+            runId(),
+            jobId(),
+            snapshotId(),
+            "request-1",
+            "correlation-1",
+            artifact,
+            Map.of()
+        ));
+
+        assertEquals("Java AST source fact artifact retrieval failed with status UNAVAILABLE", failure.getMessage());
+    }
+
+    @Test
+    void validatesConstructorAndRequestTextArguments() throws Exception {
+        var serverName = InProcessServerBuilder.generateName();
+        channel = InProcessChannelBuilder.forName(serverName).directExecutor().build();
         var stub = JavaAstAnalysisServiceGrpc.newBlockingStub(channel);
+
         assertThrows(IllegalArgumentException.class, () -> new JavaAstSourceFactArtifactClient(stub, 0, 1));
         assertThrows(IllegalArgumentException.class, () -> new JavaAstSourceFactArtifactClient(stub, 1, 0));
-    }
+        stopGrpc();
 
-    @Test
-    void rejectsMismatchedOwnerResponseMetadata() throws Exception {
-        var content = "source-facts".getBytes(StandardCharsets.UTF_8);
-        var wrongProducer = startClient(new CapturingJavaAstArtifactService(
-            content,
-            sha256(content),
-            content.length,
-            "other-service",
-            de.burger.forensics.analytics.analysisjob.v1.AnalysisCompleteness.ANALYSIS_COMPLETENESS_COMPLETE
-        ));
-
-        var producerFailure = assertThrows(
-            IllegalStateException.class,
-            () -> wrongProducer.read(
-                new AnalysisRunId("run-1"),
-                new AnalysisJobId("job-ast-1"),
-                new SourceSnapshotId("snapshot-1"),
-                "request-bytes",
-                "correlation-1",
-                artifact(sha256(content), content.length),
-                Map.of()
-            )
-        );
-        assertEquals("Java AST source fact artifact metadata mismatch", producerFailure.getMessage());
-
-        stopServer();
-        var incompleteResponse = startClient(new CapturingJavaAstArtifactService(
-            content,
-            sha256(content),
-            content.length,
-            JavaAstSourceFactArtifactClient.OWNER_SERVICE,
-            de.burger.forensics.analytics.analysisjob.v1.AnalysisCompleteness.ANALYSIS_COMPLETENESS_INCOMPLETE
-        ));
-        var completenessFailure = assertThrows(
-            IllegalStateException.class,
-            () -> incompleteResponse.read(
-                new AnalysisRunId("run-1"),
-                new AnalysisJobId("job-ast-1"),
-                new SourceSnapshotId("snapshot-1"),
-                "request-bytes",
-                "correlation-1",
-                artifact(sha256(content), content.length),
-                Map.of()
-            )
-        );
-        assertEquals("Java AST source fact artifact metadata mismatch", completenessFailure.getMessage());
-    }
-
-    @Test
-    void acceptsUnknownCompletenessFromOwnerResponse() throws Exception {
-        var content = "source-facts".getBytes(StandardCharsets.UTF_8);
-        var unknownResponse = startClient(new CapturingJavaAstArtifactService(
-            content,
-            sha256(content),
-            content.length,
-            JavaAstSourceFactArtifactClient.OWNER_SERVICE,
-            de.burger.forensics.analytics.analysisjob.v1.AnalysisCompleteness.ANALYSIS_COMPLETENESS_UNKNOWN
-        ));
-
-        var bytes = unknownResponse.read(
-            new AnalysisRunId("run-1"),
-            new AnalysisJobId("job-ast-1"),
-            new SourceSnapshotId("snapshot-1"),
-            "request-bytes",
+        var content = validPayload().getBytes(StandardCharsets.UTF_8);
+        var artifact = artifact(content);
+        var client = clientReturning(artifact, content);
+        assertThrows(IllegalArgumentException.class, () -> client.verify(
+            runId(),
+            jobId(),
+            snapshotId(),
+            "",
             "correlation-1",
-            artifact(sha256(content), content.length, AnalysisCompleteness.UNKNOWN),
+            artifact,
             Map.of()
-        );
-
-        assertEquals(AnalysisCompleteness.UNKNOWN, bytes.artifact().completeness());
+        ));
+        assertThrows(IllegalArgumentException.class, () -> client.verify(
+            runId(),
+            jobId(),
+            snapshotId(),
+            "request-1",
+            "",
+            artifact,
+            Map.of()
+        ));
     }
 
-    @Test
-    void rejectsNonJavaAstOwnerMetadataBeforeNetworkCall() throws Exception {
-        var client = startClient(new CapturingJavaAstArtifactService(new byte[] {1}, "a".repeat(64), 1));
-
-        var producerFailure = assertThrows(
-            IllegalArgumentException.class,
-            () -> client.read(
-                new AnalysisRunId("run-1"),
-                new AnalysisJobId("job-ast-1"),
-                new SourceSnapshotId("snapshot-1"),
-                "request-bytes",
-                "correlation-1",
-                artifact(
-                    "a".repeat(64),
-                    1,
-                    AnalysisArtifactCategory.STATIC,
-                    "other-service",
-                    JavaAstSourceFactArtifactClient.OWNER_SERVICE,
-                    JavaAstSourceFactArtifactClient.RETRIEVAL_CONTRACT,
-                    AnalysisCompleteness.COMPLETE
-                ),
-                Map.of()
-            )
-        );
-        assertEquals("source fact artifact bytes must be owned by Java AST Analysis", producerFailure.getMessage());
-
-        var failure = assertThrows(
-            IllegalArgumentException.class,
-            () -> client.read(
-                new AnalysisRunId("run-1"),
-                new AnalysisJobId("job-ast-1"),
-                new SourceSnapshotId("snapshot-1"),
-                "request-bytes",
-                "correlation-1",
-                new AnalysisArtifactReference(
-                    new ArtifactReference("java-ast/snapshot-1-source-facts.json", "application/json", "a".repeat(64), 1),
-                    AnalysisArtifactCategory.STATIC,
-                    "java-ast-analysis-service",
-                    "java-ast-analysis-v1",
-                    AnalysisCompleteness.COMPLETE,
-                    new ArtifactByteAccess(
-                        "analysis-store-service",
-                        JavaAstSourceFactArtifactClient.RETRIEVAL_CONTRACT,
-                        "java-ast/snapshot-1-source-facts.json",
-                        ArtifactByteCustody.PRODUCER_RETAINED
-                    )
-                ),
-                Map.of()
-            )
-        );
-
-        assertEquals("source fact artifact bytes must be owned by Java AST Analysis", failure.getMessage());
-
-        var contractFailure = assertThrows(
-            IllegalArgumentException.class,
-            () -> client.read(
-                new AnalysisRunId("run-1"),
-                new AnalysisJobId("job-ast-1"),
-                new SourceSnapshotId("snapshot-1"),
-                "request-bytes",
-                "correlation-1",
-                artifact(
-                    "a".repeat(64),
-                    1,
-                    AnalysisArtifactCategory.STATIC,
-                    JavaAstSourceFactArtifactClient.OWNER_SERVICE,
-                    "other.v1.Bytes"
-                ),
-                Map.of()
-            )
-        );
-        assertEquals(
-            "source fact artifact retrieval contract is not the Java AST owner API",
-            contractFailure.getMessage()
-        );
+    private JavaAstSourceFactArtifactClient clientWithoutServer() {
+        var serverName = InProcessServerBuilder.generateName();
+        channel = InProcessChannelBuilder.forName(serverName).directExecutor().build();
+        return new JavaAstSourceFactArtifactClient(JavaAstAnalysisServiceGrpc.newBlockingStub(channel), 5, 1_048_576);
     }
 
-    private JavaAstSourceFactArtifactClient startClient(JavaAstAnalysisServiceGrpc.JavaAstAnalysisServiceImplBase service) throws Exception {
+    private JavaAstSourceFactArtifactClient clientReturning(AnalysisArtifactReference artifact, byte[] content) throws IOException {
+        return clientReturning(artifact, content, UnaryOperator.identity());
+    }
+
+    private JavaAstSourceFactArtifactClient clientReturning(
+        AnalysisArtifactReference artifact,
+        byte[] content,
+        UnaryOperator<GetSourceFactArtifactBytesResponse.Builder> responseCustomizer
+    ) throws IOException {
         var serverName = InProcessServerBuilder.generateName();
         server = InProcessServerBuilder.forName(serverName)
             .directExecutor()
-            .addService(service)
+            .addService(new JavaAstAnalysisServiceGrpc.JavaAstAnalysisServiceImplBase() {
+                @Override
+                public void getSourceFactArtifactBytes(
+                    GetSourceFactArtifactBytesRequest request,
+                    StreamObserver<GetSourceFactArtifactBytesResponse> responseObserver
+                ) {
+                    capturedRequest = request;
+                    var response = GetSourceFactArtifactBytesResponse.newBuilder()
+                        .setAnalysisRunId(de.burger.forensics.analytics.analysisjob.v1.AnalysisRunId.newBuilder()
+                            .setValue(request.getAnalysisRunId().getValue()))
+                        .setAnalysisJobId(de.burger.forensics.analytics.analysisjob.v1.AnalysisJobId.newBuilder()
+                            .setValue(request.getAnalysisJobId().getValue()))
+                        .setSourceSnapshotId(de.burger.forensics.analytics.analysisjob.v1.SourceSnapshotId.newBuilder()
+                            .setValue(request.getSourceSnapshotId().getValue()))
+                        .setSourceFactArtifact(protoArtifact(artifact))
+                        .setContent(ByteString.copyFrom(content))
+                        .setSha256(sha256(content))
+                        .setSizeBytes(content.length)
+                        .build();
+                    responseObserver.onNext(responseCustomizer.apply(response.toBuilder()).build());
+                    responseObserver.onCompleted();
+                }
+            })
             .build()
             .start();
         channel = InProcessChannelBuilder.forName(serverName).directExecutor().build();
-        return new JavaAstSourceFactArtifactClient(JavaAstAnalysisServiceGrpc.newBlockingStub(channel), 5, 1_000);
+        return new JavaAstSourceFactArtifactClient(JavaAstAnalysisServiceGrpc.newBlockingStub(channel), 5, 1_048_576);
+    }
+
+    private JavaAstSourceFactArtifactClient clientFailingWith(io.grpc.StatusRuntimeException error) throws IOException {
+        var serverName = InProcessServerBuilder.generateName();
+        server = InProcessServerBuilder.forName(serverName)
+            .directExecutor()
+            .addService(new JavaAstAnalysisServiceGrpc.JavaAstAnalysisServiceImplBase() {
+                @Override
+                public void getSourceFactArtifactBytes(
+                    GetSourceFactArtifactBytesRequest request,
+                    StreamObserver<GetSourceFactArtifactBytesResponse> responseObserver
+                ) {
+                    responseObserver.onError(error);
+                }
+            })
+            .build()
+            .start();
+        channel = InProcessChannelBuilder.forName(serverName).directExecutor().build();
+        return new JavaAstSourceFactArtifactClient(JavaAstAnalysisServiceGrpc.newBlockingStub(channel), 5, 1_048_576);
+    }
+
+    private static de.burger.forensics.analytics.analysisjob.v1.AnalysisArtifactReference protoArtifact(
+        AnalysisArtifactReference artifact
+    ) {
+        return de.burger.forensics.analytics.analysisjob.v1.AnalysisArtifactReference.newBuilder()
+            .setArtifact(de.burger.forensics.analytics.analysisjob.v1.ArtifactReference.newBuilder()
+                .setPath(artifact.artifact().path())
+                .setType(artifact.artifact().type())
+                .setSha256(artifact.artifact().sha256())
+                .setSizeBytes(artifact.artifact().sizeBytes()))
+            .setCategory(de.burger.forensics.analytics.analysisjob.v1.AnalysisArtifactCategory.ANALYSIS_ARTIFACT_CATEGORY_STATIC)
+            .setProducerService(artifact.producerService())
+            .setSchemaVersion(artifact.schemaVersion())
+            .setCompleteness(protoCompleteness(artifact.completeness()))
+            .setByteAccess(de.burger.forensics.analytics.analysisjob.v1.ArtifactByteAccess.newBuilder()
+                .setOwnerService(artifact.byteAccess().ownerService())
+                .setRetrievalContract(artifact.byteAccess().retrievalContract())
+                .setRetrievalReference(artifact.byteAccess().retrievalReference())
+                .setByteCustody(de.burger.forensics.analytics.analysisjob.v1.ArtifactByteCustody.ARTIFACT_BYTE_CUSTODY_PRODUCER_RETAINED))
+            .build();
+    }
+
+    private static de.burger.forensics.analytics.analysisjob.v1.AnalysisCompleteness protoCompleteness(
+        AnalysisCompleteness completeness
+    ) {
+        return switch (completeness) {
+            case COMPLETE -> de.burger.forensics.analytics.analysisjob.v1.AnalysisCompleteness.ANALYSIS_COMPLETENESS_COMPLETE;
+            case INCOMPLETE -> de.burger.forensics.analytics.analysisjob.v1.AnalysisCompleteness.ANALYSIS_COMPLETENESS_INCOMPLETE;
+            case UNKNOWN -> de.burger.forensics.analytics.analysisjob.v1.AnalysisCompleteness.ANALYSIS_COMPLETENESS_UNKNOWN;
+        };
+    }
+
+    private static AnalysisArtifactReference artifact(byte[] content) {
+        return artifact(sha256(content), content.length);
     }
 
     private static AnalysisArtifactReference artifact(String sha256, long sizeBytes) {
-        return artifact(sha256, sizeBytes, AnalysisCompleteness.COMPLETE);
-    }
-
-    private static AnalysisArtifactReference artifact(String sha256, long sizeBytes, AnalysisCompleteness completeness) {
         return artifact(
             sha256,
             sizeBytes,
             AnalysisArtifactCategory.STATIC,
-            "java-ast-analysis-service",
+            JavaAstSourceFactArtifactClient.OWNER_SERVICE,
             JavaAstSourceFactArtifactClient.OWNER_SERVICE,
             JavaAstSourceFactArtifactClient.RETRIEVAL_CONTRACT,
-            completeness
+            AnalysisCompleteness.COMPLETE
         );
     }
 
     private static AnalysisArtifactReference artifact(
-        String sha256,
-        long sizeBytes,
+        byte[] content,
         AnalysisArtifactCategory category,
+        String producerService,
         String ownerService,
         String retrievalContract
     ) {
         return artifact(
-            sha256,
-            sizeBytes,
+            sha256(content),
+            content.length,
             category,
-            "java-ast-analysis-service",
+            producerService,
             ownerService,
             retrievalContract,
             AnalysisCompleteness.COMPLETE
@@ -417,10 +587,32 @@ class JavaAstSourceFactArtifactClientTest {
         String retrievalContract,
         AnalysisCompleteness completeness
     ) {
+        return artifact(
+            sha256,
+            sizeBytes,
+            category,
+            producerService,
+            ownerService,
+            retrievalContract,
+            completeness,
+            JavaAstSourceFactArtifactPayloadParser.MEDIA_TYPE
+        );
+    }
+
+    private static AnalysisArtifactReference artifact(
+        String sha256,
+        long sizeBytes,
+        AnalysisArtifactCategory category,
+        String producerService,
+        String ownerService,
+        String retrievalContract,
+        AnalysisCompleteness completeness,
+        String artifactType
+    ) {
         return new AnalysisArtifactReference(
             new ArtifactReference(
                 "java-ast/snapshot-1-source-facts.json",
-                "application/vnd.forensic-analytics.java-ast-source-facts.v1+json",
+                artifactType,
                 sha256,
                 sizeBytes
             ),
@@ -437,93 +629,60 @@ class JavaAstSourceFactArtifactClientTest {
         );
     }
 
+    private static String validPayload() {
+        return """
+            {
+              "schemaVersion": "java-ast-analysis-v1",
+              "analysisRunId": "run-1",
+              "analysisJobId": "job-1",
+              "sourceSnapshotId": "snapshot-1",
+              "summary": {
+                "receivedFileCount": 1,
+                "parsedFileCount": 1,
+                "skippedFileCount": 0,
+                "parseErrorCount": 0,
+                "sourceFactCount": 1,
+                "parser": "JavaParser",
+                "parserVersion": "3.27.1"
+              },
+              "sourceFacts": [
+                {
+                  "factId": "fact-1",
+                  "factType": "java-method",
+                  "location": {
+                    "sourcePath": "src/main/java/a/A.java",
+                    "fullyQualifiedClassName": "a.A",
+                    "methodName": "run",
+                    "lineNumber": 4,
+                    "columnNumber": 9
+                  },
+                  "signature": "a.A#run()",
+                  "summary": "AST method a.A#run()",
+                  "evidenceKind": "STATIC_SOURCE_FACT"
+                }
+              ],
+              "diagnostics": []
+            }
+            """;
+    }
+
+    private static AnalysisRunId runId() {
+        return new AnalysisRunId("run-1");
+    }
+
+    private static AnalysisJobId jobId() {
+        return new AnalysisJobId("job-1");
+    }
+
+    private static SourceSnapshotId snapshotId() {
+        return new SourceSnapshotId("snapshot-1");
+    }
+
     private static String sha256(byte[] content) {
         try {
             return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(content));
         } catch (NoSuchAlgorithmException error) {
             throw new IllegalStateException("SHA-256 is not available", error);
-        }
-    }
-
-    private static final class CapturingJavaAstArtifactService extends JavaAstAnalysisServiceGrpc.JavaAstAnalysisServiceImplBase {
-        private final byte[] content;
-        private final String sha256;
-        private final long sizeBytes;
-        private final String producerService;
-        private final de.burger.forensics.analytics.analysisjob.v1.AnalysisCompleteness completeness;
-        private GetSourceFactArtifactBytesRequest request;
-
-        private CapturingJavaAstArtifactService(byte[] content, String sha256, long sizeBytes) {
-            this(
-                content,
-                sha256,
-                sizeBytes,
-                JavaAstSourceFactArtifactClient.OWNER_SERVICE,
-                de.burger.forensics.analytics.analysisjob.v1.AnalysisCompleteness.ANALYSIS_COMPLETENESS_COMPLETE
-            );
-        }
-
-        private CapturingJavaAstArtifactService(
-            byte[] content,
-            String sha256,
-            long sizeBytes,
-            String producerService,
-            de.burger.forensics.analytics.analysisjob.v1.AnalysisCompleteness completeness
-        ) {
-            this.content = content.clone();
-            this.sha256 = sha256;
-            this.sizeBytes = sizeBytes;
-            this.producerService = producerService;
-            this.completeness = completeness;
-        }
-
-        @Override
-        public void getSourceFactArtifactBytes(
-            GetSourceFactArtifactBytesRequest request,
-            StreamObserver<GetSourceFactArtifactBytesResponse> responseObserver
-        ) {
-            this.request = request;
-            responseObserver.onNext(GetSourceFactArtifactBytesResponse.newBuilder()
-                .setStatus(OperationStatus.newBuilder()
-                    .setCode("SOURCE_FACT_ARTIFACT_BYTES_RETRIEVED")
-                    .setMessage("Java AST source fact artifact bytes retrieved")
-                    .setCorrelationId(request.getCorrelationId()))
-                .setAnalysisRunId(request.getAnalysisRunId())
-                .setAnalysisJobId(request.getAnalysisJobId())
-                .setSourceSnapshotId(request.getSourceSnapshotId())
-                .setSourceFactArtifact(de.burger.forensics.analytics.analysisjob.v1.AnalysisArtifactReference.newBuilder()
-                    .setArtifact(de.burger.forensics.analytics.analysisjob.v1.ArtifactReference.newBuilder()
-                        .setPath(request.getRetrievalReference())
-                        .setType("application/vnd.forensic-analytics.java-ast-source-facts.v1+json")
-                        .setSha256(sha256)
-                        .setSizeBytes(sizeBytes))
-                    .setCategory(de.burger.forensics.analytics.analysisjob.v1.AnalysisArtifactCategory.ANALYSIS_ARTIFACT_CATEGORY_STATIC)
-                    .setProducerService(producerService)
-                    .setSchemaVersion(request.getSchemaVersion())
-                    .setCompleteness(completeness)
-                    .setByteAccess(de.burger.forensics.analytics.analysisjob.v1.ArtifactByteAccess.newBuilder()
-                        .setOwnerService(JavaAstSourceFactArtifactClient.OWNER_SERVICE)
-                        .setRetrievalContract(JavaAstSourceFactArtifactClient.RETRIEVAL_CONTRACT)
-                        .setRetrievalReference(request.getRetrievalReference())
-                        .setByteCustody(de.burger.forensics.analytics.analysisjob.v1.ArtifactByteCustody.ARTIFACT_BYTE_CUSTODY_PRODUCER_RETAINED)))
-                .setContent(ByteString.copyFrom(content))
-                .setSha256(sha256)
-                .setSizeBytes(sizeBytes)
-                .putAllSafeAttributes(request.getSafeAttributesMap())
-                .build());
-            responseObserver.onCompleted();
-        }
-    }
-
-    private static final class FailingJavaAstArtifactService extends JavaAstAnalysisServiceGrpc.JavaAstAnalysisServiceImplBase {
-        @Override
-        public void getSourceFactArtifactBytes(
-            GetSourceFactArtifactBytesRequest request,
-            StreamObserver<GetSourceFactArtifactBytesResponse> responseObserver
-        ) {
-            responseObserver.onError(new StatusRuntimeException(
-                Status.UNAVAILABLE.withDescription("failed at /private/workspace")
-            ));
         }
     }
 }

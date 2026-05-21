@@ -27,6 +27,8 @@ import de.burger.forensics.analytics.services.btmgeneration.domain.BtmGeneration
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -38,6 +40,7 @@ import static de.burger.forensics.analytics.services.btmgeneration.domain.BtmGen
 import static de.burger.forensics.analytics.services.btmgeneration.domain.BtmGenerationDomain.sha256;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class FileSystemBtmArtifactReaderTest {
     @TempDir
@@ -57,6 +60,17 @@ class FileSystemBtmArtifactReaderTest {
         assertEquals("selection-1", plan.manifest().targetSelection().selectionId());
         assertEquals(artifacts.artifacts().get(1).artifact().path(), plan.manifest().artifacts().getFirst().artifactReference());
         assertEquals(btmArtifact.artifact().path(), plan.manifest().artifacts().get(1).artifactReference());
+    }
+
+    @Test
+    void opensPreparedArtifactsWithNoFollowByteAccess() throws Exception {
+        var artifacts = writeArtifacts();
+        var plan = service(tempDir).prepare(command(artifacts, List.of(artifacts.artifacts().getFirst().artifact().path())));
+
+        try (var stream = service(tempDir).open(plan.artifacts().get(1))) {
+            var content = new String(stream.readAllBytes(), StandardCharsets.UTF_8);
+            assertTrue(content.contains("RULE btm-rule:test"));
+        }
     }
 
     @Test
@@ -159,6 +173,55 @@ class FileSystemBtmArtifactReaderTest {
     }
 
     @Test
+    void rejectsStoredManifestWhenGeneratedArtifactsIsNotAnArray() throws Exception {
+        var artifacts = writeArtifacts();
+        var manifestPath = tempDir.resolve(artifacts.artifacts().get(1).artifact().path());
+        var invalidGeneratedArtifacts = Files.readString(manifestPath).replaceFirst(
+            "\"generatedArtifacts\": \\[[\\s\\S]*?\\]",
+            "\"generatedArtifacts\": \"btm/snapshot-1-job-1-rules.btm\""
+        );
+        Files.writeString(manifestPath, invalidGeneratedArtifacts);
+        var rewrittenManifest = Files.readAllBytes(manifestPath);
+        var invalidManifestArtifacts = new GeneratedBtmArtifacts(List.of(
+            artifacts.artifacts().getFirst(),
+            generatedArtifact(
+                artifacts.artifacts().get(1).artifact().path(),
+                artifacts.artifacts().get(1).artifact().type(),
+                sha256(rewrittenManifest),
+                rewrittenManifest.length
+            )
+        ), artifacts.artifacts().getFirst().artifact().sizeBytes() + rewrittenManifest.length);
+
+        var invalidManifest = assertThrows(BtmArtifactDeliveryException.class, () -> service(tempDir)
+            .prepare(command(invalidManifestArtifacts, List.of())));
+
+        assertEquals(BtmArtifactDeliveryException.Reason.FAILED_PRECONDITION, invalidManifest.reason());
+    }
+
+    @Test
+    void rejectsStoredManifestWhenRequiredTextMetadataIsBlank() throws Exception {
+        var artifacts = writeArtifacts();
+        var manifestPath = tempDir.resolve(artifacts.artifacts().get(1).artifact().path());
+        var invalidManifestText = Files.readString(manifestPath).replace("\"analysisRunId\": \"run-1\"", "\"analysisRunId\": \"\"");
+        Files.writeString(manifestPath, invalidManifestText);
+        var rewrittenManifest = Files.readAllBytes(manifestPath);
+        var invalidManifestArtifacts = new GeneratedBtmArtifacts(List.of(
+            artifacts.artifacts().getFirst(),
+            generatedArtifact(
+                artifacts.artifacts().get(1).artifact().path(),
+                artifacts.artifacts().get(1).artifact().type(),
+                sha256(rewrittenManifest),
+                rewrittenManifest.length
+            )
+        ), artifacts.artifacts().getFirst().artifact().sizeBytes() + rewrittenManifest.length);
+
+        var invalidManifest = assertThrows(BtmArtifactDeliveryException.class, () -> service(tempDir)
+            .prepare(command(invalidManifestArtifacts, List.of())));
+
+        assertEquals(BtmArtifactDeliveryException.Reason.FAILED_PRECONDITION, invalidManifest.reason());
+    }
+
+    @Test
     void rejectsMetadataSizeMismatchBeforeTreatingBytesAsDeliverable() {
         var artifacts = writeArtifacts();
         var btm = artifacts.artifacts().getFirst();
@@ -228,6 +291,70 @@ class FileSystemBtmArtifactReaderTest {
             .prepare(command(mixed, List.of("btm/foreign-rules.btm"))));
 
         assertEquals(BtmArtifactDeliveryException.Reason.FAILED_PRECONDITION, mismatch.reason());
+    }
+
+    @Test
+    void rejectsFinalRuleAndManifestSymlinksBeforeDeliveryByteAccess() throws Exception {
+        var ruleSymlinkArtifacts = writeArtifacts();
+        var rulePath = tempDir.resolve(ruleSymlinkArtifacts.artifacts().getFirst().artifact().path());
+        var outsideRule = Files.writeString(tempDir.resolve("outside-delivery-rules.btm"), Files.readString(rulePath));
+        Files.delete(rulePath);
+        Files.createSymbolicLink(rulePath, outsideRule);
+
+        var ruleSymlink = assertThrows(BtmArtifactDeliveryException.class, () -> service(tempDir)
+            .prepare(command(ruleSymlinkArtifacts, List.of())));
+        assertEquals(BtmArtifactDeliveryException.Reason.FAILED_PRECONDITION, ruleSymlink.reason());
+
+        var manifestRoot = tempDir.resolve("manifest-symlink");
+        var manifestSymlinkArtifacts = new FileSystemBtmArtifactWriter(manifestRoot).write(writeRequest());
+        var manifestPath = manifestRoot.resolve(manifestSymlinkArtifacts.artifacts().get(1).artifact().path());
+        var outsideManifest = Files.writeString(manifestRoot.resolve("outside-manifest.json"), Files.readString(manifestPath));
+        Files.delete(manifestPath);
+        Files.createSymbolicLink(manifestPath, outsideManifest);
+
+        var manifestSymlink = assertThrows(BtmArtifactDeliveryException.class, () -> service(manifestRoot)
+            .prepare(command(manifestSymlinkArtifacts, List.of())));
+        assertEquals(BtmArtifactDeliveryException.Reason.FAILED_PRECONDITION, manifestSymlink.reason());
+    }
+
+    @Test
+    void rejectsSymlinkedArtifactRootBeforeDeliveryByteAccess() throws Exception {
+        var realRoot = Files.createDirectory(tempDir.resolve("real-artifact-root"));
+        var artifacts = new FileSystemBtmArtifactWriter(realRoot).write(writeRequest());
+        var symlinkRoot = tempDir.resolve("artifact-root-link");
+        Files.createSymbolicLink(symlinkRoot, realRoot);
+
+        var rootSymlink = assertThrows(BtmArtifactDeliveryException.class, () -> service(symlinkRoot)
+            .prepare(command(artifacts, List.of())));
+
+        assertEquals(BtmArtifactDeliveryException.Reason.FAILED_PRECONDITION, rootSymlink.reason());
+    }
+
+    @Test
+    void rejectsUnsafeRelativePathsInReaderGuard() throws Exception {
+        var relativePath = FileSystemBtmArtifactReader.class.getDeclaredMethod("relativePath", String.class);
+        relativePath.setAccessible(true);
+
+        assertReaderPathRejected(relativePath, "");
+        assertReaderPathRejected(relativePath, "/tmp/rules.btm");
+        assertReaderPathRejected(relativePath, "file:rules.btm");
+        assertReaderPathRejected(relativePath, "https://example.test/rules.btm");
+        assertReaderPathRejected(relativePath, "C:/tmp/rules.btm");
+        assertReaderPathRejected(relativePath, "btm/./rules.btm");
+        assertReaderPathRejected(relativePath, "btm//rules.btm");
+        assertReaderPathRejected(relativePath, "btm/../rules.btm");
+    }
+
+    @Test
+    void rejectsUnsafeArtifactReferencesBeforeReaderResolution() {
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> generatedArtifact("/tmp/rules.btm", "text/x-byteman", "a".repeat(64), 1)
+        );
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> generatedArtifact("btm/../btm/rules.btm", "text/x-byteman", "a".repeat(64), 1)
+        );
     }
 
     private GeneratedBtmArtifacts writeArtifacts() {
@@ -326,5 +453,13 @@ class FileSystemBtmArtifactReaderTest {
                 1
             )
         );
+    }
+
+    private static void assertReaderPathRejected(Method relativePath, String value) {
+        var failure = assertThrows(
+            InvocationTargetException.class,
+            () -> relativePath.invoke(null, value)
+        );
+        assertTrue(failure.getCause() instanceof BtmArtifactDeliveryException);
     }
 }

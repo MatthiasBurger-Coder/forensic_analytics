@@ -164,8 +164,32 @@ class JavaAstAnalysisDomainTest {
 
         assertThrows(IllegalArgumentException.class, () -> new SourceLocation("A.java", "a.A", "run", 0, 1));
         assertThrows(IllegalArgumentException.class, () -> new SourceLocation("A.java", "a.A", "run", 1, 0));
+        assertThrows(IllegalArgumentException.class, () -> new SourceLocation("src/main/java/a/\tA.java", "a.A", "run", 1, 1));
+        assertThrows(IllegalArgumentException.class, () -> new SourceLocation("src/main/java/a/\u0000A.java", "a.A", "run", 1, 1));
         assertEquals("", JavaAstDiagnostic.info(snapshotId, "INFO", "ok").sourcePath());
+        assertEquals(
+            "",
+            new JavaAstDiagnostic("INFO", "ok", DiagnosticSeverity.INFO, snapshotId, null, 0, 0, false, false).sourcePath()
+        );
         assertEquals("diagnostic details redacted", JavaAstDiagnostic.info(snapshotId, "INFO", "file:/tmp/secret").message());
+        assertEquals("diagnostic details redacted", JavaAstDiagnostic.info(snapshotId, "INFO", "FILE:/tmp/source.java").message());
+        assertEquals("diagnostic details redacted", JavaAstDiagnostic.info(snapshotId, "INFO", "see /tmp/source.java").message());
+        assertEquals("diagnostic details redacted", JavaAstDiagnostic.info(snapshotId, "INFO", "C:/repo/source.java").message());
+        assertEquals("diagnostic details redacted", JavaAstDiagnostic.info(snapshotId, "INFO", "https://example.test/source.java").message());
+        assertEquals("diagnostic details redacted", JavaAstDiagnostic.info(snapshotId, "INFO", "token leaked").message());
+        assertEquals("diagnostic details redacted", JavaAstDiagnostic.info(snapshotId, "INFO", "password leaked").message());
+        assertEquals("diagnostic details redacted", JavaAstDiagnostic.info(snapshotId, "INFO", "secret leaked").message());
+        assertEquals("diagnostic details redacted", JavaAstDiagnostic.info(snapshotId, "INFO", "credential leaked").message());
+        assertEquals("diagnostic details redacted", JavaAstDiagnostic.info(snapshotId, "INFO", "authorization leaked").message());
+        assertEquals("diagnostic details redacted", JavaAstDiagnostic.info(snapshotId, "INFO", "line\tone").message());
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> JavaAstDiagnostic.warning(snapshotId, "BAD", "bad", "src/main/java/a/\tA.java", 1, 1, false)
+        );
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> JavaAstDiagnostic.warning(snapshotId, "BAD", "bad", "src/main/java/a/\u0000A.java", 1, 1, false)
+        );
         assertThrows(
             IllegalArgumentException.class,
             () -> new JavaAstDiagnostic("BAD", "bad", DiagnosticSeverity.ERROR, snapshotId, "A.java", -1, 0, false, true)

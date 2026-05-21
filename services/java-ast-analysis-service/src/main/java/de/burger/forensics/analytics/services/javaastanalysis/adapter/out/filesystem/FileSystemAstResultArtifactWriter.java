@@ -16,12 +16,19 @@ import de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnal
 import de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.SourceFactArtifactBytes;
 import de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.SourceFactArtifactBytesRequest;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 
 import static de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.sha256;
@@ -51,22 +58,14 @@ public final class FileSystemAstResultArtifactWriter implements AstResultArtifac
         List<JavaAstDiagnostic> diagnostics,
         ScanSummary summary
     ) {
-        var document = new AstArtifactDocument(
-            metadata.schemaVersion(),
-            metadata.analysisRunId().value(),
-            metadata.analysisJobId().value(),
-            metadata.sourceSnapshotId().value(),
-            summary,
-            List.copyOf(sourceFacts),
-            List.copyOf(diagnostics)
-        );
+        var document = AstArtifactDocument.from(metadata, sourceFacts, diagnostics, summary);
         var content = GSON.toJson(document);
         var bytes = content.getBytes(StandardCharsets.UTF_8);
         var relativePath = artifactPath(metadata);
-        var target = artifactRoot.resolve(relativePath).normalize();
+        var target = resolve(relativePath.toString());
         try {
-            Files.createDirectories(target.getParent());
-            Files.write(target, bytes);
+            createArtifactDirectories(relativePath.getParent());
+            writeBytes(target, bytes);
         } catch (IOException error) {
             throw new UncheckedIOException("Failed to write Java AST source fact artifact.", error);
         }
@@ -90,23 +89,22 @@ public final class FileSystemAstResultArtifactWriter implements AstResultArtifac
 
     @Override
     public SourceFactArtifactBytes read(SourceFactArtifactBytesRequest request) {
-        var relativePath = Path.of(request.retrievalReference());
-        var target = artifactRoot.resolve(relativePath).normalize();
-        if (!target.startsWith(artifactRoot)) {
-            throw new IllegalArgumentException("retrieval reference must stay inside Java AST artifact storage");
-        }
+        var relativePath = relativePath(request.retrievalReference(), "retrieval reference");
+        var target = resolve(request.retrievalReference());
         try {
-            if (!Files.isRegularFile(target)) {
+            rejectSymlinkSegments(relativePath);
+            var attributes = regularFileAttributes(target);
+            if (attributes == null) {
                 throw new IllegalStateException("Source fact artifact is not available");
             }
-            var size = Files.size(target);
+            var size = attributes.size();
             if (size > request.maxBytes()) {
                 throw new IllegalStateException("Source fact artifact exceeds requested byte limit");
             }
             if (size != request.expectedSizeBytes()) {
                 throw new IllegalStateException("Source fact artifact size mismatch");
             }
-            var bytes = Files.readAllBytes(target);
+            var bytes = readBytes(target);
             var checksum = sha256(bytes);
             if (!checksum.equals(request.expectedSha256())) {
                 throw new IllegalStateException("Source fact artifact checksum mismatch");
@@ -119,7 +117,7 @@ public final class FileSystemAstResultArtifactWriter implements AstResultArtifac
                     AnalysisArtifactCategory.STATIC,
                     PRODUCER_SERVICE,
                     document.schemaVersion(),
-                    document.diagnostics().stream().anyMatch(JavaAstDiagnostic::affectsCompleteness)
+                    document.diagnostics().stream().anyMatch(DiagnosticDocument::affectsCompleteness)
                         ? de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.AnalysisCompleteness.INCOMPLETE
                         : de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.AnalysisCompleteness.COMPLETE,
                     new ArtifactByteAccess(
@@ -154,6 +152,124 @@ public final class FileSystemAstResultArtifactWriter implements AstResultArtifac
         );
     }
 
+    private Path resolve(String artifactPath) {
+        var relativePath = relativePath(artifactPath, "retrieval reference");
+        var target = artifactRoot.resolve(relativePath).normalize();
+        if (!target.startsWith(artifactRoot)) {
+            throw new IllegalArgumentException("retrieval reference must stay inside Java AST artifact storage");
+        }
+        return target;
+    }
+
+    private void createArtifactDirectories(Path relativeDirectory) throws IOException {
+        ensureRootDirectory();
+        if (relativeDirectory == null) {
+            return;
+        }
+        var current = artifactRoot;
+        for (var segment : relativeDirectory) {
+            current = current.resolve(segment);
+            if (Files.exists(current, LinkOption.NOFOLLOW_LINKS)) {
+                ensureDirectory(current);
+            } else {
+                Files.createDirectory(current);
+            }
+        }
+    }
+
+    private void ensureRootDirectory() throws IOException {
+        if (!Files.exists(artifactRoot, LinkOption.NOFOLLOW_LINKS)) {
+            Files.createDirectories(artifactRoot);
+        }
+        ensureDirectory(artifactRoot);
+    }
+
+    private static void ensureDirectory(Path path) throws IOException {
+        if (Files.isSymbolicLink(path) || !Files.isDirectory(path, LinkOption.NOFOLLOW_LINKS)) {
+            throw new IOException("Artifact directory must not be a symbolic link or non-directory.");
+        }
+    }
+
+    private static BasicFileAttributes regularFileAttributes(Path target) throws IOException {
+        if (!Files.exists(target, LinkOption.NOFOLLOW_LINKS)) {
+            return null;
+        }
+        rejectSymlink(target);
+        var attributes = Files.readAttributes(target, BasicFileAttributes.class, LinkOption.NOFOLLOW_LINKS);
+        return attributes.isRegularFile() ? attributes : null;
+    }
+
+    private static void writeBytes(Path target, byte[] bytes) throws IOException {
+        if (Files.exists(target, LinkOption.NOFOLLOW_LINKS)) {
+            rejectSymlink(target);
+            var attributes = Files.readAttributes(target, BasicFileAttributes.class, LinkOption.NOFOLLOW_LINKS);
+            if (!attributes.isRegularFile()) {
+                throw new IOException("Artifact target must be a regular file.");
+            }
+            try (var channel = Files.newByteChannel(
+                target,
+                StandardOpenOption.WRITE,
+                StandardOpenOption.TRUNCATE_EXISTING,
+                LinkOption.NOFOLLOW_LINKS
+            )) {
+                channel.write(ByteBuffer.wrap(bytes));
+            }
+            return;
+        }
+        try (var channel = Files.newByteChannel(
+            target,
+            StandardOpenOption.WRITE,
+            StandardOpenOption.CREATE_NEW,
+            LinkOption.NOFOLLOW_LINKS
+        )) {
+            channel.write(ByteBuffer.wrap(bytes));
+        }
+    }
+
+    private static byte[] readBytes(Path target) throws IOException {
+        try (var channel = Files.newByteChannel(target, StandardOpenOption.READ, LinkOption.NOFOLLOW_LINKS);
+             var output = new ByteArrayOutputStream()) {
+            var buffer = ByteBuffer.allocate(8192);
+            while (channel.read(buffer) != -1) {
+                buffer.flip();
+                output.write(buffer.array(), 0, buffer.limit());
+                buffer.clear();
+            }
+            return output.toByteArray();
+        }
+    }
+
+    private static void rejectSymlink(Path path) throws IOException {
+        if (Files.isSymbolicLink(path)) {
+            throw new IOException("Artifact path must not contain symbolic links.");
+        }
+    }
+
+    private void rejectSymlinkSegments(Path relativePath) throws IOException {
+        rejectSymlink(artifactRoot);
+        var probe = artifactRoot;
+        for (var segment : relativePath) {
+            probe = probe.resolve(segment);
+            rejectSymlink(probe);
+        }
+    }
+
+    private static Path relativePath(String value, String fieldName) {
+        var reference = Objects.requireNonNull(value, fieldName + " must not be null").replace('\\', '/');
+        var lower = reference.toLowerCase(Locale.ROOT);
+        if (reference.isBlank()
+            || reference.startsWith("/")
+            || lower.startsWith("file:")
+            || reference.contains("://")
+            || reference.matches("^[A-Za-z]:.*")) {
+            throw new IllegalArgumentException(fieldName + " must be a safe relative path");
+        }
+        if (Arrays.stream(reference.split("/")).anyMatch(part -> part.isBlank() || part.equals(".") || part.equals(".."))) {
+            throw new IllegalArgumentException(fieldName + " must not contain traversal, current-directory or blank path segments");
+        }
+        return Path.of(reference).normalize();
+    }
+
     private static String safeName(String value) {
         return value.replaceAll("[^A-Za-z0-9._-]", "_");
     }
@@ -164,8 +280,88 @@ public final class FileSystemAstResultArtifactWriter implements AstResultArtifac
         String analysisJobId,
         String sourceSnapshotId,
         ScanSummary summary,
-        List<JavaSourceFact> sourceFacts,
-        List<JavaAstDiagnostic> diagnostics
+        List<SourceFactDocument> sourceFacts,
+        List<DiagnosticDocument> diagnostics
     ) {
+        static AstArtifactDocument from(
+            RequestMetadata metadata,
+            List<JavaSourceFact> sourceFacts,
+            List<JavaAstDiagnostic> diagnostics,
+            ScanSummary summary
+        ) {
+            return new AstArtifactDocument(
+                metadata.schemaVersion(),
+                metadata.analysisRunId().value(),
+                metadata.analysisJobId().value(),
+                metadata.sourceSnapshotId().value(),
+                summary,
+                sourceFacts.stream().map(SourceFactDocument::from).toList(),
+                diagnostics.stream().map(DiagnosticDocument::from).toList()
+            );
+        }
+    }
+
+    private record SourceFactDocument(
+        String factId,
+        String factType,
+        SourceLocationDocument location,
+        String signature,
+        String summary,
+        String evidenceKind
+    ) {
+        static SourceFactDocument from(JavaSourceFact fact) {
+            return new SourceFactDocument(
+                fact.factId(),
+                fact.factType(),
+                SourceLocationDocument.from(fact.location()),
+                fact.signature(),
+                fact.summary(),
+                fact.evidenceKind().name()
+            );
+        }
+    }
+
+    private record SourceLocationDocument(
+        String sourcePath,
+        String fullyQualifiedClassName,
+        String methodName,
+        int lineNumber,
+        int columnNumber
+    ) {
+        static SourceLocationDocument from(de.burger.forensics.analytics.services.javaastanalysis.domain.JavaAstAnalysisDomain.SourceLocation location) {
+            return new SourceLocationDocument(
+                location.sourcePath(),
+                location.fullyQualifiedClassName(),
+                location.methodName(),
+                location.lineNumber(),
+                location.columnNumber()
+            );
+        }
+    }
+
+    private record DiagnosticDocument(
+        String code,
+        String message,
+        String severity,
+        String sourceSnapshotId,
+        String sourcePath,
+        int lineNumber,
+        int columnNumber,
+        boolean retryable,
+        boolean affectsCompleteness
+    ) {
+        static DiagnosticDocument from(JavaAstDiagnostic diagnostic) {
+            return new DiagnosticDocument(
+                diagnostic.code(),
+                diagnostic.message(),
+                diagnostic.severity().name(),
+                diagnostic.sourceSnapshotId().value(),
+                diagnostic.sourcePath(),
+                diagnostic.lineNumber(),
+                diagnostic.columnNumber(),
+                diagnostic.retryable(),
+                diagnostic.affectsCompleteness()
+            );
+        }
     }
 }

@@ -24,8 +24,7 @@ public record ArtifactByteAccess(
             || lower.startsWith("file:")
             || reference.matches("^[A-Za-z]:.*")
             || reference.contains("://")
-            || reference.contains("\n")
-            || reference.contains("\r")) {
+            || reference.chars().anyMatch(Character::isISOControl)) {
             throw new IllegalArgumentException(fieldName + " must not be a private path or URI");
         }
         if (Arrays.asList(reference.split("/")).stream().anyMatch(part -> part.isBlank() || part.equals(".") || part.equals(".."))) {
@@ -35,6 +34,9 @@ public record ArtifactByteAccess(
     }
 
     private static String requireSafeToken(String value, String fieldName) {
+        if (value != null && value.chars().anyMatch(Character::isISOControl)) {
+            throw new IllegalArgumentException(fieldName + " must not contain control characters");
+        }
         var token = RequiredText.require(value, fieldName);
         var lower = token.toLowerCase(Locale.ROOT);
         if (lower.contains("secret")

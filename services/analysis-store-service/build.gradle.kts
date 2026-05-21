@@ -5,6 +5,7 @@ plugins {
 }
 
 dependencies {
+    implementation(libs.gson)
     implementation(libs.grpc.netty.shaded)
     implementation(libs.grpc.protobuf)
     implementation(libs.grpc.stub)

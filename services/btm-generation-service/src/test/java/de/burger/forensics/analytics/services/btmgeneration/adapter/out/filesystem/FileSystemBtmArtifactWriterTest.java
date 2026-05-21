@@ -17,6 +17,9 @@ import de.burger.forensics.analytics.services.btmgeneration.domain.BtmGeneration
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -94,6 +97,17 @@ class FileSystemBtmArtifactWriterTest {
     }
 
     @Test
+    void createsMissingArtifactRootBeforeWritingBtmArtifacts() {
+        var artifactRoot = tempDir.resolve("missing-artifact-root");
+        var writer = new FileSystemBtmArtifactWriter(artifactRoot);
+
+        var artifacts = writer.write(request(100_000));
+
+        assertTrue(Files.isRegularFile(artifactRoot.resolve(artifacts.artifacts().getFirst().artifact().path())));
+        assertTrue(Files.isRegularFile(artifactRoot.resolve(artifacts.artifacts().get(1).artifact().path())));
+    }
+
+    @Test
     void rejectsExistingArtifactWithDifferentBytes() throws Exception {
         Files.createDirectories(tempDir.resolve("btm"));
         Files.writeString(tempDir.resolve("btm/snapshot-1-job-1-rules.btm"), "different");
@@ -101,6 +115,94 @@ class FileSystemBtmArtifactWriterTest {
         var writer = new FileSystemBtmArtifactWriter(tempDir);
 
         assertThrows(BtmArtifactException.class, () -> writer.write(request(100_000)));
+    }
+
+    @Test
+    void rejectsNonRegularExistingBtmTargetsBeforeAcceptingBytes() throws Exception {
+        var writer = new FileSystemBtmArtifactWriter(tempDir);
+        var artifacts = writer.write(request(100_000));
+        var rulePath = tempDir.resolve(artifacts.artifacts().getFirst().artifact().path());
+        Files.delete(rulePath);
+        Files.createDirectory(rulePath);
+
+        assertThrows(BtmArtifactException.class, () -> writer.write(request(100_000)));
+
+        var manifestRoot = tempDir.resolve("manifest-directory");
+        var manifestWriter = new FileSystemBtmArtifactWriter(manifestRoot);
+        var manifestArtifacts = manifestWriter.write(request(100_000));
+        var manifestPath = manifestRoot.resolve(manifestArtifacts.artifacts().get(1).artifact().path());
+        Files.delete(manifestPath);
+        Files.createDirectory(manifestPath);
+
+        assertThrows(BtmArtifactException.class, () -> manifestWriter.write(request(100_000)));
+    }
+
+    @Test
+    void rejectsSymlinkedArtifactRootBeforeWritingBtmArtifacts() throws Exception {
+        var outside = Files.createDirectory(tempDir.resolve("outside-root"));
+        var symlinkRoot = tempDir.resolve("artifact-root-link");
+        Files.createSymbolicLink(symlinkRoot, outside);
+        var writer = new FileSystemBtmArtifactWriter(symlinkRoot);
+
+        assertThrows(BtmArtifactException.class, () -> writer.write(request(100_000)));
+        try (var files = Files.list(outside)) {
+            assertEquals(0, files.count());
+        }
+    }
+
+    @Test
+    void rejectsSymlinkedBtmDirectoryBeforeWritingArtifacts() throws Exception {
+        var outside = Files.createDirectory(tempDir.resolve("outside"));
+        Files.createSymbolicLink(tempDir.resolve("btm"), outside);
+        var writer = new FileSystemBtmArtifactWriter(tempDir);
+
+        assertThrows(BtmArtifactException.class, () -> writer.write(request(100_000)));
+        try (var files = Files.list(outside)) {
+            assertEquals(0, files.count());
+        }
+    }
+
+    @Test
+    void rejectsUnsafeRelativePathsInWriterGuard() throws Exception {
+        var relativePath = FileSystemBtmArtifactWriter.class.getDeclaredMethod("relativePath", String.class, String.class);
+        relativePath.setAccessible(true);
+
+        assertWriterPathRejected(relativePath, "");
+        assertWriterPathRejected(relativePath, "/tmp/rules.btm");
+        assertWriterPathRejected(relativePath, "file:rules.btm");
+        assertWriterPathRejected(relativePath, "https://example.test/rules.btm");
+        assertWriterPathRejected(relativePath, "C:/tmp/rules.btm");
+        assertWriterPathRejected(relativePath, "btm/./rules.btm");
+        assertWriterPathRejected(relativePath, "btm//rules.btm");
+        assertWriterPathRejected(relativePath, "btm/../rules.btm");
+    }
+
+    @Test
+    void rejectsFinalRuleSymlinkBeforeAcceptingExistingIdenticalBytes() throws Exception {
+        var writer = new FileSystemBtmArtifactWriter(tempDir);
+        var artifacts = writer.write(request(100_000));
+        var rulePath = tempDir.resolve(artifacts.artifacts().getFirst().artifact().path());
+        var outside = Files.writeString(tempDir.resolve("outside-rules.btm"), Files.readString(rulePath, StandardCharsets.UTF_8));
+        var outsideContent = Files.readString(outside, StandardCharsets.UTF_8);
+        Files.delete(rulePath);
+        Files.createSymbolicLink(rulePath, outside);
+
+        assertThrows(BtmArtifactException.class, () -> writer.write(request(100_000)));
+        assertEquals(outsideContent, Files.readString(outside, StandardCharsets.UTF_8));
+    }
+
+    @Test
+    void rejectsFinalManifestSymlinkBeforeAcceptingExistingIdenticalBytes() throws Exception {
+        var writer = new FileSystemBtmArtifactWriter(tempDir);
+        var artifacts = writer.write(request(100_000));
+        var manifestPath = tempDir.resolve(artifacts.artifacts().get(1).artifact().path());
+        var outside = Files.writeString(tempDir.resolve("outside-manifest.json"), Files.readString(manifestPath, StandardCharsets.UTF_8));
+        var outsideContent = Files.readString(outside, StandardCharsets.UTF_8);
+        Files.delete(manifestPath);
+        Files.createSymbolicLink(manifestPath, outside);
+
+        assertThrows(BtmArtifactException.class, () -> writer.write(request(100_000)));
+        assertEquals(outsideContent, Files.readString(outside, StandardCharsets.UTF_8));
     }
 
     private static BtmArtifactWriteRequest request(long maxArtifactBytes) {
@@ -159,6 +261,14 @@ class FileSystemBtmArtifactWriterTest {
                 probeKinds.size()
             )
         );
+    }
+
+    private static void assertWriterPathRejected(Method relativePath, String value) {
+        var failure = assertThrows(
+            InvocationTargetException.class,
+            () -> relativePath.invoke(null, value, "BTM artifact path")
+        );
+        assertTrue(failure.getCause() instanceof BtmArtifactException);
     }
 
 }

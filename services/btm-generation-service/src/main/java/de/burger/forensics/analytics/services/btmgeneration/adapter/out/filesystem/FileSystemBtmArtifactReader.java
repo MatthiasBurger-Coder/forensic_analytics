@@ -17,11 +17,16 @@ import de.burger.forensics.analytics.services.btmgeneration.domain.BtmGeneration
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 
 public final class FileSystemBtmArtifactReader implements BtmArtifactReaderPort {
@@ -46,7 +51,11 @@ public final class FileSystemBtmArtifactReader implements BtmArtifactReaderPort 
     @Override
     public InputStream open(ReadableBtmArtifact artifact) {
         try {
-            return Files.newInputStream(resolve(artifact.reference().artifact().path()));
+            return java.nio.channels.Channels.newInputStream(Files.newByteChannel(
+                resolve(artifact.reference().artifact().path()),
+                StandardOpenOption.READ,
+                LinkOption.NOFOLLOW_LINKS
+            ));
         } catch (IOException error) {
             throw new BtmArtifactDeliveryException(
                 BtmArtifactDeliveryException.Reason.FAILED_PRECONDITION,
@@ -59,7 +68,8 @@ public final class FileSystemBtmArtifactReader implements BtmArtifactReaderPort 
     private void verifyReadableArtifact(AnalysisArtifactReference reference) {
         var target = resolve(reference.artifact().path());
         try {
-            if (Files.size(target) != reference.artifact().sizeBytes()) {
+            var attributes = Files.readAttributes(target, java.nio.file.attribute.BasicFileAttributes.class, LinkOption.NOFOLLOW_LINKS);
+            if (attributes.size() != reference.artifact().sizeBytes()) {
                 throw new BtmArtifactDeliveryException(
                     BtmArtifactDeliveryException.Reason.FAILED_PRECONDITION,
                     "BTM artifact size does not match accepted metadata."
@@ -75,7 +85,7 @@ public final class FileSystemBtmArtifactReader implements BtmArtifactReaderPort 
     }
 
     private Path resolve(String artifactPath) {
-        var relativePath = Path.of(artifactPath).normalize();
+        var relativePath = relativePath(artifactPath);
         var target = artifactRoot.resolve(relativePath).normalize();
         if (!target.startsWith(artifactRoot)) {
             throw new BtmArtifactDeliveryException(
@@ -99,7 +109,35 @@ public final class FileSystemBtmArtifactReader implements BtmArtifactReaderPort 
         return target;
     }
 
+    private static Path relativePath(String artifactPath) {
+        var reference = Objects.requireNonNull(artifactPath, "artifactPath must not be null").replace('\\', '/');
+        var lower = reference.toLowerCase(Locale.ROOT);
+        if (reference.isBlank()
+            || reference.startsWith("/")
+            || lower.startsWith("file:")
+            || reference.contains("://")
+            || reference.matches("^[A-Za-z]:.*")) {
+            throw new BtmArtifactDeliveryException(
+                BtmArtifactDeliveryException.Reason.FAILED_PRECONDITION,
+                "Accepted BTM artifact path must be a safe relative path."
+            );
+        }
+        if (Arrays.stream(reference.split("/")).anyMatch(part -> part.isBlank() || part.equals(".") || part.equals(".."))) {
+            throw new BtmArtifactDeliveryException(
+                BtmArtifactDeliveryException.Reason.FAILED_PRECONDITION,
+                "Accepted BTM artifact path must not contain traversal, current-directory or blank path segments."
+            );
+        }
+        return Path.of(reference).normalize();
+    }
+
     private void rejectSymlinkSegments(Path relativePath) {
+        if (Files.isSymbolicLink(artifactRoot)) {
+            throw new BtmArtifactDeliveryException(
+                BtmArtifactDeliveryException.Reason.FAILED_PRECONDITION,
+                "Accepted BTM artifact path must not contain symbolic links."
+            );
+        }
         var probe = artifactRoot;
         for (var segment : relativePath) {
             probe = probe.resolve(segment);
@@ -114,7 +152,8 @@ public final class FileSystemBtmArtifactReader implements BtmArtifactReaderPort 
 
     private StoredBtmArtifactManifest storedManifest(AnalysisArtifactReference manifestReference) {
         try {
-            try (var reader = Files.newBufferedReader(resolve(manifestReference.artifact().path()))) {
+            try (var stream = Files.newInputStream(resolve(manifestReference.artifact().path()), LinkOption.NOFOLLOW_LINKS);
+                 var reader = new InputStreamReader(stream, StandardCharsets.UTF_8)) {
                 var document = JsonParser.parseReader(reader).getAsJsonObject();
                 return new StoredBtmArtifactManifest(
                     new AnalysisRunId(requiredString(document, "analysisRunId")),

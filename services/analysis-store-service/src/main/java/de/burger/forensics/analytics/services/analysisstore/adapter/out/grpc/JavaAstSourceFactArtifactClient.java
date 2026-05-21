@@ -12,6 +12,7 @@ import de.burger.forensics.analytics.services.analysisstore.domain.AnalysisCompl
 import de.burger.forensics.analytics.services.analysisstore.domain.ArtifactByteAccess;
 import de.burger.forensics.analytics.services.analysisstore.domain.ArtifactByteCustody;
 import de.burger.forensics.analytics.services.analysisstore.domain.ArtifactReference;
+import de.burger.forensics.analytics.services.analysisstore.adapter.out.javaast.JavaAstSourceFactArtifactPayloadParser;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.StatusRuntimeException;
@@ -69,6 +70,7 @@ public final class JavaAstSourceFactArtifactClient implements SourceFactArtifact
 
     private final ManagedChannel channel;
     private final JavaAstAnalysisServiceGrpc.JavaAstAnalysisServiceBlockingStub stub;
+    private final JavaAstSourceFactArtifactPayloadParser sourceFactPayloadParser;
     private final long deadlineSeconds;
     private final long maxBytes;
 
@@ -83,6 +85,7 @@ public final class JavaAstSourceFactArtifactClient implements SourceFactArtifact
     ) {
         this.channel = null;
         this.stub = Objects.requireNonNull(stub, "stub must not be null");
+        this.sourceFactPayloadParser = new JavaAstSourceFactArtifactPayloadParser();
         this.deadlineSeconds = requirePositive(deadlineSeconds, "deadlineSeconds");
         this.maxBytes = requirePositive(maxBytes, "maxBytes");
     }
@@ -90,6 +93,7 @@ public final class JavaAstSourceFactArtifactClient implements SourceFactArtifact
     private JavaAstSourceFactArtifactClient(ManagedChannel channel, long deadlineSeconds, long maxBytes) {
         this.channel = Objects.requireNonNull(channel, "channel must not be null");
         this.stub = JavaAstAnalysisServiceGrpc.newBlockingStub(channel);
+        this.sourceFactPayloadParser = new JavaAstSourceFactArtifactPayloadParser();
         this.deadlineSeconds = requirePositive(deadlineSeconds, "deadlineSeconds");
         this.maxBytes = requirePositive(maxBytes, "maxBytes");
     }
@@ -152,7 +156,9 @@ public final class JavaAstSourceFactArtifactClient implements SourceFactArtifact
                 throw new IllegalStateException("Java AST source fact artifact size mismatch");
             }
             requireVerifiedArtifactMetadata(artifactReference, response.getSourceFactArtifact());
-            return new SourceFactArtifactBytes(canonicalArtifact(response.getSourceFactArtifact()), content);
+            var canonicalArtifact = canonicalArtifact(response.getSourceFactArtifact());
+            requireContractPayload(analysisRunId, analysisJobId, sourceSnapshotId, canonicalArtifact, content);
+            return new SourceFactArtifactBytes(canonicalArtifact, content);
         } catch (StatusRuntimeException error) {
             throw new IllegalStateException("Java AST source fact artifact retrieval failed with status "
                 + error.getStatus().getCode());
@@ -203,6 +209,30 @@ public final class JavaAstSourceFactArtifactClient implements SourceFactArtifact
         if (!metadataSignature(expected).equals(metadataSignature(actual))) {
             throw new IllegalStateException("Java AST source fact artifact metadata mismatch");
         }
+    }
+
+    private void requireContractPayload(
+        de.burger.forensics.analytics.services.analysisstore.domain.AnalysisRunId analysisRunId,
+        de.burger.forensics.analytics.services.analysisstore.domain.AnalysisJobId analysisJobId,
+        de.burger.forensics.analytics.services.analysisstore.domain.SourceSnapshotId sourceSnapshotId,
+        AnalysisArtifactReference artifact,
+        byte[] content
+    ) {
+        var parsed = sourceFactPayloadParser.parse(analysisRunId, analysisJobId, sourceSnapshotId, artifact, content);
+        var violations = parsed.diagnostics().stream()
+            .filter(JavaAstSourceFactArtifactClient::isPayloadContractViolation)
+            .toList();
+        if (!violations.isEmpty()) {
+            throw new IllegalStateException("Java AST source fact artifact payload violates the v1 contract.");
+        }
+        if (parsed.completeness() != artifact.completeness()) {
+            throw new IllegalStateException("Java AST source fact artifact payload completeness does not match metadata.");
+        }
+    }
+
+    private static boolean isPayloadContractViolation(JavaAstSourceFactArtifactPayloadParser.SourceFactPayloadDiagnostic diagnostic) {
+        return diagnostic.code().startsWith("SOURCE_FACT_ARTIFACT")
+            || diagnostic.code().startsWith("UNSUPPORTED_STATIC_");
     }
 
     private static List<String> metadataSignature(AnalysisArtifactReference artifact) {

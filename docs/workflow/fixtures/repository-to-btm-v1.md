@@ -46,6 +46,13 @@ Required fields:
 - `btmManifestState`: generated manifest state
 - `btmDeliveryState`: public delivery state
 
+The Java AST source-fact artifact referenced by `sourceFactArtifactType` uses
+the external payload contract in
+`contracts/grpc/java-ast-source-facts-v1.schema.json`. Service-local tests may
+use synthetic source-fact JSON that follows this schema, but shared Java DTOs
+or shared fixture modules are forbidden. Analysis Store tests must parse the
+payload into Analysis Store-owned static fact models only.
+
 No field may contain raw source code, local absolute paths, `file:` URIs,
 credentials, tokens, private repository coordinates or host workspace details.
 Missing build-output or Joern inputs remain explicit unavailable diagnostics.

@@ -23,6 +23,9 @@ class AnalysisStoreDomainModelTest {
         assertThrows(IllegalArgumentException.class, () -> new ArtifactReference("file:/tmp/private/artifact.json", "application/json", "sha", 1));
         assertThrows(IllegalArgumentException.class, () -> new ArtifactReference("../private/artifact.json", "application/json", "sha", 1));
         assertThrows(IllegalArgumentException.class, () -> new ArtifactReference("artifacts/./artifact.json", "application/json", "sha", 1));
+        assertThrows(IllegalArgumentException.class, () -> new ArtifactReference("artifacts/\tartifact.json", "application/json", "sha", 1));
+        assertThrows(IllegalArgumentException.class, () -> new ArtifactReference("\tartifacts/artifact.json", "application/json", "sha", 1));
+        assertThrows(IllegalArgumentException.class, () -> new ArtifactReference("artifacts/artifact.json\n", "application/json", "sha", 1));
         assertThrows(IllegalArgumentException.class, () -> new ArtifactReference("artifact.json", "application/json", "sha", -1));
         assertThrows(IllegalArgumentException.class, () -> new ArtifactByteAccess(
             "java-ast-analysis-service",
@@ -46,6 +49,24 @@ class AnalysisStoreDomainModelTest {
             "java-ast-analysis-service",
             "analysis-job.v1.ArtifactBytes",
             "artifacts/secret-token",
+            ArtifactByteCustody.PRODUCER_RETAINED
+        ));
+        assertThrows(IllegalArgumentException.class, () -> new ArtifactByteAccess(
+            "java-ast-analysis-service",
+            "analysis-job.v1.ArtifactBytes",
+            "artifacts/\u0000artifact",
+            ArtifactByteCustody.PRODUCER_RETAINED
+        ));
+        assertThrows(IllegalArgumentException.class, () -> new ArtifactByteAccess(
+            "java-ast-analysis-service",
+            "analysis-job.v1.ArtifactBytes",
+            "\tartifacts/artifact",
+            ArtifactByteCustody.PRODUCER_RETAINED
+        ));
+        assertThrows(IllegalArgumentException.class, () -> new ArtifactByteAccess(
+            "java-ast-analysis-service",
+            "analysis-job.v1.ArtifactBytes",
+            "artifacts/artifact\n",
             ArtifactByteCustody.PRODUCER_RETAINED
         ));
         assertThrows(NullPointerException.class, () -> new AnalysisArtifactReference(

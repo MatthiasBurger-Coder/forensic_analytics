@@ -28,6 +28,7 @@ into implemented runtime evidence.
 | planned `contracts/grpc/build-artifact-worker.proto` or approved owner API | Complete build-output package production contract | Planned by workflow v2 and retained by v3/v4; no file exists until a slice verifies the name and service boundary |
 | repository-to-BTM orchestration owner API | Worker-dispatch/job-graph owner contract between Gateway and Analysis Store | Implemented by workflow v3 Slice 11 in `contracts/grpc/analysis-job.proto`; end-to-end orchestration may only use this owner API and readiness bridge |
 | `contracts/grpc/java-ast-analysis.proto` | Java AST source-fact worker and source-fact byte retrieval contract | Current verified for Java AST source snapshot analysis and Slice 12 source-fact byte owner retrieval |
+| `contracts/grpc/java-ast-source-facts-v1.schema.json` | Java AST source-fact artifact payload contract | Slice 13 contract for `application/vnd.forensic-analytics.java-ast-source-facts.v1+json`; consumed by Analysis Store adapter parsing without shared Java DTOs |
 | `contracts/grpc/joern-cpg-analysis.proto` | Joern CPG/CFG/DFG semantic artifact worker contract | Planned initial contract |
 | `contracts/grpc/btm-generation.proto` | BTM generation, generated artifact metadata and public BTM artifact delivery contract | Planned initial contract |
 | `contracts/openapi/gateway-api.yaml` | Public Gateway REST contract | Mixed current verified and planned initial operations; repository-to-BTM submission is planned initial |

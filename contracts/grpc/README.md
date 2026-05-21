@@ -65,6 +65,18 @@ artifact metadata, byte access, completeness and diagnostics cross the
 Repository Analysis boundary through its gRPC contract rather than through
 workspace paths or implementation imports.
 
+The Java AST source-fact artifact payload media type is
+`application/vnd.forensic-analytics.java-ast-source-facts.v1+json`. Its v1
+payload contract is documented in `java-ast-source-facts-v1.schema.json`.
+The byte transport remains `GetSourceFactArtifactBytes`; the schema defines
+the JSON document carried in the returned bytes, not a duplicate protobuf fact
+stream. Analysis Store may parse this payload only inside service-local
+adapter code and must map it into Analysis Store-owned fact models. The JSON
+payload must preserve analysis identity, source snapshot identity, scan
+summary, source facts and diagnostics, use safe relative source paths only and
+must not contain workspace paths, `file:` URIs, repository URLs, credentials or
+raw source content.
+
 `joern-cpg-analysis.proto` is intentionally limited to static semantic Joern
 analysis. It accepts opaque workspace IDs, source snapshot IDs, relative source
 roots and bounded policy data through the service boundary. It returns
