@@ -94,6 +94,59 @@ class GatewaySubmissionHttpClientTest {
         assertFalse(error.getMessage().contains("/tmp"));
     }
 
+    @Test
+    void mapsIncompleteOrMalformedGatewayResponsesToRedactedCliExceptions() {
+        var missingPublicField = new RecordingHttpClient(
+            202,
+            """
+                {"analysisRunId":"analysis-run-1","status":"ACCEPTED","diagnostics":"not-an-array"}
+                """
+        );
+        var malformedError = new RecordingHttpClient(500, "{not-json");
+        var sparseError = new RecordingHttpClient(503, "{\"code\":null,\"diagnostics\":[]}");
+
+        assertTrue(assertThrows(
+            CliGatewayException.class,
+            () -> new GatewaySubmissionHttpClient(missingPublicField, new Gson()).submit(command())
+        ).getMessage().contains("statusUrl"));
+        assertTrue(assertThrows(
+            CliGatewayException.class,
+            () -> new GatewaySubmissionHttpClient(malformedError, new Gson()).submit(command())
+        ).getMessage().contains("code=UNKNOWN"));
+        assertTrue(assertThrows(
+            CliGatewayException.class,
+            () -> new GatewaySubmissionHttpClient(sparseError, new Gson()).submit(command())
+        ).getMessage().contains("correlationId=unknown"));
+    }
+
+    @Test
+    void validatesGatewaySubmitCommandBoundaries() {
+        assertEquals(
+            URI.create("http://gateway.example/api/repository-analyses"),
+            commandWithGateway("http://gateway.example/api/").repositoryAnalysesUri()
+        );
+        assertEquals("commit-1", commandWithBranchAndCommit("", "commit-1").commit());
+        assertEquals("", commandWithBranchAndCommit("main", null).commit());
+
+        assertThrows(CliUsageException.class, () -> commandWithOutputs(List.of()));
+        assertThrows(CliUsageException.class, () -> commandWithOutputs(List.of("REPORT")));
+        assertThrows(CliUsageException.class, () -> commandWithDeclaredModules(List.of()));
+        assertThrows(CliUsageException.class, () -> commandWithDeclaredModules(List.of(" ")));
+        assertThrows(CliUsageException.class, () -> commandWithTimeout(0));
+        assertThrows(CliUsageException.class, () -> commandWithTimeout(3_601));
+        assertThrows(CliUsageException.class, () -> commandWithMaxWorkspaceBytes(0));
+        assertThrows(CliUsageException.class, () -> commandWithMaxWorkspaceBytes(107_374_182_401L));
+        assertThrows(CliUsageException.class, () -> commandWithGateway("ftp://gateway.example/api"));
+        assertThrows(CliUsageException.class, () -> commandWithGateway("http:/api"));
+        assertThrows(CliUsageException.class, () -> commandWithGateway("http://user@gateway.example/api"));
+        assertThrows(CliUsageException.class, () -> commandWithGateway("http://gateway.example/api?debug=true"));
+        assertThrows(CliUsageException.class, () -> commandWithGateway("http://gateway.example/api#debug"));
+        assertThrows(CliUsageException.class, () -> commandWithRepositoryUrl("http://example.com/acme/demo.git"));
+        assertThrows(CliUsageException.class, () -> commandWithRepositoryUrl("https://user@example.com/acme/demo.git"));
+        assertThrows(CliUsageException.class, () -> commandWithCorrelationId("bad correlation"));
+        assertThrows(CliUsageException.class, () -> commandWithRequestId(" "));
+    }
+
     private static GatewaySubmitCommand command() {
         return new GatewaySubmitCommand(
             URI.create("http://gateway.example/api"),
@@ -101,6 +154,204 @@ class GatewaySubmissionHttpClientTest {
             "main",
             "",
             "request-1",
+            "gateway.v1",
+            List.of("BTM_RULES"),
+            "github",
+            "gradle",
+            "build-1",
+            "demo",
+            List.of(":app"),
+            "correlation-1",
+            "idem-1",
+            60,
+            100_000,
+            true
+        );
+    }
+
+    private static GatewaySubmitCommand commandWithGateway(String gateway) {
+        return new GatewaySubmitCommand(
+            URI.create(gateway),
+            "https://example.com/acme/demo.git",
+            "main",
+            "",
+            "request-1",
+            "gateway.v1",
+            List.of("BTM_RULES"),
+            "github",
+            "gradle",
+            "build-1",
+            "demo",
+            List.of(":app"),
+            "correlation-1",
+            "idem-1",
+            60,
+            100_000,
+            true
+        );
+    }
+
+    private static GatewaySubmitCommand commandWithBranchAndCommit(String branch, String commit) {
+        return new GatewaySubmitCommand(
+            URI.create("http://gateway.example/api"),
+            "https://example.com/acme/demo.git",
+            branch,
+            commit,
+            "request-1",
+            "gateway.v1",
+            List.of("BTM_RULES"),
+            "",
+            "gradle",
+            "build-1",
+            "demo",
+            List.of(":app"),
+            "correlation-1",
+            "idem-1",
+            60,
+            100_000,
+            false
+        );
+    }
+
+    private static GatewaySubmitCommand commandWithOutputs(List<String> outputs) {
+        return new GatewaySubmitCommand(
+            URI.create("http://gateway.example/api"),
+            "https://example.com/acme/demo.git",
+            "main",
+            "",
+            "request-1",
+            "gateway.v1",
+            outputs,
+            "github",
+            "gradle",
+            "build-1",
+            "demo",
+            List.of(":app"),
+            "correlation-1",
+            "idem-1",
+            60,
+            100_000,
+            true
+        );
+    }
+
+    private static GatewaySubmitCommand commandWithDeclaredModules(List<String> declaredModules) {
+        return new GatewaySubmitCommand(
+            URI.create("http://gateway.example/api"),
+            "https://example.com/acme/demo.git",
+            "main",
+            "",
+            "request-1",
+            "gateway.v1",
+            List.of("BTM_RULES"),
+            "github",
+            "gradle",
+            "build-1",
+            "demo",
+            declaredModules,
+            "correlation-1",
+            "idem-1",
+            60,
+            100_000,
+            true
+        );
+    }
+
+    private static GatewaySubmitCommand commandWithTimeout(long timeoutSeconds) {
+        return new GatewaySubmitCommand(
+            URI.create("http://gateway.example/api"),
+            "https://example.com/acme/demo.git",
+            "main",
+            "",
+            "request-1",
+            "gateway.v1",
+            List.of("BTM_RULES"),
+            "github",
+            "gradle",
+            "build-1",
+            "demo",
+            List.of(":app"),
+            "correlation-1",
+            "idem-1",
+            timeoutSeconds,
+            100_000,
+            true
+        );
+    }
+
+    private static GatewaySubmitCommand commandWithMaxWorkspaceBytes(long maxWorkspaceBytes) {
+        return new GatewaySubmitCommand(
+            URI.create("http://gateway.example/api"),
+            "https://example.com/acme/demo.git",
+            "main",
+            "",
+            "request-1",
+            "gateway.v1",
+            List.of("BTM_RULES"),
+            "github",
+            "gradle",
+            "build-1",
+            "demo",
+            List.of(":app"),
+            "correlation-1",
+            "idem-1",
+            60,
+            maxWorkspaceBytes,
+            true
+        );
+    }
+
+    private static GatewaySubmitCommand commandWithRepositoryUrl(String repositoryUrl) {
+        return new GatewaySubmitCommand(
+            URI.create("http://gateway.example/api"),
+            repositoryUrl,
+            "main",
+            "",
+            "request-1",
+            "gateway.v1",
+            List.of("BTM_RULES"),
+            "github",
+            "gradle",
+            "build-1",
+            "demo",
+            List.of(":app"),
+            "correlation-1",
+            "idem-1",
+            60,
+            100_000,
+            true
+        );
+    }
+
+    private static GatewaySubmitCommand commandWithCorrelationId(String correlationId) {
+        return new GatewaySubmitCommand(
+            URI.create("http://gateway.example/api"),
+            "https://example.com/acme/demo.git",
+            "main",
+            "",
+            "request-1",
+            "gateway.v1",
+            List.of("BTM_RULES"),
+            "github",
+            "gradle",
+            "build-1",
+            "demo",
+            List.of(":app"),
+            correlationId,
+            "idem-1",
+            60,
+            100_000,
+            true
+        );
+    }
+
+    private static GatewaySubmitCommand commandWithRequestId(String requestId) {
+        return new GatewaySubmitCommand(
+            URI.create("http://gateway.example/api"),
+            "https://example.com/acme/demo.git",
+            "main",
+            "",
+            requestId,
             "gateway.v1",
             List.of("BTM_RULES"),
             "github",

@@ -34,7 +34,7 @@
 | S04 | COMPLETED | Strengthened separate Swarm/Kubernetes workflow handoff; no manifests, stack files or readiness claims added. |
 | S05 | COMPLETED | Added monolith caller inventory and retirement gates; no legacy path removed. |
 | S06 | COMPLETED | Added explicit CLI `gateway-submit` path through Gateway contract; local `analyze` remains documented legacy. |
-| S07 | PENDING | Conditional legacy runtime path retirement. |
+| S07 | NO_REMOVAL_SAFE | Caller evidence still blocks legacy runtime removal; no module or path removed. |
 | S08 | PENDING | Final documentation and quality gate. |
 
 ## Commands Executed During Creation
@@ -235,7 +235,7 @@ Notes:
 |---|---|
 | Owner | Microservice Senior Expert |
 | Secondary reviewers | Senior System Architect, Senior Java Backend, Senior Tester |
-| Changed files | `docs/architecture/monolith-caller-retirement-plan.md`; `docs/architecture/service-migration-map.md`; `docs/workflow/execution-report.md` |
+| Changed files | `docs/architecture/monolith-caller-retirement-plan.md`; `docs/architecture/service-migration-map.md`; `docs/workflow/execution-report.md`; `forensic-analytics-cli/src/test/java/de/burger/forensics/analytics/cli/GatewaySubmissionHttpClientTest.java` |
 | Decision | COMPLETED |
 
 Role-review checklist:
@@ -295,3 +295,38 @@ Notes:
 - `gateway-submit` is the migrated repository-to-BTM CLI submission path.
 - The CLI module still contains the legacy local `analyze` command; S06 does not remove it.
 - No shared Gateway Java implementation classes, generated DTO modules or service-local domain models were added to CLI.
+
+## S07 Conditional Legacy Runtime Path Retirement
+
+| Field | Result |
+|---|---|
+| Owner | Senior System Architect |
+| Secondary reviewers | Senior Java Backend, Microservice Senior Expert, Senior DevOps, Senior Tester |
+| Changed files | `docs/architecture/monolith-caller-retirement-plan.md`; `docs/architecture/service-migration-map.md`; `docs/workflow/execution-report.md` |
+| Decision | `NO_REMOVAL_SAFE` |
+
+Role-review checklist:
+
+| Role | Result |
+|---|---|
+| Senior System Architect | PASS, removal is blocked because current production and test callers still exist. |
+| Senior Java Backend | PASS, `settings.gradle.kts` and legacy modules are left unchanged. |
+| Microservice Senior Expert | PASS, service autonomy is not overclaimed from the new CLI Gateway command. |
+| Senior DevOps | PASS, no runtime or deployment path is removed without rollback evidence. |
+| Senior Tester | PASS, monolith regression evidence is retained because replacement parity is incomplete. |
+
+Verification:
+
+| Command | Result |
+|---|---|
+| `rg -n "RunRepositoryAnalysisUseCase|DefaultRepositoryAnalysisIngestionUseCase|RepositoryAnalysisIngestionUseCase|forensic-analytics-engine|forensic-analytics-rest|forensic-analytics-bootstrap|forensic-analytics-boot-app|forensic-analytics-ingestion-request|forensic-analytics-testbed" settings.gradle.kts forensic-analytics-* services docs -S` | PASS, active callers and module references still exist. |
+| `./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace` | FAILED on first completed run: `checkPackageCoverage` reported `de.burger.forensics.analytics.cli branch coverage is 66.95%`. |
+| `./gradlew :forensic-analytics-cli:test :forensic-analytics-cli:jacocoTestReport --dependency-verification strict --console=plain --stacktrace` | PASS after adding coverage for Gateway submit validation and Gateway error mapping. CLI package branch coverage rose to 88.14%. |
+| `./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace` | PASS after the CLI coverage remediation. |
+
+Notes:
+
+- No `settings.gradle.kts` entry was removed.
+- No legacy module, package, class or runtime path was removed.
+- The new `gateway-submit` command does not make local `analyze`, REST, Bootstrap, Boot, Engine, Ingestion Request or Testbed caller-free.
+- The CLI test change is a S06 quality remediation discovered by the S07 full-gate coverage check.

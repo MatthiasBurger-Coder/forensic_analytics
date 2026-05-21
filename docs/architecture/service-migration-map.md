@@ -88,6 +88,11 @@ active production or test callers for CLI, REST, Bootstrap, Boot App, Engine,
 Ingestion Request, Testbed and shared application/domain modules. No path is
 caller-free in Slice 05.
 
+Slice 07 completes as `NO_REMOVAL_SAFE` for the same workflow. The new CLI
+`gateway-submit` path is routed through the Gateway contract, but the legacy
+local `analyze` command and the other in-process runtime paths still have active
+production or test callers. No module is removed from `settings.gradle.kts`.
+
 ## Migration Sequencing
 
 1. Keep current modules unchanged.

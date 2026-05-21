@@ -63,3 +63,23 @@ is not caller-free and must remain available unless a later slice explicitly
 deprecates it with tests and migration notes. Therefore the CLI module is not
 fully retired from monolith dependencies in Slice 06; only the new
 repository-to-BTM Gateway submission path is caller-free.
+
+## S07 Conditional Retirement Result
+
+Slice 07 completes as `NO_REMOVAL_SAFE`.
+
+No `settings.gradle.kts` entry, module, package, class or runtime path is
+removed because caller evidence still finds active production or test references
+for:
+
+- `forensic-analytics-cli` local `analyze` and `ingest-request` behavior;
+- `forensic-analytics-rest` repository analysis adapter;
+- `forensic-analytics-bootstrap` combined runtime wiring;
+- `forensic-analytics-boot-app` Spring Boot runtime wiring;
+- `forensic-analytics-engine` repository analysis wrapper;
+- `forensic-analytics-ingestion-request` engine request import helper;
+- `forensic-analytics-testbed` monolith parity and E2E coverage.
+
+Removal remains blocked until a later slice proves caller-free evidence,
+replacement parity, rollback or explicit deprecation strategy and a quality gate
+that is not weakened by deleting the current regression evidence.
