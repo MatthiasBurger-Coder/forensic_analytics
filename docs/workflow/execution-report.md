@@ -7,7 +7,7 @@
 | Workflow version | `fa-msa-001-microservice-decomposition-20260521-v1` |
 | Requirement ID | `FA-MSA-001` |
 | Branch | `architecture/workflow-microservice-decomposition-20260521` |
-| Status | Not executed |
+| Status | Executing |
 
 ## Workflow Creation Evidence
 
@@ -25,7 +25,7 @@
 
 | Slice | Status | Notes |
 |---|---|---|
-| S00 | PENDING | Execution preflight and context freeze |
+| S00 | COMPLETED | Branch, local ref, clean status, context-pack hashes, S3D metadata and `git diff --check` verified. |
 | S01 | PENDING | ADR and arc42 target landscape reconciliation |
 | S02 | PENDING | Caller and coupling inventory gate |
 | S03 | PENDING | Contract-first communication baseline |
@@ -44,18 +44,26 @@
 
 ## Command Log
 
-Execution commands must be appended during `workflow execute` with:
+| Slice | Command | Result |
+|---|---|---|
+| S00 | `git branch --show-current && git show-ref --verify --quiet refs/heads/architecture/workflow-microservice-decomposition-20260521 && git status --short --branch` | PASS: active branch and local ref verified; working tree clean before S00 report update. |
+| S00 | `sha256sum AGENTS.md QUALITY.md .codex/AGENTS.md .codex/workflow/workflow-execution-rules.md .agents/orchestrator/routing-rules.md .agents/orchestrator/swarm-orchestrator.md .agents/skills/workflow-authoring/SKILL.md .agents/skills/three-amigos-requirement-gatekeeper/SKILL.md .agents/skills/execution-profile-router/SKILL.md .agents/skills/microservice-migration-safety-gate/SKILL.md docs/adr/ADR-0017-target-microservices-service-landscape.md docs/architecture/target-microservices-architecture.md settings.gradle.kts build.gradle.kts` | PASS: hashes match `docs/workflow/context-pack.json`. |
+| S00 | `git diff --check` | PASS: no whitespace errors. |
+| S00 | S3D metadata validation script over `docs/workflow/workflow.md` | PASS: 16 slices, concrete IDs, complete required metadata, no unknown dependencies, no cycles. |
 
-- command;
-- working directory;
-- pass, fail or skipped status;
-- failure summary when relevant;
-- whether the failure was caused by the current slice.
+## Subagent Review Log
+
+| Slice | Reviewer | Result |
+|---|---|---|
+| S00 | Senior Execution Orchestrator subagent | PASS: S00 metadata, dependency shape, branch/scope, context-pack hashes and quality checks verified. |
+| S00 | Senior Tester subagent | PASS: S00 gates are sufficient; broader Gradle tests are not required for S00 because no Java, Gradle, contract or runtime files changed. |
+| S00 | Senior System Architect subagent | PASS: no architecture/governance blocker prevents starting S01; known ADR/arc42 service-name drift is intentionally assigned to S01. |
 
 ## Blockers
 
-No blocker prevents workflow creation. Execution blockers are documented in
-`docs/workflow/workflow.md` per slice.
+No active blocker for S00. Production migration remains blocked until S01
+reconciles ADR/arc42 target names, S03 reconciles contracts and S04 resolves
+data ownership.
 
 ## Final Acceptance
 
