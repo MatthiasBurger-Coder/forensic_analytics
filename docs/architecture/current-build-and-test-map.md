@@ -178,6 +178,10 @@ Compose startup, Gateway plus service health checks and Compose cleanup. This
 is local repository-to-BTM readiness only and does not claim production-wide
 Compose, Swarm or Kubernetes readiness.
 
+The active E2E/WildFly/CLI workflow records a separate Swarm and Kubernetes
+workflow handoff in `docs/workflow/deployment-workflow-request.md`. That handoff
+does not add stack files, manifests or readiness claims.
+
 Missing deployment material:
 
 - `deployment/docker-compose/docker-compose.yml`

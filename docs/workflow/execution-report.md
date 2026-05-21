@@ -31,7 +31,7 @@
 | S01 | COMPLETED | Added deterministic local real repository E2E fixture and test; targeted and module test gates passed. |
 | S02 | COMPLETED | Added WildFly hardening runbook and documented opt-in external evidence; targeted skip/default gate passed. |
 | S03 | COMPLETED | Added explicit planned CLI-to-Gateway contract, OpenAPI markers and contract tests; REST and CLI module gates passed. |
-| S04 | PENDING | Separate deployment workflow handoff. |
+| S04 | COMPLETED | Strengthened separate Swarm/Kubernetes workflow handoff; no manifests, stack files or readiness claims added. |
 | S05 | PENDING | Monolith caller inventory. |
 | S06 | PENDING | CLI first caller-free migration. |
 | S07 | PENDING | Conditional legacy runtime path retirement. |
@@ -198,3 +198,33 @@ Notes:
 - The new CLI contract does not claim that `forensic-analytics-cli` already calls `forensic-gateway-service`.
 - A later implementation slice must add an explicit Gateway mode or Gateway command before CLI traffic can move to Gateway.
 - The existing local-path `analyze` command must not be silently routed to Gateway.
+
+## S04 Separate Swarm And Kubernetes Workflow Handoff
+
+| Field | Result |
+|---|---|
+| Owner | Senior DevOps |
+| Secondary reviewers | Microservice Senior Expert, Senior System Architect, Senior Tester |
+| Changed files | `docs/workflow/deployment-workflow-request.md`; `deployment/docker-swarm/README.md`; `deployment/kubernetes/README.md`; `docs/architecture/current-build-and-test-map.md`; `docs/workflow/execution-report.md` |
+| Decision | COMPLETED |
+
+Role-review checklist:
+
+| Role | Result |
+|---|---|
+| Senior DevOps | PASS, the future deployment workflow now names baseline files, service image ownership checks, health/readiness/liveness checks, resource policies, rollback and validation expectations. |
+| Microservice Senior Expert | PASS, Swarm and Kubernetes readiness remains tied to service-owned deployment evidence and is not inferred from Compose or contract files. |
+| Senior System Architect | PASS, ADR-0017, ADR-0018 and arc42 deployment view remain aligned with a separate deployment workflow. |
+| Senior Tester | PASS, this documentation-only slice uses the required `git diff --check` gate and adds no runtime dependency to the default Gradle gate. |
+
+Verification:
+
+| Command | Result |
+|---|---|
+| `git diff --check` | PASS |
+
+Notes:
+
+- No Docker Swarm stack file was added.
+- No Kubernetes manifest or chart was added.
+- No deployment readiness claim was added.
