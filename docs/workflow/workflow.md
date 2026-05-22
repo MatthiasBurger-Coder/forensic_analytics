@@ -1099,6 +1099,16 @@ affected_files:
   - forensic-analytics-observability/**
   - forensic-analytics-persistence/**
   - forensic-analytics-rest/**
+  - docs/arc42/05-building-block-view.md
+  - docs/arc42/07-deployment-view.md
+  - docs/arc42/08-crosscutting-concepts.md
+  - docs/architecture/current-build-and-test-map.md
+  - docs/architecture/current-coupling-map.md
+  - docs/architecture/monolith-caller-retirement-plan.md
+  - docs/architecture/monolith-runtime-isolation.md
+  - docs/architecture/service-boundaries.md
+  - docs/workflow/execution-report.md
+  - services/README.md
 affected_modules:
   - forensic-analytics-application
   - forensic-analytics-boot-app
@@ -1124,6 +1134,16 @@ parallel_group: G09
 file_locks:
   - settings.gradle.kts
   - forensic-analytics-*/**
+  - docs/arc42/05-building-block-view.md
+  - docs/arc42/07-deployment-view.md
+  - docs/arc42/08-crosscutting-concepts.md
+  - docs/architecture/current-build-and-test-map.md
+  - docs/architecture/current-coupling-map.md
+  - docs/architecture/monolith-caller-retirement-plan.md
+  - docs/architecture/monolith-runtime-isolation.md
+  - docs/architecture/service-boundaries.md
+  - docs/workflow/execution-report.md
+  - services/README.md
 contract_locks: []
 architecture_locks:
   - monolith-module-removal

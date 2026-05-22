@@ -39,7 +39,7 @@
 | S11 | COMPLETED | CLI client target public API boundary extracted; service test/build, OpenAPI contract test, predecessor CLI test, root test, role checklist reviews and whitespace gate passed. |
 | S12 | COMPLETED | Observability stack registered as deployment-oriented policy boundary; service no-source test, root test, static boundary scans, documentation reviews and whitespace gate passed. |
 | S13 | COMPLETED | Testbed registered as non-production integration/system-test boundary; target testbed gate, root test, stop-condition scans, local role checklists and whitespace gate passed. |
-| S14 | PENDING | Legacy shared module retirement |
+| S14 | IN_PROGRESS | Scope remediation added required arc42, architecture, services README and execution report locks before retirement preflight scans. |
 | S15 | PENDING | Runtime readiness, architecture tests and closure |
 
 ## Command Log
@@ -214,6 +214,8 @@
 | S13 | `git diff --check` | PASS: no whitespace errors after S13 implementation and documentation updates. |
 | S13 | `./gradlew test --dependency-verification strict --console=plain --stacktrace` | PASS: build successful in 40s; the root test suite includes the registered `services:testbed` target and the retained `forensic-analytics-testbed` module. |
 | S13 | `git diff --cached --check` | PASS: no whitespace errors after staging only S13 files, including new testbed sources and fixtures. |
+| S14 | S14 workflow-scope review | BLOCKED before scope remediation: S14 requires final building-block/deployment documentation and retirement evidence updates, but `docs/arc42/**`, `docs/architecture/**`, `docs/workflow/execution-report.md` and `services/README.md` were absent from S14 affected files and file locks. |
+| S14 scope remediation | `git diff --check` | PASS: no whitespace errors after adding the missing S14 documentation and report locks. |
 
 ## Subagent Review Log
 
