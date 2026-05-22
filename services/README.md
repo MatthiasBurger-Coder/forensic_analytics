@@ -62,17 +62,24 @@ query API responsibility moves first to `query-report-api-service`.
 - `analysis-orchestrator-service`
 - `query-report-api-service`
 - `cli-client` (public API client boundary, not a productive backend service)
+- `observability-stack` (deployment observability boundary, not a productive backend service)
 
-These target-name service roots and the public API client boundary are additive
-migration evidence. Their predecessor service directories and legacy modules
-remain rollback/current state evidence until later retirement slices prove
-caller migration, parity and quality gates.
+These target-name service roots, the public API client boundary and the
+deployment observability boundary are additive migration evidence. Their
+predecessor service directories and legacy modules remain rollback/current
+state evidence until later retirement slices prove caller migration, parity and
+quality gates.
 
 S11 creates `services/cli-client` as an independently buildable public API
 client. It must not be treated as a productive backend service. The legacy
 `forensic-analytics-cli` module remains current-state evidence for local
 `analyze` and `ingest-request` behavior and must not be silently routed through
 the public API.
+
+S12 creates `services/observability-stack` as deployment-oriented
+observability policy material. It is not a shared Java logging or
+observability module, and it does not claim Docker Compose, Swarm or
+Kubernetes runtime readiness.
 
 ## Local Runtime Evidence
 

@@ -1,0 +1,36 @@
+version: fa-msa-001-observability-stack-v1
+status: policy-material
+owner: observability-stack
+evidenceClassification: operational-diagnostics-only
+allowedLogFields:
+  - service
+  - operation
+  - phase
+  - correlationId
+  - durationMs
+  - errorType
+  - status
+forbiddenLogValues:
+  - methodArguments
+  - methodReturnValues
+  - rawPayloads
+  - sourceContent
+  - stackFrames
+  - rawExceptionMessages
+  - credentials
+  - tokens
+  - privateWorkspacePaths
+  - llmPromptContent
+redactionRules:
+  credentials: reject
+  privateWorkspacePaths: reject
+  rawSourceContent: reject
+  rawRuntimePayloads: reject
+serviceBoundaryRules:
+  sharedJavaLoggingModule: forbiddenForTargetServices
+  serviceLocalDiagnostics: required
+  operationalLogsAsForensicEvidence: forbidden
+runtimeReadiness:
+  dockerCompose: notClaimed
+  dockerSwarm: notClaimed
+  kubernetes: notClaimed

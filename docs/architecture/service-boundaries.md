@@ -503,7 +503,17 @@ Current evidence:
 
 - `forensic-analytics-observability`;
 - `forensic-analytics-logging`;
+- `services/observability-stack`;
+- `deployment/observability/service-diagnostics-policy.yaml`;
 - deployment documentation.
+
+S12 implementation evidence:
+
+- registered Gradle project `services:observability-stack`;
+- `services/observability-stack/README.md`;
+- `deployment/observability/service-diagnostics-policy.yaml`;
+- no `project(...)` dependencies in `services/observability-stack/build.gradle.kts`;
+- no Java source under `services/observability-stack`.
 
 Stop conditions:
 

@@ -37,7 +37,7 @@
 | S09 | COMPLETED | Analysis orchestrator service extracted as target-name service; artifact-boundary and timeout remediations, target service tests/build, root test, specialist re-reviews and staged whitespace gate passed. |
 | S10 | COMPLETED | Query report API service extracted as target-name public API facade; target service tests/build, root test, documentation remediation, specialist reviews and whitespace gate passed. |
 | S11 | COMPLETED | CLI client target public API boundary extracted; service test/build, OpenAPI contract test, predecessor CLI test, root test, role checklist reviews and whitespace gate passed. |
-| S12 | IN_PROGRESS | Scope remediation added required arc42, architecture, services README and execution report locks before implementation. |
+| S12 | COMPLETED | Observability stack registered as deployment-oriented policy boundary; service no-source test, root test, static boundary scans, documentation reviews and whitespace gate passed. |
 | S13 | PENDING | Testbed decoupling |
 | S14 | PENDING | Legacy shared module retirement |
 | S15 | PENDING | Runtime readiness, architecture tests and closure |
@@ -195,6 +195,13 @@
 | S11 continuation | `git diff --cached --check` | PASS: no whitespace errors after staging only S11 files. |
 | S12 | S12 workflow-scope review | BLOCKED before scope remediation: S12 requires arc42 crosscutting observability documentation and execution-report updates, and target `services/observability-stack` evidence requires architecture and services README synchronization, but those files were absent from S12 affected files and file locks. |
 | S12 scope remediation | `git diff --check` | PASS: no whitespace errors after adding the missing S12 documentation and report locks. |
+| S12 | S12 implementation scope | PASS_WITH_PLAN: create `services/observability-stack` as deployment-oriented policy material, register `services:observability-stack`, add `deployment/observability` policy files, update arc42 and service documentation, and leave shared monolith logging/observability modules in place until later retirement slices prove caller-free migration. |
+| S12 | `find services/observability-stack -type f \( -name "*.java" -o -name "*.kt" \) -print` | PASS: no Java or Kotlin source exists under the observability stack boundary. |
+| S12 | `rg -n "project\\(" services/observability-stack \|\| true` | PASS: no Gradle project dependency declaration found in the observability stack boundary. |
+| S12 | `git diff --check` | PASS: no whitespace errors after S12 implementation edits. |
+| S12 | `./gradlew :services:observability-stack:test --dependency-verification strict --console=plain --stacktrace` | PASS: build successful in 9s; the registered observability stack project has no Java test source and completed as `NO-SOURCE`. |
+| S12 | `./gradlew test --dependency-verification strict --console=plain --stacktrace` | PASS: build successful in 32s; root test suite includes the registered `services:observability-stack` target. |
+| S12 | `git diff --cached --check` | PASS: no whitespace errors after staging only S12 files. |
 
 ## Subagent Review Log
 
@@ -307,13 +314,21 @@
 | S11 | Microservice Senior Expert local role checklist | PASS: `services:cli-client` is independently buildable as a public API client boundary, has no Gradle project dependencies, imports no service implementation packages and does not claim backend or Docker runtime readiness. |
 | S11 | Senior Tester local role checklist | PASS: target service test/build, OpenAPI contract test, predecessor CLI test, root test, static dependency scans and whitespace gate passed on the current tree. |
 | S11 | Senior Documentation Engineer local role checklist | PASS: arc42, architecture docs, `services/README.md` and this report consistently describe `cli-client` as a public client boundary and keep legacy local CLI behavior explicit. |
+| S12 | Senior DevOps local role checklist | PASS: observability stack material is deployment-oriented policy/configuration documentation only, introduces no external telemetry runtime, no credentials and no default-gate network dependency. |
+| S12 | Observability Runtime Diagnostics local role checklist | PASS: policy allows only service, operation, phase, correlation ID, duration, error type and status fields; operational logs remain diagnostics, not verified forensic evidence. |
+| S12 | Senior System Architect local role checklist | PASS: `services:observability-stack` is registered without shared Java implementation dependencies; current monolith observability/logging modules remain predecessor evidence until later retirement gates. |
+| S12 | Senior Security/Sandbox local role checklist | PASS: policy rejects credentials, private workspace paths, raw source content, raw runtime payloads and LLM prompt content; no live secrets or runtime endpoints were added. |
+| S12 | Senior Tester local role checklist | PASS: static boundary scans, targeted no-source service test, root test and whitespace gate passed; ADR-0008 update is not required because shared logging modules were not removed in S12. |
 
 ## Blockers
 
-No active blocker for S00, S01, S02, S03, S04, S05, S06, S07, S08, S09, S10 or S11 as completed workflow slices.
+No active blocker for S00, S01, S02, S03, S04, S05, S06, S07, S08, S09, S10, S11 or S12 as completed workflow slices.
 No active S11 scope or contract blocker after the scope remediation checkpoint
 commit `2fd98a5`; S11 implementation reviews and quality gates passed during
 continuation closure.
+No active S12 scope or implementation blocker after the scope remediation
+checkpoint commit `973377f`; S12 implementation reviews and quality gates
+passed during continuation closure.
 Production implementation migration remains gated by the later service
 extraction slices. Legacy module removal remains blocked until a later slice
 proves caller-free evidence, replacement parity or explicit deprecation,

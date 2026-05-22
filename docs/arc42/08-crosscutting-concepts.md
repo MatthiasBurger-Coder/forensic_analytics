@@ -124,6 +124,13 @@ for logs, metrics, tracing and dashboards. Productive services may have
 service-local diagnostics, but they must not depend on a shared Java
 observability module.
 
+S12 adds `services/observability-stack` and
+`deployment/observability/service-diagnostics-policy.yaml` as target
+observability-stack evidence. The stack is deployment-oriented policy material,
+not a productive backend service and not a shared Java runtime dependency.
+Docker Compose, Swarm and Kubernetes observability readiness remains
+unclaimed until concrete runtime descriptors and validation commands exist.
+
 Logs are diagnostics, not verified forensic evidence.
 
 Logging must avoid raw payloads, source content, method arguments, method return values, credentials, local paths, stack frames and LLM prompt content. Failure logs use exception categories instead of raw exception messages.
