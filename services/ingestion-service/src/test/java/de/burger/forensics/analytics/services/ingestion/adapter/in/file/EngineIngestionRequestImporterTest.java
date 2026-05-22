@@ -17,6 +17,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class EngineIngestionRequestImporterTest {
@@ -38,7 +39,9 @@ class EngineIngestionRequestImporterTest {
         var result = importer.importRequest(requestFile);
 
         assertEquals(IngestionStatus.COMPLETED, result.completionStatus());
+        assertFalse(result.sessionId().isBlank());
         assertEquals(3, result.uploadedPayloads());
+        assertEquals(List.of(result.sessionId(), result.sessionId(), result.sessionId()), handoff.sessionIds);
         assertEquals(List.of("byteman-rules", "analysis-manifest", "analysis-checksums"), handoff.payloads.stream()
             .map(RawIngestionPayload::descriptor)
             .map(descriptor -> descriptor.payloadId())
@@ -144,10 +147,12 @@ class EngineIngestionRequestImporterTest {
     }
 
     private static final class RecordingAcceptedIngestionHandoffPort implements AcceptedIngestionHandoffPort {
+        private final List<String> sessionIds = new ArrayList<>();
         private final List<RawIngestionPayload> payloads = new ArrayList<>();
 
         @Override
         public void accepted(String sessionId, RawIngestionPayload payload) {
+            sessionIds.add(sessionId);
             payloads.add(payload);
         }
     }

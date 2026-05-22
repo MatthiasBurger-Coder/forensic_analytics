@@ -56,6 +56,7 @@ class IngestionApplicationServiceTest {
         var command = new UploadAnalysisDataCommand("missing-session", payload("payload-a"));
 
         assertThrows(IngestionSessionNotFoundException.class, () -> service.upload(command));
+        assertEquals(0, handoff.acceptedPayloads.get());
     }
 
     @Test
@@ -74,6 +75,7 @@ class IngestionApplicationServiceTest {
             start.sessionId(),
             payload("payload-a", buildIdentity(), pluginIdentity(), "schema-v2", "{}")
         )));
+        assertEquals(0, handoff.acceptedPayloads.get());
     }
 
     @Test
@@ -87,6 +89,7 @@ class IngestionApplicationServiceTest {
         );
 
         assertThrows(IllegalArgumentException.class, () -> service.upload(conflictingUpload));
+        assertEquals(1, handoff.acceptedPayloads.get());
     }
 
     @Test
@@ -136,6 +139,7 @@ class IngestionApplicationServiceTest {
         var command = new UploadAnalysisDataCommand(start.sessionId(), payload("payload-a"));
 
         assertThrows(IllegalStateException.class, () -> service.upload(command));
+        assertEquals(0, handoff.acceptedPayloads.get());
     }
 
     private static RawIngestionPayload payload(String payloadId) {
