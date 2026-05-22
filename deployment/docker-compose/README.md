@@ -18,6 +18,11 @@ The file uses service-owned Dockerfiles and their Docker profile configuration.
 It does not add external databases, brokers, Graph DB, Vector DB, Jenkins,
 Artifactory or live credentials.
 
+`services:testbed` may use this descriptor as verified local test environment
+evidence. The descriptor remains a transitional repository-to-BTM Compose
+landscape and does not become a production deployment claim for the
+FA-MSA-001 target services.
+
 ## Local Verification
 
 Build service jars first:

@@ -60,9 +60,10 @@ Verified from `settings.gradle.kts`:
 - `services:query-report-api-service`
 - `services:cli-client`
 - `services:observability-stack`
+- `services:testbed`
 - `services:forensic-gateway-service`
 
-Fifteen service-specific Gradle projects under `services/**` are now
+Sixteen service-specific Gradle projects under `services/**` are now
 registered.
 `services:repository-source-service`, `services:ingestion-service` and
 `services:java-parser-analysis-service`, `services:joern-analysis-service` and
@@ -73,6 +74,9 @@ FA-MSA-001 public API client boundary, not a productive backend service.
 `services:observability-stack` is a registered deployment-oriented
 observability boundary, not a productive backend service and not a shared Java
 runtime module.
+`services:testbed` is a registered non-production integration and system-test
+boundary. It is not a productive backend service and must not be used as a
+shared runtime dependency by production services.
 `services:repository-analysis-service`, `services:forensic-ingestion-service`,
 `services:java-ast-analysis-service` and `services:joern-cpg-analysis-service`
 remain predecessor services and rollback inputs, not compatibility aliases.
@@ -137,6 +141,11 @@ WildFly large-repository hardening is available as an opt-in testbed scenario
 through `WildFlyRepositoryHardeningTest`. It is skipped by default unless
 `FORENSIC_ANALYTICS_WILDFLY_HARDENING=true` and an explicit WildFly branch or
 commit is provided. The runbook is `docs/testing/wildfly-hardening.md`.
+
+Slice 13 adds the same testbed coverage under `services:testbed` in package
+`de.burger.forensics.analytics.services.testbed`. The legacy
+`forensic-analytics-testbed` module remains part of the root quality gate until
+a later retirement slice proves migration parity and rollback evidence.
 
 Architecture tests were verified in these areas:
 
@@ -240,6 +249,11 @@ evidence only; Compose, Swarm and Kubernetes readiness for the FA-MSA-001
 target landscape remains future work until descriptors and validation commands
 exist. The service uses local HTTP port `8080` and remains a public facade for
 verified repository-analysis routes only.
+
+Slice 13 adds `services:testbed` without a Dockerfile or runtime service
+descriptor. It may use verified local deployment descriptors as test
+environment evidence, but S13 does not add Compose, Swarm or Kubernetes
+readiness.
 
 Slice 15 later verified the local repository-to-BTM Compose descriptor with
 six service `bootJar` tasks, `docker compose config`, `docker compose build`,

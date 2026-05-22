@@ -49,5 +49,6 @@ include(
     "services:query-report-api-service",
     "services:cli-client",
     "services:observability-stack",
+    "services:testbed",
     "services:forensic-gateway-service",
 )

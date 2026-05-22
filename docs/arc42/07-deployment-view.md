@@ -308,6 +308,27 @@ The service Dockerfile is service-owned, but S10 does not add target-service
 Docker Compose, Docker Swarm or Kubernetes deployment descriptors. Those
 readiness claims require later repository tooling and validation commands.
 
+Slice S13 adds `services/testbed` as the non-production integration and
+system-test deployment boundary. The testbed owns:
+
+- `services/testbed/build.gradle.kts`;
+- `services/testbed/README.md`;
+- deterministic repository E2E fixtures copied under
+  `services/testbed/src/test/resources/repository-e2e/`;
+- service-root test coverage under
+  `services/testbed/src/test/java/de/burger/forensics/analytics/services/testbed`.
+
+The service-local testbed gate is:
+
+```bash
+./gradlew :services:testbed:test --dependency-verification strict --console=plain --stacktrace
+```
+
+`services/testbed` is not a productive backend service. It does not add a
+Dockerfile, Docker Compose service, Docker Swarm stack or Kubernetes manifest
+in S13. The legacy `forensic-analytics-testbed` module remains active until a
+later retirement slice proves parity, caller migration and rollback evidence.
+
 ## 7.7 Local Repository-to-BTM Transitional Landscape
 
 The repository currently contains a local Docker Compose descriptor for the

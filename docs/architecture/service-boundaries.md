@@ -2,9 +2,10 @@
 
 ## Status
 
-FA-MSA-001 Slice 04 service-boundary and data-ownership baseline with Slice 05
-repository-source, Slice 06 ingestion and Slice 07 JavaParser implementation
-evidence.
+FA-MSA-001 Slice 04 service-boundary and data-ownership baseline with
+repository-source, ingestion, JavaParser, Joern, orchestrator, query/report,
+CLI client, observability and testbed implementation evidence through Slice
+13.
 
 These are target boundaries. Current `services/**` directories and
 `forensic-analytics-*` modules are implementation evidence and migration
@@ -541,9 +542,23 @@ Non-scope:
 
 Current evidence:
 
+- `services/testbed`;
 - `forensic-analytics-testbed`;
 - `deployment/docker-compose/repository-to-btm.local.yml`;
 - service-local tests under current service slices.
+
+S13 implementation evidence:
+
+- registered Gradle project `services:testbed`;
+- service-local test package
+  `de.burger.forensics.analytics.services.testbed`;
+- deterministic repository E2E fixtures under
+  `services/testbed/src/test/resources/repository-e2e/`;
+- no production Java source under `services/testbed/src/main`;
+- `services/testbed/README.md` documents the boundary as non-production
+  integration and system-test infrastructure;
+- `forensic-analytics-testbed` remains active as legacy quality-gate and
+  rollback evidence.
 
 Stop conditions:
 

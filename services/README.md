@@ -63,6 +63,7 @@ query API responsibility moves first to `query-report-api-service`.
 - `query-report-api-service`
 - `cli-client` (public API client boundary, not a productive backend service)
 - `observability-stack` (deployment observability boundary, not a productive backend service)
+- `testbed` (non-production integration and system-test boundary)
 
 These target-name service roots, the public API client boundary and the
 deployment observability boundary are additive migration evidence. Their
@@ -80,6 +81,11 @@ S12 creates `services/observability-stack` as deployment-oriented
 observability policy material. It is not a shared Java logging or
 observability module, and it does not claim Docker Compose, Swarm or
 Kubernetes runtime readiness.
+
+S13 creates `services/testbed` as non-production integration and system-test
+infrastructure. It preserves the current `forensic-analytics-testbed` coverage
+in a service-root location while the legacy module remains active as rollback
+and current quality-gate evidence.
 
 ## Local Runtime Evidence
 

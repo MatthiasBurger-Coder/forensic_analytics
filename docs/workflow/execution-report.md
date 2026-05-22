@@ -38,7 +38,7 @@
 | S10 | COMPLETED | Query report API service extracted as target-name public API facade; target service tests/build, root test, documentation remediation, specialist reviews and whitespace gate passed. |
 | S11 | COMPLETED | CLI client target public API boundary extracted; service test/build, OpenAPI contract test, predecessor CLI test, root test, role checklist reviews and whitespace gate passed. |
 | S12 | COMPLETED | Observability stack registered as deployment-oriented policy boundary; service no-source test, root test, static boundary scans, documentation reviews and whitespace gate passed. |
-| S13 | IN_PROGRESS | Scope remediation added required arc42, architecture, services README and execution report locks before implementation. |
+| S13 | COMPLETED | Testbed registered as non-production integration/system-test boundary; target testbed gate, root test, stop-condition scans, local role checklists and whitespace gate passed. |
 | S14 | PENDING | Legacy shared module retirement |
 | S15 | PENDING | Runtime readiness, architecture tests and closure |
 
@@ -204,6 +204,16 @@
 | S12 | `git diff --cached --check` | PASS: no whitespace errors after staging only S12 files. |
 | S13 | S13 workflow-scope review | BLOCKED before scope remediation: S13 requires arc42 deployment/testbed documentation and execution-report updates, and target `services/testbed` evidence requires architecture and services README synchronization, but those files were absent from S13 affected files and file locks. |
 | S13 scope remediation | `git diff --check` | PASS: no whitespace errors after adding the missing S13 documentation and report locks. |
+| S13 | S13 implementation scope | PASS_WITH_PLAN: create `services/testbed` as non-production integration and system-test infrastructure, copy current `forensic-analytics-testbed` coverage into a service-root package, register `services:testbed`, preserve the legacy testbed module until a later retirement slice proves parity, and avoid Docker/Compose readiness claims beyond verified files. |
+| S13 | `./gradlew :services:testbed:test --dependency-verification strict --console=plain --stacktrace` | FAILED after test execution completed: Gradle executed `:services:testbed:test` successfully, then failed while stopping services because the Gradle cache reported `java.io.IOException: Input/output error`. Classified as a build-environment failure; no test failure was reported. |
+| S13 | `./gradlew --stop` | PASS: stopped the existing Gradle daemon before the targeted retry. |
+| S13 | `./gradlew --no-daemon --max-workers=1 :services:testbed:test --dependency-verification strict --console=plain --stacktrace` | PASS: build successful in 20s after rerunning with a single-use daemon and reduced worker pressure. |
+| S13 | `test ! -e services/testbed/src/main \|\| find services/testbed/src/main -type f -print` | PASS: no production Java or resource source tree exists under `services/testbed/src/main`. |
+| S13 | `rg -n "project\\(\\\":services:testbed\\\"\|project\\(\\\":forensic-analytics-testbed\\\"" -g build.gradle.kts -g "!services/testbed/**" -g "!forensic-analytics-testbed/**" \|\| true` | PASS: no non-testbed Gradle project declares a dependency on `services:testbed` or `forensic-analytics-testbed`. |
+| S13 | `rg -n "de\\.burger\\.forensics\\.analytics\\.services\\.testbed\|/repository-e2e/\|repository-e2e" services/*/src/main forensic-analytics-*/src/main -g "*.java" -g "*.kt" \|\| true` | PASS: no production Java or Kotlin source references the new testbed package or deterministic repository fixture. |
+| S13 | `git diff --check` | PASS: no whitespace errors after S13 implementation and documentation updates. |
+| S13 | `./gradlew test --dependency-verification strict --console=plain --stacktrace` | PASS: build successful in 40s; the root test suite includes the registered `services:testbed` target and the retained `forensic-analytics-testbed` module. |
+| S13 | `git diff --cached --check` | PASS: no whitespace errors after staging only S13 files, including new testbed sources and fixtures. |
 
 ## Subagent Review Log
 
@@ -321,16 +331,23 @@
 | S12 | Senior System Architect local role checklist | PASS: `services:observability-stack` is registered without shared Java implementation dependencies; current monolith observability/logging modules remain predecessor evidence until later retirement gates. |
 | S12 | Senior Security/Sandbox local role checklist | PASS: policy rejects credentials, private workspace paths, raw source content, raw runtime payloads and LLM prompt content; no live secrets or runtime endpoints were added. |
 | S12 | Senior Tester local role checklist | PASS: static boundary scans, targeted no-source service test, root test and whitespace gate passed; ADR-0008 update is not required because shared logging modules were not removed in S12. |
+| S13 | Senior Tester local role checklist | PASS: target testbed gate, root test, stop-condition scans and whitespace validation passed; `forensic-analytics-testbed` remains active so no regression coverage was removed before replacement evidence exists. |
+| S13 | Senior DevOps local role checklist | PASS: `services:testbed` adds no Dockerfile or runtime service descriptor, and Compose documentation only references the verified `deployment/docker-compose/repository-to-btm.local.yml` file without adding unverified commands. |
+| S13 | Microservice Senior Expert local role checklist | PASS: testbed is explicitly non-production infrastructure, no production service depends on its source or fixtures, and it is not documented as a productive backend service or shared Java runtime module. |
+| S13 | Senior Java Backend local role checklist | PASS: `services:testbed` has no production source tree, keeps copied coverage under a service-local test package, and does not change domain, application, adapter, persistence or runtime behavior. |
 
 ## Blockers
 
-No active blocker for S00, S01, S02, S03, S04, S05, S06, S07, S08, S09, S10, S11 or S12 as completed workflow slices.
+No active blocker for S00, S01, S02, S03, S04, S05, S06, S07, S08, S09, S10, S11, S12 or S13 as completed workflow slices.
 No active S11 scope or contract blocker after the scope remediation checkpoint
 commit `2fd98a5`; S11 implementation reviews and quality gates passed during
 continuation closure.
 No active S12 scope or implementation blocker after the scope remediation
 checkpoint commit `973377f`; S12 implementation reviews and quality gates
 passed during continuation closure.
+No active S13 scope or implementation blocker after the scope remediation
+checkpoint commit `f7f582b`; the initial targeted Gradle run was retried after
+a daemon/cache stop failure and the targeted plus root gates passed.
 Production implementation migration remains gated by the later service
 extraction slices. Legacy module removal remains blocked until a later slice
 proves caller-free evidence, replacement parity or explicit deprecation,
