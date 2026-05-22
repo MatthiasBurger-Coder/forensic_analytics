@@ -55,8 +55,13 @@ routing rules, workflow files, role files or skill files.
 - Senior Security/Sandbox Engineer.
 - Senior Git Workspace Specialist.
 - Senior Joern CPG Specialist.
+- Ingestion Handoff Review.
+- Source Analysis Pipeline.
 - Distributed Systems Architect.
 - Contract Governance Expert.
+- Observability Runtime Diagnostics.
+- Security Threat Modeling.
+- ArchUnit Review.
 - Senior UX Designer.
 - Microservice Runtime Readiness Expert.
 - Senior Tester.
