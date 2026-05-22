@@ -36,7 +36,7 @@
 | S08 | COMPLETED | Joern analysis service extracted as target-name service; target service tests, packaging, build, root test, identity scans, specialist reviews and staged whitespace gate passed. |
 | S09 | COMPLETED | Analysis orchestrator service extracted as target-name service; artifact-boundary and timeout remediations, target service tests/build, root test, specialist re-reviews and staged whitespace gate passed. |
 | S10 | COMPLETED | Query report API service extracted as target-name public API facade; target service tests/build, root test, documentation remediation, specialist reviews and whitespace gate passed. |
-| S11 | PENDING | CLI client decoupling; pre-implementation scope and contract blockers found before target service creation. |
+| S11 | COMPLETED | CLI client target public API boundary extracted; service test/build, OpenAPI contract test, predecessor CLI test, root test, role checklist reviews and whitespace gate passed. |
 | S12 | PENDING | Observability stack and logging decoupling |
 | S13 | PENDING | Testbed decoupling |
 | S14 | PENDING | Legacy shared module retirement |
@@ -172,6 +172,27 @@
 | S11 scope remediation | `git diff --check` | PASS: no whitespace errors in tracked S11 scope, contract, test and documentation diffs. The first tool call timed out at 34s; the 180s rerun completed cleanly. |
 | S11 scope remediation | Documentation and workflow re-review | BLOCKED before matrix/README qualifier remediation: `services/README.md` did not yet qualify `cli-client` as a public API client rather than productive backend service, and `docs/architecture/service-communication-matrix.md` still described CLI status/report reads too broadly. |
 | S11 scope remediation | `git diff --check` | PASS after README/matrix qualifier remediation: no whitespace errors in tracked S11 remediation diffs. |
+| S11 | `./gradlew :services:cli-client:test --dependency-verification strict --console=plain --stacktrace` | PASS: build successful in 24s; CLI runner, HTTP adapter and architecture boundary tests passed for the new target public API client. |
+| S11 | `./gradlew :services:cli-client:build --dependency-verification strict --console=plain --stacktrace` | PASS: build successful in 3s; application distribution, jar, sources jar and tests completed for the independently buildable CLI client. |
+| S11 | `./gradlew :forensic-analytics-cli:test --dependency-verification strict --console=plain --stacktrace` | PASS: build successful in 3s; predecessor local `analyze` and `ingest-request` behavior remains covered and unchanged. |
+| S11 | `./gradlew :forensic-analytics-rest:test --tests "de.burger.forensics.analytics.rest.GatewayOpenApiContractTest" --dependency-verification strict --console=plain --stacktrace` | PASS: build successful in 11s; OpenAPI CLI metadata remains aligned with S11 submission-only scope and future status mapping. |
+| S11 | `./gradlew test --dependency-verification strict --console=plain --stacktrace` | PASS: build successful in 43s; root test suite includes the registered `services:cli-client` target. |
+| S11 | `rg -n "project\\(" services/cli-client/build.gradle.kts` | PASS: no Gradle project dependency declaration found in the new CLI client build file. |
+| S11 | `rg -n "de\\.burger\\.forensics\\.analytics\\.(application\|domain\|adapter\|engine\|ingestion\|observability\|persistence\|rest\|cli\|bootstrap\|boot\|logging\|testbed)\\." services/cli-client/src/main/java` | PASS: no monolith implementation imports found in CLI client production code. |
+| S11 | `rg -n "de\\.burger\\.forensics\\.analytics\\.services\\.(queryreportapi\|gateway\|repositoryanalysis\|analysisstore\|btmgeneration\|javaastanalysis\|javaparseranalysis\|joernanalysis\|joerncpganalysis\|ingestion)\\." services/cli-client/src/main/java` | PASS: no other service implementation imports found in CLI client production code. |
+| S11 | `git diff --check` | PASS: no whitespace errors in tracked S11 implementation and documentation diffs. |
+| S11 | Microservice Senior Expert review | BLOCKED before URL fixture remediation: new `cli-client` HTTP tests used `/api/repository-analyses/...` response URLs while `contracts/openapi/gateway-api.yaml` and producer tests require `/repository-analyses/...` without the server base path. |
+| S11 | `./gradlew :services:cli-client:test --dependency-verification strict --console=plain --stacktrace` | PASS after URL fixture remediation: build successful in 17s; CLI client tests now use OpenAPI-compatible `statusUrl` and `jobsUrl` values. |
+| S11 continuation | `rg -n "project\\(" services/cli-client/build.gradle.kts \|\| true` | PASS: no Gradle project dependency declaration found in the new CLI client build file on the current tree. |
+| S11 continuation | `rg -n "de\\.burger\\.forensics\\.analytics\\.(application\|domain\|adapter\|engine\|ingestion\|observability\|persistence\|rest\|cli\|bootstrap\|boot\|logging\|testbed)\\." services/cli-client/src/main/java \|\| true` | PASS: no monolith implementation imports found in CLI client production code on the current tree. |
+| S11 continuation | `rg -n "de\\.burger\\.forensics\\.analytics\\.services\\.(queryreportapi\|gateway\|repositoryanalysis\|analysisstore\|btmgeneration\|javaastanalysis\|javaparseranalysis\|joernanalysis\|joerncpganalysis\|ingestion)\\." services/cli-client/src/main/java \|\| true` | PASS: no other service implementation imports found in CLI client production code on the current tree. |
+| S11 continuation | `git diff --check` | PASS: no whitespace errors before closure report update. |
+| S11 continuation | `./gradlew :services:cli-client:test --dependency-verification strict --console=plain --stacktrace` | PASS: build successful in 10s; CLI runner, HTTP adapter and architecture boundary tests are green on the current tree. |
+| S11 continuation | `./gradlew :services:cli-client:build --dependency-verification strict --console=plain --stacktrace` | PASS: build successful in 2s; application distribution, jar, sources jar and tests remain independently buildable. |
+| S11 continuation | `./gradlew :forensic-analytics-rest:test --tests "de.burger.forensics.analytics.rest.GatewayOpenApiContractTest" --dependency-verification strict --console=plain --stacktrace` | PASS: build successful in 8s; OpenAPI CLI metadata remains aligned with S11 submission-only scope and future status mapping. |
+| S11 continuation | `./gradlew :forensic-analytics-cli:test --dependency-verification strict --console=plain --stacktrace` | PASS: build successful in 3s; predecessor local `analyze`, `ingest-request` and compatibility behavior remain covered. |
+| S11 continuation | `./gradlew test --dependency-verification strict --console=plain --stacktrace` | PASS: build successful in 42s; root test suite includes the registered `services:cli-client` target. |
+| S11 continuation | `git diff --cached --check` | PASS: no whitespace errors after staging only S11 files. |
 
 ## Subagent Review Log
 
@@ -279,12 +300,18 @@
 | S11 scope remediation | Senior Documentation Engineer subagent | BLOCKED before README/matrix qualifier remediation: service README and communication matrix needed explicit `cli-client` public-client, non-backend and later CLI status/report mapping qualifiers. |
 | S11 scope remediation | Senior Workflow Architect subagent | PASS after matrix qualifier remediation: communication matrix now limits S11 CLI use to repository-to-BTM submission and defers status/report CLI mappings. |
 | S11 scope remediation | Senior Documentation Engineer subagent | PASS after README/matrix qualifier remediation: service README now qualifies `cli-client` as a public API client boundary, not a productive backend service, and matrix/docs keep legacy CLI commands and future status/report mappings explicit. |
+| S11 | Senior Java Backend local role checklist | PASS: `services/cli-client` keeps domain/application code framework-free, delegates HTTP transport behind an application port and does not implement analysis, parser, Joern or persistence behavior. |
+| S11 | Contract/API Governance local role checklist | PASS: S11 uses only the `startRepositoryToBtmAnalysis` HTTP/OpenAPI submission path, sends the required public headers and payload fields, avoids shared Java DTO/generated modules and keeps status/report reads out of scope. |
+| S11 | Microservice Senior Expert local role checklist | PASS: `services:cli-client` is independently buildable as a public API client boundary, has no Gradle project dependencies, imports no service implementation packages and does not claim backend or Docker runtime readiness. |
+| S11 | Senior Tester local role checklist | PASS: target service test/build, OpenAPI contract test, predecessor CLI test, root test, static dependency scans and whitespace gate passed on the current tree. |
+| S11 | Senior Documentation Engineer local role checklist | PASS: arc42, architecture docs, `services/README.md` and this report consistently describe `cli-client` as a public client boundary and keep legacy local CLI behavior explicit. |
 
 ## Blockers
 
-No active blocker for S00, S01, S02, S03, S04, S05, S06, S07, S08, S09 or S10 as completed workflow slices.
-S11 product implementation is blocked until this scope and contract remediation
-checkpoint is committed.
+No active blocker for S00, S01, S02, S03, S04, S05, S06, S07, S08, S09, S10 or S11 as completed workflow slices.
+No active S11 scope or contract blocker after the scope remediation checkpoint
+commit `2fd98a5`; S11 implementation reviews and quality gates passed during
+continuation closure.
 Production implementation migration remains gated by the later service
 extraction slices. Legacy module removal remains blocked until a later slice
 proves caller-free evidence, replacement parity or explicit deprecation,

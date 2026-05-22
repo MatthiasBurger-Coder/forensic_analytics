@@ -58,15 +58,17 @@ Verified from `settings.gradle.kts`:
 - `services:ingestion-service`
 - `services:forensic-ingestion-service`
 - `services:query-report-api-service`
+- `services:cli-client`
 - `services:forensic-gateway-service`
 
-Thirteen service-specific Gradle projects under `services/**` are now
+Fourteen service-specific Gradle projects under `services/**` are now
 registered.
 `services:repository-source-service`, `services:ingestion-service` and
 `services:java-parser-analysis-service`, `services:joern-analysis-service` and
 `services:analysis-orchestrator-service` and
-`services:query-report-api-service` are FA-MSA-001 target-name service projects
-introduced by this workflow.
+`services:query-report-api-service` are FA-MSA-001 target-name backend service
+projects introduced by this workflow. `services:cli-client` is a registered
+FA-MSA-001 public API client boundary, not a productive backend service.
 `services:repository-analysis-service`, `services:forensic-ingestion-service`,
 `services:java-ast-analysis-service` and `services:joern-cpg-analysis-service`
 remain predecessor services and rollback inputs, not compatibility aliases.

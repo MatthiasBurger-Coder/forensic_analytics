@@ -61,14 +61,15 @@ query API responsibility moves first to `query-report-api-service`.
 - `joern-analysis-service`
 - `analysis-orchestrator-service`
 - `query-report-api-service`
+- `cli-client` (public API client boundary, not a productive backend service)
 
-These target-name service roots are additive migration evidence. Their
-predecessor service directories and legacy modules remain rollback/current
-state evidence until later retirement slices prove caller migration, parity and
-quality gates.
+These target-name service roots and the public API client boundary are additive
+migration evidence. Their predecessor service directories and legacy modules
+remain rollback/current state evidence until later retirement slices prove
+caller migration, parity and quality gates.
 
-`cli-client` remains a target public API client boundary until S11 creates the
-service root. It must not be treated as a productive backend service. The legacy
+S11 creates `services/cli-client` as an independently buildable public API
+client. It must not be treated as a productive backend service. The legacy
 `forensic-analytics-cli` module remains current-state evidence for local
 `analyze` and `ingest-request` behavior and must not be silently routed through
 the public API.

@@ -452,6 +452,7 @@ Non-scope:
 
 Current evidence:
 
+- `services/cli-client`;
 - `forensic-analytics-cli`;
 - `contracts/cli/gateway-cli-contract.md`.
 
@@ -462,6 +463,13 @@ S11 scope:
   `gateway.v1` unless a later contract decision introduces aliases;
 - leave legacy `forensic-analytics-cli analyze` and `ingest-request` as
   predecessor in-process commands until a later parity or deprecation slice.
+
+S11 implementation evidence:
+
+- registered Gradle project `services:cli-client`;
+- `services/cli-client/build.gradle.kts` without `project(...)` dependencies;
+- service-local CLI bootstrap, public API application port and HTTP JSON adapter;
+- architecture, CLI runner and HTTP adapter tests under `services/cli-client`.
 
 Stop conditions:
 

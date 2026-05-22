@@ -47,5 +47,6 @@ include(
     "services:ingestion-service",
     "services:forensic-ingestion-service",
     "services:query-report-api-service",
+    "services:cli-client",
     "services:forensic-gateway-service",
 )

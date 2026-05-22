@@ -148,8 +148,9 @@ services/observability-stack
 services/testbed
 ```
 
-`services/cli-client` is created by S11 as a public API client boundary. It is
-not a backend service and must not own forensic evidence, analysis execution,
+S11 adds `services/cli-client` as a public API client boundary with a
+service-local Gradle project, CLI bootstrap, HTTP/OpenAPI adapter and tests. It
+is not a backend service and must not own forensic evidence, analysis execution,
 parser behavior, Joern control or persistence. The predecessor
 `forensic-analytics-cli` local `analyze` and `ingest-request` commands remain
 current-state evidence until a later parity or deprecation slice.

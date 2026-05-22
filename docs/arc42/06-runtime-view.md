@@ -176,12 +176,12 @@ client
   -> query-report-api-service public status/report response
 ```
 
-`cli-client` is a public API client only. In S11 it starts repository-to-BTM
-jobs through `query-report-api-service` HTTP/OpenAPI using the transitional
-`gateway-submit` compatibility vocabulary. Legacy local CLI commands remain
-in-process current-state evidence until a later slice provides parity or
-explicit deprecation tests. Status and report CLI reads require later explicit
-command mappings.
+`cli-client` is a public API client only. S11 implements repository-to-BTM job
+submission through `query-report-api-service` HTTP/OpenAPI using the
+transitional `gateway-submit` compatibility vocabulary. Legacy local CLI
+commands remain in-process current-state evidence until a later slice provides
+parity or explicit deprecation tests. Status and report CLI reads require later
+explicit command mappings.
 
 Optional services such as `btm-generation-service`, `graph-replay-service` and
 `incident-analysis-service` may be added only after later slices define
