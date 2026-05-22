@@ -400,9 +400,29 @@ Outbound communication:
 
 Current evidence:
 
+- `services/query-report-api-service`;
 - `forensic-analytics-rest`;
 - public API portions of `services/forensic-gateway-service`;
 - `contracts/openapi/gateway-api.yaml`.
+
+S10 implementation state:
+
+- registered Gradle project `services:query-report-api-service`;
+- service-local package `de.burger.forensics.analytics.services.queryreportapi`;
+- service-local domain, application port, inbound HTTP adapter, outbound
+  Analysis Store owner API gRPC adapter, bootstrap, configuration, tests,
+  README and Dockerfile;
+- current verified routes `GET /health`, `GET /api/health`, `GET /api/status`,
+  `POST /api/repository-analyses` and
+  `GET /api/repository-analyses/{analysisRunId}`;
+- unchanged `contracts/openapi/gateway-api.yaml` wire/schema shape;
+- service-local generated `analysis-job.proto` transport classes.
+
+The S10 outbound gRPC adapter still calls the predecessor Analysis Store owner
+API for repository-to-BTM submission/status because the S09 target
+`analysis-orchestrator-service` intentionally leaves those RPCs unimplemented.
+Switching this facade to the target orchestrator requires a later
+contract-first slice and verified target endpoint behavior.
 
 Stop conditions:
 

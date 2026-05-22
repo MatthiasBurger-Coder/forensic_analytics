@@ -155,6 +155,14 @@ databases. `analysis-orchestrator-service` coordinates state, retry and
 failure handling only; it must not absorb repository, JavaParser, Joern,
 reporting or persistence internals.
 
+S10 implementation evidence exposes the current verified public
+repository-analysis submission/status routes in `query-report-api-service`.
+Those routes still use the predecessor Analysis Store owner API because the
+S09 target `analysis-orchestrator-service` intentionally leaves
+repository-to-BTM submission/status RPCs unimplemented. The target runtime path
+below remains the intended owner boundary and requires a later contract-first
+repointing slice.
+
 The repository analysis delivery path must be verified as:
 
 ```text

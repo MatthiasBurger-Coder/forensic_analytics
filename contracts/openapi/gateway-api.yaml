@@ -7,10 +7,12 @@ info:
     This file keeps the transitional gateway-api.yaml filename for compatibility
     with current tests and clients. Under FA-MSA-001, the target authority is
     query-report-api-service. Existing repository analysis submission routes
-    are verified from predecessor Gateway adapter evidence.
-    Results, replay, reports and health/status routes are planned initial
-    contracts approved for logical service communication design on 2026-05-16.
-    This file does not claim that planned routes are implemented yet.
+    are verified from predecessor Gateway adapter evidence and S10
+    query-report-api-service target-service tests.
+    Health/status routes are verified by S10 query-report-api-service tests.
+    Results, replay and reports routes are planned initial contracts approved
+    for logical service communication design on 2026-05-16. This file does
+    not claim that planned routes are implemented yet.
 x-contract-status: planned-initial
 servers:
   - url: /api
@@ -252,7 +254,7 @@ paths:
       tags: [Status]
       summary: Get public API and downstream service status.
       operationId: getStatus
-      x-implementation-status: planned-initial
+      x-implementation-status: current-verified
       parameters:
         - $ref: '#/components/parameters/CorrelationId'
       responses:
@@ -272,7 +274,7 @@ paths:
       tags: [Status]
       summary: Get public API health for platform routing.
       operationId: getHealth
-      x-implementation-status: planned-initial
+      x-implementation-status: current-verified
       responses:
         '200':
           description: Public API is healthy enough to receive traffic.

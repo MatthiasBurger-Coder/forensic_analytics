@@ -10,6 +10,7 @@ contract. Under FA-MSA-001 its target authority is
 file names remains compatibility evidence only; it does not make
 `forensic-gateway-service` the target service.
 
-Operations marked `current-verified` are based on the current REST adapter.
-Operations marked `planned-initial` are logical target contracts and are not
-implementation evidence until later service slices implement and test them.
+Operations marked `current-verified` are based on the current REST adapter,
+predecessor Gateway evidence and S10 `query-report-api-service` target-service
+tests. Operations marked `planned-initial` are logical target contracts and are
+not implementation evidence until later service slices implement and test them.

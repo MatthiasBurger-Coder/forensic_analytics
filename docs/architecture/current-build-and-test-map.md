@@ -57,13 +57,16 @@ Verified from `settings.gradle.kts`:
 - `services:analysis-store-service`
 - `services:ingestion-service`
 - `services:forensic-ingestion-service`
+- `services:query-report-api-service`
 - `services:forensic-gateway-service`
 
-Twelve service-specific Gradle projects under `services/**` are now registered.
+Thirteen service-specific Gradle projects under `services/**` are now
+registered.
 `services:repository-source-service`, `services:ingestion-service` and
 `services:java-parser-analysis-service`, `services:joern-analysis-service` and
-`services:analysis-orchestrator-service` are FA-MSA-001 target-name service
-projects introduced by this workflow.
+`services:analysis-orchestrator-service` and
+`services:query-report-api-service` are FA-MSA-001 target-name service projects
+introduced by this workflow.
 `services:repository-analysis-service`, `services:forensic-ingestion-service`,
 `services:java-ast-analysis-service` and `services:joern-cpg-analysis-service`
 remain predecessor services and rollback inputs, not compatibility aliases.
@@ -179,6 +182,7 @@ Existing Docker material:
 - `services/java-parser-analysis-service/Dockerfile`
 - `services/joern-analysis-service/Dockerfile`
 - `services/analysis-orchestrator-service/Dockerfile`
+- `services/query-report-api-service/Dockerfile`
 - `deployment/docker-compose/repository-to-btm.local.yml`
 
 The DevOps review verified Joern Compose configuration with:
@@ -224,6 +228,13 @@ validation commands exist. The service uses local gRPC port `9098` and health
 port `8089`, distinct from predecessor Analysis Store and earlier target
 service ports.
 
+Slice 10 adds a service-local Dockerfile for
+`services/query-report-api-service`. This is target-service container packaging
+evidence only; Compose, Swarm and Kubernetes readiness for the FA-MSA-001
+target landscape remains future work until descriptors and validation commands
+exist. The service uses local HTTP port `8080` and remains a public facade for
+verified repository-analysis routes only.
+
 Slice 15 later verified the local repository-to-BTM Compose descriptor with
 six service `bootJar` tasks, `docker compose config`, `docker compose build`,
 Compose startup, Gateway plus service health checks and Compose cleanup. This
@@ -258,11 +269,11 @@ deployment behavior, run the minimum `QUALITY.md` command before continuing:
 ./gradlew test --dependency-verification strict --console=plain --stacktrace
 ```
 
-Service-specific test commands exist for the seven registered service projects.
-Graph-replay and report-generation still have no service-local Gradle test task
-because they remain README-only planned service roots and are deferred from
-repository-to-BTM acceptance. The build-artifact worker has no Gradle task
-until a later slice creates the service root.
+Service-specific test commands exist for the registered service projects under
+`services/**`. Graph-replay and report-generation still have no service-local
+Gradle test task because they remain README-only planned service roots and are
+deferred from repository-to-BTM acceptance. The build-artifact worker has no
+Gradle task until a later slice creates the service root.
 
 Slice 18 does not remove any `forensic-analytics-*` module from the Gradle
 build. Those modules remain part of the current quality gate as legacy
@@ -298,8 +309,8 @@ remediation:
 ## Residual Risks
 
 - CI workflow evidence is absent.
-- Service-specific test tasks exist only for the seven registered service
-  projects.
+- Service-specific test tasks exist only for registered service projects under
+  `services/**`.
 - Contract tests exist for implemented service contracts, but coverage is not
   complete for every planned service interaction.
 - Frontend coverage and end-to-end test gates are not configured.

@@ -44,6 +44,14 @@ implementation code or service-shared runtime classes.
 | `observability-stack` | productive services | deployment/configuration | observability configuration | Logging, metrics, tracing and dashboards | Not a shared Java library |
 | `testbed` | productive services | Compose, REST, gRPC or test contracts | test environment docs | Integration and end-to-end tests | No production service may depend on testbed code |
 
+S10 transitional note: the implemented
+`services/query-report-api-service` repository-analysis submission/status
+routes still call the predecessor `analysis-store-service` owner API through
+service-local generated `analysis-job.proto` classes. This does not change the
+target matrix above; repointing to `analysis-orchestrator-service` requires a
+later contract-first slice because S09 intentionally leaves repository-to-BTM
+submission/status RPCs unimplemented.
+
 ## Transitional Contract Evidence
 
 Existing contracts and transitional service slices may remain during migration,

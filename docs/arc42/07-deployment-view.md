@@ -273,6 +273,37 @@ The service Dockerfile is service-owned, but S09 does not add target-service
 Docker Compose, Docker Swarm or Kubernetes deployment descriptors. Those
 readiness claims require later repository tooling and validation commands.
 
+Slice S10 adds `services/query-report-api-service` as target-service
+deployment evidence. The service owns:
+
+- `services/query-report-api-service/build.gradle.kts`;
+- `services/query-report-api-service/Dockerfile`;
+- `services/query-report-api-service/src/main/resources/application.properties`;
+- `services/query-report-api-service/src/main/resources/application-docker.properties`;
+- a service-local health HTTP endpoint on port `8080`;
+- a service-local public API HTTP endpoint on port `8080`.
+
+The service can be packaged independently with:
+
+```bash
+./gradlew :services:query-report-api-service:bootJar --dependency-verification strict --console=plain --stacktrace
+```
+
+The local operator start command is:
+
+```bash
+./gradlew :services:query-report-api-service:bootRun --dependency-verification strict --console=plain --stacktrace
+```
+
+S10 records this as the service-local start command, but the S10 verification
+run does not execute `bootRun` or a live health probe. Runtime smoke evidence
+must be recorded separately before claiming a verified running Query Report API
+Service instance.
+
+The service Dockerfile is service-owned, but S10 does not add target-service
+Docker Compose, Docker Swarm or Kubernetes deployment descriptors. Those
+readiness claims require later repository tooling and validation commands.
+
 ## 7.7 Local Repository-to-BTM Transitional Landscape
 
 The repository currently contains a local Docker Compose descriptor for the
