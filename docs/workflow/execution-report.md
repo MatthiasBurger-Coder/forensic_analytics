@@ -38,7 +38,7 @@
 | S10 | COMPLETED | Query report API service extracted as target-name public API facade; target service tests/build, root test, documentation remediation, specialist reviews and whitespace gate passed. |
 | S11 | COMPLETED | CLI client target public API boundary extracted; service test/build, OpenAPI contract test, predecessor CLI test, root test, role checklist reviews and whitespace gate passed. |
 | S12 | COMPLETED | Observability stack registered as deployment-oriented policy boundary; service no-source test, root test, static boundary scans, documentation reviews and whitespace gate passed. |
-| S13 | PENDING | Testbed decoupling |
+| S13 | IN_PROGRESS | Scope remediation added required arc42, architecture, services README and execution report locks before implementation. |
 | S14 | PENDING | Legacy shared module retirement |
 | S15 | PENDING | Runtime readiness, architecture tests and closure |
 
@@ -202,6 +202,8 @@
 | S12 | `./gradlew :services:observability-stack:test --dependency-verification strict --console=plain --stacktrace` | PASS: build successful in 9s; the registered observability stack project has no Java test source and completed as `NO-SOURCE`. |
 | S12 | `./gradlew test --dependency-verification strict --console=plain --stacktrace` | PASS: build successful in 32s; root test suite includes the registered `services:observability-stack` target. |
 | S12 | `git diff --cached --check` | PASS: no whitespace errors after staging only S12 files. |
+| S13 | S13 workflow-scope review | BLOCKED before scope remediation: S13 requires arc42 deployment/testbed documentation and execution-report updates, and target `services/testbed` evidence requires architecture and services README synchronization, but those files were absent from S13 affected files and file locks. |
+| S13 scope remediation | `git diff --check` | PASS: no whitespace errors after adding the missing S13 documentation and report locks. |
 
 ## Subagent Review Log
 

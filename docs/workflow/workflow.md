@@ -1029,6 +1029,11 @@ affected_files:
   - forensic-analytics-testbed/**
   - deployment/docker-compose/**
   - settings.gradle.kts
+  - docs/arc42/07-deployment-view.md
+  - docs/architecture/current-build-and-test-map.md
+  - docs/architecture/service-boundaries.md
+  - docs/workflow/execution-report.md
+  - services/README.md
 affected_modules:
   - services:testbed
   - forensic-analytics-testbed
@@ -1046,6 +1051,11 @@ file_locks:
   - forensic-analytics-testbed/**
   - deployment/docker-compose/**
   - settings.gradle.kts
+  - docs/arc42/07-deployment-view.md
+  - docs/architecture/current-build-and-test-map.md
+  - docs/architecture/service-boundaries.md
+  - docs/workflow/execution-report.md
+  - services/README.md
 contract_locks: []
 architecture_locks:
   - testbed-no-production-dependency
