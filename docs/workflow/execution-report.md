@@ -35,7 +35,7 @@
 | S07 | COMPLETED | JavaParser analysis service extracted as target-name service; source-analysis remediation, service build, service tests, root test, specialist reviews and staged whitespace gate passed. |
 | S08 | COMPLETED | Joern analysis service extracted as target-name service; target service tests, packaging, build, root test, identity scans, specialist reviews and staged whitespace gate passed. |
 | S09 | COMPLETED | Analysis orchestrator service extracted as target-name service; artifact-boundary and timeout remediations, target service tests/build, root test, specialist re-reviews and staged whitespace gate passed. |
-| S10 | PENDING | Query report API service boundary |
+| S10 | PENDING | Query report API service boundary; workflow-scope blockers found before product implementation. |
 | S11 | PENDING | CLI client decoupling |
 | S12 | PENDING | Observability stack and logging decoupling |
 | S13 | PENDING | Testbed decoupling |
@@ -141,6 +141,8 @@
 | S09 | `./gradlew test --dependency-verification strict --console=plain --stacktrace` | PASS after artifact-boundary and timeout remediation: build successful in 25s; 208 actionable tasks up-to-date. |
 | S09 | `git diff --check` | PASS: no whitespace errors after S09 implementation and remediation updates. |
 | S09 | `git diff --cached --check` | PASS after staging S09 files: no whitespace errors in tracked and newly added target service files. |
+| S10 | S10 workflow-scope review | BLOCKED: S10 requires arc42 and architecture documentation updates but omitted `docs/arc42/**`, `docs/architecture/**`, `docs/workflow/execution-report.md` and `services/README.md` from affected files and file locks; OpenAPI scope must be concrete for `contracts/openapi/gateway-api.yaml` and `contracts/openapi/README.md`. |
+| S10 | `./gradlew :services:query-report-api-service:test --dependency-verification strict --console=plain --stacktrace` | FAILED before implementation: Gradle could not find project `:services:query-report-api-service`; the target module must be created and registered before this required S10 gate can pass. |
 
 ## Subagent Review Log
 
@@ -220,6 +222,11 @@
 | S09 | Senior Java Backend subagent | PASS after timeout remediation: expired running leases become retryable failures, can be leased again with incremented attempts, stale worker gRPC calls map to `FAILED_PRECONDITION`, and no forbidden dependency/import was found. |
 | S09 | Senior Tester subagent | BLOCKED after remediation only on final staging: target/root gate and coverage evidence are present, but staged whitespace validation over new service files is required before closure. |
 | S09 | Senior Tester subagent | PASS after final staging: S09 files are staged and `git diff --cached --check` passed over tracked and newly added target service files. |
+| S10 | Senior Workflow Architect subagent | BLOCKED before scope remediation: S10 documentation locks omitted `docs/arc42/**`, `docs/architecture/**`, `docs/workflow/execution-report.md` and `services/README.md`, and broad OpenAPI scope should be narrowed to concrete query/report contract files. |
+| S10 | Senior Java Backend subagent | BLOCKED before implementation: workflow scope must be remediated first; additionally, current verified submit/status behavior still depends on predecessor Analysis Store because S09 target orchestrator deliberately leaves repository-to-BTM RPCs `UNIMPLEMENTED`. |
+| S10 | Microservice Senior Expert subagent | PASS_WITH_PLAN: create independent `services/query-report-api-service`, preferably using `services/forensic-gateway-service` as service-local facade evidence rather than copying monolith REST dependencies; keep facade-only boundaries and no runtime readiness overclaims. |
+| S10 | Contract/API Governance subagent | PASS_WITH_PLAN: keep `contracts/openapi/gateway-api.yaml` wire/schema shape unchanged by default; any path, method, status, header, schema or error-model change requires explicit contract-first compatibility review. |
+| S10 | Senior Tester subagent | PASS_WITH_PLAN: expected target gate failure confirmed before service creation; post-implementation coverage must include OpenAPI structure, redaction, error envelope, idempotency, owner-port behavior, facade-only architecture, boot/build and root tests. |
 
 ## Blockers
 

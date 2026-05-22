@@ -825,18 +825,24 @@ owner: senior-java-backend
 secondary_reviewers:
   - contract-first-api-steward
   - senior-react-frontend
+  - senior-documentation-engineer
   - microservice-senior-expert
   - senior-tester
 affected_files:
   - services/query-report-api-service/**
   - forensic-analytics-rest/**
-  - contracts/openapi/**
+  - contracts/openapi/gateway-api.yaml
+  - contracts/openapi/README.md
   - settings.gradle.kts
+  - docs/arc42/**
+  - docs/architecture/**
+  - docs/workflow/execution-report.md
+  - services/README.md
 affected_modules:
   - services:query-report-api-service
   - forensic-analytics-rest
 affected_contracts:
-  - query-report REST/OpenAPI contracts
+  - contracts/openapi/gateway-api.yaml
 dependencies:
   - S03
   - S04
@@ -845,10 +851,15 @@ parallel_group: G06
 file_locks:
   - services/query-report-api-service/**
   - forensic-analytics-rest/**
-  - contracts/openapi/**
+  - contracts/openapi/gateway-api.yaml
+  - contracts/openapi/README.md
   - settings.gradle.kts
+  - docs/arc42/**
+  - docs/architecture/**
+  - docs/workflow/execution-report.md
+  - services/README.md
 contract_locks:
-  - query-report-api-service
+  - contracts/openapi/gateway-api.yaml
 architecture_locks:
   - public-api-facade
 quality_gates:
