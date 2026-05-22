@@ -197,8 +197,10 @@ Payload:
 | `byteCustody` | enum | yes | `PRODUCER_RETAINED`, `SCOPED_OBJECT_ACCESS` or `EXPLICIT_HANDOFF`. |
 | `completeness` | enum | yes | Completeness of artifact set. |
 
-The S04-approved canonical artifact metadata owner registers accepted artifact
-metadata only. It does not transfer byte custody unless a later explicit
+Analysis Store acceptance registers canonical artifact metadata only for the
+current predecessor flow. In the FA-MSA-001 target flow, the S04-approved
+canonical artifact metadata owner registers accepted artifact metadata only.
+This registration does not transfer byte custody unless a later explicit
 handoff or object-access contract records that transfer.
 
 ### `analysis.report.requested`
