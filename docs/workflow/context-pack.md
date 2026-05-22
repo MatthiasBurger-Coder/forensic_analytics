@@ -40,10 +40,11 @@ routing rules, workflow files, role files or skill files.
 - Removing legacy modules without caller-free proof, replacement tests,
   rollback or deprecation notes and required quality-gate success.
 
-## Required Roles
+## Required Roles And Specialist Reviewers
 
 - Senior Requirement Engineer.
 - Senior System Architect.
+- Senior Execution Orchestrator.
 - Senior Java Backend Developer.
 - Microservice Senior Expert.
 - Contract-First API Steward.
@@ -52,6 +53,12 @@ routing rules, workflow files, role files or skill files.
 - Data Ownership and Persistence Steward.
 - Senior DevOps Engineer.
 - Senior Security/Sandbox Engineer.
+- Senior Git Workspace Specialist.
+- Senior Joern CPG Specialist.
+- Distributed Systems Architect.
+- Contract Governance Expert.
+- Senior UX Designer.
+- Microservice Runtime Readiness Expert.
 - Senior Tester.
 - Senior Documentation Engineer.
 - Senior React Frontend Developer for public API impact checks.

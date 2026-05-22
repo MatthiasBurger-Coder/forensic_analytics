@@ -74,7 +74,9 @@ S02, but execution defaults to one slice at a time unless the orchestrator
 confirms disjoint locks.
 
 ```text
-S00 -> S01 -> S02 -> S03/S04/S05/S06 -> S07 -> S08/S10 -> S09/S11 -> S12 -> S13 -> S14 -> S15
+S00 -> S01 -> S02 -> S03/S04/S05/S06/S10
+S03/S04/S05/S06 -> S07 -> S08 -> S09
+S07/S08/S10 -> S11 -> S12 -> S13 -> S14 -> S15
 ```
 
 ## Open Questions

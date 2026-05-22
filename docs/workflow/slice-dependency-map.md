@@ -10,15 +10,19 @@ S00 Execution Preflight
       -> S04 Ingestion Legacy Retirement
       -> S05 JavaParser Legacy Retirement
       -> S06 Joern Legacy Retirement
-        -> S07 Orchestration Engine And Application Split
-          -> S08 Query Report API, REST, Bootstrap And Boot Retirement
-            -> S09 CLI Client Decoupling
-          -> S10 Observability And Logging Decoupling
-            -> S11 Persistence Ownership Finalization
-              -> S12 Shared Domain And Application Module Removal
-                -> S13 Testbed Monolith Coupling Removal
-                  -> S14 Gradle Deregistration And Source Tree Removal
-                    -> S15 Closure, Rollback Notes And Release Readiness
+      -> S10 Observability And Logging Decoupling
+
+S03 + S04 + S05 + S06
+  -> S07 Orchestration Engine And Application Split
+    -> S08 Query Report API, REST, Bootstrap And Boot Retirement
+      -> S09 CLI Client Decoupling
+
+S07 + S08 + S10
+  -> S11 Persistence Ownership Finalization
+    -> S12 Shared Domain And Application Module Removal
+      -> S13 Testbed Monolith Coupling Removal
+        -> S14 Gradle Deregistration And Source Tree Removal
+          -> S15 Closure, Rollback Notes And Release Readiness
 ```
 
 ## Dependency Rationale

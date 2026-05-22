@@ -14,6 +14,7 @@ Execution slices must update arc42 when actual behavior changes:
 
 | Slice | arc42 Area |
 |---|---|
+| S02 | Communication matrix and runtime view when contract behavior changes |
 | S03 | Repository source ownership, runtime and deployment notes |
 | S04 | Ingestion boundary, contracts and payload custody |
 | S05 | Static source analysis ownership and limitations |

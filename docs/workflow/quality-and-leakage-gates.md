@@ -41,13 +41,13 @@ For service migration slices, run targeted scans proving the service does not
 depend on central legacy implementation modules:
 
 ```bash
-rg -n -P "^import\s+de\.burger\.forensics\.analytics\.(application|domain|adapter|persistence|rest|cli|engine|logging|observability|bootstrap|boot|ingestion\.request|ingestion\.grpc)\b" services -S -g "*.java"
+bash -lc 'if rg -n -P "^import\s+de\.burger\.forensics\.analytics\.(application|domain|adapter|persistence|rest|cli|engine|logging|observability|bootstrap|boot|ingestion\.request|ingestion\.grpc)\b" services -S -g "*.java"; then exit 1; else test $? -eq 1; fi'
 ```
 
 For final removal, prove no legacy build references remain:
 
 ```bash
-git ls-files "*build.gradle.kts" settings.gradle.kts | xargs rg -n "forensic-analytics-(adapter-javaparser|adapter-joern-docker|adapter-repository-source|application|boot-app|bootstrap|cli|domain|engine|ingestion-grpc|ingestion-request|logging|observability|persistence|rest|testbed)"
+bash -lc 'if rg -n "forensic-analytics-(adapter-javaparser|adapter-joern-docker|adapter-repository-source|application|boot-app|bootstrap|cli|domain|engine|ingestion-grpc|ingestion-request|logging|observability|persistence|rest|testbed)" settings.gradle.kts build.gradle.kts services -g "*.kts" -g "!**/build/**"; then exit 1; else test $? -eq 1; fi'
 ```
 
 ## Evidence Integrity Gates

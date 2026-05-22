@@ -87,6 +87,9 @@ Read-only workflow creation verification found:
 - `docs/architecture/current-coupling-map.md` records remaining production and
   test imports into legacy packages and explicitly states that no direct module
   retirement is safe yet.
+- Existing architecture maps are carry-forward baseline evidence from the
+  earlier FA-MSA-001 workflow and must be refreshed by S01 before any removal
+  decision relies on them.
 - `docs/architecture/service-migration-map.md` defines retirement gates for
   central shared modules and target service ownership.
 - ADR-0017 is accepted and defines FA-MSA-001 target service names.
@@ -376,7 +379,7 @@ architecture_locks:
 quality_gates:
   targeted:
     - './gradlew :services:repository-source-service:test --dependency-verification strict --console=plain --stacktrace'
-    - 'rg -n "forensic-analytics-adapter-repository-source|de\\.burger\\.forensics\\.analytics\\.adapter\\.repository\\.source" -g "!**/build/**" .'
+    - 'bash -lc "if rg -n \"forensic-analytics-adapter-repository-source|de\\.burger\\.forensics\\.analytics\\.adapter\\.repository\\.source\" settings.gradle.kts build.gradle.kts services forensic-analytics-* -g \"*.java\" -g \"*.kts\" -g \"!**/build/**\"; then exit 1; else test \$? -eq 1; fi"'
     - 'git diff --check'
   required:
     - './gradlew test --dependency-verification strict --console=plain --stacktrace'
@@ -433,7 +436,7 @@ architecture_locks:
 quality_gates:
   targeted:
     - './gradlew :services:ingestion-service:test --dependency-verification strict --console=plain --stacktrace'
-    - 'rg -n "forensic-analytics-ingestion-grpc|forensic-analytics-ingestion-request|de\\.burger\\.forensics\\.analytics\\.ingestion\\.(grpc|request)" -g "!**/build/**" .'
+    - 'bash -lc "if rg -n \"forensic-analytics-ingestion-grpc|forensic-analytics-ingestion-request|de\\.burger\\.forensics\\.analytics\\.ingestion\\.(grpc|request)\" settings.gradle.kts build.gradle.kts services forensic-analytics-* -g \"*.java\" -g \"*.kts\" -g \"!**/build/**\"; then exit 1; else test \$? -eq 1; fi"'
     - 'git diff --check'
   required:
     - './gradlew test --dependency-verification strict --console=plain --stacktrace'
@@ -484,7 +487,7 @@ architecture_locks:
 quality_gates:
   targeted:
     - './gradlew :services:java-parser-analysis-service:test --dependency-verification strict --console=plain --stacktrace'
-    - 'rg -n "forensic-analytics-adapter-javaparser|de\\.burger\\.forensics\\.analytics\\.adapter\\.javaparser" -g "!**/build/**" .'
+    - 'bash -lc "if rg -n \"forensic-analytics-adapter-javaparser|de\\.burger\\.forensics\\.analytics\\.adapter\\.javaparser\" settings.gradle.kts build.gradle.kts services forensic-analytics-* -g \"*.java\" -g \"*.kts\" -g \"!**/build/**\"; then exit 1; else test \$? -eq 1; fi"'
     - 'git diff --check'
   required:
     - './gradlew test --dependency-verification strict --console=plain --stacktrace'
@@ -538,7 +541,7 @@ architecture_locks:
 quality_gates:
   targeted:
     - './gradlew :services:joern-analysis-service:test --dependency-verification strict --console=plain --stacktrace'
-    - 'rg -n "forensic-analytics-adapter-joern-docker|de\\.burger\\.forensics\\.analytics\\.adapter\\.joern" -g "!**/build/**" .'
+    - 'bash -lc "if rg -n \"forensic-analytics-adapter-joern-docker|de\\.burger\\.forensics\\.analytics\\.adapter\\.joern\" settings.gradle.kts build.gradle.kts services forensic-analytics-* -g \"*.java\" -g \"*.kts\" -g \"!**/build/**\"; then exit 1; else test \$? -eq 1; fi"'
     - 'git diff --check'
   required:
     - './gradlew test --dependency-verification strict --console=plain --stacktrace'
@@ -601,7 +604,7 @@ architecture_locks:
 quality_gates:
   targeted:
     - './gradlew :services:analysis-orchestrator-service:test --dependency-verification strict --console=plain --stacktrace'
-    - 'rg -n "forensic-analytics-engine|de\\.burger\\.forensics\\.analytics\\.(engine|application|domain)" -g "!**/build/**" .'
+    - 'bash -lc "if rg -n \"forensic-analytics-engine|de\\.burger\\.forensics\\.analytics\\.(engine|application|domain)\" settings.gradle.kts build.gradle.kts services forensic-analytics-* -g \"*.java\" -g \"*.kts\" -g \"!**/build/**\"; then exit 1; else test \$? -eq 1; fi"'
     - 'git diff --check'
   required:
     - './gradlew test --dependency-verification strict --console=plain --stacktrace'
@@ -663,7 +666,7 @@ architecture_locks:
 quality_gates:
   targeted:
     - './gradlew :services:query-report-api-service:test --dependency-verification strict --console=plain --stacktrace'
-    - 'rg -n "forensic-analytics-rest|forensic-analytics-bootstrap|forensic-analytics-boot-app|de\\.burger\\.forensics\\.analytics\\.(rest|bootstrap|boot)" -g "!**/build/**" .'
+    - 'bash -lc "if rg -n \"forensic-analytics-rest|forensic-analytics-bootstrap|forensic-analytics-boot-app|de\\.burger\\.forensics\\.analytics\\.(rest|bootstrap|boot)\" settings.gradle.kts build.gradle.kts services forensic-analytics-* -g \"*.java\" -g \"*.kts\" -g \"!**/build/**\"; then exit 1; else test \$? -eq 1; fi"'
     - 'git diff --check'
   required:
     - './gradlew test --dependency-verification strict --console=plain --stacktrace'
@@ -718,7 +721,7 @@ architecture_locks:
 quality_gates:
   targeted:
     - './gradlew :services:cli-client:test --dependency-verification strict --console=plain --stacktrace'
-    - 'rg -n "forensic-analytics-cli|de\\.burger\\.forensics\\.analytics\\.cli" -g "!**/build/**" .'
+    - 'bash -lc "if rg -n \"forensic-analytics-cli|de\\.burger\\.forensics\\.analytics\\.cli\" settings.gradle.kts build.gradle.kts services forensic-analytics-* -g \"*.java\" -g \"*.kts\" -g \"!**/build/**\"; then exit 1; else test \$? -eq 1; fi"'
     - 'git diff --check'
   required:
     - './gradlew test --dependency-verification strict --console=plain --stacktrace'
@@ -774,7 +777,7 @@ architecture_locks:
 quality_gates:
   targeted:
     - './gradlew :services:observability-stack:test --dependency-verification strict --console=plain --stacktrace'
-    - 'rg -n "forensic-analytics-logging|forensic-analytics-observability|de\\.burger\\.forensics\\.analytics\\.(logging|observability)" -g "!**/build/**" .'
+    - 'bash -lc "if rg -n \"forensic-analytics-logging|forensic-analytics-observability|de\\.burger\\.forensics\\.analytics\\.(logging|observability)\" settings.gradle.kts build.gradle.kts services forensic-analytics-* -g \"*.java\" -g \"*.kts\" -g \"!**/build/**\"; then exit 1; else test \$? -eq 1; fi"'
     - 'git diff --check'
   required:
     - './gradlew test --dependency-verification strict --console=plain --stacktrace'
@@ -832,7 +835,7 @@ architecture_locks:
   - persistence-retirement
 quality_gates:
   targeted:
-    - 'rg -n "forensic-analytics-persistence|de\\.burger\\.forensics\\.analytics\\.persistence" -g "!**/build/**" .'
+    - 'bash -lc "if rg -n \"forensic-analytics-persistence|de\\.burger\\.forensics\\.analytics\\.persistence\" settings.gradle.kts build.gradle.kts services forensic-analytics-* -g \"*.java\" -g \"*.kts\" -g \"!**/build/**\"; then exit 1; else test \$? -eq 1; fi"'
     - 'git diff --check'
   required:
     - './gradlew test --dependency-verification strict --console=plain --stacktrace'
@@ -894,7 +897,7 @@ architecture_locks:
   - service-local-hexagonal-boundaries
 quality_gates:
   targeted:
-    - 'rg -n "forensic-analytics-domain|forensic-analytics-application|de\\.burger\\.forensics\\.analytics\\.(domain|application)" -g "!**/build/**" .'
+    - 'bash -lc "if rg -n \"forensic-analytics-domain|forensic-analytics-application|de\\.burger\\.forensics\\.analytics\\.(domain|application)\" settings.gradle.kts build.gradle.kts services forensic-analytics-* -g \"*.java\" -g \"*.kts\" -g \"!**/build/**\"; then exit 1; else test \$? -eq 1; fi"'
     - './gradlew test --dependency-verification strict --console=plain --stacktrace'
     - 'git diff --check'
   required:
@@ -954,7 +957,7 @@ architecture_locks:
 quality_gates:
   targeted:
     - './gradlew :services:testbed:test --dependency-verification strict --console=plain --stacktrace'
-    - 'rg -n "forensic-analytics-testbed|de\\.burger\\.forensics\\.analytics\\.testbed" -g "!**/build/**" .'
+    - 'bash -lc "if rg -n \"forensic-analytics-testbed|de\\.burger\\.forensics\\.analytics\\.testbed\" settings.gradle.kts build.gradle.kts services forensic-analytics-* -g \"*.java\" -g \"*.kts\" -g \"!**/build/**\"; then exit 1; else test \$? -eq 1; fi"'
     - 'git diff --check'
   required:
     - './gradlew test --dependency-verification strict --console=plain --stacktrace'
@@ -1021,8 +1024,8 @@ architecture_locks:
   - final-legacy-module-removal
 quality_gates:
   targeted:
-    - 'git ls-files "*build.gradle.kts" settings.gradle.kts | xargs rg -n "forensic-analytics-(adapter-javaparser|adapter-joern-docker|adapter-repository-source|application|boot-app|bootstrap|cli|domain|engine|ingestion-grpc|ingestion-request|logging|observability|persistence|rest|testbed)"'
-    - 'rg -n -P "^import\\s+de\\.burger\\.forensics\\.analytics\\.(application|domain|adapter|persistence|rest|cli|engine|logging|observability|bootstrap|boot|ingestion\\.request|ingestion\\.grpc)\\b" services -S -g "*.java"'
+    - 'bash -lc "if rg -n \"forensic-analytics-(adapter-javaparser|adapter-joern-docker|adapter-repository-source|application|boot-app|bootstrap|cli|domain|engine|ingestion-grpc|ingestion-request|logging|observability|persistence|rest|testbed)\" settings.gradle.kts build.gradle.kts services -g \"*.kts\" -g \"!**/build/**\"; then exit 1; else test \$? -eq 1; fi"'
+    - 'bash -lc "if rg -n -P \"^import\\s+de\\.burger\\.forensics\\.analytics\\.(application|domain|adapter|persistence|rest|cli|engine|logging|observability|bootstrap|boot|ingestion\\.request|ingestion\\.grpc)\\b\" services -S -g \"*.java\"; then exit 1; else test \$? -eq 1; fi"'
     - 'git diff --check'
   required:
     - './gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace'
@@ -1102,22 +1105,15 @@ rollback/deprecation notes and the full local quality gate are complete.
 ## Dependency Graph
 
 ```text
-S00
-  -> S01
-    -> S02
-      -> S03
-      -> S04
-      -> S05
-      -> S06
-        -> S07
-          -> S08
-            -> S09
-          -> S10
-            -> S11
-              -> S12
-                -> S13
-                  -> S14
-                    -> S15
+S00 -> S01 -> S02
+S02 -> S03
+S02 -> S04
+S02 -> S05
+S02 -> S06
+S02 -> S10
+S03 + S04 + S05 + S06 -> S07
+S07 -> S08 -> S09
+S07 + S08 + S10 -> S11 -> S12 -> S13 -> S14 -> S15
 ```
 
 ## Parallelization Opportunities
