@@ -3,8 +3,9 @@
 ## Status
 
 FA-MSA-001 Slice 04 service-boundary, migration inventory and
-data-ownership map with Slice 05 repository-source, Slice 06 ingestion and
-Slice 07 JavaParser implementation evidence.
+data-ownership map with Slice 05 repository-source, Slice 06 ingestion,
+Slice 07 JavaParser implementation evidence and FA-MSA-001-LMR S01 retirement
+inventory revalidation.
 
 This document maps current modular-monolith and transitional service evidence
 to FA-MSA-001 target ownership decisions. It does not move production code,
@@ -13,6 +14,12 @@ technology or claim runtime readiness. S02 refreshed this map after caller and
 Gradle coupling scans and confirmed that no central module retirement is safe
 yet. S04 records one-writer target data ownership before persistence migration
 starts.
+
+FA-MSA-001-LMR S01 revalidated the retirement inventory and found deletion is
+still unsafe: 72 direct legacy Gradle project references, 653 production
+legacy imports and 628 test legacy imports remain. The map continues to treat
+all listed `forensic-analytics-*` modules as retained legacy or rollback
+evidence until later slices prove caller-free replacement parity.
 
 ## Target Mapping
 
