@@ -2,7 +2,8 @@
 
 ## Status
 
-Verified local Docker Compose root for the repository-to-BTM service path.
+Documented local Docker Compose descriptor for the repository-to-BTM service
+path.
 
 `repository-to-btm.local.yml` defines the six-service local landscape that is
 needed after Slice 14:
@@ -18,10 +19,11 @@ The file uses service-owned Dockerfiles and their Docker profile configuration.
 It does not add external databases, brokers, Graph DB, Vector DB, Jenkins,
 Artifactory or live credentials.
 
-`services:testbed` may use this descriptor as verified local test environment
-evidence. The descriptor remains a transitional repository-to-BTM Compose
-landscape and does not become a production deployment claim for the
-FA-MSA-001 target services.
+`services:testbed` may use this descriptor as local test environment evidence.
+The descriptor remains a transitional repository-to-BTM Compose landscape and
+does not become a production deployment claim for the FA-MSA-001 target
+services. S15 did not execute or record Compose model validation, image-build,
+startup or health-check commands for this descriptor.
 
 ## Local Verification
 

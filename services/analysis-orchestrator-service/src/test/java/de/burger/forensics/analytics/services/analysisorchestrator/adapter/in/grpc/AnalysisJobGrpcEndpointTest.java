@@ -36,6 +36,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -167,6 +168,107 @@ class AnalysisJobGrpcEndpointTest {
         assertEquals("job-b", secondPage.getJobs(0).getJobId().getValue());
         assertEquals("", secondPage.getNextPageToken());
         assertEquals("job-a", lookedUp.getJobId().getValue());
+    }
+
+    @Test
+    void supportsUnfilteredListWithDefaultPageSize() {
+        stub.submitAnalysisJob(submitRequest("submit-unfiltered-a", "job-unfiltered-a", AnalysisWorkerKind.ANALYSIS_WORKER_KIND_AST_ANALYSIS));
+        stub.submitAnalysisJob(submitRequest("submit-unfiltered-b", "job-unfiltered-b", AnalysisWorkerKind.ANALYSIS_WORKER_KIND_JOERN_ANALYSIS));
+
+        var listed = stub.listAnalysisJobs(ListAnalysisJobsRequest.newBuilder()
+            .setRequestId("request-list-unfiltered")
+            .setCorrelationId("correlation-1")
+            .build());
+
+        assertEquals(2, listed.getJobsCount());
+        assertEquals("", listed.getNextPageToken());
+    }
+
+    @Test
+    void treatsUnrecognizedListFiltersAsUnfiltered() {
+        stub.submitAnalysisJob(submitRequest("submit-unrecognized-filter", "job-unrecognized-filter", AnalysisWorkerKind.ANALYSIS_WORKER_KIND_AST_ANALYSIS));
+
+        var listed = stub.listAnalysisJobs(ListAnalysisJobsRequest.newBuilder()
+            .setRequestId("request-list-unrecognized")
+            .setCorrelationId("correlation-1")
+            .setWorkerKindValue(-1)
+            .setStateValue(-1)
+            .build());
+
+        assertEquals(1, listed.getJobsCount());
+        assertEquals("job-unrecognized-filter", listed.getJobs(0).getJobId().getValue());
+    }
+
+    @Test
+    void mapsInvalidListAndLeaseRequestsToInvalidArgument() {
+        var invalidList = assertThrows(StatusRuntimeException.class, () -> stub.listAnalysisJobs(ListAnalysisJobsRequest.newBuilder()
+            .setRequestId("request-list-invalid")
+            .setCorrelationId("correlation-1")
+            .setPageSize(-1)
+            .build()));
+        var invalidLease = assertThrows(StatusRuntimeException.class, () -> stub.leaseAnalysisJob(LeaseAnalysisJobRequest.newBuilder()
+            .setRequestId("request-lease-invalid")
+            .setIdempotencyKey("lease-invalid")
+            .setCorrelationId("correlation-1")
+            .setWorkerId("worker-a")
+            .setWorkerKind(AnalysisWorkerKind.ANALYSIS_WORKER_KIND_AST_ANALYSIS)
+            .setLeaseSeconds(60)
+            .setMaxJobs(0)
+            .build()));
+
+        assertEquals(Status.Code.INVALID_ARGUMENT, invalidList.getStatus().getCode());
+        assertEquals(Status.Code.INVALID_ARGUMENT, invalidLease.getStatus().getCode());
+    }
+
+    @Test
+    void mapsMissingDuplicateAndIdempotencyConflictsToPublicStatuses() {
+        stub.submitAnalysisJob(submitRequest("submit-conflict", "job-conflict-a", AnalysisWorkerKind.ANALYSIS_WORKER_KIND_AST_ANALYSIS));
+
+        var missing = assertThrows(StatusRuntimeException.class, () -> stub.getAnalysisJob(GetAnalysisJobRequest.newBuilder()
+            .setRequestId("request-missing")
+            .setCorrelationId("correlation-1")
+            .setJobId(jobId("missing-job"))
+            .build()));
+        var duplicate = assertThrows(StatusRuntimeException.class, () -> stub.submitAnalysisJob(
+            submitRequest("submit-duplicate", "job-conflict-a", AnalysisWorkerKind.ANALYSIS_WORKER_KIND_AST_ANALYSIS)
+        ));
+        var idempotencyConflict = assertThrows(StatusRuntimeException.class, () -> stub.submitAnalysisJob(
+            submitRequest("submit-conflict", "job-conflict-b", AnalysisWorkerKind.ANALYSIS_WORKER_KIND_AST_ANALYSIS)
+        ));
+
+        assertEquals(Status.Code.NOT_FOUND, missing.getStatus().getCode());
+        assertEquals(Status.Code.INVALID_ARGUMENT, duplicate.getStatus().getCode());
+        assertEquals(Status.Code.ALREADY_EXISTS, idempotencyConflict.getStatus().getCode());
+    }
+
+    @Test
+    void mapsArtifactRegistrationRunMismatchToInvalidArgument() {
+        stub.submitAnalysisJob(submitRequest("submit-register-mismatch", "job-register-mismatch", AnalysisWorkerKind.ANALYSIS_WORKER_KIND_REPORT));
+
+        var error = assertThrows(StatusRuntimeException.class, () -> stub.registerAnalysisArtifacts(RegisterAnalysisArtifactsRequest.newBuilder()
+            .setRequestId("request-register-mismatch")
+            .setIdempotencyKey("register-mismatch")
+            .setCorrelationId("correlation-1")
+            .setAnalysisRunId(AnalysisRunId.newBuilder().setValue("other-run"))
+            .setJobId(jobId("job-register-mismatch"))
+            .addArtifacts(artifact("reports/run-1.json", "report-sha", AnalysisArtifactCategory.ANALYSIS_ARTIFACT_CATEGORY_GENERATED))
+            .build()));
+
+        assertEquals(Status.Code.INVALID_ARGUMENT, error.getStatus().getCode());
+        assertTrue(error.getStatus().getDescription().contains("analysisRunId does not match"));
+    }
+
+    @Test
+    void defensivePrivateMappingsKeepUnexpectedInputsExplicit() throws Exception {
+        var internal = invokePrivateStatus(new RuntimeException("boom"));
+        var negativePageToken = assertThrows(ValidationException.class, () -> invokePrivatePageOffset("-1"));
+        var invalidPageToken = assertThrows(ValidationException.class, () -> invokePrivatePageOffset("not-a-number"));
+        var missingMapping = assertThrows(IllegalArgumentException.class, () -> invokePrivateRequired(null, "unsupported mapping"));
+
+        assertEquals(Status.Code.INTERNAL, internal.getCode());
+        assertEquals("pageToken must not be negative", negativePageToken.getMessage());
+        assertEquals("pageToken must be an integer offset", invalidPageToken.getMessage());
+        assertEquals("unsupported mapping", missingMapping.getMessage());
     }
 
     @Test
@@ -364,6 +466,36 @@ class AnalysisJobGrpcEndpointTest {
                 .setRetrievalReference(path)
                 .setByteCustody(ArtifactByteCustody.ARTIFACT_BYTE_CUSTODY_PRODUCER_RETAINED))
             .build();
+    }
+
+    private static Status invokePrivateStatus(RuntimeException error) throws Exception {
+        return invokePrivate("toStatus", new Class<?>[] {RuntimeException.class}, error);
+    }
+
+    private static int invokePrivatePageOffset(String pageToken) throws Exception {
+        return invokePrivate("pageOffset", new Class<?>[] {String.class}, pageToken);
+    }
+
+    private static Object invokePrivateRequired(Object value, String message) throws Exception {
+        return invokePrivate("required", new Class<?>[] {Object.class, String.class}, value, message);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <T> T invokePrivate(String name, Class<?>[] parameterTypes, Object... args) throws Exception {
+        Method method = AnalysisJobGrpcEndpoint.class.getDeclaredMethod(name, parameterTypes);
+        method.setAccessible(true);
+        try {
+            return (T) method.invoke(null, args);
+        } catch (ReflectiveOperationException error) {
+            var cause = error.getCause();
+            if (cause instanceof RuntimeException runtimeException) {
+                throw runtimeException;
+            }
+            if (cause instanceof Error severeError) {
+                throw severeError;
+            }
+            throw error;
+        }
     }
 
     private static final class MutableClock extends Clock {

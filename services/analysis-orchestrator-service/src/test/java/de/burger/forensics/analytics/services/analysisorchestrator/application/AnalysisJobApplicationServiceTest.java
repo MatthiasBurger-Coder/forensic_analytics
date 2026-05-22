@@ -212,6 +212,87 @@ class AnalysisJobApplicationServiceTest {
         ));
     }
 
+    @Test
+    void rejectsDuplicateJobIdsMissingIdempotencyAndRunMismatches() {
+        submit("job-duplicate", AnalysisWorkerKind.AST_ANALYSIS);
+
+        var duplicate = assertThrows(IllegalArgumentException.class, () -> service.submit(
+            "submit-job-duplicate-again",
+            "correlation-1",
+            runId("run-1"),
+            jobId("job-duplicate"),
+            "schema-v1",
+            AnalysisWorkerKind.AST_ANALYSIS,
+            snapshotId("snapshot-1"),
+            List.of(),
+            AnalysisCompleteness.UNKNOWN,
+            Map.of()
+        ));
+        var missingIdempotency = assertThrows(IllegalArgumentException.class, () -> service.lease(
+            " ",
+            "correlation-1",
+            "worker-a",
+            AnalysisWorkerKind.AST_ANALYSIS,
+            60,
+            1
+        ));
+        var runMismatch = assertThrows(IllegalArgumentException.class, () -> service.registerArtifacts(
+            "register-run-mismatch",
+            "correlation-1",
+            runId("other-run"),
+            jobId("job-duplicate"),
+            List.of(artifact("reports/run-1.json", "report-hash", AnalysisArtifactCategory.GENERATED))
+        ));
+
+        assertEquals("analysis job already exists: job-duplicate", duplicate.getMessage());
+        assertEquals("idempotencyKey must not be blank", missingIdempotency.getMessage());
+        assertEquals("analysisRunId does not match existing job", runMismatch.getMessage());
+    }
+
+    @Test
+    void rejectsConflictingArtifactMetadataForSamePath() {
+        submit("job-artifact-conflict", AnalysisWorkerKind.REPORT);
+        service.registerArtifacts(
+            "register-first-artifact",
+            "correlation-1",
+            runId("run-1"),
+            jobId("job-artifact-conflict"),
+            List.of(artifact("reports/run-1.json", "report-hash", AnalysisArtifactCategory.GENERATED))
+        );
+
+        var conflict = assertThrows(IllegalArgumentException.class, () -> service.registerArtifacts(
+            "register-conflicting-artifact",
+            "correlation-1",
+            runId("run-1"),
+            jobId("job-artifact-conflict"),
+            List.of(artifact("reports/run-1.json", "other-hash", AnalysisArtifactCategory.GENERATED))
+        ));
+
+        assertEquals("artifact path reports/run-1.json conflicts with existing metadata", conflict.getMessage());
+    }
+
+    @Test
+    void leasesRetryableJobsWhenNoDispatchableJobRemains() {
+        submit("job-retry-only", AnalysisWorkerKind.JOERN_ANALYSIS);
+        service.lease("lease-retry-only", "correlation-1", "worker-a", AnalysisWorkerKind.JOERN_ANALYSIS, 60, 1);
+        service.fail(
+            "fail-retry-only",
+            "correlation-1",
+            jobId("job-retry-only"),
+            1,
+            "worker-a",
+            "temporary downstream timeout",
+            List.of("timeout"),
+            AnalysisCompleteness.UNKNOWN,
+            true
+        );
+
+        var leased = service.lease("lease-retry-only-again", "correlation-1", "worker-b", AnalysisWorkerKind.JOERN_ANALYSIS, 60, 1);
+
+        assertEquals(AnalysisJobState.RUNNING, leased.jobs().getFirst().state());
+        assertEquals(2, leased.jobs().getFirst().attempt());
+    }
+
     private void submit(String jobId, AnalysisWorkerKind workerKind) {
         submit(service, jobId, workerKind);
     }

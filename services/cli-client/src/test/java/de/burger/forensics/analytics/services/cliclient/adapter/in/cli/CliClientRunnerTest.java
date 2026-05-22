@@ -196,6 +196,70 @@ class CliClientRunnerTest {
         assertEquals("", errorOutput.toString(StandardCharsets.UTF_8));
     }
 
+    @Test
+    void parsesHelpAliasMissingCommandAndFalseBoolean() {
+        var submitted = new AtomicReference<CliClientSubmissionCommand>();
+        var standardOutput = new ByteArrayOutputStream();
+        var errorOutput = new ByteArrayOutputStream();
+        var runner = runner(command -> {
+            submitted.set(command);
+            return acceptedResult();
+        }, standardOutput, errorOutput);
+
+        var helpExitCode = runner.run(new String[] {"help"});
+        var missingExitCode = runner.run(new String[0]);
+        var falseBooleanExitCode = runner.run(append(
+            replaceOption(withoutOption(gatewaySubmitArgs(), "--branch"), "--allow-shallow-clone", "false"),
+            "--commit",
+            "abc123"
+        ));
+
+        assertEquals(0, helpExitCode);
+        assertEquals(2, missingExitCode);
+        assertEquals(0, falseBooleanExitCode);
+        assertNotNull(submitted.get());
+        assertEquals("", submitted.get().branch());
+        assertEquals("false", Boolean.toString(submitted.get().allowShallowClone()));
+        assertTrue(standardOutput.toString(StandardCharsets.UTF_8).contains("cli-client gateway-submit"));
+        assertTrue(errorOutput.toString(StandardCharsets.UTF_8).contains("Missing command."));
+    }
+
+    @Test
+    void reportsParserOnlyValidationBranches() {
+        var cases = List.of(
+            new InvalidCase(
+                withoutOption(gatewaySubmitArgs(), "--gateway"),
+                "Missing required gateway-submit option: --gateway"
+            ),
+            new InvalidCase(
+                replaceOption(gatewaySubmitArgs(), "--gateway", "https://[invalid"),
+                "Invalid gateway-submit option --gateway."
+            ),
+            new InvalidCase(
+                replaceOption(gatewaySubmitArgs(), "--declared-modules", " , "),
+                "Missing value for gateway-submit option: --declared-modules"
+            ),
+            new InvalidCase(
+                append(withoutOptionValue(gatewaySubmitArgs(), "--branch"), "--commit", "abc123"),
+                "Missing value for gateway-submit option: --branch"
+            )
+        );
+        for (var invalidCase : cases) {
+            var standardOutput = new ByteArrayOutputStream();
+            var errorOutput = new ByteArrayOutputStream();
+            var runner = runner(command -> acceptedResult(), standardOutput, errorOutput);
+
+            var exitCode = runner.run(invalidCase.args());
+
+            assertEquals(2, exitCode, invalidCase.expectedMessage());
+            assertTrue(
+                errorOutput.toString(StandardCharsets.UTF_8).contains(invalidCase.expectedMessage()),
+                invalidCase.expectedMessage()
+            );
+            assertEquals("", standardOutput.toString(StandardCharsets.UTF_8), invalidCase.expectedMessage());
+        }
+    }
+
     private static CliClientRunner runner(
         RepositoryAnalysisSubmissionPort submissionPort,
         ByteArrayOutputStream standardOutput,

@@ -147,10 +147,12 @@ Missing target material:
 - Helm or chart roots
 - CI workflow files under `.github/workflows`
 
-Docker Compose is verified for Joern tooling and for the Slice 15 local
-repository-to-BTM service path only. There is no verified production-wide
-compose landscape, Swarm stack, Kubernetes manifest set or complete
-service-by-service container readiness evidence.
+Docker Compose model validation is verified for Joern tooling only. The local
+repository-to-BTM Compose path is documented as transitional environment
+evidence, but Slice 15 did not execute or record Compose model validation,
+image-build, startup or health-check commands for that path. There is no
+verified production-wide compose landscape, Swarm stack, Kubernetes manifest
+set or complete service-by-service container readiness evidence.
 
 ## Microservice Readiness Baseline
 
@@ -172,9 +174,8 @@ Seven registered service projects have service-local READMEs, tests and
 Dockerfiles where verified in `services/**`, including the Gateway service.
 Graph-replay and report-generation remain README-only planned roots. The
 build-artifact worker is a planned target with no service root yet. Health
-check and production runtime readiness evidence remains incomplete outside the
-verified local repository-to-BTM Compose path unless a service-specific README
-states otherwise.
+check and production runtime readiness evidence remains incomplete outside
+service-specific README evidence and the Joern Compose model validation.
 
 Future slices must treat README-only service roots as planned targets. Registered
 service projects still need explicit start, healthcheck, orchestration and

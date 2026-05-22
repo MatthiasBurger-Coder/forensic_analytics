@@ -39,6 +39,12 @@ observed runtime execution.
 docker build -f services/java-parser-analysis-service/Dockerfile --build-arg SERVICE_JAR=services/java-parser-analysis-service/build/libs/java-parser-analysis-service-0.1.0-SNAPSHOT.jar -t forensic-analytics/java-parser-analysis-service:local .
 ```
 
+Local operator start command:
+
+```bash
+./gradlew :services:java-parser-analysis-service:bootRun --dependency-verification strict --console=plain --stacktrace
+```
+
 Default local ports are gRPC `9094` and health `8085`. S07 does not add Docker
 Compose, Docker Swarm or Kubernetes readiness for the FA-MSA-001 target
 landscape.

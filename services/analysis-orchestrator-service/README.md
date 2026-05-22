@@ -41,6 +41,12 @@ Slice 09 verification commands:
 git diff --check
 ```
 
+Local operator start command:
+
+```bash
+./gradlew :services:analysis-orchestrator-service:bootRun --dependency-verification strict --console=plain --stacktrace
+```
+
 ## Known Limits
 
 - The current repository still contains predecessor orchestration behavior in

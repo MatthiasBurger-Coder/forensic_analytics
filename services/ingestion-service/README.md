@@ -38,6 +38,12 @@ evidence; it is not an alias for this target service.
 ./gradlew :services:ingestion-service:bootJar --dependency-verification strict --console=plain --stacktrace
 ```
 
+Local operator start command:
+
+```bash
+./gradlew :services:ingestion-service:bootRun --dependency-verification strict --console=plain --stacktrace
+```
+
 The service starts with gRPC on port `9090` and a JDK HTTP health endpoint on
 port `8081` by default. Tests use ephemeral ports.
 

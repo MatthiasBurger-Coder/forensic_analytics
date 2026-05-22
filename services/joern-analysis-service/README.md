@@ -41,6 +41,12 @@ Slice 08 verification commands:
 docker compose -f docker/joern/docker-compose.joern.yml config
 ```
 
+Local operator start command:
+
+```bash
+./gradlew :services:joern-analysis-service:bootRun --dependency-verification strict --console=plain --stacktrace
+```
+
 Docker image builds and Joern runtime smoke tests are optional external
 verification for this slice because they may pull the digest-pinned Joern base
 image or create local container state.

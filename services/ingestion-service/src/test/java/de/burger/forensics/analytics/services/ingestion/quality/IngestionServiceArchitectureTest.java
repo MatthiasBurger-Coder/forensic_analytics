@@ -44,4 +44,29 @@ class IngestionServiceArchitectureTest {
                 "de.burger.forensics.analytics.ingestion.grpc..",
                 "de.burger.forensics.analytics.ingestion.request.."
             );
+
+    @ArchTest
+    static final ArchRule domain_does_not_depend_on_application_adapters_or_bootstrap =
+        noClasses()
+            .that()
+            .resideInAPackage("de.burger.forensics.analytics.services.ingestion.domain..")
+            .should()
+            .dependOnClassesThat()
+            .resideInAnyPackage(
+                "de.burger.forensics.analytics.services.ingestion.application..",
+                "de.burger.forensics.analytics.services.ingestion.adapter..",
+                "de.burger.forensics.analytics.services.ingestion.bootstrap.."
+            );
+
+    @ArchTest
+    static final ArchRule application_does_not_depend_on_adapters_or_bootstrap =
+        noClasses()
+            .that()
+            .resideInAPackage("de.burger.forensics.analytics.services.ingestion.application..")
+            .should()
+            .dependOnClassesThat()
+            .resideInAnyPackage(
+                "de.burger.forensics.analytics.services.ingestion.adapter..",
+                "de.burger.forensics.analytics.services.ingestion.bootstrap.."
+            );
 }

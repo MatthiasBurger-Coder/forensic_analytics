@@ -9,12 +9,23 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.net.Authenticator;
+import java.net.CookieHandler;
 import java.net.InetSocketAddress;
+import java.net.ProxySelector;
 import java.net.URI;
 import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicReference;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLParameters;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -135,6 +146,93 @@ class HttpRepositoryAnalysisSubmissionClientTest {
         assertEquals("Public API response is missing public field: statusUrl", error.getMessage());
     }
 
+    @Test
+    void defaultsOptionalPublicFieldsWhenGatewayOmitsThem() throws Exception {
+        startServer(exchange -> respond(exchange, 202, """
+            {
+              "analysisRunId": "analysis-run-1",
+              "status": "ACCEPTED",
+              "statusUrl": "/repository-analyses/analysis-run-1",
+              "jobsUrl": "/repository-analyses/analysis-run-1/jobs",
+              "btmDeliveryStatus": "BTM_DELIVERY_NOT_READY",
+              "correlationId": "correlation-1"
+            }
+            """));
+        var client = new HttpRepositoryAnalysisSubmissionClient(HttpClient.newHttpClient(), new Gson());
+
+        var result = client.submit(command(baseUrl()));
+
+        assertEquals("", result.btmDeliveryService());
+        assertEquals(0, result.diagnosticCount());
+    }
+
+    @Test
+    void ignoresNonPrimitiveOptionalSuccessFieldsAndNonArrayDiagnostics() throws Exception {
+        startServer(exchange -> respond(exchange, 202, """
+            {
+              "analysisRunId": "analysis-run-1",
+              "status": "ACCEPTED",
+              "statusUrl": "/repository-analyses/analysis-run-1",
+              "jobsUrl": "/repository-analyses/analysis-run-1/jobs",
+              "btmDeliveryStatus": "BTM_DELIVERY_NOT_READY",
+              "btmDeliveryService": {},
+              "correlationId": "correlation-1",
+              "diagnostics": {}
+            }
+            """));
+        var client = new HttpRepositoryAnalysisSubmissionClient(HttpClient.newHttpClient(), new Gson());
+
+        var result = client.submit(command(baseUrl()));
+
+        assertEquals("", result.btmDeliveryService());
+        assertEquals(0, result.diagnosticCount());
+    }
+
+    @Test
+    void mapsMalformedErrorEnvelopeToUnknownPublicError() throws Exception {
+        startServer(exchange -> respond(exchange, 503, "{not-json"));
+        var client = new HttpRepositoryAnalysisSubmissionClient(HttpClient.newHttpClient(), new Gson());
+
+        var error = assertThrows(PublicApiClientException.class, () -> client.submit(command(baseUrl())));
+
+        assertEquals("Public API error status=503 code=UNKNOWN retryable=false correlationId=unknown", error.getMessage());
+    }
+
+    @Test
+    void mapsBlankErrorFieldsAndNonPrimitiveRetryableToUnknownPublicValues() throws Exception {
+        startServer(exchange -> respond(exchange, 503, """
+            {
+              "code": "",
+              "retryable": {},
+              "correlationId": ""
+            }
+            """));
+        var client = new HttpRepositoryAnalysisSubmissionClient(HttpClient.newHttpClient(), new Gson());
+
+        var error = assertThrows(PublicApiClientException.class, () -> client.submit(command(baseUrl())));
+
+        assertEquals("Public API error status=503 code=unknown retryable=false correlationId=unknown", error.getMessage());
+    }
+
+    @Test
+    void mapsTransportFailuresWithoutLeakingRequestDetails() {
+        var ioClient = new ThrowingHttpClient(new IOException("private /tmp/workspace"));
+        var interruptedClient = new ThrowingHttpClient(new InterruptedException("interrupted"));
+
+        var ioError = assertThrows(
+            PublicApiClientException.class,
+            () -> new HttpRepositoryAnalysisSubmissionClient(ioClient, new Gson()).submit(command(URI.create("http://gateway.example/api")))
+        );
+        var interruptedError = assertThrows(
+            PublicApiClientException.class,
+            () -> new HttpRepositoryAnalysisSubmissionClient(interruptedClient, new Gson()).submit(command(URI.create("http://gateway.example/api")))
+        );
+
+        assertEquals("Public API request failed", ioError.getMessage());
+        assertEquals("Public API request was interrupted", interruptedError.getMessage());
+        assertTrue(Thread.interrupted());
+    }
+
     private URI baseUrl() {
         return URI.create("http://127.0.0.1:" + server.getAddress().getPort() + "/api");
     }
@@ -205,5 +303,83 @@ class HttpRepositoryAnalysisSubmissionClientTest {
         String idempotencyKey,
         String body
     ) {
+    }
+
+    private static final class ThrowingHttpClient extends HttpClient {
+        private final Exception failure;
+
+        private ThrowingHttpClient(Exception failure) {
+            this.failure = failure;
+        }
+
+        @Override
+        public Optional<CookieHandler> cookieHandler() {
+            return Optional.empty();
+        }
+
+        @Override
+        public Optional<Duration> connectTimeout() {
+            return Optional.empty();
+        }
+
+        @Override
+        public Redirect followRedirects() {
+            return Redirect.NEVER;
+        }
+
+        @Override
+        public Optional<ProxySelector> proxy() {
+            return Optional.empty();
+        }
+
+        @Override
+        public SSLContext sslContext() {
+            return null;
+        }
+
+        @Override
+        public SSLParameters sslParameters() {
+            return null;
+        }
+
+        @Override
+        public Optional<Authenticator> authenticator() {
+            return Optional.empty();
+        }
+
+        @Override
+        public Version version() {
+            return Version.HTTP_1_1;
+        }
+
+        @Override
+        public Optional<Executor> executor() {
+            return Optional.empty();
+        }
+
+        @Override
+        public <T> HttpResponse<T> send(HttpRequest request, HttpResponse.BodyHandler<T> responseBodyHandler) throws IOException, InterruptedException {
+            if (failure instanceof IOException ioException) {
+                throw ioException;
+            }
+            if (failure instanceof InterruptedException interruptedException) {
+                throw interruptedException;
+            }
+            throw new AssertionError(failure);
+        }
+
+        @Override
+        public <T> CompletableFuture<HttpResponse<T>> sendAsync(HttpRequest request, HttpResponse.BodyHandler<T> responseBodyHandler) {
+            throw new UnsupportedOperationException("not used");
+        }
+
+        @Override
+        public <T> CompletableFuture<HttpResponse<T>> sendAsync(
+            HttpRequest request,
+            HttpResponse.BodyHandler<T> responseBodyHandler,
+            HttpResponse.PushPromiseHandler<T> pushPromiseHandler
+        ) {
+            throw new UnsupportedOperationException("not used");
+        }
     }
 }

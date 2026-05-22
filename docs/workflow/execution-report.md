@@ -40,7 +40,7 @@
 | S12 | COMPLETED | Observability stack registered as deployment-oriented policy boundary; service no-source test, root test, static boundary scans, documentation reviews and whitespace gate passed. |
 | S13 | COMPLETED | Testbed registered as non-production integration/system-test boundary; target testbed gate, root test, stop-condition scans, local role checklists and whitespace gate passed. |
 | S14 | COMPLETED | Three Amigos repair converted direct deletion into a retirement-readiness gate; caller scans remain non-empty, so S14 closes as `NO_REMOVAL_SAFE` with follow-up retirement slices. |
-| S15 | PENDING | Runtime readiness, architecture tests and closure |
+| S15 | COMPLETED | Runtime readiness, architecture tests, package-coverage remediation and final quality gate passed with deployment-readiness limits recorded. |
 
 ## Command Log
 
@@ -349,10 +349,42 @@
 | S14 | Senior Java Backend local role checklist | PASS_WITH_BLOCKER_EVIDENCE: current backend imports and Gradle references prove that direct removal would break active behavior; no source or build retirement was attempted. |
 | S14 | Senior React Frontend local role checklist | PASS: no frontend files or UI/API client behavior changed; frontend impact is limited to future caller migration if a later workflow routes UI calls through target services. |
 | S14 | Senior Tester local role checklist | PASS_WITH_REPAIR: S14 keeps regression coverage intact and records follow-up tests required before any legacy path removal. |
+| S15 | `git branch --show-current && git show-ref --verify --quiet refs/heads/architecture/workflow-microservice-decomposition-20260521 && git status --short --branch --untracked-files=all` | PASS: active workflow branch and local ref verified; working tree changes are limited to S15 docs, closure tests and the CLI testable bootstrap seam. |
+| S15 | `git ls-files "services/*/build.gradle.kts" "services/*/Dockerfile" "services/*/README.md" "services/*/src/main/resources/application*.properties"` | PASS: the six FA-MSA-001 target services have service-owned build files, Dockerfiles, README start-path documentation and application configuration files. |
+| S15 | `rg -n "project\\(" services/{repository-source-service,ingestion-service,java-parser-analysis-service,joern-analysis-service,analysis-orchestrator-service,query-report-api-service}/build.gradle.kts \|\| true` | PASS: no direct Gradle `project(...)` dependency exists in the six productive target service build files. |
+| S15 | cross-service Java import scan over the six productive target service source trees | PASS: no target service imports another target service implementation package. |
+| S15 | architecture test inventory over the six productive target services | PASS: each target service contains architecture tests guarding domain, application and adapter boundaries. |
+| S15 | `./gradlew :services:repository-source-service:build --dependency-verification strict --console=plain --stacktrace` | PASS: build successful in 37s. |
+| S15 | `./gradlew :services:ingestion-service:build --dependency-verification strict --console=plain --stacktrace` | PASS: build successful in 33s. |
+| S15 | `./gradlew :services:java-parser-analysis-service:build --dependency-verification strict --console=plain --stacktrace` | PASS: build successful in 3s. |
+| S15 | `./gradlew :services:joern-analysis-service:build --dependency-verification strict --console=plain --stacktrace` | PASS: build successful in 3s. |
+| S15 | `./gradlew :services:analysis-orchestrator-service:build --dependency-verification strict --console=plain --stacktrace` | PASS: build successful in 3s before coverage remediation; rerun together with `:services:cli-client:build` passed after remediation. |
+| S15 | `./gradlew :services:query-report-api-service:build --dependency-verification strict --console=plain --stacktrace` | PASS: build successful in 3s. |
+| S15 | supplemental boundary builds for `:services:cli-client`, `:services:testbed` and `:services:observability-stack` | PASS: all three special boundaries built successfully; they remain public-client, non-production testbed and deployment-policy boundaries, not productive backend microservices. |
+| S15 | `./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace` | TIMED_OUT_WITHOUT_RESULT on first app-tool attempt after 15m while the WSL Gradle process continued; no pass was claimed from this attempt because the exit code was not captured. |
+| S15 | `./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace` | FAILED before remediation at `:checkPackageCoverage`: branch coverage was below threshold for analysis-orchestrator gRPC/application and cli-client domain/HTTP/CLI packages, and cli-client bootstrap line coverage was 0%. |
+| S15 | `./gradlew :services:cli-client:test :services:analysis-orchestrator-service:test --dependency-verification strict --console=plain --stacktrace` | PASS after remediation: targeted tests passed after adding CLI command, HTTP adapter, bootstrap and analysis-orchestrator regression coverage. |
+| S15 | `./gradlew :services:cli-client:jacocoTestReport :services:analysis-orchestrator-service:jacocoTestReport checkPackageCoverage --dependency-verification strict --console=plain --stacktrace` | PASS after remediation: package coverage passed for the previously failing cli-client and analysis-orchestrator packages. |
+| S15 | `./gradlew :services:analysis-orchestrator-service:build :services:cli-client:build --dependency-verification strict --console=plain --stacktrace` | PASS: impacted service builds passed in 33s after the coverage remediation. |
+| S15 | `./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace` | PASS before final role-review remediation: full local quality gate passed in 27m 30s; 322 actionable tasks, 308 executed, 14 up-to-date. Java 25 protobuf/gRPC/netty warnings and two existing deprecated ingestion-test setter warnings were non-failing. |
+| S15 | Senior Tester subagent | PASS: S15 coverage remediation is sufficient; no blocking test gaps found. The reviewer also verified `git diff --check`, untracked test-file whitespace, service readiness inventory, direct `project(...)` dependency scan and cross-service import scan. |
+| S15 | Senior DevOps subagent | BLOCKED before documentation remediation: service-local readiness evidence was present, but docs referenced absent `docs/workflow/deployment-workflow-request.md`, overused verified wording for local Compose evidence and had uneven service README start-path documentation. |
+| S15 | Senior System Architect subagent | BLOCKED before architecture/documentation remediation: `ingestion-service` lacked explicit domain/application hexagonal direction rules, the closure depended on untracked CLI tests that must be staged, and the build/test map incorrectly mentioned S07 CLI coverage remediation instead of S15. |
+| S15 | Microservice Senior Expert subagent | PASS_WITH_LIMITS: six productive backend services have service-local build files, configs, Dockerfiles, healthcheck definitions, architecture tests, no shared Java implementation module dependency and no cross-service implementation imports; Docker image-build, Compose startup, Swarm and Kubernetes readiness remain unverified and excluded. |
+| S15 | Role-review remediation | PASS: added ingestion-service domain/application ArchUnit direction rules, added service README `bootRun` start paths where missing, removed unverifiable deployment-handoff references, tightened local Compose wording, corrected the S15 coverage-remediation documentation and kept the two new CLI tests in the closure set. |
+| S15 | Senior DevOps subagent re-review | BLOCKED before final documentation remediation: `docs/architecture/current-state.md` still described repository-to-BTM Compose evidence as verified for S15. |
+| S15 | Final DevOps documentation remediation | PASS: `docs/architecture/current-state.md` now limits Compose model validation to Joern tooling and states that S15 did not execute or record repository-to-BTM Compose validation, image-build, startup or health-check commands. |
+| S15 | Senior DevOps subagent final re-review | PASS: no remaining active readiness overclaim; `git diff --check` passed in the re-review. |
+| S15 | Senior System Architect subagent re-review | BLOCKED only on final Git tracking: ArchUnit and documentation blockers were resolved, but the two new CLI coverage tests still had to be staged before closure evidence was reproducible. |
+| S15 | Final staged-file review | PASS: the two new CLI coverage tests are staged as added files and `git diff --cached --check` passed. |
+| S15 | Senior System Architect subagent final re-review | PASS: CLI tests are staged, ingestion ArchUnit direction rules are present, staged whitespace validation passed and remaining deployment limits are accepted future-work constraints. |
+| S15 | `./gradlew :services:ingestion-service:test --tests "de.burger.forensics.analytics.services.ingestion.quality.IngestionServiceArchitectureTest" --dependency-verification strict --console=plain --stacktrace` | PASS after architecture remediation: build successful in 18s; 11 actionable tasks, 2 executed, 9 up-to-date. |
+| S15 | `git diff --check` | PASS after role-review remediation: no whitespace errors in the tracked and unstaged S15 diff. |
+| S15 | `./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace` | PASS after role-review remediation: full local quality gate passed in 27m 22s; 322 actionable tasks executed. Java 25 protobuf/gRPC/netty warnings and existing deprecated ingestion-test setter warnings were non-failing. |
 
 ## Blockers
 
-No active blocker for S00, S01, S02, S03, S04, S05, S06, S07, S08, S09, S10, S11, S12, S13 or S14 as completed workflow slices.
+No active blocker for S00, S01, S02, S03, S04, S05, S06, S07, S08, S09, S10, S11, S12, S13, S14 or S15 as completed workflow slices.
 No active S11 scope or contract blocker after the scope remediation checkpoint
 commit `2fd98a5`; S11 implementation reviews and quality gates passed during
 continuation closure.
@@ -367,8 +399,24 @@ path-specific follow-up slices prove caller-free evidence, replacement parity
 or explicit deprecation, rollback or operator notes and the required quality
 gate. This is an accepted workflow repair state, not a claim that retained
 legacy modules are production microservices.
+S15 closes the workflow with runtime-readiness limits: target services have
+independent build paths, Dockerfiles, documented start paths, healthcheck
+definitions, service-local configuration and architecture-test coverage, but
+S15 does not claim verified Docker image-build execution, Docker Compose
+startup, Docker Swarm readiness or Kubernetes readiness.
 
 ## Final Acceptance
 
-Not evaluated. FA-MSA-001 acceptance is evaluated only after S15 completes and
-the required quality gates pass.
+PASS_WITH_LIMITS. FA-MSA-001 target service closure evidence passed the
+mandatory S15 service builds and the full local quality gate:
+
+```bash
+./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace
+```
+
+The accepted limits are explicit: retained `forensic-analytics-*` modules are
+legacy in-process and rollback evidence until path-specific retirement slices
+prove caller-free removal, and deployment readiness is limited to verified
+service-local build/start/configuration/Dockerfile/healthcheck evidence.
+Docker image-build execution, Docker Compose startup, Docker Swarm readiness
+and Kubernetes readiness require future verified deployment slices.
