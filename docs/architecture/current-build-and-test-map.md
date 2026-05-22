@@ -245,12 +245,15 @@ port `8089`, distinct from predecessor Analysis Store and earlier target
 service ports. S07 does not claim Docker image build readiness; Docker
 build-context verification remains later deployment work.
 
-Slice 10 adds a service-local Dockerfile for
+FA-MSA-001-LMR S08 keeps a service-local Dockerfile for
 `services/query-report-api-service`. This is target-service container packaging
 evidence only; Compose, Swarm and Kubernetes readiness for the FA-MSA-001
 target landscape remains future work until descriptors and validation commands
-exist. The service uses local HTTP port `8080` and remains a public facade for
-verified repository-analysis routes only.
+exist. The service uses local HTTP port `8080`, points at
+`analysis-orchestrator-service` gRPC port `9098`, and remains a public facade
+for verified repository-analysis routes plus pending/status-only orchestrator
+readiness. S08 does not claim Docker image build readiness; Docker
+build-context verification remains later deployment work.
 
 Slice 13 adds `services:testbed` without a Dockerfile or runtime service
 descriptor. It may use verified local deployment descriptors as test

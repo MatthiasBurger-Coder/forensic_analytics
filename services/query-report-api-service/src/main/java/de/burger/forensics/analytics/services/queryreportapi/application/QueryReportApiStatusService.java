@@ -9,7 +9,7 @@ public final class QueryReportApiStatusService {
     public QueryReportApiStatusSnapshot currentStatus() {
         return new QueryReportApiStatusSnapshot(
             "UP",
-            List.of(new DownstreamServiceStatus("analysis-store-service", "UNKNOWN"))
+            List.of(new DownstreamServiceStatus("analysis-orchestrator-service", "UNKNOWN"))
         );
     }
 }

@@ -279,7 +279,7 @@ claim Docker image build readiness from the Dockerfile alone. Those readiness
 claims require later repository tooling, Docker build-context verification and
 validation commands.
 
-Slice S10 adds `services/query-report-api-service` as target-service
+Slice S08 adds `services/query-report-api-service` as target-service
 deployment evidence. The service owns:
 
 - `services/query-report-api-service/build.gradle.kts`;
@@ -301,14 +301,15 @@ The local operator start command is:
 ./gradlew :services:query-report-api-service:bootRun --dependency-verification strict --console=plain --stacktrace
 ```
 
-S10 records this as the service-local start command, but the S10 verification
+S08 records this as the service-local start command, but the S08 verification
 run does not execute `bootRun` or a live health probe. Runtime smoke evidence
 must be recorded separately before claiming a verified running Query Report API
 Service instance.
 
-The service Dockerfile is service-owned, but S10 does not add target-service
-Docker Compose, Docker Swarm or Kubernetes deployment descriptors. Those
-readiness claims require later repository tooling and validation commands.
+The service Dockerfile is service-owned, but S08 does not add target-service
+Docker Compose, Docker Swarm or Kubernetes deployment descriptors and does not
+claim Docker image build readiness. Those readiness claims require later
+repository tooling and validation commands.
 
 Slice S13 adds `services/testbed` as the non-production integration and
 system-test deployment boundary. The testbed owns:

@@ -34,15 +34,16 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-class AnalysisStoreRepositoryToBtmGrpcClientTest {
+class AnalysisOrchestratorRepositoryToBtmGrpcClientCompatibilityTest {
     @Test
-    void mapsGatewaySubmissionToAnalysisStoreOwnerRequest() {
-        var service = new CapturingAnalysisStoreService();
+    void mapsGatewaySubmissionToAnalysisOrchestratorRequest() {
+        var service = new CapturingAnalysisOrchestratorService();
         var fixture = GrpcFixture.start(service);
         try {
-            var client = new AnalysisStoreRepositoryToBtmGrpcClient(
+            var client = new AnalysisOrchestratorRepositoryToBtmGrpcClient(
                 AnalysisJobServiceGrpc.newBlockingStub(fixture.channel),
                 30
             );
@@ -84,12 +85,12 @@ class AnalysisStoreRepositoryToBtmGrpcClientTest {
     }
 
     @Test
-    void redactsAnalysisStoreDiagnosticsBeforeReturningPublicGatewaySubmission() {
-        var service = new CapturingAnalysisStoreService();
+    void redactsAnalysisOrchestratorDiagnosticsBeforeReturningPublicGatewaySubmission() {
+        var service = new CapturingAnalysisOrchestratorService();
         service.diagnosticMessage = "git clone https://example.com/private.git failed in /tmp/workspace-1 with token=abc";
         var fixture = GrpcFixture.start(service);
         try {
-            var client = new AnalysisStoreRepositoryToBtmGrpcClient(
+            var client = new AnalysisOrchestratorRepositoryToBtmGrpcClient(
                 AnalysisJobServiceGrpc.newBlockingStub(fixture.channel),
                 30
             );
@@ -107,12 +108,12 @@ class AnalysisStoreRepositoryToBtmGrpcClientTest {
     }
 
     @Test
-    void readsRepositoryToBtmStatusThroughAnalysisStoreOwnerApi() {
-        var service = new CapturingAnalysisStoreService();
+    void readsRepositoryToBtmStatusThroughAnalysisOrchestratorApi() {
+        var service = new CapturingAnalysisOrchestratorService();
         service.completenessValue = AnalysisCompleteness.ANALYSIS_COMPLETENESS_INCOMPLETE.getNumber();
         var fixture = GrpcFixture.start(service);
         try {
-            var client = new AnalysisStoreRepositoryToBtmGrpcClient(
+            var client = new AnalysisOrchestratorRepositoryToBtmGrpcClient(
                 AnalysisJobServiceGrpc.newBlockingStub(fixture.channel),
                 30
             );
@@ -123,10 +124,32 @@ class AnalysisStoreRepositoryToBtmGrpcClientTest {
             assertEquals("correlation-status", service.statusRequest.getCorrelationId());
             assertEquals("analysis-run-1", service.statusRequest.getAnalysisRunId().getValue());
             assertEquals("analysis-run-1", result.analysisRunId());
-            assertEquals("UNKNOWN", result.status());
+            assertEquals("ACCEPTED", result.status());
             assertEquals("AVAILABLE", result.sourceSnapshotStatus());
             assertEquals("repository-to-btm", result.workflow());
             assertEquals("ORCHESTRATION_STATUS", result.diagnostics().getFirst().code());
+            assertEquals("ANALYSIS_COMPLETENESS_INCOMPLETE", result.diagnostics().get(1).code());
+        } finally {
+            fixture.close();
+        }
+    }
+
+    @Test
+    void mapsPendingStatusWithoutSourceSnapshotAvailability() {
+        var service = new CapturingAnalysisOrchestratorService();
+        service.includeSourceSnapshot = false;
+        service.completenessValue = AnalysisCompleteness.ANALYSIS_COMPLETENESS_INCOMPLETE.getNumber();
+        var fixture = GrpcFixture.start(service);
+        try {
+            var client = new AnalysisOrchestratorRepositoryToBtmGrpcClient(
+                AnalysisJobServiceGrpc.newBlockingStub(fixture.channel),
+                30
+            );
+
+            var result = client.status(new StatusRequest("request-status", "correlation-status", "analysis-run-1"));
+
+            assertEquals("ACCEPTED", result.status());
+            assertNull(result.sourceSnapshotStatus());
             assertEquals("ANALYSIS_COMPLETENESS_INCOMPLETE", result.diagnostics().get(1).code());
         } finally {
             fixture.close();
@@ -167,7 +190,7 @@ class AnalysisStoreRepositoryToBtmGrpcClientTest {
             RepositoryToBtmOrchestrationState.REPOSITORY_TO_BTM_ORCHESTRATION_STATE_ACCEPTED,
             AnalysisCompleteness.ANALYSIS_COMPLETENESS_INCOMPLETE.getNumber(),
             BtmDeliveryReadiness.BTM_DELIVERY_READINESS_NOT_READY,
-            "UNKNOWN",
+            "ACCEPTED",
             "BTM_DELIVERY_NOT_READY",
             "ANALYSIS_COMPLETENESS_INCOMPLETE"
         );
@@ -183,7 +206,7 @@ class AnalysisStoreRepositoryToBtmGrpcClientTest {
             RepositoryToBtmOrchestrationState.REPOSITORY_TO_BTM_ORCHESTRATION_STATE_ACCEPTED,
             99,
             BtmDeliveryReadiness.BTM_DELIVERY_READINESS_NOT_READY,
-            "UNKNOWN",
+            "ACCEPTED",
             "BTM_DELIVERY_NOT_READY",
             "ANALYSIS_COMPLETENESS_UNKNOWN"
         );
@@ -199,7 +222,7 @@ class AnalysisStoreRepositoryToBtmGrpcClientTest {
         assertGatewayError(Status.FAILED_PRECONDITION, 502, "BACKEND_UNAVAILABLE", false);
         assertGatewayError(Status.INTERNAL, 500, "UNEXPECTED_ERROR", false);
 
-        var client = new AnalysisStoreRepositoryToBtmGrpcClient("127.0.0.1", 1, 1);
+        var client = new AnalysisOrchestratorRepositoryToBtmGrpcClient("127.0.0.1", 1, 1);
         client.close();
     }
 
@@ -226,9 +249,9 @@ class AnalysisStoreRepositoryToBtmGrpcClientTest {
         String expectedErrorCode,
         boolean expectedRetryable
     ) {
-        var fixture = GrpcFixture.start(new FailingAnalysisStoreService(status));
+        var fixture = GrpcFixture.start(new FailingAnalysisOrchestratorService(status));
         try {
-            var client = new AnalysisStoreRepositoryToBtmGrpcClient(
+            var client = new AnalysisOrchestratorRepositoryToBtmGrpcClient(
                 AnalysisJobServiceGrpc.newBlockingStub(fixture.channel),
                 30
             );
@@ -268,13 +291,13 @@ class AnalysisStoreRepositoryToBtmGrpcClientTest {
         String expectedReadiness,
         String expectedCompletenessDiagnostic
     ) {
-        var service = new CapturingAnalysisStoreService();
+        var service = new CapturingAnalysisOrchestratorService();
         service.state = state;
         service.completenessValue = completenessValue;
         service.readiness = readiness;
         var fixture = GrpcFixture.start(service);
         try {
-            var client = new AnalysisStoreRepositoryToBtmGrpcClient(
+            var client = new AnalysisOrchestratorRepositoryToBtmGrpcClient(
                 AnalysisJobServiceGrpc.newBlockingStub(fixture.channel),
                 30
             );
@@ -293,12 +316,13 @@ class AnalysisStoreRepositoryToBtmGrpcClientTest {
         }
     }
 
-    private static final class CapturingAnalysisStoreService
+    private static final class CapturingAnalysisOrchestratorService
         extends AnalysisJobServiceGrpc.AnalysisJobServiceImplBase {
         private StartRepositoryToBtmRequest request;
         private GetRepositoryToBtmStatusRequest statusRequest;
-        private String diagnosticMessage = "Analysis Store accepted orchestration";
+        private String diagnosticMessage = "Analysis Orchestrator accepted orchestration";
         private int completenessValue = AnalysisCompleteness.ANALYSIS_COMPLETENESS_COMPLETE.getNumber();
+        private boolean includeSourceSnapshot = true;
         private RepositoryToBtmOrchestrationState state =
             RepositoryToBtmOrchestrationState.REPOSITORY_TO_BTM_ORCHESTRATION_STATE_WAITING_FOR_REPOSITORY;
         private BtmDeliveryReadiness readiness = BtmDeliveryReadiness.BTM_DELIVERY_READINESS_NOT_READY;
@@ -340,14 +364,13 @@ class AnalysisStoreRepositoryToBtmGrpcClientTest {
         }
 
         private RepositoryToBtmOrchestrationStatus status(String analysisRunId, String correlationId) {
-            return RepositoryToBtmOrchestrationStatus.newBuilder()
+            var builder = RepositoryToBtmOrchestrationStatus.newBuilder()
                 .setStatus(OperationStatus.newBuilder()
                     .setCode("REPOSITORY_TO_BTM_ACCEPTED")
                     .setMessage("accepted")
                     .setCorrelationId(correlationId))
                 .setAnalysisRunId(AnalysisRunId.newBuilder().setValue(analysisRunId))
                 .setRepositoryAnalysisJobId(AnalysisJobId.newBuilder().setValue("repository-analysis-job-1"))
-                .setSourceSnapshotId(SourceSnapshotId.newBuilder().setValue("source-snapshot-pending-1"))
                 .setCompletenessValue(completenessValue)
                 .setState(state)
                 .setBtmDeliveryReadiness(readiness)
@@ -355,16 +378,19 @@ class AnalysisStoreRepositoryToBtmGrpcClientTest {
                 .addDiagnostics(RepositoryToBtmDiagnostic.newBuilder()
                     .setCode("ORCHESTRATION_STATUS")
                     .setMessage(diagnosticMessage)
-                    .setSeverity(RepositoryToBtmDiagnosticSeverity.REPOSITORY_TO_BTM_DIAGNOSTIC_SEVERITY_INFO))
-                .build();
+                    .setSeverity(RepositoryToBtmDiagnosticSeverity.REPOSITORY_TO_BTM_DIAGNOSTIC_SEVERITY_INFO));
+            if (includeSourceSnapshot) {
+                builder.setSourceSnapshotId(SourceSnapshotId.newBuilder().setValue("source-snapshot-pending-1"));
+            }
+            return builder.build();
         }
     }
 
-    private static final class FailingAnalysisStoreService
+    private static final class FailingAnalysisOrchestratorService
         extends AnalysisJobServiceGrpc.AnalysisJobServiceImplBase {
         private final Status status;
 
-        private FailingAnalysisStoreService(Status status) {
+        private FailingAnalysisOrchestratorService(Status status) {
             this.status = status;
         }
 

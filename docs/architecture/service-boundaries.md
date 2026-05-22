@@ -432,12 +432,12 @@ Current evidence:
 - public API portions of `services/forensic-gateway-service`;
 - `contracts/openapi/gateway-api.yaml`.
 
-S10 implementation state:
+S08 implementation state:
 
 - registered Gradle project `services:query-report-api-service`;
 - service-local package `de.burger.forensics.analytics.services.queryreportapi`;
 - service-local domain, application port, inbound HTTP adapter, outbound
-  Analysis Store owner API gRPC adapter, bootstrap, configuration, tests,
+  Analysis Orchestrator gRPC adapter, bootstrap, configuration, tests,
   README and Dockerfile;
 - current verified routes `GET /health`, `GET /api/health`, `GET /api/status`,
   `POST /api/repository-analyses` and
@@ -445,12 +445,14 @@ S10 implementation state:
 - unchanged `contracts/openapi/gateway-api.yaml` wire/schema shape;
 - service-local generated `analysis-job.proto` transport classes.
 
-The S10 outbound gRPC adapter still calls the predecessor Analysis Store owner
-API for public repository-to-BTM submission/status. S07 target
-`analysis-orchestrator-service` now accepts repository-to-BTM requests and
-returns pending status only; switching this facade to the target orchestrator
-still requires a later contract-first slice with verified public API parity and
-caller behavior.
+The S08 outbound gRPC adapter calls the S07 `analysis-orchestrator-service`
+`StartRepositoryToBtm` and `GetRepositoryToBtmStatus` RPCs. The public facade
+preserves the REST/OpenAPI response shape and maps orchestrator
+`WAITING_FOR_REPOSITORY` plus `INCOMPLETE` readiness to public `ACCEPTED`,
+`BTM_DELIVERY_NOT_READY` and explicit incomplete diagnostics. This is not
+completed analysis parity: no repository checkout, worker dispatch, Joern run,
+BTM generation, report assembly or artifact byte custody is claimed by
+`query-report-api-service`.
 
 Stop conditions:
 

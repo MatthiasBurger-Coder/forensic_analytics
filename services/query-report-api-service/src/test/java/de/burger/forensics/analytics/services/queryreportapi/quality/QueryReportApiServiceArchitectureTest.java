@@ -46,6 +46,7 @@ class QueryReportApiServiceArchitectureTest {
             .resideInAnyPackage(
                 "de.burger.forensics.analytics.services.repositoryanalysis..",
                 "de.burger.forensics.analytics.services.analysisstore..",
+                "de.burger.forensics.analytics.services.analysisorchestrator..",
                 "de.burger.forensics.analytics.services.btmgeneration..",
                 "de.burger.forensics.analytics.services.javaastanalysis..",
                 "de.burger.forensics.analytics.services.joerncpganalysis..",

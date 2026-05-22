@@ -28,16 +28,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-public final class AnalysisStoreRepositoryToBtmGrpcClient implements RepositoryAnalysisOwnerPort, AutoCloseable {
+public final class AnalysisOrchestratorRepositoryToBtmGrpcClient implements RepositoryAnalysisOwnerPort, AutoCloseable {
     private final ManagedChannel channel;
     private final AnalysisJobServiceGrpc.AnalysisJobServiceBlockingStub stub;
     private final long deadlineSeconds;
 
-    public AnalysisStoreRepositoryToBtmGrpcClient(String host, int port, long deadlineSeconds) {
+    public AnalysisOrchestratorRepositoryToBtmGrpcClient(String host, int port, long deadlineSeconds) {
         this(ManagedChannelBuilder.forAddress(host, port).usePlaintext().build(), deadlineSeconds);
     }
 
-    AnalysisStoreRepositoryToBtmGrpcClient(
+    AnalysisOrchestratorRepositoryToBtmGrpcClient(
         AnalysisJobServiceGrpc.AnalysisJobServiceBlockingStub stub,
         long deadlineSeconds
     ) {
@@ -46,7 +46,7 @@ public final class AnalysisStoreRepositoryToBtmGrpcClient implements RepositoryA
         this.deadlineSeconds = deadlineSeconds;
     }
 
-    private AnalysisStoreRepositoryToBtmGrpcClient(ManagedChannel channel, long deadlineSeconds) {
+    private AnalysisOrchestratorRepositoryToBtmGrpcClient(ManagedChannel channel, long deadlineSeconds) {
         this.channel = channel;
         this.stub = AnalysisJobServiceGrpc.newBlockingStub(channel);
         this.deadlineSeconds = deadlineSeconds;
@@ -150,14 +150,9 @@ public final class AnalysisStoreRepositoryToBtmGrpcClient implements RepositoryA
     }
 
     private static String publicStatus(RepositoryToBtmOrchestrationStatus status) {
-        if (status.getCompleteness() == AnalysisCompleteness.ANALYSIS_COMPLETENESS_INCOMPLETE
-            || status.getCompleteness() == AnalysisCompleteness.ANALYSIS_COMPLETENESS_UNKNOWN
-            || status.getCompleteness() == AnalysisCompleteness.ANALYSIS_COMPLETENESS_UNSPECIFIED
-            || status.getCompleteness() == AnalysisCompleteness.UNRECOGNIZED) {
-            return "UNKNOWN";
-        }
         return switch (status.getState()) {
-            case REPOSITORY_TO_BTM_ORCHESTRATION_STATE_READY_FOR_BTM_DELIVERY -> "COMPLETED";
+            case REPOSITORY_TO_BTM_ORCHESTRATION_STATE_READY_FOR_BTM_DELIVERY ->
+                status.getCompleteness() == AnalysisCompleteness.ANALYSIS_COMPLETENESS_COMPLETE ? "COMPLETED" : "UNKNOWN";
             case REPOSITORY_TO_BTM_ORCHESTRATION_STATE_FAILED -> "FAILED";
             case REPOSITORY_TO_BTM_ORCHESTRATION_STATE_INCOMPLETE,
                  REPOSITORY_TO_BTM_ORCHESTRATION_STATE_UNSPECIFIED,
@@ -184,12 +179,12 @@ public final class AnalysisStoreRepositoryToBtmGrpcClient implements RepositoryA
             case ANALYSIS_COMPLETENESS_INCOMPLETE -> java.util.Optional.of(new Diagnostic(
                 "WARNING",
                 "ANALYSIS_COMPLETENESS_INCOMPLETE",
-                "Owner reported incomplete repository analysis state"
+                "Analysis Orchestrator reported incomplete repository analysis state"
             ));
             case ANALYSIS_COMPLETENESS_UNKNOWN, ANALYSIS_COMPLETENESS_UNSPECIFIED, UNRECOGNIZED -> java.util.Optional.of(new Diagnostic(
                 "WARNING",
                 "ANALYSIS_COMPLETENESS_UNKNOWN",
-                "Owner did not provide complete repository analysis state"
+                "Analysis Orchestrator did not provide complete repository analysis state"
             ));
             case ANALYSIS_COMPLETENESS_COMPLETE -> java.util.Optional.empty();
         };
@@ -210,12 +205,12 @@ public final class AnalysisStoreRepositoryToBtmGrpcClient implements RepositoryA
             return new QueryReportApiRepositoryAnalysisException(504, "TIMEOUT", true, "Repository-to-BTM orchestration request timed out");
         }
         if (code == Status.Code.UNAVAILABLE) {
-            return new QueryReportApiRepositoryAnalysisException(503, "BACKEND_UNAVAILABLE", true, "Analysis Store service is unavailable");
+            return new QueryReportApiRepositoryAnalysisException(503, "BACKEND_UNAVAILABLE", true, "Analysis Orchestrator service is unavailable");
         }
         if (code == Status.Code.FAILED_PRECONDITION) {
-            return new QueryReportApiRepositoryAnalysisException(502, "BACKEND_UNAVAILABLE", false, "Analysis Store could not prepare orchestration state");
+            return new QueryReportApiRepositoryAnalysisException(502, "BACKEND_UNAVAILABLE", false, "Analysis Orchestrator could not prepare orchestration state");
         }
-        return new QueryReportApiRepositoryAnalysisException(500, "UNEXPECTED_ERROR", false, "Analysis Store orchestration failed");
+        return new QueryReportApiRepositoryAnalysisException(500, "UNEXPECTED_ERROR", false, "Analysis Orchestrator orchestration failed");
     }
 
     @Override

@@ -69,14 +69,14 @@ runtime-ready. CLI contract parity remains limited to the existing
 | `observability-stack` | productive services | deployment/configuration | observability configuration | Logging, metrics, tracing and dashboards | Not a shared Java library |
 | `testbed` | productive services | Compose, REST, gRPC or test contracts | test environment docs | Integration and end-to-end tests | No production service may depend on testbed code |
 
-S10 transitional note: the implemented
+S08 transitional note: the implemented
 `services/query-report-api-service` repository-analysis submission/status
-routes still call the predecessor `analysis-store-service` owner API through
-service-local generated `analysis-job.proto` classes. This does not change the
-target matrix above; S07 `analysis-orchestrator-service` accepts
-repository-to-BTM requests and returns pending status only, so repointing the
-public facade still requires a later contract-first slice with public parity
-tests.
+routes call the S07 `analysis-orchestrator-service` `StartRepositoryToBtm` and
+`GetRepositoryToBtmStatus` RPCs through service-local generated
+`analysis-job.proto` classes. This does not claim full repository-to-BTM
+execution parity: the orchestrator returns pending/status-only readiness, and
+the public facade maps that to `ACCEPTED` with incomplete diagnostics and
+`BTM_DELIVERY_NOT_READY`.
 
 ## Transitional Contract Evidence
 
@@ -89,11 +89,11 @@ as `forensic-gateway-service`, `repository-analysis-service`,
 OpenAPI evidence is mixed: selected operations are currently verified, while
 planned routes are target contract intent rather than implementation evidence.
 Event contracts are design artifacts until producers, consumers and broker
-runtime evidence are verified. The query/report API still relies on
-predecessor `analysis-store-service` behavior for repository-analysis
-submission/status; S07 target orchestrator pending-status support is not yet a
-public facade replacement, so repointing that path to
-`analysis-orchestrator-service` requires a later contract-first slice.
+runtime evidence are verified. S08 routes repository-analysis
+submission/status through `analysis-orchestrator-service` pending readiness;
+that is public facade replacement evidence for acceptance/status only, not
+evidence of repository checkout, worker dispatch, BTM generation, report
+assembly or completed runtime analysis.
 
 ## Error, Retry And Idempotency Rules
 

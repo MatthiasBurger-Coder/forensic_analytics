@@ -1,7 +1,7 @@
 package de.burger.forensics.analytics.services.queryreportapi.bootstrap;
 
 import de.burger.forensics.analytics.services.queryreportapi.adapter.in.http.QueryReportApiHttpHandler;
-import de.burger.forensics.analytics.services.queryreportapi.adapter.out.grpc.AnalysisStoreRepositoryToBtmGrpcClient;
+import de.burger.forensics.analytics.services.queryreportapi.adapter.out.grpc.AnalysisOrchestratorRepositoryToBtmGrpcClient;
 import de.burger.forensics.analytics.services.queryreportapi.application.QueryReportApiRepositoryAnalysisSubmissionService;
 import de.burger.forensics.analytics.services.queryreportapi.application.QueryReportApiStatusService;
 import de.burger.forensics.analytics.services.queryreportapi.application.port.RepositoryAnalysisOwnerPort;
@@ -26,8 +26,8 @@ public class QueryReportApiServiceConfiguration {
     public RepositoryAnalysisOwnerPort repositoryAnalysisOwnerPort(
         QueryReportApiServiceProperties properties
     ) {
-        var grpc = properties.analysisStore().grpc();
-        return new AnalysisStoreRepositoryToBtmGrpcClient(grpc.host(), grpc.port(), grpc.deadlineSeconds());
+        var grpc = properties.analysisOrchestrator().grpc();
+        return new AnalysisOrchestratorRepositoryToBtmGrpcClient(grpc.host(), grpc.port(), grpc.deadlineSeconds());
     }
 
     @Bean

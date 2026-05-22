@@ -242,10 +242,10 @@ The query/report API service is the public facade for status, query and report
 responses. It must use owner APIs and must not perform analysis execution or
 read private service databases.
 
-Slice S10 adds `services/query-report-api-service` as target-service
+Slice S08 adds `services/query-report-api-service` as target-service
 implementation evidence for the FA-MSA-001 public API facade boundary. It is
 registered as its own Gradle project and owns service-local domain,
-application port, inbound HTTP adapter, outbound Analysis Store owner API gRPC
+application port, inbound HTTP adapter, outbound Analysis Orchestrator gRPC
 adapter, bootstrap, configuration, tests, README and Dockerfile. The service
 keeps the transitional `gateway-api.yaml` filename and `analysis-job.proto`
 transport input as external contract evidence only; generated transport
@@ -254,7 +254,7 @@ classes remain inside the service build.
 `forensic-analytics-rest` and public API portions of
 `services/forensic-gateway-service` remain current-state predecessor and
 rollback evidence. They are not compatibility aliases for
-`query-report-api-service` and are not removed by S10.
+`query-report-api-service` and are not removed by S08.
 
 Optional later service candidates such as `btm-generation-service`,
 `graph-replay-service` and `incident-analysis-service` remain outside

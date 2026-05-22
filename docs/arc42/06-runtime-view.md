@@ -155,12 +155,13 @@ databases. `analysis-orchestrator-service` coordinates state, retry and
 failure handling only; it must not absorb repository, JavaParser, Joern,
 reporting or persistence internals.
 
-S10 implementation evidence exposes the current verified public
+S08 implementation evidence exposes the current verified public
 repository-analysis submission/status routes in `query-report-api-service`.
-Those routes still use the predecessor Analysis Store owner API. S07 target
-`analysis-orchestrator-service` accepts repository-to-BTM requests and returns
-pending status only; facade repointing still requires a later contract-first
-slice that proves public API parity and caller behavior.
+Those routes call S07 target `analysis-orchestrator-service`, which accepts
+repository-to-BTM requests and returns pending status only. The facade maps the
+pending state to public `ACCEPTED`, `BTM_DELIVERY_NOT_READY` and incomplete
+diagnostics without claiming source snapshot availability, worker execution or
+generated BTM bytes.
 
 The repository analysis delivery path must be verified as:
 
@@ -264,13 +265,15 @@ The current implementation verifies transitional service paths such as:
 ```text
 worker or current public facade
   -> AnalysisJobService gRPC
-  -> current analysis-store-service application service
+  -> analysis-orchestrator-service application service
   -> service-local analysis job repository
 ```
 
 This path supports job submission, leasing, progress, completion, failure,
-listing and artifact metadata registration. It does not yet ingest normalized
-fact bodies, runtime trace facts, incidents or correlation indexes.
+listing, artifact metadata registration and S08 public pending/status reads.
+The retained `analysis-store-service` predecessor remains rollback evidence.
+Neither path yet ingests normalized fact bodies, runtime trace facts, incidents
+or correlation indexes.
 
 ## 6.9 Agent Governance Runtime Flows
 

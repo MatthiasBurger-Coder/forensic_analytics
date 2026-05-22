@@ -2,14 +2,14 @@ package de.burger.forensics.analytics.services.queryreportapi.bootstrap;
 
 public record QueryReportApiServiceProperties(
     Http http,
-    AnalysisStore analysisStore
+    AnalysisOrchestrator analysisOrchestrator
 ) {
     public QueryReportApiServiceProperties {
         if (http == null) {
             throw new NullPointerException("http must not be null");
         }
-        if (analysisStore == null) {
-            throw new NullPointerException("analysis store must not be null");
+        if (analysisOrchestrator == null) {
+            throw new NullPointerException("analysis orchestrator must not be null");
         }
     }
 
@@ -20,10 +20,10 @@ public record QueryReportApiServiceProperties(
         }
     }
 
-    public record AnalysisStore(Grpc grpc) {
-        public AnalysisStore {
+    public record AnalysisOrchestrator(Grpc grpc) {
+        public AnalysisOrchestrator {
             if (grpc == null) {
-                throw new NullPointerException("analysis store gRPC must not be null");
+                throw new NullPointerException("analysis orchestrator gRPC must not be null");
             }
         }
     }
