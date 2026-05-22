@@ -1,54 +1,40 @@
 # arc42 Check Status
 
-## Status
+## Workflow Creation Status
 
-`CHECKED_WITH_REQUIRED_EXECUTION_UPDATES`
+Status: checked for workflow creation.
 
-Workflow creation checked the current arc42 and architecture documentation. The
-documents are sufficient to create the FA-MSA-001 workflow, but they intentionally
-must be updated during Slice 01 before production migration slices run.
+This workflow was created from the existing FA-MSA-001 architecture baseline.
+No product source or runtime behavior was changed during workflow creation, so
+arc42 content is not updated in this creation slice.
 
-## Files Checked
+## Required Execution Updates
 
-- `docs/arc42/04-solution-strategy.md`
-- `docs/arc42/05-building-block-view.md`
-- `docs/arc42/07-deployment-view.md`
-- `docs/arc42/09-architecture-decisions.md`
-- `docs/architecture/target-microservices-architecture.md`
-- `docs/architecture/service-boundaries.md`
-- `docs/architecture/service-migration-map.md`
-- `docs/architecture/current-coupling-map.md`
-- `docs/architecture/data-ownership.md`
-- `docs/architecture/service-communication-matrix.md`
-- `docs/architecture/monolith-runtime-isolation.md`
-- `docs/architecture/monolith-caller-retirement-plan.md`
+Execution slices must update arc42 when actual behavior changes:
 
-## Findings
+| Slice | arc42 Area |
+|---|---|
+| S03 | Repository source ownership, runtime and deployment notes |
+| S04 | Ingestion boundary, contracts and payload custody |
+| S05 | Static source analysis ownership and limitations |
+| S06 | Joern runtime, CPG artifact ownership and deployment constraints |
+| S07 | Orchestration, shared domain/application split and runtime view |
+| S08 | Public API, boot/bootstrap retirement and deployment view |
+| S09 | CLI client context and user-visible API consumption |
+| S10 | Crosscutting logging, diagnostics and observability |
+| S11 | Data ownership and persistence concepts |
+| S12 | Building block view and architecture constraints |
+| S13 | Testbed and integration environment |
+| S14 | Final build/module topology |
+| S15 | Final readiness, risks and technical debt |
 
-- Current arc42 and ADRs document a target service landscape that differs from
-  FA-MSA-001 names.
-- Current architecture docs correctly state that existing `forensic-analytics-*`
-  modules are not microservices.
-- Current architecture docs record active callers for legacy monolith modules
-  and block unproven removal.
-- Docker Swarm and Kubernetes readiness are not currently implemented; the
-  workflow must not claim readiness before manifests and validation commands
-  exist.
+## Stop Conditions
 
-## Required Slice 01 Updates
+Stop execution when docs claim:
 
-Slice 01 must update or supersede the affected ADR/arc42 documents so the
-architecture source of truth explicitly handles:
-
-- `repository-source-service`;
-- `ingestion-service`;
-- `java-parser-analysis-service`;
-- `joern-analysis-service`;
-- `analysis-orchestrator-service`;
-- `query-report-api-service`;
-- `cli-client`;
-- `observability-stack`;
-- `testbed`.
-
-The update must keep planned behavior separate from implemented behavior and
-must not call current partial service slices production-ready without evidence.
+- a module is removed while it is still registered or referenced;
+- a service is independently deployable without verified build/start/container
+  evidence;
+- Swarm or Kubernetes readiness without repository manifests and commands;
+- persistence ownership without an explicit service owner;
+- generated or inferred output as verified forensic evidence.

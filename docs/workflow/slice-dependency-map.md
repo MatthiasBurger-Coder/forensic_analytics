@@ -4,21 +4,21 @@
 
 ```text
 S00 Execution Preflight
-  -> S01 ADR And arc42 Target Landscape Reconciliation
-    -> S02 Caller And Coupling Inventory Gate
-      -> S03 Contract-First Communication Baseline
-      -> S04 Data Ownership And Persistence Split
-        -> S05 Repository Source Service Extraction
-        -> S06 Ingestion Service Extraction
-        -> S07 JavaParser Analysis Service Extraction
-        -> S08 Joern Analysis Service Extraction
-          -> S09 Analysis Orchestrator Service Boundary
-          -> S10 Query Report API Service Boundary
-            -> S11 CLI Client Decoupling
-        -> S12 Observability Stack And Logging Decoupling
-          -> S13 Testbed Decoupling
-            -> S14 Legacy Shared Module Retirement
-              -> S15 Runtime Readiness, Architecture Tests And Closure
+  -> S01 Current Caller And Dependency Revalidation
+    -> S02 Contract And Runtime Parity Gate
+      -> S03 Repository Source Legacy Retirement
+      -> S04 Ingestion Legacy Retirement
+      -> S05 JavaParser Legacy Retirement
+      -> S06 Joern Legacy Retirement
+        -> S07 Orchestration Engine And Application Split
+          -> S08 Query Report API, REST, Bootstrap And Boot Retirement
+            -> S09 CLI Client Decoupling
+          -> S10 Observability And Logging Decoupling
+            -> S11 Persistence Ownership Finalization
+              -> S12 Shared Domain And Application Module Removal
+                -> S13 Testbed Monolith Coupling Removal
+                  -> S14 Gradle Deregistration And Source Tree Removal
+                    -> S15 Closure, Rollback Notes And Release Readiness
 ```
 
 ## Dependency Rationale
@@ -26,43 +26,45 @@ S00 Execution Preflight
 | Slice | Dependency Reason |
 |---|---|
 | S00 | Freezes branch, context and quality baseline before execution. |
-| S01 | Resolves the known drift between FA-MSA-001 names and accepted ADR/arc42 names before product migration. |
-| S02 | Caller proof must exist before any old module or dependency is removed. |
-| S03 | Services must communicate through explicit contracts before implementation depends on communication behavior. |
-| S04 | Persistence and canonical-data ownership must be explicit before central persistence is removed. |
-| S05-S08 | Worker/service extraction starts after contract and data ownership gates. |
-| S09 | Orchestrator can coordinate only after initial worker boundaries are defined. |
-| S10 | Query/report API depends on public contracts and orchestration ownership. |
-| S11 | CLI can migrate after the public query/report API contract exists. |
-| S12 | Observability/logging decoupling can run after architecture baseline and caller inventory. |
-| S13 | Testbed decoupling depends on enough service boundaries to replace monolith-only coverage. |
-| S14 | Legacy module retirement depends on service migration, caller-free proof and replacement tests. |
-| S15 | Final readiness and acceptance criteria can close only after old module retirement. |
+| S01 | Caller proof must be current before any path is marked removable. |
+| S02 | Runtime callers can move only after external contracts and parity gates are verified. |
+| S03 | Repository source adapter retirement depends on service contract and source ownership. |
+| S04 | Ingestion module retirement depends on intake contract and raw payload ownership. |
+| S05 | JavaParser adapter retirement depends on static source-fact parity. |
+| S06 | Joern adapter retirement depends on Joern artifact and diagnostics parity. |
+| S07 | Engine/application split depends on worker service boundaries from S03-S06. |
+| S08 | REST/boot/bootstrap retirement depends on orchestrator and public API replacement. |
+| S09 | CLI decoupling depends on public API behavior. |
+| S10 | Observability/logging decoupling can start after contracts but must finish before central module removal. |
+| S11 | Persistence retirement depends on orchestration, public API and observability ownership. |
+| S12 | Shared domain/application removal depends on all service-local replacements. |
+| S13 | Testbed retirement depends on service-local regression parity. |
+| S14 | Final deletion depends on every path-specific migration slice. |
+| S15 | Closure depends on final quality gate and documentation alignment. |
 
 ## Parallelization Opportunities
 
-S05 through S08 have potential parallel implementation after S03 and S04 because
-they target different service roots and old adapter modules. The active workflow
-still executes one slice at a time unless the user explicitly authorizes
-parallel subagent or worker execution. Parallel work must use disjoint file,
-contract and architecture locks.
+S03 through S06 may be parallelized after S02 only when S3D confirms disjoint
+file locks and stable contracts. S10 can run after S02 while S07/S08 proceed
+only when observability file locks do not overlap. Default execution remains
+one slice at a time.
 
 ## Lock Summary
 
 | Lock Area | Owning Slice |
 |---|---|
-| Target service naming and ADR/arc42 authority | S01 |
-| Legacy caller inventory | S02 |
-| Cross-service contracts | S03 |
-| Data ownership and persistence | S04 |
-| Repository workspaces and source snapshots | S05 |
-| Raw ingestion and upload sessions | S06 |
-| JavaParser static source facts | S07 |
-| Joern semantic artifacts | S08 |
-| Orchestration state | S09 |
-| Public query/report API | S10 |
-| CLI client behavior | S11 |
-| Observability/logging | S12 |
-| Testbed and integration environment | S13 |
-| Old central module removal | S14 |
-| Final readiness and acceptance evidence | S15 |
+| Current caller inventory | S01 |
+| External service contracts | S02 |
+| Repository workspaces and source snapshots | S03 |
+| Raw ingestion and upload sessions | S04 |
+| JavaParser static source facts | S05 |
+| Joern semantic artifacts | S06 |
+| Orchestration state and shared application split | S07 |
+| Public REST/query/report API and runtime bootstrap | S08 |
+| CLI client behavior | S09 |
+| Logging and observability | S10 |
+| Persistence and data ownership | S11 |
+| Shared domain/application removal | S12 |
+| Testbed regression parity | S13 |
+| Final module deregistration | S14 |
+| Closure and release readiness | S15 |

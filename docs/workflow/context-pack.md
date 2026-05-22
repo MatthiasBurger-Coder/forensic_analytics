@@ -4,56 +4,57 @@
 
 | Field | Value |
 |---|---|
-| Workflow version | `fa-msa-001-microservice-decomposition-20260521-v1` |
-| Requirement ID | `FA-MSA-001` |
-| Branch | `architecture/workflow-microservice-decomposition-20260521` |
+| Workflow version | `fa-msa-001-legacy-module-retirement-20260522-v1` |
+| Requirement ID | `FA-MSA-001-LMR` |
+| Parent requirement | `FA-MSA-001` |
+| Branch | `architecture/workflow-legacy-module-retirement-20260522` |
 | Process strand | `workflow create`; later `workflow execute` |
 | Execution profile | `FULL_PATH` |
-| Created | `2026-05-21` |
+| Created | `2026-05-22` |
 
 ## Purpose
 
-This context pack is a navigation aid for executing the FA-MSA-001 workflow. It
-does not replace root `AGENTS.md`, `QUALITY.md`, ADRs, arc42 documents,
-routing rules, active workflow files or role/skill files.
+This context pack is a navigation aid for the legacy module retirement
+workflow. It does not replace root `AGENTS.md`, `QUALITY.md`, ADRs, arc42,
+routing rules, workflow files, role files or skill files.
 
 ## Affected Areas
 
-- Microservice service landscape and naming.
-- Gradle module registration and old shared module retirement.
-- REST, gRPC, messaging and file contracts.
-- Data ownership and persistence split.
-- Repository checkout, ingestion, JavaParser and Joern analysis boundaries.
-- Analysis orchestration, query/report API, CLI, observability and testbed.
-- Dockerfile, runtime start and architecture-test readiness.
+- Legacy `forensic-analytics-*` Gradle module registration.
+- Service-local migration and caller-free proof.
+- REST, gRPC, CLI, events and file contracts.
+- Persistence ownership and stored evidence boundaries.
+- Runtime boot, bootstrap and Docker/readiness evidence.
+- Observability/logging decoupling.
+- Testbed regression parity.
+- Final Gradle deregistration and source-tree deletion.
 
 ## Forbidden Areas
 
-- Shared Java domain, application, DTO, repository, utility, fixture, logging or
-  error-model modules between services.
+- Shared Java domain, application, DTO, repository, utility, fixture, logging,
+  persistence or error-model modules between productive services.
 - Direct Gradle project dependencies between services.
-- Direct cross-service database, table, filesystem or private workspace access.
+- Direct cross-service database, table, private filesystem or workspace access.
 - Treating static facts as runtime execution evidence.
 - Treating LLM output as verified evidence.
-- Claiming Docker Swarm or Kubernetes readiness without verified files and
-  commands.
-- Removing legacy modules without caller-free proof and replacement tests.
+- Removing legacy modules without caller-free proof, replacement tests,
+  rollback or deprecation notes and required quality-gate success.
 
 ## Required Roles
 
 - Senior Requirement Engineer.
 - Senior System Architect.
-- Microservice Senior Expert.
 - Senior Java Backend Developer.
-- Senior gRPC/Proto Specialist.
+- Microservice Senior Expert.
 - Contract-First API Steward.
+- Senior gRPC/Proto Specialist.
+- Senior Analysis Storage Architect.
 - Data Ownership and Persistence Steward.
 - Senior DevOps Engineer.
 - Senior Security/Sandbox Engineer.
 - Senior Tester.
 - Senior Documentation Engineer.
-- Senior React Frontend Developer as an impact check unless public API changes
-  affect frontend code.
+- Senior React Frontend Developer for public API impact checks.
 
 ## Quality Commands
 
@@ -69,16 +70,13 @@ Full local quality gate:
 ./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace
 ```
 
-Documentation-only workflow creation verification:
+Workflow creation verification:
 
 ```bash
 git diff --check
 ```
 
 ## Governing File Hashes
-
-The companion JSON file records the same hashes in machine-readable form. The
-context is stale when any recorded hash changes without review.
 
 | File | SHA-256 |
 |---|---|
@@ -92,9 +90,11 @@ context is stale when any recorded hash changes without review.
 | `.agents/skills/three-amigos-requirement-gatekeeper/SKILL.md` | `95c04f47127f5149bb39a7e1b82b2690803cc765cad5d18274a82d415931e9ad` |
 | `.agents/skills/execution-profile-router/SKILL.md` | `40b7a5c9a2d8896b3e2f8c384300979a13d7d35986a5bd4bc4d3b5760a7d52b7` |
 | `.agents/skills/microservice-migration-safety-gate/SKILL.md` | `8579030acf72d513a3386d1325e73f146c5185106d633adc07c138eaad175f15` |
-| `docs/adr/ADR-0017-target-microservices-service-landscape.md` | `18ce4805a028d443b68140139b93345c3d9b720986738ef95c0669580bcca50c` |
-| `docs/architecture/target-microservices-architecture.md` | `540914eed2bf9fce84b02b22fa6445a32e7618fe94120f1756a92caea74fb677` |
-| `settings.gradle.kts` | `493933db7fafc6f79c0958492ab31fa652f2898537a5ff9267ac31f710d8a6c4` |
+| `docs/adr/ADR-0017-target-microservices-service-landscape.md` | `ddf2d281e8bb8d8924f4622e532da29e8f94038a66ae57d3d06a4ff85e72e95f` |
+| `docs/architecture/target-microservices-architecture.md` | `091a8942e1cf345a30fe6821e34c78c248e8d1f4996a21df122ca801aff68801` |
+| `docs/architecture/current-coupling-map.md` | `c3d85c4e15251f0e94c9b797965cca531c9f352488fc0aab852972cc65d47158` |
+| `docs/architecture/service-migration-map.md` | `99b5090c7a6683662aa8e42342229c2f4887ee7cbbdc0f60927b4a2d2d8e83cd` |
+| `settings.gradle.kts` | `f5be0d269f3a0ec5d36a9e7787a1802bebc777ab44c7544fb5759d09f53eb6a7` |
 | `build.gradle.kts` | `c9f1866871a500675f725c47795606a8ab19c9e64ba65c39e907b0cc19b8a7c1` |
 
 ## Staleness Rules
