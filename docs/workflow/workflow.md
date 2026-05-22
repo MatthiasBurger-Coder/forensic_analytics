@@ -969,6 +969,11 @@ affected_files:
   - forensic-analytics-logging/**
   - deployment/**
   - settings.gradle.kts
+  - docs/arc42/08-crosscutting-concepts.md
+  - docs/architecture/current-build-and-test-map.md
+  - docs/architecture/service-boundaries.md
+  - docs/workflow/execution-report.md
+  - services/README.md
 affected_modules:
   - services:observability-stack
   - forensic-analytics-observability
@@ -984,6 +989,11 @@ file_locks:
   - forensic-analytics-logging/**
   - deployment/**
   - settings.gradle.kts
+  - docs/arc42/08-crosscutting-concepts.md
+  - docs/architecture/current-build-and-test-map.md
+  - docs/architecture/service-boundaries.md
+  - docs/workflow/execution-report.md
+  - services/README.md
 contract_locks: []
 architecture_locks:
   - service-local-observability

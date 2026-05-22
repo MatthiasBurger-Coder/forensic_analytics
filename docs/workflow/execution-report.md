@@ -37,7 +37,7 @@
 | S09 | COMPLETED | Analysis orchestrator service extracted as target-name service; artifact-boundary and timeout remediations, target service tests/build, root test, specialist re-reviews and staged whitespace gate passed. |
 | S10 | COMPLETED | Query report API service extracted as target-name public API facade; target service tests/build, root test, documentation remediation, specialist reviews and whitespace gate passed. |
 | S11 | COMPLETED | CLI client target public API boundary extracted; service test/build, OpenAPI contract test, predecessor CLI test, root test, role checklist reviews and whitespace gate passed. |
-| S12 | PENDING | Observability stack and logging decoupling |
+| S12 | IN_PROGRESS | Scope remediation added required arc42, architecture, services README and execution report locks before implementation. |
 | S13 | PENDING | Testbed decoupling |
 | S14 | PENDING | Legacy shared module retirement |
 | S15 | PENDING | Runtime readiness, architecture tests and closure |
@@ -193,6 +193,8 @@
 | S11 continuation | `./gradlew :forensic-analytics-cli:test --dependency-verification strict --console=plain --stacktrace` | PASS: build successful in 3s; predecessor local `analyze`, `ingest-request` and compatibility behavior remain covered. |
 | S11 continuation | `./gradlew test --dependency-verification strict --console=plain --stacktrace` | PASS: build successful in 42s; root test suite includes the registered `services:cli-client` target. |
 | S11 continuation | `git diff --cached --check` | PASS: no whitespace errors after staging only S11 files. |
+| S12 | S12 workflow-scope review | BLOCKED before scope remediation: S12 requires arc42 crosscutting observability documentation and execution-report updates, and target `services/observability-stack` evidence requires architecture and services README synchronization, but those files were absent from S12 affected files and file locks. |
+| S12 scope remediation | `git diff --check` | PASS: no whitespace errors after adding the missing S12 documentation and report locks. |
 
 ## Subagent Review Log
 
