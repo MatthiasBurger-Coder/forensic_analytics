@@ -2,12 +2,14 @@
 
 ## Status
 
-Slice 08 initial independent Spring Boot gRPC service.
+FA-MSA-001-LMR S06 independent Spring Boot gRPC service.
 
 This service owns Joern runtime execution, static CPG/CFG/DFG artifact
 metadata, provenance and semantic mapping diagnostics. Joern artifacts remain
 service-owned files and are exposed to other services only as artifact
-references through contracts.
+references through contracts. Artifact bytes are retrieved through the
+service-owned `GetSemanticArtifactBytes` RPC; other services receive metadata
+and public retrieval references, not private filesystem paths.
 
 ## Boundary
 
@@ -32,13 +34,13 @@ reported as explicit diagnostics and incomplete analysis state.
 
 ## Verification
 
-Slice 08 verification commands:
+S06 verification commands:
 
 ```bash
 ./gradlew :services:joern-analysis-service:test --dependency-verification strict --console=plain --stacktrace
+./gradlew :forensic-analytics-adapter-joern-docker:test --dependency-verification strict --console=plain --stacktrace
 ./gradlew :services:joern-analysis-service:bootJar --dependency-verification strict --console=plain --stacktrace
 ./gradlew test --dependency-verification strict --console=plain --stacktrace
-docker compose -f docker/joern/docker-compose.joern.yml config
 ```
 
 Local operator start command:
@@ -53,19 +55,19 @@ image or create local container state.
 
 ## Known Limits
 
-- The contract is provisional and intentionally scoped to logical Slice 08
+- The contract is provisional and intentionally scoped to logical Slice 06
   communication.
 - Joern query bundle scripts are mounted or copied into the configured query
   root by later runtime packaging; missing required scripts currently produce
   incompleteness diagnostics.
 - Durable artifact indexing and target owner registration remain later
   integration work. Current predecessor integration may involve
-  `analysis-store-service`, but FA-MSA-001 target ownership requires an
-  explicit owner API or handoff contract.
+  `analysis-store-service` for artifact metadata registration. Artifact byte
+  reads stay owned by this service through `GetSemanticArtifactBytes`.
 
 The default service bind address is `0.0.0.0` with health on port `8087` and
 gRPC on port `9096`. Local clients and the Docker health probe can address the
 health endpoint through `127.0.0.1:8087` when the service runs on the local
-host. S08 does not add Docker Compose, Swarm or Kubernetes deployment for this
+host. S06 does not add Docker Compose, Swarm or Kubernetes deployment for this
 target service; those claims require dedicated deployment files and
 verification.

@@ -315,8 +315,8 @@ class JoernCpgAnalysisDomainTest {
             AnalysisCompleteness.COMPLETE,
             new ArtifactByteAccess(
                 "joern-analysis-service",
-                "analysis-job.v1.ArtifactBytes",
-                "artifacts/" + path,
+                "joern-cpg-analysis.v1.JoernCpgAnalysisService.GetSemanticArtifactBytes",
+                path,
                 ArtifactByteCustody.PRODUCER_RETAINED
             )
         );
@@ -325,7 +325,7 @@ class JoernCpgAnalysisDomainTest {
     private static ArtifactByteAccess byteAccess(String retrievalReference) {
         return new ArtifactByteAccess(
             "joern-analysis-service",
-            "analysis-job.v1.ArtifactBytes",
+            "joern-cpg-analysis.v1.JoernCpgAnalysisService.GetSemanticArtifactBytes",
             retrievalReference,
             ArtifactByteCustody.PRODUCER_RETAINED
         );

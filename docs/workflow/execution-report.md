@@ -7,7 +7,7 @@
 | Workflow version | `fa-msa-001-legacy-module-retirement-20260522-v1` |
 | Requirement ID | `FA-MSA-001-LMR` |
 | Branch | `architecture/workflow-legacy-module-retirement-20260522` |
-| Status | S05 completed; continue with S06 |
+| Status | S06 completed; continue with S07 |
 
 ## Creation Evidence
 
@@ -29,6 +29,7 @@
 | S03 | Repository Source Parity And Handoff Readiness | Senior Java Backend with Microservice Senior Expert, Security/Sandbox and Senior Tester subagent reviews | `services/repository-source-service/**`; `services/analysis-orchestrator-service/**`; `docs/workflow/execution-report.md`; `docs/workflow/context-pack.md`; `docs/workflow/context-pack.json` | targeted repository-source tests PASS; targeted analysis-orchestrator tests PASS; `./gradlew :services:repository-source-service:test --dependency-verification strict --console=plain --stacktrace` PASS; `./gradlew :services:analysis-orchestrator-service:test --dependency-verification strict --console=plain --stacktrace` PASS; `./gradlew :forensic-analytics-adapter-repository-source:test --dependency-verification strict --console=plain --stacktrace` PASS; scoped repository-source legacy import scan PASS; `./gradlew test --dependency-verification strict --console=plain --stacktrace` PASS; `git diff --check` PASS | PASS_WITH_LIMITATIONS: repository-source service boundary hardened; local/file repository inputs explicitly deprecated at service boundary; Java AST analysis remains unimplemented here; no Proto contract mutation; no full orchestrator runtime-readiness claim | `09c423c` | checked | checked | pushed |
 | S04 | Ingestion Service Parity And Handoff Readiness | Senior Java Backend with Senior gRPC/Proto, Ingestion Handoff, Microservice Senior Expert and Senior Tester subagent reviews | `services/ingestion-service/src/test/java/de/burger/forensics/analytics/services/ingestion/adapter/in/grpc/ForensicIngestionGrpcEndpointTest.java`; `services/ingestion-service/src/test/java/de/burger/forensics/analytics/services/ingestion/adapter/in/grpc/ForensicIngestionRequestValidatorTest.java`; `services/ingestion-service/src/test/java/de/burger/forensics/analytics/services/ingestion/application/IngestionApplicationServiceTest.java`; `services/ingestion-service/src/test/java/de/burger/forensics/analytics/services/ingestion/adapter/in/file/EngineIngestionRequestImporterTest.java`; `docs/workflow/execution-report.md`; `docs/workflow/context-pack.md`; `docs/workflow/context-pack.json` | targeted S04 ingestion tests PASS; `./gradlew :services:ingestion-service:test --dependency-verification strict --console=plain --stacktrace` PASS; `./gradlew :forensic-analytics-ingestion-grpc:test :forensic-analytics-ingestion-request:test --dependency-verification strict --console=plain --stacktrace` PASS; scoped ingestion-service legacy import scan PASS; `./gradlew test --dependency-verification strict --console=plain --stacktrace` PASS; `git diff --check` PASS; `python3 -m json.tool docs/workflow/context-pack.json >/dev/null` PASS | PASS_WITH_LIMITATIONS: service-local accepted payload handoff, invalid stream rejection, validator edges and importer session-id custody are proven by tests; no production, Proto or event-contract changes; default accepted-ingestion handoff remains no-op, so no external handoff runtime is claimed; `AnalyzeRepository` remains `UNIMPLEMENTED`; legacy ingestion modules retained as rollback evidence | `7e3594c` | checked | checked | pushed |
 | S05 | JavaParser Service Parity And Handoff Readiness | Senior Java Backend with Source Analysis, Microservice Senior Expert and Senior Tester subagent reviews | `services/java-parser-analysis-service/**`; `forensic-analytics-adapter-javaparser/**`; `docs/architecture/service-migration-map.md`; `docs/architecture/service-boundaries.md`; `docs/architecture/current-build-and-test-map.md`; `docs/arc42/06-runtime-view.md`; `docs/arc42/08-crosscutting-concepts.md`; `services/java-parser-analysis-service/README.md`; `docs/workflow/execution-report.md`; `docs/workflow/context-pack.md`; `docs/workflow/context-pack.json` | targeted S05 service tests PASS; targeted legacy JavaParser test PASS; `./gradlew :services:java-parser-analysis-service:test --dependency-verification strict --console=plain --stacktrace` PASS; `./gradlew :forensic-analytics-adapter-javaparser:test --dependency-verification strict --console=plain --stacktrace` PASS; `git ls-files` based java-parser-analysis-service legacy import scan PASS; `./gradlew test --dependency-verification strict --console=plain --stacktrace` PASS; `git diff --check` PASS; `python3 -m json.tool docs/workflow/context-pack.json >/dev/null` PASS | PASS_WITH_LIMITATIONS: source-fact artifact writes are immutable and idempotent for identical bytes; JavaParser service and legacy adapter projections are parity-tested; parse errors remain explicit diagnostics in the service rather than legacy `java-parse-error` facts; source-fact bytes preserve `STATIC_SOURCE_FACT`; no Proto change, no external handoff runtime claim, no Swarm/Kubernetes readiness claim and legacy adapter retained as rollback evidence | `3a039cd` | checked | checked | pushed |
+| S06 | Joern Service Parity And Handoff Readiness | Senior Joern CPG Specialist with Senior Java Backend, Senior DevOps, Microservice Senior Expert and Senior Tester subagent reviews | `contracts/grpc/joern-cpg-analysis.proto`; `services/joern-analysis-service/**`; `.dockerignore`; `docs/architecture/service-migration-map.md`; `docs/architecture/service-boundaries.md`; `docs/architecture/current-build-and-test-map.md`; `docs/arc42/05-building-block-view.md`; `docs/arc42/06-runtime-view.md`; `docs/arc42/07-deployment-view.md`; `services/joern-analysis-service/README.md`; `docs/workflow/execution-report.md`; `docs/workflow/context-pack.md`; `docs/workflow/context-pack.json` | targeted S06 service tests PASS; targeted legacy Joern Docker adapter test PASS; `./gradlew :services:joern-analysis-service:test --dependency-verification strict --console=plain --stacktrace` PASS; `./gradlew :forensic-analytics-adapter-joern-docker:test --dependency-verification strict --console=plain --stacktrace` PASS; scoped joern-analysis-service legacy import scan PASS; `./gradlew :services:joern-analysis-service:bootJar --dependency-verification strict --console=plain --stacktrace` PASS; `./gradlew test --dependency-verification strict --console=plain --stacktrace` PASS; `git diff --check` PASS; `python3 -m json.tool docs/workflow/context-pack.json >/dev/null` PASS | PASS_WITH_LIMITATIONS: Joern service now owns semantic artifact byte retrieval through `GetSemanticArtifactBytes`; artifact references no longer use the Analysis Store byte alias; runtime unavailable, timeout and missing artifact states stay explicit diagnostics with retryable status where appropriate; Docker build context allows the service boot jar; no `bootRun`, live health probe, Docker image build, Joern runtime smoke test, Compose/Swarm/Kubernetes readiness claim or legacy adapter removal | `36630ee` | checked | checked | pushed |
 
 ## Pending Slice Status
 
@@ -40,8 +41,8 @@
 | S03 | COMPLETED |
 | S04 | COMPLETED |
 | S05 | COMPLETED |
-| S06 | NEXT |
-| S07 | READY |
+| S06 | COMPLETED |
+| S07 | NEXT |
 | S08 | PENDING |
 | S09 | PENDING |
 | S10 | READY |
@@ -110,3 +111,14 @@ from legacy `java-parse-error` source facts to service diagnostics and keeps
 unresolved-symbol limitations completeness-affecting. It does not remove
 `forensic-analytics-adapter-javaparser`, mutate the gRPC contract or claim
 Swarm/Kubernetes readiness.
+
+S06 confirms the Joern service owns service-local runtime invocation,
+Joern-owned workspace materialization, CPG/CFG/DFG artifact production,
+provenance, diagnostics and semantic artifact byte retrieval. The service
+extends `joern-cpg-analysis.proto` with `GetSemanticArtifactBytes`, rejects
+private or mismatched artifact-byte requests, exposes retryable timeout and
+unavailable diagnostics, and keeps artifact bytes behind Joern-owned public
+references instead of the previous Analysis Store byte alias. The legacy
+`forensic-analytics-adapter-joern-docker` remains rollback evidence and is not
+removed. Docker image build and live Joern smoke testing remain optional
+external checks and were not claimed by S06.

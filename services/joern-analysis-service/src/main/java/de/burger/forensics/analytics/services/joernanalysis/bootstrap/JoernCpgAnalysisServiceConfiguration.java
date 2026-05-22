@@ -9,9 +9,11 @@ import de.burger.forensics.analytics.services.joernanalysis.adapter.out.joern.Pr
 import de.burger.forensics.analytics.services.joernanalysis.application.JoernCpgAnalysisApplicationService;
 import de.burger.forensics.analytics.services.joernanalysis.application.port.AnalysisStoreArtifactRegistryPort;
 import de.burger.forensics.analytics.services.joernanalysis.application.port.JoernArtifactCollectorPort;
+import de.burger.forensics.analytics.services.joernanalysis.application.port.JoernArtifactReaderPort;
 import de.burger.forensics.analytics.services.joernanalysis.application.port.JoernRuntimePort;
 import de.burger.forensics.analytics.services.joernanalysis.application.port.JoernWorkspaceMaterializerPort;
 import de.burger.forensics.analytics.services.joernanalysis.application.port.JoernWorkspacePort;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -48,6 +50,11 @@ public class JoernCpgAnalysisServiceConfiguration {
     }
 
     @Bean
+    public JoernArtifactReaderPort joernArtifactReaderPort(JoernCpgAnalysisServiceProperties properties) {
+        return new FileSystemJoernArtifactCollector(properties.artifacts().root());
+    }
+
+    @Bean
     public AnalysisStoreArtifactRegistryPort analysisStoreArtifactRegistryPort(JoernCpgAnalysisServiceProperties properties) {
         return new AnalysisStoreArtifactRegistryGrpcClient(
             properties.analysisStore().host(),
@@ -61,6 +68,7 @@ public class JoernCpgAnalysisServiceConfiguration {
         JoernWorkspaceMaterializerPort materializerPort,
         JoernWorkspacePort workspacePort,
         JoernRuntimePort runtimePort,
+        @Qualifier("joernArtifactCollectorPort")
         JoernArtifactCollectorPort artifactCollector,
         AnalysisStoreArtifactRegistryPort artifactRegistryPort
     ) {
@@ -74,8 +82,12 @@ public class JoernCpgAnalysisServiceConfiguration {
     }
 
     @Bean
-    public JoernCpgAnalysisGrpcEndpoint joernCpgAnalysisGrpcEndpoint(JoernCpgAnalysisApplicationService applicationService) {
-        return new JoernCpgAnalysisGrpcEndpoint(applicationService);
+    public JoernCpgAnalysisGrpcEndpoint joernCpgAnalysisGrpcEndpoint(
+        JoernCpgAnalysisApplicationService applicationService,
+        @Qualifier("joernArtifactReaderPort")
+        JoernArtifactReaderPort artifactReader
+    ) {
+        return new JoernCpgAnalysisGrpcEndpoint(applicationService, artifactReader);
     }
 
     @Bean

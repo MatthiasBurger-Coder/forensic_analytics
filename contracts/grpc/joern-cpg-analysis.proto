@@ -21,6 +21,9 @@ service JoernCpgAnalysisService {
 
   rpc AnalyzeSourceSnapshot(AnalyzeJoernCpgRequest)
       returns (AnalyzeJoernCpgResponse);
+
+  rpc GetSemanticArtifactBytes(GetSemanticArtifactBytesRequest)
+      returns (GetSemanticArtifactBytesResponse);
 }
 
 message MaterializeJoernWorkspaceRequest {
@@ -72,6 +75,32 @@ message AnalyzeJoernCpgResponse {
   repeated de.burger.forensics.analytics.analysisjob.v1.AnalysisArtifactReference semantic_artifacts = 6;
   JoernCpgSummary summary = 7;
   repeated JoernCpgDiagnostic diagnostics = 8;
+  map<string, string> safe_attributes = 9;
+}
+
+message GetSemanticArtifactBytesRequest {
+  string request_id = 1;
+  string correlation_id = 2;
+  de.burger.forensics.analytics.analysisjob.v1.AnalysisRunId analysis_run_id = 3;
+  de.burger.forensics.analytics.analysisjob.v1.AnalysisJobId analysis_job_id = 4;
+  de.burger.forensics.analytics.analysisjob.v1.SourceSnapshotId source_snapshot_id = 5;
+  string retrieval_reference = 6;
+  string expected_sha256 = 7;
+  int64 expected_size_bytes = 8;
+  int64 max_bytes = 9;
+  string schema_version = 10;
+  map<string, string> safe_attributes = 11;
+}
+
+message GetSemanticArtifactBytesResponse {
+  OperationStatus status = 1;
+  de.burger.forensics.analytics.analysisjob.v1.AnalysisRunId analysis_run_id = 2;
+  de.burger.forensics.analytics.analysisjob.v1.AnalysisJobId analysis_job_id = 3;
+  de.burger.forensics.analytics.analysisjob.v1.SourceSnapshotId source_snapshot_id = 4;
+  de.burger.forensics.analytics.analysisjob.v1.AnalysisArtifactReference semantic_artifact = 5;
+  bytes content = 6;
+  string sha256 = 7;
+  int64 size_bytes = 8;
   map<string, string> safe_attributes = 9;
 }
 

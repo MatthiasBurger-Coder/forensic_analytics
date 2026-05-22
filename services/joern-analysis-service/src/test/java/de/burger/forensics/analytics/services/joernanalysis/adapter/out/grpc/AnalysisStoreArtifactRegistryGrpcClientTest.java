@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static de.burger.forensics.analytics.services.joernanalysis.adapter.out.filesystem.FileSystemJoernArtifactCollector.BYTE_RETRIEVAL_CONTRACT;
 import static de.burger.forensics.analytics.services.joernanalysis.domain.JoernCpgAnalysisDomain.PRODUCER_SERVICE;
 import static de.burger.forensics.analytics.services.joernanalysis.domain.JoernCpgAnalysisDomain.SEMANTIC_ARTIFACT_SCHEMA_VERSION;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -86,8 +87,8 @@ class AnalysisStoreArtifactRegistryGrpcClientTest {
             .stream()
             .map(value -> value.getArtifact().getPath())
             .toList());
-        assertEquals("analysis-job.v1.ArtifactBytes", request.get().getArtifacts(1).getByteAccess().getRetrievalContract());
-        assertEquals("artifacts/joern-cpg/run-1/cpg.bin.zip", request.get().getArtifacts(1).getByteAccess().getRetrievalReference());
+        assertEquals(BYTE_RETRIEVAL_CONTRACT, request.get().getArtifacts(1).getByteAccess().getRetrievalContract());
+        assertEquals("joern-cpg/run-1/cpg.bin.zip", request.get().getArtifacts(1).getByteAccess().getRetrievalReference());
         assertEquals(
             de.burger.forensics.analytics.analysisjob.v1.AnalysisCompleteness.ANALYSIS_COMPLETENESS_INCOMPLETE,
             request.get().getArtifacts(0).getCompleteness()
@@ -223,8 +224,8 @@ class AnalysisStoreArtifactRegistryGrpcClientTest {
             completeness,
             new ArtifactByteAccess(
                 PRODUCER_SERVICE,
-                "analysis-job.v1.ArtifactBytes",
-                "artifacts/" + path,
+                BYTE_RETRIEVAL_CONTRACT,
+                path,
                 custody
             )
         );

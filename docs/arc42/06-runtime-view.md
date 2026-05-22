@@ -211,7 +211,7 @@ RPC from the transitional predecessor contract is intentionally not implemented
 in this service slice; a later contract migration must replace or retire that
 predecessor wire shape explicitly.
 
-Slice S08 verifies a local Joern analysis runtime boundary:
+Slice S06 verifies a local Joern analysis runtime boundary:
 
 ```text
 JoernCpgAnalysisService gRPC request
@@ -219,14 +219,15 @@ JoernCpgAnalysisService gRPC request
   -> service-local Joern analysis application service
   -> service-local Joern-owned workspace materialization
   -> service-local Joern runtime and semantic artifact adapters
-  -> semantic artifact references, completeness and diagnostics
+  -> semantic artifact references, Joern-owned byte retrieval, completeness and diagnostics
 ```
 
-The S08 service consumes only validated source/build package descriptors or
+The S06 service consumes only validated source/build package descriptors or
 Joern-owned materialized workspaces. It must not receive Repository Source
 private workspace paths, and CPG/CFG/DFG artifacts remain static semantic
 evidence rather than observed runtime execution. Joern unavailable, timeout
-and missing mapping states stay explicit diagnostics.
+and missing mapping states stay explicit retryable diagnostics where the
+underlying runtime condition is retryable.
 
 Slice S09 verifies a local orchestration runtime boundary:
 

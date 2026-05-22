@@ -184,7 +184,9 @@ class JoernCpgAnalysisServiceApplicationTest {
             (command, runtimeResult) -> new JoernArtifactCollectionResult(List.of(), 0, List.of()),
             result -> {
             }
-        ));
+        ), request -> {
+            throw new UnsupportedOperationException("artifact reader not used by lifecycle test");
+        });
     }
 
     private static String image() {

@@ -226,14 +226,15 @@ packaging evidence only; Compose, Swarm and Kubernetes readiness for the
 FA-MSA-001 target landscape remains future work until descriptors and
 validation commands exist.
 
-Slice 08 adds a service-local Dockerfile for `services/joern-analysis-service`.
+FA-MSA-001-LMR S06 adds a service-local Dockerfile for `services/joern-analysis-service`.
 This is target-service container packaging evidence only; Compose, Swarm and
 Kubernetes readiness for the FA-MSA-001 target landscape remains future work
 until descriptors and validation commands exist. The service uses local gRPC
 port `9096` and health port `8087`, distinct from predecessor Joern and
-JavaParser target ports. Docker image build or Joern runtime smoke testing is
-optional external verification because it may pull the digest-pinned Joern base
-image or create local container state.
+JavaParser target ports. The root `.dockerignore` allows the service boot jar
+into the Docker build context. Docker image build or Joern runtime smoke
+testing is optional external verification because it may pull the
+digest-pinned Joern base image or create local container state.
 
 Slice 09 adds a service-local Dockerfile for
 `services/analysis-orchestrator-service`. This is target-service container

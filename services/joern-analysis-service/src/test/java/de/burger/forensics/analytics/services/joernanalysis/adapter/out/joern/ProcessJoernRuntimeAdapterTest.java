@@ -291,6 +291,23 @@ class ProcessJoernRuntimeAdapterTest {
     }
 
     @Test
+    void appliesTimeoutAsSingleRequestBudgetAcrossJoernCommands() throws Exception {
+        var queryRoot = tempDir.resolve("queries");
+        Files.createDirectories(queryRoot);
+        Files.writeString(queryRoot.resolve("callgraph.sc"), "// synthetic fixture");
+        var adapter = new ProcessJoernRuntimeAdapter(
+            tempDir.resolve("artifacts"),
+            queryRoot,
+            executable("joern-budget", fakeBudgetConsumingJoernScript()),
+            executable("joern-parse-budget", fakeSlowParseScript()),
+            "64m",
+            image()
+        );
+
+        assertThrows(JoernCpgAnalysisTimeoutException.class, () -> adapter.analyze(commandWithTimeout(true, false, false, 3), workspace()));
+    }
+
+    @Test
     void rejectsRuntimeImageMismatchBeforeJoernInvocation() throws Exception {
         var adapter = new ProcessJoernRuntimeAdapter(
             tempDir.resolve("artifacts"),
@@ -429,6 +446,33 @@ class ProcessJoernRuntimeAdapterTest {
             """;
     }
 
+    private static String fakeBudgetConsumingJoernScript() {
+        return """
+            #!/bin/sh
+            if [ "$1" = "--version" ]; then
+              sleep 1
+              echo "joern-test-1"
+              exit 0
+            fi
+            out=""
+            while [ "$#" -gt 0 ]; do
+              if [ "$1" = "--params" ]; then
+                params="$2"
+                for pair in $(echo "$params" | tr ',' ' '); do
+                  case "$pair" in
+                    out=*) out="${pair#out=}" ;;
+                  esac
+                done
+              fi
+              shift
+            done
+            sleep 2
+            mkdir -p "$(dirname "$out")"
+            printf '{}' > "$out"
+            exit 0
+            """;
+    }
+
     private static String fakeVersionOutputJoernScript(String output) {
         return """
             #!/bin/sh
@@ -460,6 +504,24 @@ class ProcessJoernRuntimeAdapterTest {
             printf '%%s' '%s' >&2
             exit %d
             """.formatted(stderr, exitCode);
+    }
+
+    private static String fakeSlowParseScript() {
+        return """
+            #!/bin/sh
+            out=""
+            while [ "$#" -gt 0 ]; do
+              if [ "$1" = "--output" ]; then
+                shift
+                out="$1"
+              fi
+              shift
+            done
+            sleep 1
+            mkdir -p "$(dirname "$out")"
+            printf cpg > "$out"
+            exit 0
+            """;
     }
 
     private static AnalyzeJoernCpgCommand command(boolean callgraph, boolean controlflow, boolean dataflow) {

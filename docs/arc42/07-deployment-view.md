@@ -211,7 +211,7 @@ Docker Swarm or Kubernetes deployment descriptors for the target landscape.
 Those readiness claims require later repository tooling and validation
 commands.
 
-Slice S08 adds `services/joern-analysis-service` as target-service deployment
+Slice S06 adds `services/joern-analysis-service` as target-service deployment
 evidence. The service owns:
 
 - `services/joern-analysis-service/build.gradle.kts`;
@@ -233,18 +233,18 @@ The local operator start command is:
 ./gradlew :services:joern-analysis-service:bootRun --dependency-verification strict --console=plain --stacktrace
 ```
 
-S08 records this as the service-local start command, but the S08 verification
+S06 records this as the service-local start command, but the S06 verification
 run did not execute `bootRun` or a live health probe. Runtime smoke evidence
 must be recorded separately before claiming a verified running Joern Analysis
 Service instance.
 
 The service Dockerfile is service-owned and based on the digest-pinned Joern
-runtime plus a copied Java 25 runtime. S08 validates the Joern Docker Compose
-model with `docker compose -f docker/joern/docker-compose.joern.yml config`,
-but it does not add target-service Docker Compose, Docker Swarm or Kubernetes
-deployment descriptors. Docker image build and Joern runtime smoke testing are
-optional external checks because they may pull the Joern base image or create
-local container state.
+runtime plus a copied Java 25 runtime. S06 keeps Docker image build and Joern
+runtime smoke testing as optional external checks because they may pull the
+Joern base image or create local container state. The root `.dockerignore`
+explicitly allows the service boot jar into the Docker build context; S06 does
+not add target-service Docker Compose, Docker Swarm or Kubernetes deployment
+descriptors.
 
 Slice S09 adds `services/analysis-orchestrator-service` as target-service
 deployment evidence. The service owns:

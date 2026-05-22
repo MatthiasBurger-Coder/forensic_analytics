@@ -290,7 +290,7 @@ Current evidence:
 - `contracts/grpc/joern-cpg-analysis.proto`;
 - `docker/joern/**`.
 
-S08 implementation state:
+FA-MSA-001-LMR S06 implementation state:
 
 - registered Gradle project `services:joern-analysis-service`;
 - service-local package `de.burger.forensics.analytics.services.joernanalysis`;
@@ -298,17 +298,20 @@ S08 implementation state:
   filesystem, Joern runtime and artifact-registry adapters, bootstrap,
   configuration, tests, README and Dockerfile;
 - local gRPC port `9096` and health port `8087`;
-- unchanged `contracts/grpc/joern-cpg-analysis.proto` wire shape and generated
-  transport classes kept service-local;
+- `contracts/grpc/joern-cpg-analysis.proto` generated transport classes kept
+  service-local, with `GetSemanticArtifactBytes` owning semantic artifact byte
+  retrieval inside the Joern service boundary;
 - Joern runtime unavailable, timeout and missing semantic artifact mappings
-  remain explicit diagnostics with unknown or incomplete analysis state;
-- Docker/Joern runtime remains optional for the default Gradle gate. S08
-  validates the Joern Docker Compose model but does not claim Docker Compose,
-  Docker Swarm or Kubernetes deployment readiness for the target landscape.
+  remain explicit diagnostics with unknown or incomplete analysis state and
+  retryable status when the underlying diagnostic is retryable;
+- Docker/Joern runtime remains optional for the default Gradle gate. S06 fixes
+  the Docker build context allowlist for the service boot jar but does not
+  claim Docker Compose, Docker Swarm or Kubernetes deployment readiness for the
+  target landscape.
 
 `services/joern-cpg-analysis-service` and
 `forensic-analytics-adapter-joern-docker` remain predecessor and rollback
-evidence. S08 does not remove them and does not route production callers to the
+evidence. S06 does not remove them and does not route production callers to the
 new service.
 
 Stop conditions:

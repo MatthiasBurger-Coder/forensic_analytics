@@ -200,18 +200,20 @@ unchanged and generated transport classes stay inside the service build.
 rollback evidence. They are not compatibility aliases for
 `java-parser-analysis-service` and are not removed by S07.
 
-Slice S08 adds `services/joern-analysis-service` as target-service
+Slice S06 adds `services/joern-analysis-service` as target-service
 implementation evidence for the FA-MSA-001 Joern semantic analysis boundary.
 It is registered as its own Gradle project and owns service-local domain,
 application ports, inbound gRPC adapter, outbound filesystem, Joern runtime
 and artifact-registry adapters, bootstrap, configuration, tests, README and
-Dockerfile. The predecessor `joern-cpg-analysis.proto` wire shape remains
-unchanged and generated transport classes stay inside the service build.
+Dockerfile. The `joern-cpg-analysis.proto` transport contract remains
+service-local generated code and now includes the service-owned
+`GetSemanticArtifactBytes` retrieval RPC so artifact bytes are not exposed
+through an Analysis Store byte alias.
 
 `services/joern-cpg-analysis-service` and
 `forensic-analytics-adapter-joern-docker` remain current-state predecessor and
 rollback evidence. They are not compatibility aliases for
-`joern-analysis-service` and are not removed by S08.
+`joern-analysis-service` and are not removed by S06.
 
 Slice S09 adds `services/analysis-orchestrator-service` as target-service
 implementation evidence for the FA-MSA-001 orchestration boundary. It is
