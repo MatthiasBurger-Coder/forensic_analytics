@@ -66,9 +66,10 @@
     ".agents/skills/execution-profile-router/SKILL.md": "40b7a5c9a2d8896b3e2f8c384300979a13d7d35986a5bd4bc4d3b5760a7d52b7",
     ".agents/skills/microservice-migration-safety-gate/SKILL.md": "8579030acf72d513a3386d1325e73f146c5185106d633adc07c138eaad175f15",
     "docs/adr/ADR-0017-target-microservices-service-landscape.md": "ddf2d281e8bb8d8924f4622e532da29e8f94038a66ae57d3d06a4ff85e72e95f",
-    "docs/architecture/target-microservices-architecture.md": "091a8942e1cf345a30fe6821e34c78c248e8d1f4996a21df122ca801aff68801",
-    "docs/architecture/current-coupling-map.md": "c3d85c4e15251f0e94c9b797965cca531c9f352488fc0aab852972cc65d47158",
-    "docs/architecture/service-migration-map.md": "99b5090c7a6683662aa8e42342229c2f4887ee7cbbdc0f60927b4a2d2d8e83cd",
+    "docs/architecture/target-microservices-architecture.md": "f78ae9aa0e7f1ee7446f07b564408a6ff5610f7e1b9f6702823e9d38363a3550",
+    "docs/architecture/current-coupling-map.md": "370a12b924a6f71fb8013ac80c9922e3fb6dcd08412c0d450db3f56f1ef5da9a",
+    "docs/architecture/service-migration-map.md": "25f779424400bd15cb0fcc4192b20840fedad0bd94e873088dc287fca975b2ee",
+    "docs/architecture/service-communication-matrix.md": "fac93e3dbb25c752db9386b571c8fe019b52bea8ef6e6e9736adfe31b9e73dc2",
     "settings.gradle.kts": "f5be0d269f3a0ec5d36a9e7787a1802bebc777ab44c7544fb5759d09f53eb6a7",
     "build.gradle.kts": "c9f1866871a500675f725c47795606a8ab19c9e64ba65c39e907b0cc19b8a7c1"
   }

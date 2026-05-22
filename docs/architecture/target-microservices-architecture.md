@@ -2,12 +2,18 @@
 
 ## Status
 
-FA-MSA-001 Slice 01 target architecture baseline.
+FA-MSA-001 Slice 01 target architecture baseline with S02 transitional
+contract/runtime parity evidence.
 
 This document defines the active target service landscape for the monolith
 decomposition workflow. It is an architecture target and records slice-level
 implementation evidence only where the workflow has verified it. It is not a
 production-readiness claim.
+
+FA-MSA-001-LMR S02 verified that registered target-name service test tasks and
+the repository minimum test gate pass on the active workflow branch. That
+evidence is transitional: it proves testable current surfaces, not full target
+runtime parity or independent production readiness.
 
 ## Architecture Decision
 
@@ -57,6 +63,12 @@ The currently registered service slices are implementation evidence only:
 - `repository-source-service`;
 - `ingestion-service`;
 - `java-parser-analysis-service`;
+- `joern-analysis-service`;
+- `analysis-orchestrator-service`;
+- `query-report-api-service`;
+- `cli-client`;
+- `observability-stack`;
+- `testbed`;
 - `forensic-gateway-service`;
 - `forensic-ingestion-service`;
 - `repository-analysis-service`;
@@ -65,12 +77,11 @@ The currently registered service slices are implementation evidence only:
 - `joern-cpg-analysis-service`;
 - `btm-generation-service`.
 
-`repository-source-service`, `ingestion-service` and
-`java-parser-analysis-service` are registered FA-MSA-001 target-name services
-introduced by this workflow. The remaining listed services are predecessor or
-current-state service evidence. Together they do not prove the FA-MSA-001
-target service landscape is complete,
-independently deployable, health-checkable, containerized for production or
+The registered FA-MSA-001 target-name services are implementation evidence for
+the target landscape. The predecessor and current-state services remain
+rollback and migration evidence. Together they do not prove the FA-MSA-001
+target service landscape is complete, independently deployable,
+health-checkable, containerized for production, runtime-parity complete or
 free of monolith callers.
 
 ## Target Principles

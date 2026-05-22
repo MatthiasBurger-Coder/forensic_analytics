@@ -2,12 +2,17 @@
 
 ## Status
 
-FA-MSA-001 Slice 04 contract-first communication and data-ownership baseline.
+FA-MSA-001 Slice 04 contract-first communication and data-ownership baseline
+with S02 transitional contract/runtime parity evidence.
 
 This document records target communication ownership. It does not define
 database schemas and does not claim that the target services or endpoints are
 implemented. Existing contract files are current evidence and may need to be
 renamed, split or superseded by later contract slices.
+
+S02 verifies the current transitional contract surface and service-local test
+coverage. It does not claim full target runtime parity for every planned
+interaction.
 
 ## Contract Locations
 
@@ -24,6 +29,26 @@ renamed, split or superseded by later contract slices.
 
 Contracts are interface descriptions only. They must not contain Java
 implementation code or service-shared runtime classes.
+
+## S02 Verification Evidence
+
+S02 ran these checks successfully:
+
+- `./gradlew :services:repository-source-service:test --dependency-verification strict --console=plain --stacktrace`
+- `./gradlew :services:ingestion-service:test --dependency-verification strict --console=plain --stacktrace`
+- `./gradlew :services:java-parser-analysis-service:test --dependency-verification strict --console=plain --stacktrace`
+- `./gradlew :services:joern-analysis-service:test --dependency-verification strict --console=plain --stacktrace`
+- `./gradlew :services:analysis-orchestrator-service:test --dependency-verification strict --console=plain --stacktrace`
+- `./gradlew :services:query-report-api-service:test --dependency-verification strict --console=plain --stacktrace`
+- `./gradlew :services:cli-client:test --dependency-verification strict --console=plain --stacktrace`
+- `./gradlew test --dependency-verification strict --console=plain --stacktrace`
+- `git diff --check`
+
+These checks prove that the current registered target-name service test tasks
+and the repository minimum test gate pass on the active workflow branch. They
+do not prove that every target interaction in this matrix is implemented or
+runtime-ready. CLI contract parity remains limited to the existing
+`contracts/cli/**` documentation; CLI command migration remains S11 work.
 
 ## Target Matrix
 
@@ -59,6 +84,14 @@ but later slices must make their target ownership explicit. Current names such
 as `forensic-gateway-service`, `repository-analysis-service`,
 `java-ast-analysis-service`, `joern-cpg-analysis-service` and
 `analysis-store-service` are current evidence only, not FA-MSA-001 aliases.
+
+OpenAPI evidence is mixed: selected operations are currently verified, while
+planned routes are target contract intent rather than implementation evidence.
+Event contracts are design artifacts until producers, consumers and broker
+runtime evidence are verified. The query/report API still relies on
+predecessor `analysis-store-service` behavior for repository-analysis
+submission/status; repointing that path to `analysis-orchestrator-service`
+requires a later contract-first slice.
 
 ## Error, Retry And Idempotency Rules
 
