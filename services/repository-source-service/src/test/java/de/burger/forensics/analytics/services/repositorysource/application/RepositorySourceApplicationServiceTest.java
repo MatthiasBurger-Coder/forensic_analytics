@@ -22,6 +22,7 @@ import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -80,6 +81,40 @@ class RepositorySourceApplicationServiceTest {
         assertEquals(RepositoryWorkspaceStatus.CLEANED, cleaned.workspaceStatus());
         assertSame(cleaned, sameCleaned);
         assertEquals(1, workspacePort.cleaned);
+    }
+
+    @Test
+    void prepareFingerprintUsesDeterministicSafeAttributeOrdering() {
+        var firstAttributes = new LinkedHashMap<String, String>();
+        firstAttributes.put("z", "last");
+        firstAttributes.put("a", "first");
+        var secondAttributes = new LinkedHashMap<String, String>();
+        secondAttributes.put("a", "first");
+        secondAttributes.put("z", "last");
+
+        var prepared = service.prepare(
+            "prepare-key",
+            "schema-v1",
+            "correlation-1",
+            runId(),
+            repository(),
+            revision(),
+            policy(),
+            firstAttributes
+        );
+        var replayed = service.prepare(
+            "prepare-key",
+            "schema-v1",
+            "correlation-1",
+            runId(),
+            repository(),
+            revision(),
+            policy(),
+            secondAttributes
+        );
+
+        assertSame(prepared, replayed);
+        assertEquals(List.of("a", "z"), List.copyOf(prepared.safeAttributes().keySet()));
     }
 
     @Test

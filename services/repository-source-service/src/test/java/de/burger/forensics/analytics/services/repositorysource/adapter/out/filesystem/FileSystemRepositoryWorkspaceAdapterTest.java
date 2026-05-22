@@ -27,18 +27,22 @@ class FileSystemRepositoryWorkspaceAdapterTest {
             new WorkspacePolicy(true, true, false, false, 60, 100_000)
         );
         var marker = workspace.workspacePath().resolve("marker.txt");
+        var gitHome = workspace.workspacePath().resolve(".repository-source-git-home");
         Files.writeString(marker, "demo");
+        Files.createDirectories(gitHome.resolve(".config"));
 
         assertTrue(workspace.workspaceId().value().startsWith("workspace-"));
         assertFalse(workspace.workspaceId().value().contains("run"));
         assertTrue(workspace.workspacePath().startsWith(root.toRealPath()));
         assertTrue(Files.exists(marker));
+        assertTrue(Files.exists(gitHome));
 
         adapter.cleanup(workspace.workspaceId());
         adapter.cleanup(workspace.workspaceId());
         adapter.cleanup(new WorkspaceId("workspace-unknown"));
 
         assertFalse(Files.exists(workspace.workspacePath()));
+        assertFalse(Files.exists(gitHome));
         assertTrue(Files.exists(root));
     }
 

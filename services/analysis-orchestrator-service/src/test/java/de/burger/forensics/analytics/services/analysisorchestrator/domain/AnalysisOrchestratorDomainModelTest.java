@@ -19,6 +19,11 @@ class AnalysisOrchestratorDomainModelTest {
 
         assertThrows(IllegalArgumentException.class, () -> new AnalysisRunId(null));
         assertThrows(IllegalArgumentException.class, () -> new AnalysisRunId(" "));
+        assertThrows(IllegalArgumentException.class, () -> new SourceSnapshotId("/tmp/source-snapshot"));
+        assertThrows(IllegalArgumentException.class, () -> new SourceSnapshotId("file:/tmp/source-snapshot"));
+        assertThrows(IllegalArgumentException.class, () -> new SourceSnapshotId("C:/Users/demo/source-snapshot"));
+        assertThrows(IllegalArgumentException.class, () -> new SourceSnapshotId("source/snapshot"));
+        assertThrows(IllegalArgumentException.class, () -> new SourceSnapshotId("source-snapshot-token"));
         assertThrows(IllegalArgumentException.class, () -> new ArtifactReference(" ", "application/json", "sha", 1));
         assertThrows(IllegalArgumentException.class, () -> new ArtifactReference("file:/tmp/private/artifact.json", "application/json", "sha", 1));
         assertThrows(IllegalArgumentException.class, () -> new ArtifactReference("../private/artifact.json", "application/json", "sha", 1));
@@ -275,6 +280,18 @@ class AnalysisOrchestratorDomainModelTest {
         assertEquals("", job.leaseOwner());
         assertEquals(List.of("a", "z"), List.copyOf(job.attributes().keySet()));
         assertEquals(2, completed.outputArtifacts().size());
+        assertThrows(IllegalArgumentException.class, () -> AnalysisJob.submitted(
+            new AnalysisRunId("run-1"),
+            new AnalysisJobId("job-private-attribute"),
+            "schema-v1",
+            "correlation-1",
+            AnalysisWorkerKind.REPORT,
+            new SourceSnapshotId("snapshot-1"),
+            List.of(),
+            AnalysisCompleteness.UNKNOWN,
+            now,
+            Map.of("note", "checkout failed at /tmp/workspace")
+        ));
         assertThrows(IllegalArgumentException.class, () -> new AnalysisJob(
             new AnalysisRunId("run-1"),
             new AnalysisJobId("job-1"),

@@ -82,6 +82,11 @@ class RepositorySourceDomainTest {
     @Test
     void rejectsUnsafeRepositoryReferencesAndSafeAttributes() {
         assertThrows(IllegalArgumentException.class, () -> new RepositoryReference("http://example.com/repo.git", "", Map.of()));
+        assertThrows(IllegalArgumentException.class, () -> new RepositoryReference("file:///tmp/repo", "", Map.of()));
+        assertThrows(IllegalArgumentException.class, () -> new RepositoryReference("/tmp/repo", "", Map.of()));
+        assertThrows(IllegalArgumentException.class, () -> new RepositoryReference("C:/tmp/repo", "", Map.of()));
+        assertThrows(IllegalArgumentException.class, () -> new RepositoryReference("ssh://example.com/repo.git", "", Map.of()));
+        assertThrows(IllegalArgumentException.class, () -> new RepositoryReference("git@example.com:org/repo.git", "", Map.of()));
         assertThrows(IllegalArgumentException.class, () -> new RepositoryReference("https://user@example.com/repo.git", "", Map.of()));
         assertThrows(IllegalArgumentException.class, () -> new RepositoryReference("https://example.com/repo.git?token=x", "", Map.of()));
         assertThrows(IllegalArgumentException.class, () -> new RepositoryReference("https://localhost/repo.git", "", Map.of()));
@@ -105,6 +110,12 @@ class RepositorySourceDomainTest {
         assertThrows(IllegalArgumentException.class, () -> new RevisionSelector("main", false, "", true));
         assertThrows(IllegalArgumentException.class, () -> new RevisionSelector("-main", false, "", false));
         assertThrows(IllegalArgumentException.class, () -> new RevisionSelector("main..other", false, "", false));
+        assertThrows(IllegalArgumentException.class, () -> new RevisionSelector("main~1", false, "", false));
+        assertThrows(IllegalArgumentException.class, () -> new RevisionSelector("main^{}", false, "", false));
+        assertThrows(IllegalArgumentException.class, () -> new RevisionSelector("feature:name", false, "", false));
+        assertThrows(IllegalArgumentException.class, () -> new RevisionSelector("feature name", false, "", false));
+        assertThrows(IllegalArgumentException.class, () -> new RevisionSelector("refs/heads/main.lock", false, "", false));
+        assertThrows(IllegalArgumentException.class, () -> new RevisionSelector("main@{1}", false, "", false));
         assertThrows(IllegalArgumentException.class, () -> new RevisionSelector("", false, "not-a-commit", true));
         assertThrows(IllegalArgumentException.class, () -> new WorkspacePolicy(true, false, true, false, 60, 100));
         assertThrows(IllegalArgumentException.class, () -> new WorkspacePolicy(true, false, false, true, 60, 100));
@@ -124,6 +135,9 @@ class RepositorySourceDomainTest {
         assertThrows(IllegalArgumentException.class, () -> new ArtifactReference("file:/tmp/manifest.json", "application/json", SHA, 1));
         assertThrows(IllegalArgumentException.class, () -> new ArtifactReference("manifest\n.json", "application/json", SHA, 1));
         assertThrows(IllegalArgumentException.class, () -> new ArtifactReference("C:/tmp/manifest.json", "application/json", SHA, 1));
+        assertThrows(IllegalArgumentException.class, () -> new ArtifactReference("snapshots//manifest.json", "application/json", SHA, 1));
+        assertThrows(IllegalArgumentException.class, () -> new ArtifactReference("snapshots/./manifest.json", "application/json", SHA, 1));
+        assertThrows(IllegalArgumentException.class, () -> new ArtifactReference("snapshots/manifest.lock", "application/json", SHA, 1));
         assertThrows(IllegalArgumentException.class, () -> new ArtifactReference("manifest.json", "application/json", "bad", 1));
         assertThrows(IllegalArgumentException.class, () -> new ArtifactReference("manifest.json", "application/json", SHA, -1));
         assertThrows(IllegalArgumentException.class, () -> new SourceSnapshot(
@@ -371,6 +385,8 @@ class RepositorySourceDomainTest {
         assertThrows(IllegalArgumentException.class, () -> RepositorySourceDomain.requireText(null, "value"));
         assertThrows(IllegalArgumentException.class, () -> RepositorySourceDomain.safeAttributes(Map.of("note", "secret-value")));
         assertThrows(IllegalArgumentException.class, () -> RepositorySourceDomain.safeAttributes(Map.of("note", "C:/Users/demo")));
+        assertThrows(IllegalArgumentException.class, () -> RepositorySourceDomain.safeAttributes(Map.of("note", "checkout failed at /tmp/workspace")));
+        assertThrows(IllegalArgumentException.class, () -> RepositorySourceDomain.safeAttributes(Map.of("note", "C:\\Users\\demo\\repo")));
         assertThrows(IllegalArgumentException.class, () -> new CheckoutResult(
             CheckoutStatus.CHECKED_OUT,
             REPOSITORY.remoteUrl(),

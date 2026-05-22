@@ -136,6 +136,27 @@ class AnalysisJobGrpcEndpointTest {
     }
 
     @Test
+    void acceptsRepositorySourceArtifactReferencesWithoutWorkspacePaths() {
+        var submitted = stub.submitAnalysisJob(submitRequest(
+            "submit-repository-source",
+            "job-repository-source",
+            AnalysisWorkerKind.ANALYSIS_WORKER_KIND_AST_ANALYSIS
+        ).toBuilder()
+            .setSourceSnapshotId(SourceSnapshotId.newBuilder().setValue("source-snapshot-1"))
+            .clearInputArtifacts()
+            .addInputArtifacts(repositorySourceArtifact())
+            .clearAttributes()
+            .putAttributes("repository", "demo")
+            .build());
+
+        assertEquals("ACCEPTED", submitted.getStatus().getCode());
+        assertEquals("source-snapshot-1", submitted.getJob().getSourceSnapshotId().getValue());
+        assertEquals("repository-source-service", submitted.getJob().getInputArtifacts(0).getByteAccess().getOwnerService());
+        assertEquals("repository-source.v1.SourcePackage", submitted.getJob().getInputArtifacts(0).getByteAccess().getRetrievalContract());
+        assertEquals("source-snapshot/source-snapshot-1", submitted.getJob().getInputArtifacts(0).getByteAccess().getRetrievalReference());
+    }
+
+    @Test
     void supportsListPaginationAndStatusLookup() {
         stub.submitAnalysisJob(submitRequest("submit-a", "job-a", AnalysisWorkerKind.ANALYSIS_WORKER_KIND_AST_ANALYSIS));
         stub.submitAnalysisJob(submitRequest("submit-b", "job-b", AnalysisWorkerKind.ANALYSIS_WORKER_KIND_AST_ANALYSIS));
@@ -409,6 +430,25 @@ class AnalysisJobGrpcEndpointTest {
         assertEquals(Status.Code.UNIMPLEMENTED, status.getStatus().getCode());
     }
 
+    @Test
+    void rejectsPrivateRepositorySourceHandoffValues() {
+        var privateSnapshotId = assertThrows(StatusRuntimeException.class, () -> stub.submitAnalysisJob(
+            submitRequest("submit-private-snapshot", "job-private-snapshot", AnalysisWorkerKind.ANALYSIS_WORKER_KIND_AST_ANALYSIS)
+                .toBuilder()
+                .setSourceSnapshotId(SourceSnapshotId.newBuilder().setValue("/tmp/source-snapshot"))
+                .build()
+        ));
+        var privateAttribute = assertThrows(StatusRuntimeException.class, () -> stub.submitAnalysisJob(
+            submitRequest("submit-private-attribute", "job-private-attribute", AnalysisWorkerKind.ANALYSIS_WORKER_KIND_AST_ANALYSIS)
+                .toBuilder()
+                .putAttributes("note", "checkout failed at /tmp/private/workspace")
+                .build()
+        ));
+
+        assertEquals(Status.Code.INVALID_ARGUMENT, privateSnapshotId.getStatus().getCode());
+        assertEquals(Status.Code.INVALID_ARGUMENT, privateAttribute.getStatus().getCode());
+    }
+
     private static SubmitAnalysisJobRequest submitRequest(String idempotencyKey, String jobId, AnalysisWorkerKind workerKind) {
         return SubmitAnalysisJobRequest.newBuilder()
             .setRequestId("request-" + jobId)
@@ -464,6 +504,25 @@ class AnalysisJobGrpcEndpointTest {
                 .setOwnerService("query-report-api-service")
                 .setRetrievalContract("query-report-api-service.generated-reports.v1")
                 .setRetrievalReference(path)
+                .setByteCustody(ArtifactByteCustody.ARTIFACT_BYTE_CUSTODY_PRODUCER_RETAINED))
+            .build();
+    }
+
+    private static AnalysisArtifactReference repositorySourceArtifact() {
+        return AnalysisArtifactReference.newBuilder()
+            .setArtifact(ArtifactReference.newBuilder()
+                .setPath("source-snapshot/source-snapshot-1")
+                .setType("application/json")
+                .setSha256("source-sha")
+                .setSizeBytes(42))
+            .setCategory(AnalysisArtifactCategory.ANALYSIS_ARTIFACT_CATEGORY_STATIC)
+            .setProducerService("repository-source-service")
+            .setSchemaVersion("repository-source.v1.SourcePackage")
+            .setCompleteness(AnalysisCompleteness.ANALYSIS_COMPLETENESS_COMPLETE)
+            .setByteAccess(ArtifactByteAccess.newBuilder()
+                .setOwnerService("repository-source-service")
+                .setRetrievalContract("repository-source.v1.SourcePackage")
+                .setRetrievalReference("source-snapshot/source-snapshot-1")
                 .setByteCustody(ArtifactByteCustody.ARTIFACT_BYTE_CUSTODY_PRODUCER_RETAINED))
             .build();
     }

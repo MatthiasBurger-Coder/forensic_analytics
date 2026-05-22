@@ -6,6 +6,8 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -128,7 +130,7 @@ public final class RepositorySourceDomain {
 
     public record ArtifactReference(String reference, String type, String sha256, long sizeBytes) {
         public ArtifactReference {
-            reference = requireRelativeReference(reference, "artifact reference");
+            reference = requireServiceOwnedReference(reference, "artifact reference");
             type = requireText(type, "artifact type");
             sha256 = requireSha256(sha256, "artifact sha256");
             if (sizeBytes < 0) {
@@ -259,7 +261,7 @@ public final class RepositorySourceDomain {
 
     public record SourceRoot(String relativePath, String language) {
         public SourceRoot {
-            relativePath = requireRelativeReference(relativePath, "source root");
+            relativePath = requireSourceRootReference(relativePath, "source root");
             language = requireText(language, "source root language");
         }
     }
@@ -455,7 +457,7 @@ public final class RepositorySourceDomain {
             }
             sorted.put(safeKey, safeValue);
         });
-        return Map.copyOf(sorted);
+        return Collections.unmodifiableMap(new LinkedHashMap<>(sorted));
     }
 
     public static String sha256Hex(String value) {
@@ -522,7 +524,9 @@ public final class RepositorySourceDomain {
         if (ref.isBlank()) {
             return "";
         }
-        if (ref.startsWith("-") || ref.contains("..") || ref.contains("\n") || ref.contains("\r")) {
+        if (ref.startsWith("-") || ref.startsWith("/") || ref.endsWith("/") || ref.contains("..")
+            || ref.contains("//") || ref.contains("@{") || ref.contains("\\")
+            || !ref.matches("[A-Za-z0-9._/-]+") || hasUnsafeSegments(ref, false)) {
             throw new IllegalArgumentException(name + " is not a safe ref");
         }
         return ref;
@@ -536,13 +540,21 @@ public final class RepositorySourceDomain {
         return commit.toLowerCase(Locale.ROOT);
     }
 
-    private static String requireRelativeReference(String value, String name) {
+    private static String requireSourceRootReference(String value, String name) {
+        return requireRelativeReference(value, name, true);
+    }
+
+    private static String requireServiceOwnedReference(String value, String name) {
+        return requireRelativeReference(value, name, false);
+    }
+
+    private static String requireRelativeReference(String value, String name, boolean allowSingleDot) {
         var reference = requireText(value, name);
         var lower = reference.toLowerCase(Locale.ROOT);
         if (reference.startsWith("/") || reference.startsWith("\\") || reference.contains("\\")
             || lower.startsWith("file:") || reference.matches("^[A-Za-z]:.*")
-            || Arrays.asList(reference.split("/")).contains("..")
-            || reference.contains("\n") || reference.contains("\r")) {
+            || reference.chars().anyMatch(Character::isISOControl)
+            || hasUnsafeSegments(reference, allowSingleDot)) {
             throw new IllegalArgumentException(name + " must be relative and service-owned");
         }
         return reference;
@@ -554,11 +566,21 @@ public final class RepositorySourceDomain {
         if (reference.startsWith("/") || reference.startsWith("\\") || reference.contains("\\")
             || lower.startsWith("file:") || reference.matches("^[A-Za-z]:.*")
             || reference.contains("://")
-            || Arrays.asList(reference.split("/")).contains("..")
-            || reference.contains("\n") || reference.contains("\r")) {
+            || reference.chars().anyMatch(Character::isISOControl)
+            || hasUnsafeSegments(reference, false)) {
             throw new IllegalArgumentException(name + " must be an opaque public reference");
         }
         return reference;
+    }
+
+    private static boolean hasUnsafeSegments(String reference, boolean allowSingleDot) {
+        var parts = Arrays.asList(reference.split("/", -1));
+        return parts.stream().anyMatch(part ->
+            part.isBlank()
+                || "..".equals(part)
+                || part.endsWith(".lock")
+                || (".".equals(part) && !(allowSingleDot && ".".equals(reference)))
+        );
     }
 
     private static void requirePackageArtifactWhenAvailable(
@@ -592,10 +614,17 @@ public final class RepositorySourceDomain {
         return lower.startsWith("file:")
             || lower.startsWith("/")
             || lower.startsWith("\\")
-            || lower.matches("^[a-z]:.*")
+            || lower.matches(".*[a-z]:[\\\\/].*")
             || lower.contains("/home/")
+            || lower.contains("/tmp/")
+            || lower.contains("/var/")
             || lower.contains("\\users\\")
             || lower.contains("/users/")
-            || lower.contains("/mnt/");
+            || lower.contains("/mnt/")
+            || lower.contains("\\tmp\\")
+            || lower.contains("\\workspace\\")
+            || lower.contains("/workspace/")
+            || lower.contains("/workspaces/")
+            || lower.chars().anyMatch(Character::isISOControl);
     }
 }

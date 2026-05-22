@@ -25,10 +25,23 @@ class AnalysisJobRequestValidatorTest {
     @Test
     void validatesJobSubmissionAndRejectsPrivateArtifactReferences() {
         assertDoesNotThrow(() -> validator.validate(submitRequest("jobs/input.json").build()));
+        assertDoesNotThrow(() -> validator.validate(submitRequest(repositorySourceArtifact()).build()));
 
         assertThrows(ValidationException.class, () -> validator.validate(submitRequest("/private/input.json").build()));
         assertThrows(ValidationException.class, () -> validator.validate(submitRequest("file:/tmp/input.json").build()));
         assertThrows(ValidationException.class, () -> validator.validate(submitRequest("../input.json").build()));
+        assertThrows(ValidationException.class, () -> validator.validate(submitRequest("jobs/input.json")
+            .setSourceSnapshotId(SourceSnapshotId.newBuilder().setValue("/tmp/source-snapshot"))
+            .build()));
+        assertThrows(ValidationException.class, () -> validator.validate(submitRequest("jobs/input.json")
+            .setSourceSnapshotId(SourceSnapshotId.newBuilder().setValue("file:/tmp/source-snapshot"))
+            .build()));
+        assertThrows(ValidationException.class, () -> validator.validate(submitRequest("jobs/input.json")
+            .putAttributes("note", "checkout failed at /tmp/private/workspace")
+            .build()));
+        assertThrows(ValidationException.class, () -> validator.validate(submitRequest("jobs/input.json")
+            .putAttributes("token", "demo")
+            .build()));
         assertThrows(ValidationException.class, () -> validator.validate(submitRequest(artifact(
             "jobs/input.json",
             "analysis-orchestrator-service",
@@ -146,6 +159,22 @@ class AnalysisJobRequestValidatorTest {
                 .setRetrievalContract("producer-service.artifacts.v1")
                 .setRetrievalReference(path)
                 .setByteCustody(byteCustody))
+            .build();
+    }
+
+    private static AnalysisArtifactReference repositorySourceArtifact() {
+        return artifact(
+            "source-snapshot/source-snapshot-1",
+            "repository-source-service",
+            "repository-source-service",
+            ArtifactByteCustody.ARTIFACT_BYTE_CUSTODY_PRODUCER_RETAINED
+        ).toBuilder()
+            .setSchemaVersion("repository-source.v1.SourcePackage")
+            .setByteAccess(ArtifactByteAccess.newBuilder()
+                .setOwnerService("repository-source-service")
+                .setRetrievalContract("repository-source.v1.SourcePackage")
+                .setRetrievalReference("source-snapshot/source-snapshot-1")
+                .setByteCustody(ArtifactByteCustody.ARTIFACT_BYTE_CUSTODY_PRODUCER_RETAINED))
             .build();
     }
 }

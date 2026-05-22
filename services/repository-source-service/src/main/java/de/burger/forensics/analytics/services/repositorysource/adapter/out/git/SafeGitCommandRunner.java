@@ -85,13 +85,17 @@ public final class SafeGitCommandRunner implements GitCommandRunner {
         environment.put("GIT_CONFIG_GLOBAL", nullDevice());
     }
 
-    private static Path isolatedGitHome(Path workingDirectory) {
+    static Path isolatedGitHome(Path workingDirectory) {
         var absoluteWorkingDirectory = workingDirectory.toAbsolutePath().normalize();
-        var safeBase = absoluteWorkingDirectory.getParent();
-        if (safeBase == null) {
-            safeBase = absoluteWorkingDirectory;
+        var workspaceRoot = absoluteWorkingDirectory;
+        var directoryName = absoluteWorkingDirectory.getFileName();
+        if (directoryName != null && "repository".equals(directoryName.toString())) {
+            workspaceRoot = absoluteWorkingDirectory.getParent();
         }
-        return safeBase.resolve(".repository-source-git-home");
+        if (workspaceRoot == null) {
+            workspaceRoot = absoluteWorkingDirectory;
+        }
+        return workspaceRoot.resolve(".repository-source-git-home");
     }
 
     private static String nullDevice() {

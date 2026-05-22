@@ -13,6 +13,7 @@ import de.burger.forensics.analytics.analysisjob.v1.RegisterAnalysisArtifactsReq
 import de.burger.forensics.analytics.analysisjob.v1.ReportAnalysisJobProgressRequest;
 import de.burger.forensics.analytics.analysisjob.v1.SubmitAnalysisJobRequest;
 import de.burger.forensics.analytics.services.analysisorchestrator.domain.AnalysisOrchestratorArtifactOwnership;
+import de.burger.forensics.analytics.services.analysisorchestrator.domain.SafeMetadata;
 
 final class AnalysisJobRequestValidator {
     void validate(SubmitAnalysisJobRequest request) {
@@ -23,14 +24,11 @@ final class AnalysisJobRequestValidator {
         RequiredFields.present(request.hasSourceSnapshotId(), "sourceSnapshotId");
         RequiredFields.nonBlank(request.getAnalysisRunId().getValue(), "analysisRunId.value");
         RequiredFields.nonBlank(request.getJobId().getValue(), "jobId.value");
-        RequiredFields.nonBlank(request.getSourceSnapshotId().getValue(), "sourceSnapshotId.value");
+        safeOpaqueId(request.getSourceSnapshotId().getValue(), "sourceSnapshotId.value");
         workerKind(request.getWorkerKind());
         completeness(request.getInputCompleteness(), "inputCompleteness");
         request.getInputArtifactsList().forEach(this::artifact);
-        request.getAttributesMap().forEach((key, value) -> {
-            RequiredFields.nonBlank(key, "attribute.key");
-            RequiredFields.nonBlank(value, "attribute.value");
-        });
+        safeAttributes(request.getAttributesMap());
     }
 
     void validate(GetAnalysisJobRequest request) {
@@ -156,6 +154,22 @@ final class AnalysisJobRequestValidator {
     private void safeByteAccess(String value, String fieldName) {
         try {
             de.burger.forensics.analytics.services.analysisorchestrator.domain.ArtifactByteAccess.requirePublicReference(value, fieldName);
+        } catch (IllegalArgumentException error) {
+            throw new ValidationException(error.getMessage());
+        }
+    }
+
+    private void safeOpaqueId(String value, String fieldName) {
+        try {
+            SafeMetadata.requireOpaqueId(value, fieldName);
+        } catch (IllegalArgumentException error) {
+            throw new ValidationException(error.getMessage());
+        }
+    }
+
+    private void safeAttributes(java.util.Map<String, String> attributes) {
+        try {
+            SafeMetadata.safeAttributes(attributes);
         } catch (IllegalArgumentException error) {
             throw new ValidationException(error.getMessage());
         }

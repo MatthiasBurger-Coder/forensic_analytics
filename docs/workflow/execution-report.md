@@ -7,7 +7,7 @@
 | Workflow version | `fa-msa-001-legacy-module-retirement-20260522-v1` |
 | Requirement ID | `FA-MSA-001-LMR` |
 | Branch | `architecture/workflow-legacy-module-retirement-20260522` |
-| Status | S02 completed; workflow refined after S03 blocker |
+| Status | S03 completed; continue with S04 |
 
 ## Creation Evidence
 
@@ -25,7 +25,8 @@
 |---|---|---|---|---|---|---|---|---|---|
 | S00 | Execution Preflight And Evidence Freeze | Senior Execution Orchestrator with swarm-orchestrator subagent review | `docs/workflow/execution-report.md` | `git status --short --branch` PASS; `git diff --check` PASS; `python3 -m json.tool docs/workflow/context-pack.json >/dev/null` PASS; governing file `sha256sum` values match context pack | PASS | `9f6764665c121e2aa9a3b0863b0a167c25134dc9` | checked | checked | pushed |
 | S01 | Current Caller And Dependency Revalidation | Senior System Architect with Senior Java Backend and Microservice Senior Expert review | `docs/architecture/current-coupling-map.md`; `docs/architecture/service-migration-map.md`; `docs/workflow/execution-report.md` | `git ls-files "*build.gradle.kts" \| xargs rg -n "project\\(\\\":forensic-analytics-"` PASS with non-empty evidence; production import scan PASS with non-empty evidence; test import scan PASS with non-empty evidence; `git diff --check` PASS | PASS: `NO_DELETION_SAFE` | `400c1f3` | checked | checked | pushed |
-| S02 | Contract And Runtime Parity Gate | Contract-First API Steward with Senior gRPC/Proto, architecture and quality subagent reviews | `docs/architecture/service-communication-matrix.md`; `docs/architecture/target-microservices-architecture.md`; `docs/workflow/context-pack.md`; `docs/workflow/context-pack.json`; `docs/workflow/execution-report.md` | `:services:repository-source-service:test` PASS; `:services:ingestion-service:test` PASS; `:services:java-parser-analysis-service:test` PASS; `:services:joern-analysis-service:test` PASS; `:services:analysis-orchestrator-service:test` PASS; `:services:query-report-api-service:test` PASS; `:services:cli-client:test` PASS; `./gradlew test --dependency-verification strict --console=plain --stacktrace` PASS; `python3 -m json.tool docs/workflow/context-pack.json >/dev/null` PASS; `git diff --check` PASS | PASS_WITH_LIMITATIONS: current transitional contract surface verified; full target runtime parity remains later-slice work | `be98793` | checked | checked | pending checkpoint push |
+| S02 | Contract And Runtime Parity Gate | Contract-First API Steward with Senior gRPC/Proto, architecture and quality subagent reviews | `docs/architecture/service-communication-matrix.md`; `docs/architecture/target-microservices-architecture.md`; `docs/workflow/context-pack.md`; `docs/workflow/context-pack.json`; `docs/workflow/execution-report.md` | `:services:repository-source-service:test` PASS; `:services:ingestion-service:test` PASS; `:services:java-parser-analysis-service:test` PASS; `:services:joern-analysis-service:test` PASS; `:services:analysis-orchestrator-service:test` PASS; `:services:query-report-api-service:test` PASS; `:services:cli-client:test` PASS; `./gradlew test --dependency-verification strict --console=plain --stacktrace` PASS; `python3 -m json.tool docs/workflow/context-pack.json >/dev/null` PASS; `git diff --check` PASS | PASS_WITH_LIMITATIONS: current transitional contract surface verified; full target runtime parity remains later-slice work | `be98793` | checked | checked | pushed |
+| S03 | Repository Source Parity And Handoff Readiness | Senior Java Backend with Microservice Senior Expert, Security/Sandbox and Senior Tester subagent reviews | `services/repository-source-service/**`; `services/analysis-orchestrator-service/**`; `docs/workflow/execution-report.md`; `docs/workflow/context-pack.md`; `docs/workflow/context-pack.json` | targeted repository-source tests PASS; targeted analysis-orchestrator tests PASS; `./gradlew :services:repository-source-service:test --dependency-verification strict --console=plain --stacktrace` PASS; `./gradlew :services:analysis-orchestrator-service:test --dependency-verification strict --console=plain --stacktrace` PASS; `./gradlew :forensic-analytics-adapter-repository-source:test --dependency-verification strict --console=plain --stacktrace` PASS; scoped repository-source legacy import scan PASS; `./gradlew test --dependency-verification strict --console=plain --stacktrace` PASS; `git diff --check` PASS | PASS_WITH_LIMITATIONS: repository-source service boundary hardened; local/file repository inputs explicitly deprecated at service boundary; Java AST analysis remains unimplemented here; no Proto contract mutation; no full orchestrator runtime-readiness claim | `09c423c` | checked | checked | pushed |
 
 ## Pending Slice Status
 
@@ -34,8 +35,8 @@
 | S00 | COMPLETED |
 | S01 | COMPLETED |
 | S02 | COMPLETED |
-| S03 | NEXT |
-| S04 | READY |
+| S03 | COMPLETED |
+| S04 | NEXT |
 | S05 | READY |
 | S06 | READY |
 | S07 | PENDING |
@@ -79,3 +80,12 @@ S13 from early deletion slices into parity, handoff, caller-migration and
 replacement-readiness slices. S14 remains the only physical module
 deregistration and source-tree removal gate. Resume execution at S03 after the
 refinement checkpoint.
+
+S03 confirms the repository-source service is not a Java parser owner and does
+not implement `AnalyzeSourceSnapshotWithJavaAst`. The slice hardens service
+metadata against private path leakage, keeps Git command HOME under the
+prepared workspace, preserves legacy local/file repository behavior only as
+predecessor regression evidence, and requires callers to use source snapshot
+IDs plus artifact references instead of private workspace paths. S03 does not
+claim Swarm, Kubernetes or full orchestration runtime readiness; those remain
+later-slice concerns.
