@@ -2,7 +2,10 @@
 
 Java AST Analysis is an independent Spring Boot/gRPC worker for JavaParser-based
 static source scanning. It owns provisional Java source-fact extraction,
-stable source-fact IDs and AST diagnostics until accepted by Analysis Store.
+stable source-fact IDs, AST diagnostics, produced source-fact artifacts and
+producer-local artifact metadata. The current predecessor pipeline may still
+handoff references to `analysis-store-service`, but FA-MSA-001 target ownership
+keeps canonical static Java facts with `java-parser-analysis-service`.
 
 The service does not import the current modular-monolith domain, application or
 adapter modules. It generates transport classes from `contracts/grpc` inside

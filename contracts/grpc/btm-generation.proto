@@ -22,9 +22,10 @@ service BtmGenerationService {
 
 // Public facade contract for completed BTM artifact delivery.
 //
-// Gateway exposes this contract to plugins or external clients only after
-// Analysis Store metadata identifies accepted generated artifacts. BTM
-// Generation remains the byte owner until an explicit byte-handoff,
+// query-report-api-service may expose this contract to plugins or external
+// clients only after the S04-approved metadata owner identifies accepted
+// generated artifacts. BTM Generation remains the byte owner until an explicit
+// byte-handoff,
 // object-store ownership or delivery contract transfers byte custody.
 service BtmArtifactDeliveryService {
   rpc DownloadBtmArtifacts(DownloadBtmArtifactsRequest)
@@ -68,9 +69,9 @@ message DownloadBtmArtifactsRequest {
   string correlation_id = 4;
   de.burger.forensics.analytics.analysisjob.v1.AnalysisRunId analysis_run_id = 5;
   de.burger.forensics.analytics.analysisjob.v1.AnalysisJobId analysis_job_id = 6;
-  // Maximum accepted chunk size. Slice 02 target maximum is 1 MiB.
+  // Maximum accepted chunk size. Current target maximum is 1 MiB.
   int32 max_chunk_bytes = 7;
-  // Maximum accepted total delivery size. Slice 02 target maximum is 1 GiB.
+  // Maximum accepted total delivery size. Current target maximum is 1 GiB.
   int64 max_total_bytes = 8;
   repeated string artifact_references = 9;
   map<string, string> safe_attributes = 10;
@@ -121,12 +122,14 @@ message BtmArtifactChunk {
 }
 
 message DeliveredAnalysisFacts {
-  // Accepted static fact artifacts owned by analysis-store-service.
+  // Accepted static fact artifacts owned by the S04-approved canonical
+  // metadata owner.
   repeated de.burger.forensics.analytics.analysisjob.v1.AnalysisArtifactReference source_fact_artifacts = 1;
   // Accepted semantic artifacts, such as Joern CPG/CFG/DFG outputs.
   repeated de.burger.forensics.analytics.analysisjob.v1.AnalysisArtifactReference semantic_artifacts = 2;
-  // Bounded inline targets selected by analysis-store-service from accepted
-  // facts. BTM Generation must not infer runtime execution from these targets.
+  // Bounded inline targets selected by the S04-approved target-selection owner
+  // from accepted facts. BTM Generation must not infer runtime execution from
+  // these targets.
   repeated InstrumentationTarget targets = 3;
   de.burger.forensics.analytics.analysisjob.v1.AnalysisCompleteness input_completeness = 4;
   InstrumentationTargetSelection target_selection = 5;

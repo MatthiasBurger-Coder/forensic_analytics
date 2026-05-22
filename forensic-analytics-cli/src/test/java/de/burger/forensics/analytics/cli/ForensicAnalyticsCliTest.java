@@ -34,13 +34,17 @@ class ForensicAnalyticsCliTest {
     Path tempDir;
 
     @Test
-    void cliGatewayContractKeepsGatewayModeExplicitAndRedacted() throws Exception {
+    void cliGatewayContractKeepsCompatibilityModeExplicitAndRedacted() throws Exception {
         var contract = Files.readString(findCliGatewayContract(), StandardCharsets.UTF_8);
 
         assertContains(contract, "Contract version | `gateway-cli-v1`");
-        assertContains(contract, "`forensic-analytics-cli gateway-submit` is the explicit Gateway command");
-        assertContains(contract, "the implemented Gateway path is `gateway-submit`");
-        assertContains(contract, "must not silently route the existing local-path `analyze` command to Gateway");
+        assertContains(contract, "`gateway-submit` is the explicit compatibility command");
+        assertContains(contract, "the target CLI is `cli-client`");
+        assertContains(contract, "current predecessor implementation is `forensic-analytics-cli`");
+        assertContains(contract, "S11 target-client path keeps the compatibility command name");
+        assertContains(contract, "`analyze` or `ingest-request`");
+        assertContains(contract, "commands to the public API");
+        assertContains(contract, "Status reads are out of S11");
         assertContains(contract, "StartRepositoryAnalysisRequest.repositoryUrl");
         assertContains(contract, "X-Correlation-Id");
         assertContains(contract, "Idempotency-Key");
@@ -48,7 +52,8 @@ class ForensicAnalyticsCliTest {
         assertContains(contract, "RepositoryToBtmStatus");
         assertContains(contract, "workspace IDs or workspace paths");
         assertContains(contract, "raw Git stdout or stderr");
-        assertContains(contract, "must not depend on Gateway implementation classes");
+        assertContains(contract, "must not depend on `query-report-api-service` implementation classes");
+        assertContains(contract, "predecessor Gateway implementation classes");
         assertContains(contract, "contracts/openapi/gateway-api.yaml");
     }
 

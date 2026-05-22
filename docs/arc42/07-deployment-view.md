@@ -77,77 +77,274 @@ The Docker baseline lives under `docker/boot-app/`. It copies only the generated
 
 ## 7.6 Microservice Deployment Boundaries
 
-ADR-0017 defines the active target service landscape. Microservice extraction
-must keep every service independently deployable. Each service must own its
-Spring Boot application, Dockerfile, health checks, configuration, tests and
-service-local domain model before production readiness is claimed.
+ADR-0017 defines the FA-MSA-001 target service landscape. Microservice
+extraction must keep every productive service independently deployable. Each
+service must own its bootstrap, Dockerfile, health checks, configuration, tests
+and service-local domain model before production readiness is claimed.
 
-The target service roots are:
+The FA-MSA-001 target service roots are:
 
 ```text
-services/forensic-gateway-service
-services/forensic-ingestion-service
-services/repository-analysis-service
-services/build-artifact-worker-service
-services/java-ast-analysis-service
-services/joern-cpg-analysis-service
-services/btm-generation-service
-services/analysis-store-service
-services/graph-replay-service
-services/report-generation-service
-frontend/frontend-web-app
+services/repository-source-service
+services/ingestion-service
+services/java-parser-analysis-service
+services/joern-analysis-service
+services/analysis-orchestrator-service
+services/query-report-api-service
+services/cli-client
+services/observability-stack
+services/testbed
 ```
 
-Shared Java implementation modules between these services are forbidden.
-Service-to-service integration is limited to REST/OpenAPI, gRPC/protobuf and
-approved event contracts. Deployment targets must cover local Spring Boot
-startup, Docker, Docker Swarm and Kubernetes through service-owned deployment
-material before readiness is claimed.
+`cli-client`, `observability-stack` and `testbed` are special boundaries:
+
+- `cli-client` is a public API client, not a productive backend service. S11
+  creates and registers it as an independently buildable command-line
+  application; it does not own health endpoints, Docker runtime readiness or
+  service deployment readiness unless a later operator slice adds and verifies
+  them.
+- `observability-stack` is deployment/configuration material, not a shared
+  Java runtime module.
+- `testbed` is non-production integration and system-test infrastructure.
+
+Shared Java implementation modules between services are forbidden.
+Service-to-service integration is limited to REST/OpenAPI, gRPC/protobuf,
+approved message contracts or documented file contracts. Deployment targets
+must cover local startup, Docker and later Docker Swarm or Kubernetes only
+when service-owned deployment material and validation commands exist.
 
 ADR-0018 keeps contract artifacts separate from deployment readiness. A
 contract file may exist before the service, container, healthcheck, manifest or
 broker topology exists. Deployment documentation must not claim readiness from
 contract presence alone.
 
-`build-artifact-worker-service` is a planned service root only. Before it is
-called deployable, a slice must add its Spring Boot application, healthcheck,
-Dockerfile, sandbox configuration, resource quotas, network policy, tests and
-service-local contract generation. Jenkins and Artifactory integrations remain
-optional external integrations and are skipped by default in local quality
-gates.
-
 Joern Docker input must be a Joern-owned materialized workspace volume. A
-Repository Analysis private workspace volume must not be mounted into the Joern
+Repository Source private workspace volume must not be mounted into the Joern
 container.
 
-`services/analysis-store-service` is implemented as an independently buildable
-Spring Boot service. It exposes gRPC on port `9091`, a JDK HTTP health endpoint
-on port `8082`, and can be packaged with:
+The current `services/analysis-store-service` and other `services/forensic-*`
+or analysis-worker roots are transitional implementation evidence. They do not
+prove that the FA-MSA-001 target service roots are independently deployable.
+Docker Swarm and Kubernetes deployment descriptors are still future slice
+material.
+
+Slice S05 adds `services/repository-source-service` as target-service
+deployment evidence. The service owns:
+
+- `services/repository-source-service/build.gradle.kts`;
+- `services/repository-source-service/Dockerfile`;
+- `services/repository-source-service/src/main/resources/application.properties`;
+- `services/repository-source-service/src/main/resources/application-docker.properties`;
+- a service-local health HTTP endpoint on port `8083`;
+- a service-local gRPC endpoint on port `9092`;
+- the Docker profile workspace root
+  `/var/lib/forensic-analytics/repository-workspaces`.
+
+The service can be packaged independently with:
 
 ```bash
-./gradlew --no-daemon :services:analysis-store-service:bootJar --dependency-verification strict --console=plain --stacktrace
+./gradlew :services:repository-source-service:bootJar --dependency-verification strict --console=plain --stacktrace
 ```
 
-Its Dockerfile builds a standalone runtime image for the service jar. Docker
-Swarm and Kubernetes deployment descriptors are still future slice material.
-The first local Docker Compose descriptor is limited to the repository-to-BTM
-service landscape described below.
+It can be started locally with:
 
-Workflow `e2e-wildfly-cli-deploy-20260521-v1` records a separate Swarm and
-Kubernetes deployment workflow handoff. That handoff does not add stack files,
-manifests, charts, probes, resource policies or readiness claims.
+```bash
+./gradlew :services:repository-source-service:bootRun --dependency-verification strict --console=plain --stacktrace
+```
 
-## 7.7 Local Repository-to-BTM Service Landscape
+The service Dockerfile is service-owned, but S05 does not add Docker Compose,
+Docker Swarm or Kubernetes deployment descriptors for the target landscape.
+Those readiness claims require later repository tooling and validation
+commands.
 
-Slice 15 adds the first local Docker Compose descriptor for the implemented
-repository-to-BTM path:
+Slice S06 adds `services/ingestion-service` as target-service deployment
+evidence. The service owns:
+
+- `services/ingestion-service/build.gradle.kts`;
+- `services/ingestion-service/Dockerfile`;
+- `services/ingestion-service/src/main/resources/application.properties`;
+- `services/ingestion-service/src/main/resources/application-docker.properties`;
+- a service-local health HTTP endpoint on port `8081`;
+- a service-local gRPC endpoint on port `9090`.
+
+The service can be packaged independently with:
+
+```bash
+./gradlew :services:ingestion-service:bootJar --dependency-verification strict --console=plain --stacktrace
+```
+
+It can be started locally with:
+
+```bash
+./gradlew :services:ingestion-service:bootRun --dependency-verification strict --console=plain --stacktrace
+```
+
+The service Dockerfile is service-owned, but S06 does not add Docker Compose,
+Docker Swarm or Kubernetes deployment descriptors for the target landscape.
+Those readiness claims require later repository tooling and validation
+commands.
+
+Slice S07 adds `services/java-parser-analysis-service` as target-service
+deployment evidence. The service owns:
+
+- `services/java-parser-analysis-service/build.gradle.kts`;
+- `services/java-parser-analysis-service/Dockerfile`;
+- `services/java-parser-analysis-service/src/main/resources/application.properties`;
+- `services/java-parser-analysis-service/src/main/resources/application-docker.properties`;
+- a service-local health HTTP endpoint on port `8085`;
+- a service-local gRPC endpoint on port `9094`.
+
+The service can be packaged independently with:
+
+```bash
+./gradlew :services:java-parser-analysis-service:bootJar --dependency-verification strict --console=plain --stacktrace
+```
+
+It can be started locally with:
+
+```bash
+./gradlew :services:java-parser-analysis-service:bootRun --dependency-verification strict --console=plain --stacktrace
+```
+
+The service Dockerfile is service-owned, but S07 does not add Docker Compose,
+Docker Swarm or Kubernetes deployment descriptors for the target landscape.
+Those readiness claims require later repository tooling and validation
+commands.
+
+Slice S08 adds `services/joern-analysis-service` as target-service deployment
+evidence. The service owns:
+
+- `services/joern-analysis-service/build.gradle.kts`;
+- `services/joern-analysis-service/Dockerfile`;
+- `services/joern-analysis-service/src/main/resources/application.properties`;
+- `services/joern-analysis-service/src/main/resources/application-docker.properties`;
+- a service-local health HTTP endpoint on port `8087`;
+- a service-local gRPC endpoint on port `9096`.
+
+The service can be packaged independently with:
+
+```bash
+./gradlew :services:joern-analysis-service:bootJar --dependency-verification strict --console=plain --stacktrace
+```
+
+The local operator start command is:
+
+```bash
+./gradlew :services:joern-analysis-service:bootRun --dependency-verification strict --console=plain --stacktrace
+```
+
+S08 records this as the service-local start command, but the S08 verification
+run did not execute `bootRun` or a live health probe. Runtime smoke evidence
+must be recorded separately before claiming a verified running Joern Analysis
+Service instance.
+
+The service Dockerfile is service-owned and based on the digest-pinned Joern
+runtime plus a copied Java 25 runtime. S08 validates the Joern Docker Compose
+model with `docker compose -f docker/joern/docker-compose.joern.yml config`,
+but it does not add target-service Docker Compose, Docker Swarm or Kubernetes
+deployment descriptors. Docker image build and Joern runtime smoke testing are
+optional external checks because they may pull the Joern base image or create
+local container state.
+
+Slice S09 adds `services/analysis-orchestrator-service` as target-service
+deployment evidence. The service owns:
+
+- `services/analysis-orchestrator-service/build.gradle.kts`;
+- `services/analysis-orchestrator-service/Dockerfile`;
+- `services/analysis-orchestrator-service/src/main/resources/application.properties`;
+- `services/analysis-orchestrator-service/src/main/resources/application-docker.properties`;
+- a service-local health HTTP endpoint on port `8089`;
+- a service-local gRPC endpoint on port `9098`.
+
+The service can be packaged independently with:
+
+```bash
+./gradlew :services:analysis-orchestrator-service:bootJar --dependency-verification strict --console=plain --stacktrace
+```
+
+The local operator start command is:
+
+```bash
+./gradlew :services:analysis-orchestrator-service:bootRun --dependency-verification strict --console=plain --stacktrace
+```
+
+S09 records this as the service-local start command, but the S09 verification
+run does not execute `bootRun` or a live health probe. Runtime smoke evidence
+must be recorded separately before claiming a verified running Analysis
+Orchestrator Service instance.
+
+The service Dockerfile is service-owned, but S09 does not add target-service
+Docker Compose, Docker Swarm or Kubernetes deployment descriptors. Those
+readiness claims require later repository tooling and validation commands.
+
+Slice S10 adds `services/query-report-api-service` as target-service
+deployment evidence. The service owns:
+
+- `services/query-report-api-service/build.gradle.kts`;
+- `services/query-report-api-service/Dockerfile`;
+- `services/query-report-api-service/src/main/resources/application.properties`;
+- `services/query-report-api-service/src/main/resources/application-docker.properties`;
+- a service-local health HTTP endpoint on port `8080`;
+- a service-local public API HTTP endpoint on port `8080`.
+
+The service can be packaged independently with:
+
+```bash
+./gradlew :services:query-report-api-service:bootJar --dependency-verification strict --console=plain --stacktrace
+```
+
+The local operator start command is:
+
+```bash
+./gradlew :services:query-report-api-service:bootRun --dependency-verification strict --console=plain --stacktrace
+```
+
+S10 records this as the service-local start command, but the S10 verification
+run does not execute `bootRun` or a live health probe. Runtime smoke evidence
+must be recorded separately before claiming a verified running Query Report API
+Service instance.
+
+The service Dockerfile is service-owned, but S10 does not add target-service
+Docker Compose, Docker Swarm or Kubernetes deployment descriptors. Those
+readiness claims require later repository tooling and validation commands.
+
+Slice S13 adds `services/testbed` as the non-production integration and
+system-test deployment boundary. The testbed owns:
+
+- `services/testbed/build.gradle.kts`;
+- `services/testbed/README.md`;
+- deterministic repository E2E fixtures copied under
+  `services/testbed/src/test/resources/repository-e2e/`;
+- service-root test coverage under
+  `services/testbed/src/test/java/de/burger/forensics/analytics/services/testbed`.
+
+The service-local testbed gate is:
+
+```bash
+./gradlew :services:testbed:test --dependency-verification strict --console=plain --stacktrace
+```
+
+`services/testbed` is not a productive backend service. It does not add a
+Dockerfile, Docker Compose service, Docker Swarm stack or Kubernetes manifest
+in S13. The legacy `forensic-analytics-testbed` module remains active until a
+later retirement slice proves parity, caller migration and rollback evidence.
+
+Slice S14 does not remove deployment or runtime paths. It records
+`NO_REMOVAL_SAFE` when caller scans still find active legacy module use. The
+Boot app, Bootstrap runtime and retained `forensic-analytics-*` modules remain
+legacy in-process and rollback deployment evidence until later retirement
+slices migrate, deprecate or prove each path caller-free.
+
+## 7.7 Local Repository-to-BTM Transitional Landscape
+
+The repository currently contains a local Docker Compose descriptor for the
+implemented transitional repository-to-BTM path:
 
 ```text
 deployment/docker-compose/repository-to-btm.local.yml
 ```
 
-The descriptor covers only the service path that Slice 14 proved through owner
-APIs:
+The descriptor covers only the current transitional service path:
 
 ```text
 forensic-gateway-service
@@ -170,5 +367,21 @@ Kubernetes remain explicitly not ready until stack files or manifests,
 readiness/liveness probes, resource policies and validation commands are added
 by a later slice.
 
-Verified commands for the local descriptor are recorded in
-`deployment/docker-compose/README.md`.
+The local descriptor commands are documented in
+`deployment/docker-compose/README.md`. S15 did not execute or record Compose
+model validation, image-build, startup or health-check commands for this
+descriptor.
+
+The descriptor is current evidence only. It is not a readiness claim for the
+FA-MSA-001 target landscape until the target services exist and are verified by
+their own build, start, healthcheck, Docker and quality gates.
+
+S15 closes the workflow by verifying the mandatory FA-MSA-001 target service
+build tasks, service-owned Dockerfiles, Docker healthcheck definitions,
+service-local configuration files and architecture tests. This closure remains
+limited to service-local build and packaging evidence plus the repository
+quality gate; it does not claim Docker image-build, Docker Compose startup,
+Docker Swarm or Kubernetes runtime readiness for the target landscape.
+The S15 full local quality gate passed with the repository `QUALITY.md`
+command including `clean`, `test`, `jacocoTestReport`,
+`jacocoTestCoverageVerification` and `checkPackageCoverage`.

@@ -5,9 +5,13 @@
 Slice 04 initial independent service.
 
 This service receives and validates plugin, scanner and runtime evidence
-packages over gRPC. It owns raw intake sessions only. Canonical normalized facts
-belong to `analysis-store-service`, and repository checkout belongs to
-`repository-analysis-service`.
+packages over gRPC. It owns raw intake sessions, upload-session lifecycle,
+rejected-intake diagnostics and raw runtime or analysis payload byte custody
+until an explicit handoff transfers custody. Canonical normalized facts are
+target-owned by the FA-MSA-001 service that produces or accepts the evidence
+category, and repository checkout belongs to `repository-source-service`.
+The current predecessor pipeline may still hand accepted intake to
+`analysis-store-service` until later migration slices replace that path.
 
 ## Boundaries
 

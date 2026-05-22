@@ -5,8 +5,9 @@
 Slice 00 baseline for the microservices ecosystem conversion workflow.
 
 This document records the verified build, test, quality and deployment-command
-state before service migration begins. It does not claim that any quality gate
-passed unless the command is explicitly listed as executed.
+state before service migration begins, then appends verified slice updates as
+target services are introduced. It does not claim that any quality gate passed
+unless the command is explicitly listed as executed.
 
 ## Build Baseline
 
@@ -47,17 +48,42 @@ Verified from `settings.gradle.kts`:
 - `forensic-analytics-boot-app`
 - `services:btm-generation-service`
 - `services:joern-cpg-analysis-service`
+- `services:joern-analysis-service`
+- `services:analysis-orchestrator-service`
+- `services:java-parser-analysis-service`
 - `services:java-ast-analysis-service`
+- `services:repository-source-service`
 - `services:repository-analysis-service`
 - `services:analysis-store-service`
+- `services:ingestion-service`
 - `services:forensic-ingestion-service`
+- `services:query-report-api-service`
+- `services:cli-client`
+- `services:observability-stack`
+- `services:testbed`
 - `services:forensic-gateway-service`
 
-Seven service-specific Gradle projects under `services/**` are now registered.
-Graph-replay and report-generation remain README-only planned service roots
-and are explicitly deferred from repository-to-BTM acceptance by Slice 16. The
-build-artifact worker is planned by workflow v2 and retained by workflow v3;
-it has no service root yet.
+Sixteen service-specific Gradle projects under `services/**` are now
+registered.
+`services:repository-source-service`, `services:ingestion-service` and
+`services:java-parser-analysis-service`, `services:joern-analysis-service` and
+`services:analysis-orchestrator-service` and
+`services:query-report-api-service` are FA-MSA-001 target-name backend service
+projects introduced by this workflow. `services:cli-client` is a registered
+FA-MSA-001 public API client boundary, not a productive backend service.
+`services:observability-stack` is a registered deployment-oriented
+observability boundary, not a productive backend service and not a shared Java
+runtime module.
+`services:testbed` is a registered non-production integration and system-test
+boundary. It is not a productive backend service and must not be used as a
+shared runtime dependency by production services.
+`services:repository-analysis-service`, `services:forensic-ingestion-service`,
+`services:java-ast-analysis-service` and `services:joern-cpg-analysis-service`
+remain predecessor services and rollback inputs, not compatibility aliases.
+Graph-replay and report-generation remain README-only planned service roots and
+are explicitly deferred from repository-to-BTM acceptance by Slice 16. The
+build-artifact worker is planned by workflow v2 and retained by workflow v3; it
+has no service root yet.
 
 ## Quality Commands
 
@@ -116,6 +142,11 @@ through `WildFlyRepositoryHardeningTest`. It is skipped by default unless
 `FORENSIC_ANALYTICS_WILDFLY_HARDENING=true` and an explicit WildFly branch or
 commit is provided. The runbook is `docs/testing/wildfly-hardening.md`.
 
+Slice 13 adds the same testbed coverage under `services:testbed` in package
+`de.burger.forensics.analytics.services.testbed`. The legacy
+`forensic-analytics-testbed` module remains part of the root quality gate until
+a later retirement slice proves migration parity and rollback evidence.
+
 Architecture tests were verified in these areas:
 
 - application contract architecture;
@@ -161,6 +192,12 @@ Existing Docker material:
 - `docker/joern/docker-compose.joern.yml`
 - `docker/joern/scripts/**`
 - `forensic-ui/Dockerfile`
+- `services/repository-source-service/Dockerfile`
+- `services/ingestion-service/Dockerfile`
+- `services/java-parser-analysis-service/Dockerfile`
+- `services/joern-analysis-service/Dockerfile`
+- `services/analysis-orchestrator-service/Dockerfile`
+- `services/query-report-api-service/Dockerfile`
 - `deployment/docker-compose/repository-to-btm.local.yml`
 
 The DevOps review verified Joern Compose configuration with:
@@ -172,15 +209,72 @@ docker compose --env-file docker/joern/.env -f docker/joern/docker-compose.joern
 No Boot jar build, Boot Docker image build, frontend image build, Swarm command
 or Kubernetes command was executed as part of Slice 00.
 
-Slice 15 later verified the local repository-to-BTM Compose descriptor with
-six service `bootJar` tasks, `docker compose config`, `docker compose build`,
-Compose startup, Gateway plus service health checks and Compose cleanup. This
-is local repository-to-BTM readiness only and does not claim production-wide
-Compose, Swarm or Kubernetes readiness.
+Slice 05 adds a service-local Dockerfile for
+`services/repository-source-service`. This is target-service container
+packaging evidence only; Compose, Swarm and Kubernetes readiness for the
+FA-MSA-001 target landscape remains future work until descriptors and
+validation commands exist.
 
-The active E2E/WildFly/CLI workflow records a separate Swarm and Kubernetes
-workflow handoff in `docs/workflow/deployment-workflow-request.md`. That handoff
-does not add stack files, manifests or readiness claims.
+Slice 06 adds a service-local Dockerfile for `services/ingestion-service`.
+This is target-service container packaging evidence only; Compose, Swarm and
+Kubernetes readiness for the FA-MSA-001 target landscape remains future work
+until descriptors and validation commands exist.
+
+Slice 07 adds a service-local Dockerfile for
+`services/java-parser-analysis-service`. This is target-service container
+packaging evidence only; Compose, Swarm and Kubernetes readiness for the
+FA-MSA-001 target landscape remains future work until descriptors and
+validation commands exist.
+
+Slice 08 adds a service-local Dockerfile for `services/joern-analysis-service`.
+This is target-service container packaging evidence only; Compose, Swarm and
+Kubernetes readiness for the FA-MSA-001 target landscape remains future work
+until descriptors and validation commands exist. The service uses local gRPC
+port `9096` and health port `8087`, distinct from predecessor Joern and
+JavaParser target ports. Docker image build or Joern runtime smoke testing is
+optional external verification because it may pull the digest-pinned Joern base
+image or create local container state.
+
+Slice 09 adds a service-local Dockerfile for
+`services/analysis-orchestrator-service`. This is target-service container
+packaging evidence only; Compose, Swarm and Kubernetes readiness for the
+FA-MSA-001 target landscape remains future work until descriptors and
+validation commands exist. The service uses local gRPC port `9098` and health
+port `8089`, distinct from predecessor Analysis Store and earlier target
+service ports.
+
+Slice 10 adds a service-local Dockerfile for
+`services/query-report-api-service`. This is target-service container packaging
+evidence only; Compose, Swarm and Kubernetes readiness for the FA-MSA-001
+target landscape remains future work until descriptors and validation commands
+exist. The service uses local HTTP port `8080` and remains a public facade for
+verified repository-analysis routes only.
+
+Slice 13 adds `services:testbed` without a Dockerfile or runtime service
+descriptor. It may use verified local deployment descriptors as test
+environment evidence, but S13 does not add Compose, Swarm or Kubernetes
+readiness.
+
+Slice 14 is a retirement-readiness documentation and evidence gate. It does
+not remove any Gradle module, source tree or default runtime path because
+caller scans still find active build, production and test references to the
+retained `forensic-analytics-*` modules. A later removal slice must name a
+caller-free candidate and run the full local quality gate.
+
+Slice 15 verifies the mandatory FA-MSA-001 target service build paths,
+service-owned Dockerfiles, healthcheck definitions, service-local
+configuration, architecture-test coverage and the full local `QUALITY.md`
+gate. S15 does not run Docker image builds, Docker Compose startup,
+Docker Swarm or Kubernetes commands for the FA-MSA-001 target landscape.
+The S15 full local gate passed with:
+`./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace`.
+The local repository-to-BTM Compose descriptor remains transitional
+environment evidence only until a separate runtime-deployment slice verifies
+image builds, startup, health checks and cleanup commands.
+
+No separate Swarm or Kubernetes workflow handoff artifact is present in this
+repository at S15 closure. Future deployment workflows must create and verify
+their own stack files, manifests, commands and readiness evidence.
 
 Missing deployment material:
 
@@ -206,11 +300,11 @@ deployment behavior, run the minimum `QUALITY.md` command before continuing:
 ./gradlew test --dependency-verification strict --console=plain --stacktrace
 ```
 
-Service-specific test commands exist for the seven registered service projects.
-Graph-replay and report-generation still have no service-local Gradle test task
-because they remain README-only planned service roots and are deferred from
-repository-to-BTM acceptance. The build-artifact worker has no Gradle task
-until a later slice creates the service root.
+Service-specific test commands exist for the registered service projects under
+`services/**`. Graph-replay and report-generation still have no service-local
+Gradle test task because they remain README-only planned service roots and are
+deferred from repository-to-BTM acceptance. The build-artifact worker has no
+Gradle task until a later slice creates the service root.
 
 Slice 18 does not remove any `forensic-analytics-*` module from the Gradle
 build. Those modules remain part of the current quality gate as legacy
@@ -236,8 +330,8 @@ evidence without changing the default build topology:
 - a separate Swarm and Kubernetes deployment workflow request, with no stack
   files, manifests or readiness claims added by this workflow.
 
-The workflow full local quality gate passed after the S07 CLI coverage
-remediation:
+The workflow full local quality gate passed after the S15 CLI and
+analysis-orchestrator coverage remediation:
 
 ```bash
 ./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace
@@ -246,8 +340,8 @@ remediation:
 ## Residual Risks
 
 - CI workflow evidence is absent.
-- Service-specific test tasks exist only for the seven registered service
-  projects.
+- Service-specific test tasks exist only for registered service projects under
+  `services/**`.
 - Contract tests exist for implemented service contracts, but coverage is not
   complete for every planned service interaction.
 - Frontend coverage and end-to-end test gates are not configured.

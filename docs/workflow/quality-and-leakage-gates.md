@@ -1,6 +1,6 @@
 # Quality And Leakage Gates
 
-## Required Baseline
+## Authoritative Quality Source
 
 `QUALITY.md` is the authoritative quality contract.
 
@@ -10,7 +10,7 @@ Minimum command:
 ./gradlew test --dependency-verification strict --console=plain --stacktrace
 ```
 
-Full local gate:
+Full local quality gate:
 
 ```bash
 ./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace
@@ -22,33 +22,57 @@ Every slice must also run:
 git diff --check
 ```
 
-## Leakage Rules
+## Slice Gate Summary
 
-Gateway, CLI, E2E tests and WildFly reports must not expose:
-
-- credentials, tokens, authorization headers or secret-like values;
-- private workspace paths in public Gateway or CLI outputs;
-- raw stdout or raw stderr from Git, Docker, service runtimes or workers;
-- raw exception stack traces in public contracts;
-- private repository checkout paths;
-- unresolved facts as confirmed evidence.
-
-## Slice-Specific Gates
-
-| Slice | Required gate |
+| Slice | Gate |
 |---|---|
-| S01 | Targeted real repository E2E test and `:forensic-analytics-testbed:test`. |
-| S02 | Targeted WildFly hardening test proving opt-in skip by default; optional external run only with prerequisites. |
-| S03 | Gateway OpenAPI contract test, CLI contract test and contract leakage checks. |
-| S04 | Documentation-only `git diff --check`; no deployment readiness claim. |
-| S05 | Caller inventory commands and documentation diff check. |
-| S06 | CLI tests, Gateway service tests and repository minimum quality command. |
-| S07 | Repository minimum command; full local gate if any module or build registration changes. |
-| S08 | Final repository minimum command and documentation diff check. |
+| S00-S02 | Documentation and inventory checks plus `git diff --check`. |
+| S03 | Contract checks plus minimum quality command when contract/test/build files change. |
+| S04 | Data ownership documentation checks; minimum quality command if persistence code changes. |
+| S05-S11 | Targeted service/module tests, minimum quality command and `git diff --check`. |
+| S12 | Minimum quality command if Java logging/observability code changes; documentation-only otherwise. |
+| S13 | Testbed/service integration tests, minimum quality command and `git diff --check`. |
+| S14 | Caller-free searches, full local quality gate and `git diff --check`. |
+| S15 | Per-service build commands, full local quality gate and final diff review. |
+
+## Leakage Gates
+
+Service outputs, diagnostics, logs, reports and CLI responses must not expose:
+
+- credentials, tokens, secrets or userinfo in repository URLs;
+- local absolute workspace paths;
+- private service database details;
+- raw stdout or stderr from untrusted processes;
+- raw source content unless explicitly requested by an owner API contract;
+- raw runtime values unless redaction and retention rules are approved;
+- stack traces or internal exception messages in public API responses;
+- LLM output as verified evidence.
+
+## Evidence Integrity Gates
+
+- Static JavaParser and Joern facts remain static or semantic evidence.
+- Runtime execution facts require observed runtime data.
+- Missing evidence is represented as missing, incomplete, unknown or
+  unavailable.
+- Reports distinguish confirmed evidence, derived analysis, gaps, hypotheses
+  and generated content.
+- Graph, report, vector and LLM projections do not become sources of truth.
+
+## Dependency Verification
+
+Gradle dependency verification must remain strict. Do not use:
+
+```bash
+--dependency-verification off
+```
+
+If metadata is missing, update `gradle/verification-metadata.xml` only through
+the repository's checksum strategy and rerun the failing command with strict
+verification.
 
 ## Optional External Checks
 
-WildFly, Docker image build, Docker Compose runtime startup, Docker Swarm and
-Kubernetes checks are optional unless the slice changes those runtime behaviors
-or documentation makes them required. Skipped optional checks must be reported
-as `SKIPPED` with the concrete reason.
+Docker, Docker Compose, Joern, Docker Swarm, Kubernetes, Jenkins, Artifactory,
+SonarCloud and live LLM checks are optional unless a slice explicitly makes
+them required and verifies local prerequisites. A skipped optional check must be
+reported as `SKIPPED` with a reason, not as success.

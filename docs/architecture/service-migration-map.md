@@ -2,126 +2,129 @@
 
 ## Status
 
-Slice 01 service-boundary and migration planning map.
+FA-MSA-001 Slice 04 service-boundary, migration inventory and
+data-ownership map with Slice 05 repository-source, Slice 06 ingestion and
+Slice 07 JavaParser implementation evidence.
 
-This document maps current modular-monolith evidence to target service
-ownership candidates. It does not move production code, create build projects,
-create service implementations or claim runtime readiness.
+This document maps current modular-monolith and transitional service evidence
+to FA-MSA-001 target ownership decisions. It does not move production code,
+create build projects, create service implementations, define storage
+technology or claim runtime readiness. S02 refreshed this map after caller and
+Gradle coupling scans and confirmed that no central module retirement is safe
+yet. S04 records one-writer target data ownership before persistence migration
+starts.
 
-Workflow v3 inserts a Repository-to-BTM orchestration contract and
-artifact-readiness bridge before end-to-end routing. That bridge must assign
-the orchestration owner API, keep Gateway facade-only, preserve Java AST
-`ArtifactByteAccess`, define public Gateway diagnostic redaction and represent
-unavailable Joern/build-artifact inputs as explicit incomplete diagnostics
-before any monolith runtime path can be retired on that basis.
+## Target Mapping
 
-Workflow v4 inserts a source-fact byte retrieval and Java AST handoff contract
-before end-to-end routing. That bridge must make Java AST source-fact bytes
-retrievable through a verified owner API, expose Repository Analysis to Java AST
-handoff completion through a reviewed gRPC service contract and define
-deterministic local fixtures that do not depend on external Git network access,
-Docker, Jenkins, Artifactory or credentials by default.
-
-Workflow v5 Slice 16 explicitly defers `graph-replay-service` and
-`report-generation-service` from repository-to-BTM pipeline acceptance. The
-accepted BTM path ends at deterministic BTM artifact generation and public
-delivery readiness. Graph/replay and report services remain planned projection
-and generated-artifact services until later contracts, owner-query APIs,
-storage decisions and tests are approved.
-
-Slice 18 isolates the remaining `forensic-analytics-*` runtime paths as
-legacy in-process and rollback paths. No current monolith module is retired in
-Slice 18 because caller verification still finds active CLI, REST, Bootstrap,
-Boot, engine, ingestion-request and testbed dependencies.
-
-## Mapping
-
-| Target Service | Current Source Evidence | Current Coupling | Planned Migration Path | Required Contract First | Data Owner | Forbidden Moves | Verification Needed |
+| FA-MSA-001 target | Current source evidence | Current coupling | Planned migration path | Required contract first | Data owner status | Forbidden moves | Verification needed |
 |---|---|---|---|---|---|---|---|
-| `forensic-gateway-service` | `forensic-analytics-rest`, `forensic-analytics-cli`, Boot REST lifecycle | Current REST and CLI are in-process adapters | Create Gateway facade from public API contracts, then route UI/CLI through it | Gateway OpenAPI | Gateway owns facade state only | No AST, Joern, BTM, storage, replay or reporting logic | Gateway contract tests and service-local start test |
-| `forensic-ingestion-service` | `forensic-analytics-ingestion-grpc`, `forensic_ingestion.proto`, `ForensicIngestionGrpcService` | Current module has an `api` dependency on application | Extract contract, then create service-local gRPC adapter and ingestion domain | Ingestion gRPC proto | Ingestion owns raw intake and upload sessions | No shared generated Java DTO module; no canonical fact ownership | gRPC contract tests and ingestion validation tests |
-| `repository-analysis-service` | `forensic-analytics-adapter-repository-source`, checkout/workspace application ports | Checkout is in-process and shares application/domain models | The initial Repository Analysis service implementation creates an independent service-local repository-preparation API, workspace model, Git checkout adapter and source snapshot handoff; later slices may wire callers to it | `contracts/grpc/repository-analysis.proto` plus analysis job handoff contracts | Repository service owns workspaces and source snapshots | No direct workspace path sharing; no local-path checkout policy in the networked service | Service-local gRPC, architecture, workspace, Git security, coverage and container build tests |
-| `build-artifact-worker-service` | No verified standalone source yet; build context exists as request metadata only | Build execution is not a service boundary today | Add a service boundary only after Slice 07 defines source snapshot, complete build-output package, sandbox and byte-access contracts | planned build artifact worker contract or owner API | Build worker owns produced build-output package bytes when introduced | No Repository Analysis private workspace access, no shared caches as hidden coupling, no direct Analysis Store writes | Sandbox, manifest, checksum, build-system detection and byte-access tests |
-| `java-ast-analysis-service` | `forensic-analytics-adapter-javaparser`, `JavaParserSourceScanner` | Adapter shares application/domain models | Create service-local AST model, source-fact result contract and source-fact byte retrieval owner API | Analysis job/result contract and Java AST source-fact retrieval contract | AST service owns worker output and produced source-fact bytes until accepted or transferred | No runtime execution claims from static facts and no private workspace reads by consumers | Source-location, unresolved-symbol and byte-access retrieval tests |
-| `joern-cpg-analysis-service` | `forensic-analytics-adapter-joern-docker`, `docker/joern/**` | Joern adapter is in-process and uses shared ports | Create Joern service with container-contained runtime and semantic result contract | Analysis job/result contract | Joern service owns execution artifacts until accepted | No shared CPG filesystem coupling | Joern unavailable, timeout and artifact mapping tests |
-| `btm-generation-service` | `RuleGenerationPort`, `RuleGenerationRequest`, `RuleGenerationResult`, `.btm` tests | No standalone generator module exists | Create deterministic generation service from delivered fact references | Rule generation contract | BTM service owns generated bytes until explicit byte handoff; Analysis Store owns accepted artifact metadata only | No repository scanning or runtime trace invention | Rule ID stability and deterministic output tests |
-| `analysis-store-service` | `forensic-analytics-persistence`, application ports, domain session/artifact models | Current monolith persistence is in-memory and in-process | The current Analysis Store service implementation creates an independent service-local job lifecycle and artifact metadata API; later slices add durable normalized facts, incidents and correlations | `contracts/grpc/analysis-job.proto` for implemented job/artifact operations; future store/query contracts and events | Analysis Store owns canonical job lifecycle and planned canonical evidence state | No shared entities, repositories or direct DB access | Service-local gRPC, architecture, coverage and container build tests |
-| `graph-replay-service` | arc42 graph/replay concepts, semantic graph domain model | No standalone graph/replay runtime service exists; deferred by Slice 16 | Create projection service reading owner APIs and exposing replay/graph APIs in a future slice | Replay/graph API contract | Graph/replay owns projections only | No projection as source of truth | Missing-evidence and deterministic replay tests |
-| `report-generation-service` | arc42 report/LLM concepts | No standalone report runtime service exists; deferred by Slice 16 | Create report service reading Analysis Store and Graph Replay APIs in a future slice | Report API contract | Report service owns report artifacts and LLM packages | No generated text as evidence | Report determinism and evidence-label tests |
-| `frontend-web-app` | `forensic-ui`, API adapter under `/api` | Current root is outside planned `frontend/**` | Move or wrap frontend only after Gateway contracts and implementation stabilize in the active workflow | Gateway OpenAPI | Frontend owns UI state only | No direct internal worker calls | Frontend tests against Gateway API adapter |
+| `repository-source-service` | `services/repository-source-service`; predecessors `forensic-analytics-adapter-repository-source`, `services/repository-analysis-service` | S05 target service is service-local and registered; legacy adapter paths still have monolith application/domain dependencies and the predecessor service remains as rollback input | Move repository access, branch resolution, checkout/fetch, workspace preparation, source package byte custody and source snapshot descriptors into a service-local boundary; later slices must route callers and retire predecessor paths only after parity evidence | Repository source/snapshot REST, gRPC or file contract; S05 uses predecessor `repository-analysis.proto` wire shape as transitional external contract only | Owns workspaces, leases, cleanup, source package bytes, source snapshot descriptors and accepted source metadata | No private workspace sharing; no target repository code execution without sandbox approval; no JavaParser or Joern handoff logic inside repository source | Service-local architecture, Git safety, checkout diagnostics, build/start and Dockerfile checks |
+| `ingestion-service` | `services/ingestion-service`; predecessors `forensic-analytics-ingestion-grpc`, `forensic-analytics-ingestion-request`, `services/forensic-ingestion-service` | S06 target service is service-local and registered; legacy gRPC/request modules still depend on central application/domain modules and predecessor service remains as rollback input | Move intake, validation, normalization and request import behavior into service-local domain/application/adapters; later slices must route callers and retire predecessor paths only after parity evidence | Ingestion gRPC/API contract; S06 keeps `forensic-ingestion.proto` wire shape unchanged | Owns raw intake, upload sessions, raw runtime or analysis payload byte custody before handoff and rejected-ingestion diagnostics | No shared generated Java DTO module; no static/semantic canonical fact writes; no repository checkout responsibility | gRPC/API contract tests, validation tests, request-manifest tests and missing-field diagnostics |
+| `java-parser-analysis-service` | `services/java-parser-analysis-service`; predecessors `forensic-analytics-adapter-javaparser`, `services/java-ast-analysis-service` | S07 target service is service-local and registered; legacy adapter still depends on monolith application/domain/observability modules and predecessor service remains as rollback input | Move JavaParser AST scanning and static source-fact extraction into service-local boundary; later slices must route callers and retire predecessor paths only after parity evidence | JavaParser analysis and source-fact artifact contracts; S07 keeps `java-ast-analysis.proto` wire shape unchanged and adds explicit `sourceRoot` to the JSON artifact schema | Owns canonical static Java source facts it produces, source-fact artifact bytes and producer-local artifact metadata | No runtime execution claims from static facts; no JavaParser API leakage into neutral contracts; unresolved-symbol diagnostics must stay explicit | Source-location, unresolved-symbol, deterministic ID, artifact retrieval and JSON schema tests |
+| `joern-analysis-service` | `services/joern-analysis-service`; predecessors `forensic-analytics-adapter-joern-docker`, `services/joern-cpg-analysis-service`, `docker/joern/**` | S08 target service is service-local and registered; legacy adapter still depends on monolith application/domain/observability modules and predecessor service remains as rollback input | Move Joern Docker control, CPG/CFG/DFG artifact production and semantic mapping diagnostics into service-local boundary; later slices must route callers and retire predecessor paths only after parity evidence | Joern analysis artifact contract; S08 keeps `joern-cpg-analysis.proto` wire shape unchanged as transitional external contract only | Owns canonical Joern semantic facts it produces, semantic artifact bytes and producer-local artifact metadata | No shared CPG filesystem coupling; no Repository Source private workspace mounts; no CPG/CFG/DFG facts as runtime trace evidence | Joern unavailable, timeout, incomplete mapping, Docker-boundary, service-local architecture and build/start tests |
+| `analysis-orchestrator-service` | `services/analysis-orchestrator-service`; predecessors `forensic-analytics-engine`, orchestration parts of `forensic-analytics-application`, coordination/status parts of `services/analysis-store-service` | S09 target service is service-local and registered; legacy engine/application and predecessor store paths remain as rollback input | Keep orchestration-only service behavior, then route callers and retire predecessor paths only after parity evidence | Analysis orchestration API or event contracts; S09 keeps `analysis-job.proto` wire shape unchanged as transitional external contract only | Owns job lifecycle, workflow status, worker leases/attempts, retry/timeout/failure/dead-letter state, correlation references and job-to-artifact references | No repository checkout, parser, Joern, report, artifact byte custody, producer catalog or canonical fact storage inside orchestrator | Job lifecycle, retry, timeout, status, failure, dead-letter, artifact-reference and no-hidden-monolith tests |
+| `query-report-api-service` | `forensic-analytics-rest`, public facade parts of `services/forensic-gateway-service`, report/query concepts | Current REST and Gateway-style behavior are not the FA-MSA-001 query/report API target | Create public API facade that queries owner APIs and assembles reports/status only | REST/OpenAPI query/report contract | Owns public read models, public cache state, generated report packages, LLM-ready packages and stored generated LLM output only as labeled generated analysis or hypotheses | No analysis execution, checkout, Joern, JavaParser, direct DB access or canonical evidence ownership | OpenAPI contract, redaction, error mapping and frontend/CLI compatibility tests |
+| `cli-client` | `forensic-analytics-cli` | CLI currently has local in-process analysis and ingestion-request dependencies | Move CLI to public API client behavior and retire local business logic only after parity/deprecation tests | CLI/public API contract | CLI owns no forensic data | No parser, Joern, persistence, service implementation or domain logic in CLI | CLI contract tests, output redaction and legacy command parity/deprecation tests |
+| `observability-stack` | `forensic-analytics-observability`, `forensic-analytics-logging`, deployment docs | Central observability/logging Java modules are monolith coupling for target services | Replace shared Java logging/observability modules with service-local configuration and deployment observability material | Operational configuration contracts where needed | No forensic evidence ownership | No shared Java logging library; no diagnostics as evidence | Dependency scans, logging redaction and deployment-doc verification |
+| `testbed` | `forensic-analytics-testbed`, Compose docs and service-local tests | Testbed depends on many monolith modules for regression coverage | Move system/integration test orchestration to non-production testbed after replacement service E2E exists | Test environment contracts or Compose files when needed | Test data only | No production service dependency on testbed source or fixtures | Service E2E tests, no production dependency checks and Compose validation when used |
 
-## Current Modules That Remain In Place
+## Central Module Retirement Map
+
+Every row in this table is blocked until a later slice proves caller-free
+evidence, replacement parity or explicit deprecation, rollback or
+operator-visible migration notes and the relevant `QUALITY.md` quality gate.
+
+| Current module | Target decision | Retirement gate |
+|---|---|---|
+| `forensic-analytics-domain` | Split into service-local domain models. | Caller-free evidence across production code, tests, build files and docs; service-local domain parity or explicit deprecation; rollback/operator note; required quality gate. |
+| `forensic-analytics-application` | Split into service-local application/use-case code. | Caller-free evidence; verified service owners and contracts; replacement parity or explicit deprecation; rollback/operator note; required quality gate. |
+| `forensic-analytics-persistence` | Replace with service-local persistence adapters owned by the services named in the S04 ownership matrix. | Caller-free evidence; service-local persistence replacement for each S04 owner; replacement parity or explicit deprecation; rollback/operator note; required quality gate. |
+| `forensic-analytics-logging` | Replace with service-local logging configuration or `observability-stack` deployment material. | Caller-free evidence; service-local diagnostics or deployment replacement; explicit redaction behavior; rollback/operator note; required quality gate. |
+| `forensic-analytics-observability` | Replace with service-local diagnostics/correlation configuration or deployment observability material. | Caller-free evidence; service-local observability replacement; replacement parity or explicit deprecation; rollback/operator note; required quality gate. |
+| `forensic-analytics-bootstrap` | Retire after service-local bootstraps and runtime start paths are verified. | Caller-free evidence; service-local start/health/container parity; rollback/operator note; required quality gate. |
+| `forensic-analytics-boot-app` | Retire after mandatory service runtime paths and rollback evidence exist. | Caller-free evidence; mandatory service runtime parity; rollback/operator note; required quality gate. |
+| `forensic-analytics-engine` | Retire or split into `analysis-orchestrator-service` after orchestration ownership is explicit. | Caller-free evidence; orchestration API parity or explicit deprecation; rollback/operator note; required quality gate. |
+| `forensic-analytics-rest` | Retire after `query-report-api-service` has public API parity and caller migration. | Caller-free evidence; public API parity or explicit deprecation; rollback/operator note; required quality gate. |
+
+## Current Implementation Evidence
 
 The existing `forensic-analytics-*` Gradle modules remain the current
 implementation baseline until later slices move behavior behind verified
-contracts. Slice 01 does not rename modules, move packages, copy production
-logic or register service builds.
+contracts. S02 did not rename modules, move packages, copy production logic or
+register service builds. S05 registers the first target service build,
+`services:repository-source-service`, without removing the predecessor
+`services:repository-analysis-service`. S06 registers
+`services:ingestion-service`, without removing predecessor
+`services:forensic-ingestion-service` or legacy ingestion modules. S07
+registers `services:java-parser-analysis-service`, without removing
+predecessor `services:java-ast-analysis-service` or the legacy JavaParser
+adapter. S08 registers `services:joern-analysis-service`, without removing
+predecessor `services:joern-cpg-analysis-service` or the legacy Joern Docker
+adapter.
 
-## Remaining Monolith Module Owner Map
+S02 found no direct `project(...)` dependencies in
+`services/*/build.gradle.kts` and no `project(":services:...")` dependencies in
+tracked Gradle build files. Transitional service builds that generate code from
+`contracts/grpc` are consuming external interface contracts locally; this is
+not a shared Java implementation module and still requires S03 contract review.
 
-| Current Module | Target Owner / Decision |
-|---|---|
-| `forensic-analytics-domain` | Split into service-owned domain models during Slice 17/18 only after caller parity is verified; no shared domain module in target services |
-| `forensic-analytics-application` | Split by service use case owner during service migration; Analysis Store owns canonical jobs/facts, Repository Analysis owns checkout, AST/Joern/BTM services own worker behavior |
-| `forensic-analytics-engine` | Retire or isolate after Gateway, Analysis Store and worker-service orchestration parity exists |
-| `forensic-analytics-logging` | Replace with service-local logging/diagnostic configuration; no shared runtime logging module between services |
-| `forensic-analytics-observability` | Replace with service-local correlation and diagnostics contracts/configuration; no shared observability implementation module between services |
-| `forensic-analytics-cli` | Gateway/public API client adapter after the CLI Gateway contract is implemented; `contracts/cli/gateway-cli-contract.md` records that current local-path `analyze` remains legacy until an explicit Gateway mode or command exists |
-| `forensic-analytics-testbed` | Retain as monolith test evidence until Slice 17/18 decides parity or retirement; do not share as service fixture module |
-| `forensic-analytics-ingestion-request` | Map request-import behavior to Gateway or Ingestion contract path after Slice 02 clarifies public submission semantics |
-| `forensic-analytics-bootstrap` | Retire after service runtime path and deployment readiness are verified |
-| `forensic-analytics-boot-app` | Retire after implemented services cover the accepted runtime path and rollback evidence exists |
+The current service directories are transitional evidence:
 
-Slice 18 records the current isolation decision in
-`docs/architecture/monolith-runtime-isolation.md`: all rows above remain
-registered until a later slice proves replacement ownership, caller removal,
-parity or explicit deprecation tests and rollback instructions.
+- `services/forensic-gateway-service`;
+- `services/forensic-ingestion-service`;
+- `services/repository-analysis-service`;
+- `services/analysis-store-service`;
+- `services/java-ast-analysis-service`;
+- `services/joern-cpg-analysis-service`;
+- `services/btm-generation-service`;
+- `services/graph-replay-service`;
+- `services/report-generation-service`.
 
-Slice 19 reviewed the same module set for removal and did not remove any
-module from `settings.gradle.kts`. No current module is both replaced and
-caller-free.
+These directories are not FA-MSA-001 compatibility aliases. Later slices may
+move, replace, split or retire them only with verified caller evidence,
+contracts, tests and rollback notes.
 
-Workflow `e2e-wildfly-cli-deploy-20260521-v1` Slice 05 records the current
-caller inventory and retirement gates in
-`docs/architecture/monolith-caller-retirement-plan.md`. The inventory finds
-active production or test callers for CLI, REST, Bootstrap, Boot App, Engine,
-Ingestion Request, Testbed and shared application/domain modules. No path is
-caller-free in Slice 05.
+The first target-name service implementation evidence is:
 
-Slice 07 completes as `NO_REMOVAL_SAFE` for the same workflow. The new CLI
-`gateway-submit` path is routed through the Gateway contract, but the legacy
-local `analyze` command and the other in-process runtime paths still have active
-production or test callers. No module is removed from `settings.gradle.kts`.
+- `services/repository-source-service`.
+- `services/ingestion-service`.
+- `services/java-parser-analysis-service`.
+- `services/joern-analysis-service`.
+
+`services/repository-source-service` owns repository source preparation only.
+It does not implement JavaParser analysis handoff, Joern execution, report
+generation, BTM generation or direct consumer access to private workspaces.
+
+`services/ingestion-service` owns raw intake/session state, request validation,
+engine request manifest import and accepted raw payload handoff ports only. It
+does not implement repository checkout, canonical fact writes, JavaParser
+analysis, Joern execution, reporting or orchestration state.
+
+`services/java-parser-analysis-service` owns JavaParser execution, static Java
+method facts, source locations, source-root context, parser diagnostics,
+unresolved-symbol limitation diagnostics and source-fact artifact bytes only.
+It does not implement repository checkout, runtime execution truth, Joern
+semantic analysis, report generation or orchestration state.
 
 ## Migration Sequencing
 
 1. Keep current modules unchanged.
-2. Prepare target roots and documentation.
-3. Define Gateway HTTP and public gRPC BTM delivery contracts in Slice 02.
-4. Define artifact-byte and instrumentation-target ownership contracts in
-   Slice 03.
-5. Define repository source package, complete build-output package and Joern
-   materialization contracts in Slice 07.
-6. Add service-local implementations one service slice at a time.
+2. Reconcile target service names in ADR and arc42 documentation.
+3. Refresh caller and coupling inventory.
+4. Define external contracts before service implementations depend on
+   communication behavior.
+5. Assign data ownership and persistence boundaries.
+6. Add or migrate service-local implementations one service at a time.
 7. Verify service independence before routing runtime behavior.
 8. Remove obsolete monolith paths only after replacement evidence exists.
-
-The current `analysis-store-service` implementation establishes the first
-runtime boundary for analysis jobs and artifact metadata. It is not a
-migration of the existing monolith persistence module and does not claim a
-durable fact database yet.
-
-The current `repository-analysis-service` implementation establishes the
-initial repository runtime boundary. It prepares service-owned workspaces from
-clean HTTPS remotes, reports opaque source snapshot metadata and does not
-migrate or remove the current monolith repository-source adapter yet.
 
 ## Stop Conditions
 
 Stop a later migration step when:
 
 - a target owner is unclear;
-- a contract would require guessing fields or endpoints;
+- a data owner or write path is unclear;
+- a contract would require guessing fields, endpoints, topics or files;
 - a service would depend on another service's Java classes;
 - shared common Java modules are proposed;
 - direct cross-service database access is proposed;

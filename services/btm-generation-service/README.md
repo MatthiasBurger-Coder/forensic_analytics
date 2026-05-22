@@ -17,7 +17,8 @@ trace data or claim that generated rules are observed execution evidence.
   references, source snapshot IDs, analysis/job IDs and bounded inline
   instrumentation targets
 - Output ownership: generated `.btm` rule artifact and deterministic rule
-  manifest until registered with Analysis Store
+  manifest as producer-local artifact metadata unless an explicit target
+  owner contract transfers custody
 
 The service owns its domain, application behavior, adapters, configuration,
 tests, Dockerfile and health checks. It has no project dependency on the
@@ -49,8 +50,10 @@ The full repository quality gate remains defined by `QUALITY.md`.
 
 ## Known Limits
 
-- Durable artifact registration with `analysis-store-service` remains later
-  orchestration scope.
+- Durable artifact registration remains later orchestration scope. Current
+  predecessor integration may register with `analysis-store-service`, but
+  FA-MSA-001 target ownership must use an explicit owner API or handoff
+  contract.
 - The provisional contract intentionally accepts bounded inline instrumentation
   targets instead of a final canonical fact schema.
 - Docker Compose, Swarm and Kubernetes runtime readiness are not claimed in

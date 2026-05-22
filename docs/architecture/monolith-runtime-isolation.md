@@ -10,6 +10,11 @@ No `forensic-analytics-*` Gradle module is retired in Slice 18. Caller
 verification still finds active in-process runtime and test dependencies, so
 removing or disabling those modules would break verified current behavior.
 
+FA-MSA-001 Slice 14 reaches the same retirement-readiness decision for the
+current workflow state: direct legacy module removal is `NO_REMOVAL_SAFE`
+until path-specific migration, explicit deprecation, caller-free scans and the
+full quality gate are available.
+
 ## Isolation Decision
 
 The accepted repository-to-BTM path now runs through:

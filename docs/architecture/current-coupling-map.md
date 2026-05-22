@@ -2,12 +2,35 @@
 
 ## Status
 
-Slice 00 baseline for the microservices ecosystem conversion workflow.
+FA-MSA-001 Slice 02 caller and coupling inventory review for workflow
+`fa-msa-001-microservice-decomposition-20260521-v1`.
 
 This document records the current coupling that must be considered before
 service extraction. The current coupling is acceptable for the existing
 modular monolith, but it blocks any claim that current modules are already
 microservices.
+
+S02 verified the inventory on branch
+`architecture/workflow-microservice-decomposition-20260521` from starting
+commit `128879cda567c4bfcb00dad644a5d9b254ddcf05`.
+
+## Verification Commands
+
+The S02 inventory used explicit file lists instead of a bare `rg -g` search so
+that missing matches cannot be confused with a false-empty stdin search:
+
+```bash
+git rev-parse --show-toplevel
+git branch --show-current
+git status --short --branch
+git rev-parse HEAD
+git ls-files "forensic-analytics-*/build.gradle.kts" "services/*/build.gradle.kts" settings.gradle.kts | sort
+git ls-files "*build.gradle.kts" | xargs rg -n "project\\(\\\":forensic-analytics-"
+git ls-files "services/*/build.gradle.kts" | xargs -r rg -n "project\\(" || true
+rg -n -P "^import\\s+de\\.burger\\.forensics\\.analytics\\.(application|domain|adapter|persistence|rest|cli|engine|logging|observability|bootstrap|ingestion\\.request|ingestion\\.grpc)\\b" services -S -g "*.java" || true
+rg -n "RunRepositoryAnalysisUseCase|RunRepositoryAnalysisCommand|DefaultRepositoryAnalysisIngestionUseCase|RepositoryAnalysisIngestionUseCase" forensic-analytics-cli forensic-analytics-rest forensic-analytics-bootstrap forensic-analytics-boot-app forensic-analytics-engine forensic-analytics-ingestion-request forensic-analytics-testbed -S -g "*.java"
+git diff --check
+```
 
 ## Current Dependency Shape
 
@@ -37,6 +60,25 @@ Verified project dependencies include:
 | `forensic-analytics-boot-app` | Joern adapter, repository-source adapter, application, gRPC ingestion, logging, observability, persistence, REST |
 | `forensic-analytics-logging` | `forensic-analytics-observability` |
 | `forensic-analytics-testbed` | test dependencies on most backend modules |
+
+## Transitional Service Build Evidence
+
+S02 found no direct `project(...)` dependencies inside
+`services/*/build.gradle.kts`. It also found no `project(":services:...")`
+dependencies in the tracked Gradle build files. The existing service slices
+therefore do not directly include another service as a Gradle project.
+
+Several transitional services generate local transport code from
+`contracts/grpc` by configuring their own protobuf source sets. That is current
+contract-consumption evidence, not permission to introduce shared Java DTO,
+domain, utility, repository, fixture or internal error-model modules. S03 must
+still review every service contract and generated-code boundary before product
+migration uses it.
+
+S02 also found no production imports from `services/**` into the legacy
+monolith packages covered by the scan. Remaining matches in service roots are
+generated contract packages, service-local packages or architecture-test
+forbidden-package strings.
 
 ## Primary Coupling Points
 
@@ -137,9 +179,11 @@ The following current couplings block microservice claims:
 - OpenAPI and event contract files exist, but not every planned interaction is
   implemented or tested;
 - no service-private persistence ownership exists;
-- no per-service health checks exist;
-- graph-replay and report-generation remain README-only planned roots, and the
-  build-artifact worker is planned without a service root;
+- transitional service slices have some health endpoints, Docker health checks
+  and Compose health conditions, but FA-MSA-001 target landscape readiness is
+  not verified for the mandatory target service names;
+- graph-replay and report-generation remain deferred or partial evidence, and
+  the build-artifact worker is planned without a service root;
 - no Docker Swarm or Kubernetes manifests exist;
 - no service-specific CI workflow exists.
 
@@ -155,14 +199,35 @@ microservices until later slices produce runtime evidence for independent
 build, start, test, configuration, healthcheck, container and deployment
 behavior.
 
-## Slice 18 Isolation Result
+## S02 Inventory Result
 
-Slice 18 keeps the remaining `forensic-analytics-*` runtime paths registered
-and isolated as legacy in-process or rollback evidence. Caller verification
-still finds active dependencies for CLI, REST, bootstrap, Boot, engine,
-ingestion-request and testbed behavior, so removal would break verified current
-behavior.
+S02 keeps the remaining `forensic-analytics-*` runtime paths registered as
+legacy in-process or rollback evidence. Caller verification still finds active
+dependencies for CLI, REST, bootstrap, Boot, engine, ingestion-request and
+testbed behavior, so removal would break verified current behavior.
 
-The accepted repository-to-BTM path is the service-owned Gateway and worker
-path, not these legacy modules. Later removal requires the preconditions in
-`docs/architecture/monolith-runtime-isolation.md`.
+The accepted FA-MSA-001 target is service-owned behavior behind explicit
+contracts, not the legacy modules and not the transitional predecessor service
+names. Later removal requires caller-free evidence, replacement parity or
+explicit deprecation, rollback or operator migration notes and the required
+quality gate.
+
+## S14 Retirement-Readiness Update
+
+S14 repeats the caller-free question after S05 through S13 and still resolves
+to `NO_REMOVAL_SAFE`. The new `services:testbed` root preserves the legacy
+regression surface in a service-root location, which is useful parity evidence
+but still a test dependency on retained monolith modules.
+
+Current evidence remains non-empty:
+
+- 58 build-file references to the S14 legacy module candidates;
+- 633 production imports into retained `application`, `domain`, `persistence`,
+  `logging`, `observability`, `rest`, `bootstrap`, `boot` or `engine`
+  packages;
+- 594 test imports into those retained packages;
+- nine `services:testbed` test dependencies on retained legacy modules.
+
+These findings block direct module retirement. The next safe action is
+path-specific migration or explicit deprecation, followed by a smaller
+caller-free removal slice for each verified candidate.

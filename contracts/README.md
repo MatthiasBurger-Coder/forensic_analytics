@@ -11,14 +11,15 @@ models, mappers, Spring configuration, fixtures, jars or shared runtime
 libraries.
 
 CLI-facing contract notes live under `cli/`. They describe command-to-contract
-mapping only and do not authorize shared Java DTOs or Gateway implementation
+mapping only and do not authorize shared Java DTOs or public API implementation
 dependencies in the CLI.
 
-The active workflow owns Gateway HTTP and public gRPC BTM delivery contract
-updates in Slice 02, artifact-byte and instrumentation-target ownership
-contracts in Slice 03, and the Analysis Store-owned repository-to-BTM
-orchestration owner API in Slice 11. Slice 12 owns the Java AST source-fact
-byte retrieval contract and Repository Analysis to Java AST handoff closure.
+FA-MSA-001 Slice 03 aligns these contracts to the target service landscape.
+Existing file names such as `openapi/gateway-api.yaml` and
+`cli/gateway-cli-contract.md` are transitional predecessor names; their
+FA-MSA-001 authorities are `query-report-api-service` and `cli-client`.
+Orchestration contract authority belongs to `analysis-orchestrator-service`.
+Canonical fact and artifact metadata ownership remains pending S04.
 Existing contract files include:
 
 - `grpc/forensic-ingestion.proto`

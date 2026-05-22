@@ -2,12 +2,12 @@
 
 ## Status
 
-Slice 01 data-ownership baseline for the microservices ecosystem conversion
-workflow.
+FA-MSA-001 Slice 04 data-ownership and persistence split baseline.
 
-This document assigns planned data owners and cross-service access paths. It
-does not create schemas, tables, migrations, topics, buckets or database
-clients.
+This document assigns target ownership for FA-MSA-001 persistent data areas
+before persistence is split or `forensic-analytics-persistence` is retired. It
+does not create schemas, tables, migrations, topics, buckets, object prefixes,
+graph labels, vector stores or database clients.
 
 ## Ownership Rules
 
@@ -28,90 +28,90 @@ Forbidden:
 - shared Java entity modules;
 - shared repository modules;
 - shared DTO/domain modules;
-- graph, vector or report projections as primary evidence;
+- graph, report, vector or LLM projections as primary evidence;
 - treating operational logs as runtime execution evidence.
 
-## Ownership Matrix
+## Target Ownership Matrix
 
-| Data Area | Owner / One Writer | Non-Owner Access Path | Notes |
+| Data Area | Target Owner / One Writer | Non-Owner Access Path | Status |
 |---|---|---|---|
-| Raw ingestion payload intake | `forensic-ingestion-service` | Analysis Store reads through ingestion API or event handoff | Preserve schema version, provenance and correlation |
-| Upload session state | `forensic-ingestion-service` | Gateway reads through ingestion or Analysis Store views after contracts exist | Transport lifecycle is separate from canonical analysis state |
-| Canonical normalized analysis facts | `analysis-store-service` | Owner APIs, query interfaces or events | Planned owner; durable fact schemas are not implemented yet |
-| Analysis sessions and jobs | `analysis-store-service` for canonical job lifecycle state; `forensic-ingestion-service` for upload-session lifecycle | Gateway and frontend read via Gateway and owner APIs | The current service-local gRPC implementation covers the analysis job lifecycle subset |
-| Workspace/project metadata | `analysis-store-service` unless a later slice records a narrower owner | Gateway reads through owner APIs | Current code stores these in monolith in-memory repositories |
-| Audit and retention metadata | `analysis-store-service` unless a later slice records a narrower owner | Gateway or admin APIs through owner | Runtime values remain sensitive |
-| Incident records | `analysis-store-service` | Graph/replay/report query owner APIs | Planned owner; not implemented yet |
-| Correlation indexes | `analysis-store-service` | Graph/replay/report query owner APIs | Planned owner; operational `CorrelationContext` logs are diagnostics, not evidence |
-| Artifact catalog metadata | `analysis-store-service` | Owner APIs | The current service implementation registers path/reference, category, checksum, size, producer, schema version and completeness metadata |
-| Raw evidence artifact bytes | Producing service until an explicit byte-handoff or object-store ownership contract transfers byte custody | Scoped owner APIs or signed object access after design | Analysis Store owns accepted artifact metadata only unless a later contract slice assigns byte custody; no shared filesystem or bucket-prefix coupling |
-| Repository workspaces | `repository-analysis-service` | Immutable source snapshot or artifact references | Other services must not use workspace internals directly |
-| Source snapshots | `repository-analysis-service` for workspace/source package; `analysis-store-service` for accepted snapshot metadata | AST and Joern receive references through contracts | Snapshot identity must be deterministic and pinned to a resolved commit SHA |
-| Complete build-output packages | `build-artifact-worker-service` when introduced; otherwise the verified external artifact producer keeps byte custody | Analysis Store metadata with `ArtifactByteAccess`; Joern reads through owner API or validated artifact access | Artifactory and Jenkins are optional producers only; checksum or manifest mismatch is terminal |
-| AST worker output and source-fact artifact bytes | `java-ast-analysis-service` until accepted or transferred through an explicit byte-handoff/object-store contract; `analysis-store-service` for canonical facts and accepted metadata | Analysis Store retrieves bytes through the verified Java AST owner API using service-local generated client stubs only; downstream reads accepted facts from Analysis Store | Unresolved symbols remain explicit; `ArtifactByteAccess.retrieval_contract` must name a real owner API before source-fact bytes are consumed |
-| Joern CPG/CFG/DFG artifacts | `joern-cpg-analysis-service` for execution artifacts; `analysis-store-service` for accepted semantic facts and references | Graph/replay reads through owner APIs | Incomplete mappings remain explicit |
-| Instrumentation target selection | `analysis-store-service` | BTM Generation receives bounded target snapshots through `contracts/grpc/btm-generation.proto` | Targets are derived from accepted facts and semantic artifacts; they are not runtime execution evidence |
-| BTM rule artifacts | `btm-generation-service` owns generated bytes until an explicit byte-handoff or object-store ownership contract transfers byte custody; `analysis-store-service` owns accepted artifact metadata only | Gateway/report reads through Gateway/public APIs, Analysis Store metadata and BTM owner APIs after contracts exist | Rule IDs must be stable; metadata registration does not transfer byte ownership |
-| Graph projections | `graph-replay-service` | Gateway/report APIs | Rebuildable projection, not source of truth |
-| Replay projections | `graph-replay-service` | Gateway/report APIs | Missing evidence is represented explicitly |
-| Reports | `report-generation-service` | Gateway/report APIs | Reports distinguish evidence, derived facts, gaps and hypotheses |
-| LLM-ready packages | `report-generation-service` | Gateway/report APIs | Package construction must be reproducible |
-| LLM-generated output | `report-generation-service` if live generation is later approved | Gateway/report APIs | Label as generated analysis or hypothesis, never evidence |
-| Frontend state | `frontend-web-app` | Browser-local only | Frontend owns no forensic evidence |
-| Gateway request, status and delivery facade state | `forensic-gateway-service` only for public facade state | Gateway APIs | Gateway must not own canonical facts, worker orchestration state or artifact bytes |
-| Repository-to-BTM orchestration state | `analysis-store-service` unless Slice 11 records another reviewed owner | Gateway submits through the approved owner API; worker services receive explicit jobs or contracts | Gateway remains facade-only; orchestration state must preserve correlation, idempotency, completeness and retry provenance |
+| Repository workspaces | `repository-source-service` | Source snapshot IDs, artifact references and owner APIs | Target owner clear |
+| Source snapshots | `repository-source-service` owns workspace state, source package bytes, source snapshot descriptors and accepted source metadata | AST, Joern, orchestrator and query/report consumers receive source snapshot IDs, artifact references and diagnostics through owner APIs or file contracts | S04 owner assigned |
+| Raw ingestion payload intake | `ingestion-service` owns raw payload intake, intake diagnostics and raw runtime or analysis payload byte custody until an explicit handoff transfers custody | Handoff contracts, owner APIs or accepted/rejected intake events | S04 owner assigned |
+| Upload session state | `ingestion-service` | Query/report or orchestrator reads through owner API after contracts exist | S04 owner assigned |
+| JavaParser AST/source-fact worker output | `java-parser-analysis-service` owns canonical static Java source facts it produces, source-fact artifact bytes and producer-local artifact metadata | Orchestrator and query/report consumers read through service-owned retrieval APIs, artifact contracts or events | S04 owner assigned |
+| Joern CPG/CFG/DFG artifacts | `joern-analysis-service` owns canonical semantic CPG/CFG/DFG facts it produces, semantic artifact bytes and producer-local artifact metadata | Orchestrator and query/report consumers read through service-owned retrieval APIs, artifact contracts or events | S04 owner assigned |
+| Analysis job orchestration state | `analysis-orchestrator-service` owns job lifecycle, workflow status, worker leases, worker attempts, retries, timeout state, failure/dead-letter state, correlation references and job-to-artifact references | Query/report API and clients read through orchestrator APIs or events | S04 owner assigned |
+| Canonical normalized analysis facts | No single shared canonical fact store. Ownership is service-local by evidence category: repository source metadata by `repository-source-service`; raw/runtime intake records by `ingestion-service`; static Java facts by `java-parser-analysis-service`; semantic graph facts by `joern-analysis-service`; orchestration facts by `analysis-orchestrator-service`; public report projections by `query-report-api-service` | Owner APIs, query interfaces, events or documented projections | S04 owner assigned by category |
+| Artifact catalog metadata | The producer that owns artifact bytes owns producer-local catalog metadata. `analysis-orchestrator-service` owns only job-to-artifact references. `query-report-api-service` owns generated report or LLM-ready package metadata. | Owner APIs or scoped object access approved by the byte owner | S04 owner assigned |
+| Incident records | Optional future `incident-analysis-service`; no mandatory FA-MSA-001 owner | Owner APIs after a later requirement approves the service | Deferred and blocked until a later requirement |
+| Graph/replay projections | Optional future `graph-replay-service` projection owner | Query/report APIs or owner APIs after a later requirement approves the service | Deferred projection only |
+| Reports and LLM-ready packages | `query-report-api-service` owns public read models, generated report package state, LLM-ready package state and public cache state. Canonical evidence remains owned by the producing services. | Public APIs and owner APIs for source evidence | S04 owner assigned for mandatory query/report scope; standalone report service remains optional later |
+| LLM-generated output | `query-report-api-service` owns stored LLM-generated output only as generated analysis or hypotheses, never verified evidence. No live LLM-output persistence is approved until redaction, retention, access and indexing rules are documented and tested. | Public APIs with generated-output labeling and evidence-owner references | S04 owner assigned; persistence blocked until security rules exist |
+| CLI state | `cli-client` | Local only | No forensic evidence ownership |
+| Observability data | `observability-stack` for operational configuration and dashboards | Logs/metrics/traces through operational tools | Diagnostics only, not forensic evidence |
+| Test data | `testbed` | Test-only | Non-production only |
+
+## Transitional Ownership Evidence
+
+The current `analysis-store-service` implementation owns a transitional job
+lifecycle and artifact metadata subset. It is current implementation evidence,
+not the FA-MSA-001 canonical owner.
+
+FA-MSA-001 target ownership splits that predecessor responsibility as follows:
+
+- job lifecycle, worker leases, retry state, failure state, readiness and
+  correlation references move to `analysis-orchestrator-service`;
+- repository workspaces, source package bytes and source snapshot metadata move
+  to `repository-source-service`;
+- raw ingestion sessions, raw runtime payload intake and rejected-intake
+  diagnostics move to `ingestion-service`;
+- static Java source facts and source-fact artifacts move to
+  `java-parser-analysis-service`;
+- Joern CPG/CFG/DFG semantic facts and semantic artifacts move to
+  `joern-analysis-service`;
+- generated report packages, LLM-ready packages and public read models move to
+  `query-report-api-service`;
+- artifact catalog metadata stays producer-local, while the orchestrator keeps
+  only job-to-artifact references.
+
+The current `forensic-analytics-persistence` module is a monolith persistence
+adapter. It remains current implementation evidence until later service slices
+provide service-local persistence, replacement tests and caller-free proof.
+
+## Artifact Byte Custody Rules
+
+Artifact bytes stay with the producer service that created or accepted them
+unless a later explicit contract transfers custody. A consumer may receive only
+an owner-issued artifact reference, a bounded response from an owner API, or
+scoped object access approved by the owner.
+
+Every artifact handoff must preserve:
+
+- producer service;
+- artifact type and schema or media type;
+- deterministic identifier or checksum when the contract defines one;
+- correlation and source snapshot references where applicable;
+- completeness or unavailable state;
+- sensitivity classification when known;
+- maximum size or chunking policy before large payload transfer;
+- retention and cleanup owner;
+- redaction obligations before public report or LLM package use.
+
+The orchestrator may persist job-to-artifact references for coordination, but
+it must not become the artifact byte owner, producer catalog owner or canonical
+fact store.
 
 ## Store Types
 
 | Store Type | Owner Rule |
 |---|---|
-| Relational or transactional store | Owned by the service that owns the canonical data |
-| File/object store | Owned by the service responsible for the artifact bytes or exposed through scoped object access |
+| Relational or transactional store | Owned by the service that owns the canonical data or orchestration state |
+| File/object store | Owned by the service responsible for the artifact bytes or exposed through owner-approved scoped object access |
 | Event store | Owned by the producer or broker governance decision recorded in the contract slice |
-| Graph store | Owned by `graph-replay-service` as a projection |
+| Graph store | Projection owner only; never source of truth |
 | Vector store | Projection only; owner depends on a later LLM/context decision |
 | Operational logs | Diagnostics only; not canonical forensic evidence |
-
-## Analysis Store Implementation Status
-
-`analysis-store-service` now has an independent Spring Boot service boundary and
-service-local `AnalysisJobService` gRPC adapter. In the target Slice 03
-contract, it is also the owner of accepted bounded instrumentation target
-selection metadata derived from accepted facts. Its current implemented write
-authority is limited to:
-
-- analysis run IDs, job IDs and source snapshot IDs;
-- analysis job state, worker kind, attempts, lease owner and lease expiry;
-- job diagnostics and failure metadata;
-- input and output artifact metadata references;
-- idempotent job lifecycle operations.
-
-It does not yet implement durable database access, migrations, normalized static
-facts, runtime facts, incident records, correlation indexes, graph labels or
-private storage tables. Those remain later slices that require explicit
-contracts, storage decisions and migration evidence.
-
-## Build Artifact Worker Ownership Status
-
-`build-artifact-worker-service` is an approved planned owner for complete
-build-output package bytes only after a workflow slice creates its service
-boundary, contract and runtime evidence. Until then, Artifactory, Artifact
-Store or Jenkins references are optional external producer inputs and do not
-write canonical Analysis Store state directly.
-
-Analysis Store may register build-output package metadata, provenance,
-completeness and `ArtifactByteAccess`, but it must not take byte custody unless
-a later explicit byte-handoff contract assigns that ownership.
-
-## Java AST Source-Fact Byte Ownership Status
-
-`java-ast-analysis-service` remains the owner of produced source-fact artifact
-bytes until a later explicit byte-handoff or object-store contract transfers
-custody. Analysis Store may accept source-fact metadata and canonical normalized
-facts, but it may retrieve source-fact bytes only through a verified Java AST
-owner API using service-local generated client stubs. Direct reads of
-Repository Analysis workspaces, Java AST private files, private object prefixes
-or another service's implementation classes remain forbidden.
 
 ## Cross-Service Read Rules
 

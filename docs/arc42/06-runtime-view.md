@@ -85,88 +85,177 @@ Operational correlation IDs help connect adapter logs for diagnostics. They are 
 
 ## 6.8 Target Microservice Runtime Flow
 
-The target runtime flow for service-split work is defined by ADR-0017 and is
-partially implemented. The full evidence-review flow remains planned until
-graph-replay and report-generation runtime paths are implemented and verified:
+The target runtime flow for service-split work is defined by ADR-0017 and
+FA-MSA-001. The flow below is a target and is not yet implemented end to end:
 
 ```text
-Frontend / CLI / external client
-  -> Gateway
-  -> Analysis Store orchestration owner API
-  -> Repository Analysis
-  -> Source Snapshot And Build Artifact Resolution
-  -> Java AST Analysis
-  -> Java AST Source-Fact Byte Retrieval
-  -> Joern CPG Analysis
-  -> Analysis Store
-  -> Graph Replay
-  -> Report Generation
-  -> Gateway
-  -> Frontend / client
+UI / cli-client / external client
+  -> query-report-api-service
+  -> analysis-orchestrator-service
+  -> repository-source-service
+  -> java-parser-analysis-service
+  -> joern-analysis-service
+  -> analysis-orchestrator-service
+  -> query-report-api-service
+  -> client
 ```
 
-Plugin, scanner and runtime evidence enters through the ingestion service.
-Canonical evidence and one-writer analysis state belong to the analysis store.
-Graph, replay, reports and LLM packages are projections or generated artifacts
-that must remain traceable to owner evidence APIs.
+Producer, scanner and runtime evidence enters through `ingestion-service`.
+Canonical evidence and one-writer analysis state require the S04 data-ownership
+decision before persistence is split. Graph, replay, reports and LLM packages
+are projections or generated artifacts that must remain traceable to owner
+evidence APIs.
 
-Gateway remains a public facade in this flow. Repository-to-BTM worker
-dispatch, retry and job-graph readiness state is owned by Analysis Store
-through the Slice 11 owner API. Gateway must not sequence worker business logic
-directly.
-
-Slice 12 verifies the Java AST source-fact byte retrieval owner API, the
-Repository Analysis to Java AST handoff signal and deterministic local
-repository-to-BTM fixtures. The default readiness path uses fakes, in-process
-gRPC and service-local fixtures rather than external Git network access,
-Docker, Jenkins, Artifactory or credentials.
-
-The repository-to-BTM delivery path must be verified as:
+Slice S06 verifies a local ingestion runtime boundary:
 
 ```text
-Plugin / external client
-  -> Gateway HTTP repository-to-BTM request
-  -> Analysis Store orchestration owner API
-  -> Repository Analysis source snapshot
-  -> Java AST source-fact bytes through owner API
-  -> optional Joern worker outputs
-  -> Analysis Store accepted metadata and target selection
-  -> BTM Generation
-  -> Gateway public BTM delivery facade
-  -> Plugin / external client receives completed BTM files or unavailable state
+producer / scanner / runtime collector
+  -> ForensicIngestionService gRPC request or stream
+  -> services/ingestion-service inbound adapter
+  -> service-local ingestion application service
+  -> service-local raw intake session state
+  -> accepted raw payload handoff port
 ```
 
-The CLI now implements an explicit `gateway-submit` command for Gateway HTTP
-repository-to-BTM submission. That command is a Gateway/public API client path
-only. The local CLI `analyze` command remains an in-process legacy path and
-must not be treated as Gateway execution evidence.
+The S06 service also supports service-local engine request manifest import:
 
-Slice 16 defers graph-replay and report-generation service implementation from
-repository-to-BTM acceptance. The accepted BTM pipeline does not require replay
-views, graph projections, reports, incident packages, LLM-ready packages or
-live LLM output. Those services may be added only after a later slice defines
+```text
+engine-request.json
+  -> service-local request reader
+  -> verified build, module, plugin and payload descriptors
+  -> payload file bytes
+  -> service-local ingestion application service
+```
+
+The manifest importer uses only verified fields from the request file. Missing
+fields, malformed JSON, unsupported payload kinds and missing payload files are
+reported as ingestion request errors. The importer does not write canonical
+static, semantic, runtime, report or orchestration facts.
+
+Slice S07 verifies a local JavaParser runtime boundary:
+
+```text
+repository-source-service source snapshot contract
+  -> JavaAstAnalysisService.AnalyzeSourceSnapshot
+  -> services/java-parser-analysis-service inbound adapter
+  -> service-local JavaParser analysis application service
+  -> service-local JavaParser outbound adapter
+  -> service-local source-fact artifact writer
+  -> source-fact metadata plus retrievable artifact bytes
+```
+
+The S07 service emits static Java source facts only. Parse errors are reported
+as diagnostics, not canonical facts, and `SYMBOL_RESOLUTION_NOT_CONFIGURED` is
+reported as a completeness-affecting limitation until real symbol solving is
+implemented. Source-fact JSON artifacts carry explicit `sourceRoot` context.
+
+`query-report-api-service` remains a public facade in this flow. It must not
+sequence worker business logic directly, run analysis or read private service
+databases. `analysis-orchestrator-service` coordinates state, retry and
+failure handling only; it must not absorb repository, JavaParser, Joern,
+reporting or persistence internals.
+
+S10 implementation evidence exposes the current verified public
+repository-analysis submission/status routes in `query-report-api-service`.
+Those routes still use the predecessor Analysis Store owner API because the
+S09 target `analysis-orchestrator-service` intentionally leaves
+repository-to-BTM submission/status RPCs unimplemented. The target runtime path
+below remains the intended owner boundary and requires a later contract-first
+repointing slice.
+
+The repository analysis delivery path must be verified as:
+
+```text
+client
+  -> query-report-api-service request
+  -> analysis-orchestrator-service owner API
+  -> repository-source-service source snapshot
+  -> java-parser-analysis-service source facts
+  -> joern-analysis-service semantic artifacts when inputs are complete
+  -> S04-approved accepted metadata or canonical fact owner
+  -> query-report-api-service public status/report response
+```
+
+`cli-client` is a public API client only. S11 implements repository-to-BTM job
+submission through `query-report-api-service` HTTP/OpenAPI using the
+transitional `gateway-submit` compatibility vocabulary. Legacy local CLI
+commands remain in-process current-state evidence until a later slice provides
+parity or explicit deprecation tests. Status and report CLI reads require later
+explicit command mappings.
+
+Optional services such as `btm-generation-service`, `graph-replay-service` and
+`incident-analysis-service` may be added only after later slices define
 contracts, owner-query access, projection rebuild rules, storage ownership and
 tests that keep projections and generated output separate from evidence.
 
-Repository Analysis resolves branch input to a concrete commit SHA before
-analysis handoff. The source snapshot may reference a complete build-output
-package from a verified Artifact Store/Artifactory artifact, an optional
-Jenkins pipeline for the pinned snapshot, or a future sandboxed
-`build-artifact-worker-service` fallback. Joern consumes only validated
-source/build package descriptors or materialized Joern-owned workspaces; it
-must not receive Repository Analysis private workspace IDs.
+`repository-source-service` resolves branch input to a concrete commit SHA
+before analysis handoff. Joern consumes only validated source/build package
+descriptors or materialized Joern-owned workspaces; it must not receive
+Repository Source private workspace IDs.
 
-ADR-0018 allows the initial runtime communication contracts to describe planned
-Gateway, worker, replay, report and event flows before each runtime path exists.
-Those flows remain contract design until a slice implements and verifies the
-corresponding runtime behavior.
-
-The current implementation verifies a narrow Analysis Store runtime path:
+Slice S05 verifies a local repository-source runtime boundary:
 
 ```text
-worker or future Gateway
+RepositoryAnalysisService gRPC request
+  -> services/repository-source-service inbound adapter
+  -> service-local repository source application service
+  -> service-local Git checkout and workspace adapters
+  -> opaque workspace ID and source snapshot descriptor
+```
+
+The S05 service does not run JavaParser, Joern, repository build scripts,
+repository hooks, BTM generation or report logic. Public responses expose
+snapshot IDs, relative source roots, artifact references, completeness markers
+and diagnostics, not private filesystem paths. The inherited Java AST handoff
+RPC from the transitional predecessor contract is intentionally not implemented
+in this service slice; a later contract migration must replace or retire that
+predecessor wire shape explicitly.
+
+Slice S08 verifies a local Joern analysis runtime boundary:
+
+```text
+JoernCpgAnalysisService gRPC request
+  -> services/joern-analysis-service inbound adapter
+  -> service-local Joern analysis application service
+  -> service-local Joern-owned workspace materialization
+  -> service-local Joern runtime and semantic artifact adapters
+  -> semantic artifact references, completeness and diagnostics
+```
+
+The S08 service consumes only validated source/build package descriptors or
+Joern-owned materialized workspaces. It must not receive Repository Source
+private workspace paths, and CPG/CFG/DFG artifacts remain static semantic
+evidence rather than observed runtime execution. Joern unavailable, timeout
+and missing mapping states stay explicit diagnostics.
+
+Slice S09 verifies a local orchestration runtime boundary:
+
+```text
+AnalysisJobService gRPC request
+  -> services/analysis-orchestrator-service inbound adapter
+  -> service-local analysis job application service
+  -> service-local orchestration repository
+  -> lifecycle/status/lease/retry/failure/dead-letter state
+  -> job-to-artifact references only
+```
+
+The S09 service does not call repository checkout, JavaParser, Joern, report or
+artifact-byte implementations. Transitional `analysis-job.proto` RPC names for
+instrumentation planning and repository-to-BTM orchestration remain generated
+transport methods, but this service returns `UNIMPLEMENTED` for them so worker
+or report behavior is not absorbed into orchestration.
+
+ADR-0018 allows the initial runtime communication contracts to describe planned
+API, worker, replay, report and event flows before each runtime path exists.
+Those flows remain contract design until a slice implements and verifies
+corresponding runtime behavior.
+
+The current implementation verifies transitional service paths such as:
+
+```text
+worker or current public facade
   -> AnalysisJobService gRPC
-  -> analysis-store-service application service
+  -> current analysis-store-service application service
   -> service-local analysis job repository
 ```
 

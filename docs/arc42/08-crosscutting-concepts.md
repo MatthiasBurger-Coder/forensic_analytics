@@ -76,7 +76,7 @@ Graph DB and Vector DB are projections from the canonical analysis model. They a
 Ambiguous mappings between JavaParser, Joern, Byteman rules and runtime events must be marked with confidence levels. Unclear mappings must not be silently accepted.
 
 Source snapshots for cross-service analysis are commit-pinned. A moving branch
-name is resolved once during Repository Analysis and later branch movement
+name is resolved once by `repository-source-service` and later branch movement
 creates a new snapshot instead of mutating existing analysis input.
 
 Complete build-output packages are explicit artifacts, not inferred runtime
@@ -86,32 +86,31 @@ fallback only when the earlier options are absent. Manifest or checksum
 mismatch is an integrity failure and must not trigger fallback.
 
 Joern materialization creates a Joern-owned workspace from validated
-source/build packages. It rejects private Repository Analysis workspace IDs,
+source/build packages. It rejects private Repository Source workspace IDs,
 absolute paths, `file:` URIs, traversal, symlinks, hardlinks, device files,
 duplicate normalized paths and quota overruns before Docker mounting.
 
-The v3 repository-to-BTM readiness bridge requires Java AST source-fact
-artifacts to carry valid `ArtifactByteAccess` before Analysis Store accepts
-them for target planning. If Repository Analysis cannot provide available and
-complete source/build package descriptors, Joern must be skipped with explicit
-incomplete diagnostics instead of receiving invalid package metadata. Public
-Gateway diagnostics must be allow-listed or redacted before downstream messages
-cross the external API boundary.
+FA-MSA-001 requires JavaParser source-fact artifacts to carry valid owner and
+retrieval information before another service consumes them for planning. If
+`repository-source-service` cannot provide available and complete source/build
+package descriptors, Joern must be skipped with explicit incomplete diagnostics
+instead of receiving invalid package metadata. Public query/report diagnostics
+must be allow-listed or redacted before downstream messages cross the external
+API boundary.
 
-The v4 source-fact retrieval bridge requires `ArtifactByteAccess` to resolve to
-a verified Java AST owner API before Analysis Store consumes source-fact bytes.
-Repository Analysis to Java AST handoff completion must be represented through
-a reviewed service contract, and deterministic local fixtures must avoid
-external Git network access, Docker, Jenkins, Artifactory, credentials, private
-workspace paths and raw source content by default.
+Source-fact retrieval must resolve to a verified `java-parser-analysis-service`
+owner API or documented artifact contract before bytes are consumed by another
+service. Repository Source to JavaParser handoff completion must be represented
+through a reviewed service contract, and deterministic local fixtures must
+avoid external Git network access, Docker, Jenkins, Artifactory, credentials,
+private workspace paths and raw source content by default.
 
-The v5 artifact-contract prerequisite requires the Java AST source-fact JSON
-payload to be an explicit external contract before Analysis Store turns source
-facts into target-planning input. Parsing belongs in Analysis Store adapters,
-not in shared Java DTOs or Java AST implementation imports. Java AST and BTM
-artifact filesystem adapters must use no-follow symlink checks for directory
-segments and files before reading, writing or accepting existing artifact
-bytes.
+The JavaParser source-fact JSON payload must be an explicit external contract
+before another service turns source facts into target-planning input. Parsing
+belongs in that service's adapter boundary, not in shared Java DTOs or
+JavaParser implementation imports. JavaParser, Joern and optional artifact
+filesystem adapters must use no-follow symlink checks for directory segments
+and files before reading, writing or accepting existing artifact bytes.
 
 ## 8.7 Replay Uncertainty
 
@@ -119,13 +118,34 @@ The replay must explicitly show missing, incomplete or uncertain event chains.
 
 ## 8.8 Operational Observability
 
-Operational observability is scoped to non-core operational boundaries. REST, gRPC, CLI, bootstrap, source adapters, Joern Docker execution, engine entrypoints, engine-request import and persistence write operations create sanitized operation logs through `forensic-analytics-observability` where useful.
+Operational observability is scoped to non-core operational boundaries. Under
+FA-MSA-001, `observability-stack` owns deployment and configuration material
+for logs, metrics, tracing and dashboards. Productive services may have
+service-local diagnostics, but they must not depend on a shared Java
+observability module.
 
-The observability boundary uses JDK logging only. It does not introduce Spring AOP, AspectJ, SLF4J or concrete logging providers. Logs are diagnostics, not verified forensic evidence.
+S12 adds `services/observability-stack` and
+`deployment/observability/service-diagnostics-policy.yaml` as target
+observability-stack evidence. The stack is deployment-oriented policy material,
+not a productive backend service and not a shared Java runtime dependency.
+Docker Compose, Swarm and Kubernetes observability readiness remains
+unclaimed until concrete runtime descriptors and validation commands exist.
+
+Logs are diagnostics, not verified forensic evidence.
 
 Logging must avoid raw payloads, source content, method arguments, method return values, credentials, local paths, stack frames and LLM prompt content. Failure logs use exception categories instead of raw exception messages.
 
-ADR-0008 adds `forensic-analytics-logging` as a separate cross-cutting module for the Spring Boot runtime. It provides an injectable `ForensicLoggerFactory` and optional method interception while reusing the observability correlation context. This exception is limited to the logging module; domain and application code remain independent from logging and Spring.
+ADR-0008 describes the current monolith logging-module exception. FA-MSA-001
+supersedes that target direction for productive services: shared Java logging
+modules must be retired or replaced with service-local configuration and
+`observability-stack` deployment material before final acceptance.
+
+S14 records that this retirement is not yet executable for the current
+workflow state. `forensic-analytics-logging` and
+`forensic-analytics-observability` remain legacy in-process modules while
+callers and regression coverage still depend on them. Later retirement slices
+must prove caller-free evidence, replacement parity and rollback or explicit
+deprecation before removing either module.
 
 Automatic method logging records method operation names, phases, durations, correlation IDs and exception categories only. It must not record arguments, return values, raw exception messages, stack frames or evidence payloads.
 

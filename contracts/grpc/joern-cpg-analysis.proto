@@ -9,7 +9,7 @@ option java_multiple_files = true;
 option java_package = "de.burger.forensics.analytics.joerncpganalysis.v1";
 option java_outer_classname = "JoernCpgAnalysisProto";
 
-// Provisional Slice 08 contract for Joern CPG/CFG/DFG semantic analysis.
+// FA-MSA-001 contract for Joern CPG/CFG/DFG semantic analysis.
 //
 // The service owns Joern execution and semantic artifact metadata only. It must
 // not claim runtime execution, observed branch flow, observed values, graph
@@ -76,7 +76,7 @@ message AnalyzeJoernCpgResponse {
 }
 
 message SourceWorkspace {
-  // Opaque Joern-owned workspace identifier. Repository Analysis workspace
+  // Opaque Joern-owned workspace identifier. Repository source workspace
   // identifiers, absolute paths, file URIs and parent traversal are forbidden
   // on the public contract.
   string workspace_id = 1;
