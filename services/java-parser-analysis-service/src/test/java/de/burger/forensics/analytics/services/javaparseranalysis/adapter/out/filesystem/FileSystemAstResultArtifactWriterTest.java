@@ -7,6 +7,7 @@ import de.burger.forensics.analytics.services.javaparseranalysis.domain.JavaAstA
 import de.burger.forensics.analytics.services.javaparseranalysis.domain.JavaAstAnalysisDomain.AnalysisCompleteness;
 import de.burger.forensics.analytics.services.javaparseranalysis.domain.JavaAstAnalysisDomain.AnalysisJobId;
 import de.burger.forensics.analytics.services.javaparseranalysis.domain.JavaAstAnalysisDomain.AnalysisRunId;
+import de.burger.forensics.analytics.services.javaparseranalysis.domain.JavaAstAnalysisDomain.ArtifactByteCustody;
 import de.burger.forensics.analytics.services.javaparseranalysis.domain.JavaAstAnalysisDomain.DiagnosticSeverity;
 import de.burger.forensics.analytics.services.javaparseranalysis.domain.JavaAstAnalysisDomain.EvidenceKind;
 import de.burger.forensics.analytics.services.javaparseranalysis.domain.JavaAstAnalysisDomain.JavaAstDiagnostic;
@@ -66,6 +67,10 @@ class FileSystemAstResultArtifactWriterTest {
         assertEquals(AnalysisArtifactCategory.STATIC, artifact.category());
         assertEquals("java-parser-analysis-service", artifact.producerService());
         assertEquals("application/vnd.forensic-analytics.java-ast-source-facts.v1+json", artifact.artifact().type());
+        assertEquals("java-parser-analysis-service", artifact.byteAccess().ownerService());
+        assertEquals(FileSystemAstResultArtifactWriter.BYTE_RETRIEVAL_CONTRACT, artifact.byteAccess().retrievalContract());
+        assertEquals(artifact.artifact().path(), artifact.byteAccess().retrievalReference());
+        assertEquals(ArtifactByteCustody.PRODUCER_RETAINED, artifact.byteAccess().byteCustody());
         assertTrue(content.contains("\"signature\": \"a.A#run()\""));
         assertTrue(content.contains("\"code\": \"SYMBOL_RESOLUTION_NOT_CONFIGURED\""));
         assertEquals(64, artifact.artifact().sha256().length());
@@ -156,6 +161,24 @@ class FileSystemAstResultArtifactWriterTest {
     }
 
     @Test
+    void refusesToOverwriteExistingArtifactWithDifferentContent() throws Exception {
+        var writer = new FileSystemAstResultArtifactWriter(tempDir);
+        var metadata = metadata();
+        var artifact = writer.write(metadata, List.of(), List.of(), new ScanSummary(0, 0, 0, 0, 0, "JavaParser", "3.27.1"));
+        var artifactPath = tempDir.resolve(artifact.artifact().path());
+        var originalContent = Files.readString(artifactPath);
+
+        var failure = assertThrows(
+            UncheckedIOException.class,
+            () -> writer.write(metadata, List.of(sourceFact()), List.of(), new ScanSummary(1, 1, 0, 0, 1, "JavaParser", "3.27.1"))
+        );
+
+        assertEquals("Artifact target already exists with different content.", failure.getCause().getMessage());
+        assertEquals(originalContent, Files.readString(artifactPath));
+        assertEquals(artifact.artifact().sha256(), writer.read(request(artifact)).artifact().artifact().sha256());
+    }
+
+    @Test
     void createsMissingArtifactRootBeforeWritingSourceFactBytes() {
         var artifactRoot = tempDir.resolve("missing-artifact-root");
         var writer = new FileSystemAstResultArtifactWriter(artifactRoot);
@@ -168,14 +191,14 @@ class FileSystemAstResultArtifactWriterTest {
     @Test
     void readsSourceFactBytesAndPreservesCompleteMetadata() {
         var writer = new FileSystemAstResultArtifactWriter(tempDir);
-        var artifact = writer.write(metadata(), List.of(), List.of(), new ScanSummary(0, 0, 0, 0, 0, "JavaParser", "3.27.1"));
+        var artifact = writer.write(metadata(), List.of(sourceFact()), List.of(), new ScanSummary(1, 1, 0, 0, 1, "JavaParser", "3.27.1"));
 
         var bytes = writer.read(request(artifact));
 
         assertEquals(AnalysisCompleteness.COMPLETE, bytes.artifact().completeness());
         assertEquals("java-parser-analysis-service", bytes.artifact().byteAccess().ownerService());
         assertEquals(Map.of("tenant", "demo"), bytes.safeAttributes());
-        assertTrue(new String(bytes.content(), java.nio.charset.StandardCharsets.UTF_8).contains("\"sourceFacts\": []"));
+        assertTrue(new String(bytes.content(), java.nio.charset.StandardCharsets.UTF_8).contains("\"evidenceKind\": \"STATIC_SOURCE_FACT\""));
     }
 
     @Test
@@ -386,6 +409,18 @@ class FileSystemAstResultArtifactWriterTest {
             new SourceSnapshotId("snapshot-1"),
             "java-parser-analysis-service-test",
             Map.of("tenant", "demo")
+        );
+    }
+
+    private static JavaSourceFact sourceFact() {
+        return new JavaSourceFact(
+            "fact-1",
+            "java-method",
+            "src/main/java",
+            new SourceLocation("src/main/java/A.java", "a.A", "run", 4, 9),
+            "a.A#run()",
+            "AST method a.A#run()",
+            EvidenceKind.STATIC_SOURCE_FACT
         );
     }
 

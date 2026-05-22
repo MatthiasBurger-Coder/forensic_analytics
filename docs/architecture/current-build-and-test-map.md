@@ -220,7 +220,7 @@ This is target-service container packaging evidence only; Compose, Swarm and
 Kubernetes readiness for the FA-MSA-001 target landscape remains future work
 until descriptors and validation commands exist.
 
-Slice 07 adds a service-local Dockerfile for
+FA-MSA-001-LMR S05 adds a service-local Dockerfile for
 `services/java-parser-analysis-service`. This is target-service container
 packaging evidence only; Compose, Swarm and Kubernetes readiness for the
 FA-MSA-001 target landscape remains future work until descriptors and

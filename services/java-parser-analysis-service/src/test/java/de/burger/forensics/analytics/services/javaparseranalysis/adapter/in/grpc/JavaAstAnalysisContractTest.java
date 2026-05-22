@@ -52,6 +52,17 @@ class JavaAstAnalysisContractTest {
             "#/$defs/safeRelativePath",
             sourceFact.getAsJsonObject("properties").getAsJsonObject("sourceRoot").get("$ref").getAsString()
         );
+        assertEquals(
+            "STATIC_SOURCE_FACT",
+            sourceFact.getAsJsonObject("properties").getAsJsonObject("evidenceKind").get("const").getAsString()
+        );
+
+        var diagnostic = schema.getAsJsonObject("$defs").getAsJsonObject("diagnostic");
+        assertEquals("affectsCompleteness", diagnostic.getAsJsonArray("required").get(8).getAsString());
+        assertEquals(
+            "boolean",
+            diagnostic.getAsJsonObject("properties").getAsJsonObject("affectsCompleteness").get("type").getAsString()
+        );
     }
 
     private static Path contractSchema() {

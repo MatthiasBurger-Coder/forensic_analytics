@@ -223,7 +223,7 @@ Current evidence:
 - `contracts/grpc/java-ast-analysis.proto`;
 - `contracts/grpc/java-ast-source-facts-v1.schema.json`.
 
-S07 implementation state:
+FA-MSA-001-LMR S05 implementation state:
 
 - registered Gradle project `services:java-parser-analysis-service`;
 - service-local package `de.burger.forensics.analytics.services.javaparseranalysis`;
@@ -239,7 +239,7 @@ S07 implementation state:
 
 `services/java-ast-analysis-service` and
 `forensic-analytics-adapter-javaparser` remain predecessor and rollback
-evidence. S07 does not remove them, does not route production callers to the
+evidence. S05 does not remove them, does not route production callers to the
 new service and does not claim Docker Compose, Docker Swarm or Kubernetes
 readiness for the target landscape.
 

@@ -28,6 +28,16 @@ class RepositoryToBtmFixtureTest {
         assertSafeFixtureValues(fixture);
     }
 
+    @Test
+    void fixtureRemainsHandoffOnlyUntilBtmInputsAreAvailable() throws IOException {
+        var fixture = fixture();
+
+        assertEquals("PENDING_SOURCE_FACT_BYTES", fixture.getProperty("targetSelectionState"));
+        assertEquals("NOT_READY", fixture.getProperty("btmGenerationRequestState"));
+        assertEquals("UNAVAILABLE", fixture.getProperty("btmManifestState"));
+        assertEquals("UNAVAILABLE", fixture.getProperty("btmDeliveryState"));
+    }
+
     private static Properties fixture() throws IOException {
         var properties = new Properties();
         try (var input = RepositoryToBtmFixtureTest.class.getClassLoader()

@@ -110,7 +110,10 @@ before another service turns source facts into target-planning input. Parsing
 belongs in that service's adapter boundary, not in shared Java DTOs or
 JavaParser implementation imports. JavaParser, Joern and optional artifact
 filesystem adapters must use no-follow symlink checks for directory segments
-and files before reading, writing or accepting existing artifact bytes.
+and files before reading, writing or accepting existing artifact bytes. Published
+artifact byte references are immutable: repeating a write for identical bytes is
+idempotent, while different bytes for an existing reference are rejected instead
+of replacing prior evidence.
 
 ## 8.7 Replay Uncertainty
 
