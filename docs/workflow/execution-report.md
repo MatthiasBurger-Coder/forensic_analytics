@@ -7,7 +7,7 @@
 | Workflow version | `fa-msa-001-legacy-module-retirement-20260522-v1` |
 | Requirement ID | `FA-MSA-001-LMR` |
 | Branch | `architecture/workflow-legacy-module-retirement-20260522` |
-| Status | S02 completed |
+| Status | S02 completed; workflow refined after S03 blocker |
 
 ## Creation Evidence
 
@@ -73,3 +73,9 @@ work.
 
 S02 also refreshed the context-pack architecture hashes because S01 and S02
 changed architecture evidence that later slices must re-read.
+
+Workflow-create refinement after the S03 execution blocker changes S03 through
+S13 from early deletion slices into parity, handoff, caller-migration and
+replacement-readiness slices. S14 remains the only physical module
+deregistration and source-tree removal gate. Resume execution at S03 after the
+refinement checkpoint.

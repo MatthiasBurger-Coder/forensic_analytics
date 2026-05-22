@@ -6,21 +6,21 @@
 S00 Execution Preflight
   -> S01 Current Caller And Dependency Revalidation
     -> S02 Contract And Runtime Parity Gate
-      -> S03 Repository Source Legacy Retirement
-      -> S04 Ingestion Legacy Retirement
-      -> S05 JavaParser Legacy Retirement
-      -> S06 Joern Legacy Retirement
-      -> S10 Observability And Logging Decoupling
+      -> S03 Repository Source Parity And Handoff Readiness
+      -> S04 Ingestion Service Parity And Handoff Readiness
+      -> S05 JavaParser Service Parity And Handoff Readiness
+      -> S06 Joern Service Parity And Handoff Readiness
+      -> S10 Observability And Logging Replacement Readiness
 
 S03 + S04 + S05 + S06
-  -> S07 Orchestration Engine And Application Split
-    -> S08 Query Report API, REST, Bootstrap And Boot Retirement
-      -> S09 CLI Client Decoupling
+  -> S07 Orchestration Service Parity And Application Split Readiness
+    -> S08 Query Report API And Runtime Replacement Readiness
+      -> S09 CLI Client Parity And Decoupling Readiness
 
 S07 + S08 + S10
-  -> S11 Persistence Ownership Finalization
-    -> S12 Shared Domain And Application Module Removal
-      -> S13 Testbed Monolith Coupling Removal
+  -> S11 Persistence Ownership And Replacement Readiness
+    -> S12 Service-Local Domain And Application Readiness
+      -> S13 Service Testbed Parity And Monolith Coupling Readiness
         -> S14 Gradle Deregistration And Source Tree Removal
           -> S15 Closure, Rollback Notes And Release Readiness
 ```
@@ -32,17 +32,17 @@ S07 + S08 + S10
 | S00 | Freezes branch, context and quality baseline before execution. |
 | S01 | Caller proof must be current before any path is marked removable. |
 | S02 | Runtime callers can move only after external contracts and parity gates are verified. |
-| S03 | Repository source adapter retirement depends on service contract and source ownership. |
-| S04 | Ingestion module retirement depends on intake contract and raw payload ownership. |
-| S05 | JavaParser adapter retirement depends on static source-fact parity. |
-| S06 | Joern adapter retirement depends on Joern artifact and diagnostics parity. |
-| S07 | Engine/application split depends on worker service boundaries from S03-S06. |
-| S08 | REST/boot/bootstrap retirement depends on orchestrator and public API replacement. |
-| S09 | CLI decoupling depends on public API behavior. |
-| S10 | Observability/logging decoupling can start after contracts but must finish before central module removal. |
-| S11 | Persistence retirement depends on orchestration, public API and observability ownership. |
-| S12 | Shared domain/application removal depends on all service-local replacements. |
-| S13 | Testbed retirement depends on service-local regression parity. |
+| S03 | Repository source parity and handoff readiness depend on service contract and source ownership. |
+| S04 | Ingestion parity and handoff readiness depend on intake contract and raw payload ownership. |
+| S05 | JavaParser parity depends on static source-fact contracts and diagnostics. |
+| S06 | Joern parity depends on Joern artifact and diagnostics contracts. |
+| S07 | Orchestration readiness depends on worker service boundaries from S03-S06. |
+| S08 | Public API and runtime replacement readiness depends on orchestrator and public API contracts. |
+| S09 | CLI client readiness depends on public API behavior. |
+| S10 | Observability/logging replacement readiness can start after contracts but must finish before central module removal. |
+| S11 | Persistence replacement readiness depends on orchestration, public API and observability ownership. |
+| S12 | Service-local domain/application readiness depends on all service-local replacements. |
+| S13 | Testbed parity readiness depends on service-local regression parity. |
 | S14 | Final deletion depends on every path-specific migration slice. |
 | S15 | Closure depends on final quality gate and documentation alignment. |
 

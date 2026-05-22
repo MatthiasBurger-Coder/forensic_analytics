@@ -20,10 +20,21 @@ verification shows that direct deletion is not safe yet: the legacy modules are
 still registered in `settings.gradle.kts`, still referenced from Gradle build
 files and still contain production or regression-test behavior.
 
-This workflow is the executable retirement plan for those legacy modules. It is
-not a big-bang deletion plan. Each module or module group is retired only after
-service-local parity, explicit contract ownership, caller-free evidence,
-rollback or deprecation notes and the required `QUALITY.md` gate exist.
+This workflow is the executable migration and retirement plan for those legacy
+modules. It is not a big-bang deletion plan. Each module or module group is
+first migrated through service-local parity, explicit contract ownership,
+caller rewiring, rollback or deprecation notes and testbed replacement
+coverage. Physical module deregistration and source-tree deletion are allowed
+only in the final removal gate after caller-free evidence and the required
+`QUALITY.md` gate exist.
+
+S03 execution on 2026-05-22 proved that the previous early-retirement slice
+shape was too deletion-oriented: `forensic-analytics-adapter-repository-source`
+still had production and test callers, while `repository-source-service` was
+not a drop-in replacement for local/file repository behavior. This refinement
+therefore changes S03 through S13 into parity, handoff, caller-migration and
+replacement-readiness slices. S14 is the only full-repository legacy
+module-removal slice.
 
 ## Target Picture
 
@@ -111,7 +122,7 @@ Read-only workflow creation verification found:
 | Open questions | None blocking workflow creation. Execution slices may stop when a service owner, contract field, test parity or rollback path cannot be verified. |
 | Blocking questions | None for workflow creation. |
 | Confidence | 92 percent. |
-| Decision | `READY_FOR_WORKFLOW`. |
+| Decision | `READY_FOR_WORKFLOW`; refined after S03 execution blocker to enforce strangler migration before deletion. |
 
 ## Scope
 
@@ -121,8 +132,11 @@ In scope:
 - Prove replacement parity or explicit deprecation for each legacy runtime path.
 - Migrate remaining runtime callers to service-local boundaries and external
   contracts.
-- Remove direct Gradle dependencies on legacy modules.
-- Deregister and delete only verified caller-free legacy modules.
+- Remove direct Gradle dependencies on legacy modules only after replacement
+  callers are verified.
+- Deregister and delete legacy modules only in the final removal gate after
+  every earlier parity, handoff, caller-migration and testbed-replacement slice
+  has passed.
 - Keep docs, ADR/arc42 and retirement maps synchronized with actual state.
 
 Out of scope:
@@ -150,6 +164,9 @@ Out of scope:
 - Missing evidence must be represented as missing, unresolved or incomplete.
 - No module may be removed while it is the only regression coverage for a
   behavior.
+- Full-repository zero-reference scans are final-removal gates only. Earlier
+  slices use scoped readiness scans and may retain legacy modules as rollback
+  or regression evidence.
 
 ## Backend Assessment
 
@@ -341,7 +358,7 @@ stop_conditions:
 Purpose: prove the service communication surface that will replace in-process
 legacy callers.
 
-### Slice 03 - Repository Source Legacy Retirement
+### Slice 03 - Repository Source Parity And Handoff Readiness
 
 ```yaml
 slice_id: S03
@@ -354,14 +371,14 @@ secondary_reviewers:
   - senior-tester
 affected_files:
   - services/repository-source-service/**
+  - services/analysis-orchestrator-service/**
   - forensic-analytics-adapter-repository-source/**
-  - forensic-analytics-bootstrap/**
-  - forensic-analytics-boot-app/**
-  - settings.gradle.kts
+  - contracts/grpc/**
   - docs/architecture/**
   - docs/workflow/execution-report.md
 affected_modules:
   - services:repository-source-service
+  - services:analysis-orchestrator-service
   - forensic-analytics-adapter-repository-source
 affected_contracts:
   - contracts/grpc/**
@@ -370,32 +387,41 @@ dependencies:
 parallel_group: G03
 file_locks:
   - services/repository-source-service/**
+  - services/analysis-orchestrator-service/**
   - forensic-analytics-adapter-repository-source/**
   - docs/workflow/execution-report.md
 contract_locks:
   - repository-source-contract
 architecture_locks:
   - repository-source-ownership
+  - repository-source-handoff
 quality_gates:
   targeted:
     - './gradlew :services:repository-source-service:test --dependency-verification strict --console=plain --stacktrace'
-    - 'bash -lc "if rg -n \"forensic-analytics-adapter-repository-source|de\\.burger\\.forensics\\.analytics\\.adapter\\.repository\\.source\" settings.gradle.kts build.gradle.kts services forensic-analytics-* -g \"*.java\" -g \"*.kts\" -g \"!**/build/**\"; then exit 1; else test \$? -eq 1; fi"'
+    - './gradlew :forensic-analytics-adapter-repository-source:test --dependency-verification strict --console=plain --stacktrace'
+    - 'bash -lc "if rg -n -P \"^import\\s+de\\.burger\\.forensics\\.analytics\\.(application|domain|adapter|persistence|rest|cli|engine|logging|observability|bootstrap|boot|ingestion\\.(request|grpc))\\b\" services/repository-source-service/src/main -S -g \"*.java\"; then exit 1; else test \$? -eq 1; fi"'
     - 'git diff --check'
   required:
     - './gradlew test --dependency-verification strict --console=plain --stacktrace'
 documentation:
   arc42: update repository source ownership and deployment notes
-  adr: checked
+  adr: checked; new ADR required if local/file repository input remains target behavior
 stop_conditions:
-  - repository checkout behavior has no service-local replacement
+  - repository-source parity or explicit deprecation is not documented and tested
   - private workspace access crosses a service boundary
-  - legacy adapter callers remain after proposed removal
+  - a caller is rewired to private workspace paths instead of source snapshot IDs or artifact references
+  - AnalyzeSourceSnapshotWithJavaAst is assigned to repository-source-service without an approved contract change
 ```
 
-Purpose: move remaining repository-source behavior and callers to the target
-service, then remove the legacy adapter only if caller-free proof is empty.
+Purpose: decide and prove repository-source service parity or explicit
+deprecation before any removal. This slice keeps the legacy adapter registered
+as rollback and regression evidence, verifies service-local checkout,
+workspace cleanup, source-root, idempotency, quota, timeout, redaction and
+diagnostic behavior, and prepares the orchestrator handoff through external
+contracts. It must not remove `forensic-analytics-adapter-repository-source`;
+physical removal belongs to S14.
 
-### Slice 04 - Ingestion Legacy Retirement
+### Slice 04 - Ingestion Service Parity And Handoff Readiness
 
 ```yaml
 slice_id: S04
@@ -410,9 +436,8 @@ affected_files:
   - services/ingestion-service/**
   - forensic-analytics-ingestion-grpc/**
   - forensic-analytics-ingestion-request/**
-  - forensic-analytics-cli/**
-  - forensic-analytics-bootstrap/**
-  - settings.gradle.kts
+  - contracts/grpc/**
+  - contracts/events/**
   - docs/architecture/**
   - docs/workflow/execution-report.md
 affected_modules:
@@ -436,7 +461,8 @@ architecture_locks:
 quality_gates:
   targeted:
     - './gradlew :services:ingestion-service:test --dependency-verification strict --console=plain --stacktrace'
-    - 'bash -lc "if rg -n \"forensic-analytics-ingestion-grpc|forensic-analytics-ingestion-request|de\\.burger\\.forensics\\.analytics\\.ingestion\\.(grpc|request)\" settings.gradle.kts build.gradle.kts services forensic-analytics-* -g \"*.java\" -g \"*.kts\" -g \"!**/build/**\"; then exit 1; else test \$? -eq 1; fi"'
+    - './gradlew :forensic-analytics-ingestion-grpc:test :forensic-analytics-ingestion-request:test --dependency-verification strict --console=plain --stacktrace'
+    - 'bash -lc "if rg -n -P \"^import\\s+de\\.burger\\.forensics\\.analytics\\.(application|domain|adapter|persistence|rest|cli|engine|logging|observability|bootstrap|boot|ingestion\\.(request|grpc))\\b\" services/ingestion-service/src/main -S -g \"*.java\"; then exit 1; else test \$? -eq 1; fi"'
     - 'git diff --check'
   required:
     - './gradlew test --dependency-verification strict --console=plain --stacktrace'
@@ -446,13 +472,16 @@ documentation:
 stop_conditions:
   - runtime or analysis payload custody is unclear
   - missing fields are silently filled
-  - legacy ingestion callers remain after proposed removal
+  - legacy ingestion behavior is removed before service-local parity or explicit deprecation is tested
 ```
 
-Purpose: retire legacy ingestion transport/request modules only after the
-target ingestion service owns intake and validation behavior.
+Purpose: prove ingestion-service ownership of intake, validation, raw payload
+custody, accepted/rejected diagnostics and handoff semantics while retaining
+legacy ingestion modules as rollback evidence. Physical removal of
+`forensic-analytics-ingestion-grpc` and `forensic-analytics-ingestion-request`
+belongs to S14 after caller-free proof.
 
-### Slice 05 - JavaParser Legacy Retirement
+### Slice 05 - JavaParser Service Parity And Handoff Readiness
 
 ```yaml
 slice_id: S05
@@ -465,7 +494,7 @@ secondary_reviewers:
 affected_files:
   - services/java-parser-analysis-service/**
   - forensic-analytics-adapter-javaparser/**
-  - settings.gradle.kts
+  - contracts/grpc/**
   - docs/architecture/**
   - docs/workflow/execution-report.md
 affected_modules:
@@ -487,7 +516,8 @@ architecture_locks:
 quality_gates:
   targeted:
     - './gradlew :services:java-parser-analysis-service:test --dependency-verification strict --console=plain --stacktrace'
-    - 'bash -lc "if rg -n \"forensic-analytics-adapter-javaparser|de\\.burger\\.forensics\\.analytics\\.adapter\\.javaparser\" settings.gradle.kts build.gradle.kts services forensic-analytics-* -g \"*.java\" -g \"*.kts\" -g \"!**/build/**\"; then exit 1; else test \$? -eq 1; fi"'
+    - './gradlew :forensic-analytics-adapter-javaparser:test --dependency-verification strict --console=plain --stacktrace'
+    - 'bash -lc "if rg -n -P \"^import\\s+de\\.burger\\.forensics\\.analytics\\.(application|domain|adapter|persistence|rest|cli|engine|logging|observability|bootstrap|boot|ingestion\\.(request|grpc))\\b\" services/java-parser-analysis-service/src/main -S -g \"*.java\"; then exit 1; else test \$? -eq 1; fi"'
     - 'git diff --check'
   required:
     - './gradlew test --dependency-verification strict --console=plain --stacktrace'
@@ -497,13 +527,15 @@ documentation:
 stop_conditions:
   - unresolved symbols are dropped or converted to false relationships
   - static facts are presented as runtime execution
-  - legacy JavaParser callers remain after proposed removal
+  - legacy JavaParser behavior is removed before service-local parity or explicit deprecation is tested
 ```
 
-Purpose: retire the legacy JavaParser adapter after service-local AST/source
-fact parity is verified.
+Purpose: prove JavaParser service-local AST/source-fact parity, unresolved
+symbol diagnostics, deterministic IDs and artifact handoff behavior while
+retaining the legacy adapter as rollback evidence. Physical removal of
+`forensic-analytics-adapter-javaparser` belongs to S14 after caller-free proof.
 
-### Slice 06 - Joern Legacy Retirement
+### Slice 06 - Joern Service Parity And Handoff Readiness
 
 ```yaml
 slice_id: S06
@@ -518,7 +550,7 @@ affected_files:
   - services/joern-analysis-service/**
   - forensic-analytics-adapter-joern-docker/**
   - docker/joern/**
-  - settings.gradle.kts
+  - contracts/grpc/**
   - docs/architecture/**
   - docs/workflow/execution-report.md
 affected_modules:
@@ -541,7 +573,8 @@ architecture_locks:
 quality_gates:
   targeted:
     - './gradlew :services:joern-analysis-service:test --dependency-verification strict --console=plain --stacktrace'
-    - 'bash -lc "if rg -n \"forensic-analytics-adapter-joern-docker|de\\.burger\\.forensics\\.analytics\\.adapter\\.joern\" settings.gradle.kts build.gradle.kts services forensic-analytics-* -g \"*.java\" -g \"*.kts\" -g \"!**/build/**\"; then exit 1; else test \$? -eq 1; fi"'
+    - './gradlew :forensic-analytics-adapter-joern-docker:test --dependency-verification strict --console=plain --stacktrace'
+    - 'bash -lc "if rg -n -P \"^import\\s+de\\.burger\\.forensics\\.analytics\\.(application|domain|adapter|persistence|rest|cli|engine|logging|observability|bootstrap|boot|ingestion\\.(request|grpc))\\b\" services/joern-analysis-service/src/main -S -g \"*.java\"; then exit 1; else test \$? -eq 1; fi"'
     - 'git diff --check'
   required:
     - './gradlew test --dependency-verification strict --console=plain --stacktrace'
@@ -551,13 +584,16 @@ documentation:
 stop_conditions:
   - Joern CPG files are shared through private filesystem coupling
   - timeouts or unavailable-Joern diagnostics are lost
-  - legacy Joern adapter callers remain after proposed removal
+  - legacy Joern behavior is removed before service-local parity or explicit deprecation is tested
 ```
 
-Purpose: retire legacy Joern Docker adapter behavior after service-local Joern
-execution and artifact diagnostics are verified.
+Purpose: prove Joern service-local runtime control, artifact diagnostics,
+timeout handling and unavailable-Joern behavior while retaining the legacy
+adapter as rollback evidence. Physical removal of
+`forensic-analytics-adapter-joern-docker` belongs to S14 after caller-free
+proof.
 
-### Slice 07 - Orchestration Engine And Application Split
+### Slice 07 - Orchestration Service Parity And Application Split Readiness
 
 ```yaml
 slice_id: S07
@@ -573,7 +609,8 @@ affected_files:
   - forensic-analytics-engine/**
   - forensic-analytics-application/**
   - forensic-analytics-domain/**
-  - settings.gradle.kts
+  - contracts/grpc/**
+  - contracts/events/**
   - docs/architecture/**
   - docs/workflow/execution-report.md
 affected_modules:
@@ -604,7 +641,8 @@ architecture_locks:
 quality_gates:
   targeted:
     - './gradlew :services:analysis-orchestrator-service:test --dependency-verification strict --console=plain --stacktrace'
-    - 'bash -lc "if rg -n \"forensic-analytics-engine|de\\.burger\\.forensics\\.analytics\\.(engine|application|domain)\" settings.gradle.kts build.gradle.kts services forensic-analytics-* -g \"*.java\" -g \"*.kts\" -g \"!**/build/**\"; then exit 1; else test \$? -eq 1; fi"'
+    - './gradlew :forensic-analytics-engine:test :forensic-analytics-application:test :forensic-analytics-domain:test --dependency-verification strict --console=plain --stacktrace'
+    - 'bash -lc "if rg -n -P \"^import\\s+de\\.burger\\.forensics\\.analytics\\.(application|domain|adapter|persistence|rest|cli|engine|logging|observability|bootstrap|boot|ingestion\\.(request|grpc))\\b\" services/analysis-orchestrator-service/src/main -S -g \"*.java\"; then exit 1; else test \$? -eq 1; fi"'
     - 'git diff --check'
   required:
     - './gradlew test --dependency-verification strict --console=plain --stacktrace'
@@ -613,14 +651,17 @@ documentation:
   adr: new ADR required for service-state ownership changes
 stop_conditions:
   - orchestrator absorbs repository checkout, parser, Joern or report ownership
-  - shared domain/application modules remain required by target services
+  - orchestrator callers require shared domain/application modules after the slice's proposed rewiring
   - evidence categories are collapsed into ambiguous DTOs
 ```
 
-Purpose: move orchestration ownership to the target service and begin verified
-disassembly of shared domain/application code.
+Purpose: move orchestration ownership toward the target service and begin
+verified disassembly of shared domain/application code without deleting the
+shared modules early. Physical removal of `forensic-analytics-engine`,
+`forensic-analytics-application` and `forensic-analytics-domain` belongs to
+S14 after all consumers are caller-free.
 
-### Slice 08 - Query Report API, REST, Bootstrap And Boot Retirement
+### Slice 08 - Query Report API And Runtime Replacement Readiness
 
 ```yaml
 slice_id: S08
@@ -638,7 +679,6 @@ affected_files:
   - forensic-analytics-bootstrap/**
   - forensic-analytics-boot-app/**
   - contracts/openapi/**
-  - settings.gradle.kts
   - docs/architecture/**
   - docs/workflow/execution-report.md
 affected_modules:
@@ -666,7 +706,8 @@ architecture_locks:
 quality_gates:
   targeted:
     - './gradlew :services:query-report-api-service:test --dependency-verification strict --console=plain --stacktrace'
-    - 'bash -lc "if rg -n \"forensic-analytics-rest|forensic-analytics-bootstrap|forensic-analytics-boot-app|de\\.burger\\.forensics\\.analytics\\.(rest|bootstrap|boot)\" settings.gradle.kts build.gradle.kts services forensic-analytics-* -g \"*.java\" -g \"*.kts\" -g \"!**/build/**\"; then exit 1; else test \$? -eq 1; fi"'
+    - './gradlew :forensic-analytics-rest:test :forensic-analytics-bootstrap:test :forensic-analytics-boot-app:test --dependency-verification strict --console=plain --stacktrace'
+    - 'bash -lc "if rg -n -P \"^import\\s+de\\.burger\\.forensics\\.analytics\\.(application|domain|adapter|persistence|rest|cli|engine|logging|observability|bootstrap|boot|ingestion\\.(request|grpc))\\b\" services/query-report-api-service/src/main -S -g \"*.java\"; then exit 1; else test \$? -eq 1; fi"'
     - 'git diff --check'
   required:
     - './gradlew test --dependency-verification strict --console=plain --stacktrace'
@@ -675,14 +716,16 @@ documentation:
   adr: new ADR required if REST contract compatibility changes
 stop_conditions:
   - frontend or CLI-visible API shape changes without contract tests
-  - boot/bootstrap paths are removed without replacement start evidence
-  - REST callers remain after proposed removal
+  - boot/bootstrap paths are removed before replacement start evidence exists
+  - REST behavior is removed before public API parity or explicit deprecation is tested
 ```
 
-Purpose: replace in-process REST and combined runtime boot paths with verified
-service-local public API and startup evidence.
+Purpose: prove the service-local public API and runtime replacement path while
+retaining REST, bootstrap and Boot modules as rollback evidence. Physical
+removal of `forensic-analytics-rest`, `forensic-analytics-bootstrap` and
+`forensic-analytics-boot-app` belongs to S14 after caller-free proof.
 
-### Slice 09 - CLI Client Decoupling
+### Slice 09 - CLI Client Parity And Decoupling Readiness
 
 ```yaml
 slice_id: S09
@@ -697,7 +740,6 @@ affected_files:
   - forensic-analytics-cli/**
   - contracts/cli/**
   - contracts/openapi/**
-  - settings.gradle.kts
   - docs/architecture/**
   - docs/workflow/execution-report.md
 affected_modules:
@@ -721,7 +763,8 @@ architecture_locks:
 quality_gates:
   targeted:
     - './gradlew :services:cli-client:test --dependency-verification strict --console=plain --stacktrace'
-    - 'bash -lc "if rg -n \"forensic-analytics-cli|de\\.burger\\.forensics\\.analytics\\.cli\" settings.gradle.kts build.gradle.kts services forensic-analytics-* -g \"*.java\" -g \"*.kts\" -g \"!**/build/**\"; then exit 1; else test \$? -eq 1; fi"'
+    - './gradlew :forensic-analytics-cli:test --dependency-verification strict --console=plain --stacktrace'
+    - 'bash -lc "if rg -n -P \"^import\\s+de\\.burger\\.forensics\\.analytics\\.(application|domain|adapter|persistence|rest|cli|engine|logging|observability|bootstrap|boot|ingestion\\.(request|grpc))\\b\" services/cli-client/src/main -S -g \"*.java\"; then exit 1; else test \$? -eq 1; fi"'
     - 'git diff --check'
   required:
     - './gradlew test --dependency-verification strict --console=plain --stacktrace'
@@ -734,10 +777,12 @@ stop_conditions:
   - output redaction changes are untested
 ```
 
-Purpose: make CLI behavior a public API client and retire local in-process
-business logic.
+Purpose: make CLI behavior a public API client and prove command parity or
+explicit deprecation while retaining the legacy CLI module as rollback
+evidence. Physical removal of `forensic-analytics-cli` belongs to S14 after
+caller-free proof.
 
-### Slice 10 - Observability And Logging Decoupling
+### Slice 10 - Observability And Logging Replacement Readiness
 
 ```yaml
 slice_id: S10
@@ -753,7 +798,6 @@ affected_files:
   - forensic-analytics-logging/**
   - forensic-analytics-observability/**
   - deployment/**
-  - settings.gradle.kts
   - docs/architecture/**
   - docs/workflow/execution-report.md
 affected_modules:
@@ -777,7 +821,8 @@ architecture_locks:
 quality_gates:
   targeted:
     - './gradlew :services:observability-stack:test --dependency-verification strict --console=plain --stacktrace'
-    - 'bash -lc "if rg -n \"forensic-analytics-logging|forensic-analytics-observability|de\\.burger\\.forensics\\.analytics\\.(logging|observability)\" settings.gradle.kts build.gradle.kts services forensic-analytics-* -g \"*.java\" -g \"*.kts\" -g \"!**/build/**\"; then exit 1; else test \$? -eq 1; fi"'
+    - './gradlew :forensic-analytics-logging:test :forensic-analytics-observability:test --dependency-verification strict --console=plain --stacktrace'
+    - 'bash -lc "if rg -n -P \"^import\\s+de\\.burger\\.forensics\\.analytics\\.(logging|observability)\\b\" services/*/src/main -S -g \"*.java\"; then exit 1; else test \$? -eq 1; fi"'
     - 'git diff --check'
   required:
     - './gradlew test --dependency-verification strict --console=plain --stacktrace'
@@ -785,15 +830,18 @@ documentation:
   arc42: update crosscutting logging and observability
   adr: new ADR required if logging boundary strategy changes
 stop_conditions:
-  - shared Java logging or observability module remains required by target services
+  - shared Java logging or observability module remains required by a target service after the slice's proposed replacement
   - correlation or redaction semantics are lost
   - diagnostics are treated as forensic evidence
 ```
 
-Purpose: replace shared observability/logging Java modules with service-local
-diagnostics and deployment observability material.
+Purpose: replace shared observability/logging Java module usage in target
+services with service-local diagnostics and deployment observability material
+while retaining the legacy modules as rollback evidence. Physical removal of
+`forensic-analytics-logging` and `forensic-analytics-observability` belongs to
+S14 after caller-free proof.
 
-### Slice 11 - Persistence Ownership Finalization
+### Slice 11 - Persistence Ownership And Replacement Readiness
 
 ```yaml
 slice_id: S11
@@ -809,7 +857,6 @@ affected_files:
   - forensic-analytics-persistence/**
   - docs/architecture/data-ownership.md
   - docs/architecture/service-migration-map.md
-  - settings.gradle.kts
   - docs/workflow/execution-report.md
 affected_modules:
   - forensic-analytics-persistence
@@ -835,7 +882,8 @@ architecture_locks:
   - persistence-retirement
 quality_gates:
   targeted:
-    - 'bash -lc "if rg -n \"forensic-analytics-persistence|de\\.burger\\.forensics\\.analytics\\.persistence\" settings.gradle.kts build.gradle.kts services forensic-analytics-* -g \"*.java\" -g \"*.kts\" -g \"!**/build/**\"; then exit 1; else test \$? -eq 1; fi"'
+    - './gradlew :forensic-analytics-persistence:test --dependency-verification strict --console=plain --stacktrace'
+    - 'bash -lc "if rg -n -P \"^import\\s+de\\.burger\\.forensics\\.analytics\\.persistence\\b\" services/*/src/main -S -g \"*.java\"; then exit 1; else test \$? -eq 1; fi"'
     - 'git diff --check'
   required:
     - './gradlew test --dependency-verification strict --console=plain --stacktrace'
@@ -845,13 +893,14 @@ documentation:
 stop_conditions:
   - canonical data owner is unclear
   - direct cross-service database access is introduced
-  - in-memory persistence removal would delete the only tested behavior
+  - persistence behavior is removed before service-local replacement or explicit deprecation is tested
 ```
 
-Purpose: retire central persistence only after every stored category has a
-service owner and verified replacement behavior or explicit deprecation.
+Purpose: assign persistence ownership and prove replacement readiness while
+retaining central persistence as rollback evidence. Physical removal of
+`forensic-analytics-persistence` belongs to S14 after caller-free proof.
 
-### Slice 12 - Shared Domain And Application Module Removal
+### Slice 12 - Service-Local Domain And Application Readiness
 
 ```yaml
 slice_id: S12
@@ -866,7 +915,6 @@ affected_files:
   - forensic-analytics-domain/**
   - forensic-analytics-application/**
   - services/**
-  - settings.gradle.kts
   - build.gradle.kts
   - docs/architecture/**
   - docs/arc42/**
@@ -897,24 +945,28 @@ architecture_locks:
   - service-local-hexagonal-boundaries
 quality_gates:
   targeted:
-    - 'bash -lc "if rg -n \"forensic-analytics-domain|forensic-analytics-application|de\\.burger\\.forensics\\.analytics\\.(domain|application)\" settings.gradle.kts build.gradle.kts services forensic-analytics-* -g \"*.java\" -g \"*.kts\" -g \"!**/build/**\"; then exit 1; else test \$? -eq 1; fi"'
+    - './gradlew :forensic-analytics-domain:test :forensic-analytics-application:test --dependency-verification strict --console=plain --stacktrace'
+    - 'bash -lc "if rg -n -P \"^import\\s+de\\.burger\\.forensics\\.analytics\\.(domain|application)\\b\" services/*/src/main -S -g \"*.java\"; then exit 1; else test \$? -eq 1; fi"'
     - './gradlew test --dependency-verification strict --console=plain --stacktrace'
     - 'git diff --check'
   required:
-    - './gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace'
+    - './gradlew test --dependency-verification strict --console=plain --stacktrace'
 documentation:
   arc42: final service-local domain/application ownership update
   adr: checked; new ADR required if shared module exception is proposed
 stop_conditions:
-  - any productive service still depends on shared domain/application code
+  - any productive service still depends on shared domain/application code after the slice's proposed replacement
   - a shared DTO, utility, fixture or error model is introduced
   - architecture tests cannot prove forbidden dependencies
 ```
 
-Purpose: remove the central shared domain/application modules only after all
-service-local replacements and architecture tests exist.
+Purpose: prove service-local domain/application boundaries and architecture
+tests while retaining central domain/application modules as rollback evidence.
+Physical removal of `forensic-analytics-domain` and
+`forensic-analytics-application` belongs to S14 after caller-free proof and the
+full local gate.
 
-### Slice 13 - Testbed Monolith Coupling Removal
+### Slice 13 - Service Testbed Parity And Monolith Coupling Readiness
 
 ```yaml
 slice_id: S13
@@ -929,7 +981,6 @@ affected_files:
   - forensic-analytics-testbed/**
   - deployment/**
   - docs/testing/**
-  - settings.gradle.kts
   - docs/architecture/**
   - docs/workflow/execution-report.md
 affected_modules:
@@ -957,7 +1008,8 @@ architecture_locks:
 quality_gates:
   targeted:
     - './gradlew :services:testbed:test --dependency-verification strict --console=plain --stacktrace'
-    - 'bash -lc "if rg -n \"forensic-analytics-testbed|de\\.burger\\.forensics\\.analytics\\.testbed\" settings.gradle.kts build.gradle.kts services forensic-analytics-* -g \"*.java\" -g \"*.kts\" -g \"!**/build/**\"; then exit 1; else test \$? -eq 1; fi"'
+    - './gradlew :forensic-analytics-testbed:test --dependency-verification strict --console=plain --stacktrace'
+    - 'bash -lc "if rg -n -P \"^import\\s+de\\.burger\\.forensics\\.analytics\\.testbed\\b\" services/testbed/src/main services/testbed/src/test -S -g \"*.java\"; then exit 1; else test \$? -eq 1; fi"'
     - 'git diff --check'
   required:
     - './gradlew test --dependency-verification strict --console=plain --stacktrace'
@@ -970,8 +1022,9 @@ stop_conditions:
   - test data is confused with forensic evidence
 ```
 
-Purpose: retire the legacy testbed only after service-root testbed coverage
-proves at least equal regression value.
+Purpose: prove service-root testbed parity before legacy testbed removal.
+Physical removal of `forensic-analytics-testbed` belongs to S14 after
+service-root coverage is at least equal and caller-free proof is empty.
 
 ### Slice 14 - Gradle Deregistration And Source Tree Removal
 
@@ -1179,7 +1232,8 @@ Stop workflow execution when:
 
 - exact symbol, task, package, contract, schema, service or module names cannot
   be verified;
-- a legacy module still has production or test callers;
+- a legacy module proposed for physical deletion still has production or test
+  callers;
 - service-local replacement parity is not tested;
 - a shared Java module or compatibility bridge is proposed without explicit
   ADR and tests;
@@ -1212,6 +1266,8 @@ The workflow is complete only when:
 - all listed legacy modules are removed from `settings.gradle.kts`;
 - source trees for all listed legacy modules are removed or explicitly retained
   by an ADR with a non-production purpose;
+- every removed behavior has service-local parity evidence or explicit
+  deprecation evidence before deletion;
 - target services build independently and have documented start/healthcheck
   paths;
 - no productive service depends on central shared Java implementation modules;
@@ -1223,9 +1279,11 @@ The workflow is complete only when:
 ## Handoff To `workflow execute`
 
 Run `workflow execute` only from branch
-`architecture/workflow-legacy-module-retirement-20260522`. The first executable
-slice is S00. S14 must not execute until S03 through S13 have passed and their
-caller-free evidence is recorded.
+`architecture/workflow-legacy-module-retirement-20260522`. S00 through S02
+already have execution checkpoints; after this refinement, resume execution at
+S03 as a parity and handoff readiness slice. S14 must not execute until S03
+through S13 have passed and their caller-migration, parity, deprecation and
+replacement-readiness evidence is recorded.
 
 ## arc42 Check Status
 

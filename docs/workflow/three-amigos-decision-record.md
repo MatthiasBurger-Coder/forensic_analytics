@@ -7,8 +7,8 @@
 | Workflow version | `fa-msa-001-legacy-module-retirement-20260522-v1` |
 | Requirement ID | `FA-MSA-001-LMR` |
 | Parent requirement | `FA-MSA-001` |
-| Decision | `READY_FOR_WORKFLOW` |
-| Confidence | 92 percent |
+| Decision | `REQUIRES_REFINEMENT` resolved by workflow-create refinement |
+| Confidence | 92 percent for target, 64 percent for previous S03 deletion shape |
 | Execution profile | `FULL_PATH` |
 
 ## Normalized Requirement
@@ -18,6 +18,13 @@ Create an executable workflow that retires all remaining
 the accepted FA-MSA-001 microservice target landscape. The workflow must not
 delete modules until caller-free evidence, service-local parity, rollback or
 deprecation notes and the applicable `QUALITY.md` gate exist.
+
+2026-05-22 refinement: workflow execution of S03 proved the previous
+early-retirement shape was unsafe. The target requirement is now normalized as:
+by closure, no productive `forensic-analytics-*` Gradle module remains
+registered or referenced; every removed behavior must first be implemented in
+the owning target service or explicitly deprecated with tests, migration notes
+and rollback evidence.
 
 ## Requirement Classification
 
@@ -40,11 +47,11 @@ deprecation notes and the applicable `QUALITY.md` gate exist.
 
 | Role | Finding |
 |---|---|
-| Senior Requirement Engineer | APPROVE FOR WORKFLOW. The user intent is clear: if the listed modules cannot be deleted now, create a workflow to make deletion safe. |
-| Senior System Architect | APPROVE FOR WORKFLOW with `FULL_PATH`. Direct deletion is blocked by current Gradle and source references; retirement must be sliced by service boundary. |
-| Senior Java Backend Developer | APPROVE FOR WORKFLOW. Slices must verify exact ports, use cases, adapters, tests and callers before moving or removing any Java code. |
-| Senior React Frontend Developer | N/A for workflow creation; impact check required for query/report API shape changes. |
-| Senior Tester | APPROVE FOR WORKFLOW. Final deregistration requires full local quality gate and regression parity for removed testbed coverage. |
+| Senior Requirement Engineer | REQUIRES REFINEMENT FOR S03. The end goal is correct, but early retirement slices must become parity, handoff and caller-migration slices before removal. |
+| Senior System Architect | REQUIRES REFINEMENT. S03 mixed service parity, caller migration and physical deletion; removal must move to the final S14 gate. |
+| Senior Java Backend Developer | REQUIRES REFINEMENT. Consumers such as the orchestrator, Boot, Bootstrap and testbed must be rewired or retired before adapter deletion. |
+| Senior React Frontend Developer | NO DIRECT FRONTEND IMPLEMENTATION. S08/S09 must preserve or version public API and CLI behavior before caller migration. |
+| Senior Tester | REQUIRES REFINEMENT. Existing regression coverage may be removed only after service-local parity or explicit deprecation tests exist. |
 
 ## Specialist Findings
 
@@ -69,27 +76,31 @@ deprecation notes and the applicable `QUALITY.md` gate exist.
 
 ## Dependency And Deadlock Validation
 
-The workflow is acyclic. S03 through S06 are potential parallel slices after
-S02, but execution defaults to one slice at a time unless the orchestrator
-confirms disjoint locks.
+The refined workflow is acyclic. S03 through S06 are service parity and handoff
+readiness slices after S02, not deletion slices. S10 can also run after S02.
+Execution defaults to one slice at a time unless the orchestrator confirms
+disjoint locks.
 
 ```text
 S00 -> S01 -> S02 -> S03/S04/S05/S06/S10
 S03/S04/S05/S06 -> S07 -> S08 -> S09
-S07/S08/S10 -> S11 -> S12 -> S13 -> S14 -> S15
+S07/S08/S10 -> S11 -> S12 -> S13 -> S14(final removal) -> S15
 ```
 
 ## Open Questions
 
-- None block workflow creation.
+- Whether local/file repository input remains target behavior or becomes
+  explicit deprecation is resolved inside S03 before repository-source removal.
 - During execution, any missing service owner, contract field, rollback path or
   test parity proof stops the relevant slice.
 
 ## Blockers
 
-No blocker prevents workflow creation. Direct module deletion is blocked until
-the workflow records caller-free evidence and required quality-gate success.
+No blocker prevents workflow refinement. Direct module deletion is blocked
+until S14 records caller-free evidence, replacement or deprecation parity,
+rollback notes and required quality-gate success.
 
 ## Decision
 
-`READY_FOR_WORKFLOW`
+`READY_FOR_WORKFLOW` after refinement. Resume execution at S03 as a parity and
+handoff readiness slice, not as a deletion slice.

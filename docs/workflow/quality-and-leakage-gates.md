@@ -29,20 +29,27 @@ git diff --check
 Each execution slice must run:
 
 1. The targeted service/module tests named in the slice.
-2. Caller-free scans for the candidate module or package.
+2. Scoped readiness scans for the target service or caller group changed by the
+   slice.
 3. `git diff --check`.
 4. The repository minimum gate for production Java, tests, Gradle, contracts,
    runtime wiring or deployment changes.
-5. The full local gate before S14 and S15 closure.
+5. Full caller-free scans and the full local gate only in the final removal
+   and closure slices.
 
 ## Leakage Checks
 
-For service migration slices, run targeted scans proving the service does not
-depend on central legacy implementation modules:
+For service migration readiness slices, run targeted scans proving the target
+service touched by the slice does not depend on central legacy implementation
+modules:
 
 ```bash
 bash -lc 'if rg -n -P "^import\s+de\.burger\.forensics\.analytics\.(application|domain|adapter|persistence|rest|cli|engine|logging|observability|bootstrap|boot|ingestion\.request|ingestion\.grpc)\b" services -S -g "*.java"; then exit 1; else test $? -eq 1; fi'
 ```
+
+Earlier parity and handoff slices must not use full-repository zero-reference
+scans as success criteria while the legacy module is intentionally retained as
+rollback or regression evidence. Those scans belong to the final removal gate.
 
 For final removal, prove no legacy build references remain:
 
