@@ -246,7 +246,7 @@ explicitly allows the service boot jar into the Docker build context; S06 does
 not add target-service Docker Compose, Docker Swarm or Kubernetes deployment
 descriptors.
 
-Slice S09 adds `services/analysis-orchestrator-service` as target-service
+Slice S07 keeps `services/analysis-orchestrator-service` as target-service
 deployment evidence. The service owns:
 
 - `services/analysis-orchestrator-service/build.gradle.kts`;
@@ -268,14 +268,16 @@ The local operator start command is:
 ./gradlew :services:analysis-orchestrator-service:bootRun --dependency-verification strict --console=plain --stacktrace
 ```
 
-S09 records this as the service-local start command, but the S09 verification
+S07 records this as the service-local start command, but the S07 verification
 run does not execute `bootRun` or a live health probe. Runtime smoke evidence
 must be recorded separately before claiming a verified running Analysis
 Orchestrator Service instance.
 
-The service Dockerfile is service-owned, but S09 does not add target-service
-Docker Compose, Docker Swarm or Kubernetes deployment descriptors. Those
-readiness claims require later repository tooling and validation commands.
+The service Dockerfile is service-owned, but S07 does not add target-service
+Docker Compose, Docker Swarm or Kubernetes deployment descriptors and does not
+claim Docker image build readiness from the Dockerfile alone. Those readiness
+claims require later repository tooling, Docker build-context verification and
+validation commands.
 
 Slice S10 adds `services/query-report-api-service` as target-service
 deployment evidence. The service owns:

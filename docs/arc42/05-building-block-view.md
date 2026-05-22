@@ -198,7 +198,7 @@ unchanged and generated transport classes stay inside the service build.
 `services/java-ast-analysis-service` and
 `forensic-analytics-adapter-javaparser` remain current-state predecessor and
 rollback evidence. They are not compatibility aliases for
-`java-parser-analysis-service` and are not removed by S07.
+`java-parser-analysis-service` and are not removed by S05.
 
 Slice S06 adds `services/joern-analysis-service` as target-service
 implementation evidence for the FA-MSA-001 Joern semantic analysis boundary.
@@ -215,24 +215,28 @@ through an Analysis Store byte alias.
 rollback evidence. They are not compatibility aliases for
 `joern-analysis-service` and are not removed by S06.
 
-Slice S09 adds `services/analysis-orchestrator-service` as target-service
+Slice S07 adds `services/analysis-orchestrator-service` as target-service
 implementation evidence for the FA-MSA-001 orchestration boundary. It is
 registered as its own Gradle project and owns service-local domain,
 application ports, inbound gRPC adapter, in-memory orchestration repository,
-bootstrap, configuration, tests, README and Dockerfile. The service uses
-`analysis-job.proto` as a service-local generated transport input and maps it
-to service-owned job lifecycle, lease, retry, failure, dead-letter,
-correlation and job-to-artifact reference models.
+repository-to-BTM pending readiness state, bootstrap, configuration, tests,
+README and Dockerfile. The service uses `analysis-job.proto` as a
+service-local generated transport input and maps it to service-owned job
+lifecycle, lease, retry, failure, dead-letter, correlation,
+job-to-artifact-reference and repository-to-BTM status models.
 
 `forensic-analytics-engine`, orchestration portions of
 `forensic-analytics-application` and `services/analysis-store-service` remain
 current-state predecessor and rollback evidence. They are not compatibility
-aliases for `analysis-orchestrator-service` and are not removed by S09.
+aliases for `analysis-orchestrator-service` and are not removed by S07.
 
 The orchestrator coordinates workflow state only. It must not own repository
 checkout, JavaParser scanning, Joern execution, report rendering, artifact byte
 custody, producer-local artifact catalogs, canonical analysis facts or private
-persistence owned by another service.
+persistence owned by another service. S07 `StartRepositoryToBtm` and
+`GetRepositoryToBtmStatus` behavior is acceptance/status-only and deliberately
+reports incomplete repository handoff, not-ready BTM delivery and skipped Joern
+execution until later slices wire verified owner services.
 
 The query/report API service is the public facade for status, query and report
 responses. It must use owner APIs and must not perform analysis execution or

@@ -11,6 +11,7 @@ import de.burger.forensics.analytics.analysisjob.v1.AnalysisWorkerKind;
 import de.burger.forensics.analytics.analysisjob.v1.ArtifactByteAccess;
 import de.burger.forensics.analytics.analysisjob.v1.ArtifactByteCustody;
 import de.burger.forensics.analytics.analysisjob.v1.ArtifactReference;
+import de.burger.forensics.analytics.analysisjob.v1.BtmDeliveryReadiness;
 import de.burger.forensics.analytics.analysisjob.v1.CompleteAnalysisJobRequest;
 import de.burger.forensics.analytics.analysisjob.v1.FailAnalysisJobRequest;
 import de.burger.forensics.analytics.analysisjob.v1.GetAnalysisJobRequest;
@@ -19,12 +20,20 @@ import de.burger.forensics.analytics.analysisjob.v1.LeaseAnalysisJobRequest;
 import de.burger.forensics.analytics.analysisjob.v1.ListAnalysisJobsRequest;
 import de.burger.forensics.analytics.analysisjob.v1.PlanInstrumentationTargetsRequest;
 import de.burger.forensics.analytics.analysisjob.v1.RegisterAnalysisArtifactsRequest;
+import de.burger.forensics.analytics.analysisjob.v1.RepositoryToBtmBuildContext;
+import de.burger.forensics.analytics.analysisjob.v1.RepositoryToBtmDiagnosticSeverity;
+import de.burger.forensics.analytics.analysisjob.v1.RepositoryToBtmOrchestrationState;
+import de.burger.forensics.analytics.analysisjob.v1.RepositoryToBtmRepositoryReference;
+import de.burger.forensics.analytics.analysisjob.v1.RepositoryToBtmRevision;
+import de.burger.forensics.analytics.analysisjob.v1.RepositoryToBtmWorkspacePolicy;
 import de.burger.forensics.analytics.analysisjob.v1.ReportAnalysisJobProgressRequest;
+import de.burger.forensics.analytics.analysisjob.v1.RequestedRepositoryToBtmOutput;
 import de.burger.forensics.analytics.analysisjob.v1.SourceSnapshotId;
 import de.burger.forensics.analytics.analysisjob.v1.StartRepositoryToBtmRequest;
 import de.burger.forensics.analytics.analysisjob.v1.SubmitAnalysisJobRequest;
 import de.burger.forensics.analytics.services.analysisorchestrator.adapter.out.memory.InMemoryAnalysisJobRepository;
 import de.burger.forensics.analytics.services.analysisorchestrator.application.AnalysisJobApplicationService;
+import de.burger.forensics.analytics.services.analysisorchestrator.application.RepositoryToBtmOrchestrationApplicationService;
 import io.grpc.ManagedChannel;
 import io.grpc.Server;
 import io.grpc.Status;
@@ -41,6 +50,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -63,7 +73,10 @@ class AnalysisJobGrpcEndpointTest {
         );
         server = InProcessServerBuilder.forName(serverName)
             .directExecutor()
-            .addService(new AnalysisJobGrpcEndpoint(applicationService))
+            .addService(new AnalysisJobGrpcEndpoint(
+                applicationService,
+                new RepositoryToBtmOrchestrationApplicationService()
+            ))
             .build()
             .start();
         channel = InProcessChannelBuilder.forName(serverName).directExecutor().build();
@@ -414,20 +427,98 @@ class AnalysisJobGrpcEndpointTest {
             StatusRuntimeException.class,
             () -> stub.planInstrumentationTargets(PlanInstrumentationTargetsRequest.newBuilder().build())
         );
-        var start = assertThrows(
-            StatusRuntimeException.class,
-            () -> stub.startRepositoryToBtm(StartRepositoryToBtmRequest.newBuilder().build())
-        );
-        var status = assertThrows(
-            StatusRuntimeException.class,
-            () -> stub.getRepositoryToBtmStatus(GetRepositoryToBtmStatusRequest.newBuilder().build())
-        );
 
         assertEquals(Status.Code.INVALID_ARGUMENT, invalid.getStatus().getCode());
         assertEquals(Status.Code.UNIMPLEMENTED, planning.getStatus().getCode());
         assertTrue(planning.getStatus().getDescription().contains("not owned"));
-        assertEquals(Status.Code.UNIMPLEMENTED, start.getStatus().getCode());
-        assertEquals(Status.Code.UNIMPLEMENTED, status.getStatus().getCode());
+    }
+
+    @Test
+    void acceptsRepositoryToBtmAsPendingStatusWithoutWorkerExecution() {
+        var started = stub.startRepositoryToBtm(startRepositoryToBtmRequest("start-repository-to-btm").build());
+        var status = stub.getRepositoryToBtmStatus(GetRepositoryToBtmStatusRequest.newBuilder()
+            .setRequestId("request-get-repository-to-btm")
+            .setCorrelationId("correlation-repository-to-btm")
+            .setAnalysisRunId(runId())
+            .build());
+        var repositoryJobs = stub.listAnalysisJobs(ListAnalysisJobsRequest.newBuilder()
+            .setRequestId("request-list-repository-workers")
+            .setCorrelationId("correlation-repository-to-btm")
+            .setAnalysisRunId(runId())
+            .setWorkerKind(AnalysisWorkerKind.ANALYSIS_WORKER_KIND_REPOSITORY_ANALYSIS)
+            .build());
+        var allJobs = stub.listAnalysisJobs(ListAnalysisJobsRequest.newBuilder()
+            .setRequestId("request-list-all-workers")
+            .setCorrelationId("correlation-repository-to-btm")
+            .setAnalysisRunId(runId())
+            .build());
+
+        assertEquals("REPOSITORY_TO_BTM_WAITING_FOR_REPOSITORY", started.getStatus().getCode());
+        assertEquals("correlation-repository-to-btm", started.getStatus().getCorrelationId());
+        assertEquals(false, started.getStatus().getRetryable());
+        assertTrue(started.getStatus().getMessage().contains("waiting for repository source handoff"));
+        assertEquals(RepositoryToBtmOrchestrationState.REPOSITORY_TO_BTM_ORCHESTRATION_STATE_WAITING_FOR_REPOSITORY, started.getState());
+        assertEquals(BtmDeliveryReadiness.BTM_DELIVERY_READINESS_NOT_READY, started.getBtmDeliveryReadiness());
+        assertEquals(AnalysisCompleteness.ANALYSIS_COMPLETENESS_INCOMPLETE, started.getCompleteness());
+        assertEquals(true, started.getJoernSkipped());
+        assertEquals("repository-analysis-", started.getRepositoryAnalysisJobId().getValue().substring(0, "repository-analysis-".length()));
+        assertEquals(false, started.hasSourceSnapshotId());
+        assertEquals("REPOSITORY_TO_BTM_WAITING_FOR_REPOSITORY", started.getDiagnostics(0).getCode());
+        assertEquals(RepositoryToBtmDiagnosticSeverity.REPOSITORY_TO_BTM_DIAGNOSTIC_SEVERITY_INFO, started.getDiagnostics(0).getSeverity());
+        assertEquals(false, started.getDiagnostics(0).getRetryable());
+        assertEquals(true, started.getDiagnostics(0).getAffectsCompleteness());
+        assertEquals(started.getStatus(), status.getStatus());
+        assertEquals(started.getCompleteness(), status.getCompleteness());
+        assertEquals(started.getRepositoryAnalysisJobId(), status.getRepositoryAnalysisJobId());
+        assertEquals(started.getState(), status.getState());
+        assertEquals(started.getBtmDeliveryReadiness(), status.getBtmDeliveryReadiness());
+        assertEquals(started.getJoernSkipped(), status.getJoernSkipped());
+        assertEquals(started.getDiagnosticsList(), status.getDiagnosticsList());
+        assertEquals(0, repositoryJobs.getJobsCount());
+        assertEquals(0, allJobs.getJobsCount());
+        assertEquals(0, started.getAcceptedGeneratedArtifactsCount());
+        assertNoWorkersCanLeaseJobs();
+    }
+
+    @Test
+    void rejectsUnknownUnsafeAndConflictingRepositoryToBtmRequests() {
+        stub.startRepositoryToBtm(startRepositoryToBtmRequest("start-original-repository-to-btm").build());
+
+        var missing = assertThrows(StatusRuntimeException.class, () -> stub.getRepositoryToBtmStatus(GetRepositoryToBtmStatusRequest.newBuilder()
+            .setRequestId("request-get-missing-repository-to-btm")
+            .setCorrelationId("correlation-repository-to-btm")
+            .setAnalysisRunId(AnalysisRunId.newBuilder().setValue("missing-run"))
+            .build()));
+        var unsafeRemote = assertThrows(StatusRuntimeException.class, () -> stub.startRepositoryToBtm(
+            startRepositoryToBtmRequest("start-unsafe-repository-to-btm")
+                .setRepository(RepositoryToBtmRepositoryReference.newBuilder()
+                    .setRemoteUrl("https://token@example.test/repo.git")
+                    .setProvider("git"))
+                .build()
+        ));
+        var missingOutput = assertThrows(StatusRuntimeException.class, () -> stub.startRepositoryToBtm(
+            startRepositoryToBtmRequest("start-missing-output")
+                .clearRequestedOutputs()
+                .build()
+        ));
+        var idempotencyConflict = assertThrows(StatusRuntimeException.class, () -> stub.startRepositoryToBtm(
+            startRepositoryToBtmRequest("start-original-repository-to-btm")
+                .setRevision(RepositoryToBtmRevision.newBuilder().setBranch("feature/parity"))
+                .build()
+        ));
+        var analysisRunConflict = assertThrows(StatusRuntimeException.class, () -> stub.startRepositoryToBtm(
+            startRepositoryToBtmRequest("start-conflicting-repository-to-btm")
+                .setRevision(RepositoryToBtmRevision.newBuilder().setBranch("feature/parity"))
+                .build()
+        ));
+
+        assertEquals(Status.Code.NOT_FOUND, missing.getStatus().getCode());
+        assertEquals(Status.Code.INVALID_ARGUMENT, unsafeRemote.getStatus().getCode());
+        assertEquals(Status.Code.INVALID_ARGUMENT, missingOutput.getStatus().getCode());
+        assertEquals(Status.Code.ALREADY_EXISTS, idempotencyConflict.getStatus().getCode());
+        assertTrue(idempotencyConflict.getStatus().getDescription().contains("start-original-repository-to-btm"));
+        assertEquals(Status.Code.ALREADY_EXISTS, analysisRunConflict.getStatus().getCode());
+        assertTrue(analysisRunConflict.getStatus().getDescription().contains("run-1"));
     }
 
     @Test
@@ -475,6 +566,56 @@ class AnalysisJobGrpcEndpointTest {
             .setLeaseSeconds(60)
             .setMaxJobs(1)
             .build();
+    }
+
+    private void assertNoWorkersCanLeaseJobs() {
+        for (var workerKind : List.of(
+            AnalysisWorkerKind.ANALYSIS_WORKER_KIND_REPOSITORY_ANALYSIS,
+            AnalysisWorkerKind.ANALYSIS_WORKER_KIND_AST_ANALYSIS,
+            AnalysisWorkerKind.ANALYSIS_WORKER_KIND_JOERN_ANALYSIS,
+            AnalysisWorkerKind.ANALYSIS_WORKER_KIND_BTM_GENERATION,
+            AnalysisWorkerKind.ANALYSIS_WORKER_KIND_GRAPH_ANALYSIS,
+            AnalysisWorkerKind.ANALYSIS_WORKER_KIND_REPORT,
+            AnalysisWorkerKind.ANALYSIS_WORKER_KIND_LLM_PROJECTION
+        )) {
+            var leased = stub.leaseAnalysisJob(LeaseAnalysisJobRequest.newBuilder()
+                .setRequestId("request-lease-empty-" + workerKind.getNumber())
+                .setIdempotencyKey("lease-empty-" + workerKind.getNumber())
+                .setCorrelationId("correlation-repository-to-btm")
+                .setWorkerId("worker-" + workerKind.getNumber())
+                .setWorkerKind(workerKind)
+                .setLeaseSeconds(60)
+                .setMaxJobs(1)
+                .build());
+
+            assertEquals(0, leased.getJobsCount());
+        }
+    }
+
+    private static StartRepositoryToBtmRequest.Builder startRepositoryToBtmRequest(String idempotencyKey) {
+        return StartRepositoryToBtmRequest.newBuilder()
+            .setRequestId("request-" + idempotencyKey)
+            .setIdempotencyKey(idempotencyKey)
+            .setSchemaVersion("schema-v1")
+            .setCorrelationId("correlation-repository-to-btm")
+            .setAnalysisRunId(runId())
+            .setRepository(RepositoryToBtmRepositoryReference.newBuilder()
+                .setRemoteUrl("https://example.test/repository.git")
+                .setProvider("git"))
+            .setRevision(RepositoryToBtmRevision.newBuilder()
+                .setBranch("main"))
+            .setWorkspacePolicy(RepositoryToBtmWorkspacePolicy.newBuilder()
+                .setEphemeral(true)
+                .setAllowShallowClone(true)
+                .setTimeoutSeconds(60)
+                .setMaxWorkspaceBytes(1_000_000))
+            .setBuildContext(RepositoryToBtmBuildContext.newBuilder()
+                .setBuildTool("gradle")
+                .setBuildId("build-1")
+                .setRootProjectName("demo")
+                .addDeclaredModules("app"))
+            .addRequestedOutputs(RequestedRepositoryToBtmOutput.REQUESTED_REPOSITORY_TO_BTM_OUTPUT_BTM_RULES)
+            .putAttributes("repository", "demo");
     }
 
     private static AnalysisRunId runId() {

@@ -106,12 +106,12 @@ git diff --check
 | `docs/workflow/slice-dependency-map.md` | `45bae9d5c84b3b2054406bb0b9f1f63cdbe0e4acafa836ebed0306093d7dce12` |
 | `docs/workflow/quality-and-leakage-gates.md` | `d14265dbc64b2182d561bb027a07114a674f001de4a123ce508ea4f08ad1af63` |
 | `docs/workflow/three-amigos-decision-record.md` | `fc614b339bf9b571c1841ee84f43f8a475397b7d41fb53d875076284eccc62da` |
-| `docs/workflow/execution-report.md` | `b75a1ea35515029f60a229e66b96eda304e712e404b13621ab16c38c7b749caf` |
+| `docs/workflow/execution-report.md` | `e0820de1fc27b081ce508233ed955ebb5052c6d24a2618de8f15c7123d71ab6d` |
 | `docs/adr/ADR-0017-target-microservices-service-landscape.md` | `ddf2d281e8bb8d8924f4622e532da29e8f94038a66ae57d3d06a4ff85e72e95f` |
 | `docs/architecture/target-microservices-architecture.md` | `f78ae9aa0e7f1ee7446f07b564408a6ff5610f7e1b9f6702823e9d38363a3550` |
 | `docs/architecture/current-coupling-map.md` | `370a12b924a6f71fb8013ac80c9922e3fb6dcd08412c0d450db3f56f1ef5da9a` |
-| `docs/architecture/service-migration-map.md` | `f5a334103173124ba2c1311dc04f2b540ffd7444c40cbb7e833b3c9183da3c0e` |
-| `docs/architecture/service-communication-matrix.md` | `fac93e3dbb25c752db9386b571c8fe019b52bea8ef6e6e9736adfe31b9e73dc2` |
+| `docs/architecture/service-migration-map.md` | `1bf05e7f07004ba2c6dfcdf32d50e698225b0527b2df55edd7042a71e669bdd6` |
+| `docs/architecture/service-communication-matrix.md` | `361334d922635e536dbffe617d7d4eb50436122a6851dc1851bc909f9e099156` |
 | `settings.gradle.kts` | `f5be0d269f3a0ec5d36a9e7787a1802bebc777ab44c7544fb5759d09f53eb6a7` |
 | `build.gradle.kts` | `c9f1866871a500675f725c47795606a8ab19c9e64ba65c39e907b0cc19b8a7c1` |
 

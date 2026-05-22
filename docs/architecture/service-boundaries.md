@@ -359,6 +359,22 @@ Outbound communication:
 - REST/gRPC/messaging/file-contract calls to repository source, ingestion,
   JavaParser, Joern and query/report owners.
 
+S07 implementation state:
+
+- registered Gradle project `services:analysis-orchestrator-service`;
+- service-local package
+  `de.burger.forensics.analytics.services.analysisorchestrator`;
+- service-local domain, application service, inbound gRPC adapter,
+  in-memory orchestration repository, bootstrap, configuration, tests, README
+  and Dockerfile;
+- verified job lifecycle, worker lease, retry, timeout, failure,
+  dead-letter and job-to-artifact-reference behavior;
+- verified `StartRepositoryToBtm` acceptance and `GetRepositoryToBtmStatus`
+  lookup as pending status only;
+- repository-to-BTM status remains incomplete, BTM delivery is not ready and
+  Joern is marked skipped until later owner-service wiring exists;
+- `PlanInstrumentationTargets` remains `UNIMPLEMENTED`.
+
 Current evidence:
 
 - `services/analysis-orchestrator-service`;
@@ -370,6 +386,8 @@ Stop conditions:
 
 - the orchestrator becomes a new monolith by embedding other service
   responsibilities;
+- repository-to-BTM acceptance dispatches checkout, parser, Joern, BTM
+  generation or report work from the orchestrator;
 - orchestration state ownership is unclear;
 - it reads private databases or workspaces directly.
 
@@ -428,10 +446,11 @@ S10 implementation state:
 - service-local generated `analysis-job.proto` transport classes.
 
 The S10 outbound gRPC adapter still calls the predecessor Analysis Store owner
-API for repository-to-BTM submission/status because the S09 target
-`analysis-orchestrator-service` intentionally leaves those RPCs unimplemented.
-Switching this facade to the target orchestrator requires a later
-contract-first slice and verified target endpoint behavior.
+API for public repository-to-BTM submission/status. S07 target
+`analysis-orchestrator-service` now accepts repository-to-BTM requests and
+returns pending status only; switching this facade to the target orchestrator
+still requires a later contract-first slice with verified public API parity and
+caller behavior.
 
 Stop conditions:
 

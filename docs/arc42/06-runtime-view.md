@@ -157,11 +157,10 @@ reporting or persistence internals.
 
 S10 implementation evidence exposes the current verified public
 repository-analysis submission/status routes in `query-report-api-service`.
-Those routes still use the predecessor Analysis Store owner API because the
-S09 target `analysis-orchestrator-service` intentionally leaves
-repository-to-BTM submission/status RPCs unimplemented. The target runtime path
-below remains the intended owner boundary and requires a later contract-first
-repointing slice.
+Those routes still use the predecessor Analysis Store owner API. S07 target
+`analysis-orchestrator-service` accepts repository-to-BTM requests and returns
+pending status only; facade repointing still requires a later contract-first
+slice that proves public API parity and caller behavior.
 
 The repository analysis delivery path must be verified as:
 
@@ -229,7 +228,7 @@ evidence rather than observed runtime execution. Joern unavailable, timeout
 and missing mapping states stay explicit retryable diagnostics where the
 underlying runtime condition is retryable.
 
-Slice S09 verifies a local orchestration runtime boundary:
+Slice S07 verifies a local orchestration runtime boundary:
 
 ```text
 AnalysisJobService gRPC request
@@ -240,11 +239,20 @@ AnalysisJobService gRPC request
   -> job-to-artifact references only
 ```
 
-The S09 service does not call repository checkout, JavaParser, Joern, report or
-artifact-byte implementations. Transitional `analysis-job.proto` RPC names for
-instrumentation planning and repository-to-BTM orchestration remain generated
-transport methods, but this service returns `UNIMPLEMENTED` for them so worker
-or report behavior is not absorbed into orchestration.
+The S07 service also accepts `StartRepositoryToBtm` requests and answers
+`GetRepositoryToBtmStatus` as process-local readiness state:
+
+```text
+StartRepositoryToBtm
+  -> validate public repository/build metadata
+  -> store pending repository-to-BTM orchestration status
+  -> return INCOMPLETE, BTM_NOT_READY and joernSkipped=true
+```
+
+The S07 service does not call repository checkout, JavaParser, Joern, BTM
+generation, report or artifact-byte implementations. `PlanInstrumentationTargets`
+remains `UNIMPLEMENTED`, and repository-to-BTM status intentionally reports
+incomplete handoff until later slices connect verified owner services.
 
 ADR-0018 allows the initial runtime communication contracts to describe planned
 API, worker, replay, report and event flows before each runtime path exists.

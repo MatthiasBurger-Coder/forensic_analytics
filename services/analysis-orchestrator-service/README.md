@@ -2,7 +2,8 @@
 
 ## Status
 
-Slice 09 initial independent Spring Boot gRPC service.
+FA-MSA-001-LMR S07 independent Spring Boot gRPC service with
+repository-to-BTM acceptance and status-only orchestration.
 
 This service owns orchestration state only: analysis job lifecycle, workflow
 status, worker leases and attempts, retry and failure state, dead-letter
@@ -24,19 +25,28 @@ Artifact fields stored by this service are coordination references only. Owner
 services remain responsible for artifact bytes, producer-local metadata and
 retrieval APIs.
 
-The `PlanInstrumentationTargets`, `StartRepositoryToBtm` and
-`GetRepositoryToBtmStatus` RPC names remain in the transitional
-`analysis-job.proto` contract, but this S09 target service returns
-`UNIMPLEMENTED` for them because those behaviors would pull worker or
-workflow-specific implementation into the orchestrator.
+`StartRepositoryToBtm` accepts a validated repository-to-BTM request and
+`GetRepositoryToBtmStatus` returns the stored readiness state. The current
+state is intentionally incomplete: the service records that repository source
+handoff has not completed, BTM delivery is not ready and Joern is skipped. It
+does not dispatch repository workers, run checkout, call JavaParser, call
+Joern, generate BTM files, render reports or expose artifact bytes.
+
+`PlanInstrumentationTargets` remains `UNIMPLEMENTED` because instrumentation
+target selection would pull worker or analysis implementation into the
+orchestrator.
+
+Current orchestration state is process-local and in-memory. S07 does not claim
+durable persistence, distributed worker coordination, event outbox publishing,
+cross-instance idempotency or production runtime readiness.
 
 ## Verification
 
-Slice 09 verification commands:
+S07 verification commands:
 
 ```bash
 ./gradlew :services:analysis-orchestrator-service:test --dependency-verification strict --console=plain --stacktrace
-./gradlew :services:analysis-orchestrator-service:build --dependency-verification strict --console=plain --stacktrace
+./gradlew :forensic-analytics-engine:test :forensic-analytics-application:test :forensic-analytics-domain:test --dependency-verification strict --console=plain --stacktrace
 ./gradlew test --dependency-verification strict --console=plain --stacktrace
 git diff --check
 ```
@@ -51,7 +61,7 @@ Local operator start command:
 
 - The current repository still contains predecessor orchestration behavior in
   `services/analysis-store-service` and monolith modules.
-- S09 does not retire `forensic-analytics-engine`,
+- S07 does not retire `forensic-analytics-engine`,
   `forensic-analytics-application` or `services/analysis-store-service`.
-- S09 does not add Docker Compose, Swarm or Kubernetes deployment descriptors
+- S07 does not add Docker Compose, Swarm or Kubernetes deployment descriptors
   for this target service.

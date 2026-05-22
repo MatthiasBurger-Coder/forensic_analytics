@@ -22,6 +22,12 @@ final class RequiredFields {
         }
     }
 
+    static void positive(long value, String fieldName) {
+        if (value < 1) {
+            throw new ValidationException(fieldName + " must be positive");
+        }
+    }
+
     static void percent(int value, String fieldName) {
         if (value < 0 || value > 100) {
             throw new ValidationException(fieldName + " must be between 0 and 100");

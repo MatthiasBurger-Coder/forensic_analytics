@@ -73,9 +73,10 @@ S10 transitional note: the implemented
 `services/query-report-api-service` repository-analysis submission/status
 routes still call the predecessor `analysis-store-service` owner API through
 service-local generated `analysis-job.proto` classes. This does not change the
-target matrix above; repointing to `analysis-orchestrator-service` requires a
-later contract-first slice because S09 intentionally leaves repository-to-BTM
-submission/status RPCs unimplemented.
+target matrix above; S07 `analysis-orchestrator-service` accepts
+repository-to-BTM requests and returns pending status only, so repointing the
+public facade still requires a later contract-first slice with public parity
+tests.
 
 ## Transitional Contract Evidence
 
@@ -90,8 +91,9 @@ planned routes are target contract intent rather than implementation evidence.
 Event contracts are design artifacts until producers, consumers and broker
 runtime evidence are verified. The query/report API still relies on
 predecessor `analysis-store-service` behavior for repository-analysis
-submission/status; repointing that path to `analysis-orchestrator-service`
-requires a later contract-first slice.
+submission/status; S07 target orchestrator pending-status support is not yet a
+public facade replacement, so repointing that path to
+`analysis-orchestrator-service` requires a later contract-first slice.
 
 ## Error, Retry And Idempotency Rules
 
