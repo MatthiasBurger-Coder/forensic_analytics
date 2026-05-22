@@ -140,6 +140,13 @@ supersedes that target direction for productive services: shared Java logging
 modules must be retired or replaced with service-local configuration and
 `observability-stack` deployment material before final acceptance.
 
+S14 records that this retirement is not yet executable for the current
+workflow state. `forensic-analytics-logging` and
+`forensic-analytics-observability` remain legacy in-process modules while
+callers and regression coverage still depend on them. Later retirement slices
+must prove caller-free evidence, replacement parity and rollback or explicit
+deprecation before removing either module.
+
 Automatic method logging records method operation names, phases, durations, correlation IDs and exception categories only. It must not record arguments, return values, raw exception messages, stack frames or evidence payloads.
 
 ## 8.9 Spring Boot Boundary

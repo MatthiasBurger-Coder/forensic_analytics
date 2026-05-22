@@ -13,6 +13,11 @@ inputs. They must not be described as the completed FA-MSA-001 service
 landscape until the workflow proves independent build, start, test,
 configuration, healthcheck, container and deployment evidence.
 
+S14 keeps retained `forensic-analytics-*` modules as legacy in-process and
+rollback evidence because caller-free proof is not available. They are not
+productive service boundaries and must not be introduced as shared Java
+implementation modules between independently deployable services.
+
 ## Boundary Rules
 
 Every productive service must have:

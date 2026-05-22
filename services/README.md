@@ -87,6 +87,12 @@ infrastructure. It preserves the current `forensic-analytics-testbed` coverage
 in a service-root location while the legacy module remains active as rollback
 and current quality-gate evidence.
 
+S14 records `NO_REMOVAL_SAFE` for direct legacy module retirement. The
+retained `forensic-analytics-*` modules are still legacy in-process and
+rollback evidence, not shared service implementation modules for productive
+target services. Later retirement slices must remove only verified
+caller-free paths.
+
 ## Local Runtime Evidence
 
 The existing local repository-to-BTM service landscape is documented in

@@ -1077,7 +1077,7 @@ stop_conditions:
 Purpose: move system and integration test orchestration into a non-production
 testbed root while preserving coverage.
 
-### Slice 14 - Legacy Shared Module Retirement
+### Slice 14 - Legacy Module Retirement Readiness
 
 ```yaml
 slice_id: S14
@@ -1089,16 +1089,7 @@ secondary_reviewers:
   - senior-tester
   - senior-devops
 affected_files:
-  - settings.gradle.kts
-  - forensic-analytics-application/**
-  - forensic-analytics-boot-app/**
-  - forensic-analytics-bootstrap/**
-  - forensic-analytics-domain/**
-  - forensic-analytics-engine/**
-  - forensic-analytics-logging/**
-  - forensic-analytics-observability/**
-  - forensic-analytics-persistence/**
-  - forensic-analytics-rest/**
+  - docs/workflow/workflow.md
   - docs/arc42/05-building-block-view.md
   - docs/arc42/07-deployment-view.md
   - docs/arc42/08-crosscutting-concepts.md
@@ -1110,15 +1101,7 @@ affected_files:
   - docs/workflow/execution-report.md
   - services/README.md
 affected_modules:
-  - forensic-analytics-application
-  - forensic-analytics-boot-app
-  - forensic-analytics-bootstrap
-  - forensic-analytics-domain
-  - forensic-analytics-engine
-  - forensic-analytics-logging
-  - forensic-analytics-observability
-  - forensic-analytics-persistence
-  - forensic-analytics-rest
+  - none
 affected_contracts: []
 dependencies:
   - S05
@@ -1132,8 +1115,7 @@ dependencies:
   - S13
 parallel_group: G09
 file_locks:
-  - settings.gradle.kts
-  - forensic-analytics-*/**
+  - docs/workflow/workflow.md
   - docs/arc42/05-building-block-view.md
   - docs/arc42/07-deployment-view.md
   - docs/arc42/08-crosscutting-concepts.md
@@ -1150,22 +1132,52 @@ architecture_locks:
   - no-shared-java-implementation
 quality_gates:
   targeted:
-    - rg -n "project\\(\":forensic-analytics-(domain|application|persistence|logging|bootstrap|boot-app|engine|rest|observability)\"" -g "build.gradle.kts"
+    - git ls-files "*build.gradle.kts" | xargs rg -n "forensic-analytics-(domain|application|persistence|logging|bootstrap|boot-app|engine|rest|observability)"
+    - rg -n -P "^import\\s+de\\.burger\\.forensics\\.analytics\\.(application|domain|persistence|logging|observability|rest|bootstrap|boot|engine)\\b" services/*/src/main forensic-analytics-*/src/main -g "*.java"
+    - rg -n -P "^import\\s+de\\.burger\\.forensics\\.analytics\\.(application|domain|persistence|logging|observability|rest|bootstrap|boot|engine)\\b" services/*/src/test forensic-analytics-*/src/test -g "*.java"
     - git diff --check
   required:
-    - ./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace
+    - git diff --check
 documentation:
-  arc42: update final building-block and deployment views
-  adr: checked or superseded for retired modules
+  arc42: record retirement-readiness outcome without claiming module removal
+  adr: checked; no superseding ADR required unless a later retirement slice removes a module
 stop_conditions:
-  - any old module still has production or test callers
+  - any code, build or source-tree retirement is attempted while old modules still have production or test callers
   - removal would delete the only regression coverage for a behavior
-  - rollback instructions are missing
+  - rollback or explicit deprecation instructions are missing for a candidate path
   - shared Java module replacement is introduced
+  - caller-free evidence cannot be reproduced with the documented scans
 ```
 
-Purpose: remove central shared modules from the Gradle build and source tree
-only after replacement service ownership and caller-free evidence are proven.
+Purpose: decide whether central shared modules can be retired. If caller
+evidence remains, complete S14 as `NO_REMOVAL_SAFE`, update the retirement plan
+and defer deletion to follow-up slices. S14 must not remove Gradle modules,
+source trees or default runtime paths unless the documented scans prove that a
+specific candidate is caller-free and replacement parity plus rollback or
+explicit deprecation evidence exists.
+
+S14 has two valid outcomes:
+
+- `RETIREMENT_READY`: all relevant scans are empty for an explicitly named
+  candidate path, replacement parity is tested and a separate retirement slice
+  may remove that path with the full `QUALITY.md` gate.
+- `NO_REMOVAL_SAFE`: caller evidence remains. No product or build files are
+  removed; the workflow records blockers and follow-up slice candidates.
+
+Follow-up retirement work is outside S14 unless the candidate is already
+caller-free. Provisional follow-up slices:
+
+- `S14A`: migrate or explicitly deprecate local CLI `analyze` and
+  `ingest-request` behavior.
+- `S14B`: replace in-process REST, Bootstrap and Boot runtime callers with
+  service-owned contracts and startup evidence.
+- `S14C`: resolve Engine and Ingestion Request ownership through target
+  service APIs or explicit deprecation.
+- `S14D`: replace monolith-coupled Testbed coverage with networked or
+  service-local E2E coverage that is stronger than the current regression
+  evidence.
+- `S14E`: remove only verified caller-free modules or paths and run the full
+  local quality gate.
 
 ### Slice 15 - Runtime Readiness, Architecture Tests And Closure
 
@@ -1272,8 +1284,10 @@ auto` is forbidden for this product migration workflow.
 FA-MSA-001 is complete when:
 
 1. The mandatory service roots exist under `services/`.
-2. The old central monolith modules in AC-1 are no longer central Gradle
-   subprojects.
+2. The old central monolith modules in AC-1 are either retired from the Gradle
+   build with caller-free proof, replacement parity and rollback evidence, or
+   explicitly retained as `NO_REMOVAL_SAFE` legacy paths with documented
+   follow-up retirement slices.
 3. Productive services do not depend on shared Java domain, application,
    persistence, logging, bootstrap, DTO, fixture, repository or error-model
    modules.
@@ -1287,6 +1301,11 @@ FA-MSA-001 is complete when:
 9. Testbed is non-production and no service depends on it.
 10. Architecture, ADR and workflow execution documentation record final state
     and verification evidence.
+
+`NO_REMOVAL_SAFE` is an accepted workflow closure state only when S14 records
+the active callers, the reason deletion is unsafe, and the exact follow-up
+retirement slices needed before module removal can be retried. It is not a
+production microservice-readiness claim for the retained legacy modules.
 
 ## Handoff To Workflow Execute
 

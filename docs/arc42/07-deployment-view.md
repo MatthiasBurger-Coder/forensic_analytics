@@ -329,6 +329,12 @@ Dockerfile, Docker Compose service, Docker Swarm stack or Kubernetes manifest
 in S13. The legacy `forensic-analytics-testbed` module remains active until a
 later retirement slice proves parity, caller migration and rollback evidence.
 
+Slice S14 does not remove deployment or runtime paths. It records
+`NO_REMOVAL_SAFE` when caller scans still find active legacy module use. The
+Boot app, Bootstrap runtime and retained `forensic-analytics-*` modules remain
+legacy in-process and rollback deployment evidence until later retirement
+slices migrate, deprecate or prove each path caller-free.
+
 ## 7.7 Local Repository-to-BTM Transitional Landscape
 
 The repository currently contains a local Docker Compose descriptor for the

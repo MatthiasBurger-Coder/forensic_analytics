@@ -254,6 +254,12 @@ Optional later service candidates such as `btm-generation-service`,
 `graph-replay-service` and `incident-analysis-service` remain outside
 mandatory FA-MSA-001 closure unless a later requirement makes them mandatory.
 
+Slice S14 is a retirement-readiness decision, not a direct deletion slice.
+Current caller evidence keeps the central `forensic-analytics-*` modules as
+legacy in-process and rollback building blocks until later follow-up slices
+prove caller-free evidence, replacement parity and rollback or explicit
+deprecation. Retaining those modules is not a microservice-readiness claim.
+
 ADR-0018 accepts initial logical contracts for target service communication.
 Contracts marked as planned are design artifacts only; they do not prove that
 an endpoint, RPC, event publisher or event consumer is implemented. Generated

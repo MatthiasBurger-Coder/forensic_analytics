@@ -211,3 +211,23 @@ contracts, not the legacy modules and not the transitional predecessor service
 names. Later removal requires caller-free evidence, replacement parity or
 explicit deprecation, rollback or operator migration notes and the required
 quality gate.
+
+## S14 Retirement-Readiness Update
+
+S14 repeats the caller-free question after S05 through S13 and still resolves
+to `NO_REMOVAL_SAFE`. The new `services:testbed` root preserves the legacy
+regression surface in a service-root location, which is useful parity evidence
+but still a test dependency on retained monolith modules.
+
+Current evidence remains non-empty:
+
+- 58 build-file references to the S14 legacy module candidates;
+- 633 production imports into retained `application`, `domain`, `persistence`,
+  `logging`, `observability`, `rest`, `bootstrap`, `boot` or `engine`
+  packages;
+- 594 test imports into those retained packages;
+- nine `services:testbed` test dependencies on retained legacy modules.
+
+These findings block direct module retirement. The next safe action is
+path-specific migration or explicit deprecation, followed by a smaller
+caller-free removal slice for each verified candidate.

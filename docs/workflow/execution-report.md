@@ -39,7 +39,7 @@
 | S11 | COMPLETED | CLI client target public API boundary extracted; service test/build, OpenAPI contract test, predecessor CLI test, root test, role checklist reviews and whitespace gate passed. |
 | S12 | COMPLETED | Observability stack registered as deployment-oriented policy boundary; service no-source test, root test, static boundary scans, documentation reviews and whitespace gate passed. |
 | S13 | COMPLETED | Testbed registered as non-production integration/system-test boundary; target testbed gate, root test, stop-condition scans, local role checklists and whitespace gate passed. |
-| S14 | IN_PROGRESS | Scope remediation added required arc42, architecture, services README and execution report locks before retirement preflight scans. |
+| S14 | COMPLETED | Three Amigos repair converted direct deletion into a retirement-readiness gate; caller scans remain non-empty, so S14 closes as `NO_REMOVAL_SAFE` with follow-up retirement slices. |
 | S15 | PENDING | Runtime readiness, architecture tests and closure |
 
 ## Command Log
@@ -216,6 +216,13 @@
 | S13 | `git diff --cached --check` | PASS: no whitespace errors after staging only S13 files, including new testbed sources and fixtures. |
 | S14 | S14 workflow-scope review | BLOCKED before scope remediation: S14 requires final building-block/deployment documentation and retirement evidence updates, but `docs/arc42/**`, `docs/architecture/**`, `docs/workflow/execution-report.md` and `services/README.md` were absent from S14 affected files and file locks. |
 | S14 scope remediation | `git diff --check` | PASS: no whitespace errors after adding the missing S14 documentation and report locks. |
+| S14 | Three Amigos retirement gate | REQUIRES_REFINEMENT before repair: direct legacy module deletion conflicts with verified caller evidence and the strangler strategy; S14 was repaired into a `NO_REMOVAL_SAFE` retirement-readiness gate with follow-up deletion slices. |
+| S14 | `git ls-files "*build.gradle.kts" \| xargs rg -n "forensic-analytics-(domain\|application\|persistence\|logging\|bootstrap\|boot-app\|engine\|rest\|observability)" \| wc -l` | PASS_WITH_BLOCKER_EVIDENCE: 58 build-file references remain for S14 legacy module candidates; module removal is not caller-free. |
+| S14 | `rg -n -P "^import\\s+de\\.burger\\.forensics\\.analytics\\.(application\|domain\|persistence\|logging\|observability\|rest\|bootstrap\|boot\|engine)\\b" services/*/src/main forensic-analytics-*/src/main -g "*.java" \| wc -l` | PASS_WITH_BLOCKER_EVIDENCE: 633 production imports remain into retained legacy packages. |
+| S14 | `rg -n -P "^import\\s+de\\.burger\\.forensics\\.analytics\\.(application\|domain\|persistence\|logging\|observability\|rest\|bootstrap\|boot\|engine)\\b" services/*/src/test forensic-analytics-*/src/test -g "*.java" \| wc -l` | PASS_WITH_BLOCKER_EVIDENCE: 594 test imports remain into retained legacy packages. |
+| S14 | `git ls-files "services/*/build.gradle.kts" \| xargs -r rg -n "forensic-analytics-(domain\|application\|persistence\|logging\|bootstrap\|boot-app\|engine\|rest\|observability)" \|\| true` | PASS_WITH_BLOCKER_EVIDENCE: `services:testbed` intentionally retains nine test dependencies on legacy modules as S13 parity evidence; no productive service dependency was introduced. |
+| S14 | `git diff --check` | PASS: no whitespace errors after S14 workflow repair and documentation synchronization. |
+| S14 | `git diff --cached --check` | PASS: no whitespace errors after staging the S14 workflow repair documentation. |
 
 ## Subagent Review Log
 
@@ -337,10 +344,15 @@
 | S13 | Senior DevOps local role checklist | PASS: `services:testbed` adds no Dockerfile or runtime service descriptor, and Compose documentation only references the verified `deployment/docker-compose/repository-to-btm.local.yml` file without adding unverified commands. |
 | S13 | Microservice Senior Expert local role checklist | PASS: testbed is explicitly non-production infrastructure, no production service depends on its source or fixtures, and it is not documented as a productive backend service or shared Java runtime module. |
 | S13 | Senior Java Backend local role checklist | PASS: `services:testbed` has no production source tree, keeps copied coverage under a service-local test package, and does not change domain, application, adapter, persistence or runtime behavior. |
+| S14 | Senior Requirement Engineer local role checklist | PASS_WITH_REPAIR: S14 now matches the EPIC and strangler strategy by treating active callers as blocker evidence and deferring deletion to path-specific follow-up slices. |
+| S14 | Senior System Architect local role checklist | PASS_WITH_REPAIR: retained `forensic-analytics-*` modules are documented as legacy in-process and rollback evidence, not productive microservices or shared service implementation modules. |
+| S14 | Senior Java Backend local role checklist | PASS_WITH_BLOCKER_EVIDENCE: current backend imports and Gradle references prove that direct removal would break active behavior; no source or build retirement was attempted. |
+| S14 | Senior React Frontend local role checklist | PASS: no frontend files or UI/API client behavior changed; frontend impact is limited to future caller migration if a later workflow routes UI calls through target services. |
+| S14 | Senior Tester local role checklist | PASS_WITH_REPAIR: S14 keeps regression coverage intact and records follow-up tests required before any legacy path removal. |
 
 ## Blockers
 
-No active blocker for S00, S01, S02, S03, S04, S05, S06, S07, S08, S09, S10, S11, S12 or S13 as completed workflow slices.
+No active blocker for S00, S01, S02, S03, S04, S05, S06, S07, S08, S09, S10, S11, S12, S13 or S14 as completed workflow slices.
 No active S11 scope or contract blocker after the scope remediation checkpoint
 commit `2fd98a5`; S11 implementation reviews and quality gates passed during
 continuation closure.
@@ -350,10 +362,11 @@ passed during continuation closure.
 No active S13 scope or implementation blocker after the scope remediation
 checkpoint commit `f7f582b`; the initial targeted Gradle run was retried after
 a daemon/cache stop failure and the targeted plus root gates passed.
-Production implementation migration remains gated by the later service
-extraction slices. Legacy module removal remains blocked until a later slice
-proves caller-free evidence, replacement parity or explicit deprecation,
-rollback or operator notes and the required quality gate.
+S14 completes as `NO_REMOVAL_SAFE`: legacy module removal remains blocked until
+path-specific follow-up slices prove caller-free evidence, replacement parity
+or explicit deprecation, rollback or operator notes and the required quality
+gate. This is an accepted workflow repair state, not a claim that retained
+legacy modules are production microservices.
 
 ## Final Acceptance
 

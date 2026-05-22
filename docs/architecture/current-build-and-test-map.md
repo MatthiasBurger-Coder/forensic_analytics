@@ -255,6 +255,12 @@ descriptor. It may use verified local deployment descriptors as test
 environment evidence, but S13 does not add Compose, Swarm or Kubernetes
 readiness.
 
+Slice 14 is a retirement-readiness documentation and evidence gate. It does
+not remove any Gradle module, source tree or default runtime path because
+caller scans still find active build, production and test references to the
+retained `forensic-analytics-*` modules. A later removal slice must name a
+caller-free candidate and run the full local quality gate.
+
 Slice 15 later verified the local repository-to-BTM Compose descriptor with
 six service `bootJar` tasks, `docker compose config`, `docker compose build`,
 Compose startup, Gateway plus service health checks and Compose cleanup. This

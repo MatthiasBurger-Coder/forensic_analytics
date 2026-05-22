@@ -91,3 +91,69 @@ for:
 Removal remains blocked until a later slice proves caller-free evidence,
 replacement parity, rollback or explicit deprecation strategy and a quality gate
 that is not weakened by deleting the current regression evidence.
+
+## S14 Three Amigos Repair Decision
+
+S14 was repaired from a direct deletion slice into a retirement-readiness gate.
+The direct deletion requirement is not executable on the current repository
+state because the required caller-free evidence is false.
+
+Decision: `NO_REMOVAL_SAFE` for module and source-tree retirement in the
+current workflow state.
+
+Three Amigos findings:
+
+- Requirement: S14 may decide retirement readiness, but it must not delete
+  active legacy modules. The active target is to record blockers and follow-up
+  slices when callers remain.
+- Architecture: the repository is still in a strangler phase. Central
+  `forensic-analytics-*` modules remain legacy in-process and rollback paths,
+  not completed microservices and not caller-free removal candidates.
+- Backend: CLI, REST, Bootstrap, Boot, Engine, Ingestion Request, Persistence,
+  Application and Domain paths still provide verified behavior or ports used by
+  current tests and runtime wiring.
+- Test: `forensic-analytics-testbed` and `services:testbed` intentionally keep
+  regression coverage over legacy in-process behavior. Removing old modules
+  before stronger service or networked E2E evidence exists would delete the
+  only verified coverage for several behaviors.
+- DevOps: no deletion may be claimed as safe until the Gradle build, start
+  paths and rollback/deprecation notes are updated and the full local quality
+  gate passes.
+
+S14 repair verification found active coupling evidence:
+
+```bash
+git ls-files "*build.gradle.kts" | xargs rg -n "forensic-analytics-(domain|application|persistence|logging|bootstrap|boot-app|engine|rest|observability)" | wc -l
+# 58
+
+rg -n -P "^import\\s+de\\.burger\\.forensics\\.analytics\\.(application|domain|persistence|logging|observability|rest|bootstrap|boot|engine)\\b" services/*/src/main forensic-analytics-*/src/main -g "*.java" | wc -l
+# 633
+
+rg -n -P "^import\\s+de\\.burger\\.forensics\\.analytics\\.(application|domain|persistence|logging|observability|rest|bootstrap|boot|engine)\\b" services/*/src/test forensic-analytics-*/src/test -g "*.java" | wc -l
+# 594
+```
+
+`services:testbed` currently has nine test dependencies on retained legacy
+modules. This is intentional parity evidence from S13, not permission to use
+the testbed as a production dependency.
+
+S14 therefore has this executable rule:
+
+1. If scans find active callers, complete S14 as `NO_REMOVAL_SAFE`.
+2. Do not remove `settings.gradle.kts` entries, source trees, runtime paths or
+   tests in S14.
+3. Create follow-up retirement slices for each active legacy path.
+4. Retire only a path that later proves caller-free evidence, replacement
+   parity, rollback or explicit deprecation and the required `QUALITY.md` gate.
+
+## Follow-Up Retirement Slices
+
+These slices are provisional follow-up work, not executable S14 work:
+
+| Follow-up | Purpose | Required proof before deletion |
+|---|---|---|
+| `S14A` | Migrate or explicitly deprecate local CLI `analyze` and `ingest-request` behavior. | Public API CLI parity or deprecation tests, operator migration notes and root quality gate. |
+| `S14B` | Replace in-process REST, Bootstrap and Boot runtime callers with service-owned contracts and startup evidence. | Service start/health tests, REST/gRPC contract parity, rollback notes and full local quality gate. |
+| `S14C` | Resolve Engine and Ingestion Request ownership through target service APIs or explicit deprecation. | Owner API contract, compatibility/deprecation tests and no remaining production caller imports. |
+| `S14D` | Replace monolith-coupled Testbed coverage with networked or service-local E2E coverage. | E2E tests that cover the same evidence without shared Java implementation modules. |
+| `S14E` | Remove only verified caller-free modules or paths. | Empty caller scans for the named path, replacement parity, rollback/deprecation notes and full local quality gate. |
