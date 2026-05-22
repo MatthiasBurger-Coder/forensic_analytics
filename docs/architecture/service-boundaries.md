@@ -455,10 +455,19 @@ Current evidence:
 - `forensic-analytics-cli`;
 - `contracts/cli/gateway-cli-contract.md`.
 
+S11 scope:
+
+- create `services/cli-client` as the target public HTTP/OpenAPI client;
+- keep compatibility command vocabulary `gateway-submit`, `--gateway` and
+  `gateway.v1` unless a later contract decision introduces aliases;
+- leave legacy `forensic-analytics-cli analyze` and `ingest-request` as
+  predecessor in-process commands until a later parity or deprecation slice.
+
 Stop conditions:
 
-- CLI imports service implementation classes;
-- CLI depends on shared monolith domain/application modules after migration;
+- target `services/cli-client` imports service implementation classes;
+- target `services/cli-client` depends on shared monolith domain/application
+  modules after migration;
 - legacy local commands are removed without parity or explicit deprecation
   tests.
 

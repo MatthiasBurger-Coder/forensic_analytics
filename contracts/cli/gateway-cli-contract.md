@@ -4,12 +4,12 @@
 
 CLI consumer contract for public repository-to-BTM submission.
 
-`forensic-analytics-cli gateway-submit` is the explicit Gateway command for this
-transitional contract. The local-path `forensic-analytics-cli analyze` command
-remains a legacy in-process adapter and is not silently routed to Gateway.
-Under FA-MSA-001 the target CLI is `cli-client` and the public API authority is
-`query-report-api-service`; Gateway naming is retained only as current command
-and file compatibility evidence.
+`gateway-submit` is the explicit compatibility command for this transitional
+contract. The local-path `forensic-analytics-cli analyze` and `ingest-request`
+commands remain legacy in-process adapters and are not silently routed to the
+public API. Under FA-MSA-001 the target CLI is `cli-client` and the public API
+authority is `query-report-api-service`; Gateway naming is retained only as
+current command, option and file compatibility evidence.
 
 ## Producer And Consumer
 
@@ -18,7 +18,8 @@ and file compatibility evidence.
 | Consumer | `cli-client` target; current predecessor implementation is `forensic-analytics-cli` |
 | Producer | `query-report-api-service` target; current predecessor implementation evidence is `forensic-gateway-service` |
 | Protocol | HTTP JSON through `contracts/openapi/gateway-api.yaml` |
-| Gateway operations | `startRepositoryToBtmAnalysis`, `getRepositoryAnalysis` |
+| S11 operation | `startRepositoryToBtmAnalysis` |
+| Future operation | `getRepositoryAnalysis`; out of S11 until this contract defines a concrete command and option mapping |
 | Contract version | `gateway-cli-v1` |
 
 ## Current Compatibility Decision
@@ -36,9 +37,11 @@ Public repository-to-BTM submission requires:
 - `StartRepositoryAnalysisRequest`;
 - redacted `RepositoryToBtmSubmission` and `RepositoryToBtmStatus` responses.
 
-Therefore, the implemented Gateway path is `gateway-submit`. The implementation
-must not silently route the existing local-path `analyze` command to Gateway.
-Later FA-MSA-001 client work may rename or supersede this command only with a
+Therefore, the S11 target-client path keeps the compatibility command name
+`gateway-submit`, the `--gateway` option name and `gateway.v1` schema-version
+examples. The implementation must not silently route the existing local-path
+`analyze` or `ingest-request` commands to the public API. Later FA-MSA-001
+client work may rename or supersede these compatibility names only with a
 contract compatibility decision and tests.
 
 ## Planned CLI Request Mapping
@@ -59,7 +62,12 @@ request:
 | `--build-id` | `StartRepositoryAnalysisRequest.buildContext.buildId` |
 | `--root-project` | `StartRepositoryAnalysisRequest.buildContext.rootProjectName` |
 | `--declared-modules` | `StartRepositoryAnalysisRequest.buildContext.declaredModules[]` |
-| `--timeout-seconds`, `--max-workspace-bytes`, `--allow-shallow-clone` | `StartRepositoryAnalysisRequest.workspacePolicy` |
+| `--timeout-seconds` | `StartRepositoryAnalysisRequest.workspacePolicy.timeoutSeconds` |
+| `--max-workspace-bytes` | `StartRepositoryAnalysisRequest.workspacePolicy.maxWorkspaceBytes` |
+| `--allow-shallow-clone` | `StartRepositoryAnalysisRequest.workspacePolicy.allowShallowClone` |
+| fixed client value `false` | `StartRepositoryAnalysisRequest.workspacePolicy.ephemeral` |
+| fixed client value `false` | `StartRepositoryAnalysisRequest.workspacePolicy.allowPartialClone` |
+| fixed client value `false` | `StartRepositoryAnalysisRequest.workspacePolicy.allowSparseCheckout` |
 | `--correlation-id` | `X-Correlation-Id` |
 | `--idempotency-key` | `Idempotency-Key` |
 
@@ -80,8 +88,10 @@ For `202 Accepted`, CLI output may include only public API fields:
 - `correlationId`;
 - public diagnostics.
 
-For status reads, CLI output may include only fields from
-`RepositoryToBtmStatus`.
+Status reads are out of S11. A later status command must define the command
+name, `analysisRunId` option and required `X-Correlation-Id` mapping before it
+may call `getRepositoryAnalysis`. When approved, status output may include only
+fields from `RepositoryToBtmStatus`.
 
 CLI output must not include:
 
@@ -119,10 +129,13 @@ meaning:
 
 ## Generated-Code Boundary
 
-The CLI must not depend on Gateway implementation classes, generated transport
-classes, service-local domain models, service-local DTOs, mappers or internal
-exceptions. The contract source of truth is `contracts/openapi/gateway-api.yaml`
-and this file.
+The CLI must not depend on `query-report-api-service` implementation classes,
+predecessor Gateway implementation classes, service-local domain models,
+service-local DTOs, service-local mappers, internal exceptions, generated
+gRPC/protobuf transport classes or shared Java DTO modules. S11 uses HTTP JSON
+against the public OpenAPI contract. Generated OpenAPI client code is not part
+of S11; if introduced later, it must be generated service-locally inside
+`services/cli-client` from `contracts/openapi/gateway-api.yaml`.
 
 ## Contract Tests
 
@@ -131,9 +144,12 @@ Required contract tests:
 - `GatewayOpenApiContractTest` verifies the transitional public API route,
   schema, idempotency and
   redaction contract markers.
-- `ForensicAnalyticsCliTest` verifies that `gateway-submit` uses a Gateway
-  client instead of the in-process `RunRepositoryAnalysisUseCase`, preserves the
-  current local `analyze` compatibility decision and keeps output public.
+- `CliClient*Test` verifies that `services/cli-client` uses HTTP JSON public API
+  access instead of in-process analysis, parser, Joern or persistence behavior.
+- Predecessor `ForensicAnalyticsCliTest` continues to verify that
+  `gateway-submit` uses a Gateway client instead of the in-process
+  `RunRepositoryAnalysisUseCase`, preserves the current local `analyze`
+  compatibility decision and keeps output public while the predecessor remains.
 
 ## Implementation Stop Conditions
 
@@ -142,6 +158,10 @@ Stop a later implementation slice when:
 - a CLI option cannot be mapped to a public API field or header;
 - public OpenAPI lacks a required request, response or error field;
 - local-path analysis would be silently routed to Gateway;
+- local-path ingestion request import would be silently routed to the public API;
 - public CLI output would expose private workspace or checkout data;
 - implementation requires shared Java DTOs or public API implementation classes;
+- implementation imports `query-report-api-service` Java classes or generated
+  gRPC/protobuf transport classes;
+- implementation adds status reads without a concrete status command contract;
 - retry or polling behavior is needed but not explicitly approved.

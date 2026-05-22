@@ -36,7 +36,7 @@
 | S08 | COMPLETED | Joern analysis service extracted as target-name service; target service tests, packaging, build, root test, identity scans, specialist reviews and staged whitespace gate passed. |
 | S09 | COMPLETED | Analysis orchestrator service extracted as target-name service; artifact-boundary and timeout remediations, target service tests/build, root test, specialist re-reviews and staged whitespace gate passed. |
 | S10 | COMPLETED | Query report API service extracted as target-name public API facade; target service tests/build, root test, documentation remediation, specialist reviews and whitespace gate passed. |
-| S11 | PENDING | CLI client decoupling |
+| S11 | PENDING | CLI client decoupling; pre-implementation scope and contract blockers found before target service creation. |
 | S12 | PENDING | Observability stack and logging decoupling |
 | S13 | PENDING | Testbed decoupling |
 | S14 | PENDING | Legacy shared module retirement |
@@ -160,6 +160,18 @@
 | S10 | `./gradlew :forensic-analytics-rest:test --tests "de.burger.forensics.analytics.rest.GatewayOpenApiContractTest" --dependency-verification strict --console=plain --stacktrace` | PASS after final remediation: build successful in 19s; OpenAPI contract metadata remains aligned to verified health/status routes. |
 | S10 | `./gradlew test --dependency-verification strict --console=plain --stacktrace` | PASS after S04/S10 dependency repair commit `cd1140b` and final S10 remediation: build successful in 48s; 219 actionable tasks, 218 up-to-date. |
 | S10 | `git diff --check` | PASS after final remediation and S04/S10 dependency repair: no whitespace errors in tracked S10 diffs. |
+| S11 | S11 workflow-scope review | BLOCKED before scope remediation: S11 omitted `docs/workflow/execution-report.md`, `services/README.md`, relevant `docs/arc42/**`, relevant `docs/architecture/**`, and concrete CLI/OpenAPI contract locks needed to record target-client evidence and compatibility limits. |
+| S11 | Contract/API Governance review | BLOCKED before contract remediation: CLI contract needed explicit S11 operation scope, generated-code boundary, fixed workspace-policy values, status-read non-scope and compatibility vocabulary for `gateway-submit`, `--gateway` and `gateway.v1`. |
+| S11 | Senior Tester preflight | BLOCKED before target service creation: required `:services:cli-client:test` cannot run until the target project exists; predecessor `forensic-analytics-cli` remains monolith-coupled and needs compatibility coverage if touched. |
+| S11 | Senior Java Backend preflight | PASS_WITH_PLAN: create a new `services:cli-client` public HTTP/OpenAPI client and leave `forensic-analytics-cli analyze` and `ingest-request` as legacy predecessor behavior unless a later parity/deprecation slice changes them. |
+| S11 scope remediation | `./gradlew :forensic-analytics-rest:test --tests "de.burger.forensics.analytics.rest.GatewayOpenApiContractTest" --dependency-verification strict --console=plain --stacktrace` | FAILED before test/contract metadata remediation: `GatewayOpenApiContractTest` still expected the old `forensic-analytics-cli planned Gateway mode` CLI consumer marker after S11 narrowed POST to `cli-client` target mode and status reads to future CLI command mapping. |
+| S11 scope remediation | `./gradlew :forensic-analytics-rest:test --tests "de.burger.forensics.analytics.rest.GatewayOpenApiContractTest" --dependency-verification strict --console=plain --stacktrace` | PASS after metadata remediation: build successful in 10s; POST OpenAPI metadata names `cli-client` target mode plus predecessor `gateway-submit` compatibility, and GET status metadata marks CLI status mapping as future work. |
+| S11 scope remediation | `./gradlew :forensic-analytics-cli:test --tests "de.burger.forensics.analytics.cli.ForensicAnalyticsCliTest" --dependency-verification strict --console=plain --stacktrace` | FAILED before predecessor test remediation: `ForensicAnalyticsCliTest` still asserted older Gateway-only wording after the CLI contract changed to target `cli-client`, predecessor compatibility and status-read non-scope language. |
+| S11 scope remediation | `./gradlew :forensic-analytics-cli:test --tests "de.burger.forensics.analytics.cli.ForensicAnalyticsCliTest" --dependency-verification strict --console=plain --stacktrace` | PASS after predecessor test remediation: build successful in 10s; contract coverage now verifies target `cli-client`, predecessor `forensic-analytics-cli`, `gateway-submit` compatibility and S11 status-read non-scope. |
+| S11 scope remediation | `./gradlew :forensic-analytics-cli:test --dependency-verification strict --console=plain --stacktrace` | PASS: build successful in 9s; all predecessor CLI tests remain green after contract assertion updates. |
+| S11 scope remediation | `git diff --check` | PASS: no whitespace errors in tracked S11 scope, contract, test and documentation diffs. The first tool call timed out at 34s; the 180s rerun completed cleanly. |
+| S11 scope remediation | Documentation and workflow re-review | BLOCKED before matrix/README qualifier remediation: `services/README.md` did not yet qualify `cli-client` as a public API client rather than productive backend service, and `docs/architecture/service-communication-matrix.md` still described CLI status/report reads too broadly. |
+| S11 scope remediation | `git diff --check` | PASS after README/matrix qualifier remediation: no whitespace errors in tracked S11 remediation diffs. |
 
 ## Subagent Review Log
 
@@ -257,10 +269,22 @@
 | S10 | Contract/API Governance subagent | BLOCKED before final status-schema remediation: `/api/status` implementation serialized dependency field `serviceName` while the OpenAPI `DependencyStatus` schema requires `name`. |
 | S10 | Senior Documentation Engineer subagent | BLOCKED before S04/S10 dependency repair: root test failed in `AnalysisEventsContractTest` because `analysis.artifact.registered` wording drifted from the tested Analysis Store predecessor-flow metadata-only phrase. |
 | S10 | Senior Java Backend subagent | BLOCKED before final incomplete-completeness remediation: owner `ANALYSIS_COMPLETENESS_INCOMPLETE` could still publish `COMPLETED` or `FAILED`; remediated by forcing incomplete completeness to public `UNKNOWN` with diagnostics. |
+| S11 | Senior Workflow Architect subagent | BLOCKED before scope remediation: S11 locks omitted mandatory report/service/architecture documentation and needed the legacy CLI non-scope clarified before implementation. |
+| S11 | Contract/API Governance subagent | REQUIRES_REFINEMENT: S11 must update CLI/OpenAPI contract metadata before product implementation and must not add status reads without explicit command mapping. |
+| S11 | Senior Tester subagent | BLOCKED before target service creation: `services:cli-client` is absent, so the required target test gate cannot run until registration and service files exist. |
+| S11 | Senior Java Backend subagent | PASS_WITH_PLAN: implement only a new target `services/cli-client` HTTP public API client, avoid monolith/service implementation dependencies and keep predecessor local commands unchanged. |
+| S11 scope remediation | Contract/API Governance subagent | PASS: S11 is scoped to `startRepositoryToBtmAnalysis`, compatibility vocabulary and fixed workspace policy values are preserved, generated/shared Java dependency boundaries are explicit, and status reads require future CLI command mapping. |
+| S11 scope remediation | Senior Tester subagent | PASS: updated OpenAPI and predecessor CLI contract tests align with the new S11 contract; target `:services:cli-client:test` remains correctly blocked until service creation. |
+| S11 scope remediation | Senior Workflow Architect subagent | BLOCKED before matrix qualifier remediation: communication matrix still authorized CLI status/report reads too generally despite the S11 stop condition and CLI contract non-scope. |
+| S11 scope remediation | Senior Documentation Engineer subagent | BLOCKED before README/matrix qualifier remediation: service README and communication matrix needed explicit `cli-client` public-client, non-backend and later CLI status/report mapping qualifiers. |
+| S11 scope remediation | Senior Workflow Architect subagent | PASS after matrix qualifier remediation: communication matrix now limits S11 CLI use to repository-to-BTM submission and defers status/report CLI mappings. |
+| S11 scope remediation | Senior Documentation Engineer subagent | PASS after README/matrix qualifier remediation: service README now qualifies `cli-client` as a public API client boundary, not a productive backend service, and matrix/docs keep legacy CLI commands and future status/report mappings explicit. |
 
 ## Blockers
 
 No active blocker for S00, S01, S02, S03, S04, S05, S06, S07, S08, S09 or S10 as completed workflow slices.
+S11 product implementation is blocked until this scope and contract remediation
+checkpoint is committed.
 Production implementation migration remains gated by the later service
 extraction slices. Legacy module removal remains blocked until a later slice
 proves caller-free evidence, replacement parity or explicit deprecation,

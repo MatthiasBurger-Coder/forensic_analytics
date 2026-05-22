@@ -893,13 +893,21 @@ secondary_reviewers:
 affected_files:
   - services/cli-client/**
   - forensic-analytics-cli/**
-  - contracts/cli/**
+  - forensic-analytics-rest/src/test/java/de/burger/forensics/analytics/rest/GatewayOpenApiContractTest.java
+  - contracts/cli/gateway-cli-contract.md
+  - contracts/openapi/gateway-api.yaml
   - settings.gradle.kts
+  - docs/arc42/**
+  - docs/architecture/**
+  - docs/workflow/execution-report.md
+  - services/README.md
 affected_modules:
   - services:cli-client
   - forensic-analytics-cli
+  - forensic-analytics-rest
 affected_contracts:
-  - CLI public API contract
+  - contracts/cli/gateway-cli-contract.md
+  - contracts/openapi/gateway-api.yaml
 dependencies:
   - S03
   - S10
@@ -907,28 +915,42 @@ parallel_group: G07
 file_locks:
   - services/cli-client/**
   - forensic-analytics-cli/**
-  - contracts/cli/**
+  - forensic-analytics-rest/src/test/java/de/burger/forensics/analytics/rest/GatewayOpenApiContractTest.java
+  - contracts/cli/gateway-cli-contract.md
+  - contracts/openapi/gateway-api.yaml
   - settings.gradle.kts
+  - docs/arc42/**
+  - docs/architecture/**
+  - docs/workflow/execution-report.md
+  - services/README.md
 contract_locks:
-  - cli-client
+  - contracts/cli/gateway-cli-contract.md
+  - contracts/openapi/gateway-api.yaml
 architecture_locks:
   - cli-no-business-logic
 quality_gates:
   targeted:
     - ./gradlew :services:cli-client:test --dependency-verification strict --console=plain --stacktrace
+    - ./gradlew :forensic-analytics-rest:test --tests "de.burger.forensics.analytics.rest.GatewayOpenApiContractTest" --dependency-verification strict --console=plain --stacktrace
     - git diff --check
   required:
     - ./gradlew test --dependency-verification strict --console=plain --stacktrace
 documentation:
-  arc42: checked
+  arc42: update CLI client implemented evidence and predecessor limits
   adr: checked
 stop_conditions:
-  - CLI depends on service implementation classes or monolith domain/application modules after migration
-  - CLI executes analysis, parser, Joern or persistence behavior directly
+  - target services/cli-client depends on service implementation classes or monolith domain/application modules
+  - target services/cli-client executes analysis, parser, Joern or persistence behavior directly
   - local legacy commands are removed without deprecation or parity tests
+  - local forensic-analytics-cli analyze or ingest-request is silently routed to the public API
+  - status reads are implemented without explicit CLI command and option mapping in the CLI contract
 ```
 
-Purpose: move CLI behavior into `services/cli-client` as a public API client.
+Purpose: create `services/cli-client` as the target public API client.
+
+S11 does not remove or rewrite legacy `forensic-analytics-cli analyze` or
+`ingest-request` behavior. Those predecessor commands remain current-state
+evidence until a later slice provides explicit parity or deprecation tests.
 
 ### Slice 12 - Observability Stack And Logging Decoupling
 

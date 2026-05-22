@@ -23,7 +23,8 @@ class GatewayOpenApiContractTest {
         assertContains(repositoryPost, "operationId: startRepositoryToBtmAnalysis");
         assertContains(repositoryPost, "x-implementation-status: current-verified");
         assertContains(repositoryPost, "x-cli-contract: contracts/cli/gateway-cli-contract.md");
-        assertContains(repositoryPost, "forensic-analytics-cli planned Gateway mode");
+        assertContains(repositoryPost, "cli-client target public API mode");
+        assertContains(repositoryPost, "forensic-analytics-cli gateway-submit predecessor compatibility mode");
         assertContains(repositoryPost, "- $ref: '#/components/parameters/MutationCorrelationId'");
         assertContains(repositoryPost, "- $ref: '#/components/parameters/IdempotencyKey'");
         assertContains(repositoryPost, "'202':");
@@ -31,7 +32,8 @@ class GatewayOpenApiContractTest {
         assertContains(repositoryStatusGet, "operationId: getRepositoryAnalysis");
         assertContains(repositoryStatusGet, "x-implementation-status: current-verified");
         assertContains(repositoryStatusGet, "x-cli-contract: contracts/cli/gateway-cli-contract.md");
-        assertContains(repositoryStatusGet, "forensic-analytics-cli planned Gateway mode");
+        assertContains(repositoryStatusGet, "x-cli-contract-status: future-cli-command-required");
+        assertContains(repositoryStatusGet, "S11 does not define a CLI status command or response mapping.");
         assertContains(repositoryStatusGet, "- $ref: '#/components/parameters/RequiredCorrelationId'");
         assertContains(repositoryStatusGet, "$ref: '#/components/schemas/RepositoryToBtmStatus'");
 

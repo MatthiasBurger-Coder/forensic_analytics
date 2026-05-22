@@ -51,7 +51,8 @@ paths:
       x-implementation-status: current-verified
       x-cli-contract: contracts/cli/gateway-cli-contract.md
       x-cli-consumers:
-        - forensic-analytics-cli planned Gateway mode (transitional predecessor for cli-client public API mode)
+        - cli-client target public API mode
+        - forensic-analytics-cli gateway-submit predecessor compatibility mode
       parameters:
         - $ref: '#/components/parameters/MutationCorrelationId'
         - $ref: '#/components/parameters/IdempotencyKey'
@@ -80,8 +81,8 @@ paths:
       operationId: getRepositoryAnalysis
       x-implementation-status: current-verified
       x-cli-contract: contracts/cli/gateway-cli-contract.md
-      x-cli-consumers:
-        - forensic-analytics-cli planned Gateway mode (transitional predecessor for cli-client public API mode)
+      x-cli-contract-status: future-cli-command-required
+      x-cli-contract-note: S11 does not define a CLI status command or response mapping.
       parameters:
         - $ref: '#/components/parameters/RequiredCorrelationId'
         - $ref: '#/components/parameters/AnalysisRunId'
