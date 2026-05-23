@@ -162,6 +162,13 @@ Spring Boot is a server bootstrap and adapter wiring concern. It may configure o
 
 The accepted Boot boundary preserves ADR-0005. Spring-specific method logging, MDC propagation, SLF4J bindings, AspectJ weaving and concrete logging providers require a separate architecture decision before they can be introduced. Boot-scoped REST behavior follows ADR-0007 and initially wraps the existing JDK REST adapter instead of adding Spring MVC or WebFlux.
 
+S15 verifies this boundary in service-local architecture tests. Productive
+services may depend on Spring only from their `bootstrap..` packages, while
+`cli-client` must not depend on Spring at all. The former broad
+`services:testbed` Spring and logging checks are retired from the
+legacy-dependent testbed classpath after those service-local replacements are
+present and passing.
+
 ## 8.10 Engineering Governance and Documentation Synchronization
 
 Repository governance uses three process strands:

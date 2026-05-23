@@ -10,6 +10,10 @@ fixtures, local E2E tests and optional hardening scenarios. It is not a
 productive backend service and must not become a shared Java implementation
 module or runtime dependency for production services.
 
+S15 keeps WildFly hardening here as default-skipped non-production evidence,
+but productive logging and Spring architecture ownership lives in the
+service-local `*ArchitectureTest` suites for the target services.
+
 ## Verification
 
 Run the service-local testbed gate with:

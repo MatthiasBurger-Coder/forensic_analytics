@@ -335,6 +335,12 @@ does not build images, start Compose or perform health probes. The legacy
 replace or deprecate retained testbed/runtime blockers and S19 proves
 caller-free status, rollback evidence and the required quality gate.
 
+S15 keeps the service-root WildFly hardening scenario as non-production
+deployment evidence that is skipped by default unless an explicit WildFly
+branch or commit is provided. S15 does not promote `services:testbed` into a
+runtime service and does not add a Dockerfile, Compose service, Swarm stack,
+Kubernetes manifest or health probe.
+
 Slice S14 does not remove deployment or runtime paths. It records
 `NO_REMOVAL_SAFE` when caller scans still find active legacy module use. The
 Boot app, Bootstrap runtime and retained `forensic-analytics-*` modules remain

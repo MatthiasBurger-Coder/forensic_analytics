@@ -267,12 +267,12 @@ caller scans still find active build, production and test references to the
 retained `forensic-analytics-*` modules. A later removal slice must name a
 caller-free candidate and run the full local quality gate.
 
-Slice 15 must verify the mandatory FA-MSA-001 target service build paths,
-service-owned Dockerfiles, healthcheck definitions, service-local
-configuration, architecture-test coverage and the full local `QUALITY.md`
-gate. S15 must not claim Docker image builds, Docker Compose startup,
-Docker Swarm or Kubernetes commands for the FA-MSA-001 target landscape unless
-those commands are explicitly executed and recorded.
+Slice 15 relocates broad logging and Spring architecture checks from the
+legacy-dependent `services:testbed` classpath into service-local architecture
+tests for the productive target services. `services:testbed` keeps only the
+default-skipped WildFly hardening scenario in its S15 targeted gate. S15 does
+not verify Docker image builds, Docker Compose startup, service health probes,
+Docker Swarm or Kubernetes commands for the FA-MSA-001 target landscape.
 The local repository-to-BTM Compose descriptor remains transitional
 environment evidence only until a separate runtime-deployment slice verifies
 image builds, startup, health checks and cleanup commands.
@@ -335,7 +335,8 @@ evidence without changing the default build topology:
 - a separate Swarm and Kubernetes deployment workflow request, with no stack
   files, manifests or readiness claims added by this workflow.
 
-The workflow full local quality gate remains a closure requirement for S15:
+The workflow full local quality gate remains a deletion and closure
+requirement for S19 and S20:
 
 ```bash
 ./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace

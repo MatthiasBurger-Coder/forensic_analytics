@@ -56,6 +56,15 @@ class JoernCpgAnalysisServiceArchitectureTest {
             );
 
     @ArchTest
+    static final ArchRule spring_dependencies_stay_inside_service_bootstrap =
+        noClasses()
+            .that()
+            .resideOutsideOfPackage("de.burger.forensics.analytics.services.joernanalysis.bootstrap..")
+            .should()
+            .dependOnClassesThat()
+            .resideInAnyPackage("org.springframework..");
+
+    @ArchTest
     static final ArchRule domain_does_not_depend_on_application_adapters_or_bootstrap =
         noClasses()
             .that()

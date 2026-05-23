@@ -82,6 +82,15 @@ class CliClientArchitectureTest {
             );
 
     @ArchTest
+    static final ArchRule cli_client_does_not_depend_on_spring =
+        noClasses()
+            .that()
+            .resideInAPackage("de.burger.forensics.analytics.services.cliclient..")
+            .should()
+            .dependOnClassesThat()
+            .resideInAnyPackage("org.springframework..");
+
+    @ArchTest
     static final ArchRule domain_does_not_depend_on_application_adapters_or_bootstrap =
         noClasses()
             .that()

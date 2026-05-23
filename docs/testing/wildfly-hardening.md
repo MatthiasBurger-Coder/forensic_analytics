@@ -13,6 +13,12 @@ forensic-analytics-testbed/src/test/java/de/burger/forensics/analytics/testbed/W
 services/testbed/src/test/java/de/burger/forensics/analytics/services/testbed/WildFlyRepositoryHardeningTest.java
 ```
 
+S15 keeps the service-root WildFly scenario in `services:testbed` because it
+is non-production hardening evidence, not productive service coupling. Broad
+logging and Spring architecture rules are no longer owned by this testbed
+classpath; productive-service boundaries are covered by service-local
+architecture tests instead.
+
 ## Default Verification
 
 The default targeted command must pass without running the external checkout:

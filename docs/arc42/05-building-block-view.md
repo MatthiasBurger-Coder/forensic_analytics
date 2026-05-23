@@ -115,6 +115,14 @@ The logging module may depend on `forensic-analytics-observability` for correlat
 
 Automatic logging records operation name, phase, duration, correlation ID and exception category only. It must not log method arguments, return values, raw exception messages, stack frames, payloads, source content, credentials or LLM prompt content.
 
+S15 moves productive-service logging and Spring boundary checks into the
+service-local architecture tests for `analysis-orchestrator-service`,
+`repository-source-service`, `ingestion-service`,
+`java-parser-analysis-service`, `joern-analysis-service`,
+`query-report-api-service` and `cli-client`. `services:testbed` no longer owns
+the broad logging or Spring building-block architecture rules; it remains a
+non-production integration boundary with retained hardening evidence.
+
 ## 5.9 Target Microservices Ecosystem
 
 ADR-0017 defines the FA-MSA-001 target service landscape for service-split

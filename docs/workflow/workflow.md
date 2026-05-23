@@ -1098,6 +1098,13 @@ secondary_reviewers:
   - senior-system-architect
 affected_files:
   - services/testbed/**
+  - services/analysis-orchestrator-service/src/test/java/**/quality/*ArchitectureTest.java
+  - services/repository-source-service/src/test/java/**/quality/*ArchitectureTest.java
+  - services/ingestion-service/src/test/java/**/quality/*ArchitectureTest.java
+  - services/java-parser-analysis-service/src/test/java/**/quality/*ArchitectureTest.java
+  - services/joern-analysis-service/src/test/java/**/quality/*ArchitectureTest.java
+  - services/query-report-api-service/src/test/java/**/quality/*ArchitectureTest.java
+  - services/cli-client/src/test/java/**/quality/*ArchitectureTest.java
   - docs/testing/**
   - docs/architecture/**
   - docs/arc42/**
@@ -1110,6 +1117,13 @@ dependencies:
 parallel_group: G11
 file_locks:
   - services/testbed/**
+  - services/analysis-orchestrator-service/src/test/java/**/quality/*ArchitectureTest.java
+  - services/repository-source-service/src/test/java/**/quality/*ArchitectureTest.java
+  - services/ingestion-service/src/test/java/**/quality/*ArchitectureTest.java
+  - services/java-parser-analysis-service/src/test/java/**/quality/*ArchitectureTest.java
+  - services/joern-analysis-service/src/test/java/**/quality/*ArchitectureTest.java
+  - services/query-report-api-service/src/test/java/**/quality/*ArchitectureTest.java
+  - services/cli-client/src/test/java/**/quality/*ArchitectureTest.java
   - docs/testing/**
   - docs/workflow/execution-report.md
 contract_locks: []
@@ -1118,7 +1132,7 @@ architecture_locks:
   - hardening-non-production-only
 quality_gates:
   targeted:
-    - './gradlew :services:testbed:test --tests "*LoggingArchitectureTest" --tests "*SpringBootArchitectureTest" --tests "*WildFlyRepositoryHardeningTest" --dependency-verification strict --console=plain --stacktrace'
+    - './gradlew :services:testbed:test --tests "*WildFlyRepositoryHardeningTest" --dependency-verification strict --console=plain --stacktrace'
     - './gradlew :services:analysis-orchestrator-service:test :services:repository-source-service:test :services:ingestion-service:test :services:java-parser-analysis-service:test :services:joern-analysis-service:test :services:query-report-api-service:test :services:cli-client:test --tests "*ArchitectureTest" --dependency-verification strict --console=plain --stacktrace'
     - 'git diff --check'
   required:

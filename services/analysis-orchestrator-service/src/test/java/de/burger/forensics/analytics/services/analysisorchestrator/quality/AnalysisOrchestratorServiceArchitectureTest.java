@@ -53,6 +53,15 @@ class AnalysisOrchestratorServiceArchitectureTest {
             );
 
     @ArchTest
+    static final ArchRule spring_dependencies_stay_inside_service_bootstrap =
+        noClasses()
+            .that()
+            .resideOutsideOfPackage("de.burger.forensics.analytics.services.analysisorchestrator.bootstrap..")
+            .should()
+            .dependOnClassesThat()
+            .resideInAnyPackage("org.springframework..");
+
+    @ArchTest
     static final ArchRule service_does_not_import_other_service_implementation_classes =
         noClasses()
             .that()
