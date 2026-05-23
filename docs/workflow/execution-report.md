@@ -7,7 +7,7 @@
 | Workflow version | `fa-msa-001-legacy-module-retirement-20260522-v1` |
 | Requirement ID | `FA-MSA-001-LMR` |
 | Branch | `architecture/workflow-legacy-module-retirement-20260522` |
-| Status | S08 completed; continue with S09 |
+| Status | S09 completed; continue with S10 |
 
 ## Creation Evidence
 
@@ -32,6 +32,7 @@
 | S06 | Joern Service Parity And Handoff Readiness | Senior Joern CPG Specialist with Senior Java Backend, Senior DevOps, Microservice Senior Expert and Senior Tester subagent reviews | `contracts/grpc/joern-cpg-analysis.proto`; `services/joern-analysis-service/**`; `.dockerignore`; `docs/architecture/service-migration-map.md`; `docs/architecture/service-boundaries.md`; `docs/architecture/current-build-and-test-map.md`; `docs/arc42/05-building-block-view.md`; `docs/arc42/06-runtime-view.md`; `docs/arc42/07-deployment-view.md`; `services/joern-analysis-service/README.md`; `docs/workflow/execution-report.md`; `docs/workflow/context-pack.md`; `docs/workflow/context-pack.json` | targeted S06 service tests PASS; targeted legacy Joern Docker adapter test PASS; `./gradlew :services:joern-analysis-service:test --dependency-verification strict --console=plain --stacktrace` PASS; `./gradlew :forensic-analytics-adapter-joern-docker:test --dependency-verification strict --console=plain --stacktrace` PASS; scoped joern-analysis-service legacy import scan PASS; `./gradlew :services:joern-analysis-service:bootJar --dependency-verification strict --console=plain --stacktrace` PASS; `./gradlew test --dependency-verification strict --console=plain --stacktrace` PASS; `git diff --check` PASS; `python3 -m json.tool docs/workflow/context-pack.json >/dev/null` PASS | PASS_WITH_LIMITATIONS: Joern service now owns semantic artifact byte retrieval through `GetSemanticArtifactBytes`; artifact references no longer use the Analysis Store byte alias; runtime unavailable, timeout and missing artifact states stay explicit diagnostics with retryable status where appropriate; Docker build context allows the service boot jar; no `bootRun`, live health probe, Docker image build, Joern runtime smoke test, Compose/Swarm/Kubernetes readiness claim or legacy adapter removal | `36630ee` | checked | checked | pushed |
 | S07 | Orchestration Service Parity And Application Split Readiness | Senior Java Backend with Distributed Systems, Data Ownership, Microservice and Senior Tester subagent reviews | `services/analysis-orchestrator-service/**`; `contracts/grpc/README.md`; `docs/architecture/service-migration-map.md`; `docs/architecture/service-boundaries.md`; `docs/architecture/service-communication-matrix.md`; `docs/architecture/current-build-and-test-map.md`; `docs/arc42/05-building-block-view.md`; `docs/arc42/06-runtime-view.md`; `docs/arc42/07-deployment-view.md`; `docs/workflow/execution-report.md`; `docs/workflow/context-pack.md`; `docs/workflow/context-pack.json` | `./gradlew :services:analysis-orchestrator-service:test --dependency-verification strict --console=plain --stacktrace` PASS; `./gradlew :forensic-analytics-engine:test :forensic-analytics-application:test :forensic-analytics-domain:test --dependency-verification strict --console=plain --stacktrace` PASS; scoped analysis-orchestrator legacy import scan PASS; `git diff --check` PASS; `./gradlew test --dependency-verification strict --console=plain --stacktrace` PASS | PASS_WITH_LIMITATIONS: Orchestrator now accepts `StartRepositoryToBtm` and serves `GetRepositoryToBtmStatus` as process-local pending readiness only; no worker dispatch, repository checkout, JavaParser, Joern, BTM generation, report rendering, artifact byte custody, durable persistence, event outbox, distributed orchestration or Docker runtime readiness is claimed; legacy engine/application/domain modules remain retained rollback evidence | `b853bc9` | checked | checked | pushed |
 | S08 | Query Report API And Runtime Replacement Readiness | Senior Java Backend with Contract Governance, Senior DevOps, Senior React Frontend, Microservice Senior Expert and Senior Tester subagent reviews | `services/query-report-api-service/**`; `contracts/openapi/**`; `docs/architecture/service-migration-map.md`; `docs/architecture/service-boundaries.md`; `docs/architecture/service-communication-matrix.md`; `docs/architecture/current-build-and-test-map.md`; `docs/arc42/05-building-block-view.md`; `docs/arc42/06-runtime-view.md`; `docs/arc42/07-deployment-view.md`; `docs/workflow/execution-report.md`; `docs/workflow/context-pack.md`; `docs/workflow/context-pack.json` | `./gradlew :services:query-report-api-service:test --dependency-verification strict --console=plain --stacktrace` PASS; `./gradlew :forensic-analytics-rest:test :forensic-analytics-bootstrap:test :forensic-analytics-boot-app:test --dependency-verification strict --console=plain --stacktrace` PASS; scoped query-report-api-service legacy import scan PASS; `git diff --check` PASS; `python3 -m json.tool docs/workflow/context-pack.json >/dev/null` PASS; `./gradlew :services:query-report-api-service:bootJar --dependency-verification strict --console=plain --stacktrace` PASS; `./gradlew test --dependency-verification strict --console=plain --stacktrace` PASS | PASS_WITH_LIMITATIONS: Query Report API now points repository-analysis submission/status to S07 `analysis-orchestrator-service` pending readiness while preserving the public REST/OpenAPI shape; orchestrator `INCOMPLETE` plus `WAITING_FOR_REPOSITORY` maps to public `ACCEPTED`, `BTM_DELIVERY_NOT_READY` and incomplete diagnostics; no REST/bootstrap/Boot removal, report assembly, source snapshot availability claim, worker dispatch, repository checkout, JavaParser, Joern, BTM generation, artifact byte custody, Docker image build, Compose, Swarm or Kubernetes readiness is claimed | `0d5a112` | checked | checked | pushed |
+| S09 | CLI Client Parity And Decoupling Readiness | Senior Java Backend with Contract Governance, Senior UX Designer and Senior Tester subagent reviews | `services/cli-client/**`; `forensic-analytics-cli/**`; `contracts/cli/**`; `contracts/openapi/**`; `docs/architecture/service-boundaries.md`; `docs/architecture/service-communication-matrix.md`; `docs/arc42/05-building-block-view.md`; `docs/arc42/06-runtime-view.md`; `docs/arc42/07-deployment-view.md`; `docs/contracts/contract-test-plan.md`; `docs/workflow/execution-report.md`; `docs/workflow/context-pack.md`; `docs/workflow/context-pack.json` | `./gradlew :services:cli-client:test --dependency-verification strict --console=plain --stacktrace` PASS; `./gradlew :forensic-analytics-cli:test --dependency-verification strict --console=plain --stacktrace` PASS; `./gradlew :forensic-analytics-rest:test --tests '*GatewayOpenApiContractTest' --dependency-verification strict --console=plain --stacktrace` PASS; scoped cli-client legacy import scan PASS; `git diff --check` PASS; `python3 -m json.tool docs/workflow/context-pack.json >/dev/null` PASS; `./gradlew test --dependency-verification strict --console=plain --stacktrace` PASS; `./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace` FAILED at `:checkPackageCoverage` for pre-existing non-S09 branch coverage packages `services.analysisorchestrator.adapter.in.grpc`, `services.analysisorchestrator.application` and `services.joernanalysis.adapter.out.filesystem` | PASS_WITH_LIMITATIONS: S09 required and targeted gates pass; target `cli-client` remains an HTTP JSON public API client with no project-module dependencies; predecessor `forensic-analytics-cli gateway-submit` keeps compatibility behavior with redacted validation and public error output; CLI contract ownership is corrected to S09 and `buildContext.attributes={}` is explicit; `analyze`, `ingest-request`, status and report commands are not routed or added; local/private repository host policy remains owned by `query-report-api-service`; legacy CLI module remains rollback evidence; full local package-coverage repair is outside the S09 file locks and remains a separate quality blocker | `0288709` | checked | checked | checkpoint pending |
 
 ## Pending Slice Status
 
@@ -46,8 +47,8 @@
 | S06 | COMPLETED |
 | S07 | COMPLETED |
 | S08 | COMPLETED |
-| S09 | NEXT |
-| S10 | READY |
+| S09 | COMPLETED |
+| S10 | NEXT |
 | S11 | PENDING |
 | S12 | PENDING |
 | S13 | PENDING |
@@ -74,8 +75,8 @@ S02 confirms the current transitional contract surface is testable and the
 repository minimum test gate passes. It does not claim full target runtime
 parity: OpenAPI still contains planned operations, event contracts are design
 artifacts, query-report submission/status still uses predecessor
-`analysis-store-service` behavior, and CLI status/report mappings remain S11
-work.
+`analysis-store-service` behavior, and CLI status/report mappings remain later
+CLI work.
 
 S02 also refreshed the context-pack architecture hashes because S01 and S02
 changed architecture evidence that later slices must re-read.
@@ -135,3 +136,22 @@ S08 does not claim completed analysis parity, source snapshot availability for
 pending runs, worker dispatch, repository checkout, JavaParser, Joern, BTM
 generation, report assembly, artifact byte custody, Docker image build,
 Compose, Swarm or Kubernetes readiness.
+
+S09 confirms `services/cli-client` remains a target public API client for the
+transitional `gateway-submit` command and does not import monolith or service
+implementation packages. The predecessor `forensic-analytics-cli` keeps
+`analyze` and `ingest-request` as local in-process rollback evidence, while its
+`gateway-submit` path now matches target redaction behavior for malformed
+gateway/repository URL, numeric and boolean inputs. S09 does not add status or
+report commands, does not route legacy local commands to the public API and
+does not remove `forensic-analytics-cli`. Local/private repository host
+rejection remains a `query-report-api-service` validation responsibility rather
+than duplicated CLI policy.
+
+The full local `QUALITY.md` gate was run after S09 and failed only at
+`:checkPackageCoverage` for packages outside the S09 file locks:
+`de.burger.forensics.analytics.services.analysisorchestrator.adapter.in.grpc`,
+`de.burger.forensics.analytics.services.analysisorchestrator.application` and
+`de.burger.forensics.analytics.services.joernanalysis.adapter.out.filesystem`.
+S09 does not change those packages, and this report does not claim that the full
+local gate passed.

@@ -68,13 +68,19 @@ class CliClientRunnerTest {
 
         var analyzeExitCode = runner.run(new String[] {"analyze"});
         var ingestExitCode = runner.run(new String[] {"ingest-request"});
+        var statusExitCode = runner.run(new String[] {"status"});
+        var reportExitCode = runner.run(new String[] {"report"});
 
         assertEquals(2, analyzeExitCode);
         assertEquals(2, ingestExitCode);
+        assertEquals(2, statusExitCode);
+        assertEquals(2, reportExitCode);
         assertEquals(null, submitted.get());
         var errors = errorOutput.toString(StandardCharsets.UTF_8);
         assertTrue(errors.contains("Unknown command: analyze"));
         assertTrue(errors.contains("Unknown command: ingest-request"));
+        assertTrue(errors.contains("Unknown command: status"));
+        assertTrue(errors.contains("Unknown command: report"));
         assertTrue(errors.contains("cli-client gateway-submit"));
         assertEquals("", standardOutput.toString(StandardCharsets.UTF_8));
     }

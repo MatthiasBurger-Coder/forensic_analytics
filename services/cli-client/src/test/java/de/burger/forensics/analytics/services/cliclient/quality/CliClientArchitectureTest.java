@@ -46,6 +46,7 @@ class CliClientArchitectureTest {
             .dependOnClassesThat()
             .resideInAnyPackage(
                 "de.burger.forensics.analytics.services.queryreportapi..",
+                "de.burger.forensics.analytics.services.analysisorchestrator..",
                 "de.burger.forensics.analytics.services.gateway..",
                 "de.burger.forensics.analytics.services.repositoryanalysis..",
                 "de.burger.forensics.analytics.services.analysisstore..",

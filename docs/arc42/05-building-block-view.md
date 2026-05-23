@@ -148,7 +148,7 @@ services/observability-stack
 services/testbed
 ```
 
-S11 adds `services/cli-client` as a public API client boundary with a
+S09 adds `services/cli-client` as a public API client boundary with a
 service-local Gradle project, CLI bootstrap, HTTP/OpenAPI adapter and tests. It
 is not a backend service and must not own forensic evidence, analysis execution,
 parser behavior, Joern control or persistence. The predecessor

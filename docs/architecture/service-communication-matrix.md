@@ -48,7 +48,8 @@ These checks prove that the current registered target-name service test tasks
 and the repository minimum test gate pass on the active workflow branch. They
 do not prove that every target interaction in this matrix is implemented or
 runtime-ready. CLI contract parity remains limited to the existing
-`contracts/cli/**` documentation; CLI command migration remains S11 work.
+`contracts/cli/**` documentation; CLI repository-to-BTM submission parity is
+S09 work, while status and report command mappings remain later CLI work.
 
 ## Target Matrix
 
@@ -64,8 +65,8 @@ runtime-ready. CLI contract parity remains limited to the existing
 | `java-parser-analysis-service` | `analysis-orchestrator-service` and owner-authorized readers | gRPC/event/file | `contracts/grpc/java-ast-analysis.proto`, `contracts/grpc/java-ast-source-facts-v1.schema.json` and `contracts/events/analysis-events.md` | Publish source-fact metadata, diagnostics and retrievable artifact references | `java-parser-analysis-service` owns canonical static Java facts and producer-local artifact metadata; generated transport classes stay service-local |
 | `joern-analysis-service` | `analysis-orchestrator-service` and owner-authorized readers | gRPC/event/file | `contracts/grpc/joern-cpg-analysis.proto` and `contracts/events/analysis-events.md` | Publish semantic artifact metadata, diagnostics and retrievable artifact references | `joern-analysis-service` owns canonical semantic facts and producer-local artifact metadata; incomplete mappings remain explicit |
 | owner services | `query-report-api-service` | REST/gRPC/event/file | owner contracts plus `contracts/openapi/gateway-api.yaml` and `contracts/events/analysis-events.md` report events | Provide evidence, status, artifact references and projection inputs for public responses and generated report packages | Query/report reads through owner APIs and must not read private databases, workspaces or object prefixes |
-| `query-report-api-service` | UI, CLI or external client | REST/OpenAPI | `contracts/openapi/gateway-api.yaml` and `contracts/cli/gateway-cli-contract.md` transitional public API files | Provide public status, reports and LLM-ready or generated packages; S11 CLI use is limited to repository-to-BTM submission | Reports separate evidence, gaps, derived facts and hypotheses; CLI status/report reads require later explicit command mappings |
-| `cli-client` | `query-report-api-service` | REST/OpenAPI | `contracts/cli/gateway-cli-contract.md` and `contracts/openapi/gateway-api.yaml` transitional public API files | Start repository-to-BTM jobs in S11; status and report commands require later explicit CLI mappings | CLI has no business logic or service implementation dependency |
+| `query-report-api-service` | UI, CLI or external client | REST/OpenAPI | `contracts/openapi/gateway-api.yaml` and `contracts/cli/gateway-cli-contract.md` transitional public API files | Provide public status, reports and LLM-ready or generated packages; S09 CLI use is limited to repository-to-BTM submission | Reports separate evidence, gaps, derived facts and hypotheses; CLI status/report reads require later explicit command mappings |
+| `cli-client` | `query-report-api-service` | REST/OpenAPI | `contracts/cli/gateway-cli-contract.md` and `contracts/openapi/gateway-api.yaml` transitional public API files | Start repository-to-BTM jobs in S09; status and report commands require later explicit CLI mappings | CLI has no business logic or service implementation dependency |
 | `observability-stack` | productive services | deployment/configuration | observability configuration | Logging, metrics, tracing and dashboards | Not a shared Java library |
 | `testbed` | productive services | Compose, REST, gRPC or test contracts | test environment docs | Integration and end-to-end tests | No production service may depend on testbed code |
 

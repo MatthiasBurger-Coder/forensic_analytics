@@ -486,7 +486,7 @@ Current evidence:
 - `forensic-analytics-cli`;
 - `contracts/cli/gateway-cli-contract.md`.
 
-S11 scope:
+S09 scope:
 
 - create `services/cli-client` as the target public HTTP/OpenAPI client;
 - keep compatibility command vocabulary `gateway-submit`, `--gateway` and
@@ -494,7 +494,7 @@ S11 scope:
 - leave legacy `forensic-analytics-cli analyze` and `ingest-request` as
   predecessor in-process commands until a later parity or deprecation slice.
 
-S11 implementation evidence:
+S09 implementation evidence:
 
 - registered Gradle project `services:cli-client`;
 - `services/cli-client/build.gradle.kts` without `project(...)` dependencies;

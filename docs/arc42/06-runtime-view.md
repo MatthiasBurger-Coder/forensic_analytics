@@ -176,7 +176,7 @@ client
   -> query-report-api-service public status/report response
 ```
 
-`cli-client` is a public API client only. S11 implements repository-to-BTM job
+`cli-client` is a public API client only. S09 implements repository-to-BTM job
 submission through `query-report-api-service` HTTP/OpenAPI using the
 transitional `gateway-submit` compatibility vocabulary. Legacy local CLI
 commands remain in-process current-state evidence until a later slice provides

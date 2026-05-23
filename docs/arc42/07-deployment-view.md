@@ -98,7 +98,7 @@ services/testbed
 
 `cli-client`, `observability-stack` and `testbed` are special boundaries:
 
-- `cli-client` is a public API client, not a productive backend service. S11
+- `cli-client` is a public API client, not a productive backend service. S09
   creates and registers it as an independently buildable command-line
   application; it does not own health endpoints, Docker runtime readiness or
   service deployment readiness unless a later operator slice adds and verifies

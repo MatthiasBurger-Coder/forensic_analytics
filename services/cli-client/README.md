@@ -2,7 +2,7 @@
 
 `cli-client` is the FA-MSA-001 target public API client boundary.
 
-S11 implements only the transitional `gateway-submit` compatibility command for
+S09 implements only the transitional `gateway-submit` compatibility command for
 repository-to-BTM submission through `query-report-api-service` HTTP/OpenAPI.
 It does not implement analysis execution, JavaParser or Joern control,
 persistence access, local workspace handling, status reads or report reads.
