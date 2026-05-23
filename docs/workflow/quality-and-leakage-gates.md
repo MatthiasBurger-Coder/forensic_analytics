@@ -21,61 +21,101 @@ Full local gate:
 Workflow creation is documentation-only. Required verification:
 
 ```bash
+python3 -m json.tool docs/workflow/context-pack.json
 git diff --check
 ```
 
-## Slice Gate Pattern
+## Project Model Gate
 
-Each execution slice must run:
-
-1. The targeted service/module tests named in the slice.
-2. Scoped readiness scans for the target service or caller group changed by the
-   slice.
-3. `git diff --check`.
-4. The repository minimum gate for production Java, tests, Gradle, contracts,
-   runtime wiring or deployment changes.
-5. Full caller-free scans and the full local gate only in S19 final removal
-   and S20 closure slices.
-
-## Leakage Checks
-
-For service migration readiness slices, run targeted scans proving the target
-service touched by the slice does not depend on central legacy implementation
-modules:
+The service-only project model must remain true:
 
 ```bash
-bash -lc 'if rg -n -P "^import\s+de\.burger\.forensics\.analytics\.(application|domain|adapter|persistence|rest|cli|engine|logging|observability|bootstrap|boot|ingestion\.request|ingestion\.grpc)\b" services -S -g "*.java"; then exit 1; else test $? -eq 1; fi'
+./gradlew projects --dependency-verification strict --console=plain --stacktrace
 ```
 
-Earlier parity and handoff slices must not use full-repository zero-reference
-scans as success criteria while the legacy module is intentionally retained as
-rollback or regression evidence. Those scans belong to the final removal gate.
+The project listing must not include any `forensic-analytics-*` Gradle project.
 
-S14 is a readiness reconciliation gate after the S14 deletion stop. It records
-remaining references as evidence and must not delete modules or deregister
-Gradle projects. From S15 through S18, targeted slices remove or deprecate the
-remaining testbed, runtime, public API and ownership blockers before any
-physical deletion is attempted.
+## Active Build Leakage Gate
 
-For S19 final removal, prove no legacy build references remain:
+No active build file outside a deleted legacy source tree may depend on a
+legacy Gradle project:
 
 ```bash
-bash -lc 'if rg -n "forensic-analytics-(adapter-javaparser|adapter-joern-docker|adapter-repository-source|application|boot-app|bootstrap|cli|domain|engine|ingestion-grpc|ingestion-request|logging|observability|persistence|rest|testbed)" settings.gradle.kts build.gradle.kts services -g "*.kts" -g "!**/build/**"; then exit 1; else test $? -eq 1; fi'
+git ls-files "*build.gradle.kts" | grep -v "^forensic-analytics-" | xargs -r rg -n 'project\(\":forensic-analytics-'
+```
+
+This command is expected to produce no matches. A match is a blocker.
+
+## Active Service Source Leakage Gate
+
+No active Java source outside deleted legacy source trees may import legacy
+monolith packages:
+
+```bash
+git ls-files "*.java" \
+  | grep -v "^forensic-analytics-" \
+  | xargs -r rg -n -P '^import\s+de\.burger\.forensics\.analytics\.(application|domain|adapter|persistence|rest|cli|engine|logging|observability|bootstrap|boot|ingestion\.request|ingestion\.grpc)\b'
+```
+
+This command is expected to produce no matches. A match is a blocker unless a
+role review proves the match is generated historical text outside active source.
+
+## Legacy Source Tree Removal Gate
+
+Before S04 deletion:
+
+```bash
+git ls-files "forensic-analytics-*"
+```
+
+The command records deletion candidates.
+
+After S04 deletion:
+
+```bash
+git ls-files "forensic-analytics-*"
+```
+
+The command must return no tracked files unless an ADR-backed retained purpose
+is documented before closure.
+
+## Targeted Service Test Matrix
+
+| Legacy area removed | Targeted tests |
+|---|---|
+| Repository source | `./gradlew :services:repository-source-service:test :services:repository-analysis-service:test --dependency-verification strict --console=plain --stacktrace` |
+| Ingestion and engine request | `./gradlew :services:ingestion-service:test :services:forensic-ingestion-service:test --dependency-verification strict --console=plain --stacktrace` |
+| JavaParser adapter | `./gradlew :services:java-parser-analysis-service:test :services:java-ast-analysis-service:test --dependency-verification strict --console=plain --stacktrace` |
+| Joern adapter | `./gradlew :services:joern-analysis-service:test :services:joern-cpg-analysis-service:test --dependency-verification strict --console=plain --stacktrace` |
+| Application, domain, engine and persistence | `./gradlew :services:analysis-orchestrator-service:test :services:analysis-store-service:test :services:btm-generation-service:test --dependency-verification strict --console=plain --stacktrace` |
+| REST, boot, bootstrap and CLI | `./gradlew :services:query-report-api-service:test :services:forensic-gateway-service:test :services:cli-client:test --dependency-verification strict --console=plain --stacktrace` |
+| Logging, observability and testbed | `./gradlew :services:observability-stack:test :services:testbed:test --dependency-verification strict --console=plain --stacktrace` |
+
+## Frontend Impact Gate
+
+Only run when a slice changes public API fields, endpoints, response status
+shapes or `forensic-ui` API mappers:
+
+```bash
+cd forensic-ui
+npm ci
+npm run test
+npm run build
 ```
 
 ## Evidence Integrity Gates
 
 Execution must stop when a change would:
 
-- treat static analysis as runtime execution evidence;
+- treat static source facts as runtime execution evidence;
 - hide unresolved symbols or missing trace fields;
 - replace observed trace values with inferred values;
 - store LLM output as verified evidence;
 - collapse confirmed evidence, derived analysis, unresolved gaps and
   hypotheses into one ambiguous field;
-- remove the only regression coverage for behavior being retired;
-- claim a legacy module is removable while `services:testbed` still uses it as
-  the only parity, rollback or hardening evidence.
+- remove the only regression coverage for behavior still claimed as supported;
+- claim service runtime, Docker, healthcheck, Swarm or Kubernetes readiness
+  without verified repository commands and artifacts.
 
 ## Failure Routing
 
