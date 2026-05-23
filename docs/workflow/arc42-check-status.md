@@ -8,9 +8,10 @@ The workflow was regenerated because repository state changed since the earlier
 legacy-retirement plan. `settings.gradle.kts` now registers only `services:*`
 projects, while several arc42 and architecture documents still describe
 legacy `forensic-analytics-*` modules as retained active rollback or runtime
-evidence. Workflow creation does not update product behavior or delete source
-trees, so the detailed arc42 changes are assigned to execution slice S05 after
-S04 deletion evidence exists.
+evidence. Version 2 inserts a pre-deletion documentation cleanup slice for
+stale executable legacy commands. Workflow creation does not update product
+behavior or delete source trees, so detailed final arc42 closure is assigned to
+execution slice S06 after S05 deletion evidence exists.
 
 ## Required Execution Updates
 
@@ -21,9 +22,10 @@ Execution slices must update arc42 when actual state changes:
 | S01 | Reference classification notes for stale legacy module mentions |
 | S02 | Deployment/runtime documentation if `docker/boot-app` and boot-app jar references are retired |
 | S03 | Quality requirements and regression ownership after legacy module-local tests are superseded or deprecated |
-| S04 | Verified source-tree deletion evidence |
-| S05 | Sections 05, 06, 07, 08, 09, 10 and 11 for final build topology, runtime/deployment view, crosscutting concepts, ADR references, quality requirements and risks |
-| S06 | Final quality-gate evidence and release-readiness status |
+| S04 | Pre-delete deployment-command cleanup in section 07 and related service documentation |
+| S05 | Verified source-tree deletion evidence |
+| S06 | Sections 05, 06, 07, 08, 09, 10 and 11 for final build topology, runtime/deployment view, crosscutting concepts, ADR references, quality requirements and risks |
+| S07 | Final quality-gate evidence and release-readiness status |
 
 ## Stop Conditions
 

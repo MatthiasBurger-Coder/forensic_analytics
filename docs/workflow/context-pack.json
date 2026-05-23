@@ -1,9 +1,9 @@
 {
-  "workflowVersion": "fa-msa-001-final-legacy-source-retirement-20260523-v1",
+  "workflowVersion": "fa-msa-001-final-legacy-source-retirement-20260523-v2",
   "requirementId": "FA-MSA-001-LMR-FINAL",
   "parentRequirementId": "FA-MSA-001",
   "branch": "architecture/workflow-legacy-module-retirement-20260522",
-  "processStrand": "workflow create",
+  "processStrand": "workflow execute",
   "executionProfile": "FULL_PATH",
   "created": "2026-05-23",
   "affectedAreas": [

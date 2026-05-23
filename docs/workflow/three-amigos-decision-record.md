@@ -4,7 +4,7 @@
 
 | Field | Value |
 |---|---|
-| Workflow version | `fa-msa-001-final-legacy-source-retirement-20260523-v1` |
+| Workflow version | `fa-msa-001-final-legacy-source-retirement-20260523-v2` |
 | Requirement ID | `FA-MSA-001-LMR-FINAL` |
 | Parent requirement | `FA-MSA-001` |
 | Decision | `READY_FOR_WORKFLOW` |
@@ -77,10 +77,11 @@ S01 -> S03
 S02 + S03 -> S04
 S04 -> S05
 S05 -> S06
+S06 -> S07
 ```
 
 S02 and S03 may run in parallel only after S3D confirms disjoint file locks.
-S04 through S06 are sequential.
+S04 through S07 are sequential.
 
 ## Open Questions
 
@@ -89,7 +90,7 @@ S04 through S06 are sequential.
 - Which module-local tests are superseded by service tests, and which behavior
   is explicitly deprecated?
 - Whether a final ADR is added or an existing ADR is superseded is decided in
-  S05 by the ADR steward and Senior System Architect.
+  S06 by the ADR steward and Senior System Architect.
 
 ## Blockers
 

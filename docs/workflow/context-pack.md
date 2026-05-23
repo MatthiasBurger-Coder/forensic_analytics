@@ -4,11 +4,11 @@
 
 | Field | Value |
 |---|---|
-| Workflow version | `fa-msa-001-final-legacy-source-retirement-20260523-v1` |
+| Workflow version | `fa-msa-001-final-legacy-source-retirement-20260523-v2` |
 | Requirement ID | `FA-MSA-001-LMR-FINAL` |
 | Parent requirement | `FA-MSA-001` |
 | Branch | `architecture/workflow-legacy-module-retirement-20260522` |
-| Process strand | `workflow create` |
+| Process strand | `workflow execute` |
 | Execution profile | `FULL_PATH` |
 | Created | `2026-05-23` |
 

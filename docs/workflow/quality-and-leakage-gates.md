@@ -60,9 +60,23 @@ git ls-files "*.java" \
 This command is expected to produce no matches. A match is a blocker unless a
 role review proves the match is generated historical text outside active source.
 
+## Legacy Command Documentation Stopper Gate
+
+Before source-tree deletion, active service and deployment documentation must
+not present legacy Gradle tasks as executable commands or active/current
+quality-gate evidence:
+
+```bash
+rg -n '^\s*\./gradlew\s+:forensic-analytics-|:forensic-analytics-(boot-app|adapter-joern-docker|engine|application|domain)' services/analysis-orchestrator-service/README.md services/joern-analysis-service/README.md services/README.md docs/arc42/07-deployment-view.md
+```
+
+This command is expected to produce no matches after S04. A match is a blocker
+for physical deletion unless a role review proves the reference is explicitly
+historical and non-executable.
+
 ## Legacy Source Tree Removal Gate
 
-Before S04 deletion:
+Before S05 deletion:
 
 ```bash
 git ls-files "forensic-analytics-*"
@@ -70,7 +84,7 @@ git ls-files "forensic-analytics-*"
 
 The command records deletion candidates.
 
-After S04 deletion:
+After S05 deletion:
 
 ```bash
 git ls-files "forensic-analytics-*"

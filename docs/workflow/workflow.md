@@ -4,12 +4,12 @@
 
 | Field | Value |
 |---|---|
-| Workflow version | `fa-msa-001-final-legacy-source-retirement-20260523-v1` |
+| Workflow version | `fa-msa-001-final-legacy-source-retirement-20260523-v2` |
 | Requirement ID | `FA-MSA-001-LMR-FINAL` |
 | Parent requirement | `FA-MSA-001` |
 | Workflow branch | `architecture/workflow-legacy-module-retirement-20260522` |
-| Creation status | Created by `workflow create`; execution requires `workflow execute`. |
-| Process strand | `workflow create` now; later `workflow execute` for deletion slices. |
+| Creation status | Created by `workflow create`; topology corrected during `workflow execute` after S04 preflight found stale executable legacy commands. |
+| Process strand | `workflow execute` |
 | Execution profile | `FULL_PATH` |
 
 ## Executive Summary
@@ -46,10 +46,13 @@ them.
 The previous workflow was stale because it still treated the legacy source
 trees as active Gradle projects and still referenced non-executable
 `:forensic-analytics-*:test` gates. This regenerated workflow supersedes that
-plan. It routes execution through reference classification, contract and runtime
-documentation decisions, service-regression coverage confirmation, physical
-source-tree deletion, architecture documentation closure and the required
-`QUALITY.md` gates.
+plan. Version 2 inserts a pre-deletion legacy command documentation cleanup
+slice because S04 preflight found stale executable `:forensic-analytics-*`
+commands in service and deployment documentation. It routes execution through
+reference classification, contract and runtime documentation decisions,
+service-regression coverage confirmation, command-documentation stopper cleanup,
+physical source-tree deletion, architecture documentation closure and the
+required `QUALITY.md` gates.
 
 No production code or legacy source tree is removed during workflow creation.
 
@@ -124,7 +127,7 @@ subagent workflow creation:
 | Original request | Begin final removal of the listed monolith modules using `workflow create with subagent`. |
 | Interpreted intent | Create an executable, subagent-reviewed workflow for deleting the remaining tracked legacy `forensic-analytics-*` source trees and closing stale documentation/runtime references. |
 | Change type | Microservice migration completion, source-tree deletion, documentation reconciliation, quality-gate closure. |
-| Affected process strand | `workflow create` now; later `workflow execute`. |
+| Affected process strand | `workflow execute` for v2 topology correction and remaining slices. |
 | Affected architecture area | Service autonomy, no shared Java implementation modules, build topology, public contract wording, runtime/deployment documentation, regression coverage. |
 | Explicit requirements | Final removal of the listed legacy directories. |
 | Implicit requirements | Do not re-register legacy modules; preserve evidence semantics; avoid deleting the only regression coverage; keep docs/arc42 truthful. |
@@ -142,8 +145,10 @@ In scope:
 
 - Revalidate the current services-only Gradle model.
 - Classify remaining legacy references outside the legacy source trees.
-- Remove or rewrite stale Docker, README, testing, contract-test, workflow,
-  architecture and arc42 references.
+- Remove or rewrite stale Docker, README, testing, contract-test, service
+  README, workflow, architecture and arc42 references.
+- Clear stale executable `:forensic-analytics-*` commands from active service
+  and deployment documentation before deleting source trees.
 - Delete the 16 tracked `forensic-analytics-*` source trees.
 - Prove `git ls-files "forensic-analytics-*"` is empty after deletion.
 - Run targeted service tests, the minimum quality command and the full local
@@ -364,7 +369,7 @@ quality_gates:
   required:
     - 'git diff --check'
 documentation:
-  arc42: pending S05
+  arc42: pending S06
   adr: create or supersede final-retirement ADR if contract/runtime ownership changes
 stop_conditions:
   - public API field, endpoint, error shape or status shape changes without contract and frontend review
@@ -431,7 +436,7 @@ quality_gates:
   required:
     - './gradlew test --dependency-verification strict --console=plain --stacktrace'
 documentation:
-  arc42: pending S05
+  arc42: pending S06
   adr: checked
 stop_conditions:
   - a legacy module-local test is the only known coverage for behavior still claimed as supported
@@ -443,10 +448,71 @@ Purpose: prove service-local tests and explicit deprecation notes are enough to
 replace the legacy module-local tests that will be deleted with the source
 trees.
 
-### Slice 04 - Physical Legacy Source Tree Removal
+### Slice 04 - Legacy Command Documentation Stopper Cleanup
 
 ```yaml
 slice_id: S04
+profile: FULL_PATH
+owner: senior-documentation-engineer
+secondary_reviewers:
+  - senior-devops
+  - senior-system-architect
+  - senior-tester
+  - microservice-runtime-readiness-expert
+affected_files:
+  - services/analysis-orchestrator-service/README.md
+  - services/joern-analysis-service/README.md
+  - services/README.md
+  - docs/arc42/07-deployment-view.md
+  - docs/workflow/execution-report.md
+  - docs/workflow/context-pack.md
+  - docs/workflow/context-pack.json
+affected_modules: []
+affected_contracts: []
+dependencies:
+  - S02
+  - S03
+parallel_group: G04
+file_locks:
+  - services/analysis-orchestrator-service/README.md
+  - services/joern-analysis-service/README.md
+  - services/README.md
+  - docs/arc42/07-deployment-view.md
+  - docs/workflow/execution-report.md
+  - docs/workflow/context-pack.md
+  - docs/workflow/context-pack.json
+contract_locks: []
+architecture_locks:
+  - pre-delete-legacy-command-docs
+  - arc42-deployment-command-truthfulness
+quality_gates:
+  targeted:
+    - 'rg -n "^\s*\./gradlew\s+:forensic-analytics-|:forensic-analytics-(boot-app|adapter-joern-docker|engine|application|domain)" services/analysis-orchestrator-service/README.md services/joern-analysis-service/README.md services/README.md docs/arc42/07-deployment-view.md'
+    - './gradlew projects --dependency-verification strict --console=plain --stacktrace'
+    - './gradlew :services:analysis-orchestrator-service:test :services:analysis-orchestrator-service:bootJar :services:analysis-orchestrator-service:bootRun :services:joern-analysis-service:test :services:joern-analysis-service:bootJar :services:joern-analysis-service:bootRun --dry-run --dependency-verification strict --console=plain --stacktrace'
+    - 'python3 -m json.tool docs/workflow/context-pack.json'
+    - 'git diff --check'
+  required:
+    - 'git diff --check'
+documentation:
+  arc42: limited pre-delete deployment-command correction; final closure pending S06
+  adr: checked
+stop_conditions:
+  - an active service or deployment README still contains runnable :forensic-analytics-* commands
+  - docs claim legacy modules are active current-state or quality-gate evidence before deletion
+  - a replacement service command cannot be verified from the current Gradle project model
+  - cleanup would change public contract shape, runtime behavior or source code
+```
+
+Purpose: clear the S04 preflight stopper without deleting source trees. This
+slice removes or reclassifies stale executable legacy Gradle commands and
+current-state claims in active service/deployment documentation so physical
+deletion can proceed on verified documentation ground.
+
+### Slice 05 - Physical Legacy Source Tree Removal
+
+```yaml
+slice_id: S05
 profile: FULL_PATH
 owner: senior-java-backend
 secondary_reviewers:
@@ -474,9 +540,8 @@ affected_files:
 affected_modules: []
 affected_contracts: []
 dependencies:
-  - S02
-  - S03
-parallel_group: G04
+  - S04
+parallel_group: G05
 file_locks:
   - forensic-analytics-*/**
 contract_locks: []
@@ -492,22 +557,22 @@ quality_gates:
   required:
     - './gradlew test --dependency-verification strict --console=plain --stacktrace'
 documentation:
-  arc42: pending S05
+  arc42: pending S06
   adr: final-retirement ADR required when source deletion is accepted
 stop_conditions:
   - any legacy source tree is still an active Gradle project
   - any active service build or source file depends on a legacy tree
-  - any source tree is removed before S02 and S03 pass
+  - any source tree is removed before S02, S03 and S04 pass
   - git ls-files after deletion still lists a removed candidate
 ```
 
 Purpose: delete only the verified legacy source trees. This slice must not
 modify service behavior or introduce shared Java replacement modules.
 
-### Slice 05 - Architecture Documentation And ADR Closure
+### Slice 06 - Architecture Documentation And ADR Closure
 
 ```yaml
-slice_id: S05
+slice_id: S06
 profile: FULL_PATH
 owner: senior-system-architect
 secondary_reviewers:
@@ -526,8 +591,8 @@ affected_files:
 affected_modules: []
 affected_contracts: []
 dependencies:
-  - S04
-parallel_group: G05
+  - S05
+parallel_group: G06
 file_locks:
   - docs/adr/**
   - docs/arc42/**
@@ -561,10 +626,10 @@ stop_conditions:
 Purpose: align architecture, ADR, README, testing and workflow documents with
 the verified post-deletion state.
 
-### Slice 06 - Quality Gate And Release Readiness
+### Slice 07 - Quality Gate And Release Readiness
 
 ```yaml
-slice_id: S06
+slice_id: S07
 profile: FULL_PATH
 owner: senior-devops
 secondary_reviewers:
@@ -578,8 +643,8 @@ affected_modules:
   - services
 affected_contracts: []
 dependencies:
-  - S05
-parallel_group: G06
+  - S06
+parallel_group: G07
 file_locks:
   - docs/workflow/execution-report.md
 contract_locks: []
@@ -613,10 +678,11 @@ S01 -> S03
 S02 + S03 -> S04
 S04 -> S05
 S05 -> S06
+S06 -> S07
 ```
 
 S02 and S03 may run in parallel after S01 only if S3D confirms disjoint file
-locks. S04, S05 and S06 are sequential.
+locks. S04, S05, S06 and S07 are sequential.
 
 ## Role Ownership Map
 
@@ -624,19 +690,21 @@ Detailed role routing is recorded in `docs/workflow/role-ownership.md`.
 
 ## Commit And Push Plan
 
-Workflow creation does not commit or push. During later `workflow execute`,
-commits and pushes are allowed only when the active workflow execution protocol
-and user approval allow them. `push auto` is out of scope.
+The v2 topology correction may be checkpointed as workflow documentation after
+review and verification. Remaining commits and pushes are allowed only when the
+active workflow execution protocol and user approval allow them. `push auto` is
+out of scope.
 
 ## Definition Of Done
 
 - All workflow files are regenerated for the current services-only baseline.
-- S00 through S06 are executable, acyclic and have explicit locks, owners,
+- S00 through S07 are executable, acyclic and have explicit locks, owners,
   quality gates and stop conditions.
 - `docs/workflow/context-pack.md` and `docs/workflow/context-pack.json` are
   present and valid.
 - arc42 impact is checked and closure obligations are recorded.
-- Workflow creation verification passes `git diff --check`.
+- V2 workflow documentation/topology correction verification passes
+  `git diff --check`.
 
 ## Handoff To Workflow Execute
 

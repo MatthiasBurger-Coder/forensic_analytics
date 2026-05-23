@@ -8,9 +8,10 @@
 | S01 | Senior System Architect | Senior Requirement Engineer, Contract-First API Steward, Senior DevOps, Senior Tester |
 | S02 | Senior DevOps | Senior System Architect, Contract Governance Expert, Senior React Frontend, Senior Tester |
 | S03 | Senior Tester | Senior Java Backend, Microservice Senior Expert, Senior DevOps, Senior System Architect |
-| S04 | Senior Java Backend | Senior DevOps, Senior System Architect, Microservice Senior Expert, Senior Tester |
-| S05 | Senior System Architect | ADR Steward, Senior Documentation Engineer, Senior Requirement Engineer, Senior Tester |
-| S06 | Senior DevOps | Senior Tester, Senior System Architect, Microservice Runtime Readiness Expert, Senior Documentation Engineer |
+| S04 | Senior Documentation Engineer | Senior DevOps, Senior System Architect, Senior Tester, Microservice Runtime Readiness Expert |
+| S05 | Senior Java Backend | Senior DevOps, Senior System Architect, Microservice Senior Expert, Senior Tester |
+| S06 | Senior System Architect | ADR Steward, Senior Documentation Engineer, Senior Requirement Engineer, Senior Tester |
+| S07 | Senior DevOps | Senior Tester, Senior System Architect, Microservice Runtime Readiness Expert, Senior Documentation Engineer |
 
 ## Mandatory Review Rules
 

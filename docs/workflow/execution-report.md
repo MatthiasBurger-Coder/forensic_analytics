@@ -2,11 +2,12 @@
 
 ## Current Status
 
-Status: S02 and S03 completed; ready for S04 source-tree deletion preflight.
+Status: S02 and S03 completed; S04 legacy command documentation stopper cleanup
+is the next executable slice before source-tree deletion.
 
 | Field | Value |
 |---|---|
-| Workflow version | `fa-msa-001-final-legacy-source-retirement-20260523-v1` |
+| Workflow version | `fa-msa-001-final-legacy-source-retirement-20260523-v2` |
 | Branch | `architecture/workflow-legacy-module-retirement-20260522` |
 | Process strand | `workflow execute` |
 | Last update | `2026-05-23` |
@@ -83,14 +84,16 @@ Results:
 - Active Java source leakage scan found no legacy monolith imports outside
   legacy source trees.
 - `git ls-files "forensic-analytics-*" | wc -l` returned `450`; this is the
-  expected pre-S04 deletion baseline.
+  expected pre-S05 deletion baseline after the v2 topology correction.
 
 Subagent reviews:
 
-- Senior Swarm Orchestrator: READY. S00 metadata is complete; dependency graph
-  is acyclic; topological groups are `S00 | S01 | S02+S03 | S04 | S05 | S06`.
+- Senior Swarm Orchestrator: READY. S00 metadata is complete. Version 2 keeps
+  the dependency graph acyclic with topological groups
+  `S00 | S01 | S02+S03 | S04 | S05 | S06 | S07` after the pre-deletion
+  documentation stopper was discovered during S04 preflight.
 - Senior System Architect: READY. No S00 architecture blocker; arc42 has known
-  stale legacy references that belong to S01, S02 and S05.
+  stale legacy references that belong to S01, S02, S04 and S06.
 - Senior Tester: READY. S00 gates are sufficient for preflight only; later
   deletion and release slices still require their targeted and full gates.
 
@@ -165,9 +168,11 @@ S01 handoff:
 - S02 must clean stale executable runtime/Docker/contract docs.
 - S03 must use service-local gates only and confirm replacement or deprecation
   coverage.
-- S05 must reconcile architecture and arc42 current-state claims.
+- S04 must clear active service/deployment documentation blockers before
+  deletion.
+- S06 must reconcile architecture and arc42 current-state claims.
 - `docs/skill-audit/README.md` contains a stale historical audit sentence
-  outside current S05 write scope; treat it as a possible S05 scope gap if
+  outside current S06 write scope; treat it as a possible S06 scope gap if
   final closure requires all current-state wording outside architecture docs to
   be updated.
 
@@ -243,16 +248,16 @@ S02 handoff:
 
 - S03 completed first to resolve the stale service-testbed minimum-gate
   blocker that surfaced during S02 checkpoint readiness.
-- S04 may delete the legacy source trees after S02 checkpoint push confirms
-  that runtime, Docker and contract-test documentation no longer points to
-  deleted legacy executable targets.
+- S04 must first clear the remaining active service and deployment
+  documentation command blockers. S05 may delete the legacy source trees only
+  after S02, S03 and S04 are checkpointed.
 
 Rollback reference:
 
-- Revert the S02 checkpoint commit before S04 if runtime, Docker or
+- Revert the S02 checkpoint commit before S05 if runtime, Docker or
   contract-test documentation cleanup must be withdrawn.
 
-arc42Updated: pending S05
+arc42Updated: pending S06
 adrUpdated: checked; no ADR update required because no public contract shape,
 runtime ownership or deployment behavior changed in S02.
 
@@ -319,35 +324,68 @@ Subagent and role reviews:
   described as active or current quality-gate participants.
 - Senior DevOps: READY with `PRODUCT_BUILD_AFFECTING` classification because
   test code changed. S03 requires targeted service gates and the repository
-  minimum gate; the full local gate remains the S06 release-readiness gate.
+  minimum gate; the full local gate remains the S07 release-readiness gate.
 
 S03 handoff:
 
 - S02 checkpoint can be resumed after S03 because the minimum gate blocker was
   removed.
-- S04 may delete the legacy source trees only after S02 is checkpointed and
-  deletion prechecks still prove no legacy module-local test is the only known
-  coverage for behavior still claimed as supported.
+- S04 must clear active service and deployment documentation command blockers.
+  S05 may delete the legacy source trees only after S02, S03 and S04 are
+  checkpointed and deletion prechecks still prove no legacy module-local test
+  is the only known coverage for behavior still claimed as supported.
 
 Rollback reference:
 
-- Revert the S03 checkpoint commit before S04 if service-regression coverage
+- Revert the S03 checkpoint commit before S05 if service-regression coverage
   confirmation must be withdrawn.
 
-arc42Updated: pending S05
+arc42Updated: pending S06
 adrUpdated: checked
+
+## Workflow Topology Correction
+
+Status: applied in workflow version
+`fa-msa-001-final-legacy-source-retirement-20260523-v2`.
+
+Reason:
+
+- S04 preflight found stale runnable legacy Gradle commands and active/current
+  legacy evidence wording in service and deployment documentation.
+- Deleting source trees before cleaning those references would leave active
+  documentation pointing at non-existent Gradle tasks.
+
+Correction:
+
+- New S04: Legacy Command Documentation Stopper Cleanup.
+- Former S04 source-tree deletion moved to S05.
+- Former S05 architecture documentation and ADR closure moved to S06.
+- Former S06 final quality gate and release readiness moved to S07.
+
+Corrected dependency graph:
+
+```text
+S00 -> S01
+S01 -> S02
+S01 -> S03
+S02 + S03 -> S04
+S04 -> S05
+S05 -> S06
+S06 -> S07
+```
 
 ## Slice Execution Status
 
 | Slice | Status | Notes |
 |---|---|---|
 | S00 | Completed | Branch, context pack, Gradle project model, leakage baseline and `git diff --check` verified. |
-| S01 | Completed | Classification written to `docs/architecture/legacy-reference-classification.md`; deletion closure remains blocked until S02/S03/S05 cleanup and gates. |
+| S01 | Completed | Classification written to `docs/architecture/legacy-reference-classification.md`; deletion closure remains blocked until S02/S03/S04 cleanup and S06/S07 closure gates. |
 | S02 | Completed | Runtime, Docker and contract-test documentation now points to service-local ownership; no public contract files changed. |
 | S03 | Completed | Service-regression coverage assertions now target active S03 wording; all S03 targeted gates and the repository minimum gate passed. |
-| S04 | Not started | Requires `workflow execute`. |
-| S05 | Not started | Requires `workflow execute`. |
-| S06 | Not started | Requires `workflow execute`. |
+| S04 | Not started | Clears active service and deployment documentation blockers before deletion. |
+| S05 | Not started | Deletes the 16 tracked legacy source trees after S04 passes. |
+| S06 | Not started | Closes arc42, ADR and architecture documentation after deletion evidence exists. |
+| S07 | Not started | Runs final full local quality gate and release-readiness evidence. |
 
 ## Open Stop Conditions For Execution
 
