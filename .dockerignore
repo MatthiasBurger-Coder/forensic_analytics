@@ -5,9 +5,6 @@
 
 **/.gradle
 **/build/**
-!forensic-analytics-boot-app/build/
-!forensic-analytics-boot-app/build/libs/
-!forensic-analytics-boot-app/build/libs/*.jar
 !services/forensic-ingestion-service/build/
 !services/forensic-ingestion-service/build/libs/
 !services/forensic-ingestion-service/build/libs/*.jar

@@ -9,7 +9,6 @@ default quality gate.
 The scenario is implemented by:
 
 ```text
-forensic-analytics-testbed/src/test/java/de/burger/forensics/analytics/testbed/WildFlyRepositoryHardeningTest.java
 services/testbed/src/test/java/de/burger/forensics/analytics/services/testbed/WildFlyRepositoryHardeningTest.java
 ```
 
@@ -24,7 +23,6 @@ architecture tests instead.
 The default targeted command must pass without running the external checkout:
 
 ```bash
-./gradlew :forensic-analytics-testbed:test --tests '*WildFlyRepositoryHardeningTest' --dependency-verification strict --console=plain --stacktrace
 ./gradlew :services:testbed:test --tests '*WildFlyRepositoryHardeningTest' --dependency-verification strict --console=plain --stacktrace
 ```
 
@@ -60,7 +58,6 @@ export FORENSIC_ANALYTICS_WILDFLY_REPORT_DIR=build/reports/wildfly-hardening
 ## External Run Command
 
 ```bash
-./gradlew :forensic-analytics-testbed:test --tests '*WildFlyRepositoryHardeningTest' --dependency-verification strict --console=plain --stacktrace
 ./gradlew :services:testbed:test --tests '*WildFlyRepositoryHardeningTest' --dependency-verification strict --console=plain --stacktrace
 ```
 

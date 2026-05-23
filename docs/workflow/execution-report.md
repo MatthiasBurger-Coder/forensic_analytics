@@ -2,7 +2,7 @@
 
 ## Current Status
 
-Status: S03 service regression coverage confirmation completed.
+Status: S02 and S03 completed; ready for S04 source-tree deletion preflight.
 
 | Field | Value |
 |---|---|
@@ -171,6 +171,91 @@ S01 handoff:
   final closure requires all current-state wording outside architecture docs to
   be updated.
 
+## S02 Runtime, Docker And Contract Documentation Cleanup
+
+Status: completed.
+
+Responsible role: Senior DevOps with Senior System Architect, contract
+governance, Senior React Frontend and Senior Tester review.
+
+Changed files:
+
+- `.dockerignore`
+- `docker/boot-app/Dockerfile`
+- `docker/boot-app/README.md`
+- `docs/README.md`
+- `docs/contracts/contract-test-plan.md`
+- `docs/testing/wildfly-hardening.md`
+- `docs/workflow/execution-report.md`
+
+Executed commands:
+
+```bash
+git diff --check
+rg -n ":forensic-analytics-" .dockerignore docker/boot-app docs/README.md docs/testing/wildfly-hardening.md docs/contracts/contract-test-plan.md
+rg -n "forensic-analytics-boot-app|BOOT_APP_JAR|bootJar|build/libs/forensic-analytics-boot-app" .dockerignore docker/boot-app docs/README.md
+./gradlew :services:testbed:test --tests "*WildFlyRepositoryHardeningTest" --dependency-verification strict --console=plain --stacktrace
+./gradlew :services:query-report-api-service:test --tests "*GatewayOpenApiContractTest" --dependency-verification strict --console=plain --stacktrace
+./gradlew :services:btm-generation-service:generateProto --dependency-verification strict --console=plain --stacktrace
+./gradlew :services:btm-generation-service:test --tests "*BtmGenerationContractTest" --dependency-verification strict --console=plain --stacktrace
+./gradlew :services:query-report-api-service:test :services:forensic-gateway-service:test :services:cli-client:test --dependency-verification strict --console=plain --stacktrace
+./gradlew test --dependency-verification strict --console=plain --stacktrace
+```
+
+Results:
+
+- `git diff --check` passed.
+- No stale executable `:forensic-analytics-*` Gradle command remains in the
+  S02 target documentation scope.
+- No stale Boot app jar, `BOOT_APP_JAR`, `bootJar`, or deleted boot-app build
+  output reference remains in `.dockerignore`, `docker/boot-app`, or
+  `docs/README.md`.
+- `:services:testbed:test --tests "*WildFlyRepositoryHardeningTest"` passed.
+- `:services:query-report-api-service:test --tests "*GatewayOpenApiContractTest"`
+  passed.
+- `:services:btm-generation-service:generateProto` passed.
+- `:services:btm-generation-service:test --tests "*BtmGenerationContractTest"`
+  passed.
+- `:services:query-report-api-service:test :services:forensic-gateway-service:test :services:cli-client:test`
+  passed.
+- The repository minimum gate
+  `./gradlew test --dependency-verification strict --console=plain --stacktrace`
+  passed.
+
+Subagent and role reviews:
+
+- Senior DevOps: READY. Remove only the legacy Boot jar allowlist, delete the
+  stale Boot Dockerfile, retire the Boot container README, and replace
+  legacy REST/testbed commands with service-local checks.
+- Senior System Architect: READY. S02 may remove or reword executable legacy
+  runtime references without public API shape changes or ADR history rewrites.
+- Contract Governance: READY. Updating only
+  `docs/contracts/contract-test-plan.md` to use the service-local
+  `GatewayOpenApiContractTest` command is behavior-neutral; public REST,
+  CLI and gRPC contract files remain unchanged.
+- Senior React Frontend: READY. No `forensic-ui` changes are required because
+  OpenAPI paths, DTO fields, error envelopes and status shapes are unchanged.
+- Senior Tester: initial BLOCKED because the cleanup had not yet been applied;
+  targeted service verification passed and the blocker was documentation
+  state, not failing tests.
+
+S02 handoff:
+
+- S03 completed first to resolve the stale service-testbed minimum-gate
+  blocker that surfaced during S02 checkpoint readiness.
+- S04 may delete the legacy source trees after S02 checkpoint push confirms
+  that runtime, Docker and contract-test documentation no longer points to
+  deleted legacy executable targets.
+
+Rollback reference:
+
+- Revert the S02 checkpoint commit before S04 if runtime, Docker or
+  contract-test documentation cleanup must be withdrawn.
+
+arc42Updated: pending S05
+adrUpdated: checked; no ADR update required because no public contract shape,
+runtime ownership or deployment behavior changed in S02.
+
 ## S03 Service Regression Coverage Confirmation
 
 Status: completed.
@@ -244,13 +329,21 @@ S03 handoff:
   deletion prechecks still prove no legacy module-local test is the only known
   coverage for behavior still claimed as supported.
 
+Rollback reference:
+
+- Revert the S03 checkpoint commit before S04 if service-regression coverage
+  confirmation must be withdrawn.
+
+arc42Updated: pending S05
+adrUpdated: checked
+
 ## Slice Execution Status
 
 | Slice | Status | Notes |
 |---|---|---|
 | S00 | Completed | Branch, context pack, Gradle project model, leakage baseline and `git diff --check` verified. |
 | S01 | Completed | Classification written to `docs/architecture/legacy-reference-classification.md`; deletion closure remains blocked until S02/S03/S05 cleanup and gates. |
-| S02 | Pending checkpoint | Runtime/Docker/contract cleanup was serialized behind S03 after the minimum gate exposed stale service-testbed S17 assertions. |
+| S02 | Completed | Runtime, Docker and contract-test documentation now points to service-local ownership; no public contract files changed. |
 | S03 | Completed | Service-regression coverage assertions now target active S03 wording; all S03 targeted gates and the repository minimum gate passed. |
 | S04 | Not started | Requires `workflow execute`. |
 | S05 | Not started | Requires `workflow execute`. |
