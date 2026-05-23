@@ -1,11 +1,5 @@
 package de.burger.forensics.analytics.services.testbed;
 
-import de.burger.forensics.analytics.adapter.repository.source.FileSystemWorkspacePreparationAdapter;
-import de.burger.forensics.analytics.adapter.repository.source.LocalRepositorySourceAdapter;
-import de.burger.forensics.analytics.application.ingestion.command.WorkspacePreparationRequest;
-import de.burger.forensics.analytics.domain.analysis.AnalysisRunId;
-import de.burger.forensics.analytics.domain.repository.RepositoryMetadata;
-import de.burger.forensics.analytics.domain.workspace.WorkspaceCleanupPolicy;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -17,6 +11,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -65,22 +60,9 @@ class WildFlyRepositoryHardeningTest {
         metrics.put("timeoutSeconds", String.valueOf(timeout.toSeconds()));
         metrics.put("minimumFreeBytes", String.valueOf(minimumFreeBytes));
 
-        var workspaceAdapter = new FileSystemWorkspacePreparationAdapter(workspaceRoot);
-        var workspace = measured(metrics, "workspacePreparationDurationMillis", () -> workspaceAdapter.prepare(
-            new WorkspacePreparationRequest(
-                AnalysisRunId.deterministic("wildfly-hardening|" + target.identity()),
-                new WorkspacePolicy(
-                    true,
-                    false,
-                    false,
-                    false,
-                    timeout,
-                    0L,
-                    WorkspaceCleanupPolicy.DELETE_ON_COMPLETION
-                )
-            )
-        ));
-        var workspacePath = Path.of(workspace.path().value()).toAbsolutePath().normalize();
+        var workspacePath = measured(metrics, "workspacePreparationDurationMillis", () ->
+            prepareWorkspace(workspaceRoot, target)
+        );
         var repositoryDirectory = workspacePath.resolve("repository").normalize();
         metrics.put("workspacePath", workspacePath.toString());
 
@@ -120,32 +102,29 @@ class WildFlyRepositoryHardeningTest {
                 timeout,
                 gitCommand("remote", "get-url", "origin")
             )).strip();
-            var repositorySource = measured(metrics, "sourceRootDetectionDurationMillis", () ->
-                new LocalRepositorySourceAdapter(workspacePath).resolve(new RepositoryMetadata(
-                    "wildfly-hardening",
-                    repositoryDirectory.toString(),
-                    target.branch().orElse("UNSPECIFIED"),
-                    resolvedCommit
-                ))
+            var sourceRoots = measured(
+                metrics,
+                "sourceRootDetectionDurationMillis",
+                () -> detectSourceRoots(repositoryDirectory)
             );
             var size = measured(metrics, "workspaceMeasurementDurationMillis", () -> repositorySize(repositoryDirectory));
 
             metrics.put("resolvedRemoteUrl", resolvedRemoteUrl);
             metrics.put("resolvedCommit", resolvedCommit);
-            metrics.put("detectedSourceRootCount", String.valueOf(repositorySource.sourceRoots().size()));
+            metrics.put("detectedSourceRootCount", String.valueOf(sourceRoots.size()));
             metrics.put("fileCount", String.valueOf(size.fileCount()));
             metrics.put("workspaceSizeBytes", String.valueOf(size.totalBytes()));
 
             assertFalse(resolvedCommit.isBlank());
-            assertFalse(repositorySource.sourceRoots().isEmpty());
+            assertFalse(sourceRoots.isEmpty());
             assertTrue(size.fileCount() > 0, "WildFly checkout should contain repository files.");
         } catch (Exception e) {
             metrics.put("failure", e.getClass().getSimpleName() + ": " + e.getMessage());
             throw e;
         } finally {
             measured(metrics, "cleanupDurationMillis", () -> {
-                var cleaned = workspaceAdapter.cleanup(workspace);
-                metrics.put("cleanupStatus", cleaned.status().name());
+                cleanupWorkspace(workspacePath);
+                metrics.put("cleanupStatus", Files.notExists(workspacePath) ? "DELETED" : "REMAINING");
                 return null;
             });
             writeReport(metrics);
@@ -164,6 +143,18 @@ class WildFlyRepositoryHardeningTest {
         branch.ifPresent(value -> requireSafeGitReference(value, HARDENING_BRANCH));
         commit.ifPresent(value -> requireSafeGitReference(value, HARDENING_COMMIT));
         return new HardeningTarget(branch, commit);
+    }
+
+    private static Path prepareWorkspace(Path workspaceRoot, HardeningTarget target) throws IOException {
+        var workspacePath = workspaceRoot.resolve(safeWorkspaceName(target)).toAbsolutePath().normalize();
+        if (!workspacePath.startsWith(workspaceRoot.toAbsolutePath().normalize())) {
+            throw new IOException("WildFly hardening workspace escaped the configured workspace root.");
+        }
+        return Files.createDirectories(workspacePath);
+    }
+
+    private static String safeWorkspaceName(HardeningTarget target) {
+        return "wildfly-hardening-" + target.identity().replaceAll("[^A-Za-z0-9._-]", "_");
     }
 
     private static Optional<String> env(String name) {
@@ -223,6 +214,22 @@ class WildFlyRepositoryHardeningTest {
         return String.join(" ", commandLine);
     }
 
+    private static List<Path> detectSourceRoots(Path repositoryDirectory) throws IOException {
+        try (var paths = Files.walk(repositoryDirectory)) {
+            return paths
+                .filter(Files::isDirectory)
+                .filter(WildFlyRepositoryHardeningTest::isJavaSourceRoot)
+                .map(repositoryDirectory::relativize)
+                .map(Path::normalize)
+                .sorted(Comparator.comparing(Path::toString))
+                .toList();
+        }
+    }
+
+    private static boolean isJavaSourceRoot(Path path) {
+        return path.endsWith(Path.of("src", "main", "java")) || path.endsWith(Path.of("src", "test", "java"));
+    }
+
     private static RepositorySize repositorySize(Path repositoryDirectory) throws IOException {
         var fileCount = new LongAdder();
         var totalBytes = new LongAdder();
@@ -239,6 +246,17 @@ class WildFlyRepositoryHardeningTest {
             throw e.getCause();
         }
         return new RepositorySize(fileCount.sum(), totalBytes.sum());
+    }
+
+    private static void cleanupWorkspace(Path workspacePath) throws IOException {
+        if (Files.notExists(workspacePath)) {
+            return;
+        }
+        try (var paths = Files.walk(workspacePath)) {
+            for (var path : paths.sorted(Comparator.reverseOrder()).toList()) {
+                Files.deleteIfExists(path);
+            }
+        }
     }
 
     private static void writeReport(Map<String, String> metrics) throws IOException {
