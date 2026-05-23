@@ -2,7 +2,7 @@
 
 ## Current Status
 
-Status: S00 execution preflight completed.
+Status: S01 legacy reference classification completed.
 
 | Field | Value |
 |---|---|
@@ -99,12 +99,84 @@ S3D note:
 - S02 and S03 both lock `docs/testing/**`. They must not run in parallel unless
   a later S3D pass refines locks or serializes them. This does not block S00.
 
+## S01 Legacy Reference Classification
+
+Status: completed.
+
+Responsible role: Senior System Architect with Senior Requirement Engineer,
+Senior DevOps and Senior Tester review.
+
+Changed files:
+
+- `docs/architecture/legacy-reference-classification.md`
+- `docs/workflow/execution-report.md`
+
+Executed commands:
+
+```bash
+git status --short --branch
+rg -n "forensic-analytics-" docker .dockerignore contracts docs --glob "!docs/workflow/**"
+rg -n "forensic-analytics-" docker .dockerignore contracts docs --glob "!docs/workflow/**" | wc -l
+git diff --check
+```
+
+Results:
+
+- S01 reference scan completed.
+- Focused scan found `283` matches before classification and `298` matches
+  after adding the classification artifact.
+- `git diff --check` passed.
+- No active non-legacy Gradle build reference or service Java import blocker
+  was reintroduced.
+
+Subagent reviews:
+
+- Senior Requirement Engineer: READY. S01 remains aligned with FA-MSA-001 and
+  ADR-0017. Source-tree deletion is not S01 work.
+- Senior System Architect: READY for classification. Physical deletion closure
+  remains blocked until active-blocker references are removed or rewritten.
+- Senior DevOps: READY. S02 cleanup files are `.dockerignore`,
+  `docker/boot-app/Dockerfile`, `docker/boot-app/README.md`, `docs/README.md`,
+  `docs/testing/wildfly-hardening.md` and
+  `docs/contracts/contract-test-plan.md`.
+- Senior Tester: BLOCKED for S03/deletion readiness, not for S01
+  classification. Stale legacy Gradle task commands and current-state claims
+  must be replaced or marked historical before later slices pass.
+
+Classification summary:
+
+- Removable runtime/build documentation: README, Boot Docker files,
+  `.dockerignore`, WildFly hardening commands and legacy REST contract-test
+  command.
+- Historical architecture baseline: current-state, current-build/test,
+  current-coupling, monolith-retirement, service-boundary, migration-map,
+  arc42 and related architecture docs.
+- Compatibility vocabulary: Gateway/OpenAPI/CLI/gRPC predecessor wording and
+  ADR history.
+- Product/runtime namespace: `forensic-analytics-joern` and
+  `forensic-analytics-workspaces` are not legacy Gradle source-tree references.
+- Active blockers: runnable-looking `:forensic-analytics-*` commands, current
+  claims that legacy modules are registered or active quality-gate
+  participants, and rollback/regression claims that depend only on source trees
+  planned for deletion.
+
+S01 handoff:
+
+- S02 must clean stale executable runtime/Docker/contract docs.
+- S03 must use service-local gates only and confirm replacement or deprecation
+  coverage.
+- S05 must reconcile architecture and arc42 current-state claims.
+- `docs/skill-audit/README.md` contains a stale historical audit sentence
+  outside current S05 write scope; treat it as a possible S05 scope gap if
+  final closure requires all current-state wording outside architecture docs to
+  be updated.
+
 ## Slice Execution Status
 
 | Slice | Status | Notes |
 |---|---|---|
 | S00 | Completed | Branch, context pack, Gradle project model, leakage baseline and `git diff --check` verified. |
-| S01 | Not started | Requires `workflow execute`. |
+| S01 | Completed | Classification written to `docs/architecture/legacy-reference-classification.md`; deletion closure remains blocked until S02/S03/S05 cleanup and gates. |
 | S02 | Not started | Requires `workflow execute`. |
 | S03 | Not started | Requires `workflow execute`. |
 | S04 | Not started | Requires `workflow execute`. |
