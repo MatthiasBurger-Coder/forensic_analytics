@@ -53,6 +53,11 @@ Docker image builds and Joern runtime smoke tests are optional external
 verification for this slice because they may pull the digest-pinned Joern base
 image or create local container state.
 
+S16 does not retain the service-root testbed Joern Docker smoke path as target
+runtime readiness. Joern Docker smoke remains optional external verification,
+not target runtime readiness and not evidence of completed repository-to-BTM
+analysis parity.
+
 ## Known Limits
 
 - The contract is provisional and intentionally scoped to logical Slice 06

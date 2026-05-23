@@ -37,6 +37,11 @@ handles. A repeated write for the same run, job and source snapshot succeeds
 only when the produced bytes are identical; different bytes for an existing
 reference are rejected instead of replacing previously published evidence.
 
+S16 uses this service as worker-contract evidence only. The JavaParser service
+returns source-fact artifact metadata and diagnostics; it does not replace the
+legacy in-process repository-analysis summary, BTM rule generation, runtime
+execution or semantic graph assertions.
+
 ## Local Commands
 
 ```bash

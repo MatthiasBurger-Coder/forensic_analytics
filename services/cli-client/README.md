@@ -7,6 +7,11 @@ repository-to-BTM submission through `query-report-api-service` HTTP/OpenAPI.
 It does not implement analysis execution, JavaParser or Joern control,
 persistence access, local workspace handling, status reads or report reads.
 
+S16 records local `analyze` and `ingest-request` as deprecated target behavior.
+`cli-client` rejects those legacy command names and does not implement
+analysis execution, does not implement engine-request import and does not route
+local paths or engine-request files to the public API.
+
 ## Build And Test
 
 ```bash

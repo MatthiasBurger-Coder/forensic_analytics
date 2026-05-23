@@ -17,6 +17,7 @@ import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 class JavaAstAnalysisContractTest {
     @Test
@@ -39,6 +40,20 @@ class JavaAstAnalysisContractTest {
         assertEquals(6, JavaSourceFact.getDescriptor().findFieldByName("evidence_kind").getNumber());
         assertEquals(1, EvidenceKind.EVIDENCE_KIND_STATIC_SOURCE_FACT.getNumber());
         assertEquals(9, JavaAstDiagnostic.getDescriptor().findFieldByName("affects_completeness").getNumber());
+    }
+
+    @Test
+    void analyzeSourceSnapshotResponseDoesNotExposeRuntimeGraphOrBtmParityFields() {
+        var response = AnalyzeSourceSnapshotResponse.getDescriptor();
+
+        assertNotNull(response.findFieldByName("source_fact_artifact"));
+        assertNull(response.findFieldByName("semantic_graph"));
+        assertNull(response.findFieldByName("runtime_events"));
+        assertNull(response.findFieldByName("btm_rules"));
+        assertNull(response.findFieldByName("rule_artifacts"));
+        assertNull(response.findFieldByName("nodes"));
+        assertNull(response.findFieldByName("call_relations"));
+        assertNull(response.findFieldByName("data_flow_paths"));
     }
 
     @Test

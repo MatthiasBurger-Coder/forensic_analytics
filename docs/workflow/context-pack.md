@@ -107,7 +107,7 @@ git diff --check
 | `docs/workflow/slice-dependency-map.md` | `625546d35a0774cc33b7f958d6b70d538275a10535a4975935fc2e10511b2cdf` |
 | `docs/workflow/quality-and-leakage-gates.md` | `25f99e669868f23c6bb704d88c74e6d1e3428bdc4749f97dd7dd6d5090b6b5f4` |
 | `docs/workflow/three-amigos-decision-record.md` | `34639d46c625f9daf2eca3d74556625144e2d75bfe5c5c3f266f44ccf279e14c` |
-| `docs/workflow/execution-report.md` | `e99b41f005fac400a763e4e414a2ce33a19658e5ee94f61d643965e0cef26184` |
+| `docs/workflow/execution-report.md` | `4c4f326d46b5bc97242cfdc59eb760bd8ebf250ebaddb7dde05bb04793fc1832` |
 | `docs/workflow/role-ownership.md` | `d0d1ccdbd149dbdbe77097d40f4b0bfa1c4c7923a6aea8634313865135c15b7e` |
 | `docs/workflow/arc42-check-status.md` | `ea164adde7b8ac459d5b94fdae952e64635c8d4a327267dde4fe8c416a29bdae` |
 | `docs/adr/ADR-0017-target-microservices-service-landscape.md` | `ddf2d281e8bb8d8924f4622e532da29e8f94038a66ae57d3d06a4ff85e72e95f` |
@@ -116,12 +116,19 @@ git diff --check
 | `docs/architecture/service-migration-map.md` | `9c5a34d1acf9b6e11098a6a57ebecd979350dde6f1b5584170312319c3e6e66d` |
 | `docs/architecture/service-boundaries.md` | `8f8596a7678738726f92fdf8cd27ffe5fb7b9cbc792042289e0dab415e8691e2` |
 | `docs/architecture/service-communication-matrix.md` | `718050f8c6fead496896677df4ac5e76dd3423979292a9c1fd5cb4cd9250cd7d` |
+| `docs/architecture/monolith-runtime-isolation.md` | `6da99439a89aa42a9e1c8e5190e76bbb008792f595e4374aa2ac768656cdf338` |
 | `docs/architecture/current-build-and-test-map.md` | `c6508d5e584d2be93d1757b667643ac8dc7d83cfc3a81040cddf283ab23259de` |
-| `docs/arc42/05-building-block-view.md` | `9498bfe2863deba23353042e528f8bd1ea5b13312a55992b16aecce7dbf495f2` |
+| `docs/arc42/05-building-block-view.md` | `ffe560fe889fbcd51147688c98b5103b6f05a2aa72ba3d581a172580a1074bde` |
+| `docs/arc42/06-runtime-view.md` | `8fa3a04d05e3bb18239b6ae363b638b65c4ebe6958799b0c0a0fbfd85309ac7e` |
 | `docs/arc42/07-deployment-view.md` | `01faa935ffac09d7fd83c4ce04fe45934346abd529cd02c2e04ef7c3445b4ea9` |
 | `docs/arc42/08-crosscutting-concepts.md` | `bf22a6a559b07b56c4d6617f6c3c61d3684daf3973f7badcdf5dc067b8bef0e7` |
 | `docs/testing/wildfly-hardening.md` | `53f3ad4465507873bd6fb4eada92e41aedda4550c0ae53e952a95c4919c0bd69` |
-| `services/testbed/README.md` | `44a4582ceeeab52b28f085e7566be96cef0cd640c0c5f63d711cf76af2022cee` |
+| `contracts/cli/gateway-cli-contract.md` | `dfbef3d8f57c15f18fd2eca5b161393380c71bf607b25c385a95701a24fb1cdd` |
+| `services/cli-client/README.md` | `bb5c87baeee17544f9e7812f8786c62e42924de32cfb895d4c3af4854770e11c` |
+| `services/query-report-api-service/README.md` | `4e3dabc131398c1b30db50ad049ce123916dbb60e4333cca9cec00af26468dab` |
+| `services/java-parser-analysis-service/README.md` | `3c9de6fda08c5d1961e9d92f37a531173b81d6c9d4f52971ea18d634ec664b4d` |
+| `services/joern-analysis-service/README.md` | `bca7d1707e10b06f30ed95fb51f0b0dc3e2c7ea06f998b86847d6e7e935eec7a` |
+| `services/testbed/README.md` | `679fa3b3076a46ff852ba4ec57e7b7abbb7d3479c3f1267d7caf6599207e2983` |
 | `settings.gradle.kts` | `f5be0d269f3a0ec5d36a9e7787a1802bebc777ab44c7544fb5759d09f53eb6a7` |
 | `build.gradle.kts` | `c9f1866871a500675f725c47795606a8ab19c9e64ba65c39e907b0cc19b8a7c1` |
 

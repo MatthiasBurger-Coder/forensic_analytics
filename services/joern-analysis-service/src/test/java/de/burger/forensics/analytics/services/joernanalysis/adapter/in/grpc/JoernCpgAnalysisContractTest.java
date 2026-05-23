@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 class JoernCpgAnalysisContractTest {
     @Test
@@ -43,5 +44,18 @@ class JoernCpgAnalysisContractTest {
         assertNotNull(JoernCpgPolicy.getDescriptor().findFieldByName("joern_image_reference"));
         assertNotNull(JoernMaterializationPolicy.getDescriptor().findFieldByName("reject_symlinks"));
         assertEquals(3, AnalysisWorkerKind.ANALYSIS_WORKER_KIND_JOERN_ANALYSIS.getNumber());
+    }
+
+    @Test
+    void analyzeSourceSnapshotResponseDoesNotExposeLegacySemanticGraphParityFields() {
+        var response = AnalyzeJoernCpgResponse.getDescriptor();
+
+        assertNotNull(response.findFieldByName("semantic_artifacts"));
+        assertNull(response.findFieldByName("semantic_graph"));
+        assertNull(response.findFieldByName("nodes"));
+        assertNull(response.findFieldByName("call_relations"));
+        assertNull(response.findFieldByName("data_flow_paths"));
+        assertNull(response.findFieldByName("rule_artifacts"));
+        assertNull(response.findFieldByName("btm_rules"));
     }
 }

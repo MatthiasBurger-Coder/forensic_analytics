@@ -170,7 +170,9 @@ service-local Gradle project, CLI bootstrap, HTTP/OpenAPI adapter and tests. It
 is not a backend service and must not own forensic evidence, analysis execution,
 parser behavior, Joern control or persistence. The predecessor
 `forensic-analytics-cli` local `analyze` and `ingest-request` commands remain
-current-state evidence until a later parity or deprecation slice.
+predecessor rollback evidence. S16 deprecates them as target `cli-client`
+behavior and keeps `gateway-submit` as the only verified target CLI command in
+this workflow state.
 
 Every productive service must own its internal domain, application, adapters,
 bootstrap, configuration, tests, health checks and Dockerfile before production

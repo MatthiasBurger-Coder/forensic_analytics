@@ -11,6 +11,12 @@ public API. Under FA-MSA-001 the target CLI is `cli-client` and the public API
 authority is `query-report-api-service`; Gateway naming is retained only as
 current command, option and file compatibility evidence.
 
+S16 records `analyze` and `ingest-request` as deprecated target behavior for
+`cli-client`. They remain legacy in-process adapters only in predecessor
+modules until caller-free removal is proven; target CLI implementations must
+reject those commands instead of routing local paths or engine-request files to
+the public API.
+
 ## Producer And Consumer
 
 | Field | Value |
@@ -27,6 +33,11 @@ current command, option and file compatibility evidence.
 The current CLI `analyze` command is an in-process legacy adapter. It accepts
 local paths or file URIs and does not require branch, commit, correlation ID or
 idempotency key inputs.
+
+After S16, local `analyze` and `ingest-request` are not target CLI behavior.
+They are retained only as predecessor rollback evidence until S19 proves
+caller-free removal or a later workflow creates a new explicit target owner and
+contract.
 
 Public repository-to-BTM submission requires:
 

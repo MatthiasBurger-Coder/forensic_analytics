@@ -14,6 +14,11 @@ S15 keeps WildFly hardening here as default-skipped non-production evidence,
 but productive logging and Spring architecture ownership lives in the
 service-local `*ArchitectureTest` suites for the target services.
 
+S16 changes `RepositoryAnalysisTestbedTest` into deprecation evidence for the
+legacy in-process repository-analysis runtime scenario. It verifies target CLI
+and service contracts without running the legacy engine path and is not
+completed local analysis parity.
+
 ## Verification
 
 Run the service-local testbed gate with:

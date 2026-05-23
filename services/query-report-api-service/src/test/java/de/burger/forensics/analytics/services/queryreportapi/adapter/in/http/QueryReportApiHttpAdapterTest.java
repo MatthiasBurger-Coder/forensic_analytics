@@ -87,6 +87,32 @@ class QueryReportApiHttpAdapterTest {
     }
 
     @Test
+    void extensionRoutesRemainUnavailableWithoutBtmReportOrReplayParity() throws Exception {
+        var server = server();
+        try {
+            var port = server.getAddress().getPort();
+            var unavailableRoutes = List.of(
+                "/api/repository-analyses/analysis-run-1/jobs",
+                "/api/repository-analyses/analysis-run-1/results",
+                "/api/repository-analyses/analysis-run-1/replay",
+                "/api/repository-analyses/analysis-run-1/reports"
+            );
+
+            for (var route : unavailableRoutes) {
+                var response = response(port, route, "GET", "", "correlation-1", null);
+
+                assertEquals(404, response.code(), route);
+                assertTrue(response.body().contains("\"code\":\"NOT_FOUND\""), route);
+                assertFalse(response.body().contains("BTM_DELIVERY_READY"), route);
+                assertFalse(response.body().contains("workspace-"), route);
+                assertFalse(response.body().contains("/tmp"), route);
+            }
+        } finally {
+            server.stop(0);
+        }
+    }
+
+    @Test
     void validatesRepositoryAnalysisStatusCorrelationHeader() throws Exception {
         var server = server();
         try {

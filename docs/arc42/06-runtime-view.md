@@ -179,8 +179,9 @@ client
 `cli-client` is a public API client only. S09 implements repository-to-BTM job
 submission through `query-report-api-service` HTTP/OpenAPI using the
 transitional `gateway-submit` compatibility vocabulary. Legacy local CLI
-commands remain in-process current-state evidence until a later slice provides
-parity or explicit deprecation tests. Status and report CLI reads require later
+commands remain predecessor rollback evidence. S16 explicitly deprecates local
+`analyze` and `ingest-request` as target `cli-client` behavior; they are not
+silently routed to the public API. Status and report CLI reads require later
 explicit command mappings.
 
 Optional services such as `btm-generation-service`, `graph-replay-service` and

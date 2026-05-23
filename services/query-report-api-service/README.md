@@ -47,6 +47,12 @@ public API maps that pending state to `ACCEPTED` with explicit incomplete
 diagnostics; it does not claim worker execution, generated BTM bytes, report
 readiness or artifact custody.
 
+S16 keeps this as accepted/pending state only. Extension routes for jobs,
+results, replay and reports remain unavailable until a later slice implements
+and tests owner-backed behavior. The facade still does not claim worker
+execution, generated BTM bytes, report readiness, replay readiness or semantic
+graph parity.
+
 Configuration keys:
 
 - `forensics.query-report-api.service.http.enabled`
