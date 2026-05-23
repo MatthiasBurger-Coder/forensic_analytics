@@ -371,20 +371,19 @@ readiness/liveness probes, resource policies and validation commands are added
 by a later slice.
 
 The local descriptor commands are documented in
-`deployment/docker-compose/README.md`. S15 did not execute or record Compose
-model validation, image-build, startup or health-check commands for this
+`deployment/docker-compose/README.md`. The active workflow has not executed or
+recorded Compose model validation, image-build, startup or health-check
+commands for this
 descriptor.
 
 The descriptor is current evidence only. It is not a readiness claim for the
 FA-MSA-001 target landscape until the target services exist and are verified by
 their own build, start, healthcheck, Docker and quality gates.
 
-S15 closes the workflow by verifying the mandatory FA-MSA-001 target service
-build tasks, service-owned Dockerfiles, Docker healthcheck definitions,
-service-local configuration files and architecture tests. This closure remains
+S15 must close the workflow by verifying the mandatory FA-MSA-001 target
+service build tasks, service-owned Dockerfiles, Docker healthcheck definitions,
+service-local configuration files and architecture tests. That closure remains
 limited to service-local build and packaging evidence plus the repository
-quality gate; it does not claim Docker image-build, Docker Compose startup,
-Docker Swarm or Kubernetes runtime readiness for the target landscape.
-The S15 full local quality gate passed with the repository `QUALITY.md`
-command including `clean`, `test`, `jacocoTestReport`,
-`jacocoTestCoverageVerification` and `checkPackageCoverage`.
+quality gate; it must not claim Docker image-build, Docker Compose startup,
+Docker Swarm or Kubernetes runtime readiness for the target landscape unless
+those commands are explicitly executed and recorded.

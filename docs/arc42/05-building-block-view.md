@@ -98,6 +98,14 @@ application packages remain framework-free; service-local bootstrap code may
 own the Spring Boot entrypoint, configuration and lifecycle wiring for an
 independent service.
 
+S12 verifies that productive service code keeps domain and application models
+inside service-local packages and that productive service build files do not
+depend on the retained central `forensic-analytics-domain` or
+`forensic-analytics-application` modules. Those central modules remain
+current-state and rollback evidence until S14 proves caller-free retirement.
+The non-production `services:testbed` test dependencies remain S13/S14
+regression evidence and are not productive service coupling.
+
 ## 5.8 Cross-cutting Logging Module
 
 ADR-0008 accepts `forensic-analytics-logging` as a cross-cutting infrastructure module. It provides `ForensicLoggerFactory` for explicit logger injection and optional Spring method interception in the Boot runtime.

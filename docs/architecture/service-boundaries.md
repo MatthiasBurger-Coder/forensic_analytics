@@ -4,8 +4,8 @@
 
 FA-MSA-001 Slice 04 service-boundary and data-ownership baseline with
 repository-source, ingestion, JavaParser, Joern, orchestrator, query/report,
-CLI client, observability and testbed implementation evidence through Slice
-13.
+CLI client and observability implementation evidence through Slice 12.
+Testbed parity remains scheduled for Slice 13.
 
 These are target boundaries. Current `services/**` directories and
 `forensic-analytics-*` modules are implementation evidence and migration
@@ -13,10 +13,10 @@ inputs. They must not be described as the completed FA-MSA-001 service
 landscape until the workflow proves independent build, start, test,
 configuration, healthcheck, container and deployment evidence.
 
-S14 keeps retained `forensic-analytics-*` modules as legacy in-process and
-rollback evidence because caller-free proof is not available. They are not
-productive service boundaries and must not be introduced as shared Java
-implementation modules between independently deployable services.
+Retained `forensic-analytics-*` modules remain legacy in-process and rollback
+evidence until S14 proves caller-free retirement and the required quality gate.
+They are not productive service boundaries and must not be introduced as shared
+Java implementation modules between independently deployable services.
 
 ## Boundary Rules
 
@@ -578,7 +578,7 @@ Current evidence:
 - `deployment/docker-compose/repository-to-btm.local.yml`;
 - service-local tests under current service slices.
 
-S13 implementation evidence:
+Current service-root testbed evidence:
 
 - registered Gradle project `services:testbed`;
 - service-local test package
@@ -590,6 +590,8 @@ S13 implementation evidence:
   integration and system-test infrastructure;
 - `forensic-analytics-testbed` remains active as legacy quality-gate and
   rollback evidence.
+
+S13 must verify this evidence before legacy testbed removal can be considered.
 
 Stop conditions:
 

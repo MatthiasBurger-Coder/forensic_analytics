@@ -266,19 +266,18 @@ caller scans still find active build, production and test references to the
 retained `forensic-analytics-*` modules. A later removal slice must name a
 caller-free candidate and run the full local quality gate.
 
-Slice 15 verifies the mandatory FA-MSA-001 target service build paths,
+Slice 15 must verify the mandatory FA-MSA-001 target service build paths,
 service-owned Dockerfiles, healthcheck definitions, service-local
 configuration, architecture-test coverage and the full local `QUALITY.md`
-gate. S15 does not run Docker image builds, Docker Compose startup,
-Docker Swarm or Kubernetes commands for the FA-MSA-001 target landscape.
-The S15 full local gate passed with:
-`./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace`.
+gate. S15 must not claim Docker image builds, Docker Compose startup,
+Docker Swarm or Kubernetes commands for the FA-MSA-001 target landscape unless
+those commands are explicitly executed and recorded.
 The local repository-to-BTM Compose descriptor remains transitional
 environment evidence only until a separate runtime-deployment slice verifies
 image builds, startup, health checks and cleanup commands.
 
 No separate Swarm or Kubernetes workflow handoff artifact is present in this
-repository at S15 closure. Future deployment workflows must create and verify
+repository. Future deployment workflows must create and verify
 their own stack files, manifests, commands and readiness evidence.
 
 Missing deployment material:
@@ -335,8 +334,7 @@ evidence without changing the default build topology:
 - a separate Swarm and Kubernetes deployment workflow request, with no stack
   files, manifests or readiness claims added by this workflow.
 
-The workflow full local quality gate passed after the S15 CLI and
-analysis-orchestrator coverage remediation:
+The workflow full local quality gate remains a closure requirement for S15:
 
 ```bash
 ./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace
