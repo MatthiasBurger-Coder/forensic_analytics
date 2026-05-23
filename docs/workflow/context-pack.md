@@ -107,7 +107,7 @@ git diff --check
 | `docs/workflow/slice-dependency-map.md` | `625546d35a0774cc33b7f958d6b70d538275a10535a4975935fc2e10511b2cdf` |
 | `docs/workflow/quality-and-leakage-gates.md` | `25f99e669868f23c6bb704d88c74e6d1e3428bdc4749f97dd7dd6d5090b6b5f4` |
 | `docs/workflow/three-amigos-decision-record.md` | `34639d46c625f9daf2eca3d74556625144e2d75bfe5c5c3f266f44ccf279e14c` |
-| `docs/workflow/execution-report.md` | `1a89f474918aab9ae46eee0242868f2d66c07d4a538875be2da1436e91e10d3b` |
+| `docs/workflow/execution-report.md` | `83ab3440b19169e72ed626ccacbeaa12c6d4d7777ab4d43e44d54e79ceecef3d` |
 | `docs/workflow/role-ownership.md` | `d0d1ccdbd149dbdbe77097d40f4b0bfa1c4c7923a6aea8634313865135c15b7e` |
 | `docs/workflow/arc42-check-status.md` | `ea164adde7b8ac459d5b94fdae952e64635c8d4a327267dde4fe8c416a29bdae` |
 | `docs/adr/ADR-0017-target-microservices-service-landscape.md` | `ddf2d281e8bb8d8924f4622e532da29e8f94038a66ae57d3d06a4ff85e72e95f` |
