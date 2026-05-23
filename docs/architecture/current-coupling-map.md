@@ -226,7 +226,7 @@ Current evidence remains non-empty:
   `logging`, `observability`, `rest`, `bootstrap`, `boot` or `engine`
   packages;
 - 594 test imports into those retained packages;
-- nine `services:testbed` test dependencies on retained legacy modules.
+- 13 `services:testbed` test dependencies on retained legacy modules.
 
 These findings block direct module retirement. The next safe action is
 path-specific migration or explicit deprecation, followed by a smaller

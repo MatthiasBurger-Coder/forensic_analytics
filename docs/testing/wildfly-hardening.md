@@ -10,6 +10,7 @@ The scenario is implemented by:
 
 ```text
 forensic-analytics-testbed/src/test/java/de/burger/forensics/analytics/testbed/WildFlyRepositoryHardeningTest.java
+services/testbed/src/test/java/de/burger/forensics/analytics/services/testbed/WildFlyRepositoryHardeningTest.java
 ```
 
 ## Default Verification
@@ -18,6 +19,7 @@ The default targeted command must pass without running the external checkout:
 
 ```bash
 ./gradlew :forensic-analytics-testbed:test --tests '*WildFlyRepositoryHardeningTest' --dependency-verification strict --console=plain --stacktrace
+./gradlew :services:testbed:test --tests '*WildFlyRepositoryHardeningTest' --dependency-verification strict --console=plain --stacktrace
 ```
 
 When `FORENSIC_ANALYTICS_WILDFLY_HARDENING` is not set to `true`, JUnit skips
@@ -53,6 +55,7 @@ export FORENSIC_ANALYTICS_WILDFLY_REPORT_DIR=build/reports/wildfly-hardening
 
 ```bash
 ./gradlew :forensic-analytics-testbed:test --tests '*WildFlyRepositoryHardeningTest' --dependency-verification strict --console=plain --stacktrace
+./gradlew :services:testbed:test --tests '*WildFlyRepositoryHardeningTest' --dependency-verification strict --console=plain --stacktrace
 ```
 
 ## Evidence Written

@@ -142,8 +142,9 @@ through `WildFlyRepositoryHardeningTest`. It is skipped by default unless
 `FORENSIC_ANALYTICS_WILDFLY_HARDENING=true` and an explicit WildFly branch or
 commit is provided. The runbook is `docs/testing/wildfly-hardening.md`.
 
-Slice 13 adds the same testbed coverage under `services:testbed` in package
-`de.burger.forensics.analytics.services.testbed`. The legacy
+Slice 13 verifies the same testbed coverage under `services:testbed` in package
+`de.burger.forensics.analytics.services.testbed`, including the default-skipped
+WildFly hardening scenario. The legacy
 `forensic-analytics-testbed` module remains part of the root quality gate until
 a later retirement slice proves migration parity and rollback evidence.
 

@@ -133,7 +133,7 @@ rg -n -P "^import\\s+de\\.burger\\.forensics\\.analytics\\.(application|domain|p
 # 594
 ```
 
-`services:testbed` currently has nine test dependencies on retained legacy
+`services:testbed` currently has 13 test dependencies on retained legacy
 modules. This is intentional parity evidence from S13, not permission to use
 the testbed as a production dependency.
 

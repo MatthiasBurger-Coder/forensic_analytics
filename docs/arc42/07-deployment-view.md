@@ -311,7 +311,7 @@ Docker Compose, Docker Swarm or Kubernetes deployment descriptors and does not
 claim Docker image build readiness. Those readiness claims require later
 repository tooling and validation commands.
 
-Slice S13 adds `services/testbed` as the non-production integration and
+Slice S13 verifies `services/testbed` as the non-production integration and
 system-test deployment boundary. The testbed owns:
 
 - `services/testbed/build.gradle.kts`;
@@ -329,8 +329,11 @@ The service-local testbed gate is:
 
 `services/testbed` is not a productive backend service. It does not add a
 Dockerfile, Docker Compose service, Docker Swarm stack or Kubernetes manifest
-in S13. The legacy `forensic-analytics-testbed` module remains active until a
-later retirement slice proves parity, caller migration and rollback evidence.
+in S13. The local Compose descriptor is validated as model syntax only; S13
+does not build images, start Compose or perform health probes. The legacy
+`forensic-analytics-testbed` module remains active until a later retirement
+slice proves caller-free status, rollback evidence and the required quality
+gate.
 
 Slice S14 does not remove deployment or runtime paths. It records
 `NO_REMOVAL_SAFE` when caller scans still find active legacy module use. The

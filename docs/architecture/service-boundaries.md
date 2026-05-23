@@ -591,7 +591,9 @@ Current service-root testbed evidence:
 - `forensic-analytics-testbed` remains active as legacy quality-gate and
   rollback evidence.
 
-S13 must verify this evidence before legacy testbed removal can be considered.
+S13 verifies this service-root evidence against the legacy testbed module.
+Legacy testbed removal still belongs to S14 and requires caller-free proof plus
+the required quality gate.
 
 Stop conditions:
 
