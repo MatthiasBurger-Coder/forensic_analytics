@@ -13,11 +13,11 @@ inputs. They must not be described as the completed FA-MSA-001 service
 landscape until the workflow proves independent build, start, test,
 configuration, healthcheck, container and deployment evidence.
 
-Retained `forensic-analytics-*` modules remain legacy in-process and rollback
-evidence until S15 through S18 resolve remaining blockers and S19 proves
-caller-free retirement plus the required quality gate. They are not productive
-service boundaries and must not be introduced as shared Java implementation
-modules between independently deployable services.
+Retained `forensic-analytics-*` source trees are historical pre-retirement and
+rollback evidence until S05 deletion and S06/S07 closure prove caller-free
+retirement plus the required quality gates. They are not productive service
+boundaries and must not be introduced as shared Java implementation modules
+between independently deployable services.
 
 ## Boundary Rules
 
@@ -589,13 +589,12 @@ Current service-root testbed evidence:
 - no production Java source under `services/testbed/src/main`;
 - `services/testbed/README.md` documents the boundary as non-production
   integration and system-test infrastructure;
-- `forensic-analytics-testbed` remains active as legacy quality-gate and
-  rollback evidence.
+- the predecessor testbed source tree is historical rollback evidence pending
+  final source-tree retirement.
 
-S13 verifies this service-root evidence against the legacy testbed module.
-Legacy testbed removal now belongs to S19 after S15 through S18 replace or
-deprecate retained blockers and caller-free proof plus the required quality
-gate exist.
+S13 verifies this service-root evidence against predecessor testbed behavior.
+Legacy testbed source-tree removal belongs to the final legacy retirement
+workflow after caller-free proof and required quality gates exist.
 
 Stop conditions:
 

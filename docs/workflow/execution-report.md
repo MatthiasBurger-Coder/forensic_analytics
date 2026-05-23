@@ -2,8 +2,7 @@
 
 ## Current Status
 
-Status: S02 and S03 completed; S04 legacy command documentation stopper cleanup
-is the next executable slice before source-tree deletion.
+Status: S04 completed; ready for S05 source-tree deletion preflight.
 
 | Field | Value |
 |---|---|
@@ -374,6 +373,92 @@ S05 -> S06
 S06 -> S07
 ```
 
+## S04 Legacy Command Documentation Stopper Cleanup
+
+Status: completed.
+
+Responsible role: Senior Documentation Engineer with Senior DevOps, Senior
+System Architect, Senior Tester and Microservice Runtime Readiness review.
+
+Changed files:
+
+- `services/analysis-orchestrator-service/README.md`
+- `services/joern-analysis-service/README.md`
+- `services/README.md`
+- `docs/architecture/current-build-and-test-map.md`
+- `docs/architecture/current-coupling-map.md`
+- `docs/architecture/legacy-reference-classification.md`
+- `docs/architecture/monolith-caller-retirement-plan.md`
+- `docs/architecture/monolith-runtime-isolation.md`
+- `docs/architecture/service-boundaries.md`
+- `docs/architecture/service-migration-map.md`
+- `docs/arc42/05-building-block-view.md`
+- `docs/arc42/07-deployment-view.md`
+- `docs/arc42/08-crosscutting-concepts.md`
+- `docs/skill-audit/README.md`
+- `docs/workflow/workflow.md`
+- `docs/workflow/quality-and-leakage-gates.md`
+- `docs/workflow/context-pack.md`
+- `docs/workflow/context-pack.json`
+- `docs/workflow/execution-report.md`
+
+Executed commands:
+
+```bash
+rg -n "^\s*\./gradlew\s+:forensic-analytics-|:forensic-analytics-(boot-app|adapter-joern-docker|engine|application|domain)|bootstrap module can start|existing bootstrap module remains available|current-state evidence|current quality-gate evidence|current multi-project build includes|current implementation baseline|current workflow state|current repository state|verified current behavior|active as legacy quality-gate|active as rollback|remain active|remains active|retained active|active rollback|remain registered|active legacy callers|S15 through S18|S13 through S18|S19|S20|72 direct|653 production|628 test|13 test dependencies" services/analysis-orchestrator-service/README.md services/joern-analysis-service/README.md services/README.md docs/architecture/current-build-and-test-map.md docs/architecture/current-coupling-map.md docs/architecture/legacy-reference-classification.md docs/architecture/monolith-caller-retirement-plan.md docs/architecture/monolith-runtime-isolation.md docs/architecture/service-boundaries.md docs/architecture/service-migration-map.md docs/arc42/05-building-block-view.md docs/arc42/07-deployment-view.md docs/arc42/08-crosscutting-concepts.md docs/skill-audit/README.md
+python3 -m json.tool docs/workflow/context-pack.json
+git diff --check
+./gradlew projects --dependency-verification strict --console=plain --stacktrace
+./gradlew :services:analysis-orchestrator-service:test :services:analysis-orchestrator-service:bootJar :services:analysis-orchestrator-service:bootRun :services:joern-analysis-service:test :services:joern-analysis-service:bootJar :services:joern-analysis-service:bootRun --dry-run --dependency-verification strict --console=plain --stacktrace
+```
+
+Results:
+
+- The legacy command and active/current legacy evidence scan produced no
+  matches after cleanup.
+- `docs/workflow/context-pack.json` is valid JSON.
+- `git diff --check` passed.
+- `./gradlew projects --dependency-verification strict --console=plain --stacktrace`
+  passed and listed only `services:*` projects.
+- The service-local `analysis-orchestrator-service` and
+  `joern-analysis-service` test, `bootJar` and `bootRun` dry-run command
+  passed, proving the documented service-local Gradle paths exist without
+  starting long-running services.
+
+Subagent and role reviews:
+
+- Senior DevOps: READY. Replace runnable legacy Gradle commands with verified
+  service-local commands and run the project-model and dry-run checks.
+- Senior Documentation Engineer: READY. Treat stale legacy module references
+  as historical/non-executable evidence and avoid inventing replacement
+  Gradle tasks.
+- Senior System Architect: READY for corrected sequence. The documentation
+  stopper must be cleared before physical deletion; architecture review expanded
+  S04 to include exact stale current/active claims in architecture and audit
+  documents, stale arc42 bootstrap/logging runtime claims, and superseded old
+  S15-S20 retirement sequencing/count evidence in architecture documentation.
+- Senior Tester: READY with documentation-only scope; no product test code
+  changed in S04.
+
+S04 handoff:
+
+- S05 may run physical source-tree deletion after checkpointing this slice and
+  rerunning deletion prechecks.
+- S06 still owns final architecture/ADR closure after deletion evidence exists.
+- S07 still owns the full local quality gate and release-readiness evidence.
+
+Rollback reference:
+
+- Revert the S04 checkpoint commit before S05 if active service or deployment
+  documentation must temporarily restore legacy command wording for audit
+  reasons.
+
+arc42Updated: limited section 07 pre-delete command truthfulness update; final
+closure pending S06
+adrUpdated: checked; no ADR update required because S04 changes only
+documentation truthfulness and does not change runtime behavior or public
+contracts
+
 ## Slice Execution Status
 
 | Slice | Status | Notes |
@@ -382,7 +467,7 @@ S06 -> S07
 | S01 | Completed | Classification written to `docs/architecture/legacy-reference-classification.md`; deletion closure remains blocked until S02/S03/S04 cleanup and S06/S07 closure gates. |
 | S02 | Completed | Runtime, Docker and contract-test documentation now points to service-local ownership; no public contract files changed. |
 | S03 | Completed | Service-regression coverage assertions now target active S03 wording; all S03 targeted gates and the repository minimum gate passed. |
-| S04 | Not started | Clears active service and deployment documentation blockers before deletion. |
+| S04 | Completed | Active service and deployment documentation blockers cleared; service-local Gradle dry-runs and project-model gate passed. |
 | S05 | Not started | Deletes the 16 tracked legacy source trees after S04 passes. |
 | S06 | Not started | Closes arc42, ADR and architecture documentation after deletion evidence exists. |
 | S07 | Not started | Runs final full local quality gate and release-readiness evidence. |

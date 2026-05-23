@@ -97,9 +97,9 @@ git diff --check
 | `settings.gradle.kts` | `1f0e681f1286f377e4671dc461e76c7449ceac81b1351c6e65dab139584c7122` |
 | `build.gradle.kts` | `c9f1866871a500675f725c47795606a8ab19c9e64ba65c39e907b0cc19b8a7c1` |
 | `docs/adr/ADR-0017-target-microservices-service-landscape.md` | `ddf2d281e8bb8d8924f4622e532da29e8f94038a66ae57d3d06a4ff85e72e95f` |
-| `docs/arc42/05-building-block-view.md` | `ffe560fe889fbcd51147688c98b5103b6f05a2aa72ba3d581a172580a1074bde` |
-| `docs/arc42/07-deployment-view.md` | `01faa935ffac09d7fd83c4ce04fe45934346abd529cd02c2e04ef7c3445b4ea9` |
-| `docs/arc42/08-crosscutting-concepts.md` | `bf22a6a559b07b56c4d6617f6c3c61d3684daf3973f7badcdf5dc067b8bef0e7` |
+| `docs/arc42/05-building-block-view.md` | `844f50a59e393afd2d5fdf44ab04a5f8c70156b02f9c08d359b66f32be2df03a` |
+| `docs/arc42/07-deployment-view.md` | `c423bd95b97fb6838389b5880b51873d159fa1852ce26dcbced67cb39c184e41` |
+| `docs/arc42/08-crosscutting-concepts.md` | `958d12c69ec80400e184c5e390712d62ecff4861db5fa16f7894332dfe589ff6` |
 
 ## Staleness Rules
 

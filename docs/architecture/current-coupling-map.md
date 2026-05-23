@@ -84,9 +84,10 @@ forbidden-package strings.
 
 ### Boot App Runtime
 
-`forensic-analytics-boot-app` is the strongest current runtime coupling point.
-It wires repository-source adapters, application services, gRPC ingestion,
-logging, observability, persistence and REST into one Spring Boot application.
+`forensic-analytics-boot-app` was the strongest predecessor runtime coupling
+point. It wired repository-source adapters, application services, gRPC
+ingestion, logging, observability, persistence and REST into one Spring Boot
+application before service extraction.
 
 This is platform-level runtime composition, not a gateway or service ecosystem.
 Future service slices must replace direct project-module coupling with
@@ -94,12 +95,13 @@ service-owned models and external contracts.
 
 ### Bootstrap Runtime
 
-`forensic-analytics-bootstrap` is a second combined runtime path. It starts
-gRPC and REST in one process and builds backend components directly from
+`forensic-analytics-bootstrap` was a predecessor combined runtime path. It
+started gRPC and REST in one process and built backend components directly from
 in-memory repositories, application use cases and repository-source adapters.
 
-This path is useful current-state evidence, but it is also a migration coupling
-that must be retired or isolated only after replacement evidence exists.
+This path is useful historical pre-retirement evidence, but it is also a
+migration coupling that must be retired or isolated only after replacement
+evidence exists.
 
 ### gRPC Ingestion Adapter
 
@@ -110,7 +112,7 @@ that must be retired or isolated only after replacement evidence exists.
 - `ForensicIngestionGrpcService`;
 - request validators;
 - mappers from Protobuf DTOs to application commands;
-- an `api(project(":forensic-analytics-application"))` dependency.
+- a legacy application project API dependency.
 
 Future contract slices must separate external `.proto` contracts from Java
 implementation dependencies. Generated transport types must not become shared
@@ -201,10 +203,10 @@ behavior.
 
 ## S02 Inventory Result
 
-S02 keeps the remaining `forensic-analytics-*` runtime paths registered as
-legacy in-process or rollback evidence. Caller verification still finds active
-dependencies for CLI, REST, bootstrap, Boot, engine, ingestion-request and
-testbed behavior, so removal would break verified current behavior.
+S02 kept the remaining `forensic-analytics-*` runtime paths as historical
+legacy in-process or rollback evidence. That caller verification is superseded
+by the active final-retirement workflow, which requires S04 documentation
+cleanup before S05 deletion and S06/S07 closure.
 
 The accepted FA-MSA-001 target is service-owned behavior behind explicit
 contracts, not the legacy modules and not the transitional predecessor service
@@ -217,28 +219,30 @@ quality gate.
 S14 repeats the caller-free question after S05 through S13 and still resolves
 to `NO_REMOVAL_SAFE`. The new `services:testbed` root preserves the legacy
 regression surface in a service-root location, which is useful parity evidence
-but still a test dependency on retained monolith modules.
+without depending on retained monolith modules in the verified service-only
+Gradle model.
 
-Workflow-create refinement after the S14 execution stop keeps S14 as a
-no-deletion readiness gate. S15 through S18 now own the remaining testbed,
-runtime, public API, boot/bootstrap and ownership exits. S19 is the first
-deletion-capable slice and may remove only verified caller-free candidates.
+Workflow-create refinement after the S14 execution stop is superseded by the
+active final-retirement workflow. S04 clears pre-deletion documentation
+blockers, S05 is the first deletion-capable slice, S06 closes architecture and
+ADR evidence, and S07 owns final release readiness.
 
-Current evidence remains non-empty:
+Superseded S14 evidence was non-empty at the time:
 
-- all 16 listed legacy modules remain registered in `settings.gradle.kts`;
-- `services:testbed` still has 13 test-scoped legacy module dependencies;
-- 633 production imports into retained `application`, `domain`, `persistence`,
-  `logging`, `observability`, `rest`, `bootstrap`, `boot` or `engine`
-  packages;
-- 594 test imports into those retained packages;
+- all 16 listed legacy modules were still registered in `settings.gradle.kts`;
+- `services:testbed` still had test-scoped legacy module dependencies;
+- non-zero production imports into retained `application`, `domain`,
+  `persistence`, `logging`, `observability`, `rest`, `bootstrap`, `boot` or
+  `engine` packages;
+- non-zero test imports into those retained packages;
 - focused S14 service production scans found no legacy imports in
   `services/**/src/main`, while service test scans still find legacy imports in
   `services/testbed/src/test`.
 
-These findings block direct module retirement. The next safe action is
-path-specific migration or explicit deprecation, followed by a smaller
-caller-free removal slice for each verified candidate.
+Those findings blocked direct module retirement at S14. Current final-retirement
+verification supersedes the counts: `./gradlew projects` lists only
+`services:*`, active non-legacy build files have no legacy project references
+and active non-legacy Java sources have no legacy monolith imports.
 
 ## FA-MSA-001-LMR S01 Revalidation
 
@@ -255,15 +259,17 @@ rg -n -P "^import\\s+de\\.burger\\.forensics\\.analytics\\.(application|domain|a
 git diff --check
 ```
 
-Current evidence remains non-empty:
+Superseded S01 evidence was non-empty at the time:
 
-- 72 direct Gradle `project(":forensic-analytics-*")` dependency references
-  across legacy module build files and `services/testbed`;
-- 653 production Java imports into retained legacy packages;
-- 628 test Java imports into retained legacy packages;
-- `forensic-analytics-testbed` and `services:testbed` each still test-depend
-  on 13 retained legacy modules.
+- direct legacy Gradle project dependency references across legacy module build
+  files and `services/testbed`;
+- production Java imports into retained legacy packages;
+- test Java imports into retained legacy packages;
+- `forensic-analytics-testbed` and `services:testbed` each test-depended on
+  retained legacy modules.
 
-S01 therefore records `NO_DELETION_SAFE`. No listed legacy module is removed by
-S01. The next safe action is to proceed to S02 contract and runtime parity
+S01 therefore recorded `NO_DELETION_SAFE`. No listed legacy module was removed
+by S01. The active final-retirement workflow now proceeds through S04
+documentation-stopper cleanup, S05 deletion, S06 architecture closure and S07
+release readiness after current caller-free and service-only build checks.
 gates before path-specific retirement slices.

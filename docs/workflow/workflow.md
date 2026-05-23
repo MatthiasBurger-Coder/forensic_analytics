@@ -463,7 +463,19 @@ affected_files:
   - services/analysis-orchestrator-service/README.md
   - services/joern-analysis-service/README.md
   - services/README.md
+  - docs/architecture/current-build-and-test-map.md
+  - docs/architecture/current-coupling-map.md
+  - docs/architecture/legacy-reference-classification.md
+  - docs/architecture/monolith-caller-retirement-plan.md
+  - docs/architecture/monolith-runtime-isolation.md
+  - docs/architecture/service-boundaries.md
+  - docs/architecture/service-migration-map.md
+  - docs/arc42/05-building-block-view.md
   - docs/arc42/07-deployment-view.md
+  - docs/arc42/08-crosscutting-concepts.md
+  - docs/skill-audit/README.md
+  - docs/workflow/workflow.md
+  - docs/workflow/quality-and-leakage-gates.md
   - docs/workflow/execution-report.md
   - docs/workflow/context-pack.md
   - docs/workflow/context-pack.json
@@ -477,7 +489,19 @@ file_locks:
   - services/analysis-orchestrator-service/README.md
   - services/joern-analysis-service/README.md
   - services/README.md
+  - docs/architecture/current-build-and-test-map.md
+  - docs/architecture/current-coupling-map.md
+  - docs/architecture/legacy-reference-classification.md
+  - docs/architecture/monolith-caller-retirement-plan.md
+  - docs/architecture/monolith-runtime-isolation.md
+  - docs/architecture/service-boundaries.md
+  - docs/architecture/service-migration-map.md
+  - docs/arc42/05-building-block-view.md
   - docs/arc42/07-deployment-view.md
+  - docs/arc42/08-crosscutting-concepts.md
+  - docs/skill-audit/README.md
+  - docs/workflow/workflow.md
+  - docs/workflow/quality-and-leakage-gates.md
   - docs/workflow/execution-report.md
   - docs/workflow/context-pack.md
   - docs/workflow/context-pack.json
@@ -487,7 +511,7 @@ architecture_locks:
   - arc42-deployment-command-truthfulness
 quality_gates:
   targeted:
-    - 'rg -n "^\s*\./gradlew\s+:forensic-analytics-|:forensic-analytics-(boot-app|adapter-joern-docker|engine|application|domain)" services/analysis-orchestrator-service/README.md services/joern-analysis-service/README.md services/README.md docs/arc42/07-deployment-view.md'
+    - 'rg -n "^\s*\./gradlew\s+:forensic-analytics-|:forensic-analytics-(boot-app|adapter-joern-docker|engine|application|domain)|bootstrap module can start|existing bootstrap module remains available|current-state evidence|current quality-gate evidence|current multi-project build includes|current implementation baseline|current workflow state|current repository state|verified current behavior|active as legacy quality-gate|active as rollback|remain active|remains active|retained active|active rollback|remain registered|active legacy callers|S15 through S18|S13 through S18|S19|S20|72 direct|653 production|628 test|13 test dependencies" services/analysis-orchestrator-service/README.md services/joern-analysis-service/README.md services/README.md docs/architecture/current-build-and-test-map.md docs/architecture/current-coupling-map.md docs/architecture/legacy-reference-classification.md docs/architecture/monolith-caller-retirement-plan.md docs/architecture/monolith-runtime-isolation.md docs/architecture/service-boundaries.md docs/architecture/service-migration-map.md docs/arc42/05-building-block-view.md docs/arc42/07-deployment-view.md docs/arc42/08-crosscutting-concepts.md docs/skill-audit/README.md'
     - './gradlew projects --dependency-verification strict --console=plain --stacktrace'
     - './gradlew :services:analysis-orchestrator-service:test :services:analysis-orchestrator-service:bootJar :services:analysis-orchestrator-service:bootRun :services:joern-analysis-service:test :services:joern-analysis-service:bootJar :services:joern-analysis-service:bootRun --dry-run --dependency-verification strict --console=plain --stacktrace'
     - 'python3 -m json.tool docs/workflow/context-pack.json'
@@ -498,16 +522,17 @@ documentation:
   arc42: limited pre-delete deployment-command correction; final closure pending S06
   adr: checked
 stop_conditions:
-  - an active service or deployment README still contains runnable :forensic-analytics-* commands
-  - docs claim legacy modules are active current-state or quality-gate evidence before deletion
+  - an active service, deployment, architecture or audit document still contains runnable :forensic-analytics-* commands
+  - docs claim legacy modules are active current-state, current implementation baseline or quality-gate evidence before deletion
   - a replacement service command cannot be verified from the current Gradle project model
   - cleanup would change public contract shape, runtime behavior or source code
 ```
 
 Purpose: clear the S04 preflight stopper without deleting source trees. This
 slice removes or reclassifies stale executable legacy Gradle commands and
-current-state claims in active service/deployment documentation so physical
-deletion can proceed on verified documentation ground.
+current-state claims in active service, deployment, architecture and audit
+documentation so physical deletion can proceed on verified documentation
+ground.
 
 ### Slice 05 - Physical Legacy Source Tree Removal
 

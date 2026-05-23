@@ -4,31 +4,36 @@
 
 FA-MSA-001 service-boundary, migration inventory and data-ownership map with
 current FA-MSA-001-LMR S03 repository-source, S04 ingestion, S05 JavaParser,
-S06 Joern, S07 orchestration and S18 public API contract ownership evidence
+S06 Joern, S07 orchestration and earlier public API contract ownership evidence
 plus retirement inventory revalidation.
 
 This document maps current modular-monolith and transitional service evidence
 to FA-MSA-001 target ownership decisions. It does not move production code,
 create build projects, create service implementations, define storage
-technology or claim runtime readiness. S02 refreshed this map after caller and
-Gradle coupling scans and confirmed that no central module retirement is safe
-yet. S04 records one-writer target data ownership before persistence migration
-starts.
+technology or claim runtime readiness. Earlier slice labels in this document
+are prior migration evidence; the active final source-tree retirement sequence
+uses S04 documentation-stopper cleanup, S05 deletion, S06 architecture closure
+and S07 release readiness. S04 records one-writer target data ownership before
+persistence migration starts.
 
-FA-MSA-001-LMR S01 revalidated the retirement inventory and found deletion is
-still unsafe: 72 direct legacy Gradle project references, 653 production
-legacy imports and 628 test legacy imports remain. S11 confirms
-`forensic-analytics-persistence` is still retained legacy or rollback evidence:
+Earlier FA-MSA-001-LMR inventories recorded direct legacy Gradle references and
+legacy imports before service extraction progressed. That count set is
+superseded by final-retirement verification: the active Gradle model is
+service-only, active non-legacy build files have no `project(":forensic-analytics-*")`
+dependencies, active non-legacy Java sources have no legacy monolith imports,
+and `450` tracked legacy source-tree files remain as deletion candidates.
+`forensic-analytics-persistence` is historical legacy or rollback evidence:
 productive target services do not import or build-depend on it, but
 workspace/project administration, membership, asset, audit, retention and
 legacy project-storage behavior still have no mandatory FA-MSA-001 target
-owner. The map continues to treat all listed `forensic-analytics-*` modules as
-retained legacy or rollback evidence until later slices prove caller-free
-replacement parity.
+owner. The map treats all listed `forensic-analytics-*` source trees as
+historical pre-retirement evidence until S05 deletion and S06/S07 closure prove
+caller-free replacement parity.
 
-S18 moves the executable OpenAPI contract test for the current public
-repository-to-BTM submission/status shape into `query-report-api-service` and
-adds target CLI HTTP client coverage. It does not remove
+Earlier public API contract work moved the executable OpenAPI contract test for
+the public repository-to-BTM submission/status shape into
+`query-report-api-service` and added target CLI HTTP client coverage. It does
+not remove
 `forensic-analytics-rest`, `forensic-analytics-bootstrap`,
 `forensic-analytics-boot-app` or `forensic-analytics-persistence`, and it does
 not claim durable persistence, container runtime or live health readiness.
@@ -37,12 +42,12 @@ not claim durable persistence, container runtime or live health readiness.
 
 | FA-MSA-001 target | Current source evidence | Current coupling | Planned migration path | Required contract first | Data owner status | Forbidden moves | Verification needed |
 |---|---|---|---|---|---|---|---|
-| `repository-source-service` | `services/repository-source-service`; predecessors `forensic-analytics-adapter-repository-source`, `services/repository-analysis-service` | FA-MSA-001-LMR S03 target service is service-local and registered; legacy adapter paths still have monolith application/domain dependencies and the predecessor service remains as rollback input | Move repository access, branch resolution, checkout/fetch, workspace preparation, source package byte custody and source snapshot descriptors into a service-local boundary; later slices must route callers and retire predecessor paths only after parity evidence | Repository source/snapshot REST, gRPC or file contract; S03 uses predecessor `repository-analysis.proto` wire shape as transitional external contract only | Owns workspaces, leases, cleanup, source package bytes, source snapshot descriptors and accepted source metadata | No private workspace sharing; no target repository code execution without sandbox approval; no JavaParser or Joern handoff logic inside repository source | Service-local architecture, Git safety, checkout diagnostics, build/start and Dockerfile checks |
-| `ingestion-service` | `services/ingestion-service`; predecessors `forensic-analytics-ingestion-grpc`, `forensic-analytics-ingestion-request`, `services/forensic-ingestion-service` | FA-MSA-001-LMR S04 target service is service-local and registered; legacy gRPC/request modules still depend on central application/domain modules and predecessor service remains as rollback input | Move intake, validation, normalization and request import behavior into service-local domain/application/adapters; later slices must route callers and retire predecessor paths only after parity evidence | Ingestion gRPC/API contract; S04 keeps `forensic-ingestion.proto` wire shape unchanged | Owns raw intake, upload sessions, raw runtime or analysis payload byte custody before handoff and rejected-ingestion diagnostics | No shared generated Java DTO module; no static/semantic canonical fact writes; no repository checkout responsibility | gRPC/API contract tests, validation tests, request-manifest tests and missing-field diagnostics |
-| `java-parser-analysis-service` | `services/java-parser-analysis-service`; predecessors `forensic-analytics-adapter-javaparser`, `services/java-ast-analysis-service` | FA-MSA-001-LMR S05 target service is service-local and registered; legacy adapter still depends on monolith application/domain/observability modules and predecessor service remains as rollback input | Move JavaParser AST scanning and static source-fact extraction into service-local boundary; later slices must route callers and retire predecessor paths only after parity evidence | JavaParser analysis and source-fact artifact contracts; S05 keeps `java-ast-analysis.proto` wire shape unchanged and adds explicit `sourceRoot` to the JSON artifact schema | Owns canonical static Java source facts it produces, immutable source-fact artifact bytes and producer-local artifact metadata | No runtime execution claims from static facts; no JavaParser API leakage into neutral contracts; unresolved-symbol diagnostics must stay explicit | Source-location, unresolved-symbol, deterministic ID, immutable artifact retrieval and JSON schema tests |
-| `joern-analysis-service` | `services/joern-analysis-service`; predecessors `forensic-analytics-adapter-joern-docker`, `services/joern-cpg-analysis-service`, `docker/joern/**` | FA-MSA-001-LMR S06 target service is service-local and registered; legacy adapter still depends on monolith application/domain/observability modules and predecessor service remains as rollback input | Move Joern Docker control, CPG/CFG/DFG artifact production, semantic artifact byte retrieval and semantic mapping diagnostics into service-local boundary; later slices must route callers and retire predecessor paths only after parity evidence | Joern analysis artifact contract; S06 extends `joern-cpg-analysis.proto` with service-owned `GetSemanticArtifactBytes` retrieval instead of an Analysis Store byte alias | Owns canonical Joern semantic facts it produces, semantic artifact bytes and producer-local artifact metadata | No shared CPG filesystem coupling; no Repository Source private workspace mounts; no CPG/CFG/DFG facts as runtime trace evidence | Joern unavailable, timeout, incomplete mapping, byte retrieval, Docker-boundary, service-local architecture and build/start tests |
+| `repository-source-service` | `services/repository-source-service`; predecessors `forensic-analytics-adapter-repository-source`, `services/repository-analysis-service` | FA-MSA-001-LMR S03 target service is service-local and registered; legacy adapter paths previously had monolith application/domain dependencies and the predecessor service is rollback input | Move repository access, branch resolution, checkout/fetch, workspace preparation, source package byte custody and source snapshot descriptors into a service-local boundary; later slices must route callers and retire predecessor paths only after parity evidence | Repository source/snapshot REST, gRPC or file contract; S03 uses predecessor `repository-analysis.proto` wire shape as transitional external contract only | Owns workspaces, leases, cleanup, source package bytes, source snapshot descriptors and accepted source metadata | No private workspace sharing; no target repository code execution without sandbox approval; no JavaParser or Joern handoff logic inside repository source | Service-local architecture, Git safety, checkout diagnostics, build/start and Dockerfile checks |
+| `ingestion-service` | `services/ingestion-service`; predecessors `forensic-analytics-ingestion-grpc`, `forensic-analytics-ingestion-request`, `services/forensic-ingestion-service` | FA-MSA-001-LMR S04 target service is service-local and registered; legacy gRPC/request modules previously depended on central application/domain modules and the predecessor service is rollback input | Move intake, validation, normalization and request import behavior into service-local domain/application/adapters; later slices must route callers and retire predecessor paths only after parity evidence | Ingestion gRPC/API contract; S04 keeps `forensic-ingestion.proto` wire shape unchanged | Owns raw intake, upload sessions, raw runtime or analysis payload byte custody before handoff and rejected-ingestion diagnostics | No shared generated Java DTO module; no static/semantic canonical fact writes; no repository checkout responsibility | gRPC/API contract tests, validation tests, request-manifest tests and missing-field diagnostics |
+| `java-parser-analysis-service` | `services/java-parser-analysis-service`; predecessors `forensic-analytics-adapter-javaparser`, `services/java-ast-analysis-service` | FA-MSA-001-LMR S05 target service is service-local and registered; legacy adapter previously depended on monolith application/domain/observability modules and the predecessor service is rollback input | Move JavaParser AST scanning and static source-fact extraction into service-local boundary; later slices must route callers and retire predecessor paths only after parity evidence | JavaParser analysis and source-fact artifact contracts; S05 keeps `java-ast-analysis.proto` wire shape unchanged and adds explicit `sourceRoot` to the JSON artifact schema | Owns canonical static Java source facts it produces, immutable source-fact artifact bytes and producer-local artifact metadata | No runtime execution claims from static facts; no JavaParser API leakage into neutral contracts; unresolved-symbol diagnostics must stay explicit | Source-location, unresolved-symbol, deterministic ID, immutable artifact retrieval and JSON schema tests |
+| `joern-analysis-service` | `services/joern-analysis-service`; predecessors `forensic-analytics-adapter-joern-docker`, `services/joern-cpg-analysis-service`, `docker/joern/**` | FA-MSA-001-LMR S06 target service is service-local and registered; legacy adapter previously depended on monolith application/domain/observability modules and the predecessor service is rollback input | Move Joern Docker control, CPG/CFG/DFG artifact production, semantic artifact byte retrieval and semantic mapping diagnostics into service-local boundary; later slices must route callers and retire predecessor paths only after parity evidence | Joern analysis artifact contract; S06 extends `joern-cpg-analysis.proto` with service-owned `GetSemanticArtifactBytes` retrieval instead of an Analysis Store byte alias | Owns canonical Joern semantic facts it produces, semantic artifact bytes and producer-local artifact metadata | No shared CPG filesystem coupling; no Repository Source private workspace mounts; no CPG/CFG/DFG facts as runtime trace evidence | Joern unavailable, timeout, incomplete mapping, byte retrieval, Docker-boundary, service-local architecture and build/start tests |
 | `analysis-orchestrator-service` | `services/analysis-orchestrator-service`; predecessors `forensic-analytics-engine`, orchestration parts of `forensic-analytics-application`, coordination/status parts of `services/analysis-store-service` | FA-MSA-001-LMR S07 target service is service-local and registered; `StartRepositoryToBtm` and `GetRepositoryToBtmStatus` are implemented as pending/status-only orchestration; legacy engine/application and predecessor store paths remain as rollback input | Keep orchestration-only service behavior, then route callers and retire predecessor paths only after parity evidence | Analysis orchestration API or event contracts; S07 keeps `analysis-job.proto` wire shape unchanged as transitional external contract only | Owns job lifecycle, workflow status, worker leases/attempts, retry/timeout/failure/dead-letter state, correlation references, job-to-artifact references and process-local repository-to-BTM readiness state | No repository checkout, parser, Joern, BTM generation, report, artifact byte custody, producer catalog, canonical fact storage, durable persistence, event outbox or distributed orchestration claim inside orchestrator | Job lifecycle, retry, timeout, status, failure, dead-letter, artifact-reference, repository-to-BTM pending-status, idempotency and no-hidden-monolith tests |
-| `query-report-api-service` | `services/query-report-api-service`; predecessors `forensic-analytics-rest`, public facade parts of `services/forensic-gateway-service`, report/query concepts | FA-MSA-001-LMR S08 target service is service-local and registered; S18 adds service-local executable OpenAPI contract-test ownership; repository-analysis submission/status routes call S07 `analysis-orchestrator-service` pending readiness while legacy REST/Gateway paths remain rollback input | Keep public API facade behavior, then add report/status owner reads and retire predecessor paths only after caller migration and parity evidence | REST/OpenAPI query/report contract; S08 keeps `gateway-api.yaml` wire shape unchanged and uses `analysis-job.proto` as transitional external contract only | Owns public read models, public cache state, generated report packages, LLM-ready packages and stored generated LLM output only as labeled generated analysis or hypotheses | No analysis execution, checkout, Joern, JavaParser, direct DB access, canonical evidence ownership, worker dispatch or BTM byte custody | Service-local OpenAPI contract, redaction, error mapping, orchestrator pending-status mapping and frontend/CLI compatibility tests |
+| `query-report-api-service` | `services/query-report-api-service`; predecessors `forensic-analytics-rest`, public facade parts of `services/forensic-gateway-service`, report/query concepts | FA-MSA-001-LMR S08 target service is service-local and registered; earlier public API contract work adds service-local executable OpenAPI contract-test ownership; repository-analysis submission/status routes call S07 `analysis-orchestrator-service` pending readiness while legacy REST/Gateway paths remain rollback input | Keep public API facade behavior, then add report/status owner reads and retire predecessor paths only after caller migration and parity evidence | REST/OpenAPI query/report contract; S08 keeps `gateway-api.yaml` wire shape unchanged and uses `analysis-job.proto` as transitional external contract only | Owns public read models, public cache state, generated report packages, LLM-ready packages and stored generated LLM output only as labeled generated analysis or hypotheses | No analysis execution, checkout, Joern, JavaParser, direct DB access, canonical evidence ownership, worker dispatch or BTM byte custody | Service-local OpenAPI contract, redaction, error mapping, orchestrator pending-status mapping and frontend/CLI compatibility tests |
 | `cli-client` | `forensic-analytics-cli` | CLI currently has local in-process analysis and ingestion-request dependencies | Move CLI to public API client behavior and retire local business logic only after parity/deprecation tests | CLI/public API contract | CLI owns no forensic data | No parser, Joern, persistence, service implementation or domain logic in CLI | CLI contract tests, HTTP payload/header coverage, output redaction and legacy command parity/deprecation tests |
 | `observability-stack` | `forensic-analytics-observability`, `forensic-analytics-logging`, deployment docs | Central observability/logging Java modules are monolith coupling for target services | Replace shared Java logging/observability modules with service-local configuration and deployment observability material | Operational configuration contracts where needed | No forensic evidence ownership | No shared Java logging library; no diagnostics as evidence | Dependency scans, logging redaction and deployment-doc verification |
 | `testbed` | `forensic-analytics-testbed`, Compose docs and service-local tests | Testbed depends on many monolith modules for regression coverage | Move system/integration test orchestration to non-production testbed after replacement service E2E exists | Test environment contracts or Compose files when needed | Test data only | No production service dependency on testbed source or fixtures | Service E2E tests, no production dependency checks and Compose validation when used |
@@ -71,18 +76,20 @@ central `de.burger.forensics.analytics.domain` or
 service build files do not depend on `forensic-analytics-domain`,
 `forensic-analytics-application` or another `services:*` implementation
 project. The retained central domain and application modules remain
-current-state and rollback evidence until S15 through S18 resolve remaining
-testbed, runtime, public API, boot/bootstrap and ownership blockers and S19
-proves caller-free retirement across build files, production code, tests and
-documentation. `services:testbed` keeps test-scoped legacy dependencies as
-non-production S13/S14 evidence, not as productive service coupling.
+historical rollback evidence until the final legacy source-tree retirement
+workflow resolves remaining testbed, runtime, public API, boot/bootstrap and
+ownership blockers and proves caller-free retirement across build files,
+production code, tests and documentation. `services:testbed` keeps test-scoped
+legacy dependencies as non-production S13/S14 evidence, not as productive
+service coupling.
 
 ## Current Implementation Evidence
 
-The existing `forensic-analytics-*` Gradle modules remain the current
-implementation baseline until later slices move behavior behind verified
-contracts. S02 did not rename modules, move packages, copy production logic or
-register service builds. S03 registers the first target service build,
+The legacy `forensic-analytics-*` source trees are historical migration
+baseline evidence, not the active Gradle implementation baseline. The verified
+Gradle project model is service-only under `services:*`. S02 did not
+rename modules, move packages, copy production logic or register service
+builds. S03 registers the first target service build,
 `services:repository-source-service`, without removing the predecessor
 `services:repository-analysis-service`. S04 registers
 `services:ingestion-service`, without removing predecessor
@@ -159,16 +166,18 @@ generation or report rendering and does not claim durable persistence,
 event-outbox or distributed orchestration parity.
 
 `forensic-analytics-engine`, orchestration portions of
-`forensic-analytics-application` and `forensic-analytics-domain` remain
-retained rollback/current-state evidence after S07. Their physical removal is
-still gated by later caller-free and parity evidence.
+`forensic-analytics-application` and `forensic-analytics-domain` are historical
+rollback evidence after S07. Their physical removal belongs to the final legacy
+source-tree retirement workflow and is gated by caller-free and parity
+evidence.
 
 After S12, productive service-local domain and application boundaries are
 guarded by service ArchUnit rules plus a build-isolation regression that scans
 productive service build files for forbidden central domain/application or
-cross-service project dependencies. This does not authorize deletion of the
-central modules, because testbed rollback coverage and remaining legacy module
-callers are handled by S13 through S18 before any S19 removal candidate.
+cross-service project dependencies. This does not by itself authorize deletion
+of central legacy source trees. The active final-retirement workflow handles
+physical deletion in S05 only after S02 runtime cleanup, S03 regression
+coverage and S04 documentation-stopper gates pass.
 
 ## Migration Sequencing
 

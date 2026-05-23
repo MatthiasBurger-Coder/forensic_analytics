@@ -4,13 +4,14 @@
 
 S01 classification status: `READY_FOR_CLASSIFICATION`.
 
-Deletion closure status: `BLOCKED_FOR_DELETION_CLOSURE` until S02, S03 and S05
-remove or rewrite stale executable references, confirm service-local regression
-coverage and close architecture documentation.
+Deletion closure status: `BLOCKED_FOR_DELETION_CLOSURE` until S02, S03, S04,
+S05 and S06 remove or rewrite stale executable references, confirm
+service-local regression coverage, clear pre-deletion documentation blockers,
+delete source trees and close architecture documentation.
 
 ## Verification
 
-S01 verified the current repository state on branch
+S01 verified repository state on branch
 `architecture/workflow-legacy-module-retirement-20260522`:
 
 - `settings.gradle.kts` includes only `services:*` projects.
@@ -28,7 +29,7 @@ S01 verified the current repository state on branch
 ### Removable Implementation Or Runtime Documentation
 
 These references are stale executable or runtime documentation and must be
-removed or retargeted before S04 source-tree deletion is accepted:
+removed or retargeted before S05 source-tree deletion is accepted:
 
 - `docs/README.md`: legacy module inventory, gRPC/REST/Bootstrap/Boot app
   runtime sections, legacy Gradle commands and legacy jar paths.
@@ -49,7 +50,7 @@ legacy Gradle projects.
 ### Historical Architecture Baseline
 
 These references are architecture history, predecessor evidence or stale
-current-state material. They may remain only when rewritten as dated,
+state-of-record material. They may remain only when rewritten as dated,
 superseded or historical evidence:
 
 - `docs/architecture/current-state.md`
@@ -68,12 +69,11 @@ superseded or historical evidence:
 - `docs/arc42/08-crosscutting-concepts.md`
 - `docs/skill-audit/README.md`
 
-Any wording that says legacy modules are currently registered, active quality
-gate participants, active rollback runtime, or the current implementation
-baseline is an active blocker after S04 deletion. S05 owns architecture and
-arc42 closure. `docs/skill-audit/README.md` is outside the current S05 write
-scope and must be handled as a scope gap if final closure treats that historical
-audit sentence as a release blocker.
+Any wording that says legacy modules are registered in the verified project
+model, quality-gate participants, rollback runtime units, or the operative
+implementation baseline is a blocker before S05 deletion. S04 owns
+pre-deletion documentation blocker cleanup for exact operative legacy claims;
+S06 owns final architecture and arc42 closure.
 
 ### Compatibility Vocabulary
 
@@ -147,9 +147,9 @@ Before S03 can pass, stale legacy task commands must be replaced with service
 or root gates, and remaining module-local test references must be marked as
 historical rollback evidence or deprecated behavior.
 
-## S05 Handoff
+## S06 Handoff
 
-S05 must reconcile architecture and arc42 documents after physical deletion.
+S06 must reconcile architecture and arc42 documents after physical deletion.
 It must preserve ADR history, update current-state claims, and keep evidence
 categories explicit. It must not claim service runtime, Docker, healthcheck,
 Swarm or Kubernetes readiness without verified repository commands and

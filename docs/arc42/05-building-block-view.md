@@ -86,9 +86,14 @@ The observability module must not depend on domain, application, persistence, RE
 
 ## 5.7 Spring Boot Server Boundary
 
-ADR-0006 accepts Spring Boot as the outer server boundary. The implemented module is `forensic-analytics-boot-app`, which owns the Spring Boot application entrypoint, typed configuration and Spring bean wiring for verified adapters.
+ADR-0006 accepted Spring Boot as the predecessor outer server boundary. The
+historical implementation module was `forensic-analytics-boot-app`, which owned
+the Spring Boot application entrypoint, typed configuration and Spring bean
+wiring for verified monolith adapters before service extraction.
 
-The existing `forensic-analytics-bootstrap` module remains available while parity is phased in. Spring Boot adoption must not add Spring dependencies or annotations to `forensic-analytics-domain` or `forensic-analytics-application`.
+The predecessor `forensic-analytics-bootstrap` source tree is historical
+pre-retirement evidence. Spring Boot adoption must not add Spring dependencies
+or annotations to service domain/application packages.
 
 ADR-0007 keeps the existing JDK REST adapter behind Boot lifecycle wiring. Spring MVC, WebFlux and Actuator endpoints are not part of the current Boot boundary.
 
@@ -101,11 +106,10 @@ independent service.
 S12 verifies that productive service code keeps domain and application models
 inside service-local packages and that productive service build files do not
 depend on the retained central `forensic-analytics-domain` or
-`forensic-analytics-application` modules. Those central modules remain
-current-state and rollback evidence until S15 through S18 resolve the remaining
-testbed, runtime, public API and ownership blockers and S19 proves
-caller-free retirement. The non-production `services:testbed` test dependencies
-remain S13/S14 regression evidence and are not productive service coupling.
+`forensic-analytics-application` modules. Those central source trees are
+historical pre-retirement and rollback evidence until S05 deletion and S06/S07
+closure prove caller-free retirement. The non-production `services:testbed`
+regression evidence is not productive service coupling.
 
 ## 5.8 Cross-cutting Logging Module
 
@@ -115,7 +119,7 @@ The logging module may depend on `forensic-analytics-observability` for correlat
 
 Automatic logging records operation name, phase, duration, correlation ID and exception category only. It must not log method arguments, return values, raw exception messages, stack frames, payloads, source content, credentials or LLM prompt content.
 
-S15 moves productive-service logging and Spring boundary checks into the
+Earlier logging and Spring boundary work moved productive-service checks into the
 service-local architecture tests for `analysis-orchestrator-service`,
 `repository-source-service`, `ingestion-service`,
 `java-parser-analysis-service`, `joern-analysis-service`,
@@ -189,7 +193,7 @@ Dockerfile. It keeps the predecessor `repository-analysis.proto` filename and
 wire service name as a transitional external contract only; generated transport
 classes remain inside the service build.
 
-`services/repository-analysis-service` remains current-state predecessor
+`services/repository-analysis-service` remains historical predecessor
 evidence and rollback input. It is not a compatibility alias for
 `repository-source-service` and is not removed by S05.
 
@@ -202,9 +206,9 @@ bootstrap, configuration, tests, README and Dockerfile. The predecessor
 transport classes stay inside the service build.
 
 `services/forensic-ingestion-service`, `forensic-analytics-ingestion-grpc` and
-`forensic-analytics-ingestion-request` remain current-state predecessor and
-rollback evidence. They are not compatibility aliases for `ingestion-service`
-and are not removed by S06.
+`forensic-analytics-ingestion-request` are historical predecessor and rollback
+evidence. They are not compatibility aliases for `ingestion-service`; legacy
+source-tree deletion belongs to the final retirement workflow.
 
 Slice S07 adds `services/java-parser-analysis-service` as target-service
 implementation evidence for the FA-MSA-001 JavaParser analysis boundary. It is
@@ -215,9 +219,9 @@ Dockerfile. The predecessor `java-ast-analysis.proto` wire shape remains
 unchanged and generated transport classes stay inside the service build.
 
 `services/java-ast-analysis-service` and
-`forensic-analytics-adapter-javaparser` remain current-state predecessor and
-rollback evidence. They are not compatibility aliases for
-`java-parser-analysis-service` and are not removed by S05.
+`forensic-analytics-adapter-javaparser` are historical predecessor and rollback
+evidence. They are not compatibility aliases for `java-parser-analysis-service`;
+legacy source-tree deletion belongs to the final retirement workflow.
 
 Slice S06 adds `services/joern-analysis-service` as target-service
 implementation evidence for the FA-MSA-001 Joern semantic analysis boundary.
@@ -230,9 +234,10 @@ service-local generated code and now includes the service-owned
 through an Analysis Store byte alias.
 
 `services/joern-cpg-analysis-service` and
-`forensic-analytics-adapter-joern-docker` remain current-state predecessor and
+`forensic-analytics-adapter-joern-docker` are historical predecessor and
 rollback evidence. They are not compatibility aliases for
-`joern-analysis-service` and are not removed by S06.
+`joern-analysis-service`; legacy source-tree deletion belongs to the final
+retirement workflow.
 
 Slice S07 adds `services/analysis-orchestrator-service` as target-service
 implementation evidence for the FA-MSA-001 orchestration boundary. It is
@@ -245,9 +250,10 @@ lifecycle, lease, retry, failure, dead-letter, correlation,
 job-to-artifact-reference and repository-to-BTM status models.
 
 `forensic-analytics-engine`, orchestration portions of
-`forensic-analytics-application` and `services/analysis-store-service` remain
-current-state predecessor and rollback evidence. They are not compatibility
-aliases for `analysis-orchestrator-service` and are not removed by S07.
+`forensic-analytics-application` and `services/analysis-store-service` are
+historical predecessor and rollback evidence. They are not compatibility
+aliases for `analysis-orchestrator-service`; legacy source-tree deletion
+belongs to the final retirement workflow.
 
 The orchestrator coordinates workflow state only. It must not own repository
 checkout, JavaParser scanning, Joern execution, report rendering, artifact byte
@@ -271,20 +277,19 @@ transport input as external contract evidence only; generated transport
 classes remain inside the service build.
 
 `forensic-analytics-rest` and public API portions of
-`services/forensic-gateway-service` remain current-state predecessor and
-rollback evidence. They are not compatibility aliases for
-`query-report-api-service` and are not removed by S08.
+`services/forensic-gateway-service` are historical predecessor and rollback
+evidence. They are not compatibility aliases for `query-report-api-service`;
+legacy source-tree deletion belongs to the final retirement workflow.
 
 Optional later service candidates such as `btm-generation-service`,
 `graph-replay-service` and `incident-analysis-service` remain outside
 mandatory FA-MSA-001 closure unless a later requirement makes them mandatory.
 
-Slice S14 is a retirement-readiness decision, not a direct deletion slice.
-Current caller evidence keeps the central `forensic-analytics-*` modules as
-legacy in-process and rollback building blocks until S15 through S18 prove
-replacement or explicit deprecation for the remaining blockers and S19 proves
-caller-free evidence. Retaining those modules is not a microservice-readiness
-claim.
+Slice S14 was a retirement-readiness decision, not a direct deletion slice.
+That prior caller evidence is superseded by the active final-retirement
+workflow: S05 removes verified caller-free legacy source trees and S06/S07 close
+architecture and quality evidence. Retaining historical pre-retirement source
+trees is not a microservice-readiness claim.
 
 ADR-0018 accepts initial logical contracts for target service communication.
 Contracts marked as planned are design artifacts only; they do not prove that

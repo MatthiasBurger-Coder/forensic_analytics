@@ -62,12 +62,12 @@ role review proves the match is generated historical text outside active source.
 
 ## Legacy Command Documentation Stopper Gate
 
-Before source-tree deletion, active service and deployment documentation must
-not present legacy Gradle tasks as executable commands or active/current
-quality-gate evidence:
+Before source-tree deletion, active service, deployment, architecture and audit
+documentation must not present legacy Gradle tasks as executable commands or
+active/current implementation, state or quality-gate evidence:
 
 ```bash
-rg -n '^\s*\./gradlew\s+:forensic-analytics-|:forensic-analytics-(boot-app|adapter-joern-docker|engine|application|domain)' services/analysis-orchestrator-service/README.md services/joern-analysis-service/README.md services/README.md docs/arc42/07-deployment-view.md
+rg -n '^\s*\./gradlew\s+:forensic-analytics-|:forensic-analytics-(boot-app|adapter-joern-docker|engine|application|domain)|bootstrap module can start|existing bootstrap module remains available|current-state evidence|current quality-gate evidence|current multi-project build includes|current implementation baseline|current workflow state|current repository state|verified current behavior|active as legacy quality-gate|active as rollback|remain active|remains active|retained active|active rollback|remain registered|active legacy callers|S15 through S18|S13 through S18|S19|S20|72 direct|653 production|628 test|13 test dependencies' services/analysis-orchestrator-service/README.md services/joern-analysis-service/README.md services/README.md docs/architecture/current-build-and-test-map.md docs/architecture/current-coupling-map.md docs/architecture/legacy-reference-classification.md docs/architecture/monolith-caller-retirement-plan.md docs/architecture/monolith-runtime-isolation.md docs/architecture/service-boundaries.md docs/architecture/service-migration-map.md docs/arc42/05-building-block-view.md docs/arc42/07-deployment-view.md docs/arc42/08-crosscutting-concepts.md docs/skill-audit/README.md
 ```
 
 This command is expected to produce no matches after S04. A match is a blocker
