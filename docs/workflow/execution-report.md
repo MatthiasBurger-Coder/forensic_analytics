@@ -2,7 +2,7 @@
 
 ## Current Status
 
-Status: S04 completed; ready for S05 source-tree deletion preflight.
+Status: S05 completed; ready for S06 architecture and ADR closure.
 
 | Field | Value |
 |---|---|
@@ -459,6 +459,68 @@ adrUpdated: checked; no ADR update required because S04 changes only
 documentation truthfulness and does not change runtime behavior or public
 contracts
 
+## S05 Execution Result
+
+Status: COMPLETED
+
+Scope executed:
+
+- Removed the 16 tracked legacy source trees:
+  `forensic-analytics-adapter-javaparser`,
+  `forensic-analytics-adapter-joern-docker`,
+  `forensic-analytics-adapter-repository-source`,
+  `forensic-analytics-application`, `forensic-analytics-boot-app`,
+  `forensic-analytics-bootstrap`, `forensic-analytics-cli`,
+  `forensic-analytics-domain`, `forensic-analytics-engine`,
+  `forensic-analytics-ingestion-grpc`,
+  `forensic-analytics-ingestion-request`,
+  `forensic-analytics-logging`, `forensic-analytics-observability`,
+  `forensic-analytics-persistence`, `forensic-analytics-rest`, and
+  `forensic-analytics-testbed`.
+- No service source, contract, runtime, Docker, or active Gradle build files were
+  modified in this slice.
+
+Verification:
+
+- `git ls-files "forensic-analytics-*"`: passed; no tracked legacy source-tree
+  files remain in the index.
+- `git ls-files "*build.gradle.kts" | grep -v "^forensic-analytics-" | xargs -r rg -n "project\\(\\\":forensic-analytics-"`:
+  passed; no active Gradle project dependencies point to retired legacy modules.
+- `git ls-files "*.java" | grep -v "^forensic-analytics-" | xargs -r rg -n -P "^import\\s+de\\.burger\\.forensics\\.analytics\\.(application|domain|adapter|persistence|rest|cli|engine|logging|observability|bootstrap|boot|ingestion\\.request|ingestion\\.grpc)\\b"`:
+  passed; no active Java source imports retired legacy packages.
+- `git diff --check` and `git diff --cached --check`: passed.
+- `./gradlew projects --dependency-verification strict --console=plain --stacktrace`:
+  passed; Gradle lists only the `services` project hierarchy.
+- `./gradlew test --dependency-verification strict --console=plain --stacktrace`:
+  passed.
+
+Role result:
+
+- Senior Java Backend Developer: READY. The retired source trees were orphaned
+  after S04 and were removed as the final physical legacy-tree deletion slice.
+- Senior DevOps: READY. The post-delete project-model gate confirms only active
+  service projects remain registered.
+- Senior System Architect: READY. No active non-legacy Gradle project or Java
+  import depends on the removed trees.
+- Microservice Senior Expert: READY. No active service tree, contract directory,
+  Docker path or service-owned domain changed; the diff introduces no shared
+  Java module or service-to-service project dependency.
+- Senior Tester: READY. The repository minimum test gate passed after deletion.
+
+S05 handoff:
+
+- S06 owns final arc42, ADR and architecture closure using the S05 deletion
+  evidence.
+- S07 owns the full local quality gate and release-readiness evidence.
+
+Rollback reference:
+
+- Revert the S05 checkpoint commit if an active service dependency on a retired
+  source tree is later discovered.
+
+arc42Updated: pending S06
+adrUpdated: pending S06
+
 ## Slice Execution Status
 
 | Slice | Status | Notes |
@@ -468,7 +530,7 @@ contracts
 | S02 | Completed | Runtime, Docker and contract-test documentation now points to service-local ownership; no public contract files changed. |
 | S03 | Completed | Service-regression coverage assertions now target active S03 wording; all S03 targeted gates and the repository minimum gate passed. |
 | S04 | Completed | Active service and deployment documentation blockers cleared; service-local Gradle dry-runs and project-model gate passed. |
-| S05 | Not started | Deletes the 16 tracked legacy source trees after S04 passes. |
+| S05 | Completed | Removed all 16 tracked legacy source trees; post-delete leakage scans, project-model gate and repository test gate passed. |
 | S06 | Not started | Closes arc42, ADR and architecture documentation after deletion evidence exists. |
 | S07 | Not started | Runs final full local quality gate and release-readiness evidence. |
 
