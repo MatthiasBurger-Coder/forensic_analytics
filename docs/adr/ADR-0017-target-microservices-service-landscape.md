@@ -4,6 +4,12 @@
 
 Accepted
 
+Post-S05 closure note: ADR-0022 closes this ADR's conditional source-tree
+retirement path. The central `forensic-analytics-*` modular-monolith source
+trees named below are no longer tracked active implementation inputs after
+checkpoint `d8d9dab`; the target service landscape and service-autonomy rules in
+this ADR remain active.
+
 ## Context
 
 The repository previously documented a target landscape using names such as
@@ -12,15 +18,15 @@ The repository previously documented a target landscape using names such as
 `analysis-store-service`, `graph-replay-service`, `report-generation-service`
 and `frontend-web-app`.
 
-FA-MSA-001 supersedes that naming direction for the active microservice
-decomposition workflow. The current repository still contains older service
-slice directories and the central `forensic-analytics-*` modular-monolith
-modules. Those directories are current implementation evidence and migration
-inputs, not the final FA-MSA-001 target names and not compatibility aliases.
+FA-MSA-001 superseded that naming direction for the active microservice
+decomposition workflow. At original acceptance time, the repository still
+contained older service slice directories and central `forensic-analytics-*`
+modular-monolith modules. After ADR-0022/S05, the older service slice
+directories remain migration evidence where registered, while the central
+source trees are retired historical predecessor evidence.
 
-The current repository is still a modular monolith with partial service slices.
-The service landscape is therefore a target architecture decision, not an
-implementation or production-readiness claim.
+The repository still has partial service slices. The service landscape is
+therefore a target architecture decision, not a production-readiness claim.
 
 ## Decision
 

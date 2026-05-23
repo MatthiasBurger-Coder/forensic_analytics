@@ -4,8 +4,8 @@
 for the FA-MSA-001 workflow.
 
 It preserves predecessor `forensic-analytics-testbed` coverage in a
-service-root location while the tracked legacy source tree remains historical
-rollback evidence pending final deletion. The testbed owns deterministic
+service-root location after S05 source-tree removal. The retired source tree is
+historical predecessor evidence only. The testbed owns deterministic
 repository fixtures, local E2E tests and optional hardening scenarios. It is
 not a productive backend service and must not become a shared Java
 implementation module or runtime dependency for production services.

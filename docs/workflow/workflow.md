@@ -37,11 +37,12 @@ forensic-analytics-testbed
 ```
 
 Read-only verification and five role/subagent reviews on 2026-05-23 found that
-the repository has already moved the active Gradle build to `services:*`
-projects only. The legacy `forensic-analytics-*` directories still exist and
-are tracked source trees, but they are no longer registered Gradle modules and
-no active service build file or service Java source import currently depends on
-them.
+the repository had already moved the active Gradle build to `services:*`
+projects only. The legacy `forensic-analytics-*` directories were still tracked
+source trees at workflow creation time, but they were no longer registered
+Gradle modules and no active service build file or service Java source import
+depended on them. During `workflow execute`, S05 removed all listed legacy
+source trees in checkpoint `d8d9dab`.
 
 The previous workflow was stale because it still treated the legacy source
 trees as active Gradle projects and still referenced non-executable
@@ -54,7 +55,8 @@ service-regression coverage confirmation, command-documentation stopper cleanup,
 physical source-tree deletion, architecture documentation closure and the
 required `QUALITY.md` gates.
 
-No production code or legacy source tree is removed during workflow creation.
+No production code or legacy source tree was removed during workflow creation.
+Source-tree deletion occurred later in S05 after S02, S03 and S04 gates passed.
 
 ## Target Picture
 
@@ -88,7 +90,9 @@ Read-only workflow creation verification found:
 - `./gradlew projects --dependency-verification strict --console=plain --stacktrace`
   passed and listed only `services:*` subprojects.
 - `settings.gradle.kts` includes only `services:*` projects.
-- `git ls-files "forensic-analytics-*" | wc -l` returned `450`.
+- At workflow creation, `git ls-files "forensic-analytics-*" | wc -l`
+  returned `450`; after S05 checkpoint `d8d9dab`,
+  `git ls-files "forensic-analytics-*"` returns no tracked source-tree files.
 - A scan of `settings.gradle.kts`, root build files and `services/**/*.gradle.kts`
   found no `project(":forensic-analytics-*")` references.
 - A scan of non-legacy Java files found no imports from legacy monolith
@@ -338,6 +342,8 @@ affected_files:
   - docs/testing/**
   - docs/contracts/**
   - contracts/**
+  - services/testbed/README.md
+  - contracts/**
 affected_modules:
   - services:cli-client
   - services:query-report-api-service
@@ -355,6 +361,8 @@ file_locks:
   - docs/README.md
   - docs/testing/**
   - docs/contracts/**
+  - contracts/**
+  - services/testbed/README.md
   - contracts/**
 contract_locks:
   - public-rest-contract
@@ -610,11 +618,15 @@ affected_files:
   - docs/arc42/**
   - docs/architecture/**
   - docs/workflow/**
+  - docs/skill-audit/**
   - docs/README.md
   - docs/testing/**
   - docs/contracts/**
+  - contracts/**
+  - services/testbed/README.md
 affected_modules: []
-affected_contracts: []
+affected_contracts:
+  - contract-provenance-wording-only
 dependencies:
   - S05
 parallel_group: G06
@@ -623,17 +635,25 @@ file_locks:
   - docs/arc42/**
   - docs/architecture/**
   - docs/workflow/**
+  - docs/skill-audit/**
   - docs/README.md
   - docs/testing/**
   - docs/contracts/**
-contract_locks: []
+  - contracts/**
+  - services/testbed/README.md
+contract_locks:
+  - contracts/provenance-wording-only
 architecture_locks:
   - arc42-legacy-retirement-closure
   - adr-final-retirement
+  - skill-audit-baseline-wording
+  - contract-provenance-wording
+  - testbed-predecessor-wording
 quality_gates:
   targeted:
     - 'rg -n ":forensic-analytics-" docs docker contracts .dockerignore --glob "!docs/workflow/**"'
     - 'rg -n "forensic-analytics-" docs docker contracts .dockerignore --glob "!docs/workflow/**"'
+    - 'rg -n "forensic-analytics-" services/testbed/README.md'
     - 'python3 -m json.tool docs/workflow/context-pack.json'
     - 'git diff --check'
   required:

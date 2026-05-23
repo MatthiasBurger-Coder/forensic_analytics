@@ -2,12 +2,12 @@
 
 ## Status
 
-S01 classification status: `READY_FOR_CLASSIFICATION`.
+S01 classification status: `COMPLETED`.
 
-Deletion closure status: `BLOCKED_FOR_DELETION_CLOSURE` until S02, S03, S04,
-S05 and S06 remove or rewrite stale executable references, confirm
-service-local regression coverage, clear pre-deletion documentation blockers,
-delete source trees and close architecture documentation.
+Deletion closure status: `S06_ARCHITECTURE_CLOSURE_IN_PROGRESS`. S02, S03 and
+S04 cleared the pre-deletion runtime, regression and executable-documentation
+stoppers. S05 deleted the tracked legacy source trees in checkpoint `d8d9dab`.
+S06 closes architecture, arc42 and ADR evidence before S07 release readiness.
 
 ## Verification
 
@@ -15,8 +15,10 @@ S01 verified repository state on branch
 `architecture/workflow-legacy-module-retirement-20260522`:
 
 - `settings.gradle.kts` includes only `services:*` projects.
-- `git ls-files "forensic-analytics-*" | wc -l` returns `450` tracked legacy
-  source-tree files.
+- Before S05, `git ls-files "forensic-analytics-*" | wc -l` returned `450`
+  tracked legacy source-tree files.
+- After S05 checkpoint `d8d9dab`, `git ls-files "forensic-analytics-*"`
+  returns no tracked legacy source-tree files.
 - No active non-legacy build file contains a
   `project(":forensic-analytics-*")` dependency.
 - No active non-legacy Java source imports legacy monolith packages.
@@ -28,14 +30,15 @@ S01 verified repository state on branch
 
 ### Removable Implementation Or Runtime Documentation
 
-These references are stale executable or runtime documentation and must be
-removed or retargeted before S05 source-tree deletion is accepted:
+These references were stale executable or runtime documentation and had to be
+removed or retargeted before S05 source-tree deletion was accepted:
 
 - `docs/README.md`: legacy module inventory, gRPC/REST/Bootstrap/Boot app
   runtime sections, legacy Gradle commands and legacy jar paths.
 - `.dockerignore`: `forensic-analytics-boot-app/build/libs` Docker-context
   exceptions.
-- `docker/boot-app/Dockerfile`: default jar path under the legacy Boot app.
+- historical `docker/boot-app/Dockerfile` path when present: default jar path
+  under the legacy Boot app; the active repository no longer contains this file.
 - `docker/boot-app/README.md`: legacy Boot app `bootJar`, image and run
   commands.
 - `docs/testing/wildfly-hardening.md`: legacy `forensic-analytics-testbed`
@@ -43,9 +46,9 @@ removed or retargeted before S05 source-tree deletion is accepted:
 - `docs/contracts/contract-test-plan.md`: legacy
   `:forensic-analytics-rest:test` command.
 
-S02 owns the runtime, Docker and contract-documentation cleanup for these
-files. It must not leave runnable-looking commands for unregistered or deleted
-legacy Gradle projects.
+S02 and S04 completed the runtime, Docker and contract-documentation cleanup
+for these files. They must not be reintroduced as runnable-looking commands for
+unregistered or deleted legacy Gradle projects.
 
 ### Historical Architecture Baseline
 
@@ -71,9 +74,10 @@ superseded or historical evidence:
 
 Any wording that says legacy modules are registered in the verified project
 model, quality-gate participants, rollback runtime units, or the operative
-implementation baseline is a blocker before S05 deletion. S04 owns
-pre-deletion documentation blocker cleanup for exact operative legacy claims;
-S06 owns final architecture and arc42 closure.
+implementation baseline is a post-S05 architecture blocker. S06 owns final
+architecture and arc42 closure and must leave remaining names explicitly marked
+as historical predecessor, contract compatibility or product/runtime namespace
+evidence.
 
 ### Compatibility Vocabulary
 
@@ -125,27 +129,27 @@ explicitly marked as historical:
 
 ## S02 Handoff
 
-S02 must clean the stale executable/runtime references in:
+S02 cleaned stale executable/runtime references in:
 
 - `.dockerignore`
-- `docker/boot-app/Dockerfile`
+- historical `docker/boot-app/Dockerfile` path when present
 - `docker/boot-app/README.md`
 - `docs/README.md`
 - `docs/testing/wildfly-hardening.md`
 - `docs/contracts/contract-test-plan.md`
 
-S02 must keep contract compatibility vocabulary unless a contract-governance
-review approves a behavior-neutral wording change.
+Contract compatibility vocabulary remains protected unless a
+contract-governance review approves a behavior-neutral wording change.
 
 ## S03 Handoff
 
-S03 must use service-local gates only. It must not rely on any
+S03 used service-local gates only. It did not rely on any
 `:forensic-analytics-*` Gradle task because the active project model no longer
-includes those modules.
+included those modules.
 
-Before S03 can pass, stale legacy task commands must be replaced with service
-or root gates, and remaining module-local test references must be marked as
-historical rollback evidence or deprecated behavior.
+Stale legacy task commands were replaced with service or root gates, and
+remaining module-local test references were marked as historical predecessor
+evidence or deprecated behavior.
 
 ## S06 Handoff
 

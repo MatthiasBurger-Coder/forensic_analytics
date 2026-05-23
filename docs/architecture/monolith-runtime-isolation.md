@@ -47,34 +47,36 @@ forensic-ui
   -> btm-generation-service
 ```
 
-The following remaining monolith runtime paths are retained only as legacy
-in-process paths and rollback evidence:
+The following former monolith runtime paths are retired source trees after S05.
+They remain only as historical predecessor evidence and as rollback-by-revert
+context under ADR-0022:
 
-| Path | Current role | Slice 18 decision |
+| Path | Historical role | Post-S05 decision |
 |---|---|---|
-| `forensic-analytics-cli` | Local in-process command adapter for analysis and engine-request import | Target `cli-client` deprecates local `analyze` and `ingest-request` behavior in S16; predecessor module remains rollback evidence until caller-free removal |
-| `forensic-analytics-rest` | Predecessor JDK HTTP adapter used by Boot and bootstrap paths | Historical legacy REST behavior; public API contract-test ownership now also exists in `query-report-api-service`, and this source tree is rollback evidence until final retirement |
-| `forensic-analytics-bootstrap` | Predecessor combined gRPC and REST runtime assembly | Historical rollback/manual local runtime evidence |
-| `forensic-analytics-boot-app` | Predecessor Spring Boot wrapper for monolith adapters | Historical legacy Boot runtime and rollback evidence |
-| `forensic-analytics-engine` | In-process facade around application repository analysis use cases | Retained as predecessor rollback evidence; service-root S16 no longer treats this as target runtime parity |
-| `forensic-analytics-ingestion-request` | JSON engine-request importer used by CLI | Retained as predecessor rollback evidence; target CLI deprecates local engine-request import unless a later contract assigns a new owner |
-| `forensic-analytics-testbed` | In-process integration and architecture verification | Historical monolith rollback evidence until S05 deletion and S06/S07 closure; service-root testbed no longer claims completed local analysis parity |
+| `forensic-analytics-cli` | Local in-process command adapter for analysis and engine-request import | Source tree retired by S05; `services:cli-client` is the active client boundary |
+| `forensic-analytics-rest` | Predecessor JDK HTTP adapter used by Boot and bootstrap paths | Source tree retired by S05; public API contract-test ownership exists in `query-report-api-service` |
+| `forensic-analytics-bootstrap` | Predecessor combined gRPC and REST runtime assembly | Source tree retired by S05; no active combined monolith runtime source remains |
+| `forensic-analytics-boot-app` | Predecessor Spring Boot wrapper for monolith adapters | Source tree retired by S05; no active monolith Boot runtime source remains |
+| `forensic-analytics-engine` | In-process facade around application repository analysis use cases | Source tree retired by S05; `analysis-orchestrator-service` owns the active target orchestration boundary |
+| `forensic-analytics-ingestion-request` | JSON engine-request importer used by CLI | Source tree retired by S05; future import behavior requires service-owned contracts |
+| `forensic-analytics-testbed` | In-process integration and architecture verification | Source tree retired by S05; active non-production evidence is under `services:testbed` |
 
-These modules must not be described as implemented microservices. They share
-Java implementation modules and belong to the historical modular-monolith
-baseline until final source-tree retirement is complete.
+These historical paths must not be described as implemented microservices or
+as current runtime rollback units. Their behavior can be restored only by an
+explicit rollback of the S05 checkpoint or by a new service-owned requirement.
 
 ## Retirement Preconditions
 
-A later slice may retire or disable one of these paths only after it records:
+ADR-0022 records the final source-tree retirement. A later slice that restores,
+reimplements or changes one of these behaviors must record:
 
 - the verified replacement service owner;
 - the exact public REST, gRPC or event contract;
 - caller searches proving no remaining production or test dependency still
   needs the old path;
 - parity or explicit deprecation tests;
-- rollback instructions for restoring the current module registration and
-  runtime entrypoint.
+- rollback or migration instructions that do not silently reintroduce shared
+  Java implementation modules.
 
 ## Slice 19 Removal Review
 
@@ -94,6 +96,8 @@ Slice 19.
 
 ## Rollback
 
-Rollback for Slice 18 is documentation-only: revert the Slice 18 documentation
-commit. No runtime code, Gradle registration, source root, contract or
-deployment descriptor is changed by this isolation decision.
+Rollback for the historical Slice 18 isolation decision is documentation-only.
+Rollback for the actual S05 source-tree retirement is defined by ADR-0022:
+revert checkpoint commit `d8d9dab` on the workflow branch and then rerun the
+S05/S06/S07 gates. No source tree remains intentionally retained as an active
+rollback runtime.

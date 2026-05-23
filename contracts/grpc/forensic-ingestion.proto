@@ -8,8 +8,9 @@ option java_outer_classname = "ForensicIngestionProto";
 
 // Initial contract extracted during Slice 03.
 //
-// Current implementation evidence exists in
-// forensic-analytics-ingestion-grpc/src/main/proto/forensic_ingestion.proto.
+// Predecessor implementation evidence existed in
+// forensic-analytics-ingestion-grpc/src/main/proto/forensic_ingestion.proto
+// before S05 source-tree removal.
 // This contract preserves the current v1 package, service methods, field
 // numbers and enum numbers so existing generated clients can be migrated to a
 // contract-owned source without changing transport semantics.

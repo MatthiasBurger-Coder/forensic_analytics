@@ -6,14 +6,15 @@ CLI consumer contract for public repository-to-BTM submission.
 
 `gateway-submit` is the explicit compatibility command for this transitional
 contract. The local-path `forensic-analytics-cli analyze` and `ingest-request`
-commands remain legacy in-process adapters and are not silently routed to the
-public API. Under FA-MSA-001 the target CLI is `cli-client` and the public API
-authority is `query-report-api-service`; Gateway naming is retained only as
-current command, option and file compatibility evidence.
+commands are historical predecessor in-process adapter vocabulary after S05
+source-tree removal and are not silently routed to the public API. Under
+FA-MSA-001 the target CLI is `cli-client` and the public API authority is
+`query-report-api-service`; Gateway naming is retained only as command, option
+and file compatibility evidence.
 
-S16 records `analyze` and `ingest-request` as deprecated target behavior for
-`cli-client`. They remain legacy in-process adapters only in predecessor
-modules until caller-free removal is proven; target CLI implementations must
+Earlier service-migration evidence recorded `analyze` and `ingest-request` as
+deprecated target behavior for `cli-client`. They remain predecessor command
+vocabulary only after S05 source-tree removal; target CLI implementations must
 reject those commands instead of routing local paths or engine-request files to
 the public API.
 
@@ -21,8 +22,8 @@ the public API.
 
 | Field | Value |
 |---|---|
-| Consumer | `cli-client` target; current predecessor implementation is `forensic-analytics-cli` |
-| Producer | `query-report-api-service` target; current predecessor implementation evidence is `forensic-gateway-service` |
+| Consumer | `cli-client` target; predecessor implementation history is `forensic-analytics-cli` |
+| Producer | `query-report-api-service` target; predecessor implementation evidence is `forensic-gateway-service` |
 | Protocol | HTTP JSON through `contracts/openapi/gateway-api.yaml` |
 | S09 operation | `startRepositoryToBtmAnalysis` |
 | Future operation | `getRepositoryAnalysis`; out of S09 until this contract defines a concrete command and option mapping |
@@ -30,13 +31,13 @@ the public API.
 
 ## Current Compatibility Decision
 
-The current CLI `analyze` command is an in-process legacy adapter. It accepts
-local paths or file URIs and does not require branch, commit, correlation ID or
-idempotency key inputs.
+The predecessor CLI `analyze` command was an in-process legacy adapter. It
+accepted local paths or file URIs and did not require branch, commit,
+correlation ID or idempotency key inputs.
 
-After S16, local `analyze` and `ingest-request` are not target CLI behavior.
-They are retained only as predecessor rollback evidence until S19 proves
-caller-free removal or a later workflow creates a new explicit target owner and
+Local `analyze` and `ingest-request` are not target CLI behavior. After S05
+source-tree removal they are retained only as predecessor compatibility
+vocabulary unless a later workflow creates a new explicit target owner and
 contract.
 
 Public repository-to-BTM submission requires:
@@ -163,10 +164,11 @@ Required contract tests:
   redaction contract markers.
 - `CliClient*Test` verifies that `services/cli-client` uses HTTP JSON public API
   access instead of in-process analysis, parser, Joern or persistence behavior.
-- Predecessor `ForensicAnalyticsCliTest` continues to verify that
-  `gateway-submit` uses a Gateway client instead of the in-process
-  `RunRepositoryAnalysisUseCase`, preserves the current local `analyze`
-  compatibility decision and keeps output public while the predecessor remains.
+- Historical predecessor `ForensicAnalyticsCliTest` evidence verified that
+  `gateway-submit` used a Gateway client instead of the in-process
+  `RunRepositoryAnalysisUseCase`. After S05 source-tree removal, active
+  verification belongs to `CliClient*Test` and `GatewayOpenApiContractTest`;
+  local `analyze` compatibility remains predecessor vocabulary only.
 
 ## Implementation Stop Conditions
 

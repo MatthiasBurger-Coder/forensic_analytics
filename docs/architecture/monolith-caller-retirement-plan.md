@@ -70,8 +70,9 @@ local behavior.
 The local-path `analyze` behavior was an operative predecessor command in this
 historical inventory. It was not caller-free at the time and required explicit
 deprecation with tests and migration notes before retirement. The active
-final-retirement workflow now treats the CLI source tree as historical
-pre-retirement evidence pending S05 deletion and S06/S07 closure.
+final-retirement workflow now treats the CLI source tree as retired historical
+predecessor evidence after S05, with S06/S07 closing documentation and release
+readiness.
 
 ## S02 Conditional Retirement Result
 
@@ -152,12 +153,10 @@ S14 therefore has this executable rule:
 ## Refined Follow-Up Retirement Slices
 
 Workflow-create refinement after the S14 execution stop is superseded by the
-active final-retirement workflow. S04 clears pre-deletion documentation
-blockers, S05 is candidate source-tree deletion, S06 is architecture/ADR
-closure and S07 is release readiness.
+active final-retirement workflow. S04 cleared pre-deletion documentation
+blockers, S05 completed source-tree deletion, S06 is architecture/ADR closure
+and S07 is release readiness.
 
-| Follow-up | Purpose | Required proof before deletion |
-|---|---|---|
 | Active slice | Purpose | Required proof before deletion or closure |
 |---|---|---|
 | `S04` | Clear stale executable/current legacy documentation blockers. | No active service, deployment, architecture or audit docs claim legacy modules as current executable/build/runtime evidence. |

@@ -6,12 +6,11 @@ Status: checked for workflow creation on 2026-05-23.
 
 The workflow was regenerated because repository state changed since the earlier
 legacy-retirement plan. `settings.gradle.kts` now registers only `services:*`
-projects, while several arc42 and architecture documents still describe
-legacy `forensic-analytics-*` modules as retained active rollback or runtime
-evidence. Version 2 inserts a pre-deletion documentation cleanup slice for
-stale executable legacy commands. Workflow creation does not update product
-behavior or delete source trees, so detailed final arc42 closure is assigned to
-execution slice S06 after S05 deletion evidence exists.
+projects. Version 2 inserted a pre-deletion documentation cleanup slice for
+stale executable legacy commands. S05 then removed the tracked legacy
+`forensic-analytics-*` source trees, and S06 closes arc42/architecture/ADR
+wording so remaining names are historical predecessor, contract compatibility
+or product/runtime namespace evidence only.
 
 ## Required Execution Updates
 

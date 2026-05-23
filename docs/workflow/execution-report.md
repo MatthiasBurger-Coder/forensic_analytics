@@ -2,7 +2,7 @@
 
 ## Current Status
 
-Status: S05 completed; ready for S06 architecture and ADR closure.
+Status: S06 completed; ready for S07 final quality and release-readiness closure.
 
 | Field | Value |
 |---|---|
@@ -170,10 +170,10 @@ S01 handoff:
 - S04 must clear active service/deployment documentation blockers before
   deletion.
 - S06 must reconcile architecture and arc42 current-state claims.
-- `docs/skill-audit/README.md` contains a stale historical audit sentence
-  outside current S06 write scope; treat it as a possible S06 scope gap if
-  final closure requires all current-state wording outside architecture docs to
-  be updated.
+- `docs/skill-audit/README.md` contained a stale historical audit sentence.
+  S06 expands its file scope to `docs/skill-audit/**` only for that baseline
+  wording so the final closure does not leave a contradictory current-state
+  claim outside architecture docs.
 
 ## S02 Runtime, Docker And Contract Documentation Cleanup
 
@@ -256,7 +256,7 @@ Rollback reference:
 - Revert the S02 checkpoint commit before S05 if runtime, Docker or
   contract-test documentation cleanup must be withdrawn.
 
-arc42Updated: pending S06
+arc42Updated: completed in S06
 adrUpdated: checked; no ADR update required because no public contract shape,
 runtime ownership or deployment behavior changed in S02.
 
@@ -339,7 +339,7 @@ Rollback reference:
 - Revert the S03 checkpoint commit before S05 if service-regression coverage
   confirmation must be withdrawn.
 
-arc42Updated: pending S06
+arc42Updated: completed in S06
 adrUpdated: checked
 
 ## Workflow Topology Correction
@@ -518,8 +518,63 @@ Rollback reference:
 - Revert the S05 checkpoint commit if an active service dependency on a retired
   source tree is later discovered.
 
-arc42Updated: pending S06
-adrUpdated: pending S06
+arc42Updated: completed in S06
+adrUpdated: completed in S06
+
+## S06 Execution Result
+
+Status: completed.
+
+Scope executed:
+
+- Added ADR-0022 for final modular-monolith source-tree retirement.
+- Updated ADR cross-references while preserving historical decision context.
+- Updated arc42 sections 03, 05, 06, 07, 08, 09, 10 and 11 so deleted
+  `forensic-analytics-*` source trees are historical predecessor evidence, not
+  active runtime/build evidence.
+- Updated architecture maps and status documents for the post-S05 service-only
+  Gradle topology.
+- Expanded S06 workflow scope to include `docs/skill-audit/**` for one stale
+  audit-baseline wording fix tied to the post-S05 closure.
+- Expanded S06 workflow scope to include `contracts/**` and
+  `services/testbed/README.md` for provenance-only wording fixes discovered by
+  reviewer recheck. The edits do not change OpenAPI, CLI or gRPC fields,
+  endpoints, service names, enum values or compatibility behavior.
+- Updated workflow context-pack metadata and hashes with S05 checkpoint
+  `d8d9dab` and `trackedLegacyFileCount: 0`.
+
+Verification:
+
+- `python3 -m json.tool docs/workflow/context-pack.json`: passed.
+- `git diff --check`: passed.
+- `git ls-files "forensic-analytics-*" | wc -l`: `0`.
+- Active Gradle legacy project-reference scan: `0`.
+- Active Java legacy import scan: `0`.
+- `rg -n ":forensic-analytics-" docs docker contracts .dockerignore --glob "!docs/workflow/**"`:
+  classification scan returned historical/forbidden-example matches only.
+- `rg -n "forensic-analytics-" docs docker contracts .dockerignore --glob "!docs/workflow/**"`:
+  classification scan returned historical, ADR, contract compatibility,
+  product/runtime namespace or predecessor-provenance matches only.
+
+Reviewer result:
+
+- Senior Requirement Engineer: READY. ADR-0022 required and preserves ADR-0017
+  target landscape while closing the pre-S05 tracked-source assumption.
+- Architecture Reviewer: READY after stale active-evidence, service-slice label,
+  logging/observability and contract/testbed wording fixes.
+- Documentation Reviewer: READY after execution-report, ADR, service-boundaries,
+  arc42, current-state, workflow-scope and contract/testbed wording fixes.
+- Contract / ingestion handoff reviewer: READY. Contract and testbed edits are
+  wording/provenance only; no wire/API field, endpoint, service name, enum value
+  or compatibility behavior changed.
+- Quality Reviewer: READY. S06 docs-only gates are sufficient; ADR-0022 must be
+  staged with the final S06 commit.
+
+S06 handoff:
+
+- S07 owns the full local quality gate and final release-readiness evidence.
+- S07 must not re-open legacy source-tree deletion unless a new active
+  dependency is found.
 
 ## Slice Execution Status
 
@@ -531,7 +586,7 @@ adrUpdated: pending S06
 | S03 | Completed | Service-regression coverage assertions now target active S03 wording; all S03 targeted gates and the repository minimum gate passed. |
 | S04 | Completed | Active service and deployment documentation blockers cleared; service-local Gradle dry-runs and project-model gate passed. |
 | S05 | Completed | Removed all 16 tracked legacy source trees; post-delete leakage scans, project-model gate and repository test gate passed. |
-| S06 | Not started | Closes arc42, ADR and architecture documentation after deletion evidence exists. |
+| S06 | Completed | Closed arc42, ADR, architecture, workflow, contract-provenance and testbed wording after deletion evidence; local gates and reviewer rechecks passed. |
 | S07 | Not started | Runs final full local quality gate and release-readiness evidence. |
 
 ## Open Stop Conditions For Execution

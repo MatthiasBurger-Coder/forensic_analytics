@@ -338,9 +338,8 @@ The service-local testbed gate is:
 Dockerfile, Docker Compose service, Docker Swarm stack or Kubernetes manifest
 in S13. The local Compose descriptor is validated as model syntax only; S13
 does not build images, start Compose or perform health probes. The predecessor
-testbed source tree is historical rollback evidence until the final legacy
-source-tree retirement workflow deletes verified caller-free paths and records
-architecture and quality closure.
+testbed source tree was retired by S05; remaining testbed evidence is
+service-local under `services:testbed` plus historical documentation.
 
 Earlier WildFly hardening work keeps the service-root scenario as
 non-production deployment evidence that is skipped by default unless an
@@ -348,12 +347,11 @@ explicit WildFly branch or commit is provided. It does not promote
 `services:testbed` into a runtime service and does not add a Dockerfile,
 Compose service, Swarm stack, Kubernetes manifest or health probe.
 
-Slice S14 does not remove deployment or runtime paths. It records
-`NO_REMOVAL_SAFE` when caller scans still find legacy module use. The
-predecessor Boot, Bootstrap and retained legacy source trees are historical
-pre-retirement in-process and rollback deployment evidence, not active
-deployment units. The final legacy source-tree retirement workflow owns
-deletion of verified caller-free paths and the subsequent architecture closure.
+Slice S14 did not remove deployment or runtime paths. That historical
+`NO_REMOVAL_SAFE` result is superseded by S05 source-tree retirement. The
+predecessor Boot and Bootstrap source trees are now deleted historical
+deployment evidence, not active deployment units. S06 records the architecture
+closure and S07 owns final release-readiness evidence.
 
 ## 7.7 Local Repository-to-BTM Transitional Landscape
 

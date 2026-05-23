@@ -2,7 +2,11 @@
 
 ## Status
 
-Accepted. Partially extended by ADR-0008 for the separate cross-cutting `forensic-analytics-logging` module.
+Accepted. Partially extended by ADR-0008 for the separate cross-cutting
+predecessor `forensic-analytics-logging` module. ADR-0022/S05 later retired
+the `forensic-analytics-observability` and `forensic-analytics-logging` source
+trees as active implementation source; this ADR remains historical context for
+the logging boundary and diagnostics-as-not-evidence rule.
 
 ## Context
 
@@ -12,15 +16,18 @@ The current Forensic Analytics architecture does not use Spring wiring, and runt
 
 ## Decision
 
-Create a dedicated `forensic-analytics-observability` module with a small JDK-based logging boundary.
+The original decision created a dedicated `forensic-analytics-observability`
+module with a small JDK-based logging boundary.
 
-The module owns:
+The predecessor module owned:
 
 - correlation ID scope management
 - structured operation event formatting
 - a minimal operation logger facade backed by `System.Logger`
 
-Adapter, engine, persistence, ingestion-request and bootstrap code may depend on this module. Domain and application code must not depend on it.
+Adapter, engine, persistence, ingestion-request and bootstrap code could depend
+on this predecessor module. Domain and application code was not allowed to
+depend on it.
 
 Do not introduce Spring AOP, AspectJ, SLF4J, Logback, Log4j2 or annotation-driven logging in this slice. Do not log method arguments, return values, payload bytes, source content, LLM prompts or raw exception messages.
 
@@ -29,4 +36,4 @@ Do not introduce Spring AOP, AspectJ, SLF4J, Logback, Log4j2 or annotation-drive
 - Logging is explicit at operational boundaries instead of implicit through method weaving.
 - Strict dependency verification is unchanged because no external logging dependency is added.
 - Correlation IDs support operational diagnostics but are not treated as canonical evidence.
-- Future SLF4J, OpenTelemetry or logging-provider changes still require a separate architecture and dependency decision. ADR-0008 accepts Spring method interception only in `forensic-analytics-logging`; the observability module remains framework-neutral.
+- Future SLF4J, OpenTelemetry or logging-provider changes still require a separate architecture and dependency decision. ADR-0008 accepted Spring method interception only in the predecessor `forensic-analytics-logging`; active services must use service-local diagnostics or `observability-stack` deployment material.

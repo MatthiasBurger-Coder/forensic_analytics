@@ -52,6 +52,7 @@ Quality
 | Slice cannot be classified | `S3_CLASSIFY` routes to `S3_UNCLASSIFIED` and Root Architect escalation |
 | S3D detects overlapping locks | The failure routes as `LOCK_CONFLICT` through the Typed Error Router |
 | Slice checkpoint commit is created | The commit contains exactly one slice and records workflow version, changed files, quality result, commit hash and rollback reference |
+| Legacy source-tree retirement completes | `git ls-files "forensic-analytics-*"` returns no tracked files, active build/source leakage scans remain empty and the repository minimum gate passes |
 | Checkpoint push fails | The failure routes to `CP_ROLLBACK` or Root Architect escalation instead of force-push or `push auto` |
 | Slice checkpoint push is requested | The push targets only `origin/<workflow-branch>` and does not create or merge a PR |
 | `push auto` is requested | `S1_PUSH_ELIGIBILITY_GUARD` proves the change belongs to `skills-agents` and no product implementation files changed |

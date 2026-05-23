@@ -16,8 +16,8 @@ Forensics Platform
 ├── Graph Projection
 ├── Vector Context Builder
 ├── LLM Diagnosis
-├── Observability Boundary
-├── Cross-cutting Logging Module
+├── Service-local Diagnostics
+├── Observability Stack
 ├── Repair Orchestration
 └── Adapters
     ├── Gradle Plugin Request Adapter
@@ -48,8 +48,8 @@ Forensics Platform
 | Graph Projection Service | Builds graph projections from canonical facts |
 | Vector Context Builder | Builds semantic context for retrieval and LLM use |
 | LLM Diagnosis Service | Creates evidence-based root-cause analysis |
-| Observability Boundary | Provides adapter-level correlation scopes and sanitized operation logging without becoming evidence storage |
-| Cross-cutting Logging Module | Provides injectable logger wrappers and Boot-scoped method interception for sanitized operational diagnostics |
+| Service-local Diagnostics | Provides owner-local correlation, sanitized operation logging and missing-value diagnostics without becoming evidence storage |
+| Observability Stack | Provides deployment-oriented observability configuration and policy material; it is not a shared Java runtime module |
 | Repair Orchestrator | Prepares future gated repair flows |
 
 ## 5.3 Hexagonal Architecture Mapping
@@ -59,7 +59,7 @@ Forensics Platform
 | Domain | IDs, analysis model, incident model, replay model, rule plan |
 | Application | Import use cases, replay use cases, diagnosis use cases |
 | Ports | Fact import port, event store port, graph port, LLM port, rule generation port |
-| Infrastructure | Adapter-facing observability, correlation support and outer server bootstrap configuration |
+| Infrastructure | Service-local diagnostics, correlation support and outer server bootstrap configuration |
 | Adapters | gRPC ingestion, REST API, CLI, Gradle/Maven request and runtime-binding adapters, server-side Joern, server-side Byteman/BTM, relational DB, graph DB, vector DB, LLM provider |
 
 ## 5.4 Important Boundary
@@ -68,7 +68,11 @@ Gradle and Maven plugins must not become the central platform. They trigger serv
 
 ## 5.5 gRPC Ingestion Boundary
 
-`forensic-analytics-ingestion-grpc` is an inbound adapter. It may depend on generated Protobuf/gRPC classes and the application layer. It must not depend on persistence adapters, Joern, replay, LLM providers or plugin internals.
+`services/ingestion-service` is the current service-local gRPC ingestion
+boundary. It may generate transport classes inside its own build, but those
+classes must not become shared Java DTO or domain modules. The retired
+`forensic-analytics-ingestion-grpc` source tree remains historical predecessor
+provenance only.
 
 The adapter maps:
 
@@ -78,11 +82,18 @@ Proto DTO
     -> Application Use Case
 ```
 
-## 5.6 Observability Boundary
+## 5.6 Service-Local Diagnostics And Observability Stack
 
-`forensic-analytics-observability` is an infrastructure module for operational diagnostics. Adapter, engine, ingestion-request, persistence and bootstrap code may use it to create sanitized operation logs and correlation scopes where a request or command boundary exists.
+`services/observability-stack` is the current deployment-oriented
+observability boundary. Service-local diagnostics may exist inside each owning
+service, but the retired `forensic-analytics-observability` source tree is not
+an active shared Java module.
 
-The observability module must not depend on domain, application, persistence, REST, gRPC, generated protobuf classes, Spring AOP, AspectJ, SLF4J or concrete logging providers. Domain and application code must not depend on observability.
+Current diagnostics are service-local, and `services/observability-stack`
+contains deployment/configuration material only. The retired
+`forensic-analytics-observability` and `forensic-analytics-logging` source
+trees must not be reintroduced as shared Java runtime dependencies. Domain and
+application code inside services must not depend on shared diagnostics modules.
 
 ## 5.7 Spring Boot Server Boundary
 
@@ -91,11 +102,15 @@ historical implementation module was `forensic-analytics-boot-app`, which owned
 the Spring Boot application entrypoint, typed configuration and Spring bean
 wiring for verified monolith adapters before service extraction.
 
-The predecessor `forensic-analytics-bootstrap` source tree is historical
-pre-retirement evidence. Spring Boot adoption must not add Spring dependencies
-or annotations to service domain/application packages.
+The predecessor `forensic-analytics-bootstrap` source tree was retired by S05
+and ADR-0022. Spring Boot adoption must not add Spring dependencies or
+annotations to service domain/application packages.
 
-ADR-0007 keeps the existing JDK REST adapter behind Boot lifecycle wiring. Spring MVC, WebFlux and Actuator endpoints are not part of the current Boot boundary.
+ADR-0007 historically kept the predecessor JDK REST adapter behind Boot
+lifecycle wiring. After ADR-0022/S05, that Boot/REST source-tree ownership is
+retired historical context. Current public API behavior is service-local where
+`query-report-api-service` has explicit verification; Spring MVC, WebFlux and
+Actuator endpoints are still not accepted by ADR-0007.
 
 ADR-0019 extends the Spring Boot boundary to service-local bootstrap packages
 under `de.burger.forensics.analytics.services..bootstrap..`. Service domain and
@@ -105,17 +120,22 @@ independent service.
 
 S12 verifies that productive service code keeps domain and application models
 inside service-local packages and that productive service build files do not
-depend on the retained central `forensic-analytics-domain` or
-`forensic-analytics-application` modules. Those central source trees are
-historical pre-retirement and rollback evidence until S05 deletion and S06/S07
-closure prove caller-free retirement. The non-production `services:testbed`
-regression evidence is not productive service coupling.
+depend on the retired central `forensic-analytics-domain` or
+`forensic-analytics-application` modules. S05 removed those central source
+trees; S06/S07 close architecture and quality evidence. The non-production
+`services:testbed` regression evidence is not productive service coupling.
 
-## 5.8 Cross-cutting Logging Module
+## 5.8 Historical Logging Decision
 
-ADR-0008 accepts `forensic-analytics-logging` as a cross-cutting infrastructure module. It provides `ForensicLoggerFactory` for explicit logger injection and optional Spring method interception in the Boot runtime.
+ADR-0008 accepted `forensic-analytics-logging` as a predecessor cross-cutting
+infrastructure module. ADR-0022 retires that source tree for active
+implementation; productive services must not replace it with another shared
+Java logging module.
 
-The logging module may depend on `forensic-analytics-observability` for correlation context and on Spring AOP/Context for the accepted method-interception exception. It may publish Boot auto-configuration metadata. It must not depend on domain, application, adapters, persistence, REST, gRPC, generated Protobuf, AspectJ, SLF4J or concrete logging providers.
+The predecessor logging module may remain documented as ADR history only.
+Current service code must keep diagnostics service-local or in
+`observability-stack` deployment/configuration material. Shared logging modules
+between independently deployable services remain forbidden.
 
 Automatic logging records operation name, phase, duration, correlation ID and exception category only. It must not log method arguments, return values, raw exception messages, stack frames, payloads, source content, credentials or LLM prompt content.
 
@@ -173,10 +193,10 @@ S09 adds `services/cli-client` as a public API client boundary with a
 service-local Gradle project, CLI bootstrap, HTTP/OpenAPI adapter and tests. It
 is not a backend service and must not own forensic evidence, analysis execution,
 parser behavior, Joern control or persistence. The predecessor
-`forensic-analytics-cli` local `analyze` and `ingest-request` commands remain
-predecessor rollback evidence. S16 deprecates them as target `cli-client`
-behavior and keeps `gateway-submit` as the only verified target CLI command in
-this workflow state.
+`forensic-analytics-cli` source tree was retired by S05. Historical local
+`analyze` and `ingest-request` command names remain predecessor/deprecation
+evidence only. S16 keeps `gateway-submit` as the only verified target CLI
+command in this workflow state.
 
 Every productive service must own its internal domain, application, adapters,
 bootstrap, configuration, tests, health checks and Dockerfile before production
@@ -205,10 +225,11 @@ bootstrap, configuration, tests, README and Dockerfile. The predecessor
 `forensic-ingestion.proto` wire shape remains unchanged and generated
 transport classes stay inside the service build.
 
-`services/forensic-ingestion-service`, `forensic-analytics-ingestion-grpc` and
-`forensic-analytics-ingestion-request` are historical predecessor and rollback
-evidence. They are not compatibility aliases for `ingestion-service`; legacy
-source-tree deletion belongs to the final retirement workflow.
+`services/forensic-ingestion-service` remains a live predecessor service root.
+The `forensic-analytics-ingestion-grpc` and
+`forensic-analytics-ingestion-request` source trees were retired by S05 and are
+historical provenance only. They are not compatibility aliases for
+`ingestion-service`.
 
 Slice S07 adds `services/java-parser-analysis-service` as target-service
 implementation evidence for the FA-MSA-001 JavaParser analysis boundary. It is
@@ -218,10 +239,10 @@ filesystem artifact adapter, bootstrap, configuration, tests, README and
 Dockerfile. The predecessor `java-ast-analysis.proto` wire shape remains
 unchanged and generated transport classes stay inside the service build.
 
-`services/java-ast-analysis-service` and
-`forensic-analytics-adapter-javaparser` are historical predecessor and rollback
-evidence. They are not compatibility aliases for `java-parser-analysis-service`;
-legacy source-tree deletion belongs to the final retirement workflow.
+`services/java-ast-analysis-service` remains a live predecessor service root.
+The `forensic-analytics-adapter-javaparser` source tree was retired by S05 and
+is historical provenance only. It is not a compatibility alias for
+`java-parser-analysis-service`.
 
 Slice S06 adds `services/joern-analysis-service` as target-service
 implementation evidence for the FA-MSA-001 Joern semantic analysis boundary.
@@ -233,11 +254,10 @@ service-local generated code and now includes the service-owned
 `GetSemanticArtifactBytes` retrieval RPC so artifact bytes are not exposed
 through an Analysis Store byte alias.
 
-`services/joern-cpg-analysis-service` and
-`forensic-analytics-adapter-joern-docker` are historical predecessor and
-rollback evidence. They are not compatibility aliases for
-`joern-analysis-service`; legacy source-tree deletion belongs to the final
-retirement workflow.
+`services/joern-cpg-analysis-service` remains a live predecessor service root.
+The `forensic-analytics-adapter-joern-docker` source tree was retired by S05
+and is historical provenance only. It is not a compatibility alias for
+`joern-analysis-service`.
 
 Slice S07 adds `services/analysis-orchestrator-service` as target-service
 implementation evidence for the FA-MSA-001 orchestration boundary. It is
@@ -249,11 +269,10 @@ service-local generated transport input and maps it to service-owned job
 lifecycle, lease, retry, failure, dead-letter, correlation,
 job-to-artifact-reference and repository-to-BTM status models.
 
-`forensic-analytics-engine`, orchestration portions of
-`forensic-analytics-application` and `services/analysis-store-service` are
-historical predecessor and rollback evidence. They are not compatibility
-aliases for `analysis-orchestrator-service`; legacy source-tree deletion
-belongs to the final retirement workflow.
+`services/analysis-store-service` remains a live predecessor service root.
+The `forensic-analytics-engine` source tree and orchestration portions of the
+retired `forensic-analytics-application` source tree are historical provenance
+only. They are not compatibility aliases for `analysis-orchestrator-service`.
 
 The orchestrator coordinates workflow state only. It must not own repository
 checkout, JavaParser scanning, Joern execution, report rendering, artifact byte
@@ -276,10 +295,10 @@ keeps the transitional `gateway-api.yaml` filename and `analysis-job.proto`
 transport input as external contract evidence only; generated transport
 classes remain inside the service build.
 
-`forensic-analytics-rest` and public API portions of
-`services/forensic-gateway-service` are historical predecessor and rollback
-evidence. They are not compatibility aliases for `query-report-api-service`;
-legacy source-tree deletion belongs to the final retirement workflow.
+`services/forensic-gateway-service` remains a live predecessor service root.
+The `forensic-analytics-rest` source tree was retired by S05 and is historical
+provenance only. It is not a compatibility alias for
+`query-report-api-service`.
 
 Optional later service candidates such as `btm-generation-service`,
 `graph-replay-service` and `incident-analysis-service` remain outside
@@ -287,9 +306,9 @@ mandatory FA-MSA-001 closure unless a later requirement makes them mandatory.
 
 Slice S14 was a retirement-readiness decision, not a direct deletion slice.
 That prior caller evidence is superseded by the active final-retirement
-workflow: S05 removes verified caller-free legacy source trees and S06/S07 close
-architecture and quality evidence. Retaining historical pre-retirement source
-trees is not a microservice-readiness claim.
+workflow: S05 removed verified caller-free legacy source trees and S06/S07 close
+architecture and quality evidence. Historical references to retired source
+trees are not microservice-readiness claims.
 
 ADR-0018 accepts initial logical contracts for target service communication.
 Contracts marked as planned are design artifacts only; they do not prove that
