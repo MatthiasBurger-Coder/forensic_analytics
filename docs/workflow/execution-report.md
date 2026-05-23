@@ -245,3 +245,30 @@ cleanup. The slice therefore rewrites the two service-root testbed classes into
 boundary/deprecation evidence and strengthens target-service tests instead of
 removing modules. Remaining deletion candidates must still pass S18 ownership
 exit and S19 caller-free removal checks.
+
+S18 confirms that the current public OpenAPI contract is no longer executable
+only from `forensic-analytics-rest`. Senior System Architect, Analysis Storage
+Architect, Senior React Frontend, Senior DevOps and Senior Tester reviews all
+blocked physical `forensic-analytics-rest`, Boot, Bootstrap or Persistence
+removal, but approved the constrained ownership transfer. The slice adds a
+service-local `GatewayOpenApiContractTest` in
+`query-report-api-service`, keeps the OpenAPI shape unchanged, strengthens
+`cli-client` HTTP adapter coverage for headers, payload, accepted response
+mapping and redacted errors, and records the target-service ownership in
+contract, architecture and arc42 documentation. The legacy REST test remains
+rollback evidence, and S18 does not claim durable persistence, live bootRun,
+Docker image build, Compose, Swarm, Kubernetes or frontend-visible API drift.
+
+S18 implementation checkpoint: `51fa760 test(workflow): transfer public API contract ownership`.
+
+S18 verification passed:
+
+```bash
+./gradlew :services:query-report-api-service:test --tests "*GatewayOpenApiContractTest" --dependency-verification strict --console=plain --stacktrace
+./gradlew :services:cli-client:test --tests "*HttpRepositoryAnalysisSubmissionClientTest" --dependency-verification strict --console=plain --stacktrace
+./gradlew :services:query-report-api-service:test :services:cli-client:test :services:analysis-orchestrator-service:test :services:ingestion-service:test --dependency-verification strict --console=plain --stacktrace
+bash -lc "if rg -n \"GatewayOpenApiContractTest|forensic-analytics-rest\" services/query-report-api-service services/testbed contracts/openapi docs/contracts -g \"*.java\" -g \"*.md\" -g \"*.yaml\" -g \"*.yml\"; then test 0 -eq 0; else exit 1; fi"
+git diff --check
+python3 -m json.tool docs/workflow/context-pack.json >/dev/null
+./gradlew test --dependency-verification strict --console=plain --stacktrace
+```
