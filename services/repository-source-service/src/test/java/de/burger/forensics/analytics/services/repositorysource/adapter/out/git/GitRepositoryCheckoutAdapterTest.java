@@ -48,8 +48,15 @@ class GitRepositoryCheckoutAdapterTest {
         );
 
         assertEquals(CheckoutStatus.CHECKED_OUT, checkout.status());
+        assertEquals(REPOSITORY.remoteUrl(), checkout.resolvedRemoteUrl());
         assertEquals("b".repeat(40), checkout.resolvedCommit());
         assertEquals("src/main/java", checkout.sourceRoots().getFirst().relativePath());
+        assertEquals(List.of("GIT_CHECKOUT_COMPLETED"), checkout.diagnostics().stream()
+            .map(de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.Diagnostic::code)
+            .toList());
+        assertTrue(runner.commands.stream().anyMatch(command ->
+            command.arguments().contains("clone") && command.arguments().contains(REPOSITORY.remoteUrl())
+        ));
         assertTrue(runner.commands.stream().anyMatch(command -> command.arguments().contains("--depth")));
         assertTrue(runner.commands.stream().anyMatch(command ->
             command.arguments().contains("http.curloptResolve=example.com:443:93.184.216.34")
@@ -60,6 +67,7 @@ class GitRepositoryCheckoutAdapterTest {
             )
         ));
         assertTrue(runner.commands.stream().noneMatch(command -> command.arguments().contains("submodule")));
+        assertTrue(runner.commands.stream().noneMatch(command -> command.arguments().contains("build")));
     }
 
     @Test

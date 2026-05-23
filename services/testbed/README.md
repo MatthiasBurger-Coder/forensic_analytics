@@ -19,6 +19,19 @@ legacy in-process repository-analysis runtime scenario. It verifies target CLI
 and service contracts without running the legacy engine path and is not
 completed local analysis parity.
 
+S17 changes `RepositoryAnalysisMiniEndToEndTest` and
+`RepositoryAnalysisRealRepositoryEndToEndTest` into repository checkout and
+ingestion boundary evidence. The former mini and real repository fixture
+behavior remains legacy rollback evidence only: `AnalyzeRepository`, local or
+file repository checkout, monolith analysis-session registration and direct
+workspace cleanup are deprecated target behavior, and target services do not
+accept local or file repository input. Replacement evidence is split across
+`repository-source-service` checkout/workspace/source-snapshot tests,
+`ingestion-service` `AnalyzeRepository` `UNIMPLEMENTED` tests and
+`analysis-orchestrator-service` pending `StartRepositoryToBtm` tests. This is
+not session-registration parity and does not claim completed local repository
+analysis parity.
+
 ## Verification
 
 Run the service-local testbed gate with:

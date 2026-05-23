@@ -12,6 +12,7 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -20,7 +21,7 @@ class FileSystemRepositoryWorkspaceAdapterTest {
     private Path root;
 
     @Test
-    void preparesOpaqueWorkspaceUnderRootAndCleansItWithoutFollowingExternalPaths() throws Exception {
+    void preparesOpaqueWorkspaceUnderConfiguredRootAndCleansIt() throws Exception {
         var adapter = new FileSystemRepositoryWorkspaceAdapter(root);
         var workspace = adapter.prepare(
             new AnalysisRunId("run:1"),
@@ -34,6 +35,7 @@ class FileSystemRepositoryWorkspaceAdapterTest {
         assertTrue(workspace.workspaceId().value().startsWith("workspace-"));
         assertFalse(workspace.workspaceId().value().contains("run"));
         assertTrue(workspace.workspacePath().startsWith(root.toRealPath()));
+        assertNotEquals(root.toRealPath(), workspace.workspacePath());
         assertTrue(Files.exists(marker));
         assertTrue(Files.exists(gitHome));
 
@@ -65,7 +67,7 @@ class FileSystemRepositoryWorkspaceAdapterTest {
     }
 
     @Test
-    void rejectsEscapedCleanupTargetsAndIgnoresAlreadyMissingWorkspaces() {
+    void rejectsEscapedWorkspaceMappingsDuringCleanup() {
         var escapedWorkspace = new WorkspaceId("workspace-escaped");
         var escaped = new FileSystemRepositoryWorkspaceAdapter(root, Map.of(escapedWorkspace, root.resolveSibling("outside")));
         var escapedError = assertThrows(IllegalStateException.class, () -> escaped.cleanup(escapedWorkspace));

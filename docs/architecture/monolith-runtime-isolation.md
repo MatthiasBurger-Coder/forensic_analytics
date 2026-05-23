@@ -17,6 +17,14 @@ full quality gate are available. S16 then deprecates the service-root testbed
 runtime scenario for target behavior rather than claiming full in-process
 analysis parity.
 
+S17 extends that decision to the former mini and real repository E2E tests.
+`AnalyzeRepository`, local or file repository checkout and monolith
+analysis-session registration remain legacy rollback evidence only. Target
+coverage is split across `repository-source-service` repository preparation,
+workspace cleanup and source snapshot tests, `ingestion-service`
+`AnalyzeRepository` `UNIMPLEMENTED` tests and `analysis-orchestrator-service`
+pending `StartRepositoryToBtm` status tests.
+
 ## Isolation Decision
 
 The accepted repository-to-BTM path now runs through:

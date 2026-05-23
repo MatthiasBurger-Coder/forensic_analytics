@@ -28,9 +28,10 @@ retrieval APIs.
 `StartRepositoryToBtm` accepts a validated repository-to-BTM request and
 `GetRepositoryToBtmStatus` returns the stored readiness state. The current
 state is intentionally incomplete: the service records that repository source
-handoff has not completed, BTM delivery is not ready and Joern is skipped. It
-does not dispatch repository workers, run checkout, call JavaParser, call
-Joern, generate BTM files, render reports or expose artifact bytes.
+handoff has not completed, reports `waiting for repository source handoff`,
+BTM delivery is not ready and Joern is skipped. It does not dispatch
+repository workers, run checkout, call JavaParser, call Joern, generate BTM
+files, render reports or expose artifact bytes.
 
 `PlanInstrumentationTargets` remains `UNIMPLEMENTED` because instrumentation
 target selection would pull worker or analysis implementation into the

@@ -155,6 +155,11 @@ class ForensicIngestionGrpcEndpointTest {
 
         assertEquals(Status.Code.UNIMPLEMENTED, error.getStatus().getCode());
         assertEquals(Status.Code.UNIMPLEMENTED, malformedError.getStatus().getCode());
+        assertEquals(
+            "AnalyzeRepository is not implemented by ingestion-service; repository checkout is owned by repository-source-service",
+            error.getStatus().getDescription()
+        );
+        assertEquals(error.getStatus().getDescription(), malformedError.getStatus().getDescription());
     }
 
     @Test

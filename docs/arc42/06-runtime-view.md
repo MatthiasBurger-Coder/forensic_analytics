@@ -212,6 +212,16 @@ RPC from the transitional predecessor contract is intentionally not implemented
 in this service slice; a later contract migration must replace or retire that
 predecessor wire shape explicitly.
 
+S17 confirms that the former mini and real repository E2E path is not a target
+runtime flow. `AnalyzeRepository`, local or file repository checkout and
+monolith analysis-session registration remain deprecated target behavior and
+legacy rollback evidence only. Target runtime evidence is narrower:
+`repository-source-service` owns clean HTTPS repository preparation, opaque
+workspace IDs, cleanup and source snapshot descriptors; `ingestion-service`
+returns `UNIMPLEMENTED` for `AnalyzeRepository`; and
+`analysis-orchestrator-service` records an incomplete
+`WAITING_FOR_REPOSITORY` status without dispatching repository workers.
+
 Slice S06 verifies a local Joern analysis runtime boundary:
 
 ```text

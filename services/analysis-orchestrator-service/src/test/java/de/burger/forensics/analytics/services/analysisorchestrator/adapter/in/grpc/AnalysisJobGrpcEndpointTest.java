@@ -481,6 +481,27 @@ class AnalysisJobGrpcEndpointTest {
     }
 
     @Test
+    void rejectsLocalFileAndNonHttpsRepositoryToBtmInputs() {
+        for (String remote : List.of(
+            "file:///tmp/repo",
+            "/tmp/repo",
+            "http://example.test/repo.git",
+            "ssh://example.test/repo.git"
+        )) {
+            var failure = assertThrows(StatusRuntimeException.class, () -> stub.startRepositoryToBtm(
+                startRepositoryToBtmRequest("reject-repository-to-btm-" + Math.abs(remote.hashCode()))
+                    .setRepository(RepositoryToBtmRepositoryReference.newBuilder()
+                        .setRemoteUrl(remote)
+                        .setProvider("git"))
+                    .build()
+            ));
+
+            assertEquals(Status.Code.INVALID_ARGUMENT, failure.getStatus().getCode());
+            assertTrue(failure.getStatus().getDescription().contains("clean HTTPS URL"));
+        }
+    }
+
+    @Test
     void rejectsUnknownUnsafeAndConflictingRepositoryToBtmRequests() {
         stub.startRepositoryToBtm(startRepositoryToBtmRequest("start-original-repository-to-btm").build());
 
