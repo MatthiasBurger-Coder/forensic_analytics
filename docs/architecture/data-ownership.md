@@ -3,7 +3,8 @@
 ## Status
 
 FA-MSA-001 Slice 04 data-ownership and persistence split baseline with S11
-legacy persistence ownership clarification.
+legacy persistence ownership clarification and S18 public API ownership exit
+evidence.
 
 This document assigns target ownership for FA-MSA-001 persistent data areas
 before persistence is split or `forensic-analytics-persistence` is retired. It
@@ -102,6 +103,13 @@ S11 also clarifies that current in-memory target-service stores prove
 service-local replacement direction only. They do not prove durable production
 persistence, event sourcing, audit-grade ordering, event outbox behavior,
 broker readiness, schema/table names or final caller-free module retirement.
+
+S18 adds target-service public API and CLI client contract-test ownership for
+the repository-to-BTM submission/status path. This closes only the executable
+public API contract-test ownership gap for that target path. It does not assign
+legacy workspace/project administration, membership, asset, audit, retention
+or project-storage persistence to a target service and does not make
+`forensic-analytics-persistence` removal-safe.
 
 ## Artifact Byte Custody Rules
 

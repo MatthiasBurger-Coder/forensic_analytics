@@ -2,6 +2,8 @@ package de.burger.forensics.analytics.services.cliclient.adapter.out.http;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonParser;
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpServer;
 import de.burger.forensics.analytics.services.cliclient.domain.CliClientSubmissionCommand;
 import org.junit.jupiter.api.Test;
 
@@ -12,6 +14,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.Authenticator;
 import java.net.CookieHandler;
+import java.net.InetSocketAddress;
 import java.net.ProxySelector;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -25,9 +28,10 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executor;
 import java.util.concurrent.Flow;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -35,6 +39,93 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class HttpRepositoryAnalysisSubmissionClientTest {
+    @Test
+    void sendsOpenApiAlignedHeadersAndPayloadAndMapsAcceptedResponse() throws Exception {
+        var captured = new AtomicReference<CapturedRequest>();
+        var server = server(exchange -> {
+            captured.set(capture(exchange));
+            respond(exchange, 202, """
+                {
+                  "analysisRunId": "analysis-run-1",
+                  "status": "ACCEPTED",
+                  "statusUrl": "/repository-analyses/analysis-run-1",
+                  "jobsUrl": "/repository-analyses/analysis-run-1/jobs",
+                  "btmDeliveryStatus": "BTM_DELIVERY_NOT_READY",
+                  "btmDeliveryService": "BtmArtifactDeliveryService",
+                  "correlationId": "correlation-1",
+                  "diagnostics": [{"code": "WAITING", "message": "pending"}]
+                }
+                """);
+        });
+        try {
+            var result = client().submit(command(server));
+
+            assertEquals("analysis-run-1", result.analysisRunId());
+            assertEquals("ACCEPTED", result.status());
+            assertEquals("/repository-analyses/analysis-run-1", result.statusUrl());
+            assertEquals("/repository-analyses/analysis-run-1/jobs", result.jobsUrl());
+            assertEquals("BTM_DELIVERY_NOT_READY", result.btmDeliveryStatus());
+            assertEquals("BtmArtifactDeliveryService", result.btmDeliveryService());
+            assertEquals("correlation-1", result.correlationId());
+            assertEquals(1, result.diagnosticCount());
+            assertEquals("POST", captured.get().method());
+            assertEquals("/api/repository-analyses", captured.get().path());
+            assertEquals("application/json", captured.get().accept());
+            assertEquals("application/json; charset=utf-8", captured.get().contentType());
+            assertEquals("correlation-1", captured.get().correlationId());
+            assertEquals("idem-1", captured.get().idempotencyKey());
+            assertContainsAll(
+                captured.get().body(),
+                "\"requestId\":\"request-1\"",
+                "\"schemaVersion\":\"gateway.v1\"",
+                "\"repositoryUrl\":\"https://example.com/acme/demo.git\"",
+                "\"requestedOutputs\":[\"BTM_RULES\"]",
+                "\"provider\":\"github\"",
+                "\"branch\":\"main\"",
+                "\"commit\":\"\"",
+                "\"buildTool\":\"gradle\"",
+                "\"buildId\":\"build-1\"",
+                "\"rootProjectName\":\"demo\"",
+                "\"declaredModules\":[\":app\",\":lib\"]",
+                "\"attributes\":{}",
+                "\"ephemeral\":false",
+                "\"allowShallowClone\":true",
+                "\"allowPartialClone\":false",
+                "\"allowSparseCheckout\":false",
+                "\"timeoutSeconds\":60",
+                "\"maxWorkspaceBytes\":100000"
+            );
+            assertFalse(captured.get().body().contains("workspace-"));
+            assertFalse(captured.get().body().contains("/tmp"));
+        } finally {
+            server.stop(0);
+        }
+    }
+
+    @Test
+    void mapsPublicErrorEnvelopeWithoutLeakingPrivateResponseBody() throws Exception {
+        var server = server(exchange -> respond(exchange, 409, """
+            {
+              "code": "CONFLICT",
+              "retryable": false,
+              "correlationId": "correlation-1",
+              "message": "private path /tmp/workspace and token=abc must not leak"
+            }
+            """));
+        try {
+            var failure = assertThrows(PublicApiClientException.class, () -> client().submit(command(server)));
+
+            assertEquals(
+                "Public API error status=409 code=CONFLICT retryable=false correlationId=correlation-1",
+                failure.getMessage()
+            );
+            assertFalse(failure.getMessage().contains("/tmp"));
+            assertFalse(failure.getMessage().contains("token"));
+        } finally {
+            server.stop(0);
+        }
+    }
+
     @Test
     void sendsContractHeadersAndPayloadToPublicApiBaseUrl() {
         var httpClient = new RecordingHttpClient(
@@ -242,6 +333,57 @@ class HttpRepositoryAnalysisSubmissionClientTest {
         }
     }
 
+    @Test
+    void rejectsMalformedAcceptedResponseAsInvalidPublicJson() throws Exception {
+        var server = server(exchange -> respond(exchange, 202, "{\"status\":\"ACCEPTED\""));
+        try {
+            var failure = assertThrows(PublicApiClientException.class, () -> client().submit(command(server)));
+
+            assertEquals("Public API returned invalid JSON", failure.getMessage());
+        } finally {
+            server.stop(0);
+        }
+    }
+
+    private static HttpRepositoryAnalysisSubmissionClient client() {
+        return new HttpRepositoryAnalysisSubmissionClient(HttpClient.newHttpClient(), new Gson());
+    }
+
+    private static HttpServer server(ExchangeHandler handler) throws IOException {
+        var server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        server.createContext("/api/repository-analyses", exchange -> {
+            try {
+                handler.handle(exchange);
+            } finally {
+                exchange.close();
+            }
+        });
+        server.start();
+        return server;
+    }
+
+    private static CliClientSubmissionCommand command(HttpServer server) {
+        return new CliClientSubmissionCommand(
+            URI.create("http://127.0.0.1:" + server.getAddress().getPort() + "/api"),
+            "https://example.com/acme/demo.git",
+            "main",
+            "",
+            "request-1",
+            "gateway.v1",
+            List.of("BTM_RULES"),
+            "github",
+            "gradle",
+            "build-1",
+            "demo",
+            List.of(":app", ":lib"),
+            "correlation-1",
+            "idem-1",
+            60,
+            100_000,
+            true
+        );
+    }
+
     private static CliClientSubmissionCommand command() {
         return new CliClientSubmissionCommand(
             URI.create("http://gateway.example/api"),
@@ -262,6 +404,31 @@ class HttpRepositoryAnalysisSubmissionClientTest {
             100_000,
             true
         );
+    }
+
+    private static CapturedRequest capture(HttpExchange exchange) throws IOException {
+        return new CapturedRequest(
+            exchange.getRequestMethod(),
+            exchange.getRequestURI().getPath(),
+            exchange.getRequestHeaders().getFirst("Accept"),
+            exchange.getRequestHeaders().getFirst("Content-Type"),
+            exchange.getRequestHeaders().getFirst("X-Correlation-Id"),
+            exchange.getRequestHeaders().getFirst("Idempotency-Key"),
+            new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8)
+        );
+    }
+
+    private static void respond(HttpExchange exchange, int statusCode, String response) throws IOException {
+        var bytes = response.getBytes(StandardCharsets.UTF_8);
+        exchange.getResponseHeaders().set("Content-Type", "application/json");
+        exchange.sendResponseHeaders(statusCode, bytes.length);
+        exchange.getResponseBody().write(bytes);
+    }
+
+    private static void assertContainsAll(String content, String... expectedFragments) {
+        for (var fragment : expectedFragments) {
+            assertTrue(content.contains(fragment), () -> "Missing expected fragment: " + fragment);
+        }
     }
 
     private static final class RecordingHttpClient extends HttpClient {
@@ -445,5 +612,20 @@ class HttpRepositoryAnalysisSubmissionClientTest {
         public HttpClient.Version version() {
             return HttpClient.Version.HTTP_1_1;
         }
+    }
+
+    private interface ExchangeHandler {
+        void handle(HttpExchange exchange) throws IOException;
+    }
+
+    private record CapturedRequest(
+        String method,
+        String path,
+        String accept,
+        String contentType,
+        String correlationId,
+        String idempotencyKey,
+        String body
+    ) {
     }
 }

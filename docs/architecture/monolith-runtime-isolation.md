@@ -25,6 +25,13 @@ workspace cleanup and source snapshot tests, `ingestion-service`
 `AnalyzeRepository` `UNIMPLEMENTED` tests and `analysis-orchestrator-service`
 pending `StartRepositoryToBtm` status tests.
 
+S18 then moves the executable OpenAPI contract-test ownership for the current
+public repository-to-BTM submission/status shape into
+`query-report-api-service` and adds target CLI HTTP client coverage. This
+removes the "OpenAPI contract tests remain owned only by
+`forensic-analytics-rest`" blocker, but it does not make the retained runtime
+modules caller-free or removal-safe.
+
 ## Isolation Decision
 
 The accepted repository-to-BTM path now runs through:
@@ -45,7 +52,7 @@ in-process paths and rollback evidence:
 | Path | Current role | Slice 18 decision |
 |---|---|---|
 | `forensic-analytics-cli` | Local in-process command adapter for analysis and engine-request import | Target `cli-client` deprecates local `analyze` and `ingest-request` behavior in S16; predecessor module remains rollback evidence until caller-free removal |
-| `forensic-analytics-rest` | Current JDK HTTP adapter used by Boot and bootstrap paths | Retained as legacy REST behavior; not the target Gateway |
+| `forensic-analytics-rest` | Current JDK HTTP adapter used by Boot and bootstrap paths | Retained as legacy REST behavior; S18 public API contract-test ownership now also exists in `query-report-api-service`, but this module remains rollback evidence |
 | `forensic-analytics-bootstrap` | Manual combined gRPC and REST runtime assembly | Retained as rollback/manual local runtime evidence |
 | `forensic-analytics-boot-app` | Spring Boot wrapper for the current monolith adapters | Retained as legacy Boot runtime and rollback evidence |
 | `forensic-analytics-engine` | In-process facade around application repository analysis use cases | Retained as predecessor rollback evidence; service-root S16 no longer treats this as target runtime parity |

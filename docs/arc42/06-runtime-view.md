@@ -184,6 +184,13 @@ commands remain predecessor rollback evidence. S16 explicitly deprecates local
 silently routed to the public API. Status and report CLI reads require later
 explicit command mappings.
 
+S18 makes the current public API contract executable from the surviving target
+service side: `query-report-api-service` owns a service-local
+`GatewayOpenApiContractTest` for `contracts/openapi/gateway-api.yaml`, and
+`cli-client` owns HTTP adapter coverage for headers, payload, accepted response
+mapping and redacted errors. The public API shape is unchanged, so no frontend
+contract drift is introduced by S18.
+
 Optional services such as `btm-generation-service`, `graph-replay-service` and
 `incident-analysis-service` may be added only after later slices define
 contracts, owner-query access, projection rebuild rules, storage ownership and

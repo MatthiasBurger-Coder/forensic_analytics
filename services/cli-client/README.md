@@ -12,6 +12,13 @@ S16 records local `analyze` and `ingest-request` as deprecated target behavior.
 analysis execution, does not implement engine-request import and does not route
 local paths or engine-request files to the public API.
 
+S18 keeps that public-client boundary and adds deterministic HTTP adapter
+coverage for the OpenAPI-aligned repository-to-BTM submission request. The test
+verifies headers, JSON payload shape, accepted response mapping and redacted
+error handling against a local HTTP server. It does not add status or report
+commands and does not move local workspace, persistence or analysis behavior
+into the client.
+
 ## Build And Test
 
 ```bash

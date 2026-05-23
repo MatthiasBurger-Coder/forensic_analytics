@@ -33,6 +33,13 @@ remain later workflow slices. Planned OpenAPI routes are contract design
 evidence, not runtime implementation evidence until later slices implement and
 test them.
 
+S18 adds service-local executable OpenAPI contract ownership for the current
+repository-to-BTM submission/status routes. The service test
+`GatewayOpenApiContractTest` reads `contracts/openapi/gateway-api.yaml` and
+keeps the target public API contract executable outside
+`forensic-analytics-rest`. This does not change the REST shape and does not
+claim additional boot, container, persistence or frontend readiness.
+
 ## Analysis Orchestrator API Client
 
 The service uses service-local generated Protobuf classes from
