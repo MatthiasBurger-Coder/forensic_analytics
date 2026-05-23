@@ -183,8 +183,10 @@ Payload fields match `analysis.job.failed` and add:
 
 Producer: service that owns produced artifact bytes
 
-Consumers: S04-approved canonical artifact metadata owner and downstream
-worker services
+Consumers: the producer-local metadata owner named in `metadataOwnerService`,
+`analysis-orchestrator-service` for job-to-artifact references,
+`query-report-api-service` for owner-authorized public projections and
+downstream worker services
 
 Payload:
 
@@ -198,8 +200,11 @@ Payload:
 | `completeness` | enum | yes | Completeness of artifact set. |
 
 Analysis Store acceptance registers canonical artifact metadata only for the
-current predecessor flow. In the FA-MSA-001 target flow, the S04-approved
-canonical artifact metadata owner registers accepted artifact metadata only.
+current predecessor flow. In the FA-MSA-001 target flow, there is no shared
+canonical artifact metadata store. The producer that owns artifact bytes owns
+producer-local artifact metadata. `analysis-orchestrator-service` may keep
+job-to-artifact references only, and `query-report-api-service` may keep public
+projection or generated-package metadata only after owner-authorized access.
 This registration does not transfer byte custody unless a later explicit
 handoff or object-access contract records that transfer.
 
@@ -207,9 +212,8 @@ handoff or object-access contract records that transfer.
 
 Producer: `query-report-api-service`
 
-Consumers: `query-report-api-service` service-local report adapter, optional
-later `report-generation-service` only if a later requirement approves it, and
-the S04-approved report artifact owner
+Consumers: `query-report-api-service` service-local report adapter and optional
+later `report-generation-service` only if a later requirement approves it
 
 Payload:
 
@@ -223,7 +227,7 @@ Payload:
 Producer: `query-report-api-service` service-local report adapter or optional
 later `report-generation-service` only if a later requirement approves it
 
-Consumers: `query-report-api-service` and the S04-approved report artifact owner
+Consumers: `query-report-api-service`
 
 Payload:
 

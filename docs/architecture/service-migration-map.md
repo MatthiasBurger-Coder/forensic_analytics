@@ -17,9 +17,14 @@ starts.
 
 FA-MSA-001-LMR S01 revalidated the retirement inventory and found deletion is
 still unsafe: 72 direct legacy Gradle project references, 653 production
-legacy imports and 628 test legacy imports remain. The map continues to treat
-all listed `forensic-analytics-*` modules as retained legacy or rollback
-evidence until later slices prove caller-free replacement parity.
+legacy imports and 628 test legacy imports remain. S11 confirms
+`forensic-analytics-persistence` is still retained legacy or rollback evidence:
+productive target services do not import or build-depend on it, but
+workspace/project administration, membership, asset, audit, retention and
+legacy project-storage behavior still have no mandatory FA-MSA-001 target
+owner. The map continues to treat all listed `forensic-analytics-*` modules as
+retained legacy or rollback evidence until later slices prove caller-free
+replacement parity.
 
 ## Target Mapping
 
@@ -45,7 +50,7 @@ operator-visible migration notes and the relevant `QUALITY.md` quality gate.
 |---|---|---|
 | `forensic-analytics-domain` | Split into service-local domain models. | Caller-free evidence across production code, tests, build files and docs; service-local domain parity or explicit deprecation; rollback/operator note; required quality gate. |
 | `forensic-analytics-application` | Split into service-local application/use-case code. | Caller-free evidence; verified service owners and contracts; replacement parity or explicit deprecation; rollback/operator note; required quality gate. |
-| `forensic-analytics-persistence` | Replace with service-local persistence adapters owned by the services named in the S04 ownership matrix. | Caller-free evidence; service-local persistence replacement for each S04 owner; replacement parity or explicit deprecation; rollback/operator note; required quality gate. |
+| `forensic-analytics-persistence` | Replace mandatory repository-to-BTM persistence concerns with service-local state owned by the S04/S11 ownership matrix; retain workspace/project administration, membership, asset, audit, retention and legacy project-storage behavior until a later owner requirement or explicit deprecation exists. | Caller-free evidence; service-local persistence replacement for each assigned owner; explicit owner decision or deprecation for retained legacy-only areas; replacement parity or explicit deprecation; rollback/operator note; required quality gate. |
 | `forensic-analytics-logging` | Replace with service-local logging configuration or `observability-stack` deployment material. | Caller-free evidence; service-local diagnostics or deployment replacement; explicit redaction behavior; rollback/operator note; required quality gate. |
 | `forensic-analytics-observability` | Replace with service-local diagnostics/correlation configuration or deployment observability material. | Caller-free evidence; service-local observability replacement; replacement parity or explicit deprecation; rollback/operator note; required quality gate. |
 | `forensic-analytics-bootstrap` | Retire after service-local bootstraps and runtime start paths are verified. | Caller-free evidence; service-local start/health/container parity; rollback/operator note; required quality gate. |

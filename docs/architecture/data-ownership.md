@@ -2,7 +2,8 @@
 
 ## Status
 
-FA-MSA-001 Slice 04 data-ownership and persistence split baseline.
+FA-MSA-001 Slice 04 data-ownership and persistence split baseline with S11
+legacy persistence ownership clarification.
 
 This document assigns target ownership for FA-MSA-001 persistent data areas
 before persistence is split or `forensic-analytics-persistence` is retired. It
@@ -51,6 +52,14 @@ Forbidden:
 | CLI state | `cli-client` | Local only | No forensic evidence ownership |
 | Observability data | `observability-stack` for operational configuration and dashboards | Logs/metrics/traces through operational tools | Diagnostics only, not forensic evidence |
 | Test data | `testbed` | Test-only | Non-production only |
+| Workspace lifecycle state | Retained legacy workspace/application path; no mandatory FA-MSA-001 target service owns this state yet | Current legacy APIs only until a later requirement creates a workspace administration owner or explicitly deprecates the feature | S11 retention-only; blocked for retirement |
+| Workspace membership state | Retained legacy workspace/application path; no mandatory FA-MSA-001 target service owns this state yet | Current legacy APIs only until a later requirement creates a workspace administration owner or explicitly deprecates the feature | S11 retention-only; blocked for retirement |
+| Project lifecycle state | Retained legacy workspace/application path; no mandatory FA-MSA-001 target service owns this state yet | Current legacy APIs only until a later requirement creates a project administration owner or explicitly deprecates the feature | S11 retention-only; blocked for retirement |
+| Project membership state | Retained legacy workspace/application path; no mandatory FA-MSA-001 target service owns this state yet | Current legacy APIs only until a later requirement creates a project administration owner or explicitly deprecates the feature | S11 retention-only; blocked for retirement |
+| Workspace and project assets | Retained legacy asset/application path; generated report package ownership remains with `query-report-api-service` only for mandatory query/report scope | Current legacy asset APIs for workspace/project assets; public report package APIs after owner-specific report contracts exist | S11 retention-only for workspace/project assets; report package owner assigned |
+| Workspace audit events | Retained legacy audit/application path; no mandatory FA-MSA-001 target service owns audit-grade workspace events yet | Current legacy audit APIs only until a later requirement creates an audit owner or explicitly deprecates the feature | S11 retention-only; durable audit ordering not claimed |
+| Retention policy metadata | Retained legacy workspace/application path; no mandatory FA-MSA-001 target service owns this state yet | Current legacy retention APIs only until a later requirement creates a workspace administration owner or explicitly deprecates the feature | S11 retention-only; blocked for retirement |
+| Project storage path resolution | Retained legacy storage adapter path for legacy workspace/project storage; producer services own their own artifact/object paths | Legacy storage resolver only for retained workspace/project paths; target services expose owner-issued artifact references or owner APIs, never private paths | S11 retention-only for legacy storage resolver |
 
 ## Transitional Ownership Evidence
 
@@ -78,6 +87,21 @@ FA-MSA-001 target ownership splits that predecessor responsibility as follows:
 The current `forensic-analytics-persistence` module is a monolith persistence
 adapter. It remains current implementation evidence until later service slices
 provide service-local persistence, replacement tests and caller-free proof.
+
+S11 clarifies that `forensic-analytics-persistence` contains retained
+workspace/project administration, membership, asset, audit, retention and
+legacy project-storage behavior that is not part of the mandatory FA-MSA-001
+repository-to-BTM target acceptance path. Those areas remain legacy
+rollback/current-state evidence. They must not be silently moved to
+`analysis-orchestrator-service`, `ingestion-service`,
+`query-report-api-service` or another target service without a later
+requirement, owner decision, contract impact review, tests and rollback or
+deprecation notes.
+
+S11 also clarifies that current in-memory target-service stores prove
+service-local replacement direction only. They do not prove durable production
+persistence, event sourcing, audit-grade ordering, event outbox behavior,
+broker readiness, schema/table names or final caller-free module retirement.
 
 ## Artifact Byte Custody Rules
 
