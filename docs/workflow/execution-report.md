@@ -2,7 +2,7 @@
 
 ## Current Status
 
-Status: S06 completed; ready for S07 final quality and release-readiness closure.
+Status: S07 completed; final quality and release-readiness closure passed.
 
 | Field | Value |
 |---|---|
@@ -576,6 +576,82 @@ S06 handoff:
 - S07 must not re-open legacy source-tree deletion unless a new active
   dependency is found.
 
+## S07 Quality Gate And Release Readiness
+
+Status: completed.
+
+Scope:
+
+- Verified the final service-only Gradle topology after all legacy
+  `forensic-analytics-*` source trees were physically removed.
+- Preserved S16 predecessor CLI deprecation evidence in
+  `contracts/cli/gateway-cli-contract.md` so the active testbed can still prove
+  that local `analyze` and `ingest-request` vocabulary is not silently routed to
+  the public API after S05.
+- Added focused regression coverage for:
+  - repository-to-BTM start-command boundary validation;
+  - defensive analysis-orchestrator enum-to-protobuf mappings;
+  - Joern filesystem workspace resolution, artifact collection, provenance
+    completeness and semantic artifact byte-read integrity.
+- Did not re-register legacy Gradle projects, restore legacy source roots, add
+  shared Java modules or claim independent production runtime/deployment
+  readiness beyond the verified service build and tests.
+
+Gate repair notes:
+
+- Initial isolated S07 full gate failed in
+  `RepositoryAnalysisTestbedTest.targetCliDocumentsLegacyLocalCommandDeprecationWithoutInProcessRouting`
+  because `contracts/cli/gateway-cli-contract.md` lost the exact historical
+  `S16` / `legacy in-process adapters` evidence fragments that the active
+  testbed asserts.
+- The testbed failure was fixed by wording-only contract provenance; no CLI,
+  REST, gRPC, service behavior or wire contract changed.
+- The next full gate passed all tests and JaCoCo module tasks but failed the
+  root `checkPackageCoverage` package threshold for three packages:
+  `analysisorchestrator.adapter.in.grpc`,
+  `analysisorchestrator.application` and
+  `joernanalysis.adapter.out.filesystem`.
+- Coverage was repaired with focused tests rather than lowering thresholds or
+  excluding packages. Post-repair package branch coverage was:
+  - `analysisorchestrator.adapter.in.grpc`: `83.90%`;
+  - `analysisorchestrator.application`: `85.19%`;
+  - `joernanalysis.adapter.out.filesystem`: `80.44%`.
+
+Verification:
+
+- `./gradlew projects --dependency-verification strict --console=plain --stacktrace`:
+  passed; project model contains only the root, `:services` and active service
+  subprojects.
+- `git ls-files "forensic-analytics-*" | wc -l`: `0`.
+- `./gradlew :services:testbed:test --dependency-verification strict --console=plain --stacktrace --no-daemon`:
+  passed after the CLI contract provenance fix.
+- `./gradlew :services:analysis-orchestrator-service:test :services:joern-analysis-service:test --dependency-verification strict --console=plain --stacktrace --no-daemon`:
+  passed after targeted coverage tests were added.
+- `./gradlew :services:analysis-orchestrator-service:jacocoTestReport :services:joern-analysis-service:jacocoTestReport checkPackageCoverage --dependency-verification strict --console=plain --stacktrace --no-daemon`:
+  passed.
+- `./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace --no-daemon`:
+  passed; `206` tasks executed.
+
+Reviewer result:
+
+- Senior Tester: READY to run the S07 gate; no extra targeted tests were
+  required before the first full gate.
+- Microservice Runtime Readiness Reviewer: READY to run S07 with the constraint
+  that this slice must not claim production runtime, Docker image, Compose,
+  Swarm or Kubernetes readiness beyond verified gates.
+- Senior DevOps: initial gate was BLOCKED by a daemon/lock abort; after daemon
+  cleanup and `--no-daemon` isolation, the gate proceeded to actionable test
+  and coverage failures.
+- Quality Reviewer: identified the package coverage blockers and recommended
+  keeping the new focused tests, then rerunning targeted service tests and the
+  full gate.
+
+S07 closure:
+
+- Final local quality gate passed.
+- Legacy tracked source-tree count remains `0`.
+- No remaining S07 stop condition is open.
+
 ## Slice Execution Status
 
 | Slice | Status | Notes |
@@ -587,7 +663,7 @@ S06 handoff:
 | S04 | Completed | Active service and deployment documentation blockers cleared; service-local Gradle dry-runs and project-model gate passed. |
 | S05 | Completed | Removed all 16 tracked legacy source trees; post-delete leakage scans, project-model gate and repository test gate passed. |
 | S06 | Completed | Closed arc42, ADR, architecture, workflow, contract-provenance and testbed wording after deletion evidence; local gates and reviewer rechecks passed. |
-| S07 | Not started | Runs final full local quality gate and release-readiness evidence. |
+| S07 | Completed | Final full local quality gate passed after testbed provenance and package coverage repairs; legacy tracked source-tree count remains `0`. |
 
 ## Open Stop Conditions For Execution
 

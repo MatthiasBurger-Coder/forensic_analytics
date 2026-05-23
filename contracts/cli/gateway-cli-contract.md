@@ -12,8 +12,9 @@ FA-MSA-001 the target CLI is `cli-client` and the public API authority is
 `query-report-api-service`; Gateway naming is retained only as command, option
 and file compatibility evidence.
 
-Earlier service-migration evidence recorded `analyze` and `ingest-request` as
-deprecated target behavior for `cli-client`. They remain predecessor command
+Earlier S16 service-migration evidence recorded `analyze` and `ingest-request`
+as deprecated target behavior for `cli-client` while legacy in-process adapters
+were still retained as predecessor evidence. They remain predecessor command
 vocabulary only after S05 source-tree removal; target CLI implementations must
 reject those commands instead of routing local paths or engine-request files to
 the public API.
