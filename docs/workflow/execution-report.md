@@ -4,10 +4,10 @@
 
 | Field | Value |
 |---|---|
-| Workflow version | `fa-msa-001-legacy-module-retirement-20260522-v1` |
+| Workflow version | `fa-msa-001-legacy-module-retirement-20260522-v2` |
 | Requirement ID | `FA-MSA-001-LMR` |
 | Branch | `architecture/workflow-legacy-module-retirement-20260522` |
-| Status | S13 completed; continue with S14 |
+| Status | S13 completed; S14 deletion stopped; refined workflow resumes at S14 readiness reconciliation |
 
 ## Creation Evidence
 
@@ -17,7 +17,7 @@
 | Branch | `architecture/workflow-legacy-module-retirement-20260522` |
 | Profile | `FULL_PATH` |
 | Quality authority | `QUALITY.md` |
-| Decision record | `READY_FOR_WORKFLOW` |
+| Decision record | `READY_FOR_WORKFLOW` after S14 workflow-create refinement |
 
 ## Execution Log
 
@@ -58,6 +58,11 @@
 | S13 | COMPLETED |
 | S14 | NEXT |
 | S15 | PENDING |
+| S16 | PENDING |
+| S17 | PENDING |
+| S18 | PENDING |
+| S19 | PENDING |
+| S20 | PENDING |
 
 ## Notes
 
@@ -87,9 +92,10 @@ changed architecture evidence that later slices must re-read.
 
 Workflow-create refinement after the S03 execution blocker changes S03 through
 S13 from early deletion slices into parity, handoff, caller-migration and
-replacement-readiness slices. S14 remains the only physical module
-deregistration and source-tree removal gate. Resume execution at S03 after the
-refinement checkpoint.
+replacement-readiness slices. The later S14 execution blocker changes S14 into
+a no-deletion readiness reconciliation gate and moves physical module
+deregistration/source-tree removal to S19 after S15 through S18. Resume
+execution at S14 after the refinement checkpoint.
 
 S03 confirms the repository-source service is not a Java parser owner and does
 not implement `AnalyzeSourceSnapshotWithJavaAst`. The slice hardens service
@@ -211,3 +217,17 @@ matches the legacy `forensic-analytics-testbed` tests and resources after
 package relocation, while documenting that both testbeds still keep 13
 test-scoped legacy dependencies. This is parity and rollback evidence only; it
 does not authorize legacy module removal.
+
+S14 deletion review stopped with a real blocker. Senior DevOps, Senior System
+Architect, Senior Java Backend, Microservice Senior Expert and Senior Tester
+reviews agreed that source-tree deletion is unsafe while
+`settings.gradle.kts` still registers all 16 listed legacy modules and
+`services:testbed` keeps 13 test-scoped legacy dependencies plus legacy
+imports in `RepositoryAnalysisTestbedTest`,
+`RepositoryAnalysisMiniEndToEndTest`,
+`RepositoryAnalysisRealRepositoryEndToEndTest` and
+`WildFlyRepositoryHardeningTest`. Productive services remain clean under the
+checked main-source and productive-build scans. Workflow-create refinement
+therefore changes S14 into a no-deletion `NO_REMOVAL_SAFE` readiness gate,
+adds S15 through S18 migration/deprecation slices, moves deletion to S19 and
+moves closure to S20.

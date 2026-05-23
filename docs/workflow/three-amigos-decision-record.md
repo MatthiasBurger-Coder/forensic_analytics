@@ -4,11 +4,11 @@
 
 | Field | Value |
 |---|---|
-| Workflow version | `fa-msa-001-legacy-module-retirement-20260522-v1` |
+| Workflow version | `fa-msa-001-legacy-module-retirement-20260522-v2` |
 | Requirement ID | `FA-MSA-001-LMR` |
 | Parent requirement | `FA-MSA-001` |
-| Decision | `REQUIRES_REFINEMENT` resolved by workflow-create refinement |
-| Confidence | 92 percent for target, 64 percent for previous S03 deletion shape |
+| Decision | `READY_FOR_WORKFLOW` after S14 workflow-create refinement |
+| Confidence | 94 percent for refined no-deletion S14 readiness gate and S15-S20 follow-up sequence |
 | Execution profile | `FULL_PATH` |
 
 ## Normalized Requirement
@@ -25,6 +25,15 @@ by closure, no productive `forensic-analytics-*` Gradle module remains
 registered or referenced; every removed behavior must first be implemented in
 the owning target service or explicitly deprecated with tests, migration notes
 and rollback evidence.
+
+2026-05-22 S14 refinement: workflow execution reached the final deletion gate
+and all S14 reviewers stopped deletion. Productive services are clean under the
+checked main-source and productive-build scans, but `services:testbed` still
+keeps 13 test-scoped legacy dependencies and legacy imports as
+rollback/regression evidence. S14 is therefore refined into a
+`NO_REMOVAL_SAFE` readiness reconciliation gate. S15 through S18 now own the
+remaining testbed, runtime, public API, boot/bootstrap and persistence exit
+work. S19 is the first deletion-capable slice, and S20 is closure.
 
 ## Requirement Classification
 
@@ -47,11 +56,11 @@ and rollback evidence.
 
 | Role | Finding |
 |---|---|
-| Senior Requirement Engineer | REQUIRES REFINEMENT FOR S03. The end goal is correct, but early retirement slices must become parity, handoff and caller-migration slices before removal. |
-| Senior System Architect | REQUIRES REFINEMENT. S03 mixed service parity, caller migration and physical deletion; removal must move to the final S14 gate. |
-| Senior Java Backend Developer | REQUIRES REFINEMENT. Consumers such as the orchestrator, Boot, Bootstrap and testbed must be rewired or retired before adapter deletion. |
+| Senior Requirement Engineer | READY AFTER S14 REFINEMENT. S14 must record readiness and blockers, not delete; follow-up slices must resolve testbed/runtime blockers before removal. |
+| Senior System Architect | READY AFTER S14 REFINEMENT. S14 conflicts with architecture docs when deletion-oriented; removal moves to S19 after S15-S18. |
+| Senior Java Backend Developer | READY WITH STOP CONDITIONS. Testbed scenarios cannot be directly ported without fabricating parity; target-service behavior must be implemented or explicitly deprecated first. |
 | Senior React Frontend Developer | NO DIRECT FRONTEND IMPLEMENTATION. S08/S09 must preserve or version public API and CLI behavior before caller migration. |
-| Senior Tester | REQUIRES REFINEMENT. Existing regression coverage may be removed only after service-local parity or explicit deprecation tests exist. |
+| Senior Tester | READY WITH TESTBED GATES. Existing regression coverage may be removed only after service-local parity or explicit deprecation tests exist. |
 
 ## Specialist Findings
 
@@ -84,7 +93,8 @@ disjoint locks.
 ```text
 S00 -> S01 -> S02 -> S03/S04/S05/S06/S10
 S03/S04/S05/S06 -> S07 -> S08 -> S09
-S07/S08/S10 -> S11 -> S12 -> S13 -> S14(final removal) -> S15
+S07/S08/S10 -> S11 -> S12 -> S13 -> S14(no-deletion readiness)
+S14 -> S15/S16/S17/S18 -> S19(final removal) -> S20
 ```
 
 ## Open Questions
@@ -96,11 +106,13 @@ S07/S08/S10 -> S11 -> S12 -> S13 -> S14(final removal) -> S15
 
 ## Blockers
 
-No blocker prevents workflow refinement. Direct module deletion is blocked
-until S14 records caller-free evidence, replacement or deprecation parity,
-rollback notes and required quality-gate success.
+No blocker prevents workflow refinement. Direct module deletion remains blocked
+until S15 through S18 remove or deprecate the remaining testbed/runtime/public
+API/ownership blockers and S19 records caller-free evidence, rollback notes and
+required quality-gate success.
 
 ## Decision
 
-`READY_FOR_WORKFLOW` after refinement. Resume execution at S03 as a parity and
-handoff readiness slice, not as a deletion slice.
+`READY_FOR_WORKFLOW` after S14 refinement. Resume execution at S14 as a
+no-deletion retirement readiness reconciliation slice, then continue through
+S15-S18 before any S19 removal candidate is attempted.

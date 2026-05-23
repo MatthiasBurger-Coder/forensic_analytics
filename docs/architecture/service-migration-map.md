@@ -64,10 +64,11 @@ central `de.burger.forensics.analytics.domain` or
 service build files do not depend on `forensic-analytics-domain`,
 `forensic-analytics-application` or another `services:*` implementation
 project. The retained central domain and application modules remain
-current-state and rollback evidence until S14 proves caller-free retirement
-across build files, production code, tests and documentation.
-`services:testbed` keeps test-scoped legacy dependencies as non-production S13
-and S14 evidence, not as productive service coupling.
+current-state and rollback evidence until S15 through S18 resolve remaining
+testbed, runtime, public API, boot/bootstrap and ownership blockers and S19
+proves caller-free retirement across build files, production code, tests and
+documentation. `services:testbed` keeps test-scoped legacy dependencies as
+non-production S13/S14 evidence, not as productive service coupling.
 
 ## Current Implementation Evidence
 
@@ -160,7 +161,7 @@ guarded by service ArchUnit rules plus a build-isolation regression that scans
 productive service build files for forbidden central domain/application or
 cross-service project dependencies. This does not authorize deletion of the
 central modules, because testbed rollback coverage and remaining legacy module
-callers are handled by S13 and S14.
+callers are handled by S13 through S18 before any S19 removal candidate.
 
 ## Migration Sequencing
 

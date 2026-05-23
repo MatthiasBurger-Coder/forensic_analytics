@@ -18,8 +18,13 @@
 | S11 | Senior Analysis Storage Architect | Data Ownership Steward, Senior Java Backend, Microservice Senior Expert, Senior Tester |
 | S12 | Senior System Architect | Senior Java Backend, Microservice Senior Expert, ArchUnit Review, Senior Tester |
 | S13 | Senior Tester | Microservice Senior Expert, Senior DevOps, Senior Java Backend |
-| S14 | Senior DevOps | Senior System Architect, Senior Java Backend, Microservice Senior Expert, Senior Tester |
-| S15 | Senior System Architect | Senior DevOps, Senior Tester, Runtime Readiness Expert, Senior Documentation Engineer |
+| S14 | Senior System Architect | Senior DevOps, Senior Java Backend, Microservice Senior Expert, Senior Tester |
+| S15 | Senior Tester | Senior Java Backend, Microservice Senior Expert, Senior DevOps, Senior System Architect |
+| S16 | Senior Java Backend | Senior Tester, Microservice Senior Expert, Contract Governance Expert, Senior DevOps |
+| S17 | Senior Java Backend | Senior gRPC/Proto Specialist, Ingestion Handoff Review, Microservice Senior Expert, Senior Tester |
+| S18 | Senior System Architect | Contract-First API Steward, Data Ownership/Persistence Steward, Senior React Frontend, Senior DevOps, Senior Tester |
+| S19 | Senior DevOps | Senior System Architect, Senior Java Backend, Microservice Senior Expert, Senior Tester |
+| S20 | Senior System Architect | Senior DevOps, Senior Tester, Runtime Readiness Expert, Senior Documentation Engineer |
 
 ## Mandatory Review Rules
 

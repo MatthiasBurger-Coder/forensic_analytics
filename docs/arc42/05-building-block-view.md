@@ -102,9 +102,10 @@ S12 verifies that productive service code keeps domain and application models
 inside service-local packages and that productive service build files do not
 depend on the retained central `forensic-analytics-domain` or
 `forensic-analytics-application` modules. Those central modules remain
-current-state and rollback evidence until S14 proves caller-free retirement.
-The non-production `services:testbed` test dependencies remain S13/S14
-regression evidence and are not productive service coupling.
+current-state and rollback evidence until S15 through S18 resolve the remaining
+testbed, runtime, public API and ownership blockers and S19 proves
+caller-free retirement. The non-production `services:testbed` test dependencies
+remain S13/S14 regression evidence and are not productive service coupling.
 
 ## 5.8 Cross-cutting Logging Module
 
@@ -270,9 +271,10 @@ mandatory FA-MSA-001 closure unless a later requirement makes them mandatory.
 
 Slice S14 is a retirement-readiness decision, not a direct deletion slice.
 Current caller evidence keeps the central `forensic-analytics-*` modules as
-legacy in-process and rollback building blocks until later follow-up slices
-prove caller-free evidence, replacement parity and rollback or explicit
-deprecation. Retaining those modules is not a microservice-readiness claim.
+legacy in-process and rollback building blocks until S15 through S18 prove
+replacement or explicit deprecation for the remaining blockers and S19 proves
+caller-free evidence. Retaining those modules is not a microservice-readiness
+claim.
 
 ADR-0018 accepts initial logical contracts for target service communication.
 Contracts marked as planned are design artifacts only; they do not prove that

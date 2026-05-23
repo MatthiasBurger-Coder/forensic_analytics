@@ -219,14 +219,22 @@ to `NO_REMOVAL_SAFE`. The new `services:testbed` root preserves the legacy
 regression surface in a service-root location, which is useful parity evidence
 but still a test dependency on retained monolith modules.
 
+Workflow-create refinement after the S14 execution stop keeps S14 as a
+no-deletion readiness gate. S15 through S18 now own the remaining testbed,
+runtime, public API, boot/bootstrap and ownership exits. S19 is the first
+deletion-capable slice and may remove only verified caller-free candidates.
+
 Current evidence remains non-empty:
 
-- 58 build-file references to the S14 legacy module candidates;
+- all 16 listed legacy modules remain registered in `settings.gradle.kts`;
+- `services:testbed` still has 13 test-scoped legacy module dependencies;
 - 633 production imports into retained `application`, `domain`, `persistence`,
   `logging`, `observability`, `rest`, `bootstrap`, `boot` or `engine`
   packages;
 - 594 test imports into those retained packages;
-- 13 `services:testbed` test dependencies on retained legacy modules.
+- focused S14 service production scans found no legacy imports in
+  `services/**/src/main`, while service test scans still find legacy imports in
+  `services/testbed/src/test`.
 
 These findings block direct module retirement. The next safe action is
 path-specific migration or explicit deprecation, followed by a smaller

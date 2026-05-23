@@ -4,7 +4,7 @@
 
 | Field | Value |
 |---|---|
-| Workflow version | `fa-msa-001-legacy-module-retirement-20260522-v1` |
+| Workflow version | `fa-msa-001-legacy-module-retirement-20260522-v2` |
 | Requirement ID | `FA-MSA-001-LMR` |
 | Parent requirement | `FA-MSA-001` |
 | Branch | `architecture/workflow-legacy-module-retirement-20260522` |
@@ -26,8 +26,9 @@ routing rules, workflow files, role files or skill files.
 - Persistence ownership and stored evidence boundaries.
 - Runtime boot, bootstrap and Docker/readiness evidence.
 - Observability/logging decoupling.
-- Testbed regression parity.
-- Final Gradle deregistration and source-tree deletion.
+- Testbed regression parity and legacy dependency exit.
+- S14 retirement readiness reconciliation.
+- S19 final Gradle deregistration and source-tree deletion.
 
 ## Forbidden Areas
 
@@ -102,16 +103,21 @@ git diff --check
 | `.agents/skills/three-amigos-requirement-gatekeeper/SKILL.md` | `95c04f47127f5149bb39a7e1b82b2690803cc765cad5d18274a82d415931e9ad` |
 | `.agents/skills/execution-profile-router/SKILL.md` | `40b7a5c9a2d8896b3e2f8c384300979a13d7d35986a5bd4bc4d3b5760a7d52b7` |
 | `.agents/skills/microservice-migration-safety-gate/SKILL.md` | `8579030acf72d513a3386d1325e73f146c5185106d633adc07c138eaad175f15` |
-| `docs/workflow/workflow.md` | `9fbcc72e3d5c94d4e6238f81fb4d9f496ca53f6a9a17b10b2ffa77301c2921cc` |
-| `docs/workflow/slice-dependency-map.md` | `45bae9d5c84b3b2054406bb0b9f1f63cdbe0e4acafa836ebed0306093d7dce12` |
-| `docs/workflow/quality-and-leakage-gates.md` | `d14265dbc64b2182d561bb027a07114a674f001de4a123ce508ea4f08ad1af63` |
-| `docs/workflow/three-amigos-decision-record.md` | `fc614b339bf9b571c1841ee84f43f8a475397b7d41fb53d875076284eccc62da` |
-| `docs/workflow/execution-report.md` | `91e8521108f964f93142482bc2563c4830f8ddd409071a119b1f73325e313484` |
+| `docs/workflow/workflow.md` | `cb19ea89e0a20f19d652aca675504ef4d3c73a1e2be3620d45ab49b7da68944a` |
+| `docs/workflow/slice-dependency-map.md` | `625546d35a0774cc33b7f958d6b70d538275a10535a4975935fc2e10511b2cdf` |
+| `docs/workflow/quality-and-leakage-gates.md` | `25f99e669868f23c6bb704d88c74e6d1e3428bdc4749f97dd7dd6d5090b6b5f4` |
+| `docs/workflow/three-amigos-decision-record.md` | `34639d46c625f9daf2eca3d74556625144e2d75bfe5c5c3f266f44ccf279e14c` |
+| `docs/workflow/execution-report.md` | `f188d9e77adccfb4a4502618ffd00d6626e4b261431081c127532fc7263a2414` |
+| `docs/workflow/role-ownership.md` | `d0d1ccdbd149dbdbe77097d40f4b0bfa1c4c7923a6aea8634313865135c15b7e` |
+| `docs/workflow/arc42-check-status.md` | `ea164adde7b8ac459d5b94fdae952e64635c8d4a327267dde4fe8c416a29bdae` |
 | `docs/adr/ADR-0017-target-microservices-service-landscape.md` | `ddf2d281e8bb8d8924f4622e532da29e8f94038a66ae57d3d06a4ff85e72e95f` |
 | `docs/architecture/target-microservices-architecture.md` | `f78ae9aa0e7f1ee7446f07b564408a6ff5610f7e1b9f6702823e9d38363a3550` |
-| `docs/architecture/current-coupling-map.md` | `c28dd36d218511848bf376ce5d5828449b87567f6012cc765ef0544ccacef4f4` |
-| `docs/architecture/service-migration-map.md` | `7af36b597400bbcda014666f47132aad621857b0f1f3408d0dfaeefa87779c07` |
+| `docs/architecture/current-coupling-map.md` | `d8ac37e4304bbce12ecf6ec1ea438b8f9636497a18174faa9079cade58040050` |
+| `docs/architecture/service-migration-map.md` | `9c5a34d1acf9b6e11098a6a57ebecd979350dde6f1b5584170312319c3e6e66d` |
+| `docs/architecture/service-boundaries.md` | `8f8596a7678738726f92fdf8cd27ffe5fb7b9cbc792042289e0dab415e8691e2` |
 | `docs/architecture/service-communication-matrix.md` | `718050f8c6fead496896677df4ac5e76dd3423979292a9c1fd5cb4cd9250cd7d` |
+| `docs/arc42/05-building-block-view.md` | `6bf913c1ef1a0bd4be6f215acc9fd27ffe081421d100e3a1139b1fb46b9ca861` |
+| `docs/arc42/07-deployment-view.md` | `7293455347900d97d52c9316a19d15e7cc7fc967295bfad0c32dbc0c68da429e` |
 | `settings.gradle.kts` | `f5be0d269f3a0ec5d36a9e7787a1802bebc777ab44c7544fb5759d09f53eb6a7` |
 | `build.gradle.kts` | `c9f1866871a500675f725c47795606a8ab19c9e64ba65c39e907b0cc19b8a7c1` |
 

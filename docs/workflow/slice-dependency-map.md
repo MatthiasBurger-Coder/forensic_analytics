@@ -21,8 +21,15 @@ S07 + S08 + S10
   -> S11 Persistence Ownership And Replacement Readiness
     -> S12 Service-Local Domain And Application Readiness
       -> S13 Service Testbed Parity And Monolith Coupling Readiness
-        -> S14 Gradle Deregistration And Source Tree Removal
-          -> S15 Closure, Rollback Notes And Release Readiness
+        -> S14 Retirement Readiness Reconciliation
+          -> S15 Testbed Architecture And Hardening Relocation
+          -> S16 Testbed Runtime Scenario Replacement Or Deprecation
+          -> S17 Repository Checkout And Ingestion Testbed Replacement
+          -> S18 Public API, Boot And Persistence Ownership Exit
+
+S15 + S16 + S17 + S18
+  -> S19 Candidate-Specific Gradle Deregistration And Source Tree Removal
+    -> S20 Closure, Rollback Notes And Release Readiness
 ```
 
 ## Dependency Rationale
@@ -43,15 +50,21 @@ S07 + S08 + S10
 | S11 | Persistence replacement readiness depends on orchestration, public API and observability ownership. |
 | S12 | Service-local domain/application readiness depends on all service-local replacements. |
 | S13 | Testbed parity readiness depends on service-local regression parity. |
-| S14 | Final deletion depends on every path-specific migration slice. |
-| S15 | Closure depends on final quality gate and documentation alignment. |
+| S14 | Readiness reconciliation depends on S13 and must complete with no deletion when blockers remain. |
+| S15 | Testbed architecture and hardening relocation depends on S14 blocker inventory. |
+| S16 | Runtime scenario replacement or deprecation depends on S14 blocker inventory. |
+| S17 | Repository checkout and ingestion replacement depends on S14 blocker inventory. |
+| S18 | Public API, boot and persistence ownership exit depends on S14 and S11 ownership evidence. |
+| S19 | Final deletion depends on S15 through S18 and every path-specific migration/deprecation slice. |
+| S20 | Closure depends on final quality gate and documentation alignment. |
 
 ## Parallelization Opportunities
 
 S03 through S06 may be parallelized after S02 only when S3D confirms disjoint
 file locks and stable contracts. S10 can run after S02 while S07/S08 proceed
-only when observability file locks do not overlap. Default execution remains
-one slice at a time.
+only when observability file locks do not overlap. S15 through S18 can run in
+parallel only when S3D confirms disjoint `services/testbed`, contract and
+architecture locks. Default execution remains one slice at a time.
 
 ## Lock Summary
 
@@ -70,5 +83,10 @@ one slice at a time.
 | Persistence and data ownership | S11 |
 | Shared domain/application removal | S12 |
 | Testbed regression parity | S13 |
-| Final module deregistration | S14 |
-| Closure and release readiness | S15 |
+| Retirement readiness and blocker reconciliation | S14 |
+| Testbed architecture and hardening relocation | S15 |
+| Testbed runtime scenario replacement or deprecation | S16 |
+| Repository checkout and ingestion replacement | S17 |
+| Public API, boot and persistence ownership exit | S18 |
+| Final module deregistration | S19 |
+| Closure and release readiness | S20 |

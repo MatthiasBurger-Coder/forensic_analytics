@@ -34,8 +34,8 @@ Each execution slice must run:
 3. `git diff --check`.
 4. The repository minimum gate for production Java, tests, Gradle, contracts,
    runtime wiring or deployment changes.
-5. Full caller-free scans and the full local gate only in the final removal
-   and closure slices.
+5. Full caller-free scans and the full local gate only in S19 final removal
+   and S20 closure slices.
 
 ## Leakage Checks
 
@@ -51,7 +51,13 @@ Earlier parity and handoff slices must not use full-repository zero-reference
 scans as success criteria while the legacy module is intentionally retained as
 rollback or regression evidence. Those scans belong to the final removal gate.
 
-For final removal, prove no legacy build references remain:
+S14 is a readiness reconciliation gate after the S14 deletion stop. It records
+remaining references as evidence and must not delete modules or deregister
+Gradle projects. From S15 through S18, targeted slices remove or deprecate the
+remaining testbed, runtime, public API and ownership blockers before any
+physical deletion is attempted.
+
+For S19 final removal, prove no legacy build references remain:
 
 ```bash
 bash -lc 'if rg -n "forensic-analytics-(adapter-javaparser|adapter-joern-docker|adapter-repository-source|application|boot-app|bootstrap|cli|domain|engine|ingestion-grpc|ingestion-request|logging|observability|persistence|rest|testbed)" settings.gradle.kts build.gradle.kts services -g "*.kts" -g "!**/build/**"; then exit 1; else test $? -eq 1; fi'
@@ -67,7 +73,9 @@ Execution must stop when a change would:
 - store LLM output as verified evidence;
 - collapse confirmed evidence, derived analysis, unresolved gaps and
   hypotheses into one ambiguous field;
-- remove the only regression coverage for behavior being retired.
+- remove the only regression coverage for behavior being retired;
+- claim a legacy module is removable while `services:testbed` still uses it as
+  the only parity, rollback or hardening evidence.
 
 ## Failure Routing
 

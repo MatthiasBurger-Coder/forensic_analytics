@@ -4,7 +4,7 @@
 
 | Field | Value |
 |---|---|
-| Workflow version | `fa-msa-001-legacy-module-retirement-20260522-v1` |
+| Workflow version | `fa-msa-001-legacy-module-retirement-20260522-v2` |
 | Requirement ID | `FA-MSA-001-LMR` |
 | Parent requirement | `FA-MSA-001` |
 | Workflow branch | `architecture/workflow-legacy-module-retirement-20260522` |
@@ -31,10 +31,14 @@ only in the final removal gate after caller-free evidence and the required
 S03 execution on 2026-05-22 proved that the previous early-retirement slice
 shape was too deletion-oriented: `forensic-analytics-adapter-repository-source`
 still had production and test callers, while `repository-source-service` was
-not a drop-in replacement for local/file repository behavior. This refinement
-therefore changes S03 through S13 into parity, handoff, caller-migration and
-replacement-readiness slices. S14 is the only full-repository legacy
-module-removal slice.
+not a drop-in replacement for local/file repository behavior. S14 execution
+review on 2026-05-22 proved the same risk for final deletion: productive service
+main sources are caller-free, but `services:testbed` still keeps test-scoped
+legacy dependencies and imports as rollback/regression evidence. This
+refinement therefore changes S14 into a no-deletion readiness gate, adds
+executable S15 through S18 migration/deprecation slices for the remaining
+non-production and runtime blockers, moves physical removal to S19, and moves
+closure to S20.
 
 ## Target Picture
 
@@ -419,7 +423,7 @@ as rollback and regression evidence, verifies service-local checkout,
 workspace cleanup, source-root, idempotency, quota, timeout, redaction and
 diagnostic behavior, and prepares the orchestrator handoff through external
 contracts. It must not remove `forensic-analytics-adapter-repository-source`;
-physical removal belongs to S14.
+physical removal belongs to S19.
 
 ### Slice 04 - Ingestion Service Parity And Handoff Readiness
 
@@ -479,7 +483,7 @@ Purpose: prove ingestion-service ownership of intake, validation, raw payload
 custody, accepted/rejected diagnostics and handoff semantics while retaining
 legacy ingestion modules as rollback evidence. Physical removal of
 `forensic-analytics-ingestion-grpc` and `forensic-analytics-ingestion-request`
-belongs to S14 after caller-free proof.
+belongs to S19 after caller-free proof.
 
 ### Slice 05 - JavaParser Service Parity And Handoff Readiness
 
@@ -533,7 +537,7 @@ stop_conditions:
 Purpose: prove JavaParser service-local AST/source-fact parity, unresolved
 symbol diagnostics, deterministic IDs and artifact handoff behavior while
 retaining the legacy adapter as rollback evidence. Physical removal of
-`forensic-analytics-adapter-javaparser` belongs to S14 after caller-free proof.
+`forensic-analytics-adapter-javaparser` belongs to S19 after caller-free proof.
 
 ### Slice 06 - Joern Service Parity And Handoff Readiness
 
@@ -590,7 +594,7 @@ stop_conditions:
 Purpose: prove Joern service-local runtime control, artifact diagnostics,
 timeout handling and unavailable-Joern behavior while retaining the legacy
 adapter as rollback evidence. Physical removal of
-`forensic-analytics-adapter-joern-docker` belongs to S14 after caller-free
+`forensic-analytics-adapter-joern-docker` belongs to S19 after caller-free
 proof.
 
 ### Slice 07 - Orchestration Service Parity And Application Split Readiness
@@ -659,7 +663,7 @@ Purpose: move orchestration ownership toward the target service and begin
 verified disassembly of shared domain/application code without deleting the
 shared modules early. Physical removal of `forensic-analytics-engine`,
 `forensic-analytics-application` and `forensic-analytics-domain` belongs to
-S14 after all consumers are caller-free.
+S19 after all consumers are caller-free.
 
 ### Slice 08 - Query Report API And Runtime Replacement Readiness
 
@@ -723,7 +727,7 @@ stop_conditions:
 Purpose: prove the service-local public API and runtime replacement path while
 retaining REST, bootstrap and Boot modules as rollback evidence. Physical
 removal of `forensic-analytics-rest`, `forensic-analytics-bootstrap` and
-`forensic-analytics-boot-app` belongs to S14 after caller-free proof.
+`forensic-analytics-boot-app` belongs to S19 after caller-free proof.
 
 ### Slice 09 - CLI Client Parity And Decoupling Readiness
 
@@ -779,7 +783,7 @@ stop_conditions:
 
 Purpose: make CLI behavior a public API client and prove command parity or
 explicit deprecation while retaining the legacy CLI module as rollback
-evidence. Physical removal of `forensic-analytics-cli` belongs to S14 after
+evidence. Physical removal of `forensic-analytics-cli` belongs to S19 after
 caller-free proof.
 
 ### Slice 10 - Observability And Logging Replacement Readiness
@@ -839,7 +843,7 @@ Purpose: replace shared observability/logging Java module usage in target
 services with service-local diagnostics and deployment observability material
 while retaining the legacy modules as rollback evidence. Physical removal of
 `forensic-analytics-logging` and `forensic-analytics-observability` belongs to
-S14 after caller-free proof.
+S19 after caller-free proof.
 
 ### Slice 11 - Persistence Ownership And Replacement Readiness
 
@@ -898,7 +902,7 @@ stop_conditions:
 
 Purpose: assign persistence ownership and prove replacement readiness while
 retaining central persistence as rollback evidence. Physical removal of
-`forensic-analytics-persistence` belongs to S14 after caller-free proof.
+`forensic-analytics-persistence` belongs to S19 after caller-free proof.
 
 ### Slice 12 - Service-Local Domain And Application Readiness
 
@@ -963,7 +967,7 @@ stop_conditions:
 Purpose: prove service-local domain/application boundaries and architecture
 tests while retaining central domain/application modules as rollback evidence.
 Physical removal of `forensic-analytics-domain` and
-`forensic-analytics-application` belongs to S14 after caller-free proof and the
+`forensic-analytics-application` belongs to S19 after caller-free proof and the
 full local gate.
 
 ### Slice 13 - Service Testbed Parity And Monolith Coupling Readiness
@@ -1023,13 +1027,309 @@ stop_conditions:
 ```
 
 Purpose: prove service-root testbed parity before legacy testbed removal.
-Physical removal of `forensic-analytics-testbed` belongs to S14 after
+Physical removal of `forensic-analytics-testbed` belongs to S19 after
 service-root coverage is at least equal and caller-free proof is empty.
 
-### Slice 14 - Gradle Deregistration And Source Tree Removal
+### Slice 14 - Retirement Readiness Reconciliation
 
 ```yaml
 slice_id: S14
+profile: FULL_PATH
+owner: senior-system-architect
+secondary_reviewers:
+  - senior-devops
+  - senior-java-backend
+  - microservice-senior-expert
+  - senior-tester
+affected_files:
+  - docs/workflow/**
+  - docs/architecture/**
+  - docs/arc42/**
+affected_modules:
+  - services:testbed
+  - all-listed-legacy-modules
+affected_contracts: []
+dependencies:
+  - S13
+parallel_group: G10
+file_locks:
+  - docs/workflow/**
+  - docs/architecture/**
+  - docs/arc42/**
+contract_locks: []
+architecture_locks:
+  - retirement-readiness
+  - no-deletion-before-caller-free-proof
+quality_gates:
+  targeted:
+    - 'bash -lc "rg -n \"forensic-analytics-(adapter-javaparser|adapter-joern-docker|adapter-repository-source|application|boot-app|bootstrap|cli|domain|engine|ingestion-grpc|ingestion-request|logging|observability|persistence|rest|testbed)\" settings.gradle.kts build.gradle.kts services -g \"*.kts\" -g \"!**/build/**\" || test \$? -eq 1"'
+    - 'bash -lc "if rg -n -P \"^import\\s+de\\.burger\\.forensics\\.analytics\\.(application|domain|adapter|persistence|rest|cli|engine|logging|observability|bootstrap|boot|ingestion\\.request|ingestion\\.grpc)\\b\" services -S -g \"*.java\" -g \"!**/src/test/**\"; then exit 1; else test \$? -eq 1; fi"'
+    - 'bash -lc "rg -n -P \"^import\\s+de\\.burger\\.forensics\\.analytics\\.(application|domain|adapter|persistence|rest|cli|engine|logging|observability|bootstrap|boot|ingestion\\.request|ingestion\\.grpc|ingestion\\.v1)\\b\" services/testbed/src/test/java -g \"*.java\" || test \$? -eq 1"'
+    - './gradlew :services:testbed:test --dependency-verification strict --console=plain --stacktrace'
+    - 'git diff --check'
+  required:
+    - './gradlew test --dependency-verification strict --console=plain --stacktrace'
+documentation:
+  arc42: record no-removal-safe state and remaining blockers
+  adr: checked; new ADR only if a legacy module is intentionally retained long term
+stop_conditions:
+  - deletion or Gradle deregistration is attempted in this slice
+  - productive service main code or productive service build files regain legacy module coupling
+  - services:testbed blocker evidence is not recorded
+  - required quality gate fails
+  - line-ending-only churn pollutes the diff
+```
+
+Purpose: reconcile the S14 execution stop as `NO_REMOVAL_SAFE`, separate
+productive service autonomy from non-production testbed rollback evidence, and
+make the remaining executable migration slices explicit. This slice must not
+delete modules, source trees, tests or `settings.gradle.kts` entries.
+
+### Slice 15 - Testbed Architecture And Hardening Relocation
+
+```yaml
+slice_id: S15
+profile: FULL_PATH
+owner: senior-tester
+secondary_reviewers:
+  - senior-java-backend
+  - microservice-senior-expert
+  - senior-devops
+  - senior-system-architect
+affected_files:
+  - services/testbed/**
+  - docs/testing/**
+  - docs/architecture/**
+  - docs/arc42/**
+  - docs/workflow/execution-report.md
+affected_modules:
+  - services:testbed
+affected_contracts: []
+dependencies:
+  - S14
+parallel_group: G11
+file_locks:
+  - services/testbed/**
+  - docs/testing/**
+  - docs/workflow/execution-report.md
+contract_locks: []
+architecture_locks:
+  - testbed-architecture-rules
+  - hardening-non-production-only
+quality_gates:
+  targeted:
+    - './gradlew :services:testbed:test --tests "*LoggingArchitectureTest" --tests "*SpringBootArchitectureTest" --tests "*WildFlyRepositoryHardeningTest" --dependency-verification strict --console=plain --stacktrace'
+    - './gradlew :services:analysis-orchestrator-service:test :services:repository-source-service:test :services:ingestion-service:test :services:java-parser-analysis-service:test :services:joern-analysis-service:test :services:query-report-api-service:test :services:cli-client:test --tests "*ArchitectureTest" --dependency-verification strict --console=plain --stacktrace'
+    - 'git diff --check'
+  required:
+    - './gradlew test --dependency-verification strict --console=plain --stacktrace'
+documentation:
+  arc42: update testbed and quality-risk views when hardening or architecture-rule ownership changes
+  adr: checked
+stop_conditions:
+  - hardening requires live network or Docker in the default gate
+  - broad monolith architecture rules have no service-local replacement
+  - removing a test removes the only regression coverage for a retained behavior
+```
+
+Purpose: move broad logging, Spring and hardening checks away from
+legacy-module-dependent testbed classpaths or explicitly record why a retained
+non-production hardening path remains. This slice must preserve default-skipped
+external hardening behavior and must not treat test data as forensic evidence.
+
+### Slice 16 - Testbed Runtime Scenario Replacement Or Deprecation
+
+```yaml
+slice_id: S16
+profile: FULL_PATH
+owner: senior-java-backend
+secondary_reviewers:
+  - senior-tester
+  - microservice-senior-expert
+  - contract-governance-expert
+  - senior-devops
+affected_files:
+  - services/testbed/**
+  - services/cli-client/**
+  - services/query-report-api-service/**
+  - services/java-parser-analysis-service/**
+  - services/joern-analysis-service/**
+  - contracts/cli/**
+  - contracts/openapi/**
+  - docs/architecture/**
+  - docs/arc42/**
+  - docs/workflow/execution-report.md
+affected_modules:
+  - services:testbed
+  - services:cli-client
+  - services:query-report-api-service
+  - services:java-parser-analysis-service
+  - services:joern-analysis-service
+affected_contracts:
+  - contracts/cli/**
+  - contracts/openapi/**
+dependencies:
+  - S14
+parallel_group: G11
+file_locks:
+  - services/testbed/**
+  - services/cli-client/**
+  - services/query-report-api-service/**
+  - services/java-parser-analysis-service/**
+  - services/joern-analysis-service/**
+  - docs/workflow/execution-report.md
+contract_locks:
+  - cli-public-behavior
+  - public-rest-api
+architecture_locks:
+  - testbed-runtime-parity
+  - no-fabricated-end-to-end-parity
+quality_gates:
+  targeted:
+    - './gradlew :services:testbed:test --tests "de.burger.forensics.analytics.services.testbed.RepositoryAnalysisTestbedTest.*" --dependency-verification strict --console=plain --stacktrace'
+    - './gradlew :services:cli-client:test :services:query-report-api-service:test --dependency-verification strict --console=plain --stacktrace'
+    - './gradlew :services:java-parser-analysis-service:test :services:joern-analysis-service:test --dependency-verification strict --console=plain --stacktrace'
+    - 'git diff --check'
+  required:
+    - './gradlew test --dependency-verification strict --console=plain --stacktrace'
+documentation:
+  arc42: update public API, CLI and static/semantic analysis limitations when behavior is migrated or deprecated
+  adr: checked; new ADR required if local CLI analyze or ingest-request remains supported long term
+stop_conditions:
+  - local CLI analyze or ingest-request remains required but no target owner implements it
+  - completed BTM generation, report output or semantic graph parity is asserted without verified service behavior
+  - replacement coverage is weaker than the legacy testbed scenario being retired
+```
+
+Purpose: replace legacy in-process CLI, engine, JavaParser and Joern testbed
+scenarios with target service or public API coverage, or explicitly deprecate
+legacy-only local behavior with operator notes and tests. The slice must not
+invent end-to-end parity that target services do not implement.
+
+### Slice 17 - Repository Checkout And Ingestion Testbed Replacement
+
+```yaml
+slice_id: S17
+profile: FULL_PATH
+owner: senior-java-backend
+secondary_reviewers:
+  - senior-grpc-proto-specialist
+  - ingestion-handoff-review
+  - microservice-senior-expert
+  - senior-tester
+affected_files:
+  - services/testbed/**
+  - services/repository-source-service/**
+  - services/ingestion-service/**
+  - services/analysis-orchestrator-service/**
+  - contracts/**
+dependencies:
+  - S14
+parallel_group: G11
+file_locks:
+  - services/testbed/**
+  - services/repository-source-service/**
+  - services/ingestion-service/**
+  - services/analysis-orchestrator-service/**
+  - docs/workflow/execution-report.md
+contract_locks:
+  - repository-source-contracts
+  - ingestion-contracts
+architecture_locks:
+  - repository-checkout-ownership
+  - ingestion-session-ownership
+quality_gates:
+  targeted:
+    - './gradlew :services:testbed:test --tests "de.burger.forensics.analytics.services.testbed.RepositoryAnalysisMiniEndToEndTest.*" --tests "de.burger.forensics.analytics.services.testbed.RepositoryAnalysisRealRepositoryEndToEndTest.*" --dependency-verification strict --console=plain --stacktrace'
+    - './gradlew :services:repository-source-service:test --dependency-verification strict --console=plain --stacktrace'
+    - './gradlew :services:ingestion-service:test --dependency-verification strict --console=plain --stacktrace'
+    - './gradlew :services:analysis-orchestrator-service:test --dependency-verification strict --console=plain --stacktrace'
+    - 'git diff --check'
+  required:
+    - './gradlew test --dependency-verification strict --console=plain --stacktrace'
+documentation:
+  arc42: update repository-source and ingestion runtime views when replacement behavior changes
+  adr: checked; new ADR required if AnalyzeRepository remains intentionally unimplemented
+stop_conditions:
+  - AnalyzeRepository checkout/session semantics are required but no service implements them
+  - local or file repository input is treated as supported without verified target service behavior
+  - workspace cleanup, source-root detection or session registration parity is weaker than retained tests
+```
+
+Purpose: replace legacy mini and real repository E2E tests with
+repository-source, ingestion and orchestration target-service coverage, or
+explicitly document unsupported/deprecated inputs. Missing values and incomplete
+states must stay explicit.
+
+### Slice 18 - Public API, Boot And Persistence Ownership Exit
+
+```yaml
+slice_id: S18
+profile: FULL_PATH
+owner: senior-system-architect
+secondary_reviewers:
+  - contract-first-api-steward
+  - data-ownership-persistence-steward
+  - senior-react-frontend
+  - senior-devops
+  - senior-tester
+affected_files:
+  - services/query-report-api-service/**
+  - services/cli-client/**
+  - contracts/openapi/**
+  - contracts/events/**
+  - docs/architecture/**
+  - docs/arc42/**
+  - docs/workflow/execution-report.md
+affected_modules:
+  - services:query-report-api-service
+  - services:cli-client
+  - services:analysis-orchestrator-service
+  - services:ingestion-service
+affected_contracts:
+  - contracts/openapi/**
+  - contracts/events/**
+dependencies:
+  - S14
+  - S11
+parallel_group: G11
+file_locks:
+  - services/query-report-api-service/**
+  - services/cli-client/**
+  - docs/architecture/**
+  - docs/arc42/**
+  - docs/workflow/execution-report.md
+contract_locks:
+  - public-rest-api
+  - persistence-ownership
+architecture_locks:
+  - runtime-bootstrap-retirement
+  - persistence-owner-exit
+quality_gates:
+  targeted:
+    - './gradlew :services:query-report-api-service:test :services:cli-client:test :services:analysis-orchestrator-service:test :services:ingestion-service:test --dependency-verification strict --console=plain --stacktrace'
+    - 'bash -lc "if rg -n \"GatewayOpenApiContractTest|forensic-analytics-rest\" services/query-report-api-service services/testbed contracts/openapi docs/contracts -g \"*.java\" -g \"*.md\" -g \"*.yaml\" -g \"*.yml\"; then test 0 -eq 0; else exit 1; fi"'
+    - 'git diff --check'
+  required:
+    - './gradlew test --dependency-verification strict --console=plain --stacktrace'
+documentation:
+  arc42: update public API, deployment and persistence ownership views
+  adr: checked; new ADR required if public API or persistence ownership changes
+stop_conditions:
+  - OpenAPI contract tests remain owned only by forensic-analytics-rest
+  - docs claim runtime boot, health or persistence readiness not proven by commands
+  - frontend-visible API shape changes without frontend impact review and gates
+```
+
+Purpose: move public API contract-test ownership to surviving services before
+`forensic-analytics-rest` can be removed, and close remaining boot/bootstrap
+and persistence ownership gaps without touching `forensic-ui` unless an API
+shape actually changes.
+
+### Slice 19 - Candidate-Specific Gradle Deregistration And Source Tree Removal
+
+```yaml
+slice_id: S19
 profile: FULL_PATH
 owner: senior-devops
 secondary_reviewers:
@@ -1061,12 +1361,14 @@ affected_files:
   - docs/arc42/**
   - docs/workflow/execution-report.md
 affected_modules:
-  - all-listed-legacy-modules
+  - verified-caller-free-legacy-module-candidates
 affected_contracts: []
 dependencies:
-  - S12
-  - S13
-parallel_group: G10
+  - S15
+  - S16
+  - S17
+  - S18
+parallel_group: G12
 file_locks:
   - settings.gradle.kts
   - build.gradle.kts
@@ -1083,22 +1385,26 @@ quality_gates:
   required:
     - './gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace'
 documentation:
-  arc42: final module-removal state required
+  arc42: final module-removal state required for each removed candidate
   adr: checked; new ADR required if any central module remains intentionally
 stop_conditions:
-  - any legacy module reference remains in build files or service production code
+  - any legacy module reference remains in build files or service code for a removal candidate
+  - testbed, public API or rollback coverage is weaker than before removal
   - required quality gate fails
   - deletion includes unrelated modules or generated evidence
   - line-ending-only churn pollutes the diff
 ```
 
-Purpose: remove the registered legacy modules and source trees only after all
-previous slices prove they are no longer needed.
+Purpose: remove only those registered legacy modules and source trees whose
+build, production, test and ownership evidence is already caller-free. This is
+the first deletion-capable slice, and it may be split into one candidate or
+tightly related candidate group per checkpoint if the executor finds residual
+risk.
 
-### Slice 15 - Closure, Rollback Notes And Release Readiness
+### Slice 20 - Closure, Rollback Notes And Release Readiness
 
 ```yaml
-slice_id: S15
+slice_id: S20
 profile: FULL_PATH
 owner: senior-system-architect
 secondary_reviewers:
@@ -1125,8 +1431,8 @@ affected_modules:
 affected_contracts:
   - contracts/**
 dependencies:
-  - S14
-parallel_group: G11
+  - S19
+parallel_group: G13
 file_locks:
   - docs/architecture/**
   - docs/arc42/**
@@ -1153,7 +1459,8 @@ stop_conditions:
 ```
 
 Purpose: close the workflow only after service readiness, documentation,
-rollback/deprecation notes and the full local quality gate are complete.
+rollback/deprecation notes, retained-module ADR decisions and the full local
+quality gate are complete.
 
 ## Dependency Graph
 
@@ -1166,7 +1473,12 @@ S02 -> S06
 S02 -> S10
 S03 + S04 + S05 + S06 -> S07
 S07 -> S08 -> S09
-S07 + S08 + S10 -> S11 -> S12 -> S13 -> S14 -> S15
+S07 + S08 + S10 -> S11 -> S12 -> S13 -> S14
+S14 -> S15
+S14 -> S16
+S14 -> S17
+S14 + S11 -> S18
+S15 + S16 + S17 + S18 -> S19 -> S20
 ```
 
 ## Parallelization Opportunities
@@ -1175,6 +1487,9 @@ S03 through S06 may be executed in parallel only when the workflow executor
 confirms disjoint file locks and stable contracts. The default execution mode
 is one slice at a time. S10 may run after S02 in parallel with orchestration
 work only when observability file locks do not overlap with service slices.
+S15 through S18 may be considered for parallel execution only when S3D confirms
+that their `services/testbed`, public API, contract and architecture locks do
+not overlap; otherwise execute them sequentially.
 
 ## Role Or Subagent Ownership Map
 
@@ -1209,7 +1524,7 @@ repository minimum gate:
 ./gradlew test --dependency-verification strict --console=plain --stacktrace
 ```
 
-Before final legacy module deregistration and closure, run:
+Before S19 legacy module deregistration and S20 closure, run:
 
 ```bash
 ./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace
@@ -1263,9 +1578,9 @@ create or merge a PR and must not push to `main`.
 
 The workflow is complete only when:
 
-- all listed legacy modules are removed from `settings.gradle.kts`;
-- source trees for all listed legacy modules are removed or explicitly retained
-  by an ADR with a non-production purpose;
+- all caller-free listed legacy modules are removed from `settings.gradle.kts`;
+- source trees for all caller-free listed legacy modules are removed or
+  explicitly retained by an ADR with a non-production purpose;
 - every removed behavior has service-local parity evidence or explicit
   deprecation evidence before deletion;
 - target services build independently and have documented start/healthcheck
@@ -1279,11 +1594,11 @@ The workflow is complete only when:
 ## Handoff To `workflow execute`
 
 Run `workflow execute` only from branch
-`architecture/workflow-legacy-module-retirement-20260522`. S00 through S02
-already have execution checkpoints; after this refinement, resume execution at
-S03 as a parity and handoff readiness slice. S14 must not execute until S03
-through S13 have passed and their caller-migration, parity, deprecation and
-replacement-readiness evidence is recorded.
+`architecture/workflow-legacy-module-retirement-20260522`. S00 through S13
+already have execution checkpoints. After this refinement, resume execution at
+S14 as a no-deletion retirement readiness reconciliation slice. Physical module
+removal is not authorized until S15 through S18 pass and S19 proves
+candidate-specific caller-free evidence plus the full local quality gate.
 
 ## arc42 Check Status
 

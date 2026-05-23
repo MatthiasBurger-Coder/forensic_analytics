@@ -331,15 +331,16 @@ The service-local testbed gate is:
 Dockerfile, Docker Compose service, Docker Swarm stack or Kubernetes manifest
 in S13. The local Compose descriptor is validated as model syntax only; S13
 does not build images, start Compose or perform health probes. The legacy
-`forensic-analytics-testbed` module remains active until a later retirement
-slice proves caller-free status, rollback evidence and the required quality
-gate.
+`forensic-analytics-testbed` module remains active until S15 through S18
+replace or deprecate retained testbed/runtime blockers and S19 proves
+caller-free status, rollback evidence and the required quality gate.
 
 Slice S14 does not remove deployment or runtime paths. It records
 `NO_REMOVAL_SAFE` when caller scans still find active legacy module use. The
 Boot app, Bootstrap runtime and retained `forensic-analytics-*` modules remain
-legacy in-process and rollback deployment evidence until later retirement
-slices migrate, deprecate or prove each path caller-free.
+legacy in-process and rollback deployment evidence until S15 through S18
+migrate or deprecate the remaining paths and S19 proves each removal candidate
+caller-free.
 
 ## 7.7 Local Repository-to-BTM Transitional Landscape
 
@@ -383,7 +384,7 @@ The descriptor is current evidence only. It is not a readiness claim for the
 FA-MSA-001 target landscape until the target services exist and are verified by
 their own build, start, healthcheck, Docker and quality gates.
 
-S15 must close the workflow by verifying the mandatory FA-MSA-001 target
+S20 must close the workflow by verifying the mandatory FA-MSA-001 target
 service build tasks, service-owned Dockerfiles, Docker healthcheck definitions,
 service-local configuration files and architecture tests. That closure remains
 limited to service-local build and packaging evidence plus the repository

@@ -4,8 +4,8 @@
 
 FA-MSA-001 Slice 04 service-boundary and data-ownership baseline with
 repository-source, ingestion, JavaParser, Joern, orchestrator, query/report,
-CLI client and observability implementation evidence through Slice 12.
-Testbed parity remains scheduled for Slice 13.
+CLI client, observability and testbed implementation evidence through Slice 13.
+S14 is a no-deletion readiness reconciliation gate after the S14 deletion stop.
 
 These are target boundaries. Current `services/**` directories and
 `forensic-analytics-*` modules are implementation evidence and migration
@@ -14,9 +14,10 @@ landscape until the workflow proves independent build, start, test,
 configuration, healthcheck, container and deployment evidence.
 
 Retained `forensic-analytics-*` modules remain legacy in-process and rollback
-evidence until S14 proves caller-free retirement and the required quality gate.
-They are not productive service boundaries and must not be introduced as shared
-Java implementation modules between independently deployable services.
+evidence until S15 through S18 resolve remaining blockers and S19 proves
+caller-free retirement plus the required quality gate. They are not productive
+service boundaries and must not be introduced as shared Java implementation
+modules between independently deployable services.
 
 ## Boundary Rules
 
@@ -592,8 +593,9 @@ Current service-root testbed evidence:
   rollback evidence.
 
 S13 verifies this service-root evidence against the legacy testbed module.
-Legacy testbed removal still belongs to S14 and requires caller-free proof plus
-the required quality gate.
+Legacy testbed removal now belongs to S19 after S15 through S18 replace or
+deprecate retained blockers and caller-free proof plus the required quality
+gate exist.
 
 Stop conditions:
 

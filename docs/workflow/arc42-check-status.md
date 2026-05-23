@@ -26,8 +26,13 @@ Execution slices must update arc42 when actual behavior changes:
 | S11 | Data ownership and persistence concepts |
 | S12 | Building block view and architecture constraints |
 | S13 | Testbed and integration environment |
-| S14 | Final build/module topology |
-| S15 | Final readiness, risks and technical debt |
+| S14 | Retirement readiness, `NO_REMOVAL_SAFE` blockers and retained rollback evidence |
+| S15 | Testbed architecture checks and hardening ownership |
+| S16 | Testbed runtime scenario replacement or deprecation |
+| S17 | Repository checkout and ingestion replacement evidence |
+| S18 | Public API, boot/bootstrap and persistence ownership exit |
+| S19 | Final build/module topology for verified caller-free candidates |
+| S20 | Final readiness, risks and technical debt |
 
 ## Stop Conditions
 
