@@ -127,7 +127,7 @@ for logs, metrics, tracing and dashboards. Productive services may have
 service-local diagnostics, but they must not depend on a shared Java
 observability module.
 
-S12 adds `services/observability-stack` and
+S10 verifies `services/observability-stack` and
 `deployment/observability/service-diagnostics-policy.yaml` as target
 observability-stack evidence. The stack is deployment-oriented policy material,
 not a productive backend service and not a shared Java runtime dependency.
@@ -143,12 +143,16 @@ supersedes that target direction for productive services: shared Java logging
 modules must be retired or replaced with service-local configuration and
 `observability-stack` deployment material before final acceptance.
 
-S14 records that this retirement is not yet executable for the current
-workflow state. `forensic-analytics-logging` and
+The active workflow records that this retirement is not yet executable for the
+current workflow state. `forensic-analytics-logging` and
 `forensic-analytics-observability` remain legacy in-process modules while
 callers and regression coverage still depend on them. Later retirement slices
 must prove caller-free evidence, replacement parity and rollback or explicit
 deprecation before removing either module.
+
+S10 does not certify end-to-end ingestion upload correlation preservation. The
+current ingestion upload contract has no verified correlation carrier, so that
+gap remains owned by a contract-authorized ingestion refinement slice.
 
 Automatic method logging records method operation names, phases, durations, correlation IDs and exception categories only. It must not record arguments, return values, raw exception messages, stack frames or evidence payloads.
 

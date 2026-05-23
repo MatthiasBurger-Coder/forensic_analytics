@@ -4,9 +4,18 @@ owner: observability-stack
 evidenceClassification: operational-diagnostics-only
 allowedLogFields:
   - service
+  - serviceName
   - operation
   - phase
   - correlationId
+  - traceId
+  - spanId
+  - parentSpanId
+  - analysisRunId
+  - runtimeSessionId
+  - incidentId
+  - workerName
+  - stepName
   - durationMs
   - errorType
   - status
@@ -22,15 +31,42 @@ forbiddenLogValues:
   - privateWorkspacePaths
   - llmPromptContent
 redactionRules:
+  methodArguments: reject
+  methodReturnValues: reject
   credentials: reject
   privateWorkspacePaths: reject
+  rawExceptionMessages: reject
   rawSourceContent: reject
   rawRuntimePayloads: reject
+  sourceContent: reject
+  stackFrames: reject
+  tokens: reject
+  llmPromptContent: reject
+missingValuePolicy:
+  correlationId: unavailable
+  traceId: unavailable
+  spanId: unavailable
+  parentSpanId: unavailable
+  analysisRunId: unavailable
+  runtimeSessionId: unavailable
+  incidentId: unavailable
+  workerName: notApplicable
+  stepName: notApplicable
+  fabricatedDiagnosticValues: forbidden
 serviceBoundaryRules:
   sharedJavaLoggingModule: forbiddenForTargetServices
   serviceLocalDiagnostics: required
   operationalLogsAsForensicEvidence: forbidden
+diagnosticSurfacePolicy:
+  defaultBinding: loopbackOrInternalNetwork
+  publicExposure: forbiddenWithoutExplicitDeploymentValidation
+  healthMetricsTracingOrLogShippingExposure: requiresExplicitDeploymentValidation
+  liveCredentialsInDefaultConfiguration: forbidden
 runtimeReadiness:
   dockerCompose: notClaimed
   dockerSwarm: notClaimed
   kubernetes: notClaimed
+  prometheus: notClaimed
+  grafana: notClaimed
+  opentelemetryCollector: notClaimed
+  logShipping: notClaimed

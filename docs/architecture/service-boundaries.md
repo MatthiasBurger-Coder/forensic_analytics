@@ -537,11 +537,13 @@ Current evidence:
 - `deployment/observability/service-diagnostics-policy.yaml`;
 - deployment documentation.
 
-S12 implementation evidence:
+S10 replacement-readiness evidence:
 
 - registered Gradle project `services:observability-stack`;
 - `services/observability-stack/README.md`;
 - `deployment/observability/service-diagnostics-policy.yaml`;
+- policy test coverage for allowed diagnostics, redaction, missing values,
+  diagnostic exposure and diagnostics-not-evidence rules;
 - no `project(...)` dependencies in `services/observability-stack/build.gradle.kts`;
 - no Java source under `services/observability-stack`.
 

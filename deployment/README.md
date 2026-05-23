@@ -21,6 +21,7 @@ Docker Swarm and Kubernetes remain planning roots. No Swarm or Kubernetes
 runtime readiness is claimed until stack files or manifests, health/readiness
 probes and validation commands exist.
 
-`observability/` contains S12 policy material for service diagnostics,
-redaction and future deployment observability configuration. It does not start
-external telemetry services or claim runtime readiness.
+`observability/` contains S10 policy material for service diagnostics,
+redaction, correlation fields, diagnostic exposure and future deployment
+observability configuration. It does not start external telemetry services or
+claim runtime readiness.
