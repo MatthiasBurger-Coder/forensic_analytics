@@ -2,7 +2,7 @@
 
 ## Current Status
 
-Status: S01 legacy reference classification completed.
+Status: S03 service regression coverage confirmation completed.
 
 | Field | Value |
 |---|---|
@@ -171,14 +171,87 @@ S01 handoff:
   final closure requires all current-state wording outside architecture docs to
   be updated.
 
+## S03 Service Regression Coverage Confirmation
+
+Status: completed.
+
+Responsible role: Senior Tester with Senior Java Backend, Microservice Senior
+Expert and Senior DevOps review.
+
+Changed files:
+
+- `services/testbed/README.md`
+- `services/testbed/src/test/java/de/burger/forensics/analytics/services/testbed/RepositoryAnalysisMiniEndToEndTest.java`
+- `services/testbed/src/test/java/de/burger/forensics/analytics/services/testbed/RepositoryAnalysisRealRepositoryEndToEndTest.java`
+- `docs/workflow/execution-report.md`
+
+Executed commands:
+
+```bash
+./gradlew :services:testbed:test --tests de.burger.forensics.analytics.services.testbed.RepositoryAnalysisRealRepositoryEndToEndTest --dependency-verification strict --console=plain --stacktrace
+./gradlew :services:testbed:test --dependency-verification strict --console=plain --stacktrace
+./gradlew :services:repository-source-service:test :services:repository-analysis-service:test --dependency-verification strict --console=plain --stacktrace
+./gradlew :services:ingestion-service:test :services:forensic-ingestion-service:test --dependency-verification strict --console=plain --stacktrace
+./gradlew :services:java-parser-analysis-service:test :services:java-ast-analysis-service:test --dependency-verification strict --console=plain --stacktrace
+./gradlew :services:joern-analysis-service:test :services:joern-cpg-analysis-service:test --dependency-verification strict --console=plain --stacktrace
+./gradlew :services:analysis-orchestrator-service:test :services:analysis-store-service:test :services:btm-generation-service:test --dependency-verification strict --console=plain --stacktrace
+./gradlew :services:query-report-api-service:test :services:forensic-gateway-service:test :services:cli-client:test --dependency-verification strict --console=plain --stacktrace
+./gradlew :services:observability-stack:test :services:testbed:test --dependency-verification strict --console=plain --stacktrace
+git diff --check
+./gradlew test --dependency-verification strict --console=plain --stacktrace
+```
+
+Results:
+
+- The initial repository minimum gate failure was reproduced as
+  `:services:testbed:test` /
+  `RepositoryAnalysisRealRepositoryEndToEndTest.realRepositoryFixtureBehaviorIsRetainedOnlyAsLegacyRollbackEvidence`.
+- The failure was caused by a stale service-testbed assertion against old S17
+  workflow text in `docs/workflow/workflow.md`, not by S02 runtime or contract
+  documentation changes.
+- `services/testbed` now describes predecessor testbed coverage as
+  service-root regression evidence and historical rollback evidence pending
+  deletion, not as an active legacy Gradle module or current quality-gate
+  participant.
+- Testbed assertions now pin the active S03 service-regression coverage
+  wording and keep the unsupported local/file repository input and no-parity
+  guards.
+- All S03 targeted service test bundles passed.
+- `git diff --check` passed.
+- The repository minimum gate
+  `./gradlew test --dependency-verification strict --console=plain --stacktrace`
+  passed.
+
+Subagent and role reviews:
+
+- Senior Tester: READY_TO_FIX. Retarget stale S17 assertions to active S03
+  workflow wording and rerun `:services:testbed:test` plus the minimum gate.
+- Senior Java Backend: READY. The fix is backend-neutral when limited to
+  `services/testbed` README and test assertions and does not change
+  production service behavior.
+- Microservice Senior Expert: BLOCKED until unsafe README wording is removed.
+  The service-local structure is acceptable, but legacy modules must not be
+  described as active or current quality-gate participants.
+- Senior DevOps: READY with `PRODUCT_BUILD_AFFECTING` classification because
+  test code changed. S03 requires targeted service gates and the repository
+  minimum gate; the full local gate remains the S06 release-readiness gate.
+
+S03 handoff:
+
+- S02 checkpoint can be resumed after S03 because the minimum gate blocker was
+  removed.
+- S04 may delete the legacy source trees only after S02 is checkpointed and
+  deletion prechecks still prove no legacy module-local test is the only known
+  coverage for behavior still claimed as supported.
+
 ## Slice Execution Status
 
 | Slice | Status | Notes |
 |---|---|---|
 | S00 | Completed | Branch, context pack, Gradle project model, leakage baseline and `git diff --check` verified. |
 | S01 | Completed | Classification written to `docs/architecture/legacy-reference-classification.md`; deletion closure remains blocked until S02/S03/S05 cleanup and gates. |
-| S02 | Not started | Requires `workflow execute`. |
-| S03 | Not started | Requires `workflow execute`. |
+| S02 | Pending checkpoint | Runtime/Docker/contract cleanup was serialized behind S03 after the minimum gate exposed stale service-testbed S17 assertions. |
+| S03 | Completed | Service-regression coverage assertions now target active S03 wording; all S03 targeted gates and the repository minimum gate passed. |
 | S04 | Not started | Requires `workflow execute`. |
 | S05 | Not started | Requires `workflow execute`. |
 | S06 | Not started | Requires `workflow execute`. |

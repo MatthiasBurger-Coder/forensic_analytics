@@ -19,7 +19,7 @@ class RepositoryAnalysisRealRepositoryEndToEndTest {
 
         assertContainsAll(
             testbedReadme,
-            "S17",
+            "S03",
             "real repository fixture",
             "legacy rollback evidence",
             "target services do not accept local or file repository input"
@@ -32,9 +32,9 @@ class RepositoryAnalysisRealRepositoryEndToEndTest {
         );
         assertContainsAll(
             workflow,
-            "S17",
-            "explicitly document unsupported/deprecated inputs",
-            "local or file repository input is treated as supported without verified target service behavior"
+            "Slice 03 - Service Regression Coverage Confirmation",
+            "service-local tests and explicit deprecation notes",
+            "a legacy module-local test is the only known coverage for behavior still claimed as supported"
         );
     }
 
