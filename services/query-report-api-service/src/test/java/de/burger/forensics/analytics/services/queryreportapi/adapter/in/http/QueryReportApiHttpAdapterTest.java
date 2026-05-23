@@ -36,7 +36,7 @@ class QueryReportApiHttpAdapterTest {
             var status = response(port, "/api/status", "GET");
             assertEquals(200, status.code());
             assertTrue(status.body().contains("\"status\":\"UP\""));
-            assertTrue(status.body().contains("\"name\":\"analysis-store-service\""));
+            assertTrue(status.body().contains("\"name\":\"analysis-orchestrator-service\""));
             assertTrue(status.body().contains("\"status\":\"UNKNOWN\""));
 
             var notFound = response(port, "/api/repository-analyses", "GET");
@@ -81,6 +81,32 @@ class QueryReportApiHttpAdapterTest {
             assertFalse(status.body().contains("\"jobsUrl\""));
             assertFalse(status.body().contains("\"btmDeliveryStatus\""));
             assertFalse(status.body().contains("/tmp"));
+        } finally {
+            server.stop(0);
+        }
+    }
+
+    @Test
+    void extensionRoutesRemainUnavailableWithoutBtmReportOrReplayParity() throws Exception {
+        var server = server();
+        try {
+            var port = server.getAddress().getPort();
+            var unavailableRoutes = List.of(
+                "/api/repository-analyses/analysis-run-1/jobs",
+                "/api/repository-analyses/analysis-run-1/results",
+                "/api/repository-analyses/analysis-run-1/replay",
+                "/api/repository-analyses/analysis-run-1/reports"
+            );
+
+            for (var route : unavailableRoutes) {
+                var response = response(port, route, "GET", "", "correlation-1", null);
+
+                assertEquals(404, response.code(), route);
+                assertTrue(response.body().contains("\"code\":\"NOT_FOUND\""), route);
+                assertFalse(response.body().contains("BTM_DELIVERY_READY"), route);
+                assertFalse(response.body().contains("workspace-"), route);
+                assertFalse(response.body().contains("/tmp"), route);
+            }
         } finally {
             server.stop(0);
         }
@@ -335,7 +361,7 @@ class QueryReportApiHttpAdapterTest {
                 "BtmArtifactDeliveryService",
                 request.correlationId(),
                 List.of(
-                    Diagnostic.info("ORCHESTRATION_ACCEPTED", "Analysis Store accepted orchestration"),
+                    Diagnostic.info("ORCHESTRATION_ACCEPTED", "Analysis Orchestrator accepted orchestration"),
                     Diagnostic.info("PATH_LEAK", "git clone https://example.com/private.git failed in /tmp/repository-workspaces/workspace-1 with token=abc")
                 )
             );
@@ -352,7 +378,7 @@ class QueryReportApiHttpAdapterTest {
                 "ACCEPTED",
                 "repository-to-btm",
                 null,
-                List.of(Diagnostic.info("ORCHESTRATION_STATUS", "Analysis Store status loaded"))
+                List.of(Diagnostic.info("ORCHESTRATION_STATUS", "Analysis Orchestrator status loaded"))
             );
         }
     }

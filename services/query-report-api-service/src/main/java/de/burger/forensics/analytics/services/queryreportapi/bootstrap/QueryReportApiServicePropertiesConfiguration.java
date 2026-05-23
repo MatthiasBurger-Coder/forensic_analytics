@@ -14,11 +14,11 @@ public class QueryReportApiServicePropertiesConfiguration {
                 text(environment, "forensics.query-report-api.service.http.host", "127.0.0.1"),
                 integer(environment, "forensics.query-report-api.service.http.port", 8080)
             ),
-            new QueryReportApiServiceProperties.AnalysisStore(
+            new QueryReportApiServiceProperties.AnalysisOrchestrator(
                 new QueryReportApiServiceProperties.Grpc(
-                    text(environment, "forensics.query-report-api.service.analysis-store.grpc.host", "127.0.0.1"),
-                    integer(environment, "forensics.query-report-api.service.analysis-store.grpc.port", 9091),
-                    integer(environment, "forensics.query-report-api.service.analysis-store.grpc.deadline-seconds", 5)
+                    text(environment, "forensics.query-report-api.service.analysis-orchestrator.grpc.host", "127.0.0.1"),
+                    integer(environment, "forensics.query-report-api.service.analysis-orchestrator.grpc.port", 9098),
+                    integer(environment, "forensics.query-report-api.service.analysis-orchestrator.grpc.deadline-seconds", 5)
                 )
             )
         );

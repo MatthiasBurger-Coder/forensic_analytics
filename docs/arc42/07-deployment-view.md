@@ -98,7 +98,7 @@ services/testbed
 
 `cli-client`, `observability-stack` and `testbed` are special boundaries:
 
-- `cli-client` is a public API client, not a productive backend service. S11
+- `cli-client` is a public API client, not a productive backend service. S09
   creates and registers it as an independently buildable command-line
   application; it does not own health endpoints, Docker runtime readiness or
   service deployment readiness unless a later operator slice adds and verifies
@@ -211,7 +211,7 @@ Docker Swarm or Kubernetes deployment descriptors for the target landscape.
 Those readiness claims require later repository tooling and validation
 commands.
 
-Slice S08 adds `services/joern-analysis-service` as target-service deployment
+Slice S06 adds `services/joern-analysis-service` as target-service deployment
 evidence. The service owns:
 
 - `services/joern-analysis-service/build.gradle.kts`;
@@ -233,20 +233,20 @@ The local operator start command is:
 ./gradlew :services:joern-analysis-service:bootRun --dependency-verification strict --console=plain --stacktrace
 ```
 
-S08 records this as the service-local start command, but the S08 verification
+S06 records this as the service-local start command, but the S06 verification
 run did not execute `bootRun` or a live health probe. Runtime smoke evidence
 must be recorded separately before claiming a verified running Joern Analysis
 Service instance.
 
 The service Dockerfile is service-owned and based on the digest-pinned Joern
-runtime plus a copied Java 25 runtime. S08 validates the Joern Docker Compose
-model with `docker compose -f docker/joern/docker-compose.joern.yml config`,
-but it does not add target-service Docker Compose, Docker Swarm or Kubernetes
-deployment descriptors. Docker image build and Joern runtime smoke testing are
-optional external checks because they may pull the Joern base image or create
-local container state.
+runtime plus a copied Java 25 runtime. S06 keeps Docker image build and Joern
+runtime smoke testing as optional external checks because they may pull the
+Joern base image or create local container state. The root `.dockerignore`
+explicitly allows the service boot jar into the Docker build context; S06 does
+not add target-service Docker Compose, Docker Swarm or Kubernetes deployment
+descriptors.
 
-Slice S09 adds `services/analysis-orchestrator-service` as target-service
+Slice S07 keeps `services/analysis-orchestrator-service` as target-service
 deployment evidence. The service owns:
 
 - `services/analysis-orchestrator-service/build.gradle.kts`;
@@ -268,16 +268,18 @@ The local operator start command is:
 ./gradlew :services:analysis-orchestrator-service:bootRun --dependency-verification strict --console=plain --stacktrace
 ```
 
-S09 records this as the service-local start command, but the S09 verification
+S07 records this as the service-local start command, but the S07 verification
 run does not execute `bootRun` or a live health probe. Runtime smoke evidence
 must be recorded separately before claiming a verified running Analysis
 Orchestrator Service instance.
 
-The service Dockerfile is service-owned, but S09 does not add target-service
-Docker Compose, Docker Swarm or Kubernetes deployment descriptors. Those
-readiness claims require later repository tooling and validation commands.
+The service Dockerfile is service-owned, but S07 does not add target-service
+Docker Compose, Docker Swarm or Kubernetes deployment descriptors and does not
+claim Docker image build readiness from the Dockerfile alone. Those readiness
+claims require later repository tooling, Docker build-context verification and
+validation commands.
 
-Slice S10 adds `services/query-report-api-service` as target-service
+Slice S08 adds `services/query-report-api-service` as target-service
 deployment evidence. The service owns:
 
 - `services/query-report-api-service/build.gradle.kts`;
@@ -299,16 +301,17 @@ The local operator start command is:
 ./gradlew :services:query-report-api-service:bootRun --dependency-verification strict --console=plain --stacktrace
 ```
 
-S10 records this as the service-local start command, but the S10 verification
+S08 records this as the service-local start command, but the S08 verification
 run does not execute `bootRun` or a live health probe. Runtime smoke evidence
 must be recorded separately before claiming a verified running Query Report API
 Service instance.
 
-The service Dockerfile is service-owned, but S10 does not add target-service
-Docker Compose, Docker Swarm or Kubernetes deployment descriptors. Those
-readiness claims require later repository tooling and validation commands.
+The service Dockerfile is service-owned, but S08 does not add target-service
+Docker Compose, Docker Swarm or Kubernetes deployment descriptors and does not
+claim Docker image build readiness. Those readiness claims require later
+repository tooling and validation commands.
 
-Slice S13 adds `services/testbed` as the non-production integration and
+Slice S13 verifies `services/testbed` as the non-production integration and
 system-test deployment boundary. The testbed owns:
 
 - `services/testbed/build.gradle.kts`;
@@ -326,14 +329,24 @@ The service-local testbed gate is:
 
 `services/testbed` is not a productive backend service. It does not add a
 Dockerfile, Docker Compose service, Docker Swarm stack or Kubernetes manifest
-in S13. The legacy `forensic-analytics-testbed` module remains active until a
-later retirement slice proves parity, caller migration and rollback evidence.
+in S13. The local Compose descriptor is validated as model syntax only; S13
+does not build images, start Compose or perform health probes. The legacy
+`forensic-analytics-testbed` module remains active until S15 through S18
+replace or deprecate retained testbed/runtime blockers and S19 proves
+caller-free status, rollback evidence and the required quality gate.
+
+S15 keeps the service-root WildFly hardening scenario as non-production
+deployment evidence that is skipped by default unless an explicit WildFly
+branch or commit is provided. S15 does not promote `services:testbed` into a
+runtime service and does not add a Dockerfile, Compose service, Swarm stack,
+Kubernetes manifest or health probe.
 
 Slice S14 does not remove deployment or runtime paths. It records
 `NO_REMOVAL_SAFE` when caller scans still find active legacy module use. The
 Boot app, Bootstrap runtime and retained `forensic-analytics-*` modules remain
-legacy in-process and rollback deployment evidence until later retirement
-slices migrate, deprecate or prove each path caller-free.
+legacy in-process and rollback deployment evidence until S15 through S18
+migrate or deprecate the remaining paths and S19 proves each removal candidate
+caller-free.
 
 ## 7.7 Local Repository-to-BTM Transitional Landscape
 
@@ -368,20 +381,19 @@ readiness/liveness probes, resource policies and validation commands are added
 by a later slice.
 
 The local descriptor commands are documented in
-`deployment/docker-compose/README.md`. S15 did not execute or record Compose
-model validation, image-build, startup or health-check commands for this
+`deployment/docker-compose/README.md`. The active workflow has not executed or
+recorded Compose model validation, image-build, startup or health-check
+commands for this
 descriptor.
 
 The descriptor is current evidence only. It is not a readiness claim for the
 FA-MSA-001 target landscape until the target services exist and are verified by
 their own build, start, healthcheck, Docker and quality gates.
 
-S15 closes the workflow by verifying the mandatory FA-MSA-001 target service
-build tasks, service-owned Dockerfiles, Docker healthcheck definitions,
-service-local configuration files and architecture tests. This closure remains
+S20 must close the workflow by verifying the mandatory FA-MSA-001 target
+service build tasks, service-owned Dockerfiles, Docker healthcheck definitions,
+service-local configuration files and architecture tests. That closure remains
 limited to service-local build and packaging evidence plus the repository
-quality gate; it does not claim Docker image-build, Docker Compose startup,
-Docker Swarm or Kubernetes runtime readiness for the target landscape.
-The S15 full local quality gate passed with the repository `QUALITY.md`
-command including `clean`, `test`, `jacocoTestReport`,
-`jacocoTestCoverageVerification` and `checkPackageCoverage`.
+quality gate; it must not claim Docker image-build, Docker Compose startup,
+Docker Swarm or Kubernetes runtime readiness for the target landscape unless
+those commands are explicitly executed and recorded.

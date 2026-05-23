@@ -11,6 +11,12 @@ public API. Under FA-MSA-001 the target CLI is `cli-client` and the public API
 authority is `query-report-api-service`; Gateway naming is retained only as
 current command, option and file compatibility evidence.
 
+S16 records `analyze` and `ingest-request` as deprecated target behavior for
+`cli-client`. They remain legacy in-process adapters only in predecessor
+modules until caller-free removal is proven; target CLI implementations must
+reject those commands instead of routing local paths or engine-request files to
+the public API.
+
 ## Producer And Consumer
 
 | Field | Value |
@@ -18,8 +24,8 @@ current command, option and file compatibility evidence.
 | Consumer | `cli-client` target; current predecessor implementation is `forensic-analytics-cli` |
 | Producer | `query-report-api-service` target; current predecessor implementation evidence is `forensic-gateway-service` |
 | Protocol | HTTP JSON through `contracts/openapi/gateway-api.yaml` |
-| S11 operation | `startRepositoryToBtmAnalysis` |
-| Future operation | `getRepositoryAnalysis`; out of S11 until this contract defines a concrete command and option mapping |
+| S09 operation | `startRepositoryToBtmAnalysis` |
+| Future operation | `getRepositoryAnalysis`; out of S09 until this contract defines a concrete command and option mapping |
 | Contract version | `gateway-cli-v1` |
 
 ## Current Compatibility Decision
@@ -27,6 +33,11 @@ current command, option and file compatibility evidence.
 The current CLI `analyze` command is an in-process legacy adapter. It accepts
 local paths or file URIs and does not require branch, commit, correlation ID or
 idempotency key inputs.
+
+After S16, local `analyze` and `ingest-request` are not target CLI behavior.
+They are retained only as predecessor rollback evidence until S19 proves
+caller-free removal or a later workflow creates a new explicit target owner and
+contract.
 
 Public repository-to-BTM submission requires:
 
@@ -37,7 +48,12 @@ Public repository-to-BTM submission requires:
 - `StartRepositoryAnalysisRequest`;
 - redacted `RepositoryToBtmSubmission` and `RepositoryToBtmStatus` responses.
 
-Therefore, the S11 target-client path keeps the compatibility command name
+The CLI validates repository URL syntax, HTTPS and user-info restrictions before
+submission. Local/private host and network-range policy remains owned by
+`query-report-api-service`, which returns a public `VALIDATION_ERROR` envelope
+without exposing private workspace or checkout details.
+
+Therefore, the S09 target-client path keeps the compatibility command name
 `gateway-submit`, the `--gateway` option name and `gateway.v1` schema-version
 examples. The implementation must not silently route the existing local-path
 `analyze` or `ingest-request` commands to the public API. Later FA-MSA-001
@@ -62,6 +78,7 @@ request:
 | `--build-id` | `StartRepositoryAnalysisRequest.buildContext.buildId` |
 | `--root-project` | `StartRepositoryAnalysisRequest.buildContext.rootProjectName` |
 | `--declared-modules` | `StartRepositoryAnalysisRequest.buildContext.declaredModules[]` |
+| fixed client value `{}` | `StartRepositoryAnalysisRequest.buildContext.attributes` |
 | `--timeout-seconds` | `StartRepositoryAnalysisRequest.workspacePolicy.timeoutSeconds` |
 | `--max-workspace-bytes` | `StartRepositoryAnalysisRequest.workspacePolicy.maxWorkspaceBytes` |
 | `--allow-shallow-clone` | `StartRepositoryAnalysisRequest.workspacePolicy.allowShallowClone` |
@@ -88,7 +105,7 @@ For `202 Accepted`, CLI output may include only public API fields:
 - `correlationId`;
 - public diagnostics.
 
-Status reads are out of S11. A later status command must define the command
+Status reads are out of S09. A later status command must define the command
 name, `analysisRunId` option and required `X-Correlation-Id` mapping before it
 may call `getRepositoryAnalysis`. When approved, status output may include only
 fields from `RepositoryToBtmStatus`.
@@ -132,9 +149,9 @@ meaning:
 The CLI must not depend on `query-report-api-service` implementation classes,
 predecessor Gateway implementation classes, service-local domain models,
 service-local DTOs, service-local mappers, internal exceptions, generated
-gRPC/protobuf transport classes or shared Java DTO modules. S11 uses HTTP JSON
+gRPC/protobuf transport classes or shared Java DTO modules. S09 uses HTTP JSON
 against the public OpenAPI contract. Generated OpenAPI client code is not part
-of S11; if introduced later, it must be generated service-locally inside
+of S09; if introduced later, it must be generated service-locally inside
 `services/cli-client` from `contracts/openapi/gateway-api.yaml`.
 
 ## Contract Tests

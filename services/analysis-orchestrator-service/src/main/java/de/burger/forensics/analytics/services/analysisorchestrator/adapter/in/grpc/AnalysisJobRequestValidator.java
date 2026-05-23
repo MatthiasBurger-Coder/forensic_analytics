@@ -7,12 +7,16 @@ import de.burger.forensics.analytics.analysisjob.v1.AnalysisWorkerKind;
 import de.burger.forensics.analytics.analysisjob.v1.CompleteAnalysisJobRequest;
 import de.burger.forensics.analytics.analysisjob.v1.FailAnalysisJobRequest;
 import de.burger.forensics.analytics.analysisjob.v1.GetAnalysisJobRequest;
+import de.burger.forensics.analytics.analysisjob.v1.GetRepositoryToBtmStatusRequest;
 import de.burger.forensics.analytics.analysisjob.v1.LeaseAnalysisJobRequest;
 import de.burger.forensics.analytics.analysisjob.v1.ListAnalysisJobsRequest;
 import de.burger.forensics.analytics.analysisjob.v1.RegisterAnalysisArtifactsRequest;
 import de.burger.forensics.analytics.analysisjob.v1.ReportAnalysisJobProgressRequest;
+import de.burger.forensics.analytics.analysisjob.v1.RequestedRepositoryToBtmOutput;
+import de.burger.forensics.analytics.analysisjob.v1.StartRepositoryToBtmRequest;
 import de.burger.forensics.analytics.analysisjob.v1.SubmitAnalysisJobRequest;
 import de.burger.forensics.analytics.services.analysisorchestrator.domain.AnalysisOrchestratorArtifactOwnership;
+import de.burger.forensics.analytics.services.analysisorchestrator.domain.SafeMetadata;
 
 final class AnalysisJobRequestValidator {
     void validate(SubmitAnalysisJobRequest request) {
@@ -23,14 +27,11 @@ final class AnalysisJobRequestValidator {
         RequiredFields.present(request.hasSourceSnapshotId(), "sourceSnapshotId");
         RequiredFields.nonBlank(request.getAnalysisRunId().getValue(), "analysisRunId.value");
         RequiredFields.nonBlank(request.getJobId().getValue(), "jobId.value");
-        RequiredFields.nonBlank(request.getSourceSnapshotId().getValue(), "sourceSnapshotId.value");
+        safeOpaqueId(request.getSourceSnapshotId().getValue(), "sourceSnapshotId.value");
         workerKind(request.getWorkerKind());
         completeness(request.getInputCompleteness(), "inputCompleteness");
         request.getInputArtifactsList().forEach(this::artifact);
-        request.getAttributesMap().forEach((key, value) -> {
-            RequiredFields.nonBlank(key, "attribute.key");
-            RequiredFields.nonBlank(value, "attribute.value");
-        });
+        safeAttributes(request.getAttributesMap());
     }
 
     void validate(GetAnalysisJobRequest request) {
@@ -100,6 +101,57 @@ final class AnalysisJobRequestValidator {
         request.getArtifactsList().forEach(this::artifact);
     }
 
+    void validate(StartRepositoryToBtmRequest request) {
+        commonMutation(request.getRequestId(), request.getIdempotencyKey(), request.getCorrelationId());
+        RequiredFields.nonBlank(request.getSchemaVersion(), "schemaVersion");
+        RequiredFields.present(request.hasAnalysisRunId(), "analysisRunId");
+        RequiredFields.nonBlank(request.getAnalysisRunId().getValue(), "analysisRunId.value");
+        RequiredFields.present(request.hasRepository(), "repository");
+        RequiredFields.nonBlank(request.getRepository().getRemoteUrl(), "repository.remoteUrl");
+        httpsRepositoryUrl(request.getRepository().getRemoteUrl());
+        safeOpaqueId(request.getRepository().getProvider(), "repository.provider");
+        RequiredFields.present(request.hasRevision(), "revision");
+        if (request.getRevision().getBranch().isBlank() && request.getRevision().getCommit().isBlank()) {
+            throw new ValidationException("revision branch or commit must be provided");
+        }
+        if (!request.getRevision().getBranch().isBlank()) {
+            safeByteAccess(request.getRevision().getBranch(), "revision.branch");
+        }
+        if (!request.getRevision().getCommit().isBlank()) {
+            safeByteAccess(request.getRevision().getCommit(), "revision.commit");
+        }
+        RequiredFields.present(request.hasWorkspacePolicy(), "workspacePolicy");
+        RequiredFields.positive(request.getWorkspacePolicy().getTimeoutSeconds(), "workspacePolicy.timeoutSeconds");
+        RequiredFields.positive(request.getWorkspacePolicy().getMaxWorkspaceBytes(), "workspacePolicy.maxWorkspaceBytes");
+        RequiredFields.present(request.hasBuildContext(), "buildContext");
+        safeByteAccess(request.getBuildContext().getBuildTool(), "buildContext.buildTool");
+        if (!request.getBuildContext().getBuildId().isBlank()) {
+            safeByteAccess(request.getBuildContext().getBuildId(), "buildContext.buildId");
+        }
+        if (!request.getBuildContext().getRootProjectName().isBlank()) {
+            safeByteAccess(request.getBuildContext().getRootProjectName(), "buildContext.rootProjectName");
+        }
+        request.getBuildContext().getDeclaredModulesList().forEach(module -> safeByteAccess(module, "buildContext.declaredModules"));
+        safeAttributes(request.getBuildContext().getAttributesMap());
+        if (request.getRequestedOutputsList().stream().noneMatch(output -> output == RequestedRepositoryToBtmOutput.REQUESTED_REPOSITORY_TO_BTM_OUTPUT_BTM_RULES)) {
+            throw new ValidationException("requestedOutputs must include BTM_RULES");
+        }
+        if (request.getRequestedOutputsList().stream().anyMatch(output ->
+            output == RequestedRepositoryToBtmOutput.REQUESTED_REPOSITORY_TO_BTM_OUTPUT_UNSPECIFIED
+                || output == RequestedRepositoryToBtmOutput.UNRECOGNIZED
+        )) {
+            throw new ValidationException("requestedOutputs must be specified");
+        }
+        safeAttributes(request.getAttributesMap());
+    }
+
+    void validate(GetRepositoryToBtmStatusRequest request) {
+        RequiredFields.nonBlank(request.getRequestId(), "requestId");
+        RequiredFields.nonBlank(request.getCorrelationId(), "correlationId");
+        RequiredFields.present(request.hasAnalysisRunId(), "analysisRunId");
+        RequiredFields.nonBlank(request.getAnalysisRunId().getValue(), "analysisRunId.value");
+    }
+
     private void commonMutation(String requestId, String idempotencyKey, String correlationId) {
         RequiredFields.nonBlank(requestId, "requestId");
         RequiredFields.nonBlank(idempotencyKey, "idempotencyKey");
@@ -158,6 +210,32 @@ final class AnalysisJobRequestValidator {
             de.burger.forensics.analytics.services.analysisorchestrator.domain.ArtifactByteAccess.requirePublicReference(value, fieldName);
         } catch (IllegalArgumentException error) {
             throw new ValidationException(error.getMessage());
+        }
+    }
+
+    private void safeOpaqueId(String value, String fieldName) {
+        try {
+            SafeMetadata.requireOpaqueId(value, fieldName);
+        } catch (IllegalArgumentException error) {
+            throw new ValidationException(error.getMessage());
+        }
+    }
+
+    private void safeAttributes(java.util.Map<String, String> attributes) {
+        try {
+            SafeMetadata.safeAttributes(attributes);
+        } catch (IllegalArgumentException error) {
+            throw new ValidationException(error.getMessage());
+        }
+    }
+
+    private void httpsRepositoryUrl(String remoteUrl) {
+        var text = remoteUrl.strip();
+        if (!remoteUrl.equals(text)
+            || !text.startsWith("https://")
+            || text.contains("@")
+            || text.chars().anyMatch(Character::isWhitespace)) {
+            throw new ValidationException("repository.remoteUrl must be a clean HTTPS URL without embedded credentials");
         }
     }
 

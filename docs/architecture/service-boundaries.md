@@ -4,8 +4,8 @@
 
 FA-MSA-001 Slice 04 service-boundary and data-ownership baseline with
 repository-source, ingestion, JavaParser, Joern, orchestrator, query/report,
-CLI client, observability and testbed implementation evidence through Slice
-13.
+CLI client, observability and testbed implementation evidence through Slice 13.
+S14 is a no-deletion readiness reconciliation gate after the S14 deletion stop.
 
 These are target boundaries. Current `services/**` directories and
 `forensic-analytics-*` modules are implementation evidence and migration
@@ -13,10 +13,11 @@ inputs. They must not be described as the completed FA-MSA-001 service
 landscape until the workflow proves independent build, start, test,
 configuration, healthcheck, container and deployment evidence.
 
-S14 keeps retained `forensic-analytics-*` modules as legacy in-process and
-rollback evidence because caller-free proof is not available. They are not
-productive service boundaries and must not be introduced as shared Java
-implementation modules between independently deployable services.
+Retained `forensic-analytics-*` modules remain legacy in-process and rollback
+evidence until S15 through S18 resolve remaining blockers and S19 proves
+caller-free retirement plus the required quality gate. They are not productive
+service boundaries and must not be introduced as shared Java implementation
+modules between independently deployable services.
 
 ## Boundary Rules
 
@@ -223,7 +224,7 @@ Current evidence:
 - `contracts/grpc/java-ast-analysis.proto`;
 - `contracts/grpc/java-ast-source-facts-v1.schema.json`.
 
-S07 implementation state:
+FA-MSA-001-LMR S05 implementation state:
 
 - registered Gradle project `services:java-parser-analysis-service`;
 - service-local package `de.burger.forensics.analytics.services.javaparseranalysis`;
@@ -239,7 +240,7 @@ S07 implementation state:
 
 `services/java-ast-analysis-service` and
 `forensic-analytics-adapter-javaparser` remain predecessor and rollback
-evidence. S07 does not remove them, does not route production callers to the
+evidence. S05 does not remove them, does not route production callers to the
 new service and does not claim Docker Compose, Docker Swarm or Kubernetes
 readiness for the target landscape.
 
@@ -290,7 +291,7 @@ Current evidence:
 - `contracts/grpc/joern-cpg-analysis.proto`;
 - `docker/joern/**`.
 
-S08 implementation state:
+FA-MSA-001-LMR S06 implementation state:
 
 - registered Gradle project `services:joern-analysis-service`;
 - service-local package `de.burger.forensics.analytics.services.joernanalysis`;
@@ -298,17 +299,20 @@ S08 implementation state:
   filesystem, Joern runtime and artifact-registry adapters, bootstrap,
   configuration, tests, README and Dockerfile;
 - local gRPC port `9096` and health port `8087`;
-- unchanged `contracts/grpc/joern-cpg-analysis.proto` wire shape and generated
-  transport classes kept service-local;
+- `contracts/grpc/joern-cpg-analysis.proto` generated transport classes kept
+  service-local, with `GetSemanticArtifactBytes` owning semantic artifact byte
+  retrieval inside the Joern service boundary;
 - Joern runtime unavailable, timeout and missing semantic artifact mappings
-  remain explicit diagnostics with unknown or incomplete analysis state;
-- Docker/Joern runtime remains optional for the default Gradle gate. S08
-  validates the Joern Docker Compose model but does not claim Docker Compose,
-  Docker Swarm or Kubernetes deployment readiness for the target landscape.
+  remain explicit diagnostics with unknown or incomplete analysis state and
+  retryable status when the underlying diagnostic is retryable;
+- Docker/Joern runtime remains optional for the default Gradle gate. S06 fixes
+  the Docker build context allowlist for the service boot jar but does not
+  claim Docker Compose, Docker Swarm or Kubernetes deployment readiness for the
+  target landscape.
 
 `services/joern-cpg-analysis-service` and
 `forensic-analytics-adapter-joern-docker` remain predecessor and rollback
-evidence. S08 does not remove them and does not route production callers to the
+evidence. S06 does not remove them and does not route production callers to the
 new service.
 
 Stop conditions:
@@ -356,6 +360,22 @@ Outbound communication:
 - REST/gRPC/messaging/file-contract calls to repository source, ingestion,
   JavaParser, Joern and query/report owners.
 
+S07 implementation state:
+
+- registered Gradle project `services:analysis-orchestrator-service`;
+- service-local package
+  `de.burger.forensics.analytics.services.analysisorchestrator`;
+- service-local domain, application service, inbound gRPC adapter,
+  in-memory orchestration repository, bootstrap, configuration, tests, README
+  and Dockerfile;
+- verified job lifecycle, worker lease, retry, timeout, failure,
+  dead-letter and job-to-artifact-reference behavior;
+- verified `StartRepositoryToBtm` acceptance and `GetRepositoryToBtmStatus`
+  lookup as pending status only;
+- repository-to-BTM status remains incomplete, BTM delivery is not ready and
+  Joern is marked skipped until later owner-service wiring exists;
+- `PlanInstrumentationTargets` remains `UNIMPLEMENTED`.
+
 Current evidence:
 
 - `services/analysis-orchestrator-service`;
@@ -367,6 +387,8 @@ Stop conditions:
 
 - the orchestrator becomes a new monolith by embedding other service
   responsibilities;
+- repository-to-BTM acceptance dispatches checkout, parser, Joern, BTM
+  generation or report work from the orchestrator;
 - orchestration state ownership is unclear;
 - it reads private databases or workspaces directly.
 
@@ -411,12 +433,12 @@ Current evidence:
 - public API portions of `services/forensic-gateway-service`;
 - `contracts/openapi/gateway-api.yaml`.
 
-S10 implementation state:
+S08 implementation state:
 
 - registered Gradle project `services:query-report-api-service`;
 - service-local package `de.burger.forensics.analytics.services.queryreportapi`;
 - service-local domain, application port, inbound HTTP adapter, outbound
-  Analysis Store owner API gRPC adapter, bootstrap, configuration, tests,
+  Analysis Orchestrator gRPC adapter, bootstrap, configuration, tests,
   README and Dockerfile;
 - current verified routes `GET /health`, `GET /api/health`, `GET /api/status`,
   `POST /api/repository-analyses` and
@@ -424,11 +446,14 @@ S10 implementation state:
 - unchanged `contracts/openapi/gateway-api.yaml` wire/schema shape;
 - service-local generated `analysis-job.proto` transport classes.
 
-The S10 outbound gRPC adapter still calls the predecessor Analysis Store owner
-API for repository-to-BTM submission/status because the S09 target
-`analysis-orchestrator-service` intentionally leaves those RPCs unimplemented.
-Switching this facade to the target orchestrator requires a later
-contract-first slice and verified target endpoint behavior.
+The S08 outbound gRPC adapter calls the S07 `analysis-orchestrator-service`
+`StartRepositoryToBtm` and `GetRepositoryToBtmStatus` RPCs. The public facade
+preserves the REST/OpenAPI response shape and maps orchestrator
+`WAITING_FOR_REPOSITORY` plus `INCOMPLETE` readiness to public `ACCEPTED`,
+`BTM_DELIVERY_NOT_READY` and explicit incomplete diagnostics. This is not
+completed analysis parity: no repository checkout, worker dispatch, Joern run,
+BTM generation, report assembly or artifact byte custody is claimed by
+`query-report-api-service`.
 
 Stop conditions:
 
@@ -462,7 +487,7 @@ Current evidence:
 - `forensic-analytics-cli`;
 - `contracts/cli/gateway-cli-contract.md`.
 
-S11 scope:
+S09 scope:
 
 - create `services/cli-client` as the target public HTTP/OpenAPI client;
 - keep compatibility command vocabulary `gateway-submit`, `--gateway` and
@@ -470,7 +495,7 @@ S11 scope:
 - leave legacy `forensic-analytics-cli analyze` and `ingest-request` as
   predecessor in-process commands until a later parity or deprecation slice.
 
-S11 implementation evidence:
+S09 implementation evidence:
 
 - registered Gradle project `services:cli-client`;
 - `services/cli-client/build.gradle.kts` without `project(...)` dependencies;
@@ -513,11 +538,13 @@ Current evidence:
 - `deployment/observability/service-diagnostics-policy.yaml`;
 - deployment documentation.
 
-S12 implementation evidence:
+S10 replacement-readiness evidence:
 
 - registered Gradle project `services:observability-stack`;
 - `services/observability-stack/README.md`;
 - `deployment/observability/service-diagnostics-policy.yaml`;
+- policy test coverage for allowed diagnostics, redaction, missing values,
+  diagnostic exposure and diagnostics-not-evidence rules;
 - no `project(...)` dependencies in `services/observability-stack/build.gradle.kts`;
 - no Java source under `services/observability-stack`.
 
@@ -552,7 +579,7 @@ Current evidence:
 - `deployment/docker-compose/repository-to-btm.local.yml`;
 - service-local tests under current service slices.
 
-S13 implementation evidence:
+Current service-root testbed evidence:
 
 - registered Gradle project `services:testbed`;
 - service-local test package
@@ -564,6 +591,11 @@ S13 implementation evidence:
   integration and system-test infrastructure;
 - `forensic-analytics-testbed` remains active as legacy quality-gate and
   rollback evidence.
+
+S13 verifies this service-root evidence against the legacy testbed module.
+Legacy testbed removal now belongs to S19 after S15 through S18 replace or
+deprecate retained blockers and caller-free proof plus the required quality
+gate exist.
 
 Stop conditions:
 

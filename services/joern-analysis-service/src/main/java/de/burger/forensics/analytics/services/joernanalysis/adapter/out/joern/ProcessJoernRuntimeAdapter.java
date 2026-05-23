@@ -81,21 +81,21 @@ public final class ProcessJoernRuntimeAdapter implements JoernRuntimePort {
         var artifactDirectory = artifactDirectory(command);
         prepareArtifactDirectory(artifactDirectory);
 
-        var timeout = Duration.ofSeconds(command.policy().timeoutSeconds());
+        var deadline = RequestDeadline.after(Duration.ofSeconds(command.policy().timeoutSeconds()));
         var diagnostics = new ArrayList<JoernCpgDiagnostic>();
-        var version = joernVersion(command, timeout);
+        var version = joernVersion(command, deadline);
         diagnostics.addAll(version.diagnostics());
-        createCpg(command, workspace, artifactDirectory, timeout);
-        runOptionalQuery(command, artifactDirectory, "callgraph.sc", CALLGRAPH, command.policy().requireCallgraph(), diagnostics, timeout);
-        runOptionalQuery(command, artifactDirectory, "controlflow.sc", CONTROLFLOW, command.policy().requireControlflow(), diagnostics, timeout);
-        runOptionalQuery(command, artifactDirectory, "dataflow.sc", DATAFLOW, command.policy().requireDataflow(), diagnostics, timeout);
-        runOptionalQuery(command, artifactDirectory, "slices.sc", SLICES, command.policy().requireDataflow(), diagnostics, timeout);
+        createCpg(command, workspace, artifactDirectory, deadline);
+        runOptionalQuery(command, artifactDirectory, "callgraph.sc", CALLGRAPH, command.policy().requireCallgraph(), diagnostics, deadline);
+        runOptionalQuery(command, artifactDirectory, "controlflow.sc", CONTROLFLOW, command.policy().requireControlflow(), diagnostics, deadline);
+        runOptionalQuery(command, artifactDirectory, "dataflow.sc", DATAFLOW, command.policy().requireDataflow(), diagnostics, deadline);
+        runOptionalQuery(command, artifactDirectory, "slices.sc", SLICES, command.policy().requireDataflow(), diagnostics, deadline);
 
         return new JoernRuntimeResult(version.value(), runtimeImageReference, artifactDirectory, diagnostics);
     }
 
-    private VersionProbe joernVersion(AnalyzeJoernCpgCommand command, Duration timeout) {
-        var result = run(List.of(joernExecutable, "--version"), artifactRoot, timeout);
+    private VersionProbe joernVersion(AnalyzeJoernCpgCommand command, RequestDeadline deadline) {
+        var result = run(List.of(joernExecutable, "--version"), artifactRoot, deadline.remaining());
         if (!result.successful()) {
             return unknownVersion(command);
         }
@@ -121,7 +121,7 @@ public final class ProcessJoernRuntimeAdapter implements JoernRuntimePort {
         AnalyzeJoernCpgCommand command,
         ResolvedJoernWorkspace workspace,
         String artifactDirectory,
-        Duration timeout
+        RequestDeadline deadline
     ) {
         var arguments = new ArrayList<String>();
         arguments.add(joernParseExecutable);
@@ -131,7 +131,7 @@ public final class ProcessJoernRuntimeAdapter implements JoernRuntimePort {
         arguments.add("javasrc");
         arguments.add("--output");
         arguments.add(artifactRoot.resolve(artifactDirectory).resolve(CPG).toString());
-        var result = run(arguments, workspace.workspacePath(), timeout);
+        var result = run(arguments, workspace.workspacePath(), deadline.remaining());
         if (!result.successful()) {
             throw new JoernRuntimeUnavailableException(
                 "Joern CPG creation failed with exit code " + result.exitCode() + ": " + sanitize(result.stderr())
@@ -146,7 +146,7 @@ public final class ProcessJoernRuntimeAdapter implements JoernRuntimePort {
         String outputName,
         boolean required,
         List<JoernCpgDiagnostic> diagnostics,
-        Duration timeout
+        RequestDeadline deadline
     ) {
         var script = queryScriptsRoot.resolve(scriptName).normalize();
         if (!script.startsWith(queryScriptsRoot) || !Files.isRegularFile(script)) {
@@ -171,7 +171,7 @@ public final class ProcessJoernRuntimeAdapter implements JoernRuntimePort {
             "--params",
             "cpg=" + cpg + ",out=" + output
         );
-        var result = run(arguments, artifactRoot.resolve(artifactDirectory), timeout);
+        var result = run(arguments, artifactRoot.resolve(artifactDirectory), deadline.remaining());
         if (!result.successful() && required) {
             diagnostics.add(JoernCpgDiagnostic.warning(
                 command.metadata().sourceSnapshotId(),
@@ -352,6 +352,20 @@ public final class ProcessJoernRuntimeAdapter implements JoernRuntimePort {
         private VersionProbe {
             value = requireText(value, "Joern version");
             diagnostics = List.copyOf(Objects.requireNonNull(diagnostics, "diagnostics must not be null"));
+        }
+    }
+
+    private record RequestDeadline(long expiresAtNanos) {
+        private static RequestDeadline after(Duration duration) {
+            return new RequestDeadline(System.nanoTime() + duration.toNanos());
+        }
+
+        private Duration remaining() {
+            var remainingNanos = expiresAtNanos - System.nanoTime();
+            if (remainingNanos <= 0L) {
+                throw new JoernCpgAnalysisTimeoutException("Joern execution exceeded configured timeout");
+            }
+            return Duration.ofNanos(remainingNanos);
         }
     }
 }

@@ -132,7 +132,7 @@ fields, malformed JSON, unsupported payload kinds and missing payload files are
 reported as ingestion request errors. The importer does not write canonical
 static, semantic, runtime, report or orchestration facts.
 
-Slice S07 verifies a local JavaParser runtime boundary:
+Slice S05 verifies a local JavaParser runtime boundary:
 
 ```text
 repository-source-service source snapshot contract
@@ -144,7 +144,7 @@ repository-source-service source snapshot contract
   -> source-fact metadata plus retrievable artifact bytes
 ```
 
-The S07 service emits static Java source facts only. Parse errors are reported
+The S05 service emits static Java source facts only. Parse errors are reported
 as diagnostics, not canonical facts, and `SYMBOL_RESOLUTION_NOT_CONFIGURED` is
 reported as a completeness-affecting limitation until real symbol solving is
 implemented. Source-fact JSON artifacts carry explicit `sourceRoot` context.
@@ -155,13 +155,13 @@ databases. `analysis-orchestrator-service` coordinates state, retry and
 failure handling only; it must not absorb repository, JavaParser, Joern,
 reporting or persistence internals.
 
-S10 implementation evidence exposes the current verified public
+S08 implementation evidence exposes the current verified public
 repository-analysis submission/status routes in `query-report-api-service`.
-Those routes still use the predecessor Analysis Store owner API because the
-S09 target `analysis-orchestrator-service` intentionally leaves
-repository-to-BTM submission/status RPCs unimplemented. The target runtime path
-below remains the intended owner boundary and requires a later contract-first
-repointing slice.
+Those routes call S07 target `analysis-orchestrator-service`, which accepts
+repository-to-BTM requests and returns pending status only. The facade maps the
+pending state to public `ACCEPTED`, `BTM_DELIVERY_NOT_READY` and incomplete
+diagnostics without claiming source snapshot availability, worker execution or
+generated BTM bytes.
 
 The repository analysis delivery path must be verified as:
 
@@ -176,12 +176,20 @@ client
   -> query-report-api-service public status/report response
 ```
 
-`cli-client` is a public API client only. S11 implements repository-to-BTM job
+`cli-client` is a public API client only. S09 implements repository-to-BTM job
 submission through `query-report-api-service` HTTP/OpenAPI using the
 transitional `gateway-submit` compatibility vocabulary. Legacy local CLI
-commands remain in-process current-state evidence until a later slice provides
-parity or explicit deprecation tests. Status and report CLI reads require later
+commands remain predecessor rollback evidence. S16 explicitly deprecates local
+`analyze` and `ingest-request` as target `cli-client` behavior; they are not
+silently routed to the public API. Status and report CLI reads require later
 explicit command mappings.
+
+S18 makes the current public API contract executable from the surviving target
+service side: `query-report-api-service` owns a service-local
+`GatewayOpenApiContractTest` for `contracts/openapi/gateway-api.yaml`, and
+`cli-client` owns HTTP adapter coverage for headers, payload, accepted response
+mapping and redacted errors. The public API shape is unchanged, so no frontend
+contract drift is introduced by S18.
 
 Optional services such as `btm-generation-service`, `graph-replay-service` and
 `incident-analysis-service` may be added only after later slices define
@@ -211,7 +219,17 @@ RPC from the transitional predecessor contract is intentionally not implemented
 in this service slice; a later contract migration must replace or retire that
 predecessor wire shape explicitly.
 
-Slice S08 verifies a local Joern analysis runtime boundary:
+S17 confirms that the former mini and real repository E2E path is not a target
+runtime flow. `AnalyzeRepository`, local or file repository checkout and
+monolith analysis-session registration remain deprecated target behavior and
+legacy rollback evidence only. Target runtime evidence is narrower:
+`repository-source-service` owns clean HTTPS repository preparation, opaque
+workspace IDs, cleanup and source snapshot descriptors; `ingestion-service`
+returns `UNIMPLEMENTED` for `AnalyzeRepository`; and
+`analysis-orchestrator-service` records an incomplete
+`WAITING_FOR_REPOSITORY` status without dispatching repository workers.
+
+Slice S06 verifies a local Joern analysis runtime boundary:
 
 ```text
 JoernCpgAnalysisService gRPC request
@@ -219,16 +237,17 @@ JoernCpgAnalysisService gRPC request
   -> service-local Joern analysis application service
   -> service-local Joern-owned workspace materialization
   -> service-local Joern runtime and semantic artifact adapters
-  -> semantic artifact references, completeness and diagnostics
+  -> semantic artifact references, Joern-owned byte retrieval, completeness and diagnostics
 ```
 
-The S08 service consumes only validated source/build package descriptors or
+The S06 service consumes only validated source/build package descriptors or
 Joern-owned materialized workspaces. It must not receive Repository Source
 private workspace paths, and CPG/CFG/DFG artifacts remain static semantic
 evidence rather than observed runtime execution. Joern unavailable, timeout
-and missing mapping states stay explicit diagnostics.
+and missing mapping states stay explicit retryable diagnostics where the
+underlying runtime condition is retryable.
 
-Slice S09 verifies a local orchestration runtime boundary:
+Slice S07 verifies a local orchestration runtime boundary:
 
 ```text
 AnalysisJobService gRPC request
@@ -239,11 +258,20 @@ AnalysisJobService gRPC request
   -> job-to-artifact references only
 ```
 
-The S09 service does not call repository checkout, JavaParser, Joern, report or
-artifact-byte implementations. Transitional `analysis-job.proto` RPC names for
-instrumentation planning and repository-to-BTM orchestration remain generated
-transport methods, but this service returns `UNIMPLEMENTED` for them so worker
-or report behavior is not absorbed into orchestration.
+The S07 service also accepts `StartRepositoryToBtm` requests and answers
+`GetRepositoryToBtmStatus` as process-local readiness state:
+
+```text
+StartRepositoryToBtm
+  -> validate public repository/build metadata
+  -> store pending repository-to-BTM orchestration status
+  -> return INCOMPLETE, BTM_NOT_READY and joernSkipped=true
+```
+
+The S07 service does not call repository checkout, JavaParser, Joern, BTM
+generation, report or artifact-byte implementations. `PlanInstrumentationTargets`
+remains `UNIMPLEMENTED`, and repository-to-BTM status intentionally reports
+incomplete handoff until later slices connect verified owner services.
 
 ADR-0018 allows the initial runtime communication contracts to describe planned
 API, worker, replay, report and event flows before each runtime path exists.
@@ -255,13 +283,15 @@ The current implementation verifies transitional service paths such as:
 ```text
 worker or current public facade
   -> AnalysisJobService gRPC
-  -> current analysis-store-service application service
+  -> analysis-orchestrator-service application service
   -> service-local analysis job repository
 ```
 
 This path supports job submission, leasing, progress, completion, failure,
-listing and artifact metadata registration. It does not yet ingest normalized
-fact bodies, runtime trace facts, incidents or correlation indexes.
+listing, artifact metadata registration and S08 public pending/status reads.
+The retained `analysis-store-service` predecessor remains rollback evidence.
+Neither path yet ingests normalized fact bodies, runtime trace facts, incidents
+or correlation indexes.
 
 ## 6.9 Agent Governance Runtime Flows
 

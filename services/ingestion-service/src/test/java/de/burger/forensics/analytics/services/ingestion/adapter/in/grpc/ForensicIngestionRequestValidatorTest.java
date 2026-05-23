@@ -28,6 +28,29 @@ class ForensicIngestionRequestValidatorTest {
     }
 
     @Test
+    void rejectsIncompleteStartRequests() {
+        assertThrows(ValidationException.class, () -> validator.validate(StartAnalysisSessionRequest.getDefaultInstance()));
+        assertThrows(ValidationException.class, () -> validator.validate(StartAnalysisSessionRequest.newBuilder()
+            .setBuildIdentity(buildIdentity())
+            .setSchemaVersion("schema-v1")
+            .build()));
+        assertThrows(ValidationException.class, () -> validator.validate(StartAnalysisSessionRequest.newBuilder()
+            .setPluginIdentity(pluginIdentity())
+            .setSchemaVersion("schema-v1")
+            .build()));
+        assertThrows(ValidationException.class, () -> validator.validate(StartAnalysisSessionRequest.newBuilder()
+            .setBuildIdentity(buildIdentity())
+            .setPluginIdentity(pluginIdentity())
+            .setSchemaVersion(" ")
+            .build()));
+        assertThrows(ValidationException.class, () -> validator.validate(StartAnalysisSessionRequest.newBuilder()
+            .setBuildIdentity(buildIdentity().toBuilder().clearBuildId())
+            .setPluginIdentity(pluginIdentity())
+            .setSchemaVersion("schema-v1")
+            .build()));
+    }
+
+    @Test
     void rejectsUploadWithoutProvenanceIdentity() {
         var envelope = envelope("session-1", "payload-a").toBuilder()
             .clearBuildIdentity()
@@ -56,9 +79,29 @@ class ForensicIngestionRequestValidatorTest {
             .setPayloadDescriptor(payloadDescriptor("payload-a").toBuilder()
                 .putAttributes("source", " "))
             .build();
+        var blankAttributeKey = envelope("session-1", "payload-a").toBuilder()
+            .setPayloadDescriptor(payloadDescriptor("payload-a").toBuilder()
+                .putAttributes(" ", "value"))
+            .build();
+        var blankPayloadId = envelope("session-1", "payload-a").toBuilder()
+            .setPayloadDescriptor(payloadDescriptor("payload-a").toBuilder()
+                .setPayloadId(" "))
+            .build();
+        var blankContentType = envelope("session-1", "payload-a").toBuilder()
+            .setPayloadDescriptor(payloadDescriptor("payload-a").toBuilder()
+                .setContentType(" "))
+            .build();
+        var unrecognizedKind = envelope("session-1", "payload-a").toBuilder()
+            .setPayloadDescriptor(payloadDescriptor("payload-a").toBuilder()
+                .setKindValue(-1))
+            .build();
 
         assertThrows(ValidationException.class, () -> validator.validate(unspecifiedKind));
         assertThrows(ValidationException.class, () -> validator.validate(blankAttribute));
+        assertThrows(ValidationException.class, () -> validator.validate(blankAttributeKey));
+        assertThrows(ValidationException.class, () -> validator.validate(blankPayloadId));
+        assertThrows(ValidationException.class, () -> validator.validate(blankContentType));
+        assertThrows(ValidationException.class, () -> validator.validate(unrecognizedKind));
     }
 
     @Test

@@ -153,7 +153,7 @@ final class CliArgumentParser {
         try {
             return URI.create(value);
         } catch (IllegalArgumentException e) {
-            throw new CliUsageException("Invalid gateway-submit option " + option + ": " + value);
+            throw new CliUsageException("Invalid gateway-submit option " + option + ".");
         }
     }
 
@@ -172,7 +172,7 @@ final class CliArgumentParser {
         try {
             return Long.parseLong(value);
         } catch (NumberFormatException e) {
-            throw new CliUsageException("Invalid numeric gateway-submit option " + option + ": " + value);
+            throw new CliUsageException("Invalid numeric gateway-submit option " + option + ".");
         }
     }
 
@@ -183,6 +183,6 @@ final class CliArgumentParser {
         if ("false".equalsIgnoreCase(value)) {
             return false;
         }
-        throw new CliUsageException("Invalid boolean gateway-submit option " + option + ": " + value);
+        throw new CliUsageException("Invalid boolean gateway-submit option " + option + ".");
     }
 }

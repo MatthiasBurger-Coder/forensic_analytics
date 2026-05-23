@@ -1,5 +1,6 @@
 package de.burger.forensics.analytics.services.joernanalysis.adapter.in.grpc;
 
+import com.google.protobuf.ByteString;
 import de.burger.forensics.analytics.analysisjob.v1.AnalysisArtifactCategory;
 import de.burger.forensics.analytics.analysisjob.v1.AnalysisArtifactReference;
 import de.burger.forensics.analytics.analysisjob.v1.AnalysisCompleteness;
@@ -11,6 +12,8 @@ import de.burger.forensics.analytics.analysisjob.v1.SourceSnapshotId;
 import de.burger.forensics.analytics.joerncpganalysis.v1.AnalyzeJoernCpgRequest;
 import de.burger.forensics.analytics.joerncpganalysis.v1.AnalyzeJoernCpgResponse;
 import de.burger.forensics.analytics.joerncpganalysis.v1.DiagnosticSeverity;
+import de.burger.forensics.analytics.joerncpganalysis.v1.GetSemanticArtifactBytesRequest;
+import de.burger.forensics.analytics.joerncpganalysis.v1.GetSemanticArtifactBytesResponse;
 import de.burger.forensics.analytics.joerncpganalysis.v1.JoernMaterializationPolicy;
 import de.burger.forensics.analytics.joerncpganalysis.v1.JoernCpgAnalysisServiceGrpc;
 import de.burger.forensics.analytics.joerncpganalysis.v1.JoernCpgDiagnostic;
@@ -25,6 +28,7 @@ import de.burger.forensics.analytics.services.joernanalysis.application.JoernCpg
 import de.burger.forensics.analytics.services.joernanalysis.application.JoernCpgAnalysisTimeoutException;
 import de.burger.forensics.analytics.services.joernanalysis.application.JoernCpgArtifactException;
 import de.burger.forensics.analytics.services.joernanalysis.application.JoernRuntimeUnavailableException;
+import de.burger.forensics.analytics.services.joernanalysis.application.port.JoernArtifactReaderPort;
 import de.burger.forensics.analytics.services.joernanalysis.domain.JoernCpgAnalysisDomain.AnalyzeJoernCpgCommand;
 import de.burger.forensics.analytics.services.joernanalysis.domain.JoernCpgAnalysisDomain.AnalyzeJoernCpgResult;
 import de.burger.forensics.analytics.services.joernanalysis.domain.JoernCpgAnalysisDomain.MaterializationMetadata;
@@ -32,6 +36,8 @@ import de.burger.forensics.analytics.services.joernanalysis.domain.JoernCpgAnaly
 import de.burger.forensics.analytics.services.joernanalysis.domain.JoernCpgAnalysisDomain.MaterializeJoernWorkspaceCommand;
 import de.burger.forensics.analytics.services.joernanalysis.domain.JoernCpgAnalysisDomain.MaterializeJoernWorkspaceResult;
 import de.burger.forensics.analytics.services.joernanalysis.domain.JoernCpgAnalysisDomain.RequestMetadata;
+import de.burger.forensics.analytics.services.joernanalysis.domain.JoernCpgAnalysisDomain.SemanticArtifactBytes;
+import de.burger.forensics.analytics.services.joernanalysis.domain.JoernCpgAnalysisDomain.SemanticArtifactBytesRequest;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 
@@ -60,9 +66,14 @@ public final class JoernCpgAnalysisGrpcEndpoint extends JoernCpgAnalysisServiceG
     );
 
     private final JoernCpgAnalysisApplicationService applicationService;
+    private final JoernArtifactReaderPort artifactReader;
 
-    public JoernCpgAnalysisGrpcEndpoint(JoernCpgAnalysisApplicationService applicationService) {
+    public JoernCpgAnalysisGrpcEndpoint(
+        JoernCpgAnalysisApplicationService applicationService,
+        JoernArtifactReaderPort artifactReader
+    ) {
         this.applicationService = Objects.requireNonNull(applicationService, "application service must not be null");
+        this.artifactReader = Objects.requireNonNull(artifactReader, "artifact reader must not be null");
     }
 
     @Override
@@ -89,6 +100,20 @@ public final class JoernCpgAnalysisGrpcEndpoint extends JoernCpgAnalysisServiceG
             requireJoernWorker(request);
             var result = applicationService.analyze(command(request));
             responseObserver.onNext(response(result));
+            responseObserver.onCompleted();
+        } catch (RuntimeException error) {
+            responseObserver.onError(status(error).asRuntimeException());
+        }
+    }
+
+    @Override
+    public void getSemanticArtifactBytes(
+        GetSemanticArtifactBytesRequest request,
+        StreamObserver<GetSemanticArtifactBytesResponse> responseObserver
+    ) {
+        try {
+            var bytes = artifactReader.read(bytesRequest(request));
+            responseObserver.onNext(bytesResponse(request, bytes));
             responseObserver.onCompleted();
         } catch (RuntimeException error) {
             responseObserver.onError(status(error).asRuntimeException());
@@ -173,6 +198,28 @@ public final class JoernCpgAnalysisGrpcEndpoint extends JoernCpgAnalysisServiceG
             ),
             policy(request.getPolicy()),
             workspace(request.getWorkspace())
+        );
+    }
+
+    private static SemanticArtifactBytesRequest bytesRequest(GetSemanticArtifactBytesRequest request) {
+        return new SemanticArtifactBytesRequest(
+            request.getRequestId(),
+            request.getCorrelationId(),
+            new de.burger.forensics.analytics.services.joernanalysis.domain.JoernCpgAnalysisDomain.AnalysisRunId(
+                request.getAnalysisRunId().getValue()
+            ),
+            new de.burger.forensics.analytics.services.joernanalysis.domain.JoernCpgAnalysisDomain.AnalysisJobId(
+                request.getAnalysisJobId().getValue()
+            ),
+            new de.burger.forensics.analytics.services.joernanalysis.domain.JoernCpgAnalysisDomain.SourceSnapshotId(
+                request.getSourceSnapshotId().getValue()
+            ),
+            request.getRetrievalReference(),
+            request.getExpectedSha256(),
+            request.getExpectedSizeBytes(),
+            request.getMaxBytes(),
+            request.getSchemaVersion(),
+            request.getSafeAttributesMap()
         );
     }
 
@@ -327,6 +374,28 @@ public final class JoernCpgAnalysisGrpcEndpoint extends JoernCpgAnalysisServiceG
         return builder.build();
     }
 
+    private static GetSemanticArtifactBytesResponse bytesResponse(
+        GetSemanticArtifactBytesRequest request,
+        SemanticArtifactBytes bytes
+    ) {
+        var artifact = bytes.artifact();
+        return GetSemanticArtifactBytesResponse.newBuilder()
+            .setStatus(OperationStatus.newBuilder()
+                .setCode("SEMANTIC_ARTIFACT_BYTES_RETRIEVED")
+                .setMessage("Joern semantic artifact bytes retrieved")
+                .setRetryable(false)
+                .setCorrelationId(request.getCorrelationId()))
+            .setAnalysisRunId(request.getAnalysisRunId())
+            .setAnalysisJobId(request.getAnalysisJobId())
+            .setSourceSnapshotId(request.getSourceSnapshotId())
+            .setSemanticArtifact(artifact(artifact))
+            .setContent(ByteString.copyFrom(bytes.content()))
+            .setSha256(artifact.artifact().sha256())
+            .setSizeBytes(artifact.artifact().sizeBytes())
+            .putAllSafeAttributes(bytes.safeAttributes())
+            .build();
+    }
+
     private static OperationStatus status(String code, String message, MaterializeJoernWorkspaceResult result) {
         var builder = OperationStatus.newBuilder()
             .setCode(code)
@@ -344,7 +413,8 @@ public final class JoernCpgAnalysisGrpcEndpoint extends JoernCpgAnalysisServiceG
                     ? code
                     : "ANALYZED_INCOMPLETE")
             .setMessage(message)
-            .setRetryable(false)
+            .setRetryable(result.diagnostics().stream()
+                .anyMatch(de.burger.forensics.analytics.services.joernanalysis.domain.JoernCpgAnalysisDomain.JoernCpgDiagnostic::retryable))
             .setCorrelationId(result.metadata().correlationId());
         result.diagnostics().forEach(diagnostic -> builder.addDiagnostics(diagnostic(diagnostic)));
         return builder.build();

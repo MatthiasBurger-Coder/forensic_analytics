@@ -14,8 +14,9 @@ import de.burger.forensics.analytics.ingestion.v1.StartAnalysisSessionRequest;
 import de.burger.forensics.analytics.ingestion.v1.UploadAnalysisDataResponse;
 import de.burger.forensics.analytics.ingestion.v1.WorkspacePolicy;
 import de.burger.forensics.analytics.services.ingestion.adapter.out.memory.InMemoryIngestionSessionRepository;
-import de.burger.forensics.analytics.services.ingestion.adapter.out.memory.NoOpAcceptedIngestionHandoffPort;
 import de.burger.forensics.analytics.services.ingestion.application.IngestionApplicationService;
+import de.burger.forensics.analytics.services.ingestion.application.port.AcceptedIngestionHandoffPort;
+import de.burger.forensics.analytics.services.ingestion.domain.RawIngestionPayload;
 import io.grpc.ManagedChannel;
 import io.grpc.Server;
 import io.grpc.Status;
@@ -28,6 +29,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -46,13 +48,15 @@ class ForensicIngestionGrpcEndpointTest {
     private ManagedChannel channel;
     private ForensicIngestionServiceGrpc.ForensicIngestionServiceBlockingStub blockingStub;
     private ForensicIngestionServiceGrpc.ForensicIngestionServiceStub asyncStub;
+    private RecordingAcceptedIngestionHandoffPort handoff;
 
     @BeforeEach
     void startServer() throws IOException {
         var serverName = InProcessServerBuilder.generateName();
+        handoff = new RecordingAcceptedIngestionHandoffPort();
         var applicationService = new IngestionApplicationService(
             new InMemoryIngestionSessionRepository(),
-            new NoOpAcceptedIngestionHandoffPort()
+            handoff
         );
         server = InProcessServerBuilder.forName(serverName)
             .directExecutor()
@@ -84,6 +88,14 @@ class ForensicIngestionGrpcEndpointTest {
         assertTrue(responseObserver.awaitCompletion());
         assertNull(responseObserver.error);
         assertEquals(1, responseObserver.values.getFirst().getReceivedItems());
+        assertEquals(1, handoff.accepted.size());
+        assertEquals(start.getSessionId(), handoff.sessionIds.getFirst());
+        assertEquals("payload-a", handoff.accepted.getFirst().descriptor().payloadId());
+        assertEquals("project-a", handoff.accepted.getFirst().buildIdentity().projectId());
+        assertEquals("module-a", handoff.accepted.getFirst().moduleIdentity().moduleName());
+        assertEquals("forensic-plugin", handoff.accepted.getFirst().pluginIdentity().pluginName());
+        assertEquals("schema-v1", handoff.accepted.getFirst().schemaVersion());
+        assertEquals("{}", new String(handoff.accepted.getFirst().payload(), StandardCharsets.UTF_8));
 
         var complete = blockingStub.completeAnalysisSession(CompleteAnalysisSessionRequest.newBuilder()
             .setSessionId(start.getSessionId())
@@ -143,6 +155,11 @@ class ForensicIngestionGrpcEndpointTest {
 
         assertEquals(Status.Code.UNIMPLEMENTED, error.getStatus().getCode());
         assertEquals(Status.Code.UNIMPLEMENTED, malformedError.getStatus().getCode());
+        assertEquals(
+            "AnalyzeRepository is not implemented by ingestion-service; repository checkout is owned by repository-source-service",
+            error.getStatus().getDescription()
+        );
+        assertEquals(error.getStatus().getDescription(), malformedError.getStatus().getDescription());
     }
 
     @Test
@@ -181,9 +198,12 @@ class ForensicIngestionGrpcEndpointTest {
             .clearPayloadDescriptor()
             .setPayloadType("SOURCE_FACTS")
             .build());
+        requestObserver.onNext(envelope(start.getSessionId(), "payload-b"));
+        requestObserver.onCompleted();
 
         assertTrue(responseObserver.awaitCompletion());
         assertEquals(Status.Code.INVALID_ARGUMENT, Status.fromThrowable(responseObserver.error).getCode());
+        assertTrue(handoff.accepted.isEmpty());
     }
 
     @Test
@@ -265,6 +285,17 @@ class ForensicIngestionGrpcEndpointTest {
 
         private boolean awaitCompletion() throws InterruptedException {
             return latch.await(5, TimeUnit.SECONDS);
+        }
+    }
+
+    private static final class RecordingAcceptedIngestionHandoffPort implements AcceptedIngestionHandoffPort {
+        private final List<String> sessionIds = new ArrayList<>();
+        private final List<RawIngestionPayload> accepted = new ArrayList<>();
+
+        @Override
+        public void accepted(String sessionId, RawIngestionPayload payload) {
+            sessionIds.add(sessionId);
+            accepted.add(payload);
         }
     }
 }

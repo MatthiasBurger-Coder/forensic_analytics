@@ -23,6 +23,9 @@
 !services/java-ast-analysis-service/build/
 !services/java-ast-analysis-service/build/libs/
 !services/java-ast-analysis-service/build/libs/*.jar
+!services/joern-analysis-service/build/
+!services/joern-analysis-service/build/libs/
+!services/joern-analysis-service/build/libs/*.jar
 !services/joern-cpg-analysis-service/build/
 !services/joern-cpg-analysis-service/build/libs/
 !services/joern-cpg-analysis-service/build/libs/*.jar

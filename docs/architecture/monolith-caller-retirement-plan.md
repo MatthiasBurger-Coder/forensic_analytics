@@ -133,7 +133,7 @@ rg -n -P "^import\\s+de\\.burger\\.forensics\\.analytics\\.(application|domain|p
 # 594
 ```
 
-`services:testbed` currently has nine test dependencies on retained legacy
+`services:testbed` currently has 13 test dependencies on retained legacy
 modules. This is intentional parity evidence from S13, not permission to use
 the testbed as a production dependency.
 
@@ -146,14 +146,18 @@ S14 therefore has this executable rule:
 4. Retire only a path that later proves caller-free evidence, replacement
    parity, rollback or explicit deprecation and the required `QUALITY.md` gate.
 
-## Follow-Up Retirement Slices
+## Refined Follow-Up Retirement Slices
 
-These slices are provisional follow-up work, not executable S14 work:
+Workflow-create refinement after the S14 execution stop promotes the
+provisional follow-up work into the active workflow sequence. S14 remains a
+no-deletion readiness reconciliation gate. S15 through S18 resolve remaining
+blockers, S19 is candidate-specific removal and S20 is closure.
 
 | Follow-up | Purpose | Required proof before deletion |
 |---|---|---|
-| `S14A` | Migrate or explicitly deprecate local CLI `analyze` and `ingest-request` behavior. | Public API CLI parity or deprecation tests, operator migration notes and root quality gate. |
-| `S14B` | Replace in-process REST, Bootstrap and Boot runtime callers with service-owned contracts and startup evidence. | Service start/health tests, REST/gRPC contract parity, rollback notes and full local quality gate. |
-| `S14C` | Resolve Engine and Ingestion Request ownership through target service APIs or explicit deprecation. | Owner API contract, compatibility/deprecation tests and no remaining production caller imports. |
-| `S14D` | Replace monolith-coupled Testbed coverage with networked or service-local E2E coverage. | E2E tests that cover the same evidence without shared Java implementation modules. |
-| `S14E` | Remove only verified caller-free modules or paths. | Empty caller scans for the named path, replacement parity, rollback/deprecation notes and full local quality gate. |
+| `S15` | Relocate testbed architecture and hardening checks away from legacy-module-dependent classpaths. | Service-local architecture gates or retained non-production hardening evidence without weakening default gates. |
+| `S16` | Migrate or explicitly deprecate local CLI, engine and in-process Joern testbed scenarios. | Public API or service parity tests, deprecation/operator notes and root quality gate. |
+| `S17` | Replace repository checkout and ingestion E2E tests with target service coverage or explicit unsupported-input decisions. | Repository-source, ingestion and orchestration tests that preserve checkout, source-root, cleanup and session evidence. |
+| `S18` | Move public API contract ownership and close boot/bootstrap/persistence ownership exits. | Surviving OpenAPI contract test, ownership docs, public API/client gates and no frontend-visible drift. |
+| `S19` | Remove only verified caller-free modules or paths. | Empty caller scans for the named path, replacement parity, rollback/deprecation notes and full local quality gate. |
+| `S20` | Close readiness, rollback notes and technical debt. | Final arc42/ADR/docs sync and full local quality gate. |

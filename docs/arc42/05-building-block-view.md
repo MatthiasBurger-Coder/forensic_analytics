@@ -98,6 +98,15 @@ application packages remain framework-free; service-local bootstrap code may
 own the Spring Boot entrypoint, configuration and lifecycle wiring for an
 independent service.
 
+S12 verifies that productive service code keeps domain and application models
+inside service-local packages and that productive service build files do not
+depend on the retained central `forensic-analytics-domain` or
+`forensic-analytics-application` modules. Those central modules remain
+current-state and rollback evidence until S15 through S18 resolve the remaining
+testbed, runtime, public API and ownership blockers and S19 proves
+caller-free retirement. The non-production `services:testbed` test dependencies
+remain S13/S14 regression evidence and are not productive service coupling.
+
 ## 5.8 Cross-cutting Logging Module
 
 ADR-0008 accepts `forensic-analytics-logging` as a cross-cutting infrastructure module. It provides `ForensicLoggerFactory` for explicit logger injection and optional Spring method interception in the Boot runtime.
@@ -105,6 +114,14 @@ ADR-0008 accepts `forensic-analytics-logging` as a cross-cutting infrastructure 
 The logging module may depend on `forensic-analytics-observability` for correlation context and on Spring AOP/Context for the accepted method-interception exception. It may publish Boot auto-configuration metadata. It must not depend on domain, application, adapters, persistence, REST, gRPC, generated Protobuf, AspectJ, SLF4J or concrete logging providers.
 
 Automatic logging records operation name, phase, duration, correlation ID and exception category only. It must not log method arguments, return values, raw exception messages, stack frames, payloads, source content, credentials or LLM prompt content.
+
+S15 moves productive-service logging and Spring boundary checks into the
+service-local architecture tests for `analysis-orchestrator-service`,
+`repository-source-service`, `ingestion-service`,
+`java-parser-analysis-service`, `joern-analysis-service`,
+`query-report-api-service` and `cli-client`. `services:testbed` no longer owns
+the broad logging or Spring building-block architecture rules; it remains a
+non-production integration boundary with retained hardening evidence.
 
 ## 5.9 Target Microservices Ecosystem
 
@@ -148,12 +165,14 @@ services/observability-stack
 services/testbed
 ```
 
-S11 adds `services/cli-client` as a public API client boundary with a
+S09 adds `services/cli-client` as a public API client boundary with a
 service-local Gradle project, CLI bootstrap, HTTP/OpenAPI adapter and tests. It
 is not a backend service and must not own forensic evidence, analysis execution,
 parser behavior, Joern control or persistence. The predecessor
 `forensic-analytics-cli` local `analyze` and `ingest-request` commands remain
-current-state evidence until a later parity or deprecation slice.
+predecessor rollback evidence. S16 deprecates them as target `cli-client`
+behavior and keeps `gateway-submit` as the only verified target CLI command in
+this workflow state.
 
 Every productive service must own its internal domain, application, adapters,
 bootstrap, configuration, tests, health checks and Dockerfile before production
@@ -198,48 +217,54 @@ unchanged and generated transport classes stay inside the service build.
 `services/java-ast-analysis-service` and
 `forensic-analytics-adapter-javaparser` remain current-state predecessor and
 rollback evidence. They are not compatibility aliases for
-`java-parser-analysis-service` and are not removed by S07.
+`java-parser-analysis-service` and are not removed by S05.
 
-Slice S08 adds `services/joern-analysis-service` as target-service
+Slice S06 adds `services/joern-analysis-service` as target-service
 implementation evidence for the FA-MSA-001 Joern semantic analysis boundary.
 It is registered as its own Gradle project and owns service-local domain,
 application ports, inbound gRPC adapter, outbound filesystem, Joern runtime
 and artifact-registry adapters, bootstrap, configuration, tests, README and
-Dockerfile. The predecessor `joern-cpg-analysis.proto` wire shape remains
-unchanged and generated transport classes stay inside the service build.
+Dockerfile. The `joern-cpg-analysis.proto` transport contract remains
+service-local generated code and now includes the service-owned
+`GetSemanticArtifactBytes` retrieval RPC so artifact bytes are not exposed
+through an Analysis Store byte alias.
 
 `services/joern-cpg-analysis-service` and
 `forensic-analytics-adapter-joern-docker` remain current-state predecessor and
 rollback evidence. They are not compatibility aliases for
-`joern-analysis-service` and are not removed by S08.
+`joern-analysis-service` and are not removed by S06.
 
-Slice S09 adds `services/analysis-orchestrator-service` as target-service
+Slice S07 adds `services/analysis-orchestrator-service` as target-service
 implementation evidence for the FA-MSA-001 orchestration boundary. It is
 registered as its own Gradle project and owns service-local domain,
 application ports, inbound gRPC adapter, in-memory orchestration repository,
-bootstrap, configuration, tests, README and Dockerfile. The service uses
-`analysis-job.proto` as a service-local generated transport input and maps it
-to service-owned job lifecycle, lease, retry, failure, dead-letter,
-correlation and job-to-artifact reference models.
+repository-to-BTM pending readiness state, bootstrap, configuration, tests,
+README and Dockerfile. The service uses `analysis-job.proto` as a
+service-local generated transport input and maps it to service-owned job
+lifecycle, lease, retry, failure, dead-letter, correlation,
+job-to-artifact-reference and repository-to-BTM status models.
 
 `forensic-analytics-engine`, orchestration portions of
 `forensic-analytics-application` and `services/analysis-store-service` remain
 current-state predecessor and rollback evidence. They are not compatibility
-aliases for `analysis-orchestrator-service` and are not removed by S09.
+aliases for `analysis-orchestrator-service` and are not removed by S07.
 
 The orchestrator coordinates workflow state only. It must not own repository
 checkout, JavaParser scanning, Joern execution, report rendering, artifact byte
 custody, producer-local artifact catalogs, canonical analysis facts or private
-persistence owned by another service.
+persistence owned by another service. S07 `StartRepositoryToBtm` and
+`GetRepositoryToBtmStatus` behavior is acceptance/status-only and deliberately
+reports incomplete repository handoff, not-ready BTM delivery and skipped Joern
+execution until later slices wire verified owner services.
 
 The query/report API service is the public facade for status, query and report
 responses. It must use owner APIs and must not perform analysis execution or
 read private service databases.
 
-Slice S10 adds `services/query-report-api-service` as target-service
+Slice S08 adds `services/query-report-api-service` as target-service
 implementation evidence for the FA-MSA-001 public API facade boundary. It is
 registered as its own Gradle project and owns service-local domain,
-application port, inbound HTTP adapter, outbound Analysis Store owner API gRPC
+application port, inbound HTTP adapter, outbound Analysis Orchestrator gRPC
 adapter, bootstrap, configuration, tests, README and Dockerfile. The service
 keeps the transitional `gateway-api.yaml` filename and `analysis-job.proto`
 transport input as external contract evidence only; generated transport
@@ -248,7 +273,7 @@ classes remain inside the service build.
 `forensic-analytics-rest` and public API portions of
 `services/forensic-gateway-service` remain current-state predecessor and
 rollback evidence. They are not compatibility aliases for
-`query-report-api-service` and are not removed by S10.
+`query-report-api-service` and are not removed by S08.
 
 Optional later service candidates such as `btm-generation-service`,
 `graph-replay-service` and `incident-analysis-service` remain outside
@@ -256,9 +281,10 @@ mandatory FA-MSA-001 closure unless a later requirement makes them mandatory.
 
 Slice S14 is a retirement-readiness decision, not a direct deletion slice.
 Current caller evidence keeps the central `forensic-analytics-*` modules as
-legacy in-process and rollback building blocks until later follow-up slices
-prove caller-free evidence, replacement parity and rollback or explicit
-deprecation. Retaining those modules is not a microservice-readiness claim.
+legacy in-process and rollback building blocks until S15 through S18 prove
+replacement or explicit deprecation for the remaining blockers and S19 proves
+caller-free evidence. Retaining those modules is not a microservice-readiness
+claim.
 
 ADR-0018 accepts initial logical contracts for target service communication.
 Contracts marked as planned are design artifacts only; they do not prove that

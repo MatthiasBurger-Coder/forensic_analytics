@@ -40,10 +40,20 @@ class IngestionServiceArchitectureTest {
                 "de.burger.forensics.analytics.application..",
                 "de.burger.forensics.analytics.domain..",
                 "de.burger.forensics.analytics.persistence..",
+                "de.burger.forensics.analytics.logging..",
                 "de.burger.forensics.analytics.observability..",
                 "de.burger.forensics.analytics.ingestion.grpc..",
                 "de.burger.forensics.analytics.ingestion.request.."
             );
+
+    @ArchTest
+    static final ArchRule spring_dependencies_stay_inside_service_bootstrap =
+        noClasses()
+            .that()
+            .resideOutsideOfPackage("de.burger.forensics.analytics.services.ingestion.bootstrap..")
+            .should()
+            .dependOnClassesThat()
+            .resideInAnyPackage("org.springframework..");
 
     @ArchTest
     static final ArchRule domain_does_not_depend_on_application_adapters_or_bootstrap =

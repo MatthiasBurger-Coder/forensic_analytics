@@ -25,7 +25,8 @@ evidence; it is not an alias for this target service.
   modular-monolith domain/application/persistence modules is used.
 - `AnalyzeRepository` is retained by the v1 contract but returns an explicit
   gRPC `UNIMPLEMENTED` status in this service because repository checkout is
-  not an ingestion responsibility.
+  not an ingestion responsibility. The exact status description is
+  `AnalyzeRepository is not implemented by ingestion-service; repository checkout is owned by repository-source-service`.
 - Engine ingestion request manifests are parsed service-locally from verified
   fields only and imported through this service's application boundary. Missing
   fields, unsupported payload kinds and missing payload files remain explicit

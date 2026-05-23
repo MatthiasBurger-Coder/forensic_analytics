@@ -90,7 +90,12 @@ record GatewaySubmitCommand(
 
     private static String validateRepositoryUrl(String repositoryUrl) {
         var value = requireText(repositoryUrl, "--repo-url");
-        var uri = URI.create(value);
+        URI uri;
+        try {
+            uri = URI.create(value);
+        } catch (IllegalArgumentException e) {
+            throw new CliUsageException("Invalid gateway-submit --repo-url.");
+        }
         if (!"https".equalsIgnoreCase(uri.getScheme())) {
             throw new CliUsageException("gateway-submit --repo-url must be an HTTPS URL.");
         }

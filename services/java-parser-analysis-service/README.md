@@ -13,8 +13,9 @@ its own Gradle project and maps them into service-owned models.
 
 ## Contract
 
-The provisional Slice 07 inbound API is `JavaAstAnalysisService.AnalyzeSourceSnapshot`
-from `contracts/grpc/java-ast-analysis.proto`.
+The current FA-MSA-001-LMR S05 inbound API is
+`JavaAstAnalysisService.AnalyzeSourceSnapshot` from
+`contracts/grpc/java-ast-analysis.proto`.
 
 Inputs are immutable source snapshot identifiers, declared Java source roots,
 bounded UTF-8 source files and scan policy limits. Results are delivered as
@@ -31,6 +32,16 @@ every scan until real symbol solving is implemented. Source-fact artifacts
 carry explicit `sourceRoot` context and never represent static reachability as
 observed runtime execution.
 
+Source-fact artifact retrieval references are immutable forensic evidence
+handles. A repeated write for the same run, job and source snapshot succeeds
+only when the produced bytes are identical; different bytes for an existing
+reference are rejected instead of replacing previously published evidence.
+
+S16 uses this service as worker-contract evidence only. The JavaParser service
+returns source-fact artifact metadata and diagnostics; it does not replace the
+legacy in-process repository-analysis summary, BTM rule generation, runtime
+execution or semantic graph assertions.
+
 ## Local Commands
 
 ```bash
@@ -45,6 +56,6 @@ Local operator start command:
 ./gradlew :services:java-parser-analysis-service:bootRun --dependency-verification strict --console=plain --stacktrace
 ```
 
-Default local ports are gRPC `9094` and health `8085`. S07 does not add Docker
+Default local ports are gRPC `9094` and health `8085`. S05 does not add Docker
 Compose, Docker Swarm or Kubernetes readiness for the FA-MSA-001 target
 landscape.

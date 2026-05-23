@@ -233,8 +233,8 @@ class JoernCpgAnalysisApplicationServiceTest {
             completeness,
             new ArtifactByteAccess(
                 PRODUCER_SERVICE,
-                "analysis-job.v1.ArtifactBytes",
-                "artifacts/" + path,
+                "joern-cpg-analysis.v1.JoernCpgAnalysisService.GetSemanticArtifactBytes",
+                path,
                 ArtifactByteCustody.PRODUCER_RETAINED
             )
         );

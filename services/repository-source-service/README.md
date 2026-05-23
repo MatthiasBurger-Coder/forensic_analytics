@@ -16,8 +16,10 @@ never part of the public contract.
   `/var/lib/forensic-analytics/repository-workspaces`
 
 The service accepts clean HTTPS repository URLs only. Local paths, `file:`
-URLs, SSH/SCP remotes, submodules, build execution and parser execution are out
-of scope for S05.
+URLs, SSH/SCP remotes, submodules, build execution and parser execution are
+explicitly deprecated at this service boundary. The legacy repository-source
+adapter remains registered only as predecessor regression evidence until the
+workflow reaches the final removal gate.
 
 Repository checkout runs in a service-owned workspace. Public responses expose
 opaque workspace IDs, source snapshot IDs, relative source roots and artifact
@@ -40,5 +42,5 @@ Run the service locally:
 ```
 
 The default health endpoint listens on `127.0.0.1:8083` and the service gRPC
-port listens on `127.0.0.1:9092`. S05 does not claim Docker Compose, Swarm or
+port listens on `127.0.0.1:9092`. S03 does not claim Docker Compose, Swarm or
 Kubernetes runtime readiness for this target service.

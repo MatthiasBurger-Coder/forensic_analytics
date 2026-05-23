@@ -1,5 +1,6 @@
 package de.burger.forensics.analytics.services.javaparseranalysis.adapter.in.grpc;
 
+import de.burger.forensics.analytics.analysisjob.v1.AnalysisArtifactCategory;
 import de.burger.forensics.analytics.analysisjob.v1.AnalysisJobId;
 import de.burger.forensics.analytics.analysisjob.v1.AnalysisRunId;
 import de.burger.forensics.analytics.analysisjob.v1.AnalysisCompleteness;
@@ -41,6 +42,7 @@ import java.util.List;
 import static de.burger.forensics.analytics.services.javaparseranalysis.domain.JavaAstAnalysisDomain.sha256;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class JavaAstAnalysisGrpcEndpointTest {
     @TempDir
@@ -69,6 +71,7 @@ class JavaAstAnalysisGrpcEndpointTest {
         assertEquals("ANALYZED_INCOMPLETE", response.getStatus().getCode());
         assertEquals(AnalysisCompleteness.ANALYSIS_COMPLETENESS_INCOMPLETE, response.getCompleteness());
         assertEquals("snapshot-1", response.getSourceSnapshotId().getValue());
+        assertEquals(AnalysisArtifactCategory.ANALYSIS_ARTIFACT_CATEGORY_STATIC, response.getSourceFactArtifact().getCategory());
         assertEquals("java-parser-analysis-service", response.getSourceFactArtifact().getProducerService());
         assertEquals("java-parser-analysis-service", response.getSourceFactArtifact().getByteAccess().getOwnerService());
         assertEquals(
@@ -92,11 +95,22 @@ class JavaAstAnalysisGrpcEndpointTest {
             bytes.getSourceFactArtifact().getByteAccess().getRetrievalContract()
         );
         assertEquals(bytes.getSha256(), sha256(bytes.getContent().toByteArray()));
+        assertTrue(bytes.getContent().toStringUtf8().contains("\"evidenceKind\": \"STATIC_SOURCE_FACT\""));
 
-        var complete = stub.analyzeSourceSnapshot(request(AnalysisWorkerKind.ANALYSIS_WORKER_KIND_AST_ANALYSIS, false));
+        var complete = stub.analyzeSourceSnapshot(request(
+            AnalysisWorkerKind.ANALYSIS_WORKER_KIND_AST_ANALYSIS,
+            false,
+            "run-1",
+            "job-complete",
+            "snapshot-complete",
+            "package a; class A { void run() {} }"
+        ));
         var parseError = stub.analyzeSourceSnapshot(request(
             AnalysisWorkerKind.ANALYSIS_WORKER_KIND_AST_ANALYSIS,
             false,
+            "run-1",
+            "job-parse-error",
+            "snapshot-parse-error",
             "class Broken { void fail( }"
         ));
 
@@ -309,15 +323,26 @@ class JavaAstAnalysisGrpcEndpointTest {
         boolean symbolDiagnostics,
         String content
     ) {
+        return request(workerKind, symbolDiagnostics, "run-1", "job-1", "snapshot-1", content);
+    }
+
+    private static AnalyzeSourceSnapshotRequest request(
+        AnalysisWorkerKind workerKind,
+        boolean symbolDiagnostics,
+        String analysisRunId,
+        String analysisJobId,
+        String sourceSnapshotId,
+        String content
+    ) {
         return AnalyzeSourceSnapshotRequest.newBuilder()
             .setRequestId("request-1")
             .setIdempotencyKey("idempotency-1")
             .setSchemaVersion("java-ast-analysis-v1")
             .setCorrelationId("correlation-1")
             .setWorkerKind(workerKind)
-            .setAnalysisRunId(AnalysisRunId.newBuilder().setValue("run-1"))
-            .setAnalysisJobId(AnalysisJobId.newBuilder().setValue("job-1"))
-            .setSourceSnapshotId(SourceSnapshotId.newBuilder().setValue("snapshot-1"))
+            .setAnalysisRunId(AnalysisRunId.newBuilder().setValue(analysisRunId))
+            .setAnalysisJobId(AnalysisJobId.newBuilder().setValue(analysisJobId))
+            .setSourceSnapshotId(SourceSnapshotId.newBuilder().setValue(sourceSnapshotId))
             .setWorkerVersion("java-parser-analysis-service-test")
             .setScanPolicy(ScanPolicy.newBuilder()
                 .setMaxFiles(10)

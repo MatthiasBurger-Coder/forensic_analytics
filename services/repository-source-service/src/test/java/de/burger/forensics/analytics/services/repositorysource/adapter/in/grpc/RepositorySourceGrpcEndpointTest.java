@@ -1,5 +1,6 @@
 package de.burger.forensics.analytics.services.repositorysource.adapter.in.grpc;
 
+import de.burger.forensics.analytics.repositoryanalysis.v1.AnalyzeSourceSnapshotWithJavaAstRequest;
 import de.burger.forensics.analytics.repositoryanalysis.v1.CleanupRepositoryWorkspaceRequest;
 import de.burger.forensics.analytics.repositoryanalysis.v1.GetRepositoryPreparationRequest;
 import de.burger.forensics.analytics.repositoryanalysis.v1.BuildOutputProducer;
@@ -40,6 +41,7 @@ import java.time.ZoneOffset;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class RepositorySourceGrpcEndpointTest {
@@ -91,9 +93,17 @@ class RepositorySourceGrpcEndpointTest {
 
         assertEquals("PREPARED", prepared.getStatus().getCode());
         assertEquals("https://example.com/acme/demo.git", loaded.getRepository().getRemoteUrl());
+        assertFalse(loaded.getWorkspaceId().contains("memory"));
+        assertFalse(loaded.getWorkspaceId().contains("/"));
+        assertFalse(loaded.getWorkspaceId().contains("\\"));
         assertEquals("src/main/java", loaded.getSourceSnapshot().getSourceRoots(0).getRelativePath());
         assertEquals(PackageAvailability.PACKAGE_AVAILABILITY_PENDING, loaded.getSourceSnapshot().getSourcePackage().getAvailability());
         assertEquals("repository-source-service", loaded.getSourceSnapshot().getSourcePackage().getByteAccess().getOwnerService());
+        assertEquals("repository-source.v1.SourcePackage", loaded.getSourceSnapshot().getSourcePackage().getByteAccess().getRetrievalContract());
+        assertEquals(
+            "source-snapshot/" + loaded.getSourceSnapshotId(),
+            loaded.getSourceSnapshot().getSourcePackage().getByteAccess().getRetrievalReference()
+        );
         assertEquals("build-artifact-worker-service", loaded.getSourceSnapshot().getBuildOutputPackage().getByteAccess().getOwnerService());
         assertEquals("auto-detect", loaded.getSourceSnapshot().getBuildOutputPackage().getBuildSystem());
         assertEquals(
@@ -113,6 +123,62 @@ class RepositorySourceGrpcEndpointTest {
         );
         assertEquals(RepositoryWorkspaceStatus.REPOSITORY_WORKSPACE_STATUS_CLEANED, cleaned.getWorkspaceStatus());
         assertEquals("CLEANED", cleaned.getStatus().getCode());
+    }
+
+    @Test
+    void keepsJavaAstAnalysisOutsideRepositorySourceOwnership() {
+        var failure = assertThrows(
+            StatusRuntimeException.class,
+            () -> stub.analyzeSourceSnapshotWithJavaAst(AnalyzeSourceSnapshotWithJavaAstRequest.newBuilder()
+                .setRequestId("request-ast")
+                .setIdempotencyKey("ast-key")
+                .setSchemaVersion("schema-v1")
+                .setCorrelationId("correlation-1")
+                .setAnalysisRunId("run-1")
+                .setAnalysisJobId("job-1")
+                .setSourceSnapshotId("source-snapshot-1")
+                .build())
+        );
+
+        assertEquals(Status.Code.UNIMPLEMENTED, failure.getStatus().getCode());
+    }
+
+    @Test
+    void rejectsLegacyLocalRepositoryInputsAtGrpcBoundaryWithoutLeakingPaths() {
+        for (String remote : List.of(
+            "file:///tmp/repo",
+            "/tmp/repo",
+            "C:/tmp/repo",
+            "ssh://example.com/repo.git",
+            "git@example.com:org/repo.git"
+        )) {
+            var failure = assertThrows(
+                StatusRuntimeException.class,
+                () -> stub.prepareRepository(prepareRequest("prepare-" + Math.abs(remote.hashCode()), "schema-v1")
+                    .toBuilder()
+                    .setRepository(RepositoryReference.newBuilder()
+                        .setRemoteUrl(remote)
+                        .setProvider("legacy-input"))
+                    .build())
+            );
+
+            assertEquals(Status.Code.INVALID_ARGUMENT, failure.getStatus().getCode());
+            assertEquals("Invalid repository source request", failure.getStatus().getDescription());
+        }
+    }
+
+    @Test
+    void rejectsPrivateSafeAttributesAtGrpcBoundaryWithoutLeakingPaths() {
+        var failure = assertThrows(
+            StatusRuntimeException.class,
+            () -> stub.prepareRepository(prepareRequest("prepare-private-attribute", "schema-v1")
+                .toBuilder()
+                .putSafeAttributes("note", "checkout failed at /tmp/private/workspace")
+                .build())
+        );
+
+        assertEquals(Status.Code.INVALID_ARGUMENT, failure.getStatus().getCode());
+        assertEquals("Invalid repository source request", failure.getStatus().getDescription());
     }
 
     @Test

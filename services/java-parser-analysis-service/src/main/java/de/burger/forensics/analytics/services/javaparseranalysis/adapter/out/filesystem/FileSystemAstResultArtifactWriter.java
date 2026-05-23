@@ -206,13 +206,9 @@ public final class FileSystemAstResultArtifactWriter implements AstResultArtifac
             if (!attributes.isRegularFile()) {
                 throw new IOException("Artifact target must be a regular file.");
             }
-            try (var channel = Files.newByteChannel(
-                target,
-                StandardOpenOption.WRITE,
-                StandardOpenOption.TRUNCATE_EXISTING,
-                LinkOption.NOFOLLOW_LINKS
-            )) {
-                channel.write(ByteBuffer.wrap(bytes));
+            var existingBytes = readBytes(target);
+            if (!Arrays.equals(existingBytes, bytes)) {
+                throw new IOException("Artifact target already exists with different content.");
             }
             return;
         }

@@ -77,10 +77,12 @@ class GatewaySubmissionHttpClientTest {
             """
                 {
                   "code": "CONFLICT",
-                  "message": "Idempotency key conflicts with a previous request",
+                  "message": "Idempotency key conflicts with /tmp/private Authorization token",
                   "retryable": false,
                   "correlationId": "correlation-1",
-                  "diagnostics": []
+                  "diagnostics": [
+                    {"code": "PRIVATE_PATH", "message": "/tmp/private Authorization token"}
+                  ]
                 }
                 """
         );
@@ -92,6 +94,7 @@ class GatewaySubmissionHttpClientTest {
         assertTrue(error.getMessage().contains("retryable=false"));
         assertTrue(error.getMessage().contains("correlationId=correlation-1"));
         assertFalse(error.getMessage().contains("/tmp"));
+        assertFalse(error.getMessage().contains("Authorization"));
     }
 
     @Test

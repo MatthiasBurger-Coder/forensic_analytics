@@ -6,7 +6,6 @@ import de.burger.forensics.analytics.application.ingestion.command.WorkspacePrep
 import de.burger.forensics.analytics.domain.analysis.AnalysisRunId;
 import de.burger.forensics.analytics.domain.repository.RepositoryMetadata;
 import de.burger.forensics.analytics.domain.workspace.WorkspaceCleanupPolicy;
-import de.burger.forensics.analytics.domain.workspace.WorkspacePolicy;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;

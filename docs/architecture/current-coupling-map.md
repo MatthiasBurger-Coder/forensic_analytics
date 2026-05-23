@@ -219,15 +219,51 @@ to `NO_REMOVAL_SAFE`. The new `services:testbed` root preserves the legacy
 regression surface in a service-root location, which is useful parity evidence
 but still a test dependency on retained monolith modules.
 
+Workflow-create refinement after the S14 execution stop keeps S14 as a
+no-deletion readiness gate. S15 through S18 now own the remaining testbed,
+runtime, public API, boot/bootstrap and ownership exits. S19 is the first
+deletion-capable slice and may remove only verified caller-free candidates.
+
 Current evidence remains non-empty:
 
-- 58 build-file references to the S14 legacy module candidates;
+- all 16 listed legacy modules remain registered in `settings.gradle.kts`;
+- `services:testbed` still has 13 test-scoped legacy module dependencies;
 - 633 production imports into retained `application`, `domain`, `persistence`,
   `logging`, `observability`, `rest`, `bootstrap`, `boot` or `engine`
   packages;
 - 594 test imports into those retained packages;
-- nine `services:testbed` test dependencies on retained legacy modules.
+- focused S14 service production scans found no legacy imports in
+  `services/**/src/main`, while service test scans still find legacy imports in
+  `services/testbed/src/test`.
 
 These findings block direct module retirement. The next safe action is
 path-specific migration or explicit deprecation, followed by a smaller
 caller-free removal slice for each verified candidate.
+
+## FA-MSA-001-LMR S01 Revalidation
+
+FA-MSA-001-LMR S01 revalidated the caller and dependency inventory on branch
+`architecture/workflow-legacy-module-retirement-20260522` after the dedicated
+legacy-module-retirement workflow was created.
+
+The S01 inventory used these reproducible checks:
+
+```bash
+git ls-files "*build.gradle.kts" | xargs rg -n "project\\(\\\":forensic-analytics-"
+rg -n -P "^import\\s+de\\.burger\\.forensics\\.analytics\\.(application|domain|adapter|persistence|rest|cli|engine|logging|observability|bootstrap|ingestion\\.request|ingestion\\.grpc)\\b" services forensic-analytics-* -S -g "**/src/main/**/*.java"
+rg -n -P "^import\\s+de\\.burger\\.forensics\\.analytics\\.(application|domain|adapter|persistence|rest|cli|engine|logging|observability|bootstrap|ingestion\\.request|ingestion\\.grpc)\\b" services forensic-analytics-* -S -g "**/src/test/**/*.java"
+git diff --check
+```
+
+Current evidence remains non-empty:
+
+- 72 direct Gradle `project(":forensic-analytics-*")` dependency references
+  across legacy module build files and `services/testbed`;
+- 653 production Java imports into retained legacy packages;
+- 628 test Java imports into retained legacy packages;
+- `forensic-analytics-testbed` and `services:testbed` each still test-depend
+  on 13 retained legacy modules.
+
+S01 therefore records `NO_DELETION_SAFE`. No listed legacy module is removed by
+S01. The next safe action is to proceed to S02 contract and runtime parity
+gates before path-specific retirement slices.

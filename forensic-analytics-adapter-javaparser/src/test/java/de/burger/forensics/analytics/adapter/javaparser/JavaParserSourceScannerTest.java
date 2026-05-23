@@ -53,19 +53,36 @@ class JavaParserSourceScannerTest {
 
         assertEquals(
             List.of(
-                "com.example.Sample#greet(String)",
-                "com.example.Sample#run()",
-                "com.example.Sample$Nested#size()"
+                new FactProjection(
+                    "java-method",
+                    "com/example/Sample.java",
+                    "com.example.Sample",
+                    "greet",
+                    4,
+                    "com.example.Sample#greet(String)",
+                    "AST method com.example.Sample#greet(String)"
+                ),
+                new FactProjection(
+                    "java-method",
+                    "com/example/Sample.java",
+                    "com.example.Sample",
+                    "run",
+                    8,
+                    "com.example.Sample#run()",
+                    "AST method com.example.Sample#run()"
+                ),
+                new FactProjection(
+                    "java-method",
+                    "com/example/Sample.java",
+                    "com.example.Sample$Nested",
+                    "size",
+                    12,
+                    "com.example.Sample$Nested#size()",
+                    "AST method com.example.Sample$Nested#size()"
+                )
             ),
-            facts.stream().map(fact -> fact.signature()).toList()
+            facts.stream().map(JavaParserSourceScannerTest::projection).toList()
         );
-        assertEquals(
-            List.of("java-method", "java-method", "java-method"),
-            facts.stream().map(fact -> fact.factType()).toList()
-        );
-        assertEquals("com/example/Sample.java", facts.getFirst().location().sourcePath());
-        assertEquals("com.example.Sample", facts.getFirst().location().fullyQualifiedClassName());
-        assertEquals("greet", facts.getFirst().location().methodName());
     }
 
     @Test
@@ -178,6 +195,29 @@ class JavaParserSourceScannerTest {
     private static void write(Path file, String content) throws Exception {
         Files.createDirectories(file.getParent());
         Files.writeString(file, content, StandardCharsets.UTF_8);
+    }
+
+    private static FactProjection projection(de.burger.forensics.analytics.domain.source.SourceFact fact) {
+        return new FactProjection(
+            fact.factType(),
+            fact.location().sourcePath(),
+            fact.location().fullyQualifiedClassName(),
+            fact.location().methodName(),
+            fact.location().lineNumber(),
+            fact.signature(),
+            fact.summary()
+        );
+    }
+
+    private record FactProjection(
+        String factType,
+        String sourcePath,
+        String fullyQualifiedClassName,
+        String methodName,
+        int lineNumber,
+        String signature,
+        String summary
+    ) {
     }
 
     private static final class RecordingOperationLogger implements OperationLogger {

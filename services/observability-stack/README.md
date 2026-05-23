@@ -2,7 +2,8 @@
 
 ## Status
 
-Slice S12 target boundary for deployment-oriented observability material.
+Slice S10 target boundary for deployment-oriented observability and logging
+replacement-readiness material.
 
 `observability-stack` is not a productive backend service and not a shared Java
 runtime module. It owns deployable and operator-facing material for logs,
@@ -24,18 +25,21 @@ Non-scope:
 - domain, application, parser, Joern, persistence or reporting behavior;
 - storing operational logs as verified forensic evidence.
 
-## Current S12 Material
+## Current S10 Material
 
 - `deployment/observability/service-diagnostics-policy.yaml`
 
-The policy records allowed diagnostic fields and forbidden values for future
-deployment configuration. It does not start external telemetry services, expose
-network ports, collect runtime traces or claim Docker Compose, Swarm or
-Kubernetes readiness.
+The policy records allowed diagnostic fields, explicit correlation and trace
+context fields, forbidden sensitive values, missing-value handling and
+diagnostic surface exposure rules for future deployment configuration. It does
+not start external telemetry services, expose network ports, collect runtime
+traces or claim Docker Compose, Swarm, Kubernetes, Prometheus, Grafana,
+OpenTelemetry collector or log-shipping readiness.
 
 ## Verification
 
 ```bash
+./gradlew :services:observability-stack:test --dependency-verification strict --console=plain --stacktrace
 ./gradlew test --dependency-verification strict --console=plain --stacktrace
 git diff --check
 ```

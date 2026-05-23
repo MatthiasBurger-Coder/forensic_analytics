@@ -5,6 +5,9 @@ import de.burger.forensics.analytics.services.javaparseranalysis.domain.JavaAstA
 import de.burger.forensics.analytics.services.javaparseranalysis.domain.JavaAstAnalysisDomain.AnalysisJobId;
 import de.burger.forensics.analytics.services.javaparseranalysis.domain.JavaAstAnalysisDomain.AnalysisRunId;
 import de.burger.forensics.analytics.services.javaparseranalysis.domain.JavaAstAnalysisDomain.AnalyzeSourceSnapshotCommand;
+import de.burger.forensics.analytics.services.javaparseranalysis.domain.JavaAstAnalysisDomain.DiagnosticSeverity;
+import de.burger.forensics.analytics.services.javaparseranalysis.domain.JavaAstAnalysisDomain.EvidenceKind;
+import de.burger.forensics.analytics.services.javaparseranalysis.domain.JavaAstAnalysisDomain.JavaSourceFact;
 import de.burger.forensics.analytics.services.javaparseranalysis.domain.JavaAstAnalysisDomain.JavaSourceFile;
 import de.burger.forensics.analytics.services.javaparseranalysis.domain.JavaAstAnalysisDomain.RequestMetadata;
 import de.burger.forensics.analytics.services.javaparseranalysis.domain.JavaAstAnalysisDomain.ScanPolicy;
@@ -17,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 
 import static de.burger.forensics.analytics.services.javaparseranalysis.domain.JavaAstAnalysisDomain.sha256;
+import static de.burger.forensics.analytics.services.javaparseranalysis.domain.JavaAstAnalysisDomain.stableId;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -48,11 +52,47 @@ class JavaParserSourceScannerAdapterTest {
 
         assertEquals(
             List.of(
-                "com.example.Sample#greet(String)",
-                "com.example.Sample#run()",
-                "com.example.Sample$Nested#size()"
+                new FactProjection(
+                    "java-method",
+                    "com/example/Sample.java",
+                    "com.example.Sample",
+                    "greet",
+                    4,
+                    "com.example.Sample#greet(String)",
+                    "AST method com.example.Sample#greet(String)"
+                ),
+                new FactProjection(
+                    "java-method",
+                    "com/example/Sample.java",
+                    "com.example.Sample",
+                    "run",
+                    8,
+                    "com.example.Sample#run()",
+                    "AST method com.example.Sample#run()"
+                ),
+                new FactProjection(
+                    "java-method",
+                    "com/example/Sample.java",
+                    "com.example.Sample$Nested",
+                    "size",
+                    12,
+                    "com.example.Sample$Nested#size()",
+                    "AST method com.example.Sample$Nested#size()"
+                )
             ),
-            result.sourceFacts().stream().map(fact -> fact.signature()).toList()
+            result.sourceFacts().stream().map(JavaParserSourceScannerAdapterTest::legacyProjection).toList()
+        );
+        assertEquals(List.of("src/main/java", "src/main/java", "src/main/java"), result.sourceFacts().stream().map(JavaSourceFact::sourceRoot).toList());
+        assertEquals(List.of(EvidenceKind.STATIC_SOURCE_FACT, EvidenceKind.STATIC_SOURCE_FACT, EvidenceKind.STATIC_SOURCE_FACT), result.sourceFacts().stream()
+            .map(JavaSourceFact::evidenceKind)
+            .toList());
+        assertEquals(
+            List.of(
+                stableId("snapshot-1", "java-method", "src/main/java/com/example/Sample.java", "com.example.Sample#greet(String)", "4"),
+                stableId("snapshot-1", "java-method", "src/main/java/com/example/Sample.java", "com.example.Sample#run()", "8"),
+                stableId("snapshot-1", "java-method", "src/main/java/com/example/Sample.java", "com.example.Sample$Nested#size()", "12")
+            ),
+            result.sourceFacts().stream().map(JavaSourceFact::factId).toList()
         );
         assertEquals("java-method", result.sourceFacts().getFirst().factType());
         assertEquals("src/main/java", result.sourceFacts().getFirst().sourceRoot());
@@ -62,6 +102,28 @@ class JavaParserSourceScannerAdapterTest {
         assertTrue(result.sourceFacts().stream().allMatch(fact -> fact.factId().startsWith("java-source-fact:")));
         assertEquals(List.of("SYMBOL_RESOLUTION_NOT_CONFIGURED"), result.diagnostics().stream().map(diagnostic -> diagnostic.code()).toList());
         assertEquals(AnalysisCompleteness.INCOMPLETE, result.completeness());
+    }
+
+    @Test
+    void ordersFactsDeterministicallyAcrossInputOrder() {
+        var alpha = file("src/main/java", "a/A.java", "package a; class A { void alpha() {} }");
+        var beta = file("src/main/java", "b/B.java", "package b; class B { void beta() {} }");
+
+        var ordered = scanner.scan(command(List.of(alpha, beta), false));
+        var reordered = scanner.scan(command(List.of(beta, alpha), false));
+
+        assertEquals(
+            List.of("a.A#alpha()", "b.B#beta()"),
+            ordered.sourceFacts().stream().map(JavaSourceFact::signature).toList()
+        );
+        assertEquals(
+            ordered.sourceFacts().stream().map(JavaSourceFact::factId).toList(),
+            reordered.sourceFacts().stream().map(JavaSourceFact::factId).toList()
+        );
+        assertEquals(
+            ordered.sourceFacts().stream().map(JavaParserSourceScannerAdapterTest::legacyProjection).toList(),
+            reordered.sourceFacts().stream().map(JavaParserSourceScannerAdapterTest::legacyProjection).toList()
+        );
     }
 
     @Test
@@ -103,6 +165,7 @@ class JavaParserSourceScannerAdapterTest {
         var result = scanner.scan(command(List.of(file("src/main/java", "Broken.java", source)), false));
 
         assertEquals(0, result.sourceFacts().size());
+        assertTrue(result.sourceFacts().stream().noneMatch(fact -> "java-parse-error".equals(fact.factType())));
         assertEquals(1, result.summary().parseErrorCount());
         assertEquals(2, result.diagnostics().size());
         assertEquals(
@@ -136,7 +199,13 @@ class JavaParserSourceScannerAdapterTest {
         assertEquals(List.of("com.example.UsesMissingType#run(MissingType)"), result.sourceFacts().stream().map(fact -> fact.signature()).toList());
         assertEquals(List.of("java-method"), result.sourceFacts().stream().map(fact -> fact.factType()).toList());
         assertEquals(List.of("SYMBOL_RESOLUTION_NOT_CONFIGURED"), result.diagnostics().stream().map(diagnostic -> diagnostic.code()).toList());
-        assertTrue(result.diagnostics().getFirst().affectsCompleteness());
+        var diagnostic = result.diagnostics().getFirst();
+        assertEquals(DiagnosticSeverity.WARNING, diagnostic.severity());
+        assertEquals("", diagnostic.sourcePath());
+        assertEquals(0, diagnostic.lineNumber());
+        assertEquals(0, diagnostic.columnNumber());
+        assertTrue(diagnostic.affectsCompleteness());
+        assertEquals(List.of(EvidenceKind.STATIC_SOURCE_FACT), result.sourceFacts().stream().map(JavaSourceFact::evidenceKind).toList());
         assertEquals(AnalysisCompleteness.INCOMPLETE, result.completeness());
     }
 
@@ -181,5 +250,32 @@ class JavaParserSourceScannerAdapterTest {
 
     private static JavaSourceFile file(String root, String path, String content) {
         return new JavaSourceFile(root, path, content, sha256(content), content.getBytes(StandardCharsets.UTF_8).length);
+    }
+
+    private static FactProjection legacyProjection(JavaSourceFact fact) {
+        return new FactProjection(
+            fact.factType(),
+            sourceRootRelativePath(fact),
+            fact.location().fullyQualifiedClassName(),
+            fact.location().methodName(),
+            fact.location().lineNumber(),
+            fact.signature(),
+            fact.summary()
+        );
+    }
+
+    private static String sourceRootRelativePath(JavaSourceFact fact) {
+        return fact.location().sourcePath().substring(fact.sourceRoot().length() + 1);
+    }
+
+    private record FactProjection(
+        String factType,
+        String sourcePath,
+        String fullyQualifiedClassName,
+        String methodName,
+        int lineNumber,
+        String signature,
+        String summary
+    ) {
     }
 }

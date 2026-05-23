@@ -102,7 +102,10 @@ repository-to-BTM requests to `StartRepositoryToBtm` and read status through
 `GetRepositoryToBtmStatus`. The response is deliberately a readiness state:
 unavailable source/build packages keep Joern skipped with explicit incomplete
 diagnostics, and completed BTM bytes remain owned by BTM Generation until the
-public delivery path returns them.
+public delivery path returns them. FA-MSA-001-LMR S07 implements the target
+orchestrator side as acceptance/status-only: it validates public request
+metadata and records incomplete pending readiness, but does not dispatch
+repository checkout, JavaParser, Joern, BTM generation or report work.
 
 `btm-generation.proto` is intentionally limited to generated instrumentation
 artifacts. It accepts accepted fact artifact references and bounded inline

@@ -46,6 +46,7 @@ class CliClientArchitectureTest {
             .dependOnClassesThat()
             .resideInAnyPackage(
                 "de.burger.forensics.analytics.services.queryreportapi..",
+                "de.burger.forensics.analytics.services.analysisorchestrator..",
                 "de.burger.forensics.analytics.services.gateway..",
                 "de.burger.forensics.analytics.services.repositoryanalysis..",
                 "de.burger.forensics.analytics.services.analysisstore..",
@@ -79,6 +80,15 @@ class CliClientArchitectureTest {
                 "de.burger.forensics.analytics.rest..",
                 "de.burger.forensics.analytics.testbed.."
             );
+
+    @ArchTest
+    static final ArchRule cli_client_does_not_depend_on_spring =
+        noClasses()
+            .that()
+            .resideInAPackage("de.burger.forensics.analytics.services.cliclient..")
+            .should()
+            .dependOnClassesThat()
+            .resideInAnyPackage("org.springframework..");
 
     @ArchTest
     static final ArchRule domain_does_not_depend_on_application_adapters_or_bootstrap =

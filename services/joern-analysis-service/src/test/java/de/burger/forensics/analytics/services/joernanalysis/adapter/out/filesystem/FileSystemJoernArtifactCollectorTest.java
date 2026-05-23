@@ -16,12 +16,14 @@ import de.burger.forensics.analytics.services.joernanalysis.domain.JoernCpgAnaly
 import de.burger.forensics.analytics.services.joernanalysis.domain.JoernCpgAnalysisDomain.JoernCpgPolicy;
 import de.burger.forensics.analytics.services.joernanalysis.domain.JoernCpgAnalysisDomain.JoernRuntimeResult;
 import de.burger.forensics.analytics.services.joernanalysis.domain.JoernCpgAnalysisDomain.RequestMetadata;
+import de.burger.forensics.analytics.services.joernanalysis.domain.JoernCpgAnalysisDomain.SemanticArtifactBytesRequest;
 import de.burger.forensics.analytics.services.joernanalysis.domain.JoernCpgAnalysisDomain.SourceRoot;
 import de.burger.forensics.analytics.services.joernanalysis.domain.JoernCpgAnalysisDomain.SourceSnapshotId;
 import de.burger.forensics.analytics.services.joernanalysis.domain.JoernCpgAnalysisDomain.SourceWorkspace;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -33,7 +35,10 @@ import static de.burger.forensics.analytics.services.joernanalysis.adapter.out.f
 import static de.burger.forensics.analytics.services.joernanalysis.adapter.out.filesystem.FileSystemJoernArtifactCollector.DATAFLOW;
 import static de.burger.forensics.analytics.services.joernanalysis.adapter.out.filesystem.FileSystemJoernArtifactCollector.PROVENANCE;
 import static de.burger.forensics.analytics.services.joernanalysis.adapter.out.filesystem.FileSystemJoernArtifactCollector.SLICES;
+import static de.burger.forensics.analytics.services.joernanalysis.domain.JoernCpgAnalysisDomain.SEMANTIC_ARTIFACT_SCHEMA_VERSION;
+import static de.burger.forensics.analytics.services.joernanalysis.domain.JoernCpgAnalysisDomain.sha256;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -231,10 +236,89 @@ class FileSystemJoernArtifactCollectorTest {
         ));
     }
 
+    @Test
+    void servesSemanticArtifactBytesThroughJoernOwnedPublicReference() throws Exception {
+        var collector = new FileSystemJoernArtifactCollector(tempDir);
+        var command = command(false, false, false, 1_000_000);
+        var relativeDirectory = fingerprintArtifactDirectory();
+        var artifactDirectory = tempDir.resolve(relativeDirectory);
+        Files.createDirectories(artifactDirectory);
+        Files.writeString(artifactDirectory.resolve(CPG), "cpg", StandardCharsets.UTF_8);
+
+        var result = collector.collect(command, new JoernRuntimeResult("joern-test-1", image(), relativeDirectory, List.of()));
+        var cpg = result.artifacts().stream()
+            .filter(reference -> reference.artifact().path().endsWith(CPG))
+            .findFirst()
+            .orElseThrow();
+
+        assertEquals(FileSystemJoernArtifactCollector.BYTE_RETRIEVAL_CONTRACT, cpg.byteAccess().retrievalContract());
+        assertEquals(cpg.artifact().path(), cpg.byteAccess().retrievalReference());
+        assertFalse(cpg.byteAccess().retrievalReference().startsWith("artifacts/"));
+        assertFalse(cpg.byteAccess().retrievalReference().startsWith("/"));
+
+        var bytes = collector.read(bytesRequest(command, cpg));
+
+        assertEquals("cpg", new String(bytes.content(), StandardCharsets.UTF_8));
+        assertEquals(cpg.artifact().sha256(), bytes.artifact().artifact().sha256());
+        assertEquals(cpg.artifact().path(), bytes.artifact().byteAccess().retrievalReference());
+        assertEquals(FileSystemJoernArtifactCollector.BYTE_RETRIEVAL_CONTRACT, bytes.artifact().byteAccess().retrievalContract());
+        assertEquals("demo", bytes.safeAttributes().get("tenant"));
+    }
+
+    @Test
+    void rejectsSemanticArtifactByteRequestsOutsideExpectedArtifactIdentity() throws Exception {
+        var collector = new FileSystemJoernArtifactCollector(tempDir);
+        var command = command(false, false, false, 1_000_000);
+        var relativeDirectory = fingerprintArtifactDirectory();
+        var artifactDirectory = tempDir.resolve(relativeDirectory);
+        Files.createDirectories(artifactDirectory);
+        Files.writeString(artifactDirectory.resolve(CPG), "cpg", StandardCharsets.UTF_8);
+
+        var result = collector.collect(command, new JoernRuntimeResult("joern-test-1", image(), relativeDirectory, List.of()));
+        var cpg = result.artifacts().stream()
+            .filter(reference -> reference.artifact().path().endsWith(CPG))
+            .findFirst()
+            .orElseThrow();
+
+        assertThrows(IllegalStateException.class, () -> collector.read(new SemanticArtifactBytesRequest(
+            "request-1",
+            "correlation-1",
+            new AnalysisRunId("other-run"),
+            new AnalysisJobId("job-1"),
+            new SourceSnapshotId("snapshot-1"),
+            cpg.artifact().path(),
+            cpg.artifact().sha256(),
+            cpg.artifact().sizeBytes(),
+            1_000_000,
+            SEMANTIC_ARTIFACT_SCHEMA_VERSION,
+            Map.of()
+        )));
+    }
+
     private Path artifactDirectory() throws Exception {
         var directory = tempDir.resolve("joern-cpg/run-1");
         Files.createDirectories(directory);
         return directory;
+    }
+
+    private static String fingerprintArtifactDirectory() {
+        return "joern-cpg/" + sha256("run-1|job-1|snapshot-1").substring(0, 24);
+    }
+
+    private static SemanticArtifactBytesRequest bytesRequest(AnalyzeJoernCpgCommand command, AnalysisArtifactReference artifact) {
+        return new SemanticArtifactBytesRequest(
+            command.metadata().requestId() + "-bytes",
+            command.metadata().correlationId(),
+            command.metadata().analysisRunId(),
+            command.metadata().analysisJobId(),
+            command.metadata().sourceSnapshotId(),
+            artifact.byteAccess().retrievalReference(),
+            artifact.artifact().sha256(),
+            artifact.artifact().sizeBytes(),
+            command.policy().maxArtifactBytes(),
+            SEMANTIC_ARTIFACT_SCHEMA_VERSION,
+            command.metadata().safeAttributes()
+        );
     }
 
     private static JoernRuntimeResult runtimeResult() {

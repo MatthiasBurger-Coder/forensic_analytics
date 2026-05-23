@@ -435,6 +435,55 @@ public final class JoernCpgAnalysisDomain {
         }
     }
 
+    public record SemanticArtifactBytesRequest(
+        String requestId,
+        String correlationId,
+        AnalysisRunId analysisRunId,
+        AnalysisJobId analysisJobId,
+        SourceSnapshotId sourceSnapshotId,
+        String retrievalReference,
+        String expectedSha256,
+        long expectedSizeBytes,
+        long maxBytes,
+        String schemaVersion,
+        Map<String, String> safeAttributes
+    ) {
+        public SemanticArtifactBytesRequest {
+            requestId = requireText(requestId, "request id");
+            correlationId = requireText(correlationId, "correlation id");
+            analysisRunId = Objects.requireNonNull(analysisRunId, "analysis run id must not be null");
+            analysisJobId = Objects.requireNonNull(analysisJobId, "analysis job id must not be null");
+            sourceSnapshotId = Objects.requireNonNull(sourceSnapshotId, "source snapshot id must not be null");
+            retrievalReference = requirePublicReference(retrievalReference, "retrieval reference");
+            expectedSha256 = requireSha256(expectedSha256, "expected checksum");
+            if (expectedSizeBytes < 0) {
+                throw new IllegalArgumentException("expected size must not be negative");
+            }
+            if (maxBytes < 1 || maxBytes > 1_073_741_824L) {
+                throw new IllegalArgumentException("max bytes must be between 1 and 1073741824");
+            }
+            schemaVersion = requireText(schemaVersion, "schema version");
+            safeAttributes = safeAttributeMap(safeAttributes);
+        }
+    }
+
+    public record SemanticArtifactBytes(
+        AnalysisArtifactReference artifact,
+        byte[] content,
+        Map<String, String> safeAttributes
+    ) {
+        public SemanticArtifactBytes {
+            artifact = Objects.requireNonNull(artifact, "artifact must not be null");
+            content = Objects.requireNonNull(content, "content must not be null").clone();
+            safeAttributes = safeAttributeMap(safeAttributes);
+        }
+
+        @Override
+        public byte[] content() {
+            return content.clone();
+        }
+    }
+
     public record MaterializeJoernWorkspaceResult(
         MaterializationMetadata metadata,
         SourceWorkspace workspace,

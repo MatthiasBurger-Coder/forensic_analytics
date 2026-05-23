@@ -9,23 +9,27 @@ import de.burger.forensics.analytics.analysisjob.v1.ArtifactByteAccess;
 import de.burger.forensics.analytics.analysisjob.v1.ArtifactByteCustody;
 import de.burger.forensics.analytics.analysisjob.v1.SourceSnapshotId;
 import de.burger.forensics.analytics.joerncpganalysis.v1.AnalyzeJoernCpgRequest;
+import de.burger.forensics.analytics.joerncpganalysis.v1.GetSemanticArtifactBytesRequest;
 import de.burger.forensics.analytics.joerncpganalysis.v1.JoernMaterializationPolicy;
 import de.burger.forensics.analytics.joerncpganalysis.v1.JoernCpgAnalysisServiceGrpc;
 import de.burger.forensics.analytics.joerncpganalysis.v1.JoernCpgPolicy;
 import de.burger.forensics.analytics.joerncpganalysis.v1.MaterializeJoernWorkspaceRequest;
 import de.burger.forensics.analytics.joerncpganalysis.v1.SourceRoot;
 import de.burger.forensics.analytics.joerncpganalysis.v1.SourceWorkspace;
+import de.burger.forensics.analytics.services.joernanalysis.adapter.out.filesystem.FileSystemJoernArtifactCollector;
 import de.burger.forensics.analytics.services.joernanalysis.application.JoernCpgAnalysisApplicationService;
 import de.burger.forensics.analytics.services.joernanalysis.application.JoernCpgAnalysisTimeoutException;
 import de.burger.forensics.analytics.services.joernanalysis.application.JoernCpgArtifactException;
 import de.burger.forensics.analytics.services.joernanalysis.application.JoernRuntimeUnavailableException;
 import de.burger.forensics.analytics.services.joernanalysis.application.port.JoernArtifactCollectorPort;
+import de.burger.forensics.analytics.services.joernanalysis.application.port.JoernArtifactReaderPort;
 import de.burger.forensics.analytics.services.joernanalysis.application.port.ResolvedJoernWorkspace;
 import de.burger.forensics.analytics.services.joernanalysis.domain.JoernCpgAnalysisDomain.AnalysisArtifactReference;
 import de.burger.forensics.analytics.services.joernanalysis.domain.JoernCpgAnalysisDomain.ArtifactReference;
 import de.burger.forensics.analytics.services.joernanalysis.domain.JoernCpgAnalysisDomain.JoernArtifactCollectionResult;
 import de.burger.forensics.analytics.services.joernanalysis.domain.JoernCpgAnalysisDomain.JoernCpgDiagnostic;
 import de.burger.forensics.analytics.services.joernanalysis.domain.JoernCpgAnalysisDomain.JoernRuntimeResult;
+import de.burger.forensics.analytics.services.joernanalysis.domain.JoernCpgAnalysisDomain.SemanticArtifactBytes;
 import io.grpc.ManagedChannel;
 import io.grpc.Server;
 import io.grpc.Status;
@@ -35,6 +39,7 @@ import io.grpc.inprocess.InProcessServerBuilder;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.List;
 
@@ -135,11 +140,48 @@ class JoernCpgAnalysisGrpcEndpointTest {
         var response = stub.analyzeSourceSnapshot(request(AnalysisWorkerKind.ANALYSIS_WORKER_KIND_JOERN_ANALYSIS));
 
         assertEquals("ANALYZED", response.getStatus().getCode());
+        assertEquals(false, response.getStatus().getRetryable());
         assertEquals(AnalysisCompleteness.ANALYSIS_COMPLETENESS_COMPLETE, response.getCompleteness());
         assertEquals("snapshot-1", response.getSourceSnapshotId().getValue());
         assertEquals(AnalysisArtifactCategory.ANALYSIS_ARTIFACT_CATEGORY_STATIC, response.getSemanticArtifacts(0).getCategory());
         assertEquals(PRODUCER_SERVICE, response.getSemanticArtifacts(0).getByteAccess().getOwnerService());
+        assertEquals(
+            FileSystemJoernArtifactCollector.BYTE_RETRIEVAL_CONTRACT,
+            response.getSemanticArtifacts(0).getByteAccess().getRetrievalContract()
+        );
+        assertEquals(
+            response.getSemanticArtifacts(0).getArtifact().getPath(),
+            response.getSemanticArtifacts(0).getByteAccess().getRetrievalReference()
+        );
         assertEquals(PRODUCER_SERVICE, response.getSummary().getProducerService());
+        assertEquals("demo", response.getSafeAttributesOrThrow("tenant"));
+    }
+
+    @Test
+    void retrievesSemanticArtifactBytesThroughJoernOwnedGrpcBoundary() throws Exception {
+        var artifact = reference("joern-cpg/run-1/cpg.bin.zip");
+        startServer(
+            applicationService(new JoernArtifactCollectionResult(List.of(artifact), 0, List.of())),
+            request -> new SemanticArtifactBytes(
+                artifact,
+                "cpg".getBytes(StandardCharsets.UTF_8),
+                request.safeAttributes()
+            )
+        );
+
+        var response = stub.getSemanticArtifactBytes(bytesRequest(artifact));
+
+        assertEquals("SEMANTIC_ARTIFACT_BYTES_RETRIEVED", response.getStatus().getCode());
+        assertEquals("joern-cpg/run-1/cpg.bin.zip", response.getSemanticArtifact().getArtifact().getPath());
+        assertEquals(
+            FileSystemJoernArtifactCollector.BYTE_RETRIEVAL_CONTRACT,
+            response.getSemanticArtifact().getByteAccess().getRetrievalContract()
+        );
+        assertEquals(
+            response.getSemanticArtifact().getArtifact().getPath(),
+            response.getSemanticArtifact().getByteAccess().getRetrievalReference()
+        );
+        assertEquals("cpg", response.getContent().toStringUtf8());
         assertEquals("demo", response.getSafeAttributesOrThrow("tenant"));
     }
 
@@ -219,6 +261,22 @@ class JoernCpgAnalysisGrpcEndpointTest {
         );
         assertEquals(Status.Code.INVALID_ARGUMENT, wrongArtifactCategory.getStatus().getCode());
 
+        var privateInputArtifact = assertThrows(
+            StatusRuntimeException.class,
+            () -> stub.analyzeSourceSnapshot(request(AnalysisWorkerKind.ANALYSIS_WORKER_KIND_JOERN_ANALYSIS).toBuilder()
+                .setWorkspace(SourceWorkspace.newBuilder()
+                    .setWorkspaceId("joern-workspace-snapshot-1")
+                    .addSourceRoots(SourceRoot.newBuilder().setRelativePath("src/main/java").setLanguage("java"))
+                    .addInputArtifacts(inputArtifact("source-generated.json", AnalysisCompleteness.ANALYSIS_COMPLETENESS_COMPLETE).toBuilder()
+                        .setByteAccess(ArtifactByteAccess.newBuilder()
+                            .setOwnerService("repository-analysis-service")
+                            .setRetrievalContract("repository-analysis.v1.SourcePackage")
+                            .setRetrievalReference("file:/tmp/private/source.zip")
+                            .setByteCustody(ArtifactByteCustody.ARTIFACT_BYTE_CUSTODY_PRODUCER_RETAINED))))
+                .build())
+        );
+        assertEquals(Status.Code.INVALID_ARGUMENT, privateInputArtifact.getStatus().getCode());
+
         var mismatchedWorkspace = assertThrows(
             StatusRuntimeException.class,
             () -> stub.analyzeSourceSnapshot(request(AnalysisWorkerKind.ANALYSIS_WORKER_KIND_JOERN_ANALYSIS).toBuilder()
@@ -232,6 +290,7 @@ class JoernCpgAnalysisGrpcEndpointTest {
         startServer(applicationServiceWithRuntimeFailure(new JoernRuntimeUnavailableException("Joern unavailable")));
         var unavailable = stub.analyzeSourceSnapshot(request(AnalysisWorkerKind.ANALYSIS_WORKER_KIND_JOERN_ANALYSIS));
         assertEquals("ANALYZED_INCOMPLETE", unavailable.getStatus().getCode());
+        assertEquals(true, unavailable.getStatus().getRetryable());
         assertEquals(AnalysisCompleteness.ANALYSIS_COMPLETENESS_UNKNOWN, unavailable.getCompleteness());
         assertEquals(List.of("JOERN_RUNTIME_UNAVAILABLE"), unavailable.getDiagnosticsList().stream()
             .map(diagnostic -> diagnostic.getCode())
@@ -243,6 +302,7 @@ class JoernCpgAnalysisGrpcEndpointTest {
         startServer(applicationServiceWithRuntimeFailure(new JoernCpgAnalysisTimeoutException("timeout")));
         var timeout = stub.analyzeSourceSnapshot(request(AnalysisWorkerKind.ANALYSIS_WORKER_KIND_JOERN_ANALYSIS));
         assertEquals("ANALYZED_INCOMPLETE", timeout.getStatus().getCode());
+        assertEquals(true, timeout.getStatus().getRetryable());
         assertEquals(AnalysisCompleteness.ANALYSIS_COMPLETENESS_UNKNOWN, timeout.getCompleteness());
         assertEquals(List.of("JOERN_RUNTIME_TIMEOUT"), timeout.getDiagnosticsList().stream()
             .map(diagnostic -> diagnostic.getCode())
@@ -397,10 +457,19 @@ class JoernCpgAnalysisGrpcEndpointTest {
     }
 
     private void startServer(JoernCpgAnalysisApplicationService applicationService) throws Exception {
+        startServer(applicationService, request -> {
+            throw new IllegalStateException("semantic artifact is not available");
+        });
+    }
+
+    private void startServer(
+        JoernCpgAnalysisApplicationService applicationService,
+        JoernArtifactReaderPort artifactReader
+    ) throws Exception {
         var serverName = InProcessServerBuilder.generateName();
         server = InProcessServerBuilder.forName(serverName)
             .directExecutor()
-            .addService(new JoernCpgAnalysisGrpcEndpoint(applicationService))
+            .addService(new JoernCpgAnalysisGrpcEndpoint(applicationService, artifactReader))
             .build()
             .start();
         channel = InProcessChannelBuilder.forName(serverName).directExecutor().build();
@@ -511,11 +580,27 @@ class JoernCpgAnalysisGrpcEndpointTest {
             completeness,
             new de.burger.forensics.analytics.services.joernanalysis.domain.JoernCpgAnalysisDomain.ArtifactByteAccess(
                 PRODUCER_SERVICE,
-                "analysis-job.v1.ArtifactBytes",
-                "artifacts/" + path,
+                FileSystemJoernArtifactCollector.BYTE_RETRIEVAL_CONTRACT,
+                path,
                 de.burger.forensics.analytics.services.joernanalysis.domain.JoernCpgAnalysisDomain.ArtifactByteCustody.PRODUCER_RETAINED
             )
         );
+    }
+
+    private static GetSemanticArtifactBytesRequest bytesRequest(AnalysisArtifactReference artifact) {
+        return GetSemanticArtifactBytesRequest.newBuilder()
+            .setRequestId("request-bytes-1")
+            .setCorrelationId("correlation-1")
+            .setAnalysisRunId(AnalysisRunId.newBuilder().setValue("run-1"))
+            .setAnalysisJobId(AnalysisJobId.newBuilder().setValue("job-1"))
+            .setSourceSnapshotId(SourceSnapshotId.newBuilder().setValue("snapshot-1"))
+            .setRetrievalReference(artifact.artifact().path())
+            .setExpectedSha256(artifact.artifact().sha256())
+            .setExpectedSizeBytes(artifact.artifact().sizeBytes())
+            .setMaxBytes(1_000_000)
+            .setSchemaVersion(SEMANTIC_ARTIFACT_SCHEMA_VERSION)
+            .putSafeAttributes("tenant", "demo")
+            .build();
     }
 
     private static AnalyzeJoernCpgRequest request(AnalysisWorkerKind workerKind) {

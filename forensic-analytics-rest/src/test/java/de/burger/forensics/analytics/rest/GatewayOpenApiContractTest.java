@@ -33,7 +33,7 @@ class GatewayOpenApiContractTest {
         assertContains(repositoryStatusGet, "x-implementation-status: current-verified");
         assertContains(repositoryStatusGet, "x-cli-contract: contracts/cli/gateway-cli-contract.md");
         assertContains(repositoryStatusGet, "x-cli-contract-status: future-cli-command-required");
-        assertContains(repositoryStatusGet, "S11 does not define a CLI status command or response mapping.");
+        assertContains(repositoryStatusGet, "S09 does not define a CLI status command or response mapping.");
         assertContains(repositoryStatusGet, "- $ref: '#/components/parameters/RequiredCorrelationId'");
         assertContains(repositoryStatusGet, "$ref: '#/components/schemas/RepositoryToBtmStatus'");
 
@@ -44,7 +44,14 @@ class GatewayOpenApiContractTest {
         assertContains(section(contract, "    RequiredCorrelationId:", "    MutationCorrelationId:"), "required: true");
 
         assertContains(contract, "required: [repositoryUrl, requestId, schemaVersion, requestedOutputs, buildContext, workspacePolicy]");
+        assertContains(contract, "required: [buildTool, buildId, declaredModules, attributes]");
         assertContains(contract, "$ref: '#/components/schemas/RequestedAnalysisOutput'");
+        assertContains(contract, "VALIDATION_ERROR");
+        assertContains(contract, "CONFLICT");
+        assertContains(contract, "BACKEND_UNAVAILABLE");
+        assertContains(contract, "TIMEOUT");
+        assertContains(contract, "NOT_FOUND");
+        assertContains(contract, "UNEXPECTED_ERROR");
         assertContains(contract, "BTM_RULES");
         assertContains(contract, "RepositoryToBtmSubmission:");
         assertContains(contract, "RepositoryToBtmStatus:");

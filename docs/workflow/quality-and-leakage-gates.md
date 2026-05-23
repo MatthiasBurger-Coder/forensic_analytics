@@ -2,7 +2,7 @@
 
 ## Authoritative Quality Source
 
-`QUALITY.md` is the authoritative quality contract.
+`QUALITY.md` is authoritative for all workflow execution quality decisions.
 
 Minimum command:
 
@@ -10,69 +10,80 @@ Minimum command:
 ./gradlew test --dependency-verification strict --console=plain --stacktrace
 ```
 
-Full local quality gate:
+Full local gate:
 
 ```bash
 ./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace
 ```
 
-Every slice must also run:
+## Workflow Creation Gate
+
+Workflow creation is documentation-only. Required verification:
 
 ```bash
 git diff --check
 ```
 
-## Slice Gate Summary
+## Slice Gate Pattern
 
-| Slice | Gate |
-|---|---|
-| S00-S02 | Documentation and inventory checks plus `git diff --check`. |
-| S03 | Contract checks plus minimum quality command when contract/test/build files change. |
-| S04 | Data ownership documentation checks; minimum quality command if persistence code changes. |
-| S05-S11 | Targeted service/module tests, minimum quality command and `git diff --check`. |
-| S12 | Minimum quality command if Java logging/observability code changes; documentation-only otherwise. |
-| S13 | Testbed/service integration tests, minimum quality command and `git diff --check`. |
-| S14 | Caller-free searches, full local quality gate and `git diff --check`. |
-| S15 | Per-service build commands, full local quality gate and final diff review. |
+Each execution slice must run:
 
-## Leakage Gates
+1. The targeted service/module tests named in the slice.
+2. Scoped readiness scans for the target service or caller group changed by the
+   slice.
+3. `git diff --check`.
+4. The repository minimum gate for production Java, tests, Gradle, contracts,
+   runtime wiring or deployment changes.
+5. Full caller-free scans and the full local gate only in S19 final removal
+   and S20 closure slices.
 
-Service outputs, diagnostics, logs, reports and CLI responses must not expose:
+## Leakage Checks
 
-- credentials, tokens, secrets or userinfo in repository URLs;
-- local absolute workspace paths;
-- private service database details;
-- raw stdout or stderr from untrusted processes;
-- raw source content unless explicitly requested by an owner API contract;
-- raw runtime values unless redaction and retention rules are approved;
-- stack traces or internal exception messages in public API responses;
-- LLM output as verified evidence.
+For service migration readiness slices, run targeted scans proving the target
+service touched by the slice does not depend on central legacy implementation
+modules:
+
+```bash
+bash -lc 'if rg -n -P "^import\s+de\.burger\.forensics\.analytics\.(application|domain|adapter|persistence|rest|cli|engine|logging|observability|bootstrap|boot|ingestion\.request|ingestion\.grpc)\b" services -S -g "*.java"; then exit 1; else test $? -eq 1; fi'
+```
+
+Earlier parity and handoff slices must not use full-repository zero-reference
+scans as success criteria while the legacy module is intentionally retained as
+rollback or regression evidence. Those scans belong to the final removal gate.
+
+S14 is a readiness reconciliation gate after the S14 deletion stop. It records
+remaining references as evidence and must not delete modules or deregister
+Gradle projects. From S15 through S18, targeted slices remove or deprecate the
+remaining testbed, runtime, public API and ownership blockers before any
+physical deletion is attempted.
+
+For S19 final removal, prove no legacy build references remain:
+
+```bash
+bash -lc 'if rg -n "forensic-analytics-(adapter-javaparser|adapter-joern-docker|adapter-repository-source|application|boot-app|bootstrap|cli|domain|engine|ingestion-grpc|ingestion-request|logging|observability|persistence|rest|testbed)" settings.gradle.kts build.gradle.kts services -g "*.kts" -g "!**/build/**"; then exit 1; else test $? -eq 1; fi'
+```
 
 ## Evidence Integrity Gates
 
-- Static JavaParser and Joern facts remain static or semantic evidence.
-- Runtime execution facts require observed runtime data.
-- Missing evidence is represented as missing, incomplete, unknown or
-  unavailable.
-- Reports distinguish confirmed evidence, derived analysis, gaps, hypotheses
-  and generated content.
-- Graph, report, vector and LLM projections do not become sources of truth.
+Execution must stop when a change would:
 
-## Dependency Verification
+- treat static analysis as runtime execution evidence;
+- hide unresolved symbols or missing trace fields;
+- replace observed trace values with inferred values;
+- store LLM output as verified evidence;
+- collapse confirmed evidence, derived analysis, unresolved gaps and
+  hypotheses into one ambiguous field;
+- remove the only regression coverage for behavior being retired;
+- claim a legacy module is removable while `services:testbed` still uses it as
+  the only parity, rollback or hardening evidence.
 
-Gradle dependency verification must remain strict. Do not use:
+## Failure Routing
 
-```bash
---dependency-verification off
-```
-
-If metadata is missing, update `gradle/verification-metadata.xml` only through
-the repository's checksum strategy and rerun the failing command with strict
-verification.
-
-## Optional External Checks
-
-Docker, Docker Compose, Joern, Docker Swarm, Kubernetes, Jenkins, Artifactory,
-SonarCloud and live LLM checks are optional unless a slice explicitly makes
-them required and verifies local prerequisites. A skipped optional check must be
-reported as `SKIPPED` with a reason, not as success.
+| Failure | Route |
+|---|---|
+| Build failure | Senior DevOps and responsible implementation owner |
+| Test failure | Senior Tester and responsible implementation owner |
+| Architecture violation | Senior System Architect and Microservice Senior Expert |
+| Contract mismatch | Contract-First API Steward and relevant contract specialist |
+| Persistence ownership conflict | Senior Analysis Storage Architect and Data Ownership Steward |
+| Unknown or repeated failure | Root Architect escalation after maxRetries = 3 |

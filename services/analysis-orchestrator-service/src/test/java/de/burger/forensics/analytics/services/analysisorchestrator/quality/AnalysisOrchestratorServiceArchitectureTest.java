@@ -53,6 +53,15 @@ class AnalysisOrchestratorServiceArchitectureTest {
             );
 
     @ArchTest
+    static final ArchRule spring_dependencies_stay_inside_service_bootstrap =
+        noClasses()
+            .that()
+            .resideOutsideOfPackage("de.burger.forensics.analytics.services.analysisorchestrator.bootstrap..")
+            .should()
+            .dependOnClassesThat()
+            .resideInAnyPackage("org.springframework..");
+
+    @ArchTest
     static final ArchRule service_does_not_import_other_service_implementation_classes =
         noClasses()
             .that()
@@ -71,6 +80,28 @@ class AnalysisOrchestratorServiceArchitectureTest {
                 "de.burger.forensics.analytics.services.ingestion..",
                 "de.burger.forensics.analytics.services.gateway.."
             );
+
+    @ArchTest
+    static final ArchRule service_does_not_depend_on_worker_execution_libraries =
+        noClasses()
+            .that()
+            .resideInAPackage("de.burger.forensics.analytics.services.analysisorchestrator..")
+            .should()
+            .dependOnClassesThat()
+            .resideInAnyPackage(
+                "com.github.javaparser..",
+                "io.joern..",
+                "overflowdb.."
+            );
+
+    @ArchTest
+    static final ArchRule service_does_not_spawn_processes =
+        noClasses()
+            .that()
+            .resideInAPackage("de.burger.forensics.analytics.services.analysisorchestrator..")
+            .should()
+            .dependOnClassesThat()
+            .haveFullyQualifiedName(ProcessBuilder.class.getName());
 
     @ArchTest
     static final ArchRule domain_does_not_depend_on_application_adapters_or_bootstrap =

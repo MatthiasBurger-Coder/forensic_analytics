@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import de.burger.forensics.analytics.services.joernanalysis.application.JoernCpgArtifactException;
 import de.burger.forensics.analytics.services.joernanalysis.application.port.JoernArtifactCollectorPort;
+import de.burger.forensics.analytics.services.joernanalysis.application.port.JoernArtifactReaderPort;
 import de.burger.forensics.analytics.services.joernanalysis.application.port.ResolvedJoernWorkspace;
 import de.burger.forensics.analytics.services.joernanalysis.domain.JoernCpgAnalysisDomain.AnalysisArtifactCategory;
 import de.burger.forensics.analytics.services.joernanalysis.domain.JoernCpgAnalysisDomain.AnalysisArtifactReference;
@@ -15,7 +16,10 @@ import de.burger.forensics.analytics.services.joernanalysis.domain.JoernCpgAnaly
 import de.burger.forensics.analytics.services.joernanalysis.domain.JoernCpgAnalysisDomain.JoernArtifactCollectionResult;
 import de.burger.forensics.analytics.services.joernanalysis.domain.JoernCpgAnalysisDomain.JoernCpgDiagnostic;
 import de.burger.forensics.analytics.services.joernanalysis.domain.JoernCpgAnalysisDomain.JoernRuntimeResult;
+import de.burger.forensics.analytics.services.joernanalysis.domain.JoernCpgAnalysisDomain.SemanticArtifactBytes;
+import de.burger.forensics.analytics.services.joernanalysis.domain.JoernCpgAnalysisDomain.SemanticArtifactBytesRequest;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
@@ -38,13 +42,15 @@ import static de.burger.forensics.analytics.services.joernanalysis.domain.JoernC
 import static de.burger.forensics.analytics.services.joernanalysis.domain.JoernCpgAnalysisDomain.SEMANTIC_ARTIFACT_SCHEMA_VERSION;
 import static de.burger.forensics.analytics.services.joernanalysis.domain.JoernCpgAnalysisDomain.completeness;
 
-public final class FileSystemJoernArtifactCollector implements JoernArtifactCollectorPort {
+public final class FileSystemJoernArtifactCollector implements JoernArtifactCollectorPort, JoernArtifactReaderPort {
     public static final String CPG = "cpg.bin.zip";
     public static final String CALLGRAPH = "callgraph.json";
     public static final String CONTROLFLOW = "controlflow.json";
     public static final String DATAFLOW = "dataflow.json";
     public static final String SLICES = "slices.json";
     public static final String PROVENANCE = "joern-provenance.json";
+    public static final String BYTE_RETRIEVAL_CONTRACT =
+        "joern-cpg-analysis.v1.JoernCpgAnalysisService.GetSemanticArtifactBytes";
     private static final Gson GSON = new GsonBuilder().disableHtmlEscaping().setPrettyPrinting().create();
 
     private final Path artifactRoot;
@@ -99,6 +105,55 @@ public final class FileSystemJoernArtifactCollector implements JoernArtifactColl
         var diagnostics = List.of(diagnostic);
         var artifact = unavailableProvenance(command, workspace, artifactDirectory, diagnostics);
         return new JoernArtifactCollectionResult(List.of(artifact), expected(command).size(), diagnostics);
+    }
+
+    @Override
+    public SemanticArtifactBytes read(SemanticArtifactBytesRequest request) {
+        if (!SEMANTIC_ARTIFACT_SCHEMA_VERSION.equals(request.schemaVersion())) {
+            throw new IllegalArgumentException("semantic artifact schema version mismatch");
+        }
+        if (!request.retrievalReference().startsWith(artifactDirectory(request) + "/")) {
+            throw new IllegalStateException("semantic artifact identity mismatch");
+        }
+        var relativePath = Path.of(request.retrievalReference());
+        var target = artifactRoot.resolve(relativePath).normalize();
+        if (!target.startsWith(artifactRoot)) {
+            throw new IllegalArgumentException("retrieval reference must stay inside Joern artifact storage");
+        }
+        try {
+            rejectSymlinkSegments(relativePath);
+            var attributes = regularFileAttributes(target);
+            if (attributes.size() > request.maxBytes()) {
+                throw new IllegalStateException("semantic artifact exceeds requested byte limit");
+            }
+            if (attributes.size() != request.expectedSizeBytes()) {
+                throw new IllegalStateException("semantic artifact size mismatch");
+            }
+            var bytes = readBytes(target, request.maxBytes());
+            var checksum = sha256(bytes);
+            if (!checksum.equals(request.expectedSha256())) {
+                throw new IllegalStateException("semantic artifact checksum mismatch");
+            }
+            return new SemanticArtifactBytes(
+                new AnalysisArtifactReference(
+                    new ArtifactReference(request.retrievalReference(), artifactType(target), checksum, bytes.length),
+                    AnalysisArtifactCategory.STATIC,
+                    PRODUCER_SERVICE,
+                    SEMANTIC_ARTIFACT_SCHEMA_VERSION,
+                    completenessFor(target),
+                    new ArtifactByteAccess(
+                        PRODUCER_SERVICE,
+                        BYTE_RETRIEVAL_CONTRACT,
+                        request.retrievalReference(),
+                        ArtifactByteCustody.PRODUCER_RETAINED
+                    )
+                ),
+                bytes,
+                request.safeAttributes()
+            );
+        } catch (IOException error) {
+            throw new UncheckedIOException("Failed to read Joern semantic artifact.", error);
+        }
     }
 
     private Path artifactDirectory(JoernRuntimeResult runtimeResult) {
@@ -182,8 +237,8 @@ public final class FileSystemJoernArtifactCollector implements JoernArtifactColl
                 artifactCompleteness,
                 new ArtifactByteAccess(
                     PRODUCER_SERVICE,
-                    "analysis-job.v1.ArtifactBytes",
-                    "artifacts/" + artifact.path(),
+                    BYTE_RETRIEVAL_CONTRACT,
+                    artifact.path(),
                     ArtifactByteCustody.PRODUCER_RETAINED
                 )
             );
@@ -276,6 +331,54 @@ public final class FileSystemJoernArtifactCollector implements JoernArtifactColl
         }
     }
 
+    private static byte[] readBytes(Path file, long maxBytes) throws IOException {
+        try (var input = Files.newInputStream(file, LinkOption.NOFOLLOW_LINKS);
+             var output = new ByteArrayOutputStream()) {
+            var buffer = new byte[8192];
+            long size = 0L;
+            int read;
+            while ((read = input.read(buffer)) != -1) {
+                if (read <= 0) {
+                    continue;
+                }
+                size += read;
+                if (size > maxBytes) {
+                    throw new JoernCpgArtifactException("semantic artifact exceeds requested byte limit");
+                }
+                output.write(buffer, 0, read);
+            }
+            return output.toByteArray();
+        }
+    }
+
+    private static String sha256(byte[] bytes) {
+        try {
+            var digest = MessageDigest.getInstance("SHA-256");
+            return HexFormat.of().formatHex(digest.digest(bytes));
+        } catch (NoSuchAlgorithmException error) {
+            throw new IllegalStateException("SHA-256 is not available.", error);
+        }
+    }
+
+    private static AnalysisCompleteness completenessFor(Path file) {
+        if (!PROVENANCE.equals(file.getFileName().toString())) {
+            return AnalysisCompleteness.COMPLETE;
+        }
+        try {
+            var json = com.google.gson.JsonParser.parseString(Files.readString(file, StandardCharsets.UTF_8)).getAsJsonObject();
+            var completeness = json.get("completeness");
+            if (completeness != null && AnalysisCompleteness.UNKNOWN.name().equals(completeness.getAsString())) {
+                return AnalysisCompleteness.UNKNOWN;
+            }
+            if (completeness != null && AnalysisCompleteness.INCOMPLETE.name().equals(completeness.getAsString())) {
+                return AnalysisCompleteness.INCOMPLETE;
+            }
+            return AnalysisCompleteness.COMPLETE;
+        } catch (RuntimeException | IOException error) {
+            return AnalysisCompleteness.UNKNOWN;
+        }
+    }
+
     private static void writeString(Path file, String content) throws IOException {
         var parent = file.getParent();
         if (parent == null) {
@@ -337,6 +440,17 @@ public final class FileSystemJoernArtifactCollector implements JoernArtifactColl
             && Objects.equals(before.lastModifiedTime(), after.lastModifiedTime());
     }
 
+    private void rejectSymlinkSegments(Path relativePath) throws IOException {
+        requireDirectoryWithoutLinks(artifactRoot);
+        var probe = artifactRoot;
+        for (var segment : relativePath) {
+            probe = probe.resolve(segment);
+            if (Files.exists(probe, LinkOption.NOFOLLOW_LINKS) && Files.isSymbolicLink(probe)) {
+                throw new JoernCpgArtifactException("semantic artifact path must not contain symbolic links");
+            }
+        }
+    }
+
     private static String artifactDirectory(AnalyzeJoernCpgCommand command) {
         var fingerprint = de.burger.forensics.analytics.services.joernanalysis.domain.JoernCpgAnalysisDomain.sha256(
             command.metadata().analysisRunId().value()
@@ -344,6 +458,17 @@ public final class FileSystemJoernArtifactCollector implements JoernArtifactColl
                 + command.metadata().analysisJobId().value()
                 + "|"
                 + command.metadata().sourceSnapshotId().value()
+        ).substring(0, 24);
+        return "joern-cpg/" + fingerprint;
+    }
+
+    private static String artifactDirectory(SemanticArtifactBytesRequest request) {
+        var fingerprint = de.burger.forensics.analytics.services.joernanalysis.domain.JoernCpgAnalysisDomain.sha256(
+            request.analysisRunId().value()
+                + "|"
+                + request.analysisJobId().value()
+                + "|"
+                + request.sourceSnapshotId().value()
         ).substring(0, 24);
         return "joern-cpg/" + fingerprint;
     }

@@ -1,11 +1,9 @@
 package de.burger.forensics.analytics.services.analysisorchestrator.domain;
 
 import java.time.Instant;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.TreeMap;
 
 public record AnalysisJob(
     AnalysisRunId analysisRunId,
@@ -278,10 +276,6 @@ public record AnalysisJob(
     }
 
     private static Map<String, String> copyAttributes(Map<String, String> source) {
-        var sorted = new TreeMap<String, String>();
-        Objects.requireNonNull(source, "attributes must not be null").forEach((key, value) -> {
-            sorted.put(RequiredText.require(key, "attribute key"), RequiredText.require(value, "attribute value"));
-        });
-        return java.util.Collections.unmodifiableMap(new LinkedHashMap<>(sorted));
+        return SafeMetadata.safeAttributes(Objects.requireNonNull(source, "attributes must not be null"));
     }
 }

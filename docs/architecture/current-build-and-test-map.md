@@ -142,8 +142,9 @@ through `WildFlyRepositoryHardeningTest`. It is skipped by default unless
 `FORENSIC_ANALYTICS_WILDFLY_HARDENING=true` and an explicit WildFly branch or
 commit is provided. The runbook is `docs/testing/wildfly-hardening.md`.
 
-Slice 13 adds the same testbed coverage under `services:testbed` in package
-`de.burger.forensics.analytics.services.testbed`. The legacy
+Slice 13 verifies the same testbed coverage under `services:testbed` in package
+`de.burger.forensics.analytics.services.testbed`, including the default-skipped
+WildFly hardening scenario. The legacy
 `forensic-analytics-testbed` module remains part of the root quality gate until
 a later retirement slice proves migration parity and rollback evidence.
 
@@ -220,35 +221,40 @@ This is target-service container packaging evidence only; Compose, Swarm and
 Kubernetes readiness for the FA-MSA-001 target landscape remains future work
 until descriptors and validation commands exist.
 
-Slice 07 adds a service-local Dockerfile for
+FA-MSA-001-LMR S05 adds a service-local Dockerfile for
 `services/java-parser-analysis-service`. This is target-service container
 packaging evidence only; Compose, Swarm and Kubernetes readiness for the
 FA-MSA-001 target landscape remains future work until descriptors and
 validation commands exist.
 
-Slice 08 adds a service-local Dockerfile for `services/joern-analysis-service`.
+FA-MSA-001-LMR S06 adds a service-local Dockerfile for `services/joern-analysis-service`.
 This is target-service container packaging evidence only; Compose, Swarm and
 Kubernetes readiness for the FA-MSA-001 target landscape remains future work
 until descriptors and validation commands exist. The service uses local gRPC
 port `9096` and health port `8087`, distinct from predecessor Joern and
-JavaParser target ports. Docker image build or Joern runtime smoke testing is
-optional external verification because it may pull the digest-pinned Joern base
-image or create local container state.
+JavaParser target ports. The root `.dockerignore` allows the service boot jar
+into the Docker build context. Docker image build or Joern runtime smoke
+testing is optional external verification because it may pull the
+digest-pinned Joern base image or create local container state.
 
-Slice 09 adds a service-local Dockerfile for
+FA-MSA-001-LMR S07 keeps a service-local Dockerfile for
 `services/analysis-orchestrator-service`. This is target-service container
 packaging evidence only; Compose, Swarm and Kubernetes readiness for the
 FA-MSA-001 target landscape remains future work until descriptors and
 validation commands exist. The service uses local gRPC port `9098` and health
 port `8089`, distinct from predecessor Analysis Store and earlier target
-service ports.
+service ports. S07 does not claim Docker image build readiness; Docker
+build-context verification remains later deployment work.
 
-Slice 10 adds a service-local Dockerfile for
+FA-MSA-001-LMR S08 keeps a service-local Dockerfile for
 `services/query-report-api-service`. This is target-service container packaging
 evidence only; Compose, Swarm and Kubernetes readiness for the FA-MSA-001
 target landscape remains future work until descriptors and validation commands
-exist. The service uses local HTTP port `8080` and remains a public facade for
-verified repository-analysis routes only.
+exist. The service uses local HTTP port `8080`, points at
+`analysis-orchestrator-service` gRPC port `9098`, and remains a public facade
+for verified repository-analysis routes plus pending/status-only orchestrator
+readiness. S08 does not claim Docker image build readiness; Docker
+build-context verification remains later deployment work.
 
 Slice 13 adds `services:testbed` without a Dockerfile or runtime service
 descriptor. It may use verified local deployment descriptors as test
@@ -261,19 +267,18 @@ caller scans still find active build, production and test references to the
 retained `forensic-analytics-*` modules. A later removal slice must name a
 caller-free candidate and run the full local quality gate.
 
-Slice 15 verifies the mandatory FA-MSA-001 target service build paths,
-service-owned Dockerfiles, healthcheck definitions, service-local
-configuration, architecture-test coverage and the full local `QUALITY.md`
-gate. S15 does not run Docker image builds, Docker Compose startup,
+Slice 15 relocates broad logging and Spring architecture checks from the
+legacy-dependent `services:testbed` classpath into service-local architecture
+tests for the productive target services. `services:testbed` keeps only the
+default-skipped WildFly hardening scenario in its S15 targeted gate. S15 does
+not verify Docker image builds, Docker Compose startup, service health probes,
 Docker Swarm or Kubernetes commands for the FA-MSA-001 target landscape.
-The S15 full local gate passed with:
-`./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace`.
 The local repository-to-BTM Compose descriptor remains transitional
 environment evidence only until a separate runtime-deployment slice verifies
 image builds, startup, health checks and cleanup commands.
 
 No separate Swarm or Kubernetes workflow handoff artifact is present in this
-repository at S15 closure. Future deployment workflows must create and verify
+repository. Future deployment workflows must create and verify
 their own stack files, manifests, commands and readiness evidence.
 
 Missing deployment material:
@@ -330,8 +335,8 @@ evidence without changing the default build topology:
 - a separate Swarm and Kubernetes deployment workflow request, with no stack
   files, manifests or readiness claims added by this workflow.
 
-The workflow full local quality gate passed after the S15 CLI and
-analysis-orchestrator coverage remediation:
+The workflow full local quality gate remains a deletion and closure
+requirement for S19 and S20:
 
 ```bash
 ./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace

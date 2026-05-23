@@ -41,10 +41,12 @@ class ForensicAnalyticsCliTest {
         assertContains(contract, "`gateway-submit` is the explicit compatibility command");
         assertContains(contract, "the target CLI is `cli-client`");
         assertContains(contract, "current predecessor implementation is `forensic-analytics-cli`");
-        assertContains(contract, "S11 target-client path keeps the compatibility command name");
+        assertContains(contract, "S09 target-client path keeps the compatibility command name");
         assertContains(contract, "`analyze` or `ingest-request`");
         assertContains(contract, "commands to the public API");
-        assertContains(contract, "Status reads are out of S11");
+        assertContains(contract, "Local/private host and network-range policy remains owned by");
+        assertContains(contract, "Status reads are out of S09");
+        assertContains(contract, "fixed client value `{}`");
         assertContains(contract, "StartRepositoryAnalysisRequest.repositoryUrl");
         assertContains(contract, "X-Correlation-Id");
         assertContains(contract, "Idempotency-Key");
@@ -232,6 +234,60 @@ class ForensicAnalyticsCliTest {
 
         assertEquals(2, exitCode);
         assertTrue(errorOutput.toString(StandardCharsets.UTF_8).contains("gateway-submit requires --branch or --commit"));
+    }
+
+    @Test
+    void gatewaySubmitValidationErrorsDoNotEchoSecretLikeInputValues() {
+        var cases = List.of(
+            new InvalidGatewaySubmitCase(
+                replaceOption(gatewaySubmitArgs(), "--gateway", "https://token:secret@gateway.example/[invalid"),
+                "Invalid gateway-submit option --gateway."
+            ),
+            new InvalidGatewaySubmitCase(
+                replaceOption(gatewaySubmitArgs(), "--repo-url", "https://token:secret@[invalid"),
+                "Invalid gateway-submit --repo-url."
+            ),
+            new InvalidGatewaySubmitCase(
+                replaceOption(gatewaySubmitArgs(), "--timeout-seconds", "secret-timeout-token"),
+                "Invalid numeric gateway-submit option --timeout-seconds."
+            ),
+            new InvalidGatewaySubmitCase(
+                replaceOption(gatewaySubmitArgs(), "--allow-shallow-clone", "secret-boolean-token"),
+                "Invalid boolean gateway-submit option --allow-shallow-clone."
+            )
+        );
+        for (var invalidCase : cases) {
+            var standardOutput = new ByteArrayOutputStream();
+            var errorOutput = new ByteArrayOutputStream();
+
+            var exitCode = new ForensicAnalyticsCli(new RecordingUseCase(), stream(standardOutput), stream(errorOutput)).run(
+                invalidCase.args()
+            );
+
+            assertEquals(2, exitCode, invalidCase.expectedMessage());
+            var errors = errorOutput.toString(StandardCharsets.UTF_8);
+            assertTrue(errors.contains(invalidCase.expectedMessage()), invalidCase.expectedMessage());
+            assertFalse(errors.contains("secret"), invalidCase.expectedMessage());
+            assertFalse(errors.contains("token"), invalidCase.expectedMessage());
+            assertEquals("", standardOutput.toString(StandardCharsets.UTF_8), invalidCase.expectedMessage());
+        }
+    }
+
+    @Test
+    void statusAndReportCommandsRemainUnavailableUntilCliContractDefinesMappings() {
+        var standardOutput = new ByteArrayOutputStream();
+        var errorOutput = new ByteArrayOutputStream();
+        var cli = new ForensicAnalyticsCli(new RecordingUseCase(), stream(standardOutput), stream(errorOutput));
+
+        var statusExitCode = cli.run(new String[] {"status"});
+        var reportExitCode = cli.run(new String[] {"report"});
+
+        assertEquals(2, statusExitCode);
+        assertEquals(2, reportExitCode);
+        var errors = errorOutput.toString(StandardCharsets.UTF_8);
+        assertTrue(errors.contains("Unknown command: status"));
+        assertTrue(errors.contains("Unknown command: report"));
+        assertEquals("", standardOutput.toString(StandardCharsets.UTF_8));
     }
 
     @Test
@@ -471,6 +527,20 @@ class ForensicAnalyticsCliTest {
             "--max-workspace-bytes", "100000",
             "--allow-shallow-clone", "true"
         };
+    }
+
+    private static String[] replaceOption(String[] args, String option, String replacement) {
+        var values = args.clone();
+        for (var index = 0; index < values.length - 1; index++) {
+            if (option.equals(values[index])) {
+                values[index + 1] = replacement;
+                return values;
+            }
+        }
+        throw new IllegalArgumentException("Missing option: " + option);
+    }
+
+    private record InvalidGatewaySubmitCase(String[] args, String expectedMessage) {
     }
 
     private static String engineRequestJson(Path payloadFile) {

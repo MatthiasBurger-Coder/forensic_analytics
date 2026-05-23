@@ -7,9 +7,9 @@ info:
     This file keeps the transitional gateway-api.yaml filename for compatibility
     with current tests and clients. Under FA-MSA-001, the target authority is
     query-report-api-service. Existing repository analysis submission routes
-    are verified from predecessor Gateway adapter evidence and S10
+    are verified from predecessor Gateway adapter evidence and S08
     query-report-api-service target-service tests.
-    Health/status routes are verified by S10 query-report-api-service tests.
+    Health/status routes are verified by S08 query-report-api-service tests.
     Results, replay and reports routes are planned initial contracts approved
     for logical service communication design on 2026-05-16. This file does
     not claim that planned routes are implemented yet.
@@ -82,7 +82,7 @@ paths:
       x-implementation-status: current-verified
       x-cli-contract: contracts/cli/gateway-cli-contract.md
       x-cli-contract-status: future-cli-command-required
-      x-cli-contract-note: S11 does not define a CLI status command or response mapping.
+      x-cli-contract-note: S09 does not define a CLI status command or response mapping.
       parameters:
         - $ref: '#/components/parameters/RequiredCorrelationId'
         - $ref: '#/components/parameters/AnalysisRunId'

@@ -276,7 +276,7 @@ class QueryReportApiRepositoryAnalysisSubmissionServiceTest {
                 "BTM_DELIVERY_NOT_READY",
                 "BtmArtifactDeliveryService",
                 request.correlationId(),
-                List.of(Diagnostic.info("ORCHESTRATION_ACCEPTED", "Analysis Store accepted orchestration"))
+                List.of(Diagnostic.info("ORCHESTRATION_ACCEPTED", "Analysis Orchestrator accepted orchestration"))
             );
         }
 
@@ -292,7 +292,7 @@ class QueryReportApiRepositoryAnalysisSubmissionServiceTest {
                 "ACCEPTED",
                 "repository-to-btm",
                 null,
-                List.of(Diagnostic.info("ORCHESTRATION_STATUS", "Analysis Store status loaded"))
+                List.of(Diagnostic.info("ORCHESTRATION_STATUS", "Analysis Orchestrator status loaded"))
             );
         }
     }

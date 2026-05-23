@@ -2,12 +2,17 @@
 
 ## Status
 
-FA-MSA-001 Slice 04 contract-first communication and data-ownership baseline.
+FA-MSA-001 Slice 04 contract-first communication and data-ownership baseline
+with S02 transitional contract/runtime parity evidence.
 
 This document records target communication ownership. It does not define
 database schemas and does not claim that the target services or endpoints are
 implemented. Existing contract files are current evidence and may need to be
 renamed, split or superseded by later contract slices.
+
+S02 verifies the current transitional contract surface and service-local test
+coverage. It does not claim full target runtime parity for every planned
+interaction.
 
 ## Contract Locations
 
@@ -25,6 +30,27 @@ renamed, split or superseded by later contract slices.
 Contracts are interface descriptions only. They must not contain Java
 implementation code or service-shared runtime classes.
 
+## S02 Verification Evidence
+
+S02 ran these checks successfully:
+
+- `./gradlew :services:repository-source-service:test --dependency-verification strict --console=plain --stacktrace`
+- `./gradlew :services:ingestion-service:test --dependency-verification strict --console=plain --stacktrace`
+- `./gradlew :services:java-parser-analysis-service:test --dependency-verification strict --console=plain --stacktrace`
+- `./gradlew :services:joern-analysis-service:test --dependency-verification strict --console=plain --stacktrace`
+- `./gradlew :services:analysis-orchestrator-service:test --dependency-verification strict --console=plain --stacktrace`
+- `./gradlew :services:query-report-api-service:test --dependency-verification strict --console=plain --stacktrace`
+- `./gradlew :services:cli-client:test --dependency-verification strict --console=plain --stacktrace`
+- `./gradlew test --dependency-verification strict --console=plain --stacktrace`
+- `git diff --check`
+
+These checks prove that the current registered target-name service test tasks
+and the repository minimum test gate pass on the active workflow branch. They
+do not prove that every target interaction in this matrix is implemented or
+runtime-ready. CLI contract parity remains limited to the existing
+`contracts/cli/**` documentation; CLI repository-to-BTM submission parity is
+S09 work, while status and report command mappings remain later CLI work.
+
 ## Target Matrix
 
 | Producer | Consumer | Protocol | Contract Authority | Purpose | Notes |
@@ -39,18 +65,19 @@ implementation code or service-shared runtime classes.
 | `java-parser-analysis-service` | `analysis-orchestrator-service` and owner-authorized readers | gRPC/event/file | `contracts/grpc/java-ast-analysis.proto`, `contracts/grpc/java-ast-source-facts-v1.schema.json` and `contracts/events/analysis-events.md` | Publish source-fact metadata, diagnostics and retrievable artifact references | `java-parser-analysis-service` owns canonical static Java facts and producer-local artifact metadata; generated transport classes stay service-local |
 | `joern-analysis-service` | `analysis-orchestrator-service` and owner-authorized readers | gRPC/event/file | `contracts/grpc/joern-cpg-analysis.proto` and `contracts/events/analysis-events.md` | Publish semantic artifact metadata, diagnostics and retrievable artifact references | `joern-analysis-service` owns canonical semantic facts and producer-local artifact metadata; incomplete mappings remain explicit |
 | owner services | `query-report-api-service` | REST/gRPC/event/file | owner contracts plus `contracts/openapi/gateway-api.yaml` and `contracts/events/analysis-events.md` report events | Provide evidence, status, artifact references and projection inputs for public responses and generated report packages | Query/report reads through owner APIs and must not read private databases, workspaces or object prefixes |
-| `query-report-api-service` | UI, CLI or external client | REST/OpenAPI | `contracts/openapi/gateway-api.yaml` and `contracts/cli/gateway-cli-contract.md` transitional public API files | Provide public status, reports and LLM-ready or generated packages; S11 CLI use is limited to repository-to-BTM submission | Reports separate evidence, gaps, derived facts and hypotheses; CLI status/report reads require later explicit command mappings |
-| `cli-client` | `query-report-api-service` | REST/OpenAPI | `contracts/cli/gateway-cli-contract.md` and `contracts/openapi/gateway-api.yaml` transitional public API files | Start repository-to-BTM jobs in S11; status and report commands require later explicit CLI mappings | CLI has no business logic or service implementation dependency |
+| `query-report-api-service` | UI, CLI or external client | REST/OpenAPI | `contracts/openapi/gateway-api.yaml` and `contracts/cli/gateway-cli-contract.md` transitional public API files | Provide public status, reports and LLM-ready or generated packages; S09 CLI use is limited to repository-to-BTM submission | Reports separate evidence, gaps, derived facts and hypotheses; CLI status/report reads require later explicit command mappings |
+| `cli-client` | `query-report-api-service` | REST/OpenAPI | `contracts/cli/gateway-cli-contract.md` and `contracts/openapi/gateway-api.yaml` transitional public API files | Start repository-to-BTM jobs in S09; status and report commands require later explicit CLI mappings | CLI has no business logic or service implementation dependency |
 | `observability-stack` | productive services | deployment/configuration | observability configuration | Logging, metrics, tracing and dashboards | Not a shared Java library |
 | `testbed` | productive services | Compose, REST, gRPC or test contracts | test environment docs | Integration and end-to-end tests | No production service may depend on testbed code |
 
-S10 transitional note: the implemented
+S08 transitional note: the implemented
 `services/query-report-api-service` repository-analysis submission/status
-routes still call the predecessor `analysis-store-service` owner API through
-service-local generated `analysis-job.proto` classes. This does not change the
-target matrix above; repointing to `analysis-orchestrator-service` requires a
-later contract-first slice because S09 intentionally leaves repository-to-BTM
-submission/status RPCs unimplemented.
+routes call the S07 `analysis-orchestrator-service` `StartRepositoryToBtm` and
+`GetRepositoryToBtmStatus` RPCs through service-local generated
+`analysis-job.proto` classes. This does not claim full repository-to-BTM
+execution parity: the orchestrator returns pending/status-only readiness, and
+the public facade maps that to `ACCEPTED` with incomplete diagnostics and
+`BTM_DELIVERY_NOT_READY`.
 
 ## Transitional Contract Evidence
 
@@ -59,6 +86,15 @@ but later slices must make their target ownership explicit. Current names such
 as `forensic-gateway-service`, `repository-analysis-service`,
 `java-ast-analysis-service`, `joern-cpg-analysis-service` and
 `analysis-store-service` are current evidence only, not FA-MSA-001 aliases.
+
+OpenAPI evidence is mixed: selected operations are currently verified, while
+planned routes are target contract intent rather than implementation evidence.
+Event contracts are design artifacts until producers, consumers and broker
+runtime evidence are verified. S08 routes repository-analysis
+submission/status through `analysis-orchestrator-service` pending readiness;
+that is public facade replacement evidence for acceptance/status only, not
+evidence of repository checkout, worker dispatch, BTM generation, report
+assembly or completed runtime analysis.
 
 ## Error, Retry And Idempotency Rules
 

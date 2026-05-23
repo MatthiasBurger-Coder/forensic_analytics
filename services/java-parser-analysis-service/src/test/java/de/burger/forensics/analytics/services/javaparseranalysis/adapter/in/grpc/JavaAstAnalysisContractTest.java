@@ -17,6 +17,7 @@ import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 class JavaAstAnalysisContractTest {
     @Test
@@ -42,6 +43,20 @@ class JavaAstAnalysisContractTest {
     }
 
     @Test
+    void analyzeSourceSnapshotResponseDoesNotExposeRuntimeGraphOrBtmParityFields() {
+        var response = AnalyzeSourceSnapshotResponse.getDescriptor();
+
+        assertNotNull(response.findFieldByName("source_fact_artifact"));
+        assertNull(response.findFieldByName("semantic_graph"));
+        assertNull(response.findFieldByName("runtime_events"));
+        assertNull(response.findFieldByName("btm_rules"));
+        assertNull(response.findFieldByName("rule_artifacts"));
+        assertNull(response.findFieldByName("nodes"));
+        assertNull(response.findFieldByName("call_relations"));
+        assertNull(response.findFieldByName("data_flow_paths"));
+    }
+
+    @Test
     void sourceFactArtifactSchemaRequiresExplicitSourceRootContext() throws Exception {
         var schema = JsonParser.parseString(Files.readString(contractSchema()))
             .getAsJsonObject();
@@ -51,6 +66,17 @@ class JavaAstAnalysisContractTest {
         assertEquals(
             "#/$defs/safeRelativePath",
             sourceFact.getAsJsonObject("properties").getAsJsonObject("sourceRoot").get("$ref").getAsString()
+        );
+        assertEquals(
+            "STATIC_SOURCE_FACT",
+            sourceFact.getAsJsonObject("properties").getAsJsonObject("evidenceKind").get("const").getAsString()
+        );
+
+        var diagnostic = schema.getAsJsonObject("$defs").getAsJsonObject("diagnostic");
+        assertEquals("affectsCompleteness", diagnostic.getAsJsonArray("required").get(8).getAsString());
+        assertEquals(
+            "boolean",
+            diagnostic.getAsJsonObject("properties").getAsJsonObject("affectsCompleteness").get("type").getAsString()
         );
     }
 

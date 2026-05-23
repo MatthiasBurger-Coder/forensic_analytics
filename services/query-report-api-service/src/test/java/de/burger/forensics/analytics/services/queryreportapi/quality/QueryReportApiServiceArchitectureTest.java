@@ -46,6 +46,7 @@ class QueryReportApiServiceArchitectureTest {
             .resideInAnyPackage(
                 "de.burger.forensics.analytics.services.repositoryanalysis..",
                 "de.burger.forensics.analytics.services.analysisstore..",
+                "de.burger.forensics.analytics.services.analysisorchestrator..",
                 "de.burger.forensics.analytics.services.btmgeneration..",
                 "de.burger.forensics.analytics.services.javaastanalysis..",
                 "de.burger.forensics.analytics.services.joerncpganalysis..",
@@ -74,6 +75,15 @@ class QueryReportApiServiceArchitectureTest {
                 "de.burger.forensics.analytics.rest..",
                 "de.burger.forensics.analytics.testbed.."
             );
+
+    @ArchTest
+    static final ArchRule spring_dependencies_stay_inside_service_bootstrap =
+        noClasses()
+            .that()
+            .resideOutsideOfPackage("de.burger.forensics.analytics.services.queryreportapi.bootstrap..")
+            .should()
+            .dependOnClassesThat()
+            .resideInAnyPackage("org.springframework..");
 
     @ArchTest
     static final ArchRule domain_does_not_depend_on_application_adapters_or_bootstrap =

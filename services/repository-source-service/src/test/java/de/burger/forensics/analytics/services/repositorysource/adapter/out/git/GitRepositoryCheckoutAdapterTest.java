@@ -48,8 +48,15 @@ class GitRepositoryCheckoutAdapterTest {
         );
 
         assertEquals(CheckoutStatus.CHECKED_OUT, checkout.status());
+        assertEquals(REPOSITORY.remoteUrl(), checkout.resolvedRemoteUrl());
         assertEquals("b".repeat(40), checkout.resolvedCommit());
         assertEquals("src/main/java", checkout.sourceRoots().getFirst().relativePath());
+        assertEquals(List.of("GIT_CHECKOUT_COMPLETED"), checkout.diagnostics().stream()
+            .map(de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.Diagnostic::code)
+            .toList());
+        assertTrue(runner.commands.stream().anyMatch(command ->
+            command.arguments().contains("clone") && command.arguments().contains(REPOSITORY.remoteUrl())
+        ));
         assertTrue(runner.commands.stream().anyMatch(command -> command.arguments().contains("--depth")));
         assertTrue(runner.commands.stream().anyMatch(command ->
             command.arguments().contains("http.curloptResolve=example.com:443:93.184.216.34")
@@ -60,6 +67,7 @@ class GitRepositoryCheckoutAdapterTest {
             )
         ));
         assertTrue(runner.commands.stream().noneMatch(command -> command.arguments().contains("submodule")));
+        assertTrue(runner.commands.stream().noneMatch(command -> command.arguments().contains("build")));
     }
 
     @Test
@@ -129,7 +137,7 @@ class GitRepositoryCheckoutAdapterTest {
 
     @Test
     void includesGitHomeInWorkspaceByteQuota() throws Exception {
-        Files.writeString(workspaceRoot.resolve(".git-home"), "0123456789");
+        Files.writeString(workspaceRoot.resolve(".repository-source-git-home"), "0123456789");
         var adapter = checkoutAdapter(new FakeRunner());
 
         var failure = assertThrows(IllegalStateException.class, () -> adapter.checkout(
@@ -143,6 +151,20 @@ class GitRepositoryCheckoutAdapterTest {
     }
 
     @Test
+    void gitHomeIsAlwaysOwnedByPreparedWorkspace() {
+        var repositoryPath = workspaceRoot.resolve("repository");
+
+        assertEquals(
+            workspaceRoot.resolve(".repository-source-git-home").toAbsolutePath().normalize(),
+            SafeGitCommandRunner.isolatedGitHome(workspaceRoot)
+        );
+        assertEquals(
+            workspaceRoot.resolve(".repository-source-git-home").toAbsolutePath().normalize(),
+            SafeGitCommandRunner.isolatedGitHome(repositoryPath)
+        );
+    }
+
+    @Test
     void sourceRootDetectorFallsBackToOpaqueRootWhenJavaLayoutIsAbsent() throws Exception {
         var repositoryRoot = Files.createDirectory(workspaceRoot.resolve("repository"));
 
@@ -150,6 +172,25 @@ class GitRepositoryCheckoutAdapterTest {
 
         assertEquals(".", roots.getFirst().relativePath());
         assertEquals("unknown", roots.getFirst().language());
+    }
+
+    @Test
+    void sourceRootDetectorReturnsDeterministicRelativeRootsAndIgnoresGeneratedDirectories() throws Exception {
+        var repositoryRoot = Files.createDirectory(workspaceRoot.resolve("repository"));
+        Files.createDirectories(repositoryRoot.resolve("module-b/src/main/java"));
+        Files.createDirectories(repositoryRoot.resolve("module-a/src/main/java"));
+        Files.createDirectories(repositoryRoot.resolve(".git/src/main/java"));
+        Files.createDirectories(repositoryRoot.resolve(".gradle/src/main/java"));
+        Files.createDirectories(repositoryRoot.resolve(".idea/src/main/java"));
+        Files.createDirectories(repositoryRoot.resolve("build/src/main/java"));
+        Files.createDirectories(repositoryRoot.resolve("target/src/main/java"));
+
+        var roots = new SourceRootDetector().detect(repositoryRoot);
+
+        assertEquals(List.of("module-a/src/main/java", "module-b/src/main/java"), roots.stream()
+            .map(de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.SourceRoot::relativePath)
+            .toList());
+        assertTrue(roots.stream().allMatch(root -> !Path.of(root.relativePath()).isAbsolute()));
     }
 
     @Test

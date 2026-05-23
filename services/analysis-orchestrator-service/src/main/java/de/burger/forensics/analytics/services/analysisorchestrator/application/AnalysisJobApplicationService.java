@@ -12,6 +12,7 @@ import de.burger.forensics.analytics.services.analysisorchestrator.domain.Analys
 import de.burger.forensics.analytics.services.analysisorchestrator.domain.AnalysisJobState;
 import de.burger.forensics.analytics.services.analysisorchestrator.domain.AnalysisRunId;
 import de.burger.forensics.analytics.services.analysisorchestrator.domain.AnalysisWorkerKind;
+import de.burger.forensics.analytics.services.analysisorchestrator.domain.SafeMetadata;
 import de.burger.forensics.analytics.services.analysisorchestrator.domain.SourceSnapshotId;
 
 import java.time.Clock;
@@ -44,6 +45,7 @@ public final class AnalysisJobApplicationService {
         AnalysisCompleteness inputCompleteness,
         Map<String, String> attributes
     ) {
+        var safeAttributes = SafeMetadata.safeAttributes(attributes);
         var fingerprint = List.of(
             "submit",
             correlationId,
@@ -54,7 +56,7 @@ public final class AnalysisJobApplicationService {
             sourceSnapshotId,
             inputArtifacts,
             inputCompleteness,
-            attributes
+            safeAttributes
         ).toString();
         return idempotent("submit", idempotencyKey, fingerprint, SubmitAnalysisJobResult.class, () -> {
             jobs.findById(jobId).ifPresent(existing -> {
@@ -70,7 +72,7 @@ public final class AnalysisJobApplicationService {
                 inputArtifacts,
                 inputCompleteness,
                 clock.instant(),
-                attributes
+                safeAttributes
             );
             jobs.save(job);
             return new SubmitAnalysisJobResult(job, OperationOutcome.accepted(correlationId, "Analysis job accepted"));

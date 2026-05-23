@@ -22,6 +22,10 @@ import de.burger.forensics.analytics.analysisjob.v1.SubmitAnalysisJobResponse;
 import de.burger.forensics.analytics.services.analysisorchestrator.application.AnalysisJobApplicationService;
 import de.burger.forensics.analytics.services.analysisorchestrator.application.AnalysisJobNotFoundException;
 import de.burger.forensics.analytics.services.analysisorchestrator.application.IdempotencyConflictException;
+import de.burger.forensics.analytics.services.analysisorchestrator.application.RepositoryToBtmOrchestrationApplicationService;
+import de.burger.forensics.analytics.services.analysisorchestrator.application.RepositoryToBtmOrchestrationApplicationService.RepositoryToBtmStartCommand;
+import de.burger.forensics.analytics.services.analysisorchestrator.application.RepositoryToBtmOrchestrationConflictException;
+import de.burger.forensics.analytics.services.analysisorchestrator.application.RepositoryToBtmOrchestrationNotFoundException;
 import de.burger.forensics.analytics.services.analysisorchestrator.domain.AnalysisArtifactReference;
 import de.burger.forensics.analytics.services.analysisorchestrator.domain.AnalysisCompleteness;
 import de.burger.forensics.analytics.services.analysisorchestrator.domain.AnalysisJob;
@@ -159,14 +163,23 @@ public final class AnalysisJobGrpcEndpoint extends AnalysisJobServiceGrpc.Analys
     );
 
     private final AnalysisJobApplicationService applicationService;
+    private final RepositoryToBtmOrchestrationApplicationService repositoryToBtmService;
     private final AnalysisJobRequestValidator validator;
 
-    public AnalysisJobGrpcEndpoint(AnalysisJobApplicationService applicationService) {
-        this(applicationService, new AnalysisJobRequestValidator());
+    public AnalysisJobGrpcEndpoint(
+        AnalysisJobApplicationService applicationService,
+        RepositoryToBtmOrchestrationApplicationService repositoryToBtmService
+    ) {
+        this(applicationService, repositoryToBtmService, new AnalysisJobRequestValidator());
     }
 
-    AnalysisJobGrpcEndpoint(AnalysisJobApplicationService applicationService, AnalysisJobRequestValidator validator) {
+    AnalysisJobGrpcEndpoint(
+        AnalysisJobApplicationService applicationService,
+        RepositoryToBtmOrchestrationApplicationService repositoryToBtmService,
+        AnalysisJobRequestValidator validator
+    ) {
         this.applicationService = Objects.requireNonNull(applicationService, "applicationService must not be null");
+        this.repositoryToBtmService = Objects.requireNonNull(repositoryToBtmService, "repositoryToBtmService must not be null");
         this.validator = Objects.requireNonNull(validator, "validator must not be null");
     }
 
@@ -358,7 +371,13 @@ public final class AnalysisJobGrpcEndpoint extends AnalysisJobServiceGrpc.Analys
         StartRepositoryToBtmRequest request,
         StreamObserver<RepositoryToBtmOrchestrationStatus> responseObserver
     ) {
-        responseObserver.onError(unsupported("repository-to-BTM orchestration is outside S09 scope").asRuntimeException());
+        try {
+            validator.validate(request);
+            responseObserver.onNext(toProto(repositoryToBtmService.start(startCommand(request))));
+            responseObserver.onCompleted();
+        } catch (RuntimeException error) {
+            responseObserver.onError(toStatus(error).asRuntimeException());
+        }
     }
 
     @Override
@@ -366,7 +385,17 @@ public final class AnalysisJobGrpcEndpoint extends AnalysisJobServiceGrpc.Analys
         GetRepositoryToBtmStatusRequest request,
         StreamObserver<RepositoryToBtmOrchestrationStatus> responseObserver
     ) {
-        responseObserver.onError(unsupported("repository-to-BTM status is outside S09 scope").asRuntimeException());
+        try {
+            validator.validate(request);
+            var status = repositoryToBtmService.get(runId(request.getAnalysisRunId()));
+            if (status == null) {
+                throw new RepositoryToBtmOrchestrationNotFoundException(request.getAnalysisRunId().getValue());
+            }
+            responseObserver.onNext(toProto(status));
+            responseObserver.onCompleted();
+        } catch (RuntimeException error) {
+            responseObserver.onError(toStatus(error).asRuntimeException());
+        }
     }
 
     private static Status unsupported(String description) {
@@ -379,9 +408,32 @@ public final class AnalysisJobGrpcEndpoint extends AnalysisJobServiceGrpc.Analys
             case IllegalArgumentException illegalArgument -> Status.INVALID_ARGUMENT.withDescription(illegalArgument.getMessage());
             case IllegalStateException illegalState -> Status.FAILED_PRECONDITION.withDescription(illegalState.getMessage());
             case AnalysisJobNotFoundException notFound -> Status.NOT_FOUND.withDescription(notFound.getMessage());
+            case RepositoryToBtmOrchestrationNotFoundException notFound -> Status.NOT_FOUND.withDescription(notFound.getMessage());
             case IdempotencyConflictException conflict -> Status.ALREADY_EXISTS.withDescription(conflict.getMessage());
+            case RepositoryToBtmOrchestrationConflictException conflict -> Status.ALREADY_EXISTS.withDescription(conflict.getMessage());
             default -> Status.INTERNAL.withDescription("analysis orchestration request failed");
         };
+    }
+
+    private static RepositoryToBtmStartCommand startCommand(StartRepositoryToBtmRequest request) {
+        return new RepositoryToBtmStartCommand(
+            request.getIdempotencyKey(),
+            request.getCorrelationId(),
+            request.getSchemaVersion(),
+            runId(request.getAnalysisRunId()),
+            request.getRepository().getRemoteUrl(),
+            request.getRepository().getProvider(),
+            request.getRevision().getBranch(),
+            request.getRevision().getCommit(),
+            request.getWorkspacePolicy().getTimeoutSeconds(),
+            request.getWorkspacePolicy().getMaxWorkspaceBytes(),
+            request.getBuildContext().getBuildTool(),
+            request.getBuildContext().getBuildId(),
+            request.getBuildContext().getRootProjectName(),
+            request.getBuildContext().getDeclaredModulesList(),
+            request.getRequestedOutputsList().stream().map(Enum::name).toList(),
+            request.getAttributesMap()
+        );
     }
 
     private static AnalysisRunId runId(de.burger.forensics.analytics.analysisjob.v1.AnalysisRunId id) {
@@ -482,6 +534,47 @@ public final class AnalysisJobGrpcEndpoint extends AnalysisJobServiceGrpc.Analys
         return builder.build();
     }
 
+    private static RepositoryToBtmOrchestrationStatus toProto(
+        de.burger.forensics.analytics.services.analysisorchestrator.domain.RepositoryToBtmOrchestrationStatus status
+    ) {
+        var builder = RepositoryToBtmOrchestrationStatus.newBuilder()
+            .setStatus(OperationStatus.newBuilder()
+                .setCode("REPOSITORY_TO_BTM_WAITING_FOR_REPOSITORY")
+                .setMessage("Repository-to-BTM orchestration accepted; waiting for repository source handoff")
+                .setRetryable(false)
+                .setCorrelationId(status.correlationId())
+                .addAllDiagnostics(status.diagnostics().stream()
+                    .map(de.burger.forensics.analytics.services.analysisorchestrator.domain.RepositoryToBtmDiagnostic::code)
+                    .toList()))
+            .setAnalysisRunId(de.burger.forensics.analytics.analysisjob.v1.AnalysisRunId.newBuilder()
+                .setValue(status.analysisRunId().value()))
+            .setRepositoryAnalysisJobId(de.burger.forensics.analytics.analysisjob.v1.AnalysisJobId.newBuilder()
+                .setValue(status.repositoryAnalysisJobId().value()))
+            .setCompleteness(toProto(status.completeness()))
+            .setState(toProto(status.state()))
+            .setBtmDeliveryReadiness(toProto(status.btmDeliveryReadiness()))
+            .setJoernSkipped(status.joernSkipped())
+            .addAllDiagnostics(status.diagnostics().stream().map(AnalysisJobGrpcEndpoint::toProto).toList())
+            .putAllAttributes(status.attributes());
+        if (!status.sourceSnapshotId().isBlank()) {
+            builder.setSourceSnapshotId(de.burger.forensics.analytics.analysisjob.v1.SourceSnapshotId.newBuilder()
+                .setValue(status.sourceSnapshotId()));
+        }
+        return builder.build();
+    }
+
+    private static de.burger.forensics.analytics.analysisjob.v1.RepositoryToBtmDiagnostic toProto(
+        de.burger.forensics.analytics.services.analysisorchestrator.domain.RepositoryToBtmDiagnostic diagnostic
+    ) {
+        return de.burger.forensics.analytics.analysisjob.v1.RepositoryToBtmDiagnostic.newBuilder()
+            .setCode(diagnostic.code())
+            .setMessage(diagnostic.message())
+            .setSeverity(toProto(diagnostic.severity()))
+            .setRetryable(diagnostic.retryable())
+            .setAffectsCompleteness(diagnostic.affectsCompleteness())
+            .build();
+    }
+
     private static de.burger.forensics.analytics.analysisjob.v1.AnalysisArtifactReference toProto(AnalysisArtifactReference reference) {
         return de.burger.forensics.analytics.analysisjob.v1.AnalysisArtifactReference.newBuilder()
             .setArtifact(de.burger.forensics.analytics.analysisjob.v1.ArtifactReference.newBuilder()
@@ -571,6 +664,47 @@ public final class AnalysisJobGrpcEndpoint extends AnalysisJobServiceGrpc.Analys
         de.burger.forensics.analytics.services.analysisorchestrator.domain.AnalysisArtifactCategory category
     ) {
         return required(CATEGORY_PROTOS.get(category), "unsupported artifact category");
+    }
+
+    private static de.burger.forensics.analytics.analysisjob.v1.RepositoryToBtmOrchestrationState toProto(
+        de.burger.forensics.analytics.services.analysisorchestrator.domain.RepositoryToBtmOrchestrationState state
+    ) {
+        return switch (state) {
+            case ACCEPTED ->
+                de.burger.forensics.analytics.analysisjob.v1.RepositoryToBtmOrchestrationState.REPOSITORY_TO_BTM_ORCHESTRATION_STATE_ACCEPTED;
+            case WAITING_FOR_REPOSITORY ->
+                de.burger.forensics.analytics.analysisjob.v1.RepositoryToBtmOrchestrationState.REPOSITORY_TO_BTM_ORCHESTRATION_STATE_WAITING_FOR_REPOSITORY;
+            case READY_FOR_BTM_DELIVERY ->
+                de.burger.forensics.analytics.analysisjob.v1.RepositoryToBtmOrchestrationState.REPOSITORY_TO_BTM_ORCHESTRATION_STATE_READY_FOR_BTM_DELIVERY;
+            case INCOMPLETE ->
+                de.burger.forensics.analytics.analysisjob.v1.RepositoryToBtmOrchestrationState.REPOSITORY_TO_BTM_ORCHESTRATION_STATE_INCOMPLETE;
+            case FAILED ->
+                de.burger.forensics.analytics.analysisjob.v1.RepositoryToBtmOrchestrationState.REPOSITORY_TO_BTM_ORCHESTRATION_STATE_FAILED;
+        };
+    }
+
+    private static de.burger.forensics.analytics.analysisjob.v1.BtmDeliveryReadiness toProto(
+        de.burger.forensics.analytics.services.analysisorchestrator.domain.BtmDeliveryReadiness readiness
+    ) {
+        return switch (readiness) {
+            case NOT_READY -> de.burger.forensics.analytics.analysisjob.v1.BtmDeliveryReadiness.BTM_DELIVERY_READINESS_NOT_READY;
+            case READY -> de.burger.forensics.analytics.analysisjob.v1.BtmDeliveryReadiness.BTM_DELIVERY_READINESS_READY;
+            case UNAVAILABLE -> de.burger.forensics.analytics.analysisjob.v1.BtmDeliveryReadiness.BTM_DELIVERY_READINESS_UNAVAILABLE;
+            case UNKNOWN -> de.burger.forensics.analytics.analysisjob.v1.BtmDeliveryReadiness.BTM_DELIVERY_READINESS_UNKNOWN;
+        };
+    }
+
+    private static de.burger.forensics.analytics.analysisjob.v1.RepositoryToBtmDiagnosticSeverity toProto(
+        de.burger.forensics.analytics.services.analysisorchestrator.domain.RepositoryToBtmDiagnosticSeverity severity
+    ) {
+        return switch (severity) {
+            case INFO ->
+                de.burger.forensics.analytics.analysisjob.v1.RepositoryToBtmDiagnosticSeverity.REPOSITORY_TO_BTM_DIAGNOSTIC_SEVERITY_INFO;
+            case WARNING ->
+                de.burger.forensics.analytics.analysisjob.v1.RepositoryToBtmDiagnosticSeverity.REPOSITORY_TO_BTM_DIAGNOSTIC_SEVERITY_WARNING;
+            case ERROR ->
+                de.burger.forensics.analytics.analysisjob.v1.RepositoryToBtmDiagnosticSeverity.REPOSITORY_TO_BTM_DIAGNOSTIC_SEVERITY_ERROR;
+        };
     }
 
     private static <T> T required(T value, String message) {
