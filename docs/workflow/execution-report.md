@@ -334,5 +334,5 @@ CP_RECORD:
 
 Checkpoint:
 
-- Commit SHA: pending until the S03 checkpoint commit is created.
+- Commit SHA: `c059aa89d4832d56c154ecb8f03963052ec7a2f9`.
 - Push result: pending until the S03 checkpoint is pushed.
