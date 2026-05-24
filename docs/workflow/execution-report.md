@@ -189,7 +189,7 @@ Checkpoint:
 
 ## Slice S02 - Contract-First Workspace API And Owner API
 
-Status: Completed; checkpoint commit pending.
+Status: Completed.
 
 Owner and reviewers:
 
@@ -249,5 +249,5 @@ Limitations and carry-forward notes:
 
 Checkpoint:
 
-- Commit SHA: pending.
+- Commit SHA: `6dcee046b61c7783947975a3f3f337fccd10fb0c`.
 - Push result: pending.
