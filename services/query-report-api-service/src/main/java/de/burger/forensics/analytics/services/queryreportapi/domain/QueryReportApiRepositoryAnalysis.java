@@ -1,6 +1,5 @@
 package de.burger.forensics.analytics.services.queryreportapi.domain;
 
-import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -16,9 +15,6 @@ public final class QueryReportApiRepositoryAnalysis {
     private static final long MAX_TIMEOUT_SECONDS = 3_600;
     private static final long MAX_WORKSPACE_BYTES = 107_374_182_400L;
     private static final Pattern COMMIT = Pattern.compile("[a-fA-F0-9]{7,64}");
-    private static final Pattern PRIVATE_IPV4 = Pattern.compile(
-        "^(0\\.|127\\.|10\\.|192\\.168\\.|172\\.(1[6-9]|2[0-9]|3[0-1])\\.|169\\.254\\.)"
-    );
     private static final Pattern PUBLIC_DIAGNOSTIC_CODE = Pattern.compile("[A-Z0-9_:-]{1,96}");
     private static final Set<String> SENSITIVE_TOKENS = Set.of(
         "authorization",
@@ -51,7 +47,7 @@ public final class QueryReportApiRepositoryAnalysis {
             schemaVersion = requireText(schemaVersion, "schema version");
             correlationId = requireText(correlationId, "correlation id");
             requestedOutputs = validatedRequestedOutputs(requestedOutputs);
-            repositoryUrl = requireCleanHttpsRemote(repositoryUrl);
+            repositoryUrl = QueryReportApiWorkspace.requireCleanHttpsRepositoryUrl(repositoryUrl);
             provider = optionalSafeText(provider, "provider");
             branch = optionalRef(branch, "branch");
             commit = optionalCommit(commit);
@@ -256,45 +252,6 @@ public final class QueryReportApiRepositoryAnalysis {
         return Map.copyOf(sorted);
     }
 
-    private static String requireCleanHttpsRemote(String remoteUrl) {
-        var candidate = requireText(remoteUrl, "repository url");
-        var uri = URI.create(candidate);
-        if (!"https".equals(uri.getScheme())) {
-            throw new IllegalArgumentException("repository url must use https");
-        }
-        if (uri.getRawUserInfo() != null || uri.getRawQuery() != null || uri.getRawFragment() != null) {
-            throw new IllegalArgumentException("repository url must not contain userinfo, query or fragment");
-        }
-        var host = normalizedHost(requireText(uri.getHost(), "repository host"));
-        if ("localhost".equals(host) || host.endsWith(".localhost") || PRIVATE_IPV4.matcher(host).find()
-            || "169.254.169.254".equals(host) || isPrivateIpv6(host)) {
-            throw new IllegalArgumentException("repository url must not target local or private hosts");
-        }
-        return candidate;
-    }
-
-    private static String normalizedHost(String host) {
-        var normalized = host.toLowerCase(Locale.ROOT);
-        if (normalized.startsWith("[") && normalized.endsWith("]")) {
-            normalized = normalized.substring(1, normalized.length() - 1);
-        }
-        var zoneIndex = normalized.indexOf('%');
-        return zoneIndex < 0 ? normalized : normalized.substring(0, zoneIndex);
-    }
-
-    private static boolean isPrivateIpv6(String host) {
-        return host.contains(":")
-            && ("::".equals(host)
-            || "::1".equals(host)
-            || "0:0:0:0:0:0:0:0".equals(host)
-            || "0:0:0:0:0:0:0:1".equals(host)
-            || host.startsWith("::ffff:")
-            || host.startsWith("0:0:0:0:0:ffff:")
-            || host.startsWith("fc")
-            || host.startsWith("fd")
-            || host.startsWith("fe80:"));
-    }
-
     private static String optionalSafeText(String value, String name) {
         if (value == null || value.isBlank()) {
             return "";
@@ -398,6 +355,7 @@ public final class QueryReportApiRepositoryAnalysis {
     private static boolean looksLikePublicLeak(String value) {
         var lower = value.toLowerCase(Locale.ROOT).trim().replace('\\', '/');
         return lower.startsWith("file:")
+            || lower.startsWith("jdbc:")
             || lower.startsWith("/")
             || lower.matches("^[a-z]:.*")
             || lower.contains("/tmp")
@@ -405,10 +363,14 @@ public final class QueryReportApiRepositoryAnalysis {
             || lower.contains("/home/")
             || lower.contains("/users/")
             || lower.contains("/var/lib/forensic-analytics")
+            || lower.contains("repository-source-data")
             || lower.contains("workspace-")
             || lower.contains("repository-workspaces")
+            || lower.contains("h2")
             || lower.contains("raw stdout")
             || lower.contains("raw stderr")
+            || lower.contains("stdout")
+            || lower.contains("stderr")
             || lower.contains("git clone")
             || lower.matches(".*https?://\\S+.*");
     }

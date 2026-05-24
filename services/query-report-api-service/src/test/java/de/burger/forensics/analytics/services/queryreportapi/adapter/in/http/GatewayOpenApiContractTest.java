@@ -91,7 +91,9 @@ class GatewayOpenApiContractTest {
 
         assertContains(contract, "- name: Workspaces");
         assertContains(metadataPost, "operationId: previewRepositoryWorkspaceMetadata");
-        assertContains(metadataPost, "x-implementation-status: planned-initial");
+        assertContains(metadataPost, "x-implementation-status: current-verified");
+        assertContains(metadataPost, "enforces the public Idempotency-Key locally");
+        assertContains(metadataPost, "configured owner schema version and metadata timeout");
         assertContains(metadataPost, "- $ref: '#/components/parameters/MutationCorrelationId'");
         assertContains(metadataPost, "- $ref: '#/components/parameters/IdempotencyKey'");
         assertContains(metadataPost, "$ref: '#/components/schemas/WorkspaceMetadataRequest'");
@@ -100,7 +102,9 @@ class GatewayOpenApiContractTest {
         assertContains(metadataPost, "$ref: '#/components/responses/IdempotencyConflict'");
 
         assertContains(workspacePost, "operationId: createRepositoryWorkspace");
-        assertContains(workspacePost, "x-implementation-status: planned-initial");
+        assertContains(workspacePost, "x-implementation-status: current-verified");
+        assertContains(workspacePost, "repository-source owner gRPC API");
+        assertContains(workspacePost, "does not read repository-source storage or workspace paths");
         assertContains(workspacePost, "- $ref: '#/components/parameters/MutationCorrelationId'");
         assertContains(workspacePost, "- $ref: '#/components/parameters/IdempotencyKey'");
         assertContains(workspacePost, "$ref: '#/components/schemas/CreateWorkspaceRequest'");
@@ -109,13 +113,15 @@ class GatewayOpenApiContractTest {
         assertContains(workspacePost, "$ref: '#/components/responses/IdempotencyConflict'");
 
         assertContains(workspaceGet, "operationId: getRepositoryWorkspace");
-        assertContains(workspaceGet, "x-implementation-status: planned-initial");
+        assertContains(workspaceGet, "x-implementation-status: current-verified");
         assertContains(workspaceGet, "- $ref: '#/components/parameters/RequiredCorrelationId'");
         assertContains(workspaceGet, "- $ref: '#/components/parameters/WorkspaceId'");
         assertContains(workspaceGet, "$ref: '#/components/schemas/RepositoryCheckoutWorkspaceResponse'");
 
         assertContains(refreshPost, "operationId: refreshRepositoryWorkspaceBranch");
-        assertContains(refreshPost, "x-implementation-status: planned-initial");
+        assertContains(refreshPost, "x-implementation-status: current-verified");
+        assertContains(refreshPost, "has no request body");
+        assertContains(refreshPost, "configured bounded refresh workspace policy");
         assertContains(refreshPost, "- $ref: '#/components/parameters/MutationCorrelationId'");
         assertContains(refreshPost, "- $ref: '#/components/parameters/IdempotencyKey'");
         assertContains(refreshPost, "- $ref: '#/components/parameters/WorkspaceId'");
@@ -136,6 +142,8 @@ class GatewayOpenApiContractTest {
         assertContains(contract, "workspaceId:");
         assertContains(contract, "workspaceBranchId:");
         assertContains(contract, "sourceSnapshotId:");
+        assertContains(contract, "CHECKED_OUT");
+        assertContains(contract, "CLEANED");
         assertContains(contract, "UP_TO_DATE");
         assertContains(contract, "UPDATED");
         assertContains(contract, "The idempotency key was already used with different input.");
@@ -159,6 +167,7 @@ class GatewayOpenApiContractTest {
 
         assertContains(repositoryUrlSchema, "DNS resolution must reject every A/AAAA result");
         assertContains(repositoryUrlSchema, "Query strings, fragments, userinfo, local names, SSH and SCP-style remotes are forbidden.");
+        assertNotContains(repositoryUrlSchema, "(?i");
         assertContains(startRepositoryAnalysisRequest, "$ref: '#/components/schemas/HttpsRepositoryUrl'");
         assertTrue(repositoryUrlPattern.matcher("https://github.com/wildfly/wildfly.git").matches());
         List.of(
@@ -168,16 +177,34 @@ class GatewayOpenApiContractTest {
             "https://example.com/repo.git?token=x",
             "https://example.com/repo.git#main",
             "https://localhost/repo.git",
+            "https://localhost./repo.git",
+            "https://127.0.0.1./repo.git",
             "https://10.0.0.1/repo.git",
             "https://100.64.0.1/repo.git",
+            "https://169.254.169.254./repo.git",
             "https://192.0.2.1/repo.git",
             "https://198.18.0.1/repo.git",
             "https://198.51.100.1/repo.git",
+            "https://192.31.196.1/repo.git",
+            "https://192.31.196.1./repo.git",
+            "https://192.52.193.1/repo.git",
+            "https://192.52.193.1./repo.git",
+            "https://192.175.48.1/repo.git",
+            "https://192.175.48.1./repo.git",
             "https://203.0.113.1/repo.git",
             "https://224.0.0.1/repo.git",
             "https://example.test/repo.git",
             "https://example.local/repo.git",
+            "https://example.invalid./repo.git",
+            "https://example.example./repo.git",
+            "https://[0000:0000:0000:0000:0000:0000:0000:0001]/repo.git",
             "https://[2001:db8::1]/repo.git",
+            "https://[2001:0db8::1]/repo.git",
+            "https://[0064:ff9b::1]/repo.git",
+            "https://[64:ff9b:1::1]/repo.git",
+            "https://[100:0:0:1::1]/repo.git",
+            "https://[3fff::1]/repo.git",
+            "https://[5f00::1]/repo.git",
             "https://[ff00::1]/repo.git"
         ).forEach(repositoryUrl -> assertFalse(
             repositoryUrlPattern.matcher(repositoryUrl).matches(),

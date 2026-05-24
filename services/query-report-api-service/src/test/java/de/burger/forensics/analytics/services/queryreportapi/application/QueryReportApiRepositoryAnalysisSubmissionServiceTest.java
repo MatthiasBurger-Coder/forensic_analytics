@@ -102,12 +102,25 @@ class QueryReportApiRepositoryAnalysisSubmissionServiceTest {
     void validatesRepositoryBoundariesAndWorkspacePolicyBeforeCallingPort() {
         var unsafeRemotes = List.of(
             "https://localhost/acme/demo.git",
+            "https://localhost./acme/demo.git",
             "https://demo.localhost/acme/demo.git",
+            "https://example.invalid./acme/demo.git",
+            "https://example/acme/demo.git",
             "https://10.0.0.1/acme/demo.git",
             "https://192.168.0.1/acme/demo.git",
             "https://172.16.0.1/acme/demo.git",
             "https://169.254.169.254/acme/demo.git",
+            "https://192.31.196.1/acme/demo.git",
+            "https://192.52.193.1/acme/demo.git",
+            "https://192.175.48.1/acme/demo.git",
             "https://[::1]/acme/demo.git",
+            "https://[0000:0000:0000:0000:0000:0000:0000:0001]/acme/demo.git",
+            "https://[0064:ff9b::1]/acme/demo.git",
+            "https://[64:ff9b:1::1]/acme/demo.git",
+            "https://[100:0:0:1::1]/acme/demo.git",
+            "https://[2001:0db8::1]/acme/demo.git",
+            "https://[3fff::1]/acme/demo.git",
+            "https://[5f00::1]/acme/demo.git",
             "https://[fc00::1]/acme/demo.git",
             "https://[fe80::1]/acme/demo.git"
         );

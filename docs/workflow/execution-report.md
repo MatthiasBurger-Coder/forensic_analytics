@@ -2,12 +2,12 @@
 
 ## Status
 
-Workflow execution is in progress. S00, S01, S02, S03, S04, S05 and S06 are
+Workflow execution is in progress. S00, S01, S02, S03, S04, S05, S06 and S07 are
 complete. Product implementation has started in repository-source-service with
 the workspace domain model, in-memory and H2 repositories, metadata
 resolution, checkout preparation, durable idempotency and branch refresh
-behavior, plus the repository-source gRPC owner API required by later facade
-and runtime slices.
+behavior, plus the repository-source gRPC owner API and query-report public
+REST facade required by later UI and runtime slices.
 
 `workflow execute` must run S00 first and then update this report after every
 slice with:
@@ -48,7 +48,7 @@ execution and contract-first sequencing.
 | S04 | Completed | Metadata preview, verified default-branch fallback, branch checkout preparation, checkout reuse and manual refresh behavior added behind repository-source application ports and Git/filesystem adapters. |
 | S05 | Completed | H2 dependency, schema, persistence adapters, durable idempotency port, restart-safe filesystem cleanup and S05 scope repair completed. |
 | S06 | Completed | Repository-source gRPC owner API endpoint, runtime wiring and sanitized error mapping completed. |
-| S07 | Not started | Query-report public REST facade. |
+| S07 | Completed | Query-report public REST facade, repository-source owner gRPC client, public DTO validation and OpenAPI alignment completed. |
 | S08 | Not started | Forensic UI Create Workspace flow. |
 | S09 | Not started | Docker-local volumes and runtime configuration. |
 | S10 | Not started | Security, leakage, idempotency and restart integration gate. |
@@ -333,6 +333,133 @@ Checkpoint:
 - Commit SHA: `346f2c88d3691540ed724a2e524ae4f11b8c83e1`.
 - Push result: pushed to
   `origin/feature/workflow-repository-workspace-checkout-h2-persistence-20260524`.
+
+## Slice S07 - Query Report Public Workspace REST Facade
+
+Status: Completed.
+
+Owner and reviewers:
+
+- Senior Java Backend
+- Senior gRPC / Protobuf Specialist
+- Senior Security Sandbox Engineer
+- Senior Tester
+- Senior Requirement Engineer
+
+Changed files:
+
+- `contracts/openapi/gateway-api.yaml`
+- `services/query-report-api-service/build.gradle.kts`
+- `services/query-report-api-service/src/main/java/de/burger/forensics/analytics/services/queryreportapi/adapter/in/http/QueryReportApiHttpHandler.java`
+- `services/query-report-api-service/src/main/java/de/burger/forensics/analytics/services/queryreportapi/adapter/out/grpc/RepositorySourceWorkspaceGrpcClient.java`
+- `services/query-report-api-service/src/main/java/de/burger/forensics/analytics/services/queryreportapi/application/QueryReportApiWorkspaceException.java`
+- `services/query-report-api-service/src/main/java/de/burger/forensics/analytics/services/queryreportapi/application/QueryReportApiWorkspaceService.java`
+- `services/query-report-api-service/src/main/java/de/burger/forensics/analytics/services/queryreportapi/application/port/RepositoryWorkspaceOwnerPort.java`
+- `services/query-report-api-service/src/main/java/de/burger/forensics/analytics/services/queryreportapi/bootstrap/QueryReportApiServiceConfiguration.java`
+- `services/query-report-api-service/src/main/java/de/burger/forensics/analytics/services/queryreportapi/bootstrap/QueryReportApiServiceProperties.java`
+- `services/query-report-api-service/src/main/java/de/burger/forensics/analytics/services/queryreportapi/bootstrap/QueryReportApiServicePropertiesConfiguration.java`
+- `services/query-report-api-service/src/main/java/de/burger/forensics/analytics/services/queryreportapi/domain/QueryReportApiRepositoryAnalysis.java`
+- `services/query-report-api-service/src/main/java/de/burger/forensics/analytics/services/queryreportapi/domain/QueryReportApiWorkspace.java`
+- `services/query-report-api-service/src/main/resources/application.properties`
+- `services/query-report-api-service/src/main/resources/application-docker.properties`
+- `services/query-report-api-service/src/main/resources/application-test.properties`
+- `services/query-report-api-service/src/test/java/de/burger/forensics/analytics/services/queryreportapi/adapter/in/http/GatewayOpenApiContractTest.java`
+- `services/query-report-api-service/src/test/java/de/burger/forensics/analytics/services/queryreportapi/adapter/in/http/QueryReportApiHttpAdapterTest.java`
+- `services/query-report-api-service/src/test/java/de/burger/forensics/analytics/services/queryreportapi/adapter/out/grpc/RepositorySourceWorkspaceGrpcClientTest.java`
+- `services/query-report-api-service/src/test/java/de/burger/forensics/analytics/services/queryreportapi/application/QueryReportApiRepositoryAnalysisSubmissionServiceTest.java`
+- `services/query-report-api-service/src/test/java/de/burger/forensics/analytics/services/queryreportapi/application/QueryReportApiWorkspaceServiceTest.java`
+- `services/query-report-api-service/src/test/java/de/burger/forensics/analytics/services/queryreportapi/bootstrap/QueryReportApiServiceApplicationTest.java`
+- `services/query-report-api-service/src/test/java/de/burger/forensics/analytics/services/queryreportapi/domain/QueryReportApiWorkspaceTest.java`
+- `services/query-report-api-service/src/test/java/de/burger/forensics/analytics/services/queryreportapi/quality/QueryReportApiServiceArchitectureTest.java`
+- `docs/workflow/execution-report.md`
+
+Commands executed:
+
+```bash
+git status --short --branch
+git diff --check
+./gradlew :services:query-report-api-service:test --tests "*GatewayOpenApiContractTest" --tests "*QueryReportApiHttpAdapterTest" --dependency-verification strict --console=plain --stacktrace
+./gradlew :services:query-report-api-service:test --tests "*RepositorySourceWorkspaceGrpcClientTest" --dependency-verification strict --console=plain --stacktrace
+./gradlew :services:query-report-api-service:test --tests "*GatewayOpenApiContractTest" --tests "*QueryReportApiHttpAdapterTest" --tests "*RepositorySourceWorkspaceGrpcClientTest" --tests "*QueryReportApiWorkspaceServiceTest" --tests "*QueryReportApiWorkspaceTest" --tests "*QueryReportApiRepositoryAnalysisSubmissionServiceTest" --dependency-verification strict --console=plain --stacktrace
+./gradlew :services:query-report-api-service:test --tests "*QueryReportApiWorkspaceTest" --tests "*QueryReportApiRepositoryAnalysisSubmissionServiceTest" --dependency-verification strict --console=plain --stacktrace
+./gradlew :services:query-report-api-service:test --dependency-verification strict --console=plain --stacktrace
+```
+
+Result:
+
+- PASS for S07 query-report public workspace REST facade.
+- Public REST now implements `POST /api/workspace-metadata`,
+  `POST /api/workspaces`, `GET /api/workspaces/{workspaceId}` and
+  `POST /api/workspaces/{workspaceId}/branches/{workspaceBranchId}/refresh`.
+- The facade uses a service-owned application port and a repository-source
+  owner gRPC client; it does not read repository-source H2 data, workspace
+  directories or private checkout files.
+- Workspace metadata preview enforces public `Idempotency-Key` locally because
+  the owner API preview does not persist a workspace; create and refresh pass
+  idempotency through to repository-source.
+- Repository-source owner gRPC `ALREADY_EXISTS`, validation, not found,
+  timeout, unavailable, failed-precondition and internal failures map to
+  controlled public errors without exposing downstream details.
+- Unsupported or unrecognized repository-source workspace and branch statuses
+  are rejected as controlled backend unavailable responses instead of being
+  fabricated as public `FAILED` state.
+- Public DTO validation and OpenAPI now include `CHECKED_OUT` and `CLEANED`
+  workspace statuses, reject blank branch strings, reject dot segments in
+  source roots and keep diagnostics sanitized.
+- The shared public `HttpsRepositoryUrl` contract and query-report runtime
+  validation were hardened for local, private, documentation, benchmarking,
+  CGNAT, multicast and special-use hosts. The repository-analysis route now
+  reuses the same clean HTTPS repository URL validator as workspace routes.
+- Architecture tests block query-report domain/application transport leakage,
+  direct repository-source implementation dependencies, SQL/H2 access and
+  main-code filesystem APIs for private workspace reads.
+
+Subagent review:
+
+- Senior gRPC / Protobuf Specialist: initial blockers resolved; final
+  re-review PASS after unsupported status, `INTERNAL` mapping and blank branch
+  fixes.
+- Senior Tester: initial blockers resolved; re-review PASS after gRPC client,
+  idempotency, source-root and architecture coverage was added.
+- Senior Requirement Engineer: PASS; S07 scope matches FA-MVP-0001 and the
+  active workflow, with metadata preview idempotency explicitly classified as
+  facade-local for the non-persisting preview.
+- Senior Security Sandbox Engineer: repeated OpenAPI/runtime URL-hardening
+  findings were resolved with targeted fixes and tests. Final local gates pass
+  after ECMA-compatible OpenAPI pattern cleanup and trailing-dot IPv4 coverage.
+
+Documentation sync:
+
+- OpenAPI `Workspaces` operations are marked `current-verified`.
+- Runtime and final arc42 synchronization remain assigned to S11.
+- ADR-0010 and ADR-0018 were checked in prior contract/source slices; S07
+  introduces no field-number or service-ownership ADR change.
+
+Limitations and carry-forward notes:
+
+- S07 intentionally does not implement the forensic-ui Create Workspace flow;
+  that remains owned by S08.
+- Docker-local volume wiring remains owned by S09.
+- End-to-end restart, Docker volume and cross-service leakage gates remain
+  owned by S10.
+- Gradle emitted Java/protobuf/netty deprecation and native-access warnings;
+  they did not fail the S07 gates.
+
+CP_RECORD:
+
+- workflowVersion: `fa-mvp-0001-repository-workspace-checkout-h2-persistence-20260524-v1`
+- sliceId: `S07`
+- sliceTitle: `Query Report Public Workspace REST Facade`
+- responsibleAgent: `senior-java-backend`
+- qualityGateResult: `PASS`
+- rollbackReference: `revert the S07 checkpoint commit after CP_COMMIT; before commit, restore the listed S07 files from HEAD`
+- arc42Updated: `not updated; runtime and final architecture synchronization remain assigned to S11`
+- adrUpdated: `not updated; no S07 ADR change recorded`
+
+Checkpoint:
+
+- Commit SHA: `pending until S07 checkpoint commit is created`.
+- Push result: `pending until S07 checkpoint push is completed`.
 
 ## Slice S01 - Requirement Terminology And Data Ownership Gate
 
