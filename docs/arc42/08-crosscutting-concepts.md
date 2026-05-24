@@ -138,17 +138,16 @@ Logs are diagnostics, not verified forensic evidence.
 
 Logging must avoid raw payloads, source content, method arguments, method return values, credentials, local paths, stack frames and LLM prompt content. Failure logs use exception categories instead of raw exception messages.
 
-ADR-0008 describes the current monolith logging-module exception. FA-MSA-001
-supersedes that target direction for productive services: shared Java logging
-modules must be retired or replaced with service-local configuration and
-`observability-stack` deployment material before final acceptance.
+ADR-0008 describes the historical monolith logging-module exception. ADR-0022
+retired that source tree for active implementation. FA-MSA-001 productive
+services must use service-local diagnostics or `observability-stack`
+deployment material rather than shared Java logging modules.
 
-The active workflow records that this retirement is not yet executable for the
-current workflow state. `forensic-analytics-logging` and
-`forensic-analytics-observability` remain legacy in-process modules while
-callers and regression coverage still depend on them. Later retirement slices
-must prove caller-free evidence, replacement parity and rollback or explicit
-deprecation before removing either module.
+Prior workflow evidence recorded that this retirement was not executable while
+callers and regression coverage depended on
+`forensic-analytics-logging` and `forensic-analytics-observability`. The active
+final-retirement workflow supersedes that state with service-only project-model
+checks, S05 deletion, S06 architecture closure and S07 release readiness.
 
 S10 does not certify end-to-end ingestion upload correlation preservation. The
 current ingestion upload contract has no verified correlation carrier, so that
@@ -160,9 +159,9 @@ Automatic method logging records method operation names, phases, durations, corr
 
 Spring Boot is a server bootstrap and adapter wiring concern. It may configure outer modules and lifecycle adapters, but it must not become a domain or application dependency.
 
-The accepted Boot boundary preserves ADR-0005. Spring-specific method logging, MDC propagation, SLF4J bindings, AspectJ weaving and concrete logging providers require a separate architecture decision before they can be introduced. Boot-scoped REST behavior follows ADR-0007 and initially wraps the existing JDK REST adapter instead of adding Spring MVC or WebFlux.
+The accepted Boot boundary preserves ADR-0005. Spring-specific method logging, MDC propagation, SLF4J bindings, AspectJ weaving and concrete logging providers require a separate architecture decision before they can be introduced. Boot-scoped REST behavior in ADR-0007 was historical predecessor behavior: it wrapped the former JDK REST adapter instead of adding Spring MVC or WebFlux. Current public API behavior is service-local where explicitly verified.
 
-S15 verifies this boundary in service-local architecture tests. Productive
+Earlier service-local architecture tests verify this boundary. Productive
 services may depend on Spring only from their `bootstrap..` packages, while
 `cli-client` must not depend on Spring at all. The former broad
 `services:testbed` Spring and logging checks are retired from the

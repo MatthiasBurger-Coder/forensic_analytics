@@ -9,12 +9,11 @@ dedicated service-level `contractTest` Gradle task exists yet. This document
 defines the executable contract checks that workflow slices must run before
 claiming contract readiness.
 
-Slice S18 moves the executable OpenAPI ownership gate for the public
-repository-to-BTM submission/status contract from "legacy REST only" to the
-surviving target service. `services:query-report-api-service` now owns a
+The executable OpenAPI ownership gate for the public repository-to-BTM
+submission/status contract belongs to the surviving target service.
+`services:query-report-api-service` now owns a
 service-local `GatewayOpenApiContractTest` for
-`contracts/openapi/gateway-api.yaml`; the legacy `forensic-analytics-rest`
-test remains rollback evidence until a later slice proves caller-free removal.
+`contracts/openapi/gateway-api.yaml`.
 
 ## Required Contract Test Areas
 
@@ -23,7 +22,7 @@ test remains rollback evidence until a later slice proves caller-free removal.
 | gRPC ingestion | `contracts/grpc/forensic-ingestion.proto` | Schema compatibility, current RPC shape, deprecated field 6 preservation, required-at-application validation, streaming upload deduplication |
 | Analysis jobs | `contracts/grpc/analysis-job.proto` | Job state transitions, lease idempotency, retryable failure, dead-letter semantics, artifact reference completeness |
 | Repository analysis | `contracts/grpc/repository-analysis.proto` | HTTPS-only URL validation, no credentials/userinfo/query secrets/fragments, branch-or-commit requirement, safe ref validation, source snapshot response without private workspace paths, cleanup by opaque workspace ID, safe-attributes policy, opaque or snapshot-relative artifact references |
-| Public REST | `contracts/openapi/gateway-api.yaml` | Service-local executable OpenAPI file contract test in `query-report-api-service`, request/response schema presence, error envelope shape, mutation correlation header, required idempotency key behavior, planned-operation implementation status, repository URL and workspace policy alignment with repository-analysis gRPC; legacy `forensic-analytics-rest` coverage remains rollback evidence only |
+| Public REST | `contracts/openapi/gateway-api.yaml` | Service-local executable OpenAPI file contract test in `query-report-api-service`, request/response schema presence, error envelope shape, mutation correlation header, required idempotency key behavior, planned-operation implementation status, repository URL and workspace policy alignment with repository-analysis gRPC |
 | CLI public API | `contracts/cli/gateway-cli-contract.md` and `contracts/openapi/gateway-api.yaml` | CLI option-to-field/header mapping, fixed empty build-context attributes, redacted public API error envelopes, target `cli-client` HTTP JSON adapter behavior, predecessor `forensic-analytics-cli gateway-submit` compatibility, and explicit absence of status/report commands until mapped |
 | Events | `contracts/events/analysis-events.md` | Envelope completeness, event id deduplication, required payload fields, at-least-once consumer behavior, unknown-field tolerance |
 | Generated code boundaries | all contracts | Generated classes stay inside service-local build output and do not become shared Java modules |
@@ -34,7 +33,7 @@ Slice 02 is contract and contract-test only. Required verification:
 
 ```bash
 git diff --check
-./gradlew :forensic-analytics-rest:test --tests '*GatewayOpenApiContractTest' --dependency-verification strict --console=plain --stacktrace
+./gradlew :services:query-report-api-service:test --tests '*GatewayOpenApiContractTest' --dependency-verification strict --console=plain --stacktrace
 ./gradlew :services:btm-generation-service:generateProto --dependency-verification strict --console=plain --stacktrace
 ./gradlew :services:btm-generation-service:test --tests '*BtmGenerationContractTest' --dependency-verification strict --console=plain --stacktrace
 ```
@@ -49,9 +48,9 @@ claiming public API ownership exit:
 ./gradlew :services:cli-client:test --tests '*HttpRepositoryAnalysisSubmissionClientTest' --dependency-verification strict --console=plain --stacktrace
 ```
 
-The Slice 02 `:forensic-analytics-rest:test --tests '*GatewayOpenApiContractTest'`
-command remains predecessor rollback evidence. It is no longer the only
-executable owner for the current public OpenAPI contract.
+The Slice 02 OpenAPI verification command is service-local. Historical
+predecessor coverage is not an executable gate in the current service-only
+Gradle model.
 
 When Slice 02 is ready for checkpoint commit, run the repository minimum gate:
 

@@ -5,10 +5,11 @@
 FA-MSA-001 Slice 02 caller and coupling inventory review for workflow
 `fa-msa-001-microservice-decomposition-20260521-v1`.
 
-This document records the current coupling that must be considered before
-service extraction. The current coupling is acceptable for the existing
-modular monolith, but it blocks any claim that current modules are already
-microservices.
+This document records historical coupling that had to be considered before
+service extraction and final source-tree retirement. ADR-0022 and S05 supersede
+the old "current modular monolith" state: the former source trees are deleted,
+and the active Java build is service-only. Historical coupling remains useful
+as migration evidence, but it is not current implementation evidence.
 
 S02 verified the inventory on branch
 `architecture/workflow-microservice-decomposition-20260521` from starting
@@ -32,9 +33,9 @@ rg -n "RunRepositoryAnalysisUseCase|RunRepositoryAnalysisCommand|DefaultReposito
 git diff --check
 ```
 
-## Current Dependency Shape
+## Historical Dependency Shape
 
-The current dependency direction is broadly hexagonal:
+At the time of S02, the monolith dependency direction was broadly hexagonal:
 
 ```text
 adapters / runtimes / CLI / REST / gRPC / persistence
@@ -42,7 +43,7 @@ adapters / runtimes / CLI / REST / gRPC / persistence
         -> domain
 ```
 
-Verified project dependencies include:
+Verified project dependencies included:
 
 | Module | Current Project Dependencies |
 |---|---|
@@ -80,13 +81,14 @@ monolith packages covered by the scan. Remaining matches in service roots are
 generated contract packages, service-local packages or architecture-test
 forbidden-package strings.
 
-## Primary Coupling Points
+## Historical Primary Coupling Points
 
 ### Boot App Runtime
 
-`forensic-analytics-boot-app` is the strongest current runtime coupling point.
-It wires repository-source adapters, application services, gRPC ingestion,
-logging, observability, persistence and REST into one Spring Boot application.
+`forensic-analytics-boot-app` was the strongest predecessor runtime coupling
+point. It wired repository-source adapters, application services, gRPC
+ingestion, logging, observability, persistence and REST into one Spring Boot
+application before service extraction.
 
 This is platform-level runtime composition, not a gateway or service ecosystem.
 Future service slices must replace direct project-module coupling with
@@ -94,23 +96,24 @@ service-owned models and external contracts.
 
 ### Bootstrap Runtime
 
-`forensic-analytics-bootstrap` is a second combined runtime path. It starts
-gRPC and REST in one process and builds backend components directly from
+`forensic-analytics-bootstrap` was a predecessor combined runtime path. It
+started gRPC and REST in one process and built backend components directly from
 in-memory repositories, application use cases and repository-source adapters.
 
-This path is useful current-state evidence, but it is also a migration coupling
-that must be retired or isolated only after replacement evidence exists.
+This path is useful historical pre-retirement evidence, but it is also a
+migration coupling that must be retired or isolated only after replacement
+evidence exists.
 
 ### gRPC Ingestion Adapter
 
-`forensic-analytics-ingestion-grpc` is not contract-only. It contains:
+`forensic-analytics-ingestion-grpc` was not contract-only. It contained:
 
 - `forensic_ingestion.proto`;
 - generated Protobuf/gRPC classes;
 - `ForensicIngestionGrpcService`;
 - request validators;
 - mappers from Protobuf DTOs to application commands;
-- an `api(project(":forensic-analytics-application"))` dependency.
+- a legacy application project API dependency.
 
 Future contract slices must separate external `.proto` contracts from Java
 implementation dependencies. Generated transport types must not become shared
@@ -118,33 +121,36 @@ domain or DTO modules between services.
 
 ### REST Adapter
 
-`forensic-analytics-rest` is an in-process adapter. It uses the JDK HTTP server,
+`forensic-analytics-rest` was an in-process adapter. It used the JDK HTTP server,
 Gson and application/domain types. It is not a gateway service and does not
 currently prove service-to-service API boundaries.
 
 ### Persistence Adapter
 
-`forensic-analytics-persistence` implements application ports with in-memory
-stores and repositories. It shares application and domain models in-process.
+`forensic-analytics-persistence` implemented application ports with in-memory
+stores and repositories. It shared application and domain models in-process.
 An independent `analysis-store-service` project now exists for job lifecycle
 and artifact metadata service behavior. A service-owned durable database is not
 verified yet.
 
 ### Observability And Logging
 
-`forensic-analytics-observability` and `forensic-analytics-logging` are shared
-Java modules in the current monolith. This is acceptable in the current build,
-but future independently deployable services must not depend on shared Java
-implementation modules for runtime behavior.
+`forensic-analytics-observability` and `forensic-analytics-logging` were shared
+Java modules in the historical monolith. After S05, no shared Java
+observability/logging module remains in the active build. Future independently
+deployable services must still not depend on shared Java implementation modules
+for runtime behavior.
 
 Service slices need service-owned logging and observability choices or external
 operational contracts without shared runtime code.
 
 ### Testbed Coupling
 
-`forensic-analytics-testbed` directly test-depends on most backend modules and
-contains in-process mini end-to-end and architecture tests. These tests verify
-the current modular monolith, not networked service boundaries.
+`forensic-analytics-testbed` directly test-depended on most backend modules and
+contained in-process mini end-to-end and architecture tests. Those tests were
+historical monolith evidence. Current testbed evidence lives under
+`services:testbed` and still does not by itself prove networked service
+boundaries.
 
 Contract and architecture tests exist for implemented service slices, but
 networked integration coverage is not complete for the whole target landscape.
@@ -160,20 +166,23 @@ Architecture tests currently guard several monolith boundaries:
 - observability isolation;
 - Spring Boot dependency placement.
 
-Production import review did not find outward framework, adapter, persistence,
-REST, gRPC or Spring imports from `forensic-analytics-domain` or
-`forensic-analytics-application`.
+The historical production import review did not find outward framework,
+adapter, persistence, REST, gRPC or Spring imports from
+`forensic-analytics-domain` or `forensic-analytics-application`.
 
 These checks should be preserved during migration, but they do not prove
 microservice autonomy.
 
 ## Service Extraction Blockers
 
-The following current couplings block microservice claims:
+The following architectural gaps still block broad microservice-readiness
+claims:
 
-- current modules share Java domain and application code;
-- current candidates share in-memory persistence implementations;
-- the existing gRPC proto is stored inside a Java implementation module;
+- not every target service has independently verified build/start/container
+  and runtime parity evidence;
+- durable service-private persistence ownership is not fully implemented;
+- historical contracts and compatibility vocabulary still require explicit
+  governance when behavior changes;
 - external `contracts/` exists, but not every planned service interaction has
   complete contract-test coverage;
 - OpenAPI and event contract files exist, but not every planned interaction is
@@ -193,18 +202,18 @@ is used, and which verification proves the replacement.
 
 ## No Microservice Claims
 
-The current modules are technical and architectural modules inside one
-repository build. They must not be renamed or described as implemented
+The active service projects are technical and architectural modules inside one
+repository build. They must not be described as production-ready implemented
 microservices until later slices produce runtime evidence for independent
 build, start, test, configuration, healthcheck, container and deployment
 behavior.
 
 ## S02 Inventory Result
 
-S02 keeps the remaining `forensic-analytics-*` runtime paths registered as
-legacy in-process or rollback evidence. Caller verification still finds active
-dependencies for CLI, REST, bootstrap, Boot, engine, ingestion-request and
-testbed behavior, so removal would break verified current behavior.
+S02 kept the remaining `forensic-analytics-*` runtime paths as historical
+legacy in-process or rollback evidence. That caller verification is superseded
+by the active final-retirement workflow, which requires S04 documentation
+cleanup before S05 deletion and S06/S07 closure.
 
 The accepted FA-MSA-001 target is service-owned behavior behind explicit
 contracts, not the legacy modules and not the transitional predecessor service
@@ -217,28 +226,31 @@ quality gate.
 S14 repeats the caller-free question after S05 through S13 and still resolves
 to `NO_REMOVAL_SAFE`. The new `services:testbed` root preserves the legacy
 regression surface in a service-root location, which is useful parity evidence
-but still a test dependency on retained monolith modules.
+without depending on retained monolith modules in the verified service-only
+Gradle model.
 
-Workflow-create refinement after the S14 execution stop keeps S14 as a
-no-deletion readiness gate. S15 through S18 now own the remaining testbed,
-runtime, public API, boot/bootstrap and ownership exits. S19 is the first
-deletion-capable slice and may remove only verified caller-free candidates.
+Workflow-create refinement after the S14 execution stop is superseded by the
+active final-retirement workflow. S04 clears pre-deletion documentation
+blockers, S05 is the first deletion-capable slice, S06 closes architecture and
+ADR evidence, and S07 owns final release readiness.
 
-Current evidence remains non-empty:
+Superseded S14 evidence was non-empty at the time:
 
-- all 16 listed legacy modules remain registered in `settings.gradle.kts`;
-- `services:testbed` still has 13 test-scoped legacy module dependencies;
-- 633 production imports into retained `application`, `domain`, `persistence`,
-  `logging`, `observability`, `rest`, `bootstrap`, `boot` or `engine`
-  packages;
-- 594 test imports into those retained packages;
+- all 16 listed legacy modules were still registered in `settings.gradle.kts`;
+- `services:testbed` still had test-scoped legacy module dependencies;
+- non-zero production imports into retained `application`, `domain`,
+  `persistence`, `logging`, `observability`, `rest`, `bootstrap`, `boot` or
+  `engine` packages;
+- non-zero test imports into those retained packages;
 - focused S14 service production scans found no legacy imports in
-  `services/**/src/main`, while service test scans still find legacy imports in
-  `services/testbed/src/test`.
+  `services/**/src/main`, while service test scans still found legacy imports
+  in `services/testbed/src/test` at that historical point.
 
-These findings block direct module retirement. The next safe action is
-path-specific migration or explicit deprecation, followed by a smaller
-caller-free removal slice for each verified candidate.
+Those findings blocked direct module retirement at S14. Current
+final-retirement verification supersedes the counts: `./gradlew projects`
+lists only `services:*`, active non-legacy build files have no legacy project
+references, active non-legacy Java sources have no legacy monolith imports, and
+S05 removed the retired source trees.
 
 ## FA-MSA-001-LMR S01 Revalidation
 
@@ -255,15 +267,16 @@ rg -n -P "^import\\s+de\\.burger\\.forensics\\.analytics\\.(application|domain|a
 git diff --check
 ```
 
-Current evidence remains non-empty:
+Superseded S01 evidence was non-empty at the time:
 
-- 72 direct Gradle `project(":forensic-analytics-*")` dependency references
-  across legacy module build files and `services/testbed`;
-- 653 production Java imports into retained legacy packages;
-- 628 test Java imports into retained legacy packages;
-- `forensic-analytics-testbed` and `services:testbed` each still test-depend
-  on 13 retained legacy modules.
+- direct legacy Gradle project dependency references across legacy module build
+  files and `services/testbed`;
+- production Java imports into retained legacy packages;
+- test Java imports into retained legacy packages;
+- `forensic-analytics-testbed` and `services:testbed` each test-depended on
+  retained legacy modules.
 
-S01 therefore records `NO_DELETION_SAFE`. No listed legacy module is removed by
-S01. The next safe action is to proceed to S02 contract and runtime parity
-gates before path-specific retirement slices.
+S01 therefore recorded `NO_DELETION_SAFE`. No listed legacy module was removed
+by S01. The active final-retirement workflow supersedes that with S04
+documentation-stopper cleanup, S05 deletion, S06 architecture closure and S07
+release readiness after caller-free and service-only build checks.

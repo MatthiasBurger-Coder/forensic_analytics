@@ -5,10 +5,11 @@
 FA-MSA-001 Slice 02 caller inventory for workflow
 `fa-msa-001-microservice-decomposition-20260521-v1`.
 
-No `forensic-analytics-*` module, package, class or runtime path is removed in
-this slice. The current modular-monolith paths remain registered until a later
-slice proves caller removal, replacement parity, rollback or explicit
-deprecation evidence.
+No `forensic-analytics-*` module, package, class or runtime path was removed in
+this historical slice. The active final-retirement workflow supersedes this
+status: the verified Gradle project model is service-only, legacy source trees
+are historical pre-retirement evidence, and S05/S06/S07 own deletion, closure
+and release readiness.
 
 ## Verification Commands
 
@@ -31,16 +32,16 @@ direct `project(...)` dependencies inside `services/*/build.gradle.kts`.
 
 ## Caller Inventory
 
-| Legacy path | Verified caller evidence | Current status | Target owner | Required contract | Parity test before removal | Rollback or deprecation strategy | Forbidden changes |
+| Legacy path | Verified caller evidence | Historical S02/S14 status | Target owner | Required contract | Parity test before removal | Rollback or deprecation strategy | Forbidden changes |
 |---|---|---|---|---|---|---|---|
-| CLI local `analyze` path in `forensic-analytics-cli` | `ForensicAnalyticsCli` loads `RunRepositoryAnalysisUseCase` through `ServiceLoader`; `AnalyzeCommand` maps to `RunRepositoryAnalysisCommand`; CLI build depends on `forensic-analytics-application` and `forensic-analytics-domain` | Active caller and migration candidate | `cli-client` as public API consumer; submission/status/report behavior owned by `analysis-orchestrator-service` and `query-report-api-service` after S03/S04 | Existing `contracts/cli/gateway-cli-contract.md` and `contracts/openapi/gateway-api.yaml` are predecessor evidence; S03 must approve FA-MSA-001 public API contracts | CLI public-API contract tests plus existing local `analyze` regression tests | Keep local `analyze` available while any remote public API command or mode is opt-in | Do not silently route local paths to public APIs; do not depend on service Java implementation classes or generated DTO modules; do not expose workspace or checkout paths |
-| REST repository analysis adapter in `forensic-analytics-rest` | `RepositoryAnalysisHttpHandler` and `RestApiServerFactory` use `RepositoryAnalysisIngestionUseCase`; REST build depends on application and domain modules | Active caller and migration candidate | `query-report-api-service` for public query/report API; `analysis-orchestrator-service` for job submission/status only after S03/S04 approve the boundary | Existing `contracts/openapi/gateway-api.yaml` is predecessor evidence; S03 must approve FA-MSA-001 query/report and orchestration contracts | OpenAPI contract tests and REST endpoint parity tests | Keep in-process REST adapter behind Boot/Bootstrap until public API parity and client migration are verified | Do not turn REST adapter into worker orchestration; do not claim runtime parity from OpenAPI alone |
-| Bootstrap combined runtime in `forensic-analytics-bootstrap` | `ForensicAnalyticsBackendComponents` constructs `DefaultRepositoryAnalysisIngestionUseCase` and wires gRPC, REST, persistence and repository-source adapters | Active caller and blocked for removal | Service-owned bootstraps for `repository-source-service`, `ingestion-service`, `java-parser-analysis-service`, `joern-analysis-service`, `analysis-orchestrator-service` and `query-report-api-service` | S03-approved service-specific REST/gRPC/event/file contracts | Service-local start tests, health checks and integration evidence for each migrated service | Keep Bootstrap as rollback path until service runtime and deployment evidence are complete | Do not remove while Boot or CLI tests still rely on in-process backend components |
-| Spring Boot monolith runtime in `forensic-analytics-boot-app` | Boot configuration constructs `DefaultRepositoryAnalysisIngestionUseCase`; REST and gRPC configurations receive `RepositoryAnalysisIngestionUseCase` | Active caller and blocked for removal | Service-local Spring Boot applications for the mandatory FA-MSA-001 services where Spring is retained | Service-specific REST/gRPC contracts and health endpoints | Service boot tests, health tests, container build tests and local Compose parity | Keep Boot app until all accepted runtime paths are covered by independently startable services | Do not describe the Boot app as a microservice landscape; do not add Spring dependencies to application or domain |
-| Repository analysis engine wrapper in `forensic-analytics-engine` | `RepositoryAnalysisEngine` delegates to `RunRepositoryAnalysisUseCase`; engine tests still instantiate that path | Active caller and blocked pending replacement decision | `analysis-orchestrator-service` API or explicit deprecation decision | Analysis orchestration contract chosen by S03/S04 | Engine replacement or deprecation tests proving equivalent command/result behavior | Keep the wrapper until the target owner and replacement API are explicit | Do not infer an owner API from naming symmetry; do not remove tests before replacement evidence exists |
-| Engine request import helper in `forensic-analytics-ingestion-request` | Module build depends on application, domain and observability; CLI currently depends on this module for `ingest-request` behavior | Active dependency and blocked pending CLI/public API decision | `ingestion-service` for intake, validation and normalization; `analysis-orchestrator-service` for job coordination; `cli-client` consumes only public APIs | Existing engine-request shape plus S03-approved ingestion/orchestration submission contract if routed remotely | CLI `ingest-request` parity tests and request redaction tests | Keep the helper as current local import path until the public submission path is approved | Do not collapse request-import behavior into repository analysis without a verified contract |
-| Testbed monolith E2E and regression paths in `forensic-analytics-testbed` | Testbed depends on CLI, engine, REST, Bootstrap, Boot app, adapters, persistence, application and domain; tests instantiate default use cases directly | Active test caller and blocked for removal | `testbed` as non-production integration environment plus service-local integration tests for mandatory target services | S03-approved service contracts and Compose/test environment contracts where needed | Networked or in-process service E2E tests that cover the same evidence without shared Java implementation modules | Keep testbed as regression evidence until service tests are stronger than the monolith coverage | Do not share testbed fixtures as service implementation modules |
-| Shared `forensic-analytics-application` and `forensic-analytics-domain` dependencies | CLI, REST, Bootstrap, Boot app, Engine, Ingestion Request and Testbed build files still depend on these modules directly or as tests | Active caller and blocked for service extraction | Split into service-owned application and domain models under each mandatory target service boundary | REST/OpenAPI, gRPC/protobuf, messaging or approved file contracts | Per-service architecture tests proving no shared monolith application/domain dependency | Keep shared modules as current monolith baseline until all consumers are migrated or explicitly deprecated | Do not create shared Java DTO, domain, utility, fixture or internal error-model modules for services |
+| CLI local `analyze` path in `forensic-analytics-cli` | `ForensicAnalyticsCli` loads `RunRepositoryAnalysisUseCase` through `ServiceLoader`; `AnalyzeCommand` maps to `RunRepositoryAnalysisCommand`; CLI build depended on `forensic-analytics-application` and `forensic-analytics-domain` | Historical caller and migration candidate | `cli-client` as public API consumer; submission/status/report behavior owned by `analysis-orchestrator-service` and `query-report-api-service` after service-boundary approval | Existing `contracts/cli/gateway-cli-contract.md` and `contracts/openapi/gateway-api.yaml` are predecessor evidence | CLI public-API contract tests plus existing local `analyze` regression tests | Preserve historical local `analyze` evidence until explicit deprecation or replacement is documented | Do not silently route local paths to public APIs; do not depend on service Java implementation classes or generated DTO modules; do not expose workspace or checkout paths |
+| REST repository analysis adapter in `forensic-analytics-rest` | `RepositoryAnalysisHttpHandler` and `RestApiServerFactory` use `RepositoryAnalysisIngestionUseCase`; REST build depended on application and domain modules | Historical caller and migration candidate | `query-report-api-service` for public query/report API; `analysis-orchestrator-service` for job submission/status | Existing `contracts/openapi/gateway-api.yaml` is predecessor evidence | OpenAPI contract tests and REST endpoint parity tests | Preserve in-process REST evidence until public API parity and client migration are verified | Do not turn REST adapter into worker orchestration; do not claim runtime parity from OpenAPI alone |
+| Bootstrap combined runtime in `forensic-analytics-bootstrap` | `ForensicAnalyticsBackendComponents` constructs `DefaultRepositoryAnalysisIngestionUseCase` and wires gRPC, REST, persistence and repository-source adapters | Historical caller; blocked in S02/S14 | Service-owned bootstraps for `repository-source-service`, `ingestion-service`, `java-parser-analysis-service`, `joern-analysis-service`, `analysis-orchestrator-service` and `query-report-api-service` | Service-specific REST/gRPC/event/file contracts | Service-local start tests, health checks and integration evidence for each migrated service | Preserve Bootstrap as historical rollback evidence until final retirement closure | Do not remove while Boot or CLI tests still rely on in-process backend components |
+| Spring Boot monolith runtime in `forensic-analytics-boot-app` | Boot configuration constructs `DefaultRepositoryAnalysisIngestionUseCase`; REST and gRPC configurations receive `RepositoryAnalysisIngestionUseCase` | Historical caller; blocked in S02/S14 | Service-local Spring Boot applications for the mandatory FA-MSA-001 services where Spring is retained | Service-specific REST/gRPC contracts and health endpoints | Service boot tests, health tests, container build tests and local Compose parity | Preserve Boot app as historical rollback evidence until independently startable services cover accepted runtime paths | Do not describe the Boot app as a microservice landscape; do not add Spring dependencies to application or domain |
+| Repository analysis engine wrapper in `forensic-analytics-engine` | `RepositoryAnalysisEngine` delegates to `RunRepositoryAnalysisUseCase`; engine tests instantiated that path | Historical caller; replacement decision required | `analysis-orchestrator-service` API or explicit deprecation decision | Analysis orchestration contract | Engine replacement or deprecation tests proving equivalent command/result behavior | Preserve wrapper evidence until the target owner and replacement API are explicit | Do not infer an owner API from naming symmetry; do not remove tests before replacement evidence exists |
+| Engine request import helper in `forensic-analytics-ingestion-request` | Module build depended on application, domain and observability; CLI depended on this module for `ingest-request` behavior | Historical dependency; CLI/public API decision required | `ingestion-service` for intake, validation and normalization; `analysis-orchestrator-service` for job coordination; `cli-client` consumes only public APIs | Existing engine-request shape plus approved ingestion/orchestration submission contract if routed remotely | CLI `ingest-request` parity tests and request redaction tests | Preserve helper evidence until the public submission path is approved | Do not collapse request-import behavior into repository analysis without a verified contract |
+| Testbed monolith E2E and regression paths in `forensic-analytics-testbed` | Testbed depended on CLI, engine, REST, Bootstrap, Boot app, adapters, persistence, application and domain; tests instantiated default use cases directly | Historical test caller; blocked in S02/S14 | `testbed` as non-production integration environment plus service-local integration tests for mandatory target services | Approved service contracts and Compose/test environment contracts where needed | Networked or in-process service E2E tests that cover the same evidence without shared Java implementation modules | Preserve testbed history as regression evidence until service tests are stronger than monolith coverage | Do not share testbed fixtures as service implementation modules |
+| Shared `forensic-analytics-application` and `forensic-analytics-domain` dependencies | CLI, REST, Bootstrap, Boot app, Engine, Ingestion Request and Testbed build files depended on these modules directly or as tests | Historical caller; service extraction blocker in S02/S14 | Split into service-owned application and domain models under each mandatory target service boundary | REST/OpenAPI, gRPC/protobuf, messaging or approved file contracts | Per-service architecture tests proving no shared monolith application/domain dependency | Preserve shared-module evidence as historical monolith baseline until consumers are migrated or explicitly deprecated | Do not create shared Java DTO, domain, utility, fixture or internal error-model modules for services |
 
 ## Retirement Gates
 
@@ -66,18 +67,19 @@ remote submission, but FA-MSA-001 uses `cli-client` as the target client name
 and requires S03-approved public API contracts before expanding or replacing
 local behavior.
 
-The current local-path `analyze` behavior remains an active legacy command. It
-is not caller-free and must remain available unless a later slice explicitly
-deprecates it with tests and migration notes. Therefore the CLI module is not
-fully retired from monolith dependencies in S02; no path is removed in this
-inventory slice.
+The local-path `analyze` behavior was an operative predecessor command in this
+historical inventory. It was not caller-free at the time and required explicit
+deprecation with tests and migration notes before retirement. The active
+final-retirement workflow now treats the CLI source tree as retired historical
+predecessor evidence after S05, with S06/S07 closing documentation and release
+readiness.
 
 ## S02 Conditional Retirement Result
 
 S02 completes as `NO_REMOVAL_SAFE` for code, build and module retirement.
 
 No `settings.gradle.kts` entry, module, package, class or runtime path is
-removed because caller evidence still finds active production or test references
+removed because caller evidence still found production or test references
 for:
 
 - `forensic-analytics-cli` local `analyze` and `ingest-request` behavior;
@@ -90,27 +92,29 @@ for:
 
 Removal remains blocked until a later slice proves caller-free evidence,
 replacement parity, rollback or explicit deprecation strategy and a quality gate
-that is not weakened by deleting the current regression evidence.
+that is not weakened by deleting regression evidence.
 
 ## S14 Three Amigos Repair Decision
 
 S14 was repaired from a direct deletion slice into a retirement-readiness gate.
-The direct deletion requirement is not executable on the current repository
-state because the required caller-free evidence is false.
+That historical direct deletion requirement was not executable because the
+required caller-free evidence was false.
 
 Decision: `NO_REMOVAL_SAFE` for module and source-tree retirement in the
-current workflow state.
+historical S14 workflow state. The active final-retirement workflow supersedes
+that state with S04 documentation cleanup, S05 deletion, S06 architecture
+closure and S07 release readiness.
 
 Three Amigos findings:
 
 - Requirement: S14 may decide retirement readiness, but it must not delete
-  active legacy modules. The active target is to record blockers and follow-up
-  slices when callers remain.
-- Architecture: the repository is still in a strangler phase. Central
-  `forensic-analytics-*` modules remain legacy in-process and rollback paths,
-  not completed microservices and not caller-free removal candidates.
+  legacy modules with callers. That historical target was to record blockers
+  and follow-up slices when callers remained.
+- Architecture: the repository was still in a strangler phase. Central
+  `forensic-analytics-*` modules were legacy in-process and rollback paths, not
+  completed microservices and not caller-free removal candidates.
 - Backend: CLI, REST, Bootstrap, Boot, Engine, Ingestion Request, Persistence,
-  Application and Domain paths still provide verified behavior or ports used by
+  Application and Domain paths provided verified behavior or ports used by
   current tests and runtime wiring.
 - Test: `forensic-analytics-testbed` and `services:testbed` intentionally keep
   regression coverage over legacy in-process behavior. Removing old modules
@@ -127,37 +131,35 @@ git ls-files "*build.gradle.kts" | xargs rg -n "forensic-analytics-(domain|appli
 # 58
 
 rg -n -P "^import\\s+de\\.burger\\.forensics\\.analytics\\.(application|domain|persistence|logging|observability|rest|bootstrap|boot|engine)\\b" services/*/src/main forensic-analytics-*/src/main -g "*.java" | wc -l
-# 633
+# historical non-zero count; superseded by final-retirement verification
 
 rg -n -P "^import\\s+de\\.burger\\.forensics\\.analytics\\.(application|domain|persistence|logging|observability|rest|bootstrap|boot|engine)\\b" services/*/src/test forensic-analytics-*/src/test -g "*.java" | wc -l
-# 594
+# historical non-zero count; superseded by final-retirement verification
 ```
 
-`services:testbed` currently has 13 test dependencies on retained legacy
-modules. This is intentional parity evidence from S13, not permission to use
-the testbed as a production dependency.
+`services:testbed` previously had test dependencies on retained legacy modules.
+That historical parity evidence is superseded by the current service-root
+testbed build, which has no legacy project dependency.
 
 S14 therefore has this executable rule:
 
 1. If scans find active callers, complete S14 as `NO_REMOVAL_SAFE`.
 2. Do not remove `settings.gradle.kts` entries, source trees, runtime paths or
    tests in S14.
-3. Create follow-up retirement slices for each active legacy path.
+3. Create follow-up retirement slices for each legacy path with callers.
 4. Retire only a path that later proves caller-free evidence, replacement
    parity, rollback or explicit deprecation and the required `QUALITY.md` gate.
 
 ## Refined Follow-Up Retirement Slices
 
-Workflow-create refinement after the S14 execution stop promotes the
-provisional follow-up work into the active workflow sequence. S14 remains a
-no-deletion readiness reconciliation gate. S15 through S18 resolve remaining
-blockers, S19 is candidate-specific removal and S20 is closure.
+Workflow-create refinement after the S14 execution stop is superseded by the
+active final-retirement workflow. S04 cleared pre-deletion documentation
+blockers, S05 completed source-tree deletion, S06 is architecture/ADR closure
+and S07 is release readiness.
 
-| Follow-up | Purpose | Required proof before deletion |
+| Active slice | Purpose | Required proof before deletion or closure |
 |---|---|---|
-| `S15` | Relocate testbed architecture and hardening checks away from legacy-module-dependent classpaths. | Service-local architecture gates or retained non-production hardening evidence without weakening default gates. |
-| `S16` | Migrate or explicitly deprecate local CLI, engine and in-process Joern testbed scenarios. | Public API or service parity tests, deprecation/operator notes and root quality gate. |
-| `S17` | Replace repository checkout and ingestion E2E tests with target service coverage or explicit unsupported-input decisions. | Repository-source, ingestion and orchestration tests that preserve checkout, source-root, cleanup and session evidence. |
-| `S18` | Move public API contract ownership and close boot/bootstrap/persistence ownership exits. | Surviving OpenAPI contract test, ownership docs, public API/client gates and no frontend-visible drift. |
-| `S19` | Remove only verified caller-free modules or paths. | Empty caller scans for the named path, replacement parity, rollback/deprecation notes and full local quality gate. |
-| `S20` | Close readiness, rollback notes and technical debt. | Final arc42/ADR/docs sync and full local quality gate. |
+| `S04` | Clear stale executable/current legacy documentation blockers. | No active service, deployment, architecture or audit docs claim legacy modules as current executable/build/runtime evidence. |
+| `S05` | Remove verified legacy source-tree candidates. | Empty active build/source leakage scans, replacement parity, rollback/deprecation notes and required quality gate. |
+| `S06` | Close architecture, ADR and arc42 evidence. | Final arc42/ADR/docs sync without overclaiming runtime, Docker, Swarm or Kubernetes readiness. |
+| `S07` | Close release readiness. | Full local quality gate and final workflow evidence. |

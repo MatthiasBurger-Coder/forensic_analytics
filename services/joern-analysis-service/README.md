@@ -34,12 +34,12 @@ reported as explicit diagnostics and incomplete analysis state.
 
 ## Verification
 
-S06 verification commands:
+Service-local verification commands:
 
 ```bash
 ./gradlew :services:joern-analysis-service:test --dependency-verification strict --console=plain --stacktrace
-./gradlew :forensic-analytics-adapter-joern-docker:test --dependency-verification strict --console=plain --stacktrace
 ./gradlew :services:joern-analysis-service:bootJar --dependency-verification strict --console=plain --stacktrace
+./gradlew :services:joern-analysis-service:bootRun --dry-run --dependency-verification strict --console=plain --stacktrace
 ./gradlew test --dependency-verification strict --console=plain --stacktrace
 ```
 

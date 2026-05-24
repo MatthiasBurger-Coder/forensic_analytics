@@ -1,276 +1,676 @@
 # Execution Report
 
-## Workflow
+## Current Status
+
+Status: S07 completed; final quality and release-readiness closure passed.
 
 | Field | Value |
 |---|---|
-| Workflow version | `fa-msa-001-legacy-module-retirement-20260522-v2` |
-| Requirement ID | `FA-MSA-001-LMR` |
+| Workflow version | `fa-msa-001-final-legacy-source-retirement-20260523-v2` |
 | Branch | `architecture/workflow-legacy-module-retirement-20260522` |
-| Status | S18 completed; S19 stopped on caller-free/removal gate blocker |
+| Process strand | `workflow execute` |
+| Last update | `2026-05-23` |
 
-## Creation Evidence
+## Workflow Creation Evidence
 
-| Check | Result |
-|---|---|
-| Repository root | `/mnt/d/Projects/forensic_analytics` |
-| Branch | `architecture/workflow-legacy-module-retirement-20260522` |
-| Profile | `FULL_PATH` |
-| Quality authority | `QUALITY.md` |
-| Decision record | `READY_FOR_WORKFLOW` after S14 workflow-create refinement |
-
-## Execution Log
-
-| Slice | Title | Responsible role | Changed files | Quality gates | Result | Rollback reference | arc42 | ADR | Push |
-|---|---|---|---|---|---|---|---|---|---|
-| S00 | Execution Preflight And Evidence Freeze | Senior Execution Orchestrator with swarm-orchestrator subagent review | `docs/workflow/execution-report.md` | `git status --short --branch` PASS; `git diff --check` PASS; `python3 -m json.tool docs/workflow/context-pack.json >/dev/null` PASS; governing file `sha256sum` values match context pack | PASS | `9f6764665c121e2aa9a3b0863b0a167c25134dc9` | checked | checked | pushed |
-| S01 | Current Caller And Dependency Revalidation | Senior System Architect with Senior Java Backend and Microservice Senior Expert review | `docs/architecture/current-coupling-map.md`; `docs/architecture/service-migration-map.md`; `docs/workflow/execution-report.md` | `git ls-files "*build.gradle.kts" \| xargs rg -n "project\\(\\\":forensic-analytics-"` PASS with non-empty evidence; production import scan PASS with non-empty evidence; test import scan PASS with non-empty evidence; `git diff --check` PASS | PASS: `NO_DELETION_SAFE` | `400c1f3` | checked | checked | pushed |
-| S02 | Contract And Runtime Parity Gate | Contract-First API Steward with Senior gRPC/Proto, architecture and quality subagent reviews | `docs/architecture/service-communication-matrix.md`; `docs/architecture/target-microservices-architecture.md`; `docs/workflow/context-pack.md`; `docs/workflow/context-pack.json`; `docs/workflow/execution-report.md` | `:services:repository-source-service:test` PASS; `:services:ingestion-service:test` PASS; `:services:java-parser-analysis-service:test` PASS; `:services:joern-analysis-service:test` PASS; `:services:analysis-orchestrator-service:test` PASS; `:services:query-report-api-service:test` PASS; `:services:cli-client:test` PASS; `./gradlew test --dependency-verification strict --console=plain --stacktrace` PASS; `python3 -m json.tool docs/workflow/context-pack.json >/dev/null` PASS; `git diff --check` PASS | PASS_WITH_LIMITATIONS: current transitional contract surface verified; full target runtime parity remains later-slice work | `be98793` | checked | checked | pushed |
-| S03 | Repository Source Parity And Handoff Readiness | Senior Java Backend with Microservice Senior Expert, Security/Sandbox and Senior Tester subagent reviews | `services/repository-source-service/**`; `services/analysis-orchestrator-service/**`; `docs/workflow/execution-report.md`; `docs/workflow/context-pack.md`; `docs/workflow/context-pack.json` | targeted repository-source tests PASS; targeted analysis-orchestrator tests PASS; `./gradlew :services:repository-source-service:test --dependency-verification strict --console=plain --stacktrace` PASS; `./gradlew :services:analysis-orchestrator-service:test --dependency-verification strict --console=plain --stacktrace` PASS; `./gradlew :forensic-analytics-adapter-repository-source:test --dependency-verification strict --console=plain --stacktrace` PASS; scoped repository-source legacy import scan PASS; `./gradlew test --dependency-verification strict --console=plain --stacktrace` PASS; `git diff --check` PASS | PASS_WITH_LIMITATIONS: repository-source service boundary hardened; local/file repository inputs explicitly deprecated at service boundary; Java AST analysis remains unimplemented here; no Proto contract mutation; no full orchestrator runtime-readiness claim | `09c423c` | checked | checked | pushed |
-| S04 | Ingestion Service Parity And Handoff Readiness | Senior Java Backend with Senior gRPC/Proto, Ingestion Handoff, Microservice Senior Expert and Senior Tester subagent reviews | `services/ingestion-service/src/test/java/de/burger/forensics/analytics/services/ingestion/adapter/in/grpc/ForensicIngestionGrpcEndpointTest.java`; `services/ingestion-service/src/test/java/de/burger/forensics/analytics/services/ingestion/adapter/in/grpc/ForensicIngestionRequestValidatorTest.java`; `services/ingestion-service/src/test/java/de/burger/forensics/analytics/services/ingestion/application/IngestionApplicationServiceTest.java`; `services/ingestion-service/src/test/java/de/burger/forensics/analytics/services/ingestion/adapter/in/file/EngineIngestionRequestImporterTest.java`; `docs/workflow/execution-report.md`; `docs/workflow/context-pack.md`; `docs/workflow/context-pack.json` | targeted S04 ingestion tests PASS; `./gradlew :services:ingestion-service:test --dependency-verification strict --console=plain --stacktrace` PASS; `./gradlew :forensic-analytics-ingestion-grpc:test :forensic-analytics-ingestion-request:test --dependency-verification strict --console=plain --stacktrace` PASS; scoped ingestion-service legacy import scan PASS; `./gradlew test --dependency-verification strict --console=plain --stacktrace` PASS; `git diff --check` PASS; `python3 -m json.tool docs/workflow/context-pack.json >/dev/null` PASS | PASS_WITH_LIMITATIONS: service-local accepted payload handoff, invalid stream rejection, validator edges and importer session-id custody are proven by tests; no production, Proto or event-contract changes; default accepted-ingestion handoff remains no-op, so no external handoff runtime is claimed; `AnalyzeRepository` remains `UNIMPLEMENTED`; legacy ingestion modules retained as rollback evidence | `7e3594c` | checked | checked | pushed |
-| S05 | JavaParser Service Parity And Handoff Readiness | Senior Java Backend with Source Analysis, Microservice Senior Expert and Senior Tester subagent reviews | `services/java-parser-analysis-service/**`; `forensic-analytics-adapter-javaparser/**`; `docs/architecture/service-migration-map.md`; `docs/architecture/service-boundaries.md`; `docs/architecture/current-build-and-test-map.md`; `docs/arc42/06-runtime-view.md`; `docs/arc42/08-crosscutting-concepts.md`; `services/java-parser-analysis-service/README.md`; `docs/workflow/execution-report.md`; `docs/workflow/context-pack.md`; `docs/workflow/context-pack.json` | targeted S05 service tests PASS; targeted legacy JavaParser test PASS; `./gradlew :services:java-parser-analysis-service:test --dependency-verification strict --console=plain --stacktrace` PASS; `./gradlew :forensic-analytics-adapter-javaparser:test --dependency-verification strict --console=plain --stacktrace` PASS; `git ls-files` based java-parser-analysis-service legacy import scan PASS; `./gradlew test --dependency-verification strict --console=plain --stacktrace` PASS; `git diff --check` PASS; `python3 -m json.tool docs/workflow/context-pack.json >/dev/null` PASS | PASS_WITH_LIMITATIONS: source-fact artifact writes are immutable and idempotent for identical bytes; JavaParser service and legacy adapter projections are parity-tested; parse errors remain explicit diagnostics in the service rather than legacy `java-parse-error` facts; source-fact bytes preserve `STATIC_SOURCE_FACT`; no Proto change, no external handoff runtime claim, no Swarm/Kubernetes readiness claim and legacy adapter retained as rollback evidence | `3a039cd` | checked | checked | pushed |
-| S06 | Joern Service Parity And Handoff Readiness | Senior Joern CPG Specialist with Senior Java Backend, Senior DevOps, Microservice Senior Expert and Senior Tester subagent reviews | `contracts/grpc/joern-cpg-analysis.proto`; `services/joern-analysis-service/**`; `.dockerignore`; `docs/architecture/service-migration-map.md`; `docs/architecture/service-boundaries.md`; `docs/architecture/current-build-and-test-map.md`; `docs/arc42/05-building-block-view.md`; `docs/arc42/06-runtime-view.md`; `docs/arc42/07-deployment-view.md`; `services/joern-analysis-service/README.md`; `docs/workflow/execution-report.md`; `docs/workflow/context-pack.md`; `docs/workflow/context-pack.json` | targeted S06 service tests PASS; targeted legacy Joern Docker adapter test PASS; `./gradlew :services:joern-analysis-service:test --dependency-verification strict --console=plain --stacktrace` PASS; `./gradlew :forensic-analytics-adapter-joern-docker:test --dependency-verification strict --console=plain --stacktrace` PASS; scoped joern-analysis-service legacy import scan PASS; `./gradlew :services:joern-analysis-service:bootJar --dependency-verification strict --console=plain --stacktrace` PASS; `./gradlew test --dependency-verification strict --console=plain --stacktrace` PASS; `git diff --check` PASS; `python3 -m json.tool docs/workflow/context-pack.json >/dev/null` PASS | PASS_WITH_LIMITATIONS: Joern service now owns semantic artifact byte retrieval through `GetSemanticArtifactBytes`; artifact references no longer use the Analysis Store byte alias; runtime unavailable, timeout and missing artifact states stay explicit diagnostics with retryable status where appropriate; Docker build context allows the service boot jar; no `bootRun`, live health probe, Docker image build, Joern runtime smoke test, Compose/Swarm/Kubernetes readiness claim or legacy adapter removal | `36630ee` | checked | checked | pushed |
-| S07 | Orchestration Service Parity And Application Split Readiness | Senior Java Backend with Distributed Systems, Data Ownership, Microservice and Senior Tester subagent reviews | `services/analysis-orchestrator-service/**`; `contracts/grpc/README.md`; `docs/architecture/service-migration-map.md`; `docs/architecture/service-boundaries.md`; `docs/architecture/service-communication-matrix.md`; `docs/architecture/current-build-and-test-map.md`; `docs/arc42/05-building-block-view.md`; `docs/arc42/06-runtime-view.md`; `docs/arc42/07-deployment-view.md`; `docs/workflow/execution-report.md`; `docs/workflow/context-pack.md`; `docs/workflow/context-pack.json` | `./gradlew :services:analysis-orchestrator-service:test --dependency-verification strict --console=plain --stacktrace` PASS; `./gradlew :forensic-analytics-engine:test :forensic-analytics-application:test :forensic-analytics-domain:test --dependency-verification strict --console=plain --stacktrace` PASS; scoped analysis-orchestrator legacy import scan PASS; `git diff --check` PASS; `./gradlew test --dependency-verification strict --console=plain --stacktrace` PASS | PASS_WITH_LIMITATIONS: Orchestrator now accepts `StartRepositoryToBtm` and serves `GetRepositoryToBtmStatus` as process-local pending readiness only; no worker dispatch, repository checkout, JavaParser, Joern, BTM generation, report rendering, artifact byte custody, durable persistence, event outbox, distributed orchestration or Docker runtime readiness is claimed; legacy engine/application/domain modules remain retained rollback evidence | `b853bc9` | checked | checked | pushed |
-| S08 | Query Report API And Runtime Replacement Readiness | Senior Java Backend with Contract Governance, Senior DevOps, Senior React Frontend, Microservice Senior Expert and Senior Tester subagent reviews | `services/query-report-api-service/**`; `contracts/openapi/**`; `docs/architecture/service-migration-map.md`; `docs/architecture/service-boundaries.md`; `docs/architecture/service-communication-matrix.md`; `docs/architecture/current-build-and-test-map.md`; `docs/arc42/05-building-block-view.md`; `docs/arc42/06-runtime-view.md`; `docs/arc42/07-deployment-view.md`; `docs/workflow/execution-report.md`; `docs/workflow/context-pack.md`; `docs/workflow/context-pack.json` | `./gradlew :services:query-report-api-service:test --dependency-verification strict --console=plain --stacktrace` PASS; `./gradlew :forensic-analytics-rest:test :forensic-analytics-bootstrap:test :forensic-analytics-boot-app:test --dependency-verification strict --console=plain --stacktrace` PASS; scoped query-report-api-service legacy import scan PASS; `git diff --check` PASS; `python3 -m json.tool docs/workflow/context-pack.json >/dev/null` PASS; `./gradlew :services:query-report-api-service:bootJar --dependency-verification strict --console=plain --stacktrace` PASS; `./gradlew test --dependency-verification strict --console=plain --stacktrace` PASS | PASS_WITH_LIMITATIONS: Query Report API now points repository-analysis submission/status to S07 `analysis-orchestrator-service` pending readiness while preserving the public REST/OpenAPI shape; orchestrator `INCOMPLETE` plus `WAITING_FOR_REPOSITORY` maps to public `ACCEPTED`, `BTM_DELIVERY_NOT_READY` and incomplete diagnostics; no REST/bootstrap/Boot removal, report assembly, source snapshot availability claim, worker dispatch, repository checkout, JavaParser, Joern, BTM generation, artifact byte custody, Docker image build, Compose, Swarm or Kubernetes readiness is claimed | `0d5a112` | checked | checked | pushed |
-| S09 | CLI Client Parity And Decoupling Readiness | Senior Java Backend with Contract Governance, Senior UX Designer and Senior Tester subagent reviews | `services/cli-client/**`; `forensic-analytics-cli/**`; `contracts/cli/**`; `contracts/openapi/**`; `docs/architecture/service-boundaries.md`; `docs/architecture/service-communication-matrix.md`; `docs/arc42/05-building-block-view.md`; `docs/arc42/06-runtime-view.md`; `docs/arc42/07-deployment-view.md`; `docs/contracts/contract-test-plan.md`; `docs/workflow/execution-report.md`; `docs/workflow/context-pack.md`; `docs/workflow/context-pack.json` | `./gradlew :services:cli-client:test --dependency-verification strict --console=plain --stacktrace` PASS; `./gradlew :forensic-analytics-cli:test --dependency-verification strict --console=plain --stacktrace` PASS; `./gradlew :forensic-analytics-rest:test --tests '*GatewayOpenApiContractTest' --dependency-verification strict --console=plain --stacktrace` PASS; scoped cli-client legacy import scan PASS; `git diff --check` PASS; `python3 -m json.tool docs/workflow/context-pack.json >/dev/null` PASS; `./gradlew test --dependency-verification strict --console=plain --stacktrace` PASS; `./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace` FAILED at `:checkPackageCoverage` for pre-existing non-S09 branch coverage packages `services.analysisorchestrator.adapter.in.grpc`, `services.analysisorchestrator.application` and `services.joernanalysis.adapter.out.filesystem` | PASS_WITH_LIMITATIONS: S09 required and targeted gates pass; target `cli-client` remains an HTTP JSON public API client with no project-module dependencies; predecessor `forensic-analytics-cli gateway-submit` keeps compatibility behavior with redacted validation and public error output; CLI contract ownership is corrected to S09 and `buildContext.attributes={}` is explicit; `analyze`, `ingest-request`, status and report commands are not routed or added; local/private repository host policy remains owned by `query-report-api-service`; legacy CLI module remains rollback evidence; full local package-coverage repair is outside the S09 file locks and remains a separate quality blocker | `0288709` | checked | checked | pushed |
-| S10 | Observability And Logging Replacement Readiness | Senior DevOps with Observability Runtime Diagnostics, Senior Java Backend, Security Threat Modeling, Senior System Architect, Senior gRPC/Proto and Senior Tester subagent reviews | `deployment/README.md`; `deployment/observability/README.md`; `deployment/observability/service-diagnostics-policy.yaml`; `services/observability-stack/README.md`; `services/observability-stack/src/test/java/de/burger/forensics/analytics/services/observabilitystack/ObservabilityStackPolicyTest.java`; `docs/arc42/08-crosscutting-concepts.md`; `docs/architecture/service-boundaries.md`; `docs/workflow/execution-report.md` | `./gradlew :services:observability-stack:test --dependency-verification strict --console=plain --stacktrace` PASS; `./gradlew :forensic-analytics-logging:test :forensic-analytics-observability:test --dependency-verification strict --console=plain --stacktrace` PASS; scoped productive service logging/observability import scan PASS; scoped productive service build-file leakage scan excluding non-production `services:testbed` PASS; `git diff --check` PASS; `./gradlew test --dependency-verification strict --console=plain --stacktrace` PASS | PASS_WITH_LIMITATIONS: Productive `services/*/src/main` code has no shared `forensic-analytics-logging` or `forensic-analytics-observability` imports and productive service build files have no direct project dependency on those modules; `services:testbed` keeps test-scoped rollback dependencies and remains S13/S14 evidence, not a productive service dependency; `observability-stack` stays deployment/policy material and not a shared Java runtime module; diagnostics policy now tests allowed fields, redaction, missing values, diagnostic exposure and diagnostics-not-evidence semantics; no external telemetry service, Docker Compose, Swarm, Kubernetes, Prometheus, Grafana, OpenTelemetry collector or log-shipping readiness is claimed; `forensic-analytics-logging` and `forensic-analytics-observability` remain rollback evidence; ingestion upload correlation preservation is not certified because the current ingestion gRPC contract has no verified correlation carrier, and remediation belongs to a contract-authorized ingestion refinement slice | `240f498` | checked | checked | pushed |
-| S11 | Persistence Ownership And Replacement Readiness | Senior Analysis Storage Architect with Data Ownership/Persistence, Senior Java Backend, Microservice Senior Expert and Senior Tester subagent reviews | `contracts/events/analysis-events.md`; `docs/architecture/data-ownership.md`; `docs/architecture/service-migration-map.md`; `docs/workflow/execution-report.md` | `./gradlew :forensic-analytics-persistence:test :services:analysis-orchestrator-service:test :services:query-report-api-service:test :services:ingestion-service:test --dependency-verification strict --console=plain --stacktrace` PASS; scoped productive service persistence import scan PASS; scoped affected-service build-file persistence dependency scan PASS; `git diff --check` PASS; `./gradlew test --dependency-verification strict --console=plain --stacktrace` PASS | PASS_WITH_LIMITATIONS: S11 resolves the ownership ambiguity for central persistence-retirement planning and replaces event-contract placeholders with producer-local metadata and query-report ownership rules; productive target services do not import or build-depend on `forensic-analytics-persistence`; `services:testbed` keeps a test-scoped rollback dependency and legacy runtime callers remain, so physical removal stays blocked for S14; workspace/project administration, membership, asset, audit, retention and legacy project-storage behavior remain retained legacy evidence until a later owner requirement or explicit deprecation exists; no durable store, schema/table, event outbox, broker runtime, event-sourced/audit-grade ordering or artifact byte custody transfer is claimed | `65beb49` | checked | checked | pushed |
-| S12 | Service-Local Domain And Application Readiness | Senior System Architect with Senior Java Backend, Microservice Senior Expert, ArchUnit Review and Senior Tester subagent reviews | `services/analysis-orchestrator-service/src/test/java/de/burger/forensics/analytics/services/analysisorchestrator/quality/AnalysisOrchestratorServiceBuildIsolationTest.java`; `docs/architecture/service-migration-map.md`; `docs/architecture/service-boundaries.md`; `docs/architecture/current-build-and-test-map.md`; `docs/arc42/05-building-block-view.md`; `docs/arc42/07-deployment-view.md`; `docs/workflow/execution-report.md`; `docs/workflow/context-pack.md`; `docs/workflow/context-pack.json` | `./gradlew :forensic-analytics-domain:test :forensic-analytics-application:test --dependency-verification strict --console=plain --stacktrace` PASS; productive service domain/application import scan PASS; productive service build-file leakage scan excluding non-production `services:testbed` PASS; `./gradlew :services:analysis-orchestrator-service:test --tests "de.burger.forensics.analytics.services.analysisorchestrator.quality.AnalysisOrchestratorServiceBuildIsolationTest" --dependency-verification strict --console=plain --stacktrace` PASS; `./gradlew test --dependency-verification strict --console=plain --stacktrace` PASS; `git diff --check` PASS | PASS_WITH_LIMITATIONS: productive services prove service-local domain/application ownership with no central domain/application imports and no productive build-file dependency on `forensic-analytics-domain`, `forensic-analytics-application` or another `services:*` implementation project; per-service ArchUnit rules plus the S12 build-isolation regression cover forbidden dependencies; false future S15 deployment and quality-pass claims are corrected to requirements; central domain/application modules and `services:testbed` test-scoped dependencies remain rollback/regression evidence for S13/S14; no module deletion, no runtime rerouting and no Docker Compose, Swarm or Kubernetes readiness is claimed | `4a6bc36` | checked | checked | pushed |
-| S13 | Service Testbed Parity And Monolith Coupling Readiness | Senior Tester with Microservice Senior Expert, Senior DevOps and Senior Java Backend subagent reviews | `services/testbed/src/main/.gitkeep`; `docs/architecture/current-coupling-map.md`; `docs/architecture/monolith-caller-retirement-plan.md`; `docs/architecture/service-boundaries.md`; `docs/architecture/current-build-and-test-map.md`; `docs/arc42/07-deployment-view.md`; `docs/testing/wildfly-hardening.md`; `docs/workflow/execution-report.md`; `docs/workflow/context-pack.md`; `docs/workflow/context-pack.json` | `./gradlew :services:testbed:test --dependency-verification strict --console=plain --stacktrace` PASS; `./gradlew :forensic-analytics-testbed:test --dependency-verification strict --console=plain --stacktrace` PASS; S13 testbed package import scan PASS after adding a tracked empty `services/testbed/src/main` path; `docker compose -f deployment/docker-compose/repository-to-btm.local.yml config --quiet` PASS as model-syntax-only evidence; `./gradlew test --dependency-verification strict --console=plain --stacktrace` PASS; `git diff --check` PASS | PASS_WITH_LIMITATIONS: `services:testbed` and `forensic-analytics-testbed` have matching service-root and legacy testbed coverage after package relocation, including 6 Java test classes, 7 `@Test` methods, 2 default-skipped external scenarios and matching repository E2E resources; test data remains non-production and not forensic evidence; no production code or service build file depends on testbed; both testbeds intentionally retain 13 test-scoped legacy module dependencies as rollback/regression evidence, so S13 is not deletion approval; Compose validation is syntax-only and does not claim image build, startup, healthcheck, Swarm or Kubernetes readiness | `3dcc21b` | checked | checked | pushed |
-| S14 | Retirement Readiness Reconciliation | Senior System Architect with Senior DevOps, Senior Java Backend, Microservice Senior Expert and Senior Tester subagent reviews | `docs/workflow/execution-report.md`; `docs/workflow/context-pack.md`; `docs/workflow/context-pack.json` | legacy build-reference scan PASS with retained blocker evidence: 29 matches, including 16 `settings.gradle.kts` legacy registrations and 13 `services:testbed` test-scoped legacy dependencies; productive service main-source legacy import scan PASS with no matches; `services/testbed/src/test/java` legacy import scan PASS with retained blocker evidence: 74 import matches across 4 test files; `./gradlew :services:testbed:test --dependency-verification strict --console=plain --stacktrace` PASS; `./gradlew test --dependency-verification strict --console=plain --stacktrace` PASS; `git diff --check` PASS | PASS_WITH_LIMITATIONS: S14 completes as `NO_REMOVAL_SAFE`; no modules, source trees, tests or Gradle registrations were removed; productive service code remains clean under S14 scans; non-production `services:testbed` retains legacy dependencies/imports as rollback and regression evidence; S15-S18 must replace or explicitly deprecate the remaining testbed, runtime, public API, boot/bootstrap and ownership blockers before S19 can attempt candidate-specific removal | `fbb1577` | checked | checked | pushed |
-| S15 | Testbed Architecture And Hardening Relocation | Senior Tester with Senior Java Backend, Microservice Senior Expert, Senior DevOps and Senior System Architect subagent reviews | `services/testbed/**`; service-local `*ArchitectureTest.java`; `docs/architecture/current-build-and-test-map.md`; `docs/arc42/05-building-block-view.md`; `docs/arc42/07-deployment-view.md`; `docs/arc42/08-crosscutting-concepts.md`; `docs/testing/wildfly-hardening.md`; `services/testbed/README.md`; `docs/workflow/workflow.md`; `docs/workflow/execution-report.md`; `docs/workflow/context-pack.md`; `docs/workflow/context-pack.json` | `./gradlew :services:testbed:test --tests "*WildFlyRepositoryHardeningTest" --dependency-verification strict --console=plain --stacktrace` PASS with WildFly external scenario default-skipped; `./gradlew :services:analysis-orchestrator-service:test :services:repository-source-service:test :services:ingestion-service:test :services:java-parser-analysis-service:test :services:joern-analysis-service:test :services:query-report-api-service:test :services:cli-client:test --tests "*ArchitectureTest" --dependency-verification strict --console=plain --stacktrace` PASS; `./gradlew test --dependency-verification strict --console=plain --stacktrace` PASS; `python3 -m json.tool docs/workflow/context-pack.json >/dev/null` PASS; `git diff --check` PASS | PASS_WITH_LIMITATIONS: broad logging and Spring architecture rules are removed from the legacy-dependent `services:testbed` classpath only after service-local replacement rules pass for the seven target services; Spring is restricted to each productive service `bootstrap..` package and forbidden from `cli-client`; `ingestion-service` also blocks central `forensic-analytics-logging`; `services:testbed` retains default-skipped WildFly hardening as non-production evidence; no module deletion, Docker image build, Compose startup, health probe, Swarm or Kubernetes readiness is claimed | `0e4a78d` | checked | checked | pushed |
-| S16 | Testbed Runtime Scenario Replacement Or Deprecation | Senior Java Backend with Senior Tester, Microservice Senior Expert, Senior DevOps and Senior System Architect subagent reviews | `services/testbed/src/test/java/de/burger/forensics/analytics/services/testbed/RepositoryAnalysisTestbedTest.java`; `services/testbed/README.md`; `services/cli-client/README.md`; `services/query-report-api-service/**`; `services/java-parser-analysis-service/**`; `services/joern-analysis-service/**`; `contracts/cli/gateway-cli-contract.md`; `docs/architecture/monolith-runtime-isolation.md`; `docs/arc42/05-building-block-view.md`; `docs/arc42/06-runtime-view.md`; `docs/workflow/execution-report.md` | initial S16 testbed gate failed on brittle documentation-fragment assertions and was repaired; `./gradlew :services:testbed:test --tests "de.burger.forensics.analytics.services.testbed.RepositoryAnalysisTestbedTest.*" --dependency-verification strict --console=plain --stacktrace` PASS with Joern Docker smoke env unset; `./gradlew :services:cli-client:test :services:query-report-api-service:test --dependency-verification strict --console=plain --stacktrace` PASS; `./gradlew :services:java-parser-analysis-service:test :services:joern-analysis-service:test --dependency-verification strict --console=plain --stacktrace` PASS; scoped `RepositoryAnalysisTestbedTest` legacy import scan PASS; `./gradlew :services:testbed:test --dependency-verification strict --console=plain --stacktrace` PASS; `./gradlew test --dependency-verification strict --console=plain --stacktrace` PASS; `python3 -m json.tool docs/workflow/context-pack.json >/dev/null` PASS; `git diff --check` PASS | PASS_WITH_LIMITATIONS: S16 retires the service-root in-process repository-analysis testbed scenario by explicit deprecation rather than replacement parity; target `cli-client` supports only `gateway-submit` and rejects local `analyze`, `ingest-request`, `status` and `report`; `query-report-api-service` remains accepted/pending and keeps jobs/results/replay/reports unavailable; JavaParser and Joern target services expose source-fact and semantic artifact contracts without BTM rules, report output, runtime facts or semantic graph parity; Joern Docker smoke is optional external verification, not default target runtime readiness; no `forensic-analytics-*` module, Gradle registration, Docker/Compose/Swarm/Kubernetes path or legacy rollback module was removed | `bf05d27` | checked | checked | pushed |
-| S17 | Repository Checkout And Ingestion Testbed Replacement | Senior Java Backend with Senior gRPC/Proto, Ingestion Handoff, Microservice Senior Expert and Senior Tester subagent reviews | `services/testbed/src/test/java/de/burger/forensics/analytics/services/testbed/RepositoryAnalysisMiniEndToEndTest.java`; `services/testbed/src/test/java/de/burger/forensics/analytics/services/testbed/RepositoryAnalysisRealRepositoryEndToEndTest.java`; `services/testbed/README.md`; `services/repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/adapter/out/filesystem/FileSystemRepositoryWorkspaceAdapterTest.java`; `services/repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/adapter/out/git/GitRepositoryCheckoutAdapterTest.java`; `services/ingestion-service/src/test/java/de/burger/forensics/analytics/services/ingestion/adapter/in/grpc/ForensicIngestionGrpcEndpointTest.java`; `services/analysis-orchestrator-service/src/test/java/de/burger/forensics/analytics/services/analysisorchestrator/adapter/in/grpc/AnalysisJobGrpcEndpointTest.java`; `services/ingestion-service/README.md`; `services/analysis-orchestrator-service/README.md`; `docs/architecture/monolith-runtime-isolation.md`; `docs/arc42/06-runtime-view.md`; `docs/workflow/execution-report.md`; `docs/workflow/context-pack.md`; `docs/workflow/context-pack.json` | initial S17 testbed gate failed on brittle documentation-fragment assertions and was repaired; initial orchestrator gate failed on a generic validation-description expectation and was repaired; `./gradlew :services:testbed:test --tests "de.burger.forensics.analytics.services.testbed.RepositoryAnalysisMiniEndToEndTest.*" --tests "de.burger.forensics.analytics.services.testbed.RepositoryAnalysisRealRepositoryEndToEndTest.*" --dependency-verification strict --console=plain --stacktrace` PASS; `./gradlew :services:repository-source-service:test --dependency-verification strict --console=plain --stacktrace` PASS; `./gradlew :services:ingestion-service:test --dependency-verification strict --console=plain --stacktrace` PASS with pre-existing deprecated test API warning; `./gradlew :services:analysis-orchestrator-service:test --dependency-verification strict --console=plain --stacktrace` PASS; scoped Mini/Real testbed legacy import scan PASS; `git diff --check` PASS; `python3 -m json.tool docs/workflow/context-pack.json >/dev/null` PASS; `./gradlew test --dependency-verification strict --console=plain --stacktrace` PASS | PASS_WITH_LIMITATIONS: S17 replaces the service-root mini and real repository E2E tests with explicit deprecation and target-service boundary evidence; `AnalyzeRepository`, local or file repository checkout, monolith analysis-session registration and direct workspace cleanup remain legacy rollback evidence only; `repository-source-service` owns clean HTTPS repository preparation, opaque workspace IDs, cleanup and source snapshot descriptors; `ingestion-service` proves `AnalyzeRepository` stays `UNIMPLEMENTED`; `analysis-orchestrator-service` rejects local/file/non-HTTPS repository-to-BTM inputs and remains pending `WAITING_FOR_REPOSITORY` without worker dispatch; no session-registration parity, source-package byte retrieval RPC, cross-service handoff runtime, module deletion, Docker image build, Compose startup, Swarm or Kubernetes readiness is claimed | `5aee0a0` | checked | checked | pushed |
-| S18 | Public API, Boot And Persistence Ownership Exit | Senior System Architect with Contract-First API, Data Ownership/Persistence, Senior React Frontend, Senior DevOps and Senior Tester subagent reviews | `services/query-report-api-service/**`; `services/cli-client/**`; `contracts/openapi/README.md`; `docs/contracts/contract-test-plan.md`; `docs/architecture/service-migration-map.md`; `docs/architecture/data-ownership.md`; `docs/architecture/monolith-runtime-isolation.md`; `docs/arc42/06-runtime-view.md`; `docs/workflow/execution-report.md`; `docs/workflow/context-pack.md`; `docs/workflow/context-pack.json` | `./gradlew :services:query-report-api-service:test --tests "*GatewayOpenApiContractTest" --dependency-verification strict --console=plain --stacktrace` PASS; `./gradlew :services:cli-client:test --tests "*HttpRepositoryAnalysisSubmissionClientTest" --dependency-verification strict --console=plain --stacktrace` PASS; `./gradlew :services:query-report-api-service:test :services:cli-client:test :services:analysis-orchestrator-service:test :services:ingestion-service:test --dependency-verification strict --console=plain --stacktrace` PASS; S18 OpenAPI ownership scan PASS with target-service test evidence; `git diff --check` PASS; `python3 -m json.tool docs/workflow/context-pack.json >/dev/null` PASS; `./gradlew test --dependency-verification strict --console=plain --stacktrace` PASS | PASS_WITH_LIMITATIONS: executable OpenAPI ownership for the current public repository-to-BTM submission/status contract now exists in `query-report-api-service` instead of only in `forensic-analytics-rest`; `cli-client` HTTP adapter coverage verifies headers, payload, accepted mapping and redacted errors; the public API shape is unchanged; no `forensic-analytics-rest`, Boot, Bootstrap or Persistence module is removed; no durable persistence, live bootRun, Docker image build, Compose, Swarm, Kubernetes or frontend-visible API drift is claimed | `51fa760` | checked | checked | pushed |
-| S19 | Candidate-Specific Gradle Deregistration And Source Tree Removal | Senior DevOps with Senior System Architect, Senior Java Backend, Microservice Senior Expert and Senior Tester subagent reviews | `docs/workflow/execution-report.md` | S19 global build-reference gate FAILED with 16 legacy registrations in `settings.gradle.kts` and 13 `services:testbed` legacy test dependencies; S19 service import gate FAILED with `services/testbed` legacy imports in `WildFlyRepositoryHardeningTest`; candidate-specific scans found `forensic-analytics-adapter-javaparser` dependency-ready but blocked by the active global S19 gate and unresolved runtime/readiness/rollback decision; `git diff --check` PASS; required full local gate NOT RUN because no deletion candidate was approved | STOP: no module deregistration or source-tree deletion performed. The active S19 gate is inconsistent with candidate-specific removal because it requires all legacy build references to disappear in the same checkpoint. S19 requires workflow-create refinement or an explicit candidate-scoped gate before `forensic-analytics-adapter-javaparser` can be considered, and all other modules remain blocked by build, testbed, runtime, ownership or rollback evidence. S20 is blocked by S19. | none | checked | checked | pushed |
-
-## Pending Slice Status
-
-| Slice | Status |
-|---|---|
-| S00 | COMPLETED |
-| S01 | COMPLETED |
-| S02 | COMPLETED |
-| S03 | COMPLETED |
-| S04 | COMPLETED |
-| S05 | COMPLETED |
-| S06 | COMPLETED |
-| S07 | COMPLETED |
-| S08 | COMPLETED |
-| S09 | COMPLETED |
-| S10 | COMPLETED |
-| S11 | COMPLETED |
-| S12 | COMPLETED |
-| S13 | COMPLETED |
-| S14 | COMPLETED |
-| S15 | COMPLETED |
-| S16 | COMPLETED |
-| S17 | COMPLETED |
-| S18 | COMPLETED |
-| S19 | STOPPED: workflow gate/refinement blocker |
-| S20 | BLOCKED_BY_S19 |
-
-## Notes
-
-Direct deletion of the listed legacy modules remains blocked until execution
-records caller-free proof, replacement parity, rollback or deprecation notes
-and the required quality-gate results.
-
-S00 confirms the active branch is
-`architecture/workflow-legacy-module-retirement-20260522`, the local branch ref
-exists, the working tree was clean before S00 report documentation, context
-pack JSON is valid and governing-file hashes match the recorded context pack.
-
-S01 confirms direct deletion is still unsafe. The current inventory finds 72
-direct legacy Gradle project references, 653 production legacy-package imports
-and 628 test legacy-package imports. `forensic-analytics-testbed` and
-`services:testbed` each still test-depend on 13 retained legacy modules.
-
-S02 confirms the current transitional contract surface is testable and the
-repository minimum test gate passes. It does not claim full target runtime
-parity: OpenAPI still contains planned operations, event contracts are design
-artifacts, query-report submission/status still uses predecessor
-`analysis-store-service` behavior, and CLI status/report mappings remain later
-CLI work.
-
-S02 also refreshed the context-pack architecture hashes because S01 and S02
-changed architecture evidence that later slices must re-read.
-
-Workflow-create refinement after the S03 execution blocker changes S03 through
-S13 from early deletion slices into parity, handoff, caller-migration and
-replacement-readiness slices. The later S14 execution blocker changes S14 into
-a no-deletion readiness reconciliation gate and moves physical module
-deregistration/source-tree removal to S19 after S15 through S18. Resume
-execution at S14 after the refinement checkpoint.
-
-S03 confirms the repository-source service is not a Java parser owner and does
-not implement `AnalyzeSourceSnapshotWithJavaAst`. The slice hardens service
-metadata against private path leakage, keeps Git command HOME under the
-prepared workspace, preserves legacy local/file repository behavior only as
-predecessor regression evidence, and requires callers to use source snapshot
-IDs plus artifact references instead of private workspace paths. S03 does not
-claim Swarm, Kubernetes or full orchestration runtime readiness; those remain
-later-slice concerns.
-
-S04 confirms ingestion-service intake and validation parity through service
-tests that record accepted payload handoff only after successful validation and
-deduplication. Invalid streamed uploads do not trigger handoff, importer
-handoffs preserve the produced session ID, and legacy ingestion modules still
-pass as rollback evidence. S04 does not mutate gRPC, Proto or event contracts
-and does not claim an external runtime handoff because the default service
-handoff adapter remains no-op until a later approved slice wires a real
-consumer.
-
-S05 confirms the JavaParser service owns service-local static Java source-fact
-production without importing monolith application, domain or adapter modules.
-Artifact retrieval references are immutable: identical repeated writes are
-idempotent and conflicting bytes for an existing reference are rejected before
-published evidence can be replaced. The slice records the intentional migration
-from legacy `java-parse-error` source facts to service diagnostics and keeps
-unresolved-symbol limitations completeness-affecting. It does not remove
-`forensic-analytics-adapter-javaparser`, mutate the gRPC contract or claim
-Swarm/Kubernetes readiness.
-
-S06 confirms the Joern service owns service-local runtime invocation,
-Joern-owned workspace materialization, CPG/CFG/DFG artifact production,
-provenance, diagnostics and semantic artifact byte retrieval. The service
-extends `joern-cpg-analysis.proto` with `GetSemanticArtifactBytes`, rejects
-private or mismatched artifact-byte requests, exposes retryable timeout and
-unavailable diagnostics, and keeps artifact bytes behind Joern-owned public
-references instead of the previous Analysis Store byte alias. The legacy
-`forensic-analytics-adapter-joern-docker` remains rollback evidence and is not
-removed. Docker image build and live Joern smoke testing remain optional
-external checks and were not claimed by S06.
-
-S08 confirms the public Query Report API facade now calls
-`analysis-orchestrator-service` for repository-to-BTM submission/status while
-keeping the OpenAPI/JSON shape stable for current clients. The facade maps
-orchestrator pending readiness to public `ACCEPTED`, preserves incomplete
-diagnostics, reports `analysis-orchestrator-service` as the downstream status
-dependency and keeps legacy REST/bootstrap/Boot modules as rollback evidence.
-S08 does not claim completed analysis parity, source snapshot availability for
-pending runs, worker dispatch, repository checkout, JavaParser, Joern, BTM
-generation, report assembly, artifact byte custody, Docker image build,
-Compose, Swarm or Kubernetes readiness.
-
-S09 confirms `services/cli-client` remains a target public API client for the
-transitional `gateway-submit` command and does not import monolith or service
-implementation packages. The predecessor `forensic-analytics-cli` keeps
-`analyze` and `ingest-request` as local in-process rollback evidence, while its
-`gateway-submit` path now matches target redaction behavior for malformed
-gateway/repository URL, numeric and boolean inputs. S09 does not add status or
-report commands, does not route legacy local commands to the public API and
-does not remove `forensic-analytics-cli`. Local/private repository host
-rejection remains a `query-report-api-service` validation responsibility rather
-than duplicated CLI policy.
-
-The full local `QUALITY.md` gate was run after S09 and failed only at
-`:checkPackageCoverage` for packages outside the S09 file locks:
-`de.burger.forensics.analytics.services.analysisorchestrator.adapter.in.grpc`,
-`de.burger.forensics.analytics.services.analysisorchestrator.application` and
-`de.burger.forensics.analytics.services.joernanalysis.adapter.out.filesystem`.
-S09 does not change those packages, and this report does not claim that the full
-local gate passed.
-
-S10 confirms observability/logging replacement readiness only for productive
-service decoupling from shared Java logging and observability modules. The
-slice adds deterministic policy coverage for `observability-stack`, expands
-the deployment diagnostics policy with explicit correlation and trace-context
-fields, missing-value handling, sensitive-value rejection and diagnostic
-surface exposure rules, and corrects stale S12 provenance references to the
-active S10 slice.
-
-S10 does not remove `forensic-analytics-logging` or
-`forensic-analytics-observability`. It also does not modify
-`contracts/grpc/forensic-ingestion.proto`, `services/ingestion-service/**` or
-legacy ingestion modules. Security and gRPC contract reviews verified that the
-current ingestion upload contract has no request correlation carrier and no
-verified gRPC metadata/header alternative. That gap remains a contract-owned
-ingestion refinement item; S10 must not be read as certifying end-to-end
-ingestion upload correlation preservation.
-
-S11 confirms productive target services do not use the shared
-`forensic-analytics-persistence` Java module. The slice clarifies ownership for
-legacy persistence areas that were still ambiguous: workspace/project
-administration, workspace/project memberships, workspace/project assets,
-workspace audit events, retention policies and legacy project-storage path
-resolution are retained legacy evidence outside mandatory FA-MSA-001
-repository-to-BTM acceptance until a later requirement assigns an owner or
-explicitly deprecates them.
-
-S11 also replaces event-contract placeholder wording for artifact metadata and
-report artifact ownership. In the FA-MSA-001 target flow, there is no shared
-canonical artifact metadata store: producer services own producer-local
-artifact metadata, `analysis-orchestrator-service` may keep job-to-artifact
-references only, and `query-report-api-service` owns public projection or
-generated-package metadata only after owner-authorized access. S11 does not
-claim durable persistence, event sourcing, broker readiness, event outbox
-behavior, audit-grade ordering or final caller-free persistence-module
-retirement.
-
-S12 resolves the quality-review STOP on build-level proof by extending
-`AnalysisOrchestratorServiceBuildIsolationTest` to scan every productive
-service build file and fail on central domain/application or cross-service
-project dependencies. `services:testbed` is explicitly excluded because it is
-non-production regression and rollback evidence owned by S13/S14. S12 also
-refreshes stale service-migration context and corrects premature S15 closure
-wording in architecture and arc42 documentation.
-
-S13 resolves the workflow gate failure caused by the missing
-`services/testbed/src/main` path by adding a tracked empty marker without
-production Java source. The slice verifies that service-root testbed coverage
-matches the legacy `forensic-analytics-testbed` tests and resources after
-package relocation, while documenting that both testbeds still keep 13
-test-scoped legacy dependencies. This is parity and rollback evidence only; it
-does not authorize legacy module removal.
-
-S14 deletion review stopped with a real blocker. Senior DevOps, Senior System
-Architect, Senior Java Backend, Microservice Senior Expert and Senior Tester
-reviews agreed that source-tree deletion is unsafe while
-`settings.gradle.kts` still registers all 16 listed legacy modules and
-`services:testbed` keeps 13 test-scoped legacy dependencies plus legacy
-imports in `RepositoryAnalysisTestbedTest`,
-`RepositoryAnalysisMiniEndToEndTest`,
-`RepositoryAnalysisRealRepositoryEndToEndTest` and
-`WildFlyRepositoryHardeningTest`. Productive services remain clean under the
-checked main-source and productive-build scans. Workflow-create refinement
-therefore changes S14 into a no-deletion `NO_REMOVAL_SAFE` readiness gate,
-adds S15 through S18 migration/deprecation slices, moves deletion to S19 and
-moves closure to S20.
-
-S17 confirms that the remaining mini and real repository testbed E2E behavior
-cannot be treated as target-service parity. Senior Java Backend, Senior
-gRPC/Proto, Ingestion Handoff, Microservice Senior Expert and Senior Tester
-reviews all blocked false parity claims for `AnalyzeRepository`, local/file
-repository checkout, monolith session registration and direct workspace
-cleanup. The slice therefore rewrites the two service-root testbed classes into
-boundary/deprecation evidence and strengthens target-service tests instead of
-removing modules. Remaining deletion candidates must still pass S18 ownership
-exit and S19 caller-free removal checks.
-
-S18 confirms that the current public OpenAPI contract is no longer executable
-only from `forensic-analytics-rest`. Senior System Architect, Analysis Storage
-Architect, Senior React Frontend, Senior DevOps and Senior Tester reviews all
-blocked physical `forensic-analytics-rest`, Boot, Bootstrap or Persistence
-removal, but approved the constrained ownership transfer. The slice adds a
-service-local `GatewayOpenApiContractTest` in
-`query-report-api-service`, keeps the OpenAPI shape unchanged, strengthens
-`cli-client` HTTP adapter coverage for headers, payload, accepted response
-mapping and redacted errors, and records the target-service ownership in
-contract, architecture and arc42 documentation. The legacy REST test remains
-rollback evidence, and S18 does not claim durable persistence, live bootRun,
-Docker image build, Compose, Swarm, Kubernetes or frontend-visible API drift.
-
-S18 implementation checkpoint: `51fa760 test(workflow): transfer public API contract ownership`.
-
-S18 verification passed:
+Read-only checks performed during workflow creation:
 
 ```bash
-./gradlew :services:query-report-api-service:test --tests "*GatewayOpenApiContractTest" --dependency-verification strict --console=plain --stacktrace
-./gradlew :services:cli-client:test --tests "*HttpRepositoryAnalysisSubmissionClientTest" --dependency-verification strict --console=plain --stacktrace
-./gradlew :services:query-report-api-service:test :services:cli-client:test :services:analysis-orchestrator-service:test :services:ingestion-service:test --dependency-verification strict --console=plain --stacktrace
-bash -lc "if rg -n \"GatewayOpenApiContractTest|forensic-analytics-rest\" services/query-report-api-service services/testbed contracts/openapi docs/contracts -g \"*.java\" -g \"*.md\" -g \"*.yaml\" -g \"*.yml\"; then test 0 -eq 0; else exit 1; fi"
+git rev-parse --show-toplevel
+git status --short
+git show-ref --verify --quiet refs/heads/architecture/workflow-legacy-module-retirement-20260522
+git branch --show-current
+./gradlew projects --dependency-verification strict --console=plain --stacktrace
+git ls-files "forensic-analytics-*" | wc -l
+rg -n 'project\(\":forensic-analytics-' settings.gradle.kts build.gradle.kts services --glob '*.gradle.kts' --glob '!**/build/**'
+git ls-files "*.java" | grep -v "^forensic-analytics-" | xargs -r rg -n -P '^import\s+de\.burger\.forensics\.analytics\.(application|domain|adapter|persistence|rest|cli|engine|logging|observability|bootstrap|boot|ingestion\.request|ingestion\.grpc)\b'
+```
+
+Verified results:
+
+- Repository root is `/mnt/d/Projects/forensic_analytics`.
+- Active branch is `architecture/workflow-legacy-module-retirement-20260522`.
+- Working tree was clean before workflow regeneration.
+- Gradle project listing passed and listed only `services:*` projects.
+- `450` tracked files remain under `forensic-analytics-*`.
+- Active Gradle build leakage scan found no `project(":forensic-analytics-*")`
+  references outside legacy source trees.
+- Active Java source leakage scan found no legacy monolith imports outside
+  legacy source trees.
+
+## Subagent Review Summary
+
+| Role | Result |
+|---|---|
+| Senior Requirement Engineer | READY_FOR_WORKFLOW with docs-drift and data-ownership stop conditions. |
+| Senior System Architect | Stale workflow/architecture docs are the main blocker; Gradle deregistration is already complete. |
+| Senior Java Backend Developer | Legacy directories are orphaned source trees; deletion can be one final source-tree removal slice after docs and gates. |
+| Senior React Frontend Developer | No direct frontend impact; `forensic-ui` uses public Gateway API only. |
+| Senior Tester | Replace stale legacy-module gates with service/root gates and run full `QUALITY.md` gate before closure. |
+
+## S00 Execution Preflight
+
+Status: completed.
+
+Responsible role: Senior Execution Orchestrator with Senior System Architect
+and Senior Tester review.
+
+Executed commands:
+
+```bash
+git branch --show-current
+git show-ref --verify --quiet refs/heads/architecture/workflow-legacy-module-retirement-20260522
+git status --short --branch
+python3 -m json.tool docs/workflow/context-pack.json
+./gradlew projects --dependency-verification strict --console=plain --stacktrace
 git diff --check
-python3 -m json.tool docs/workflow/context-pack.json >/dev/null
+git ls-files "forensic-analytics-*" | wc -l
+git ls-files "*build.gradle.kts" | grep -v "^forensic-analytics-" | xargs -r rg -n 'project\(\":forensic-analytics-'
+git ls-files "*.java" | grep -v "^forensic-analytics-" | xargs -r rg -n -P '^import\s+de\.burger\.forensics\.analytics\.(application|domain|adapter|persistence|rest|cli|engine|logging|observability|bootstrap|boot|ingestion\.request|ingestion\.grpc)\b'
+```
+
+Results:
+
+- Active branch is `architecture/workflow-legacy-module-retirement-20260522`.
+- Local workflow branch ref exists.
+- Working tree was clean at S00 start.
+- `docs/workflow/context-pack.json` is valid JSON.
+- `./gradlew projects --dependency-verification strict --console=plain --stacktrace`
+  passed and listed only `services:*` projects.
+- `git diff --check` passed.
+- Active build leakage scan found no non-legacy
+  `project(":forensic-analytics-*")` references.
+- Active Java source leakage scan found no legacy monolith imports outside
+  legacy source trees.
+- `git ls-files "forensic-analytics-*" | wc -l` returned `450`; this is the
+  expected pre-S05 deletion baseline after the v2 topology correction.
+
+Subagent reviews:
+
+- Senior Swarm Orchestrator: READY. S00 metadata is complete. Version 2 keeps
+  the dependency graph acyclic with topological groups
+  `S00 | S01 | S02+S03 | S04 | S05 | S06 | S07` after the pre-deletion
+  documentation stopper was discovered during S04 preflight.
+- Senior System Architect: READY. No S00 architecture blocker; arc42 has known
+  stale legacy references that belong to S01, S02, S04 and S06.
+- Senior Tester: READY. S00 gates are sufficient for preflight only; later
+  deletion and release slices still require their targeted and full gates.
+
+S3D note:
+
+- S02 and S03 both lock `docs/testing/**`. They must not run in parallel unless
+  a later S3D pass refines locks or serializes them. This does not block S00.
+
+## S01 Legacy Reference Classification
+
+Status: completed.
+
+Responsible role: Senior System Architect with Senior Requirement Engineer,
+Senior DevOps and Senior Tester review.
+
+Changed files:
+
+- `docs/architecture/legacy-reference-classification.md`
+- `docs/workflow/execution-report.md`
+
+Executed commands:
+
+```bash
+git status --short --branch
+rg -n "forensic-analytics-" docker .dockerignore contracts docs --glob "!docs/workflow/**"
+rg -n "forensic-analytics-" docker .dockerignore contracts docs --glob "!docs/workflow/**" | wc -l
+git diff --check
+```
+
+Results:
+
+- S01 reference scan completed.
+- Focused scan found `283` matches before classification and `298` matches
+  after adding the classification artifact.
+- `git diff --check` passed.
+- No active non-legacy Gradle build reference or service Java import blocker
+  was reintroduced.
+
+Subagent reviews:
+
+- Senior Requirement Engineer: READY. S01 remains aligned with FA-MSA-001 and
+  ADR-0017. Source-tree deletion is not S01 work.
+- Senior System Architect: READY for classification. Physical deletion closure
+  remains blocked until active-blocker references are removed or rewritten.
+- Senior DevOps: READY. S02 cleanup files are `.dockerignore`,
+  `docker/boot-app/Dockerfile`, `docker/boot-app/README.md`, `docs/README.md`,
+  `docs/testing/wildfly-hardening.md` and
+  `docs/contracts/contract-test-plan.md`.
+- Senior Tester: BLOCKED for S03/deletion readiness, not for S01
+  classification. Stale legacy Gradle task commands and current-state claims
+  must be replaced or marked historical before later slices pass.
+
+Classification summary:
+
+- Removable runtime/build documentation: README, Boot Docker files,
+  `.dockerignore`, WildFly hardening commands and legacy REST contract-test
+  command.
+- Historical architecture baseline: current-state, current-build/test,
+  current-coupling, monolith-retirement, service-boundary, migration-map,
+  arc42 and related architecture docs.
+- Compatibility vocabulary: Gateway/OpenAPI/CLI/gRPC predecessor wording and
+  ADR history.
+- Product/runtime namespace: `forensic-analytics-joern` and
+  `forensic-analytics-workspaces` are not legacy Gradle source-tree references.
+- Active blockers: runnable-looking `:forensic-analytics-*` commands, current
+  claims that legacy modules are registered or active quality-gate
+  participants, and rollback/regression claims that depend only on source trees
+  planned for deletion.
+
+S01 handoff:
+
+- S02 must clean stale executable runtime/Docker/contract docs.
+- S03 must use service-local gates only and confirm replacement or deprecation
+  coverage.
+- S04 must clear active service/deployment documentation blockers before
+  deletion.
+- S06 must reconcile architecture and arc42 current-state claims.
+- `docs/skill-audit/README.md` contained a stale historical audit sentence.
+  S06 expands its file scope to `docs/skill-audit/**` only for that baseline
+  wording so the final closure does not leave a contradictory current-state
+  claim outside architecture docs.
+
+## S02 Runtime, Docker And Contract Documentation Cleanup
+
+Status: completed.
+
+Responsible role: Senior DevOps with Senior System Architect, contract
+governance, Senior React Frontend and Senior Tester review.
+
+Changed files:
+
+- `.dockerignore`
+- `docker/boot-app/Dockerfile`
+- `docker/boot-app/README.md`
+- `docs/README.md`
+- `docs/contracts/contract-test-plan.md`
+- `docs/testing/wildfly-hardening.md`
+- `docs/workflow/execution-report.md`
+
+Executed commands:
+
+```bash
+git diff --check
+rg -n ":forensic-analytics-" .dockerignore docker/boot-app docs/README.md docs/testing/wildfly-hardening.md docs/contracts/contract-test-plan.md
+rg -n "forensic-analytics-boot-app|BOOT_APP_JAR|bootJar|build/libs/forensic-analytics-boot-app" .dockerignore docker/boot-app docs/README.md
+./gradlew :services:testbed:test --tests "*WildFlyRepositoryHardeningTest" --dependency-verification strict --console=plain --stacktrace
+./gradlew :services:query-report-api-service:test --tests "*GatewayOpenApiContractTest" --dependency-verification strict --console=plain --stacktrace
+./gradlew :services:btm-generation-service:generateProto --dependency-verification strict --console=plain --stacktrace
+./gradlew :services:btm-generation-service:test --tests "*BtmGenerationContractTest" --dependency-verification strict --console=plain --stacktrace
+./gradlew :services:query-report-api-service:test :services:forensic-gateway-service:test :services:cli-client:test --dependency-verification strict --console=plain --stacktrace
 ./gradlew test --dependency-verification strict --console=plain --stacktrace
 ```
+
+Results:
+
+- `git diff --check` passed.
+- No stale executable `:forensic-analytics-*` Gradle command remains in the
+  S02 target documentation scope.
+- No stale Boot app jar, `BOOT_APP_JAR`, `bootJar`, or deleted boot-app build
+  output reference remains in `.dockerignore`, `docker/boot-app`, or
+  `docs/README.md`.
+- `:services:testbed:test --tests "*WildFlyRepositoryHardeningTest"` passed.
+- `:services:query-report-api-service:test --tests "*GatewayOpenApiContractTest"`
+  passed.
+- `:services:btm-generation-service:generateProto` passed.
+- `:services:btm-generation-service:test --tests "*BtmGenerationContractTest"`
+  passed.
+- `:services:query-report-api-service:test :services:forensic-gateway-service:test :services:cli-client:test`
+  passed.
+- The repository minimum gate
+  `./gradlew test --dependency-verification strict --console=plain --stacktrace`
+  passed.
+
+Subagent and role reviews:
+
+- Senior DevOps: READY. Remove only the legacy Boot jar allowlist, delete the
+  stale Boot Dockerfile, retire the Boot container README, and replace
+  legacy REST/testbed commands with service-local checks.
+- Senior System Architect: READY. S02 may remove or reword executable legacy
+  runtime references without public API shape changes or ADR history rewrites.
+- Contract Governance: READY. Updating only
+  `docs/contracts/contract-test-plan.md` to use the service-local
+  `GatewayOpenApiContractTest` command is behavior-neutral; public REST,
+  CLI and gRPC contract files remain unchanged.
+- Senior React Frontend: READY. No `forensic-ui` changes are required because
+  OpenAPI paths, DTO fields, error envelopes and status shapes are unchanged.
+- Senior Tester: initial BLOCKED because the cleanup had not yet been applied;
+  targeted service verification passed and the blocker was documentation
+  state, not failing tests.
+
+S02 handoff:
+
+- S03 completed first to resolve the stale service-testbed minimum-gate
+  blocker that surfaced during S02 checkpoint readiness.
+- S04 must first clear the remaining active service and deployment
+  documentation command blockers. S05 may delete the legacy source trees only
+  after S02, S03 and S04 are checkpointed.
+
+Rollback reference:
+
+- Revert the S02 checkpoint commit before S05 if runtime, Docker or
+  contract-test documentation cleanup must be withdrawn.
+
+arc42Updated: completed in S06
+adrUpdated: checked; no ADR update required because no public contract shape,
+runtime ownership or deployment behavior changed in S02.
+
+## S03 Service Regression Coverage Confirmation
+
+Status: completed.
+
+Responsible role: Senior Tester with Senior Java Backend, Microservice Senior
+Expert and Senior DevOps review.
+
+Changed files:
+
+- `services/testbed/README.md`
+- `services/testbed/src/test/java/de/burger/forensics/analytics/services/testbed/RepositoryAnalysisMiniEndToEndTest.java`
+- `services/testbed/src/test/java/de/burger/forensics/analytics/services/testbed/RepositoryAnalysisRealRepositoryEndToEndTest.java`
+- `docs/workflow/execution-report.md`
+
+Executed commands:
+
+```bash
+./gradlew :services:testbed:test --tests de.burger.forensics.analytics.services.testbed.RepositoryAnalysisRealRepositoryEndToEndTest --dependency-verification strict --console=plain --stacktrace
+./gradlew :services:testbed:test --dependency-verification strict --console=plain --stacktrace
+./gradlew :services:repository-source-service:test :services:repository-analysis-service:test --dependency-verification strict --console=plain --stacktrace
+./gradlew :services:ingestion-service:test :services:forensic-ingestion-service:test --dependency-verification strict --console=plain --stacktrace
+./gradlew :services:java-parser-analysis-service:test :services:java-ast-analysis-service:test --dependency-verification strict --console=plain --stacktrace
+./gradlew :services:joern-analysis-service:test :services:joern-cpg-analysis-service:test --dependency-verification strict --console=plain --stacktrace
+./gradlew :services:analysis-orchestrator-service:test :services:analysis-store-service:test :services:btm-generation-service:test --dependency-verification strict --console=plain --stacktrace
+./gradlew :services:query-report-api-service:test :services:forensic-gateway-service:test :services:cli-client:test --dependency-verification strict --console=plain --stacktrace
+./gradlew :services:observability-stack:test :services:testbed:test --dependency-verification strict --console=plain --stacktrace
+git diff --check
+./gradlew test --dependency-verification strict --console=plain --stacktrace
+```
+
+Results:
+
+- The initial repository minimum gate failure was reproduced as
+  `:services:testbed:test` /
+  `RepositoryAnalysisRealRepositoryEndToEndTest.realRepositoryFixtureBehaviorIsRetainedOnlyAsLegacyRollbackEvidence`.
+- The failure was caused by a stale service-testbed assertion against old S17
+  workflow text in `docs/workflow/workflow.md`, not by S02 runtime or contract
+  documentation changes.
+- `services/testbed` now describes predecessor testbed coverage as
+  service-root regression evidence and historical rollback evidence pending
+  deletion, not as an active legacy Gradle module or current quality-gate
+  participant.
+- Testbed assertions now pin the active S03 service-regression coverage
+  wording and keep the unsupported local/file repository input and no-parity
+  guards.
+- All S03 targeted service test bundles passed.
+- `git diff --check` passed.
+- The repository minimum gate
+  `./gradlew test --dependency-verification strict --console=plain --stacktrace`
+  passed.
+
+Subagent and role reviews:
+
+- Senior Tester: READY_TO_FIX. Retarget stale S17 assertions to active S03
+  workflow wording and rerun `:services:testbed:test` plus the minimum gate.
+- Senior Java Backend: READY. The fix is backend-neutral when limited to
+  `services/testbed` README and test assertions and does not change
+  production service behavior.
+- Microservice Senior Expert: BLOCKED until unsafe README wording is removed.
+  The service-local structure is acceptable, but legacy modules must not be
+  described as active or current quality-gate participants.
+- Senior DevOps: READY with `PRODUCT_BUILD_AFFECTING` classification because
+  test code changed. S03 requires targeted service gates and the repository
+  minimum gate; the full local gate remains the S07 release-readiness gate.
+
+S03 handoff:
+
+- S02 checkpoint can be resumed after S03 because the minimum gate blocker was
+  removed.
+- S04 must clear active service and deployment documentation command blockers.
+  S05 may delete the legacy source trees only after S02, S03 and S04 are
+  checkpointed and deletion prechecks still prove no legacy module-local test
+  is the only known coverage for behavior still claimed as supported.
+
+Rollback reference:
+
+- Revert the S03 checkpoint commit before S05 if service-regression coverage
+  confirmation must be withdrawn.
+
+arc42Updated: completed in S06
+adrUpdated: checked
+
+## Workflow Topology Correction
+
+Status: applied in workflow version
+`fa-msa-001-final-legacy-source-retirement-20260523-v2`.
+
+Reason:
+
+- S04 preflight found stale runnable legacy Gradle commands and active/current
+  legacy evidence wording in service and deployment documentation.
+- Deleting source trees before cleaning those references would leave active
+  documentation pointing at non-existent Gradle tasks.
+
+Correction:
+
+- New S04: Legacy Command Documentation Stopper Cleanup.
+- Former S04 source-tree deletion moved to S05.
+- Former S05 architecture documentation and ADR closure moved to S06.
+- Former S06 final quality gate and release readiness moved to S07.
+
+Corrected dependency graph:
+
+```text
+S00 -> S01
+S01 -> S02
+S01 -> S03
+S02 + S03 -> S04
+S04 -> S05
+S05 -> S06
+S06 -> S07
+```
+
+## S04 Legacy Command Documentation Stopper Cleanup
+
+Status: completed.
+
+Responsible role: Senior Documentation Engineer with Senior DevOps, Senior
+System Architect, Senior Tester and Microservice Runtime Readiness review.
+
+Changed files:
+
+- `services/analysis-orchestrator-service/README.md`
+- `services/joern-analysis-service/README.md`
+- `services/README.md`
+- `docs/architecture/current-build-and-test-map.md`
+- `docs/architecture/current-coupling-map.md`
+- `docs/architecture/legacy-reference-classification.md`
+- `docs/architecture/monolith-caller-retirement-plan.md`
+- `docs/architecture/monolith-runtime-isolation.md`
+- `docs/architecture/service-boundaries.md`
+- `docs/architecture/service-migration-map.md`
+- `docs/arc42/05-building-block-view.md`
+- `docs/arc42/07-deployment-view.md`
+- `docs/arc42/08-crosscutting-concepts.md`
+- `docs/skill-audit/README.md`
+- `docs/workflow/workflow.md`
+- `docs/workflow/quality-and-leakage-gates.md`
+- `docs/workflow/context-pack.md`
+- `docs/workflow/context-pack.json`
+- `docs/workflow/execution-report.md`
+
+Executed commands:
+
+```bash
+rg -n "^\s*\./gradlew\s+:forensic-analytics-|:forensic-analytics-(boot-app|adapter-joern-docker|engine|application|domain)|bootstrap module can start|existing bootstrap module remains available|current-state evidence|current quality-gate evidence|current multi-project build includes|current implementation baseline|current workflow state|current repository state|verified current behavior|active as legacy quality-gate|active as rollback|remain active|remains active|retained active|active rollback|remain registered|active legacy callers|S15 through S18|S13 through S18|S19|S20|72 direct|653 production|628 test|13 test dependencies" services/analysis-orchestrator-service/README.md services/joern-analysis-service/README.md services/README.md docs/architecture/current-build-and-test-map.md docs/architecture/current-coupling-map.md docs/architecture/legacy-reference-classification.md docs/architecture/monolith-caller-retirement-plan.md docs/architecture/monolith-runtime-isolation.md docs/architecture/service-boundaries.md docs/architecture/service-migration-map.md docs/arc42/05-building-block-view.md docs/arc42/07-deployment-view.md docs/arc42/08-crosscutting-concepts.md docs/skill-audit/README.md
+python3 -m json.tool docs/workflow/context-pack.json
+git diff --check
+./gradlew projects --dependency-verification strict --console=plain --stacktrace
+./gradlew :services:analysis-orchestrator-service:test :services:analysis-orchestrator-service:bootJar :services:analysis-orchestrator-service:bootRun :services:joern-analysis-service:test :services:joern-analysis-service:bootJar :services:joern-analysis-service:bootRun --dry-run --dependency-verification strict --console=plain --stacktrace
+```
+
+Results:
+
+- The legacy command and active/current legacy evidence scan produced no
+  matches after cleanup.
+- `docs/workflow/context-pack.json` is valid JSON.
+- `git diff --check` passed.
+- `./gradlew projects --dependency-verification strict --console=plain --stacktrace`
+  passed and listed only `services:*` projects.
+- The service-local `analysis-orchestrator-service` and
+  `joern-analysis-service` test, `bootJar` and `bootRun` dry-run command
+  passed, proving the documented service-local Gradle paths exist without
+  starting long-running services.
+
+Subagent and role reviews:
+
+- Senior DevOps: READY. Replace runnable legacy Gradle commands with verified
+  service-local commands and run the project-model and dry-run checks.
+- Senior Documentation Engineer: READY. Treat stale legacy module references
+  as historical/non-executable evidence and avoid inventing replacement
+  Gradle tasks.
+- Senior System Architect: READY for corrected sequence. The documentation
+  stopper must be cleared before physical deletion; architecture review expanded
+  S04 to include exact stale current/active claims in architecture and audit
+  documents, stale arc42 bootstrap/logging runtime claims, and superseded old
+  S15-S20 retirement sequencing/count evidence in architecture documentation.
+- Senior Tester: READY with documentation-only scope; no product test code
+  changed in S04.
+
+S04 handoff:
+
+- S05 may run physical source-tree deletion after checkpointing this slice and
+  rerunning deletion prechecks.
+- S06 still owns final architecture/ADR closure after deletion evidence exists.
+- S07 still owns the full local quality gate and release-readiness evidence.
+
+Rollback reference:
+
+- Revert the S04 checkpoint commit before S05 if active service or deployment
+  documentation must temporarily restore legacy command wording for audit
+  reasons.
+
+arc42Updated: limited section 07 pre-delete command truthfulness update; final
+closure pending S06
+adrUpdated: checked; no ADR update required because S04 changes only
+documentation truthfulness and does not change runtime behavior or public
+contracts
+
+## S05 Execution Result
+
+Status: COMPLETED
+
+Scope executed:
+
+- Removed the 16 tracked legacy source trees:
+  `forensic-analytics-adapter-javaparser`,
+  `forensic-analytics-adapter-joern-docker`,
+  `forensic-analytics-adapter-repository-source`,
+  `forensic-analytics-application`, `forensic-analytics-boot-app`,
+  `forensic-analytics-bootstrap`, `forensic-analytics-cli`,
+  `forensic-analytics-domain`, `forensic-analytics-engine`,
+  `forensic-analytics-ingestion-grpc`,
+  `forensic-analytics-ingestion-request`,
+  `forensic-analytics-logging`, `forensic-analytics-observability`,
+  `forensic-analytics-persistence`, `forensic-analytics-rest`, and
+  `forensic-analytics-testbed`.
+- No service source, contract, runtime, Docker, or active Gradle build files were
+  modified in this slice.
+
+Verification:
+
+- `git ls-files "forensic-analytics-*"`: passed; no tracked legacy source-tree
+  files remain in the index.
+- `git ls-files "*build.gradle.kts" | grep -v "^forensic-analytics-" | xargs -r rg -n "project\\(\\\":forensic-analytics-"`:
+  passed; no active Gradle project dependencies point to retired legacy modules.
+- `git ls-files "*.java" | grep -v "^forensic-analytics-" | xargs -r rg -n -P "^import\\s+de\\.burger\\.forensics\\.analytics\\.(application|domain|adapter|persistence|rest|cli|engine|logging|observability|bootstrap|boot|ingestion\\.request|ingestion\\.grpc)\\b"`:
+  passed; no active Java source imports retired legacy packages.
+- `git diff --check` and `git diff --cached --check`: passed.
+- `./gradlew projects --dependency-verification strict --console=plain --stacktrace`:
+  passed; Gradle lists only the `services` project hierarchy.
+- `./gradlew test --dependency-verification strict --console=plain --stacktrace`:
+  passed.
+
+Role result:
+
+- Senior Java Backend Developer: READY. The retired source trees were orphaned
+  after S04 and were removed as the final physical legacy-tree deletion slice.
+- Senior DevOps: READY. The post-delete project-model gate confirms only active
+  service projects remain registered.
+- Senior System Architect: READY. No active non-legacy Gradle project or Java
+  import depends on the removed trees.
+- Microservice Senior Expert: READY. No active service tree, contract directory,
+  Docker path or service-owned domain changed; the diff introduces no shared
+  Java module or service-to-service project dependency.
+- Senior Tester: READY. The repository minimum test gate passed after deletion.
+
+S05 handoff:
+
+- S06 owns final arc42, ADR and architecture closure using the S05 deletion
+  evidence.
+- S07 owns the full local quality gate and release-readiness evidence.
+
+Rollback reference:
+
+- Revert the S05 checkpoint commit if an active service dependency on a retired
+  source tree is later discovered.
+
+arc42Updated: completed in S06
+adrUpdated: completed in S06
+
+## S06 Execution Result
+
+Status: completed.
+
+Scope executed:
+
+- Added ADR-0022 for final modular-monolith source-tree retirement.
+- Updated ADR cross-references while preserving historical decision context.
+- Updated arc42 sections 03, 05, 06, 07, 08, 09, 10 and 11 so deleted
+  `forensic-analytics-*` source trees are historical predecessor evidence, not
+  active runtime/build evidence.
+- Updated architecture maps and status documents for the post-S05 service-only
+  Gradle topology.
+- Expanded S06 workflow scope to include `docs/skill-audit/**` for one stale
+  audit-baseline wording fix tied to the post-S05 closure.
+- Expanded S06 workflow scope to include `contracts/**` and
+  `services/testbed/README.md` for provenance-only wording fixes discovered by
+  reviewer recheck. The edits do not change OpenAPI, CLI or gRPC fields,
+  endpoints, service names, enum values or compatibility behavior.
+- Updated workflow context-pack metadata and hashes with S05 checkpoint
+  `d8d9dab` and `trackedLegacyFileCount: 0`.
+
+Verification:
+
+- `python3 -m json.tool docs/workflow/context-pack.json`: passed.
+- `git diff --check`: passed.
+- `git ls-files "forensic-analytics-*" | wc -l`: `0`.
+- Active Gradle legacy project-reference scan: `0`.
+- Active Java legacy import scan: `0`.
+- `rg -n ":forensic-analytics-" docs docker contracts .dockerignore --glob "!docs/workflow/**"`:
+  classification scan returned historical/forbidden-example matches only.
+- `rg -n "forensic-analytics-" docs docker contracts .dockerignore --glob "!docs/workflow/**"`:
+  classification scan returned historical, ADR, contract compatibility,
+  product/runtime namespace or predecessor-provenance matches only.
+
+Reviewer result:
+
+- Senior Requirement Engineer: READY. ADR-0022 required and preserves ADR-0017
+  target landscape while closing the pre-S05 tracked-source assumption.
+- Architecture Reviewer: READY after stale active-evidence, service-slice label,
+  logging/observability and contract/testbed wording fixes.
+- Documentation Reviewer: READY after execution-report, ADR, service-boundaries,
+  arc42, current-state, workflow-scope and contract/testbed wording fixes.
+- Contract / ingestion handoff reviewer: READY. Contract and testbed edits are
+  wording/provenance only; no wire/API field, endpoint, service name, enum value
+  or compatibility behavior changed.
+- Quality Reviewer: READY. S06 docs-only gates are sufficient; ADR-0022 must be
+  staged with the final S06 commit.
+
+S06 handoff:
+
+- S07 owns the full local quality gate and final release-readiness evidence.
+- S07 must not re-open legacy source-tree deletion unless a new active
+  dependency is found.
+
+## S07 Quality Gate And Release Readiness
+
+Status: completed.
+
+Scope:
+
+- Verified the final service-only Gradle topology after all legacy
+  `forensic-analytics-*` source trees were physically removed.
+- Preserved S16 predecessor CLI deprecation evidence in
+  `contracts/cli/gateway-cli-contract.md` so the active testbed can still prove
+  that local `analyze` and `ingest-request` vocabulary is not silently routed to
+  the public API after S05.
+- Added focused regression coverage for:
+  - repository-to-BTM start-command boundary validation;
+  - defensive analysis-orchestrator enum-to-protobuf mappings;
+  - Joern filesystem workspace resolution, artifact collection, provenance
+    completeness and semantic artifact byte-read integrity.
+- Did not re-register legacy Gradle projects, restore legacy source roots, add
+  shared Java modules or claim independent production runtime/deployment
+  readiness beyond the verified service build and tests.
+
+Gate repair notes:
+
+- Initial isolated S07 full gate failed in
+  `RepositoryAnalysisTestbedTest.targetCliDocumentsLegacyLocalCommandDeprecationWithoutInProcessRouting`
+  because `contracts/cli/gateway-cli-contract.md` lost the exact historical
+  `S16` / `legacy in-process adapters` evidence fragments that the active
+  testbed asserts.
+- The testbed failure was fixed by wording-only contract provenance; no CLI,
+  REST, gRPC, service behavior or wire contract changed.
+- The next full gate passed all tests and JaCoCo module tasks but failed the
+  root `checkPackageCoverage` package threshold for three packages:
+  `analysisorchestrator.adapter.in.grpc`,
+  `analysisorchestrator.application` and
+  `joernanalysis.adapter.out.filesystem`.
+- Coverage was repaired with focused tests rather than lowering thresholds or
+  excluding packages. Post-repair package branch coverage was:
+  - `analysisorchestrator.adapter.in.grpc`: `83.90%`;
+  - `analysisorchestrator.application`: `85.19%`;
+  - `joernanalysis.adapter.out.filesystem`: `80.44%`.
+
+Verification:
+
+- `./gradlew projects --dependency-verification strict --console=plain --stacktrace`:
+  passed; project model contains only the root, `:services` and active service
+  subprojects.
+- `git ls-files "forensic-analytics-*" | wc -l`: `0`.
+- `./gradlew :services:testbed:test --dependency-verification strict --console=plain --stacktrace --no-daemon`:
+  passed after the CLI contract provenance fix.
+- `./gradlew :services:analysis-orchestrator-service:test :services:joern-analysis-service:test --dependency-verification strict --console=plain --stacktrace --no-daemon`:
+  passed after targeted coverage tests were added.
+- `./gradlew :services:analysis-orchestrator-service:jacocoTestReport :services:joern-analysis-service:jacocoTestReport checkPackageCoverage --dependency-verification strict --console=plain --stacktrace --no-daemon`:
+  passed.
+- `./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace --no-daemon`:
+  passed; `206` tasks executed.
+
+Reviewer result:
+
+- Senior Tester: READY to run the S07 gate; no extra targeted tests were
+  required before the first full gate.
+- Microservice Runtime Readiness Reviewer: READY to run S07 with the constraint
+  that this slice must not claim production runtime, Docker image, Compose,
+  Swarm or Kubernetes readiness beyond verified gates.
+- Senior DevOps: initial gate was BLOCKED by a daemon/lock abort; after daemon
+  cleanup and `--no-daemon` isolation, the gate proceeded to actionable test
+  and coverage failures.
+- Quality Reviewer: identified the package coverage blockers and recommended
+  keeping the new focused tests, then rerunning targeted service tests and the
+  full gate.
+
+S07 closure:
+
+- Final local quality gate passed.
+- Legacy tracked source-tree count remains `0`.
+- No remaining S07 stop condition is open.
+
+## Slice Execution Status
+
+| Slice | Status | Notes |
+|---|---|---|
+| S00 | Completed | Branch, context pack, Gradle project model, leakage baseline and `git diff --check` verified. |
+| S01 | Completed | Classification written to `docs/architecture/legacy-reference-classification.md`; deletion closure remains blocked until S02/S03/S04 cleanup and S06/S07 closure gates. |
+| S02 | Completed | Runtime, Docker and contract-test documentation now points to service-local ownership; no public contract files changed. |
+| S03 | Completed | Service-regression coverage assertions now target active S03 wording; all S03 targeted gates and the repository minimum gate passed. |
+| S04 | Completed | Active service and deployment documentation blockers cleared; service-local Gradle dry-runs and project-model gate passed. |
+| S05 | Completed | Removed all 16 tracked legacy source trees; post-delete leakage scans, project-model gate and repository test gate passed. |
+| S06 | Completed | Closed arc42, ADR, architecture, workflow, contract-provenance and testbed wording after deletion evidence; local gates and reviewer rechecks passed. |
+| S07 | Completed | Final full local quality gate passed after testbed provenance and package coverage repairs; legacy tracked source-tree count remains `0`. |
+
+## Open Stop Conditions For Execution
+
+- Do not re-register any legacy Gradle project.
+- Do not use stale `:forensic-analytics-*` test tasks.
+- Stop if a remaining legacy reference cannot be classified.
+- Stop if deleting a legacy tree removes the only known coverage for supported
+  behavior.
+- Stop if contract compatibility wording is behavior-relevant and not reviewed.
+- Stop if full local quality gate fails.

@@ -18,6 +18,7 @@
 | rollback path is unclear | Failed quality gates or push failures might lead to unsafe history rewriting | Use `CP_ROLLBACK` as a decision node and forbid blind `git reset --hard` |
 | flowchart becomes unreviewable | Large diagrams can hide dead nodes, missing paths and wrong backward jumps | Maintain Level 1 overview and Level 2 subgraphs in `docs/governance/workflow/` and audit them through `flowchart-integrity-auditor` |
 | governance role remains bootstrap-only | Root Architect is mapped but lacks a dedicated role artifact | Keep bootstrap owners documented and create dedicated artifacts only through a future governance slice |
+| legacy source-tree rollback is misunderstood | Retired `forensic-analytics-*` source trees might be treated as current rollback/runtime units | Use ADR-0022 and the S05 checkpoint as the rollback boundary; restore by reverting the checkpoint commit only when verified dependency evidence requires it |
 
 ## 11.1 Technical Debt Candidates
 

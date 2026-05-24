@@ -48,6 +48,123 @@ class RepositoryToBtmOrchestrationApplicationServiceTest {
         assertNull(service.get(new AnalysisRunId("missing-run")));
     }
 
+    @Test
+    void validatesRepositoryToBtmStartCommandBoundaries() {
+        var commitOnly = new RepositoryToBtmStartCommand(
+            "start-key",
+            "correlation-1",
+            "schema-v1",
+            new AnalysisRunId("run-commit"),
+            "https://example.test/repository.git",
+            "git",
+            null,
+            "abc123",
+            60,
+            1_000_000,
+            "gradle",
+            null,
+            null,
+            List.of(),
+            List.of("REQUESTED_REPOSITORY_TO_BTM_OUTPUT_BTM_RULES"),
+            Map.of()
+        );
+
+        assertEquals("", commitOnly.branch());
+        assertEquals("abc123", commitOnly.commit());
+        assertEquals("", commitOnly.buildId());
+        assertEquals("", commitOnly.rootProjectName());
+        assertThrows(IllegalArgumentException.class, () -> new RepositoryToBtmStartCommand(
+            null,
+            "correlation-1",
+            "schema-v1",
+            new AnalysisRunId("run-invalid"),
+            "https://example.test/repository.git",
+            "git",
+            "main",
+            "",
+            60,
+            1_000_000,
+            "gradle",
+            "",
+            "",
+            List.of(),
+            List.of(),
+            Map.of()
+        ));
+        assertThrows(IllegalArgumentException.class, () -> new RepositoryToBtmStartCommand(
+            " ",
+            "correlation-1",
+            "schema-v1",
+            new AnalysisRunId("run-invalid"),
+            "https://example.test/repository.git",
+            "git",
+            "main",
+            "",
+            60,
+            1_000_000,
+            "gradle",
+            "",
+            "",
+            List.of(),
+            List.of(),
+            Map.of()
+        ));
+        assertThrows(IllegalArgumentException.class, () -> new RepositoryToBtmStartCommand(
+            "start-key",
+            "correlation-1",
+            "schema-v1",
+            new AnalysisRunId("run-invalid"),
+            "https://example.test/repository.git",
+            "git",
+            " ",
+            null,
+            60,
+            1_000_000,
+            "gradle",
+            "",
+            "",
+            List.of(),
+            List.of(),
+            Map.of()
+        ));
+        assertThrows(IllegalArgumentException.class, () -> new RepositoryToBtmStartCommand(
+            "start-key",
+            "correlation-1",
+            "schema-v1",
+            new AnalysisRunId("run-invalid"),
+            "https://example.test/repository.git",
+            "git",
+            "main",
+            "",
+            0,
+            1_000_000,
+            "gradle",
+            "",
+            "",
+            List.of(),
+            List.of(),
+            Map.of()
+        ));
+        assertThrows(IllegalArgumentException.class, () -> new RepositoryToBtmStartCommand(
+            "start-key",
+            "correlation-1",
+            "schema-v1",
+            new AnalysisRunId("run-invalid"),
+            "https://example.test/repository.git",
+            "git",
+            "main",
+            "",
+            60,
+            0,
+            "gradle",
+            "",
+            "",
+            List.of(),
+            List.of(),
+            Map.of()
+        ));
+    }
+
     private static RepositoryToBtmStartCommand command(String idempotencyKey, String analysisRunId, String branch) {
         return new RepositoryToBtmStartCommand(
             idempotencyKey,

@@ -43,11 +43,11 @@ cross-instance idempotency or production runtime readiness.
 
 ## Verification
 
-S07 verification commands:
+Service-local verification commands:
 
 ```bash
 ./gradlew :services:analysis-orchestrator-service:test --dependency-verification strict --console=plain --stacktrace
-./gradlew :forensic-analytics-engine:test :forensic-analytics-application:test :forensic-analytics-domain:test --dependency-verification strict --console=plain --stacktrace
+./gradlew :services:analysis-orchestrator-service:bootJar :services:analysis-orchestrator-service:bootRun --dry-run --dependency-verification strict --console=plain --stacktrace
 ./gradlew test --dependency-verification strict --console=plain --stacktrace
 git diff --check
 ```
@@ -61,8 +61,10 @@ Local operator start command:
 ## Known Limits
 
 - The current repository still contains predecessor orchestration behavior in
-  `services/analysis-store-service` and monolith modules.
-- S07 does not retire `forensic-analytics-engine`,
-  `forensic-analytics-application` or `services/analysis-store-service`.
+  `services/analysis-store-service` and historical pre-retirement source trees
+  until the final legacy source-tree retirement workflow deletes them.
+- This service does not retire `services/analysis-store-service`; the final
+  legacy source-tree retirement workflow owns removal of predecessor engine,
+  application and domain source trees.
 - S07 does not add Docker Compose, Swarm or Kubernetes deployment descriptors
   for this target service.

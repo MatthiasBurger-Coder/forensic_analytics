@@ -5,45 +5,35 @@
 | Slice | Primary Owner | Secondary Reviewers |
 |---|---|---|
 | S00 | Senior Execution Orchestrator | Senior Requirement Engineer, Senior System Architect, Senior Tester |
-| S01 | Senior System Architect | Microservice Senior Expert, Senior Java Backend, Senior Tester |
-| S02 | Contract-First API Steward | Senior gRPC/Proto Specialist, Senior System Architect, Senior Tester, Senior DevOps |
-| S03 | Senior Java Backend | Senior Git Workspace Specialist, Microservice Senior Expert, Security/Sandbox, Senior Tester |
-| S04 | Senior Java Backend | Senior gRPC/Proto Specialist, Ingestion Handoff Review, Microservice Senior Expert, Senior Tester |
-| S05 | Senior Java Backend | Source Analysis Pipeline, Microservice Senior Expert, Senior Tester |
-| S06 | Senior Joern CPG Specialist | Senior Java Backend, Senior DevOps, Microservice Senior Expert, Senior Tester |
-| S07 | Senior Java Backend | Distributed Systems Architect, Data Ownership Steward, Microservice Senior Expert, Senior Tester |
-| S08 | Senior Java Backend | Contract Governance Expert, Senior DevOps, Senior React Frontend, Microservice Senior Expert, Senior Tester |
-| S09 | Senior Java Backend | Contract Governance Expert, Senior UX Designer, Senior Tester |
-| S10 | Senior DevOps | Observability Runtime Diagnostics, Senior Java Backend, Security Threat Modeling, Senior Tester |
-| S11 | Senior Analysis Storage Architect | Data Ownership Steward, Senior Java Backend, Microservice Senior Expert, Senior Tester |
-| S12 | Senior System Architect | Senior Java Backend, Microservice Senior Expert, ArchUnit Review, Senior Tester |
-| S13 | Senior Tester | Microservice Senior Expert, Senior DevOps, Senior Java Backend |
-| S14 | Senior System Architect | Senior DevOps, Senior Java Backend, Microservice Senior Expert, Senior Tester |
-| S15 | Senior Tester | Senior Java Backend, Microservice Senior Expert, Senior DevOps, Senior System Architect |
-| S16 | Senior Java Backend | Senior Tester, Microservice Senior Expert, Contract Governance Expert, Senior DevOps |
-| S17 | Senior Java Backend | Senior gRPC/Proto Specialist, Ingestion Handoff Review, Microservice Senior Expert, Senior Tester |
-| S18 | Senior System Architect | Contract-First API Steward, Data Ownership/Persistence Steward, Senior React Frontend, Senior DevOps, Senior Tester |
-| S19 | Senior DevOps | Senior System Architect, Senior Java Backend, Microservice Senior Expert, Senior Tester |
-| S20 | Senior System Architect | Senior DevOps, Senior Tester, Runtime Readiness Expert, Senior Documentation Engineer |
+| S01 | Senior System Architect | Senior Requirement Engineer, Contract-First API Steward, Senior DevOps, Senior Tester |
+| S02 | Senior DevOps | Senior System Architect, Contract Governance Expert, Senior React Frontend, Senior Tester |
+| S03 | Senior Tester | Senior Java Backend, Microservice Senior Expert, Senior DevOps, Senior System Architect |
+| S04 | Senior Documentation Engineer | Senior DevOps, Senior System Architect, Senior Tester, Microservice Runtime Readiness Expert |
+| S05 | Senior Java Backend | Senior DevOps, Senior System Architect, Microservice Senior Expert, Senior Tester |
+| S06 | Senior System Architect | ADR Steward, Senior Documentation Engineer, Senior Requirement Engineer, Senior Tester |
+| S07 | Senior DevOps | Senior Tester, Senior System Architect, Microservice Runtime Readiness Expert, Senior Documentation Engineer |
 
 ## Mandatory Review Rules
 
-- Microservice Senior Expert reviews every slice that removes a legacy module
-  or changes service autonomy.
-- Senior Tester reviews every slice with code, tests, Gradle or deletion
-  impact.
-- Senior DevOps reviews every slice that changes Gradle, Docker, runtime start,
-  healthcheck or deployment material.
-- Contract specialists review every REST, gRPC, event, CLI or file-contract
-  change before implementation depends on the contract.
-- Data Ownership and Persistence Steward reviews all persistence and stored
-  evidence decisions.
-- Senior React Frontend Developer is an impact reviewer when public API fields,
-  endpoints, status models or client-visible error shapes change.
+- Senior System Architect reviews every slice because the workflow changes the
+  final modular-monolith retirement state.
+- Microservice Senior Expert reviews source deletion and service-autonomy
+  claims.
+- Senior Tester reviews every slice with tests, source deletion, quality-gate
+  or regression-coverage impact.
+- Senior DevOps reviews Gradle, Docker, runtime, build and release-readiness
+  material.
+- Contract specialists review every REST/OpenAPI, gRPC/protobuf, CLI or file
+  contract wording change before implementation depends on it.
+- Senior React Frontend reviews only when public API fields, endpoints,
+  response status shapes or `forensic-ui` API mappers change.
+- ADR Steward reviews final retirement ADR creation or supersession.
 
 ## Callable Subagent Policy
 
-Callable subagents are used during `workflow execute` only when explicitly
-authorized by the runtime and current user request. When callable subagents are
-not used, the matching role files and skills are used as explicit local review
-checklists and the limitation is recorded in the execution report.
+Callable subagents were used for workflow creation because the user explicitly
+requested subagent participation. During `workflow execute`, callable subagents
+should be used when available and explicitly authorized by the active runtime.
+When a callable subagent is unavailable, the matching role file or skill is used
+as a local review checklist and the limitation is recorded in
+`docs/workflow/execution-report.md`.

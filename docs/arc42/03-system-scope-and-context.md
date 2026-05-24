@@ -74,10 +74,14 @@ producers do not become canonical evidence stores.
 ```text
 Plugin
   -> gRPC Client
-    -> forensic-analytics-ingestion-grpc
-      -> Analysis Ingestion Use Case
-        -> Workspace / Analysis Session Ports
-          -> Persistence Adapter
+    -> ingestion-service
+      -> Service-local ingestion application
+        -> Raw intake session state
+          -> Explicit owner handoff
 ```
 
-The gRPC ingestion module is an inbound adapter. It does not own persistence, Joern integration, replay logic, LLM logic, BTM generation or plugin internals.
+The former `forensic-analytics-ingestion-grpc` source tree was retired by
+ADR-0022 and S05 of the final legacy source-tree retirement workflow. Current
+gRPC ingestion implementation evidence is service-local under
+`services/ingestion-service`. Ingestion does not own persistence, Joern
+integration, replay logic, LLM logic, BTM generation or plugin internals.
