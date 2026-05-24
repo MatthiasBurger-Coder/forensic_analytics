@@ -1518,4 +1518,7 @@ CP_RECORD:
 Checkpoint:
 
 - Commit SHA: `7a73a0c1a9e1e5ace84035228f8dc7642e7976e3`.
-- Push result: pending S12 checkpoint push.
+- S12 report finalizer SHA:
+  `d0ad32b26b363d50f7e07a83bf0abffae2e4976e`.
+- Push result: pushed to
+  `origin/feature/workflow-repository-workspace-checkout-h2-persistence-20260524`.
