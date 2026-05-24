@@ -2,9 +2,10 @@
 
 ## Status
 
-Workflow execution is in progress. S00, S01 and S02 are complete. Product
-implementation has not started; S02 froze the planned REST and gRPC contracts
-for later implementation slices.
+Workflow execution is in progress. S00, S01, S02 and S03 are complete. Product
+implementation has started in repository-source-service with the workspace
+domain model, in-memory repositories and application use cases required by
+later checkout and persistence slices.
 
 `workflow execute` must run S00 first and then update this report after every
 slice with:
@@ -41,7 +42,7 @@ execution and contract-first sequencing.
 | S00 | Completed | Branch/worktree verified, context-pack JSON valid, governing hashes matched, S3D dependency graph passed after normalizing reviewer IDs and branch/process wording. |
 | S01 | Completed | Workspace terminology split into platform workspace and repository checkout workspace; repository-source ownership, H2 MVP scope and query-report facade boundary documented. |
 | S02 | Completed | Contract-first public REST and repository-source owner API frozen with security and idempotency contract tests. |
-| S03 | Not started | Repository-source workspace domain and in-memory use cases. |
+| S03 | Completed | Repository-source workspace aggregate, branch aggregate, repository identity, in-memory workspace repository and idempotent workspace/branch application use cases added. |
 | S04 | Not started | Metadata resolution, checkout and branch refresh. |
 | S05 | Not started | H2 dependency, schema and persistence adapters. |
 | S06 | Not started | Repository-source gRPC endpoint and error mapping. |
@@ -252,3 +253,86 @@ Checkpoint:
 - Commit SHA: `6dcee046b61c7783947975a3f3f337fccd10fb0c`.
 - Push result: pushed to
   `origin/feature/workflow-repository-workspace-checkout-h2-persistence-20260524`.
+
+## Slice S03 - Repository Source Workspace Domain And In-Memory Use Cases
+
+Status: Completed.
+
+Owner and reviewers:
+
+- Senior Java Backend
+- Senior System Architect
+- Senior Git Workspace Specialist
+- Senior Security Sandbox Engineer
+- Senior Tester
+
+Changed files:
+
+- `services/repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/domain/RepositorySourceDomain.java`
+- `services/repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/application/RepositoryWorkspaceApplicationService.java`
+- `services/repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/application/RepositoryWorkspaceNotFoundException.java`
+- `services/repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/application/port/RepositoryWorkspaceIdGenerator.java`
+- `services/repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/application/port/RepositoryWorkspaceRepository.java`
+- `services/repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/adapter/out/memory/InMemoryRepositoryWorkspaceRepository.java`
+- `services/repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/domain/RepositorySourceDomainTest.java`
+- `services/repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/application/RepositorySourceApplicationServiceTest.java`
+- `docs/workflow/execution-report.md`
+
+Commands executed:
+
+```bash
+git status --short --branch
+git diff --check
+./gradlew :services:repository-source-service:test --tests "*RepositorySourceDomainTest" --tests "*RepositorySourceApplicationServiceTest" --dependency-verification strict --console=plain --stacktrace
+./gradlew :services:repository-source-service:test --dependency-verification strict --console=plain --stacktrace
+```
+
+Result:
+
+- PASS for S03 repository-source domain and in-memory use-case slice.
+- Workspace state is now represented as a repository-level aggregate with
+  opaque workspace ids, read-only titles derived from repository names,
+  normalized repository keys and branch state held as data rather than
+  filesystem paths.
+- Branch state is now represented with opaque workspace branch ids, explicit
+  requested and resolved commits, source snapshot references, source roots and
+  checked-out/update/failure states.
+- Repository workspace creation and branch creation are idempotent inside the
+  application service; same idempotency key plus different fingerprint returns
+  the existing controlled conflict path before mutating state.
+- Branch reuse rejects mismatched requested commits, and checkout completion
+  validates checkout status, requested branch and requested commit before
+  updating the branch snapshot.
+- In-memory workspace repository and deterministic id generation ports are
+  available for tests and later adapter selection without introducing H2,
+  JDBC, Docker, gRPC endpoint or REST facade changes in this slice.
+- Security review blockers for direct repository-key segment validation,
+  diagnostic leakage and safe-attribute leakage were resolved.
+
+Limitations and carry-forward notes:
+
+- S03 intentionally does not perform repository metadata resolution, remote
+  default branch resolution, Git checkout, branch refresh, H2 persistence,
+  gRPC endpoint mapping, public REST mapping, Docker volume configuration or
+  frontend changes. Those remain owned by later slices.
+- Existing `PreparedWorkspace(Path)` remains an internal checkout port detail
+  from earlier implementation and is not part of the new repository workspace
+  aggregate or public result surface.
+- Gradle emitted Java/protobuf/netty deprecation and native-access warnings;
+  they did not fail the S03 gates.
+
+CP_RECORD:
+
+- workflowVersion: `fa-mvp-0001-repository-workspace-checkout-h2-persistence-20260524-v1`
+- sliceId: `S03`
+- sliceTitle: `Repository Source Workspace Domain And In-Memory Use Cases`
+- responsibleAgent: `senior-java-backend`
+- qualityGateResult: `PASS`
+- rollbackReference: `revert the S03 checkpoint commit after CP_COMMIT; before commit, restore the listed S03 files from HEAD`
+- arc42Updated: `not updated; final arc42 synchronization remains assigned to S11`
+- adrUpdated: `not updated; no S03 ADR change recorded`
+
+Checkpoint:
+
+- Commit SHA: pending until the S03 checkpoint commit is created.
+- Push result: pending until the S03 checkpoint is pushed.

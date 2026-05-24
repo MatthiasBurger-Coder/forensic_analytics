@@ -12,9 +12,15 @@ import de.burger.forensics.analytics.services.repositorysource.domain.Repository
 import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.CheckoutResult;
 import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.CheckoutStatus;
 import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.Diagnostic;
+import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.DiagnosticSeverity;
 import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.PackageAvailability;
+import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.RepositoryIdentity;
+import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.RepositoryKey;
 import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.RepositoryPreparation;
 import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.RepositoryReference;
+import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.RepositoryWorkspace;
+import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.RepositoryWorkspaceBranch;
+import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.RepositoryWorkspaceBranchStatus;
 import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.RepositoryWorkspaceStatus;
 import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.RevisionSelector;
 import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.SourcePackageDescriptor;
@@ -23,10 +29,14 @@ import de.burger.forensics.analytics.services.repositorysource.domain.Repository
 import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.SourceSnapshotCompleteness;
 import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.SourceSnapshotId;
 import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.WorkspaceId;
+import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.WorkspaceBranchId;
 import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.WorkspacePolicy;
+import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.WorkspaceTitle;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -41,6 +51,7 @@ class RepositorySourceDomainTest {
         "github",
         Map.of("tenant", "demo")
     );
+    private static final RepositoryIdentity REPOSITORY_IDENTITY = RepositoryIdentity.from(REPOSITORY, "main");
     private static final RevisionSelector REVISION = new RevisionSelector("main", true, "", false);
     private static final SourceRoot SOURCE_ROOT = new SourceRoot("src/main/java", "java");
 
@@ -77,6 +88,126 @@ class RepositorySourceDomainTest {
         assertEquals(RepositoryWorkspaceStatus.CLEANED, preparation
             .withWorkspaceStatus(RepositoryWorkspaceStatus.CLEANED, Instant.parse("2026-05-16T10:15:32Z"))
             .workspaceStatus());
+    }
+
+    @Test
+    void acceptsRepositoryWorkspaceAggregateWithOpaqueIdsDerivedTitleAndBranchData() {
+        var branch = branch(
+            new WorkspaceId("workspace-0001"),
+            new WorkspaceBranchId("workspace-branch-0001"),
+            "feature/workspace-ui"
+        );
+        var workspace = new RepositoryWorkspace(
+            new WorkspaceId("workspace-0001"),
+            WorkspaceTitle.fromRepositoryName(REPOSITORY_IDENTITY.repositoryName()),
+            REPOSITORY_IDENTITY,
+            RepositoryWorkspaceStatus.READY,
+            Instant.parse("2026-05-16T10:15:30Z"),
+            Instant.parse("2026-05-16T10:15:31Z"),
+            List.of(branch),
+            List.of(Diagnostic.info("READY", "Repository workspace is ready")),
+            Map.of("tenant", "demo")
+        );
+
+        assertEquals("example.com/acme/demo", REPOSITORY_IDENTITY.repositoryKey().value());
+        assertEquals("demo", workspace.workspaceTitle().value());
+        assertEquals("feature/workspace-ui", workspace.branches().get(0).repositoryBranch());
+        assertEquals(RepositoryWorkspaceBranchStatus.CHECKING_OUT, workspace.branches().get(0).status());
+    }
+
+    @Test
+    void rejectsRepositoryWorkspaceIdsTitlesAndBranchIdsThatExposePathsOrSecrets() {
+        assertThrows(IllegalArgumentException.class, () -> new WorkspaceId("demo"));
+        assertThrows(IllegalArgumentException.class, () -> new WorkspaceId("workspace-"));
+        assertThrows(IllegalArgumentException.class, () -> new WorkspaceId("workspace-feature/main"));
+        assertThrows(IllegalArgumentException.class, () -> new WorkspaceId("/tmp/workspace"));
+        assertThrows(IllegalArgumentException.class, () -> new WorkspaceBranchId("feature/main"));
+        assertThrows(IllegalArgumentException.class, () -> new WorkspaceBranchId("workspace-branch-feature/main"));
+        assertThrows(IllegalArgumentException.class, () -> new WorkspaceTitle("/tmp/demo"));
+        assertThrows(IllegalArgumentException.class, () -> new WorkspaceTitle("token-demo"));
+        assertThrows(IllegalArgumentException.class, () -> new RepositoryKey("https://example.com/acme/demo"));
+        assertThrows(IllegalArgumentException.class, () -> new RepositoryKey("example.com/ac me/demo"));
+        assertThrows(IllegalArgumentException.class, () -> new RepositoryIdentity(
+            RepositoryKey.of("example.com", "acme", "demo"),
+            "https://example.com/acme/demo.git",
+            "example.com",
+            "ac me",
+            "demo",
+            "main"
+        ));
+        assertThrows(IllegalArgumentException.class, () -> RepositoryIdentity.from(
+            new RepositoryReference("https://example.com/demo.git", "github", Map.of()),
+            "main"
+        ));
+        assertThrows(IllegalArgumentException.class, () -> new Diagnostic("PATH", "failed in /tmp/workspace", DiagnosticSeverity.ERROR));
+        assertThrows(IllegalArgumentException.class, () -> new Diagnostic("STDOUT", "plain tool output", DiagnosticSeverity.ERROR));
+        assertThrows(IllegalArgumentException.class, () -> new Diagnostic("DATABASE", "H2 database detail", DiagnosticSeverity.ERROR));
+        assertThrows(IllegalArgumentException.class, () -> new Diagnostic("COMMAND", "git clone failed", DiagnosticSeverity.ERROR));
+    }
+
+    @Test
+    void rejectsRepositoryWorkspaceBranchWhenSnapshotOrWorkspaceIdentityDoesNotMatch() {
+        var workspaceId = new WorkspaceId("workspace-0001");
+        var otherWorkspaceId = new WorkspaceId("workspace-0002");
+
+        assertThrows(IllegalArgumentException.class, () -> new RepositoryWorkspace(
+            workspaceId,
+            WorkspaceTitle.fromRepositoryName(REPOSITORY_IDENTITY.repositoryName()),
+            REPOSITORY_IDENTITY,
+            RepositoryWorkspaceStatus.READY,
+            Instant.EPOCH,
+            Instant.EPOCH,
+            List.of(branch(otherWorkspaceId, new WorkspaceBranchId("workspace-branch-0001"), "feature/workspace-ui")),
+            List.of(),
+            Map.of()
+        ));
+        assertThrows(IllegalArgumentException.class, () -> new RepositoryWorkspaceBranch(
+            new WorkspaceBranchId("workspace-branch-0001"),
+            workspaceId,
+            "feature/workspace-ui",
+            "",
+            "",
+            null,
+            RepositoryWorkspaceBranchStatus.CHECKED_OUT,
+            List.of(),
+            null,
+            Instant.EPOCH,
+            List.of()
+        ));
+    }
+
+    @Test
+    void copiesWorkspaceBranchesDiagnosticsAndSafeAttributesDefensively() {
+        var branches = new ArrayList<RepositoryWorkspaceBranch>();
+        branches.add(branch(new WorkspaceId("workspace-0001"), new WorkspaceBranchId("workspace-branch-0001"), "feature/workspace-ui"));
+        var diagnostics = new ArrayList<Diagnostic>();
+        diagnostics.add(Diagnostic.info("READY", "Repository workspace is ready"));
+        var attributes = new HashMap<String, String>();
+        attributes.put("tenant", "demo");
+
+        var workspace = new RepositoryWorkspace(
+            new WorkspaceId("workspace-0001"),
+            new WorkspaceTitle("demo"),
+            REPOSITORY_IDENTITY,
+            RepositoryWorkspaceStatus.READY,
+            Instant.EPOCH,
+            Instant.EPOCH,
+            branches,
+            diagnostics,
+            attributes
+        );
+        branches.clear();
+        diagnostics.clear();
+        attributes.put("tenant", "changed");
+
+        assertEquals(1, workspace.branches().size());
+        assertEquals(1, workspace.diagnostics().size());
+        assertEquals("demo", workspace.safeAttributes().get("tenant"));
+        assertThrows(UnsupportedOperationException.class, () -> workspace.branches().add(branch(
+            new WorkspaceId("workspace-0001"),
+            new WorkspaceBranchId("workspace-branch-0002"),
+            "main"
+        )));
     }
 
     @Test
@@ -384,6 +515,9 @@ class RepositorySourceDomainTest {
             .severity());
         assertThrows(IllegalArgumentException.class, () -> RepositorySourceDomain.requireText(null, "value"));
         assertThrows(IllegalArgumentException.class, () -> RepositorySourceDomain.safeAttributes(Map.of("note", "secret-value")));
+        assertThrows(IllegalArgumentException.class, () -> RepositorySourceDomain.safeAttributes(Map.of("stdout", "redacted")));
+        assertThrows(IllegalArgumentException.class, () -> RepositorySourceDomain.safeAttributes(Map.of("note", "JDBC database")));
+        assertThrows(IllegalArgumentException.class, () -> RepositorySourceDomain.safeAttributes(Map.of("/tmp/key", "value")));
         assertThrows(IllegalArgumentException.class, () -> RepositorySourceDomain.safeAttributes(Map.of("note", "C:/Users/demo")));
         assertThrows(IllegalArgumentException.class, () -> RepositorySourceDomain.safeAttributes(Map.of("note", "checkout failed at /tmp/workspace")));
         assertThrows(IllegalArgumentException.class, () -> RepositorySourceDomain.safeAttributes(Map.of("note", "C:\\Users\\demo\\repo")));
@@ -413,5 +547,25 @@ class RepositorySourceDomainTest {
             false,
             List.of()
         ));
+    }
+
+    private static RepositoryWorkspaceBranch branch(
+        WorkspaceId workspaceId,
+        WorkspaceBranchId workspaceBranchId,
+        String repositoryBranch
+    ) {
+        return new RepositoryWorkspaceBranch(
+            workspaceBranchId,
+            workspaceId,
+            repositoryBranch,
+            "",
+            "",
+            null,
+            RepositoryWorkspaceBranchStatus.CHECKING_OUT,
+            List.of(),
+            null,
+            Instant.parse("2026-05-16T10:15:31Z"),
+            List.of(Diagnostic.info("BRANCH_CREATED", "Repository workspace branch was created"))
+        );
     }
 }

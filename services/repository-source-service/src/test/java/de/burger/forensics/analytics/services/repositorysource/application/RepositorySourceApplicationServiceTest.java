@@ -1,19 +1,25 @@
 package de.burger.forensics.analytics.services.repositorysource.application;
 
 import de.burger.forensics.analytics.services.repositorysource.adapter.out.memory.InMemoryRepositoryPreparationRepository;
+import de.burger.forensics.analytics.services.repositorysource.adapter.out.memory.InMemoryRepositoryWorkspaceRepository;
 import de.burger.forensics.analytics.services.repositorysource.application.port.PreparedWorkspace;
 import de.burger.forensics.analytics.services.repositorysource.application.port.RepositoryCheckoutPort;
+import de.burger.forensics.analytics.services.repositorysource.application.port.RepositoryWorkspaceIdGenerator;
 import de.burger.forensics.analytics.services.repositorysource.application.port.RepositoryWorkspacePort;
 import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.AnalysisRunId;
+import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.RepositoryIdentity;
 import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.CheckoutResult;
 import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.CheckoutStatus;
 import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.Diagnostic;
 import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.BuildOutputProducer;
 import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.RepositoryReference;
+import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.RepositoryWorkspaceBranchSelector;
+import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.RepositoryWorkspaceBranchStatus;
 import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.RepositoryWorkspaceStatus;
 import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.RevisionSelector;
 import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.SourceRoot;
 import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.SourceSnapshotId;
+import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.WorkspaceBranchId;
 import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.WorkspaceId;
 import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.WorkspacePolicy;
 import org.junit.jupiter.api.Test;
@@ -194,6 +200,150 @@ class RepositorySourceApplicationServiceTest {
         assertEquals(1, failingWorkspacePort.cleaned);
     }
 
+    @Test
+    void createsRepositoryWorkspaceIdempotentlyForSameFingerprint() {
+        var idGenerator = new FixedRepositoryWorkspaceIdGenerator();
+        var workspaceService = workspaceService(idGenerator);
+
+        var workspace = workspaceService.createOrReuseRepositoryWorkspace(
+            "workspace-key",
+            repositoryIdentity(),
+            Map.of("tenant", "demo")
+        );
+        var replayed = workspaceService.createOrReuseRepositoryWorkspace(
+            "workspace-key",
+            repositoryIdentity(),
+            Map.of("tenant", "demo")
+        );
+        var reusedWithNewKey = workspaceService.createOrReuseRepositoryWorkspace(
+            "workspace-key-2",
+            repositoryIdentity(),
+            Map.of("tenant", "demo")
+        );
+
+        assertSame(workspace, replayed);
+        assertEquals(workspace, reusedWithNewKey);
+        assertEquals("workspace-0001", workspace.workspaceId().value());
+        assertEquals("demo", workspace.workspaceTitle().value());
+        assertEquals(1, idGenerator.workspaceIds);
+    }
+
+    @Test
+    void rejectsCreateWorkspaceIdempotencyConflictWithoutSavingOrCheckingOutAgain() {
+        var idGenerator = new FixedRepositoryWorkspaceIdGenerator();
+        var workspaceService = workspaceService(idGenerator);
+
+        workspaceService.createOrReuseRepositoryWorkspace("workspace-key", repositoryIdentity(), Map.of("tenant", "demo"));
+
+        assertThrows(IdempotencyConflictException.class, () -> workspaceService.createOrReuseRepositoryWorkspace(
+            "workspace-key",
+            repositoryIdentity(),
+            Map.of("tenant", "other")
+        ));
+        assertEquals(1, idGenerator.workspaceIds);
+    }
+
+    @Test
+    void getsRepositoryWorkspaceByOpaqueIdAndReportsMissingWorkspaceExplicitly() {
+        var workspaceService = workspaceService(new FixedRepositoryWorkspaceIdGenerator());
+        var workspace = workspaceService.createOrReuseRepositoryWorkspace(
+            "workspace-key",
+            repositoryIdentity(),
+            Map.of()
+        );
+
+        assertEquals(workspace, workspaceService.getRepositoryWorkspace(workspace.workspaceId()));
+        assertThrows(RepositoryWorkspaceNotFoundException.class, () -> workspaceService.getRepositoryWorkspace(
+            new WorkspaceId("workspace-missing")
+        ));
+    }
+
+    @Test
+    void keepsBranchNamesAsDataWhenCreatingWorkspaceBranch() {
+        var idGenerator = new FixedRepositoryWorkspaceIdGenerator();
+        var workspaceService = workspaceService(idGenerator);
+        var workspace = workspaceService.createOrReuseRepositoryWorkspace(
+            "workspace-key",
+            repositoryIdentity(),
+            Map.of()
+        );
+        var branchSelector = new RepositoryWorkspaceBranchSelector("feature/workspace-ui", "");
+
+        var branch = workspaceService.createOrReuseRepositoryWorkspaceBranch(
+            "branch-key",
+            workspace.workspaceId(),
+            branchSelector
+        );
+        var replayed = workspaceService.createOrReuseRepositoryWorkspaceBranch(
+            "branch-key",
+            workspace.workspaceId(),
+            branchSelector
+        );
+        var started = workspaceService.markBranchCheckoutStarted(workspace.workspaceId(), branch.workspaceBranchId());
+        var checkedOut = workspaceService.markBranchCheckoutCompleted(
+            workspace.workspaceId(),
+            branch.workspaceBranchId(),
+            checkoutResult("c".repeat(40)),
+            new SourceSnapshotId("source-snapshot-branch"),
+            List.of(Diagnostic.info("CHECKED_OUT", "Repository checkout completed"))
+        );
+
+        assertSame(branch, replayed);
+        assertEquals("workspace-branch-0001", branch.workspaceBranchId().value());
+        assertEquals("feature/workspace-ui", branch.repositoryBranch());
+        assertEquals(RepositoryWorkspaceBranchStatus.CHECKING_OUT, started.status());
+        assertEquals(RepositoryWorkspaceBranchStatus.CHECKED_OUT, checkedOut.status());
+        assertEquals("c".repeat(40), checkedOut.resolvedCommit());
+        assertEquals(1, idGenerator.branchIds);
+        assertThrows(IllegalArgumentException.class, () -> workspaceService.createOrReuseRepositoryWorkspaceBranch(
+            "branch-missing",
+            workspace.workspaceId(),
+            new RepositoryWorkspaceBranchSelector("", "")
+        ));
+    }
+
+    @Test
+    void rejectsBranchCommitAndCheckoutProvenanceMismatches() {
+        var workspaceService = workspaceService(new FixedRepositoryWorkspaceIdGenerator());
+        var workspace = workspaceService.createOrReuseRepositoryWorkspace(
+            "workspace-key",
+            repositoryIdentity(),
+            Map.of()
+        );
+        var branch = workspaceService.createOrReuseRepositoryWorkspaceBranch(
+            "branch-key",
+            workspace.workspaceId(),
+            new RepositoryWorkspaceBranchSelector("feature/workspace-ui", "b".repeat(40))
+        );
+
+        assertThrows(IllegalArgumentException.class, () -> workspaceService.createOrReuseRepositoryWorkspaceBranch(
+            "branch-key-2",
+            workspace.workspaceId(),
+            new RepositoryWorkspaceBranchSelector("feature/workspace-ui", "c".repeat(40))
+        ));
+        assertThrows(IllegalArgumentException.class, () -> workspaceService.markBranchCheckoutCompleted(
+            workspace.workspaceId(),
+            branch.workspaceBranchId(),
+            checkoutResult("other", "b".repeat(40), CheckoutStatus.CHECKED_OUT, "c".repeat(40)),
+            new SourceSnapshotId("source-snapshot-branch"),
+            List.of()
+        ));
+        assertThrows(IllegalArgumentException.class, () -> workspaceService.markBranchCheckoutCompleted(
+            workspace.workspaceId(),
+            branch.workspaceBranchId(),
+            checkoutResult("feature/workspace-ui", "c".repeat(40), CheckoutStatus.CHECKED_OUT, "c".repeat(40)),
+            new SourceSnapshotId("source-snapshot-branch"),
+            List.of()
+        ));
+        assertThrows(IllegalArgumentException.class, () -> workspaceService.markBranchCheckoutCompleted(
+            workspace.workspaceId(),
+            branch.workspaceBranchId(),
+            checkoutResult("feature/workspace-ui", "b".repeat(40), CheckoutStatus.FAILED, "c".repeat(40)),
+            new SourceSnapshotId("source-snapshot-branch"),
+            List.of()
+        ));
+    }
+
     private static AnalysisRunId runId() {
         return new AnalysisRunId("run-1");
     }
@@ -202,12 +352,68 @@ class RepositorySourceApplicationServiceTest {
         return new RepositoryReference("https://example.com/acme/demo.git", "github", Map.of());
     }
 
+    private static RepositoryIdentity repositoryIdentity() {
+        return RepositoryIdentity.from(repository(), "main");
+    }
+
     private static RevisionSelector revision() {
         return new RevisionSelector("main", true, "", false);
     }
 
     private static WorkspacePolicy policy() {
         return new WorkspacePolicy(true, true, false, false, 60, 100_000);
+    }
+
+    private static RepositoryWorkspaceApplicationService workspaceService(
+        FixedRepositoryWorkspaceIdGenerator idGenerator
+    ) {
+        return new RepositoryWorkspaceApplicationService(
+            new InMemoryRepositoryWorkspaceRepository(),
+            idGenerator,
+            CLOCK
+        );
+    }
+
+    private static CheckoutResult checkoutResult(String resolvedCommit) {
+        return checkoutResult("feature/workspace-ui", "", CheckoutStatus.CHECKED_OUT, resolvedCommit);
+    }
+
+    private static CheckoutResult checkoutResult(
+        String requestedBranch,
+        String requestedCommit,
+        CheckoutStatus status,
+        String resolvedCommit
+    ) {
+        return new CheckoutResult(
+            status,
+            repository().remoteUrl(),
+            resolvedCommit,
+            requestedBranch,
+            requestedCommit,
+            true,
+            5,
+            List.of(Diagnostic.info("OK", "checkout")),
+            false,
+            false,
+            List.of(new SourceRoot("src/main/java", "java"))
+        );
+    }
+
+    private static final class FixedRepositoryWorkspaceIdGenerator implements RepositoryWorkspaceIdGenerator {
+        private int workspaceIds;
+        private int branchIds;
+
+        @Override
+        public WorkspaceId newWorkspaceId() {
+            workspaceIds++;
+            return new WorkspaceId("workspace-%04d".formatted(workspaceIds));
+        }
+
+        @Override
+        public WorkspaceBranchId newWorkspaceBranchId() {
+            branchIds++;
+            return new WorkspaceBranchId("workspace-branch-%04d".formatted(branchIds));
+        }
     }
 
     private static final class FakeWorkspacePort implements RepositoryWorkspacePort {
