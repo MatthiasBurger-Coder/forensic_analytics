@@ -344,6 +344,33 @@ class QueryReportApiHttpAdapterTest {
     }
 
     @Test
+    void exposesUpdatedRepositoryWorkspaceBranchRefreshThroughPublicDto() throws Exception {
+        var server = server(new FakePreparationPort(), new UpdatedWorkspacePort());
+        try {
+            var refreshed = response(
+                server.getAddress().getPort(),
+                "/api/workspaces/workspace-0001/branches/workspace-branch-0001/refresh",
+                "POST",
+                "",
+                "correlation-workspace-refresh-updated",
+                "idem-workspace-refresh-updated"
+            );
+
+            assertEquals(200, refreshed.code());
+            assertEquals("correlation-workspace-refresh-updated", refreshed.correlationId());
+            assertTrue(refreshed.body().contains("\"workspaceBranchId\":\"workspace-branch-0001\""));
+            assertTrue(refreshed.body().contains("\"status\":\"UPDATED\""));
+            assertTrue(refreshed.body().contains("\"changed\":true"));
+            assertTrue(refreshed.body().contains("\"previousCommit\":\"abcdef1\""));
+            assertTrue(refreshed.body().contains("\"resolvedCommit\":\"fedcba2\""));
+            assertTrue(refreshed.body().contains("\"sourceSnapshotId\":\"source-snapshot-0002\""));
+            assertSafePublicBody(refreshed.body());
+        } finally {
+            server.stop(0);
+        }
+    }
+
+    @Test
     void rejectsWorkspaceMissingHeadersUnsafeRemotesAndConflictingPreviewIdempotency() throws Exception {
         var server = server();
         try {
@@ -484,6 +511,50 @@ class QueryReportApiHttpAdapterTest {
             assertSafePublicBody(response.body());
         } finally {
             failing.stop(0);
+        }
+    }
+
+    @Test
+    void redactsWorkspaceDiagnosticsFromMetadataGetAndRefreshResponses() throws Exception {
+        var leaking = server(new FakePreparationPort(), new LeakingWorkspacePort());
+        try {
+            var port = leaking.getAddress().getPort();
+            var metadata = response(
+                port,
+                "/api/workspace-metadata",
+                "POST",
+                workspaceMetadataRequest(),
+                "correlation-leak-metadata",
+                "idem-leak-metadata"
+            );
+            var loaded = response(
+                port,
+                "/api/workspaces/workspace-0001",
+                "GET",
+                "",
+                "correlation-leak-get",
+                null
+            );
+            var refreshed = response(
+                port,
+                "/api/workspaces/workspace-0001/branches/workspace-branch-0001/refresh",
+                "POST",
+                "",
+                "correlation-leak-refresh",
+                "idem-leak-refresh"
+            );
+
+            assertEquals(200, metadata.code());
+            assertEquals(200, loaded.code());
+            assertEquals(200, refreshed.code());
+            assertTrue(metadata.body().contains("Diagnostic details redacted"));
+            assertTrue(loaded.body().contains("Diagnostic details redacted"));
+            assertTrue(refreshed.body().contains("Diagnostic details redacted"));
+            assertSafePublicBody(metadata.body());
+            assertSafePublicBody(loaded.body());
+            assertSafePublicBody(refreshed.body());
+        } finally {
+            leaking.stop(0);
         }
     }
 
@@ -731,11 +802,63 @@ class QueryReportApiHttpAdapterTest {
 
     private static final class LeakingWorkspacePort extends FakeWorkspacePort {
         @Override
+        public WorkspaceMetadataResponse previewMetadata(WorkspaceMetadataRequest request) {
+            return new WorkspaceMetadataResponse(
+                "example.com/acme/demo",
+                "example.com",
+                "acme",
+                "demo",
+                "demo",
+                "main",
+                List.of(leakingDiagnostic())
+            );
+        }
+
+        @Override
         public WorkspaceResponse create(CreateWorkspaceRequest request) {
-            return workspace(List.of(Diagnostic.info(
+            return workspace(List.of(leakingDiagnostic()));
+        }
+
+        @Override
+        public WorkspaceResponse get(GetWorkspaceRequest request) {
+            return workspace(List.of(leakingDiagnostic()));
+        }
+
+        @Override
+        public BranchRefreshResponse refresh(RefreshWorkspaceBranchRequest request) {
+            return new BranchRefreshResponse(
+                "workspace-branch-0001",
+                "main",
+                "UP_TO_DATE",
+                false,
+                null,
+                "abcdef1",
+                "source-snapshot-0001",
+                List.of(leakingDiagnostic())
+            );
+        }
+
+        private static Diagnostic leakingDiagnostic() {
+            return Diagnostic.info(
                 "PATH_LEAK",
                 "raw stderr stdout jdbc:h2:file:/var/lib/forensic-analytics/repository-source-data/repository-source from git clone https://user:token@example.com/acme/private.git in /var/lib/forensic-analytics/repository-workspaces/workspace-1"
-            )));
+            );
+        }
+    }
+
+    private static final class UpdatedWorkspacePort extends FakeWorkspacePort {
+        @Override
+        public BranchRefreshResponse refresh(RefreshWorkspaceBranchRequest request) {
+            return new BranchRefreshResponse(
+                "workspace-branch-0001",
+                "main",
+                "UPDATED",
+                true,
+                "abcdef1",
+                "fedcba2",
+                "source-snapshot-0002",
+                List.of(Diagnostic.info("BRANCH_UPDATED", "Branch checkout updated"))
+            );
         }
     }
 

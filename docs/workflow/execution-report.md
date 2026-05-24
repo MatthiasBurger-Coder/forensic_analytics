@@ -2,8 +2,8 @@
 
 ## Status
 
-Workflow execution is in progress. S00, S01, S02, S03, S04, S05, S06, S07, S08
-and S09 are complete. Product implementation has started in
+Workflow execution is in progress. S00, S01, S02, S03, S04, S05, S06, S07, S08,
+S09 and S10 are complete. Product implementation has started in
 repository-source-service with the workspace domain model, in-memory and H2
 repositories, metadata resolution, checkout preparation, durable idempotency
 and branch refresh behavior, plus the repository-source gRPC owner API,
@@ -52,7 +52,7 @@ execution and contract-first sequencing.
 | S07 | Completed | Query-report public REST facade, repository-source owner gRPC client, public DTO validation and OpenAPI alignment completed. |
 | S08 | Completed | Forensic UI Create Workspace flow, public workspace REST adapter, read-only metadata preview, idempotent save/refresh UI and sanitized diagnostics completed. |
 | S09 | Completed | Docker-local repository-source service volumes and runtime configuration completed. |
-| S10 | Not started | Security, leakage, idempotency and restart integration gate. |
+| S10 | Completed | Security, leakage, idempotency, H2 restart and refresh regression gate completed. |
 | S11 | Not started | Documentation, arc42 and ADR closure. |
 | S12 | Not started | Final quality gate and workflow handoff. |
 
@@ -775,6 +775,126 @@ Checkpoint:
 - Commit SHA: `d7202d316d8f9193b913f49b0622dd33068bbae0`.
 - Push result: pushed to
   `origin/feature/workflow-repository-workspace-checkout-h2-persistence-20260524`.
+
+## Slice S10 - Security, Leakage, Idempotency And Restart Integration Gate
+
+Status: Completed.
+
+Owner and reviewers:
+
+- Senior Tester
+- Senior Security Sandbox Engineer
+- Senior Java Backend
+- Resilience Engineering checklist
+- Quality Gate Orchestrator checklist
+
+Changed files:
+
+- `forensic-ui/src/adapters/api/mappers.test.ts`
+- `services/query-report-api-service/src/test/java/de/burger/forensics/analytics/services/queryreportapi/adapter/in/http/QueryReportApiHttpAdapterTest.java`
+- `services/repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/application/RepositorySourceH2PersistenceApplicationTest.java`
+- `docs/workflow/execution-report.md`
+
+Commands executed:
+
+```bash
+./gradlew :services:repository-source-service:test --tests "*RepositorySourceH2PersistenceApplicationTest" --dependency-verification strict --console=plain --stacktrace
+./gradlew :services:query-report-api-service:test --tests "*QueryReportApiHttpAdapterTest" --dependency-verification strict --console=plain --stacktrace
+cd forensic-ui && npm run test -- mappers
+./gradlew :services:repository-source-service:test --dependency-verification strict --console=plain --stacktrace
+./gradlew :services:query-report-api-service:test --dependency-verification strict --console=plain --stacktrace
+cd forensic-ui && npm run test
+./gradlew test --dependency-verification strict --console=plain --stacktrace
+git diff --check
+```
+
+Result:
+
+- PASS for S10 security, leakage, idempotency and restart integration gate.
+- H2-backed repository workspace checkout replay now has a true `SHUTDOWN` and
+  reopen regression test, proving persisted workspace and branch state can be
+  reloaded after an H2 database close/reopen cycle.
+- H2-backed create/checkout idempotency conflicts now prove same key plus a
+  different fingerprint throws before new checkout or workspace side effects
+  and leaves persisted workspace and branch state unchanged after reopen.
+- H2-backed duplicate prevention now proves a new idempotency key for the same
+  repository key and branch reuses the persisted `workspaceId` and
+  `workspaceBranchId` after reopen instead of creating duplicates.
+- Public REST refresh responses now cover the changed `UPDATED` DTO shape with
+  `changed:true`, `previousCommit`, new `resolvedCommit` and new
+  `sourceSnapshotId`.
+- Public REST leakage tests now cover workspace metadata preview, get workspace
+  and branch refresh responses, not only create workspace.
+- Frontend DTO mapping now covers changed refresh responses from the public
+  REST adapter.
+
+Requirement and architecture trace:
+
+- Requirement type: quality-gate, persistence restart, resilience, security and
+  frontend DTO regression coverage.
+- Traceability: FA-MVP-0001 AC3, AC4, AC5, AC6 and AC8 require idempotent save,
+  idempotency conflict safety, deterministic branch refresh, H2 persistence
+  across restart and no path/raw-output leakage.
+- Evidence semantics: all new evidence is test fixture data and remains inside
+  test sources. No test fixture is documented or presented as forensic runtime
+  evidence.
+- Service boundary: query-report and UI tests continue to exercise public DTOs
+  and owner API surfaces without direct repository-source filesystem or H2
+  access.
+
+Subagent review:
+
+- Senior Tester: initial S10 blockers for durable H2 conflict mutation,
+  duplicate workspace/branch prevention, public REST changed-refresh DTO
+  coverage and frontend changed-refresh mapping were resolved. Final re-review
+  PASS.
+- Senior Java Backend: initial blockers for true H2 shutdown/reopen, durable
+  create/checkout conflict coverage, H2 duplicate prevention and broader
+  workspace DTO leakage tests were resolved.
+- Senior Security Sandbox Engineer: PASS after current test diffs; coverage
+  protects repository-source gRPC redaction, query-report public DTO/error
+  leakage controls, UI diagnostic sanitization, idempotency conflict
+  no-mutation and H2 shutdown/reopen boundaries.
+
+Quality gate notes:
+
+- `./gradlew test` passed in 10m42s with 155 actionable tasks.
+- Gradle emitted existing protobuf/Netty Java warnings and two existing
+  deprecation warnings for `setPayloadType(String)` in ingestion tests. They did
+  not fail the S10 gate and are outside this slice.
+- `cd forensic-ui && npm run test` passed with 7 test files and 49 tests.
+- Vitest emitted existing React Router v7 future-flag warnings in route tests.
+  They did not fail the S10 gate.
+
+Documentation sync:
+
+- S10 updates only this execution report. arc42 and ADR files remain unchanged
+  because S10 adds regression coverage for already documented behavior and does
+  not introduce a new architecture or persistence decision.
+
+Limitations and carry-forward notes:
+
+- S10 does not build Docker images, start Compose or execute live repository
+  checkout against external remotes. It closes deterministic unit/integration
+  regression risks. Docker runtime start/restart evidence remains optional
+  external evidence unless a later slice explicitly executes it.
+- Full local quality with coverage tasks remains owned by S12 final gate.
+
+CP_RECORD:
+
+- workflowVersion: `fa-mvp-0001-repository-workspace-checkout-h2-persistence-20260524-v1`
+- sliceId: `S10`
+- sliceTitle: `Security, Leakage, Idempotency And Restart Integration Gate`
+- responsibleAgent: `senior-tester`
+- qualityGateResult: `PASS`
+- rollbackReference: `revert the S10 checkpoint commit after CP_COMMIT; before commit, restore the listed S10 files from HEAD`
+- arc42Updated: `not updated; S10 adds regression coverage for documented behavior`
+- adrUpdated: `not updated; no S10 ADR change recorded`
+
+Checkpoint:
+
+- Commit SHA: `pending`.
+- Push result: `pending`.
 
 ## Slice S01 - Requirement Terminology And Data Ownership Gate
 

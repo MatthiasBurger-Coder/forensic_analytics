@@ -190,4 +190,23 @@ describe("API DTO mapping", () => {
     expect(refresh.status).toBe("UP_TO_DATE");
     expect(refresh.resolvedCommit).toBe("abc1234");
   });
+
+  it("maps changed repository checkout branch refresh results", () => {
+    const refresh = mapBranchRefreshDto({
+      workspaceBranchId: "workspace-branch-1",
+      repositoryBranch: "main",
+      status: "UPDATED",
+      changed: true,
+      previousCommit: "abc1234",
+      resolvedCommit: "def4567",
+      sourceSnapshotId: "source-snapshot-2",
+      diagnostics: []
+    });
+
+    expect(refresh.changed).toBe(true);
+    expect(refresh.status).toBe("UPDATED");
+    expect(refresh.previousCommit).toBe("abc1234");
+    expect(refresh.resolvedCommit).toBe("def4567");
+    expect(refresh.sourceSnapshotId).toBe("source-snapshot-2");
+  });
 });

@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Path;
+import java.sql.DriverManager;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -195,6 +196,119 @@ class RepositorySourceH2PersistenceApplicationTest {
     }
 
     @Test
+    void workspaceCheckoutReplaySurvivesH2ShutdownAndReopen() throws Exception {
+        var firstWorkspacePort = new FakeWorkspacePort();
+        var firstCheckout = new SequencedCheckoutPort("b".repeat(40));
+        var workspace = workspaceService(adapter(), firstWorkspacePort, firstCheckout).createOrReuseRepositoryWorkspaceWithCheckout(
+            "checkout-key",
+            "schema-v1",
+            "correlation-1",
+            repository(),
+            new RepositoryWorkspaceBranchSelector("main", ""),
+            policy(),
+            Map.of("tenant", "demo")
+        );
+
+        shutdownH2Database();
+
+        var replayWorkspacePort = new FakeWorkspacePort();
+        var replayCheckout = new SequencedCheckoutPort("c".repeat(40));
+        var replayService = workspaceService(adapter(), replayWorkspacePort, replayCheckout);
+        var loaded = replayService.getRepositoryWorkspace(workspace.workspaceId());
+        var replayed = replayService.createOrReuseRepositoryWorkspaceWithCheckout(
+            "checkout-key",
+            "schema-v1",
+            "correlation-1",
+            repository(),
+            new RepositoryWorkspaceBranchSelector("main", ""),
+            policy(),
+            Map.of("tenant", "demo")
+        );
+
+        assertEquals(workspace, loaded);
+        assertEquals(workspace, replayed);
+        assertEquals(0, replayWorkspacePort.branchCheckouts);
+        assertEquals(0, replayCheckout.calls);
+    }
+
+    @Test
+    void createCheckoutConflictAfterH2ShutdownDoesNotMutatePersistedWorkspaceOrBranchState() throws Exception {
+        workspaceService(adapter(), new FakeWorkspacePort(), new SequencedCheckoutPort("b".repeat(40)))
+            .createOrReuseRepositoryWorkspaceWithCheckout(
+                "checkout-key",
+                "schema-v1",
+                "correlation-1",
+                repository(),
+                new RepositoryWorkspaceBranchSelector("main", ""),
+                policy(),
+                Map.of("tenant", "demo")
+            );
+        var before = adapter().findByRepositoryKey(RepositoryIdentity.from(repository(), "main").repositoryKey()).orElseThrow();
+
+        shutdownH2Database();
+
+        var replayWorkspacePort = new FakeWorkspacePort();
+        var replayCheckout = new SequencedCheckoutPort("c".repeat(40));
+        var replayService = workspaceService(adapter(), replayWorkspacePort, replayCheckout);
+
+        assertThrows(IdempotencyConflictException.class, () -> replayService.createOrReuseRepositoryWorkspaceWithCheckout(
+            "checkout-key",
+            "schema-v1",
+            "correlation-1",
+            repository(),
+            new RepositoryWorkspaceBranchSelector("main", ""),
+            policy(),
+            Map.of("tenant", "other")
+        ));
+        var after = adapter().findByRepositoryKey(RepositoryIdentity.from(repository(), "main").repositoryKey()).orElseThrow();
+        assertEquals(before, after);
+        assertEquals(before.branches().getFirst(), after.branches().getFirst());
+        assertEquals(0, replayWorkspacePort.branchCheckouts);
+        assertEquals(0, replayCheckout.calls);
+    }
+
+    @Test
+    void sameRepositoryAndBranchReuseWorkspaceAcrossH2ShutdownWithNewIdempotencyKey() throws Exception {
+        var workspace = workspaceService(adapter(), new FakeWorkspacePort(), new SequencedCheckoutPort("b".repeat(40)))
+            .createOrReuseRepositoryWorkspaceWithCheckout(
+                "checkout-key",
+                "schema-v1",
+                "correlation-1",
+                repository(),
+                new RepositoryWorkspaceBranchSelector("main", ""),
+                policy(),
+                Map.of("tenant", "demo")
+            );
+        var branch = workspace.branches().getFirst();
+
+        shutdownH2Database();
+
+        var replayWorkspacePort = new FakeWorkspacePort();
+        var replayCheckout = new SequencedCheckoutPort("c".repeat(40));
+        var reused = workspaceService(
+            adapter(),
+            new FailingRepositoryWorkspaceIdGenerator(),
+            replayWorkspacePort,
+            replayCheckout
+        ).createOrReuseRepositoryWorkspaceWithCheckout(
+            "checkout-key-after-reopen",
+            "schema-v1",
+            "correlation-1",
+            repository(),
+            new RepositoryWorkspaceBranchSelector("main", ""),
+            policy(),
+            Map.of("tenant", "demo")
+        );
+
+        assertEquals(workspace.workspaceId(), reused.workspaceId());
+        assertEquals(1, reused.branches().size());
+        assertEquals(branch.workspaceBranchId(), reused.branches().getFirst().workspaceBranchId());
+        assertEquals(branch.sourceSnapshotId(), reused.branches().getFirst().sourceSnapshotId());
+        assertEquals(0, replayWorkspacePort.branchCheckouts);
+        assertEquals(0, replayCheckout.calls);
+    }
+
+    @Test
     void updatedRefreshReplaySurvivesLaterBranchMutationAndServiceReinstantiation() {
         var firstWorkspacePort = new FakeWorkspacePort();
         var firstCheckout = new SequencedCheckoutPort("b".repeat(40), "c".repeat(40), "d".repeat(40));
@@ -263,9 +377,18 @@ class RepositorySourceH2PersistenceApplicationTest {
         FakeWorkspacePort workspacePort,
         RepositoryCheckoutPort checkoutPort
     ) {
+        return workspaceService(adapter, new FixedRepositoryWorkspaceIdGenerator(), workspacePort, checkoutPort);
+    }
+
+    private RepositoryWorkspaceApplicationService workspaceService(
+        H2RepositorySourcePersistenceAdapter adapter,
+        RepositoryWorkspaceIdGenerator idGenerator,
+        FakeWorkspacePort workspacePort,
+        RepositoryCheckoutPort checkoutPort
+    ) {
         return new RepositoryWorkspaceApplicationService(
             adapter,
-            new FixedRepositoryWorkspaceIdGenerator(),
+            idGenerator,
             adapter,
             workspacePort,
             checkoutPort,
@@ -275,12 +398,31 @@ class RepositorySourceH2PersistenceApplicationTest {
     }
 
     private H2RepositorySourcePersistenceAdapter adapter() {
-        return new H2RepositorySourcePersistenceAdapter(
-            "jdbc:h2:file:" + tempDir.resolve("repository-source-application").toAbsolutePath().normalize()
-                + ";AUTO_SERVER=FALSE;DB_CLOSE_DELAY=-1",
-            "sa",
-            ""
-        );
+        return new H2RepositorySourcePersistenceAdapter(h2JdbcUrl(), "sa", "");
+    }
+
+    private String h2JdbcUrl() {
+        return "jdbc:h2:file:" + tempDir.resolve("repository-source-application").toAbsolutePath().normalize()
+            + ";AUTO_SERVER=FALSE;DB_CLOSE_DELAY=-1";
+    }
+
+    private void shutdownH2Database() throws Exception {
+        try (var connection = DriverManager.getConnection(h2JdbcUrl(), "sa", "");
+             var statement = connection.createStatement()) {
+            statement.execute("SHUTDOWN");
+        }
+    }
+
+    private static final class FailingRepositoryWorkspaceIdGenerator implements RepositoryWorkspaceIdGenerator {
+        @Override
+        public WorkspaceId newWorkspaceId() {
+            throw new AssertionError("existing repository workspace should be reused after H2 reopen");
+        }
+
+        @Override
+        public WorkspaceBranchId newWorkspaceBranchId() {
+            throw new AssertionError("existing repository workspace branch should be reused after H2 reopen");
+        }
     }
 
     private static RepositoryReference repository() {
