@@ -1,41 +1,40 @@
-# arc42 Check Status
+# arc42 Check Status: FA-MVP-0001
 
-## Workflow Creation Status
+## Creation-Time Status
 
-Status: checked for workflow creation on 2026-05-23.
+arc42 was checked during workflow creation. No arc42 production architecture
+content was changed in this `workflow create` turn because implementation has
+not started yet.
 
-The workflow was regenerated because repository state changed since the earlier
-legacy-retirement plan. `settings.gradle.kts` now registers only `services:*`
-projects. Version 2 inserted a pre-deletion documentation cleanup slice for
-stale executable legacy commands. S05 then removed the tracked legacy
-`forensic-analytics-*` source trees, and S06 closes arc42/architecture/ADR
-wording so remaining names are historical predecessor, contract compatibility
-or product/runtime namespace evidence only.
+Relevant checked files:
 
-## Required Execution Updates
+- `docs/arc42/02-architecture-constraints.md`
+- `docs/arc42/05-building-block-view.md`
+- `docs/arc42/06-runtime-view.md`
+- `docs/arc42/07-deployment-view.md`
+- `docs/arc42/08-crosscutting-concepts.md`
+- `docs/arc42/10-quality-requirements.md`
+- `docs/arc42/11-risks-and-technical-debt.md`
 
-Execution slices must update arc42 when actual state changes:
+## Required Updates During Execution
 
-| Slice | arc42 Area |
+Update arc42 when the corresponding slice changes verified behavior:
+
+| Slice | arc42 impact |
 |---|---|
-| S01 | Reference classification notes for stale legacy module mentions |
-| S02 | Deployment/runtime documentation if `docker/boot-app` and boot-app jar references are retired |
-| S03 | Quality requirements and regression ownership after legacy module-local tests are superseded or deprecated |
-| S04 | Pre-delete deployment-command cleanup in section 07 and related service documentation |
-| S05 | Verified source-tree deletion evidence |
-| S06 | Sections 05, 06, 07, 08, 09, 10 and 11 for final build topology, runtime/deployment view, crosscutting concepts, ADR references, quality requirements and risks |
-| S07 | Final quality-gate evidence and release-readiness status |
+| S01 | Clarify repository-source checkout workspace ownership if current architecture text is ambiguous. |
+| S02 | Update service communication and public API notes if contracts change. |
+| S03-S06 | Update building block/runtime/persistence notes for repository-source workspace and H2 behavior. |
+| S08 | Update frontend context only after public API and UI behavior are implemented. |
+| S09 | Update deployment view for Docker-local repository-source data/workspace volumes. |
+| S11 | Perform final arc42 synchronization and ADR decision check. |
 
-## Stop Conditions
+## STOP Conditions
 
-Stop execution when docs claim:
+Stop if arc42 would need to claim:
 
-- a legacy source tree is removed while `git ls-files "forensic-analytics-*"`
-  still lists tracked files;
-- a legacy module is an active Gradle project while `settings.gradle.kts` does
-  not register it;
-- a service is independently deployable without verified build/start/container
-  evidence;
-- Swarm or Kubernetes readiness without repository manifests and commands;
-- persistence ownership without an explicit service owner;
-- generated or inferred output as verified forensic evidence.
+- H2 as canonical production analytics persistence;
+- Docker Swarm or Kubernetes readiness;
+- JavaParser, Joern, BTM, replay, report or LLM behavior;
+- service-private workspace volume sharing with other services;
+- broader platform workspace lifecycle ownership.

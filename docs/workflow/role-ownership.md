@@ -1,39 +1,31 @@
-# Role Ownership
+# Role Ownership: FA-MVP-0001
 
-## Primary Routing
-
-| Slice | Primary Owner | Secondary Reviewers |
+| Slice | Primary Owner | Required Reviewers |
 |---|---|---|
-| S00 | Senior Execution Orchestrator | Senior Requirement Engineer, Senior System Architect, Senior Tester |
-| S01 | Senior System Architect | Senior Requirement Engineer, Contract-First API Steward, Senior DevOps, Senior Tester |
-| S02 | Senior DevOps | Senior System Architect, Contract Governance Expert, Senior React Frontend, Senior Tester |
-| S03 | Senior Tester | Senior Java Backend, Microservice Senior Expert, Senior DevOps, Senior System Architect |
-| S04 | Senior Documentation Engineer | Senior DevOps, Senior System Architect, Senior Tester, Microservice Runtime Readiness Expert |
-| S05 | Senior Java Backend | Senior DevOps, Senior System Architect, Microservice Senior Expert, Senior Tester |
-| S06 | Senior System Architect | ADR Steward, Senior Documentation Engineer, Senior Requirement Engineer, Senior Tester |
-| S07 | Senior DevOps | Senior Tester, Senior System Architect, Microservice Runtime Readiness Expert, Senior Documentation Engineer |
+| S00 Workflow Execution Preflight And Context Freeze | Senior Workflow Architect | Requirement Engineer, System Architect, Tester |
+| S01 Requirement Terminology And Data Ownership Gate | Senior Requirement Engineer | System Architect, Data Ownership, Storage, Microservice Expert, Tester |
+| S02 Contract-First Workspace API And Owner API | Contract Governance Expert | gRPC/Proto, Java Backend, React Frontend, Tester, Security |
+| S03 Repository Source Workspace Domain And In-Memory Use Cases | Senior Java Backend | System Architect, Git Workspace, Tester, Security |
+| S04 Repository Metadata Resolution And Branch Checkout Refresh | Senior Git Workspace Specialist | Java Backend, Security, Resilience, Tester |
+| S05 H2 Dependency, Schema And Persistence Adapters | Senior Analysis Storage Architect | Data Ownership, Java Backend, DevOps, Security, Tester |
+| S06 Repository Source gRPC Endpoint And Error Mapping | Senior gRPC/Proto Specialist | Java Backend, Contract Governance, Tester, Observability |
+| S07 Query Report Public Workspace REST Facade | Senior Java Backend | Contract Governance, gRPC/Proto, Security, Frontend, Tester |
+| S08 Forensic UI Create Workspace Flow | Senior React Frontend | UX Designer, Contract Governance, Security, Tester |
+| S09 Docker Local Volumes And Runtime Configuration | Senior DevOps | Storage, Git Workspace, Security, Runtime Readiness, Tester |
+| S10 Security, Leakage, Idempotency And Restart Integration Gate | Senior Tester | Security, Resilience, System Architect, Backend, Frontend, DevOps |
+| S11 Documentation, arc42 And ADR Closure | Senior Documentation Engineer | System Architect, ADR Steward, Documentation Sync, DevOps, Tester |
+| S12 Final Quality Gate And Workflow Handoff | Quality Gate Orchestrator | DevOps, Tester, System Architect, Git Commit Reviewer |
 
-## Mandatory Review Rules
+## Subagent Use
 
-- Senior System Architect reviews every slice because the workflow changes the
-  final modular-monolith retirement state.
-- Microservice Senior Expert reviews source deletion and service-autonomy
-  claims.
-- Senior Tester reviews every slice with tests, source deletion, quality-gate
-  or regression-coverage impact.
-- Senior DevOps reviews Gradle, Docker, runtime, build and release-readiness
-  material.
-- Contract specialists review every REST/OpenAPI, gRPC/protobuf, CLI or file
-  contract wording change before implementation depends on it.
-- Senior React Frontend reviews only when public API fields, endpoints,
-  response status shapes or `forensic-ui` API mappers change.
-- ADR Steward reviews final retirement ADR creation or supersession.
+The user explicitly requested subagents. During `workflow execute`, callable
+subagents may be used for role reviews and bounded implementation slices when
+the write scope is disjoint and the slice metadata authorizes the owner.
 
-## Callable Subagent Policy
+Subagents must:
 
-Callable subagents were used for workflow creation because the user explicitly
-requested subagent participation. During `workflow execute`, callable subagents
-should be used when available and explicitly authorized by the active runtime.
-When a callable subagent is unavailable, the matching role file or skill is used
-as a local review checklist and the limitation is recorded in
-`docs/workflow/execution-report.md`.
+- verify the active branch before edits;
+- stay inside the slice file locks;
+- avoid branch switching;
+- avoid reverting unrelated user or agent changes;
+- return changed paths, verification commands and blockers.

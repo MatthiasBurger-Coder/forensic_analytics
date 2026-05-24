@@ -1,114 +1,36 @@
-# Quality And Leakage Gates
+# Quality And Leakage Gates: FA-MVP-0001
 
-## Authoritative Quality Source
+## Authority
 
-`QUALITY.md` is authoritative for all workflow execution quality decisions.
+`QUALITY.md` is the authoritative quality contract.
 
-Minimum command:
+Minimum repository command:
 
 ```bash
 ./gradlew test --dependency-verification strict --console=plain --stacktrace
 ```
 
-Full local gate:
+Full local quality gate:
 
 ```bash
 ./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace
 ```
 
-## Workflow Creation Gate
+## Targeted Gates
 
-Workflow creation is documentation-only. Required verification:
-
-```bash
-python3 -m json.tool docs/workflow/context-pack.json
-git diff --check
-```
-
-## Project Model Gate
-
-The service-only project model must remain true:
+Repository Source:
 
 ```bash
-./gradlew projects --dependency-verification strict --console=plain --stacktrace
+./gradlew :services:repository-source-service:test --dependency-verification strict --console=plain --stacktrace
 ```
 
-The project listing must not include any `forensic-analytics-*` Gradle project.
-
-## Active Build Leakage Gate
-
-No active build file outside a deleted legacy source tree may depend on a
-legacy Gradle project:
+Query Report API:
 
 ```bash
-git ls-files "*build.gradle.kts" | grep -v "^forensic-analytics-" | xargs -r rg -n 'project\(\":forensic-analytics-'
+./gradlew :services:query-report-api-service:test --dependency-verification strict --console=plain --stacktrace
 ```
 
-This command is expected to produce no matches. A match is a blocker.
-
-## Active Service Source Leakage Gate
-
-No active Java source outside deleted legacy source trees may import legacy
-monolith packages:
-
-```bash
-git ls-files "*.java" \
-  | grep -v "^forensic-analytics-" \
-  | xargs -r rg -n -P '^import\s+de\.burger\.forensics\.analytics\.(application|domain|adapter|persistence|rest|cli|engine|logging|observability|bootstrap|boot|ingestion\.request|ingestion\.grpc)\b'
-```
-
-This command is expected to produce no matches. A match is a blocker unless a
-role review proves the match is generated historical text outside active source.
-
-## Legacy Command Documentation Stopper Gate
-
-Before source-tree deletion, active service, deployment, architecture and audit
-documentation must not present legacy Gradle tasks as executable commands or
-active/current implementation, state or quality-gate evidence:
-
-```bash
-rg -n '^\s*\./gradlew\s+:forensic-analytics-|:forensic-analytics-(boot-app|adapter-joern-docker|engine|application|domain)|bootstrap module can start|existing bootstrap module remains available|current-state evidence|current quality-gate evidence|current multi-project build includes|current implementation baseline|current workflow state|current repository state|verified current behavior|active as legacy quality-gate|active as rollback|remain active|remains active|retained active|active rollback|remain registered|active legacy callers|S15 through S18|S13 through S18|S19|S20|72 direct|653 production|628 test|13 test dependencies' services/analysis-orchestrator-service/README.md services/joern-analysis-service/README.md services/README.md docs/architecture/current-build-and-test-map.md docs/architecture/current-coupling-map.md docs/architecture/legacy-reference-classification.md docs/architecture/monolith-caller-retirement-plan.md docs/architecture/monolith-runtime-isolation.md docs/architecture/service-boundaries.md docs/architecture/service-migration-map.md docs/arc42/05-building-block-view.md docs/arc42/07-deployment-view.md docs/arc42/08-crosscutting-concepts.md docs/skill-audit/README.md
-```
-
-This command is expected to produce no matches after S04. A match is a blocker
-for physical deletion unless a role review proves the reference is explicitly
-historical and non-executable.
-
-## Legacy Source Tree Removal Gate
-
-Before S05 deletion:
-
-```bash
-git ls-files "forensic-analytics-*"
-```
-
-The command records deletion candidates.
-
-After S05 deletion:
-
-```bash
-git ls-files "forensic-analytics-*"
-```
-
-The command must return no tracked files unless an ADR-backed retained purpose
-is documented before closure.
-
-## Targeted Service Test Matrix
-
-| Legacy area removed | Targeted tests |
-|---|---|
-| Repository source | `./gradlew :services:repository-source-service:test :services:repository-analysis-service:test --dependency-verification strict --console=plain --stacktrace` |
-| Ingestion and engine request | `./gradlew :services:ingestion-service:test :services:forensic-ingestion-service:test --dependency-verification strict --console=plain --stacktrace` |
-| JavaParser adapter | `./gradlew :services:java-parser-analysis-service:test :services:java-ast-analysis-service:test --dependency-verification strict --console=plain --stacktrace` |
-| Joern adapter | `./gradlew :services:joern-analysis-service:test :services:joern-cpg-analysis-service:test --dependency-verification strict --console=plain --stacktrace` |
-| Application, domain, engine and persistence | `./gradlew :services:analysis-orchestrator-service:test :services:analysis-store-service:test :services:btm-generation-service:test --dependency-verification strict --console=plain --stacktrace` |
-| REST, boot, bootstrap and CLI | `./gradlew :services:query-report-api-service:test :services:forensic-gateway-service:test :services:cli-client:test --dependency-verification strict --console=plain --stacktrace` |
-| Logging, observability and testbed | `./gradlew :services:observability-stack:test :services:testbed:test --dependency-verification strict --console=plain --stacktrace` |
-
-## Frontend Impact Gate
-
-Only run when a slice changes public API fields, endpoints, response status
-shapes or `forensic-ui` API mappers:
+Frontend:
 
 ```bash
 cd forensic-ui
@@ -117,27 +39,64 @@ npm run test
 npm run build
 ```
 
+Docker model:
+
+```bash
+docker compose -f deployment/docker-compose/repository-to-btm.local.yml config
+```
+
+H2 dependency metadata repair, only when strict dependency verification reports
+missing H2 metadata:
+
+```bash
+./gradlew --write-verification-metadata sha256 :services:repository-source-service:test
+./gradlew :services:repository-source-service:test --dependency-verification strict --console=plain --stacktrace
+```
+
+## Leakage Gates
+
+Public REST, gRPC and UI tests must verify that none of the following leak into
+public responses:
+
+- absolute filesystem paths;
+- `/var/lib/forensic-analytics/repository-workspaces`;
+- `/var/lib/forensic-analytics/repository-source-data`;
+- `repository-workspaces`;
+- raw stdout;
+- raw stderr;
+- credentials;
+- tokens;
+- passwords;
+- authorization headers;
+- private network details;
+- local repository paths.
+
 ## Evidence Integrity Gates
 
-Execution must stop when a change would:
+Tests must verify:
 
-- treat static source facts as runtime execution evidence;
-- hide unresolved symbols or missing trace fields;
-- replace observed trace values with inferred values;
-- store LLM output as verified evidence;
-- collapse confirmed evidence, derived analysis, unresolved gaps and
-  hypotheses into one ambiguous field;
-- remove the only regression coverage for behavior still claimed as supported;
-- claim service runtime, Docker, healthcheck, Swarm or Kubernetes readiness
-  without verified repository commands and artifacts.
+- `workspaceTitle` is derived from repository name and is read-only.
+- `workspaceTitle` is never used as a path or security key.
+- `WorkspaceId` and `WorkspaceBranchId` are opaque.
+- branch names are stored as data and never used directly as directories.
+- same idempotency key plus same fingerprint returns the same result.
+- same idempotency key plus different fingerprint returns a controlled conflict
+  without mutation.
+- branch refresh returns `UP_TO_DATE` when the commit is unchanged.
+- branch refresh returns `UPDATED` and creates a new source snapshot reference
+  when the commit changes.
+- missing or unresolved repository facts are represented as diagnostics, not
+  fabricated evidence.
 
-## Failure Routing
+## Optional External Checks
 
-| Failure | Route |
-|---|---|
-| Build failure | Senior DevOps and responsible implementation owner |
-| Test failure | Senior Tester and responsible implementation owner |
-| Architecture violation | Senior System Architect and Microservice Senior Expert |
-| Contract mismatch | Contract-First API Steward and relevant contract specialist |
-| Persistence ownership conflict | Senior Analysis Storage Architect and Data Ownership Steward |
-| Unknown or repeated failure | Root Architect escalation after maxRetries = 3 |
+Docker image build and runtime checks are valuable but external:
+
+```bash
+./gradlew --no-daemon :services:repository-source-service:bootJar --dependency-verification strict --console=plain --stacktrace
+docker build -f services/repository-source-service/Dockerfile --build-arg SERVICE_JAR=services/repository-source-service/build/libs/repository-source-service-0.1.0-SNAPSHOT.jar -t forensic-analytics/repository-source-service:local .
+docker compose -f deployment/docker-compose/repository-to-btm.local.yml up -d
+```
+
+These checks may require Docker and network access. Do not claim they passed
+unless executed. Report skipped external checks explicitly.
