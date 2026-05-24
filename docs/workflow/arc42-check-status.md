@@ -46,6 +46,27 @@ verification, JavaParser, Joern, BTM generation, replay, report, LLM, Neo4j,
 Kafka, vector storage, Kubernetes or full platform workspace lifecycle
 behavior.
 
+### S11 Closure Synchronization
+
+Status: Updated.
+
+S11 synchronizes the architecture documentation after S01-S10 implementation
+evidence. The update records that:
+
+- `repository-source-service` owns FA-MVP-0001 repository checkout workspace,
+  branch, source snapshot and idempotency state;
+- the H2 adapter is service-local Docker-local MVP persistence only and does
+  not close the production database decision;
+- `query-report-api-service` exposes sanitized public workspace REST DTOs and
+  calls repository-source owner APIs instead of reading private H2 files or
+  checkout directories;
+- Docker-local Compose volume configuration is verified by model validation
+  only and does not imply image startup, Swarm or Kubernetes readiness;
+- S10 closes restart, leakage, idempotency and refresh regression coverage;
+- ADR-0023 records H2 as repository-source Docker-local MVP persistence only.
+
+S11 keeps OD-001 open for the production relational database decision.
+
 ## STOP Conditions
 
 Stop if arc42 would need to claim:

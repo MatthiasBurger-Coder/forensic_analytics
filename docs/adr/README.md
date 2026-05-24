@@ -28,6 +28,7 @@ The decisions are derived from the EPIC baseline and refined during implementati
 - [ADR-0020: Agent Governance Process Strands](ADR-0020-agent-governance-process-strands.md)
 - [ADR-0021: Governance Flowchart V2](ADR-0021-governance-flowchart-v2.md)
 - [ADR-0022: Retire legacy modular-monolith source trees](ADR-0022-final-modular-monolith-source-tree-retirement.md)
+- [ADR-0023: Use H2 only for repository-source MVP persistence](ADR-0023-h2-for-repository-source-mvp-persistence.md)
 
 ## Governance Notes
 

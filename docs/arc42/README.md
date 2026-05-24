@@ -32,11 +32,31 @@ The EPIC remains the product and requirement baseline. The arc42 documentation t
 
 ## Governance Check Status
 
-FA-MVP-0001 workflow execution is currently checking repository checkout
-workspace terminology and data ownership on branch
-`feature/workflow-repository-workspace-checkout-h2-persistence-20260524`.
-S01 distinguishes the deferred platform workspace administration concept from
-the repository-source-owned repository checkout workspace used by FA-MVP-0001.
+FA-MVP-0001 workflow execution reached the S11 documentation closure gate on
+branch `feature/workflow-repository-workspace-checkout-h2-persistence-20260524`.
+The architecture documentation now distinguishes the deferred platform
+workspace administration concept from the repository-source-owned repository
+checkout workspace used by FA-MVP-0001, records H2 as repository-source
+Docker-local MVP persistence only, and keeps JavaParser, Joern, BTM, replay,
+report, LLM, production database, Swarm and Kubernetes readiness outside this
+MVP slice.
+
+Checked sections for FA-MVP-0001 S11:
+
+- Building Block View: checked for repository-source checkout workspace
+  ownership and query-report public facade boundaries.
+- Runtime View: checked for Create Workspace UI flow and public REST owner API
+  path.
+- Deployment View: checked for Docker-local repository-source workspace and H2
+  volumes without Swarm or Kubernetes readiness claims.
+- Crosscutting Concepts: checked for no private path, raw Git output, H2 path
+  or credential leakage.
+- Architecture Decisions: checked against ADR-0010, ADR-0013, ADR-0018 and
+  ADR-0023; OD-001 remains open.
+- Quality Requirements: checked for S10 H2 reopen, idempotency conflict,
+  refresh and leakage regression scenarios.
+- Risks and Technical Debt: checked for H2 and Docker-local readiness
+  misunderstanding risks.
 
 The Governance Performance Optimization workflow was checked for workflow
 creation on branch `architecture/workflow-governance-performance-20260521`.
@@ -82,8 +102,8 @@ synchronized for Governance Flowchart V2 workflow execution on branch
 `architecture/workflow-governance-flowchart-v2-20260517`. That branch is now
 historical governance context.
 
-The current checked workflow is the EPIC v0.2 alignment workflow on branch
-`docs/workflow-forensics-tracing-analytics-epic-alignment-20260516`.
+Historical checked workflow context: the EPIC v0.2 alignment workflow ran on
+branch `docs/workflow-forensics-tracing-analytics-epic-alignment-20260516`.
 
 Checked sections:
 

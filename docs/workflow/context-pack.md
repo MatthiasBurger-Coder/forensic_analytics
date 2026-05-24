@@ -114,12 +114,13 @@ docker compose -f deployment/docker-compose/repository-to-btm.local.yml config
 | `.agents/skills/execution-profile-router/SKILL.md` | `40b7a5c9a2d8896b3e2f8c384300979a13d7d35986a5bd4bc4d3b5760a7d52b7` |
 | `.agents/skills/workflow-slice/SKILL.md` | `f58db9f89a32d6312c767d3d954aaf374a7bbe12c25915c0101489c990a54976` |
 | `contracts/grpc/repository-analysis.proto` | `e28a63411b0c62380b139312ef288fcfb68c2b231ebf5bf3c7fa9d0a2b6a02e6` |
-| `contracts/openapi/gateway-api.yaml` | `59e051d0a1ab3889d05dcbd426c38df67d6c9b45196e0d52050622bfe440d9c6` |
-| `gradle/libs.versions.toml` | `6dda5d048c065e48e2e94c40a18f5ce6e6de9929261b6a791338ac7ecc1a68bb` |
-| `deployment/docker-compose/repository-to-btm.local.yml` | `775f7ca20a42c85280375d6ac8e03cc9ae8da5ed9f6e92a07512c8b95eb46061` |
-| `services/repository-source-service/Dockerfile` | `51c3a5a5bc4f15b24948ae29ed4d30b27377d026990a0ad11f666a8eb08d513e` |
-| `services/repository-source-service/build.gradle.kts` | `6b2658d938e8f696590b1cdcf2f4504a0debe8a590aaebe0ac870172b6896e92` |
-| `services/query-report-api-service/build.gradle.kts` | `805d4c1a9855e9d68cf2f7348d731e32a6781f019013c1600c1e3380872ae368` |
+| `contracts/openapi/gateway-api.yaml` | `122130d797e78438cf23bd3e66f460363a86a27b3c6853c4193b6fe36f45eb4d` |
+| `gradle/libs.versions.toml` | `e008f210273d9c912996f13cea3298de787a9c3bd6935de31c18f9785365c00d` |
+| `gradle/verification-metadata.xml` | `235ed2886a0827939cdb3a54feff735d7136abea9ca6c991f03fd296b812bc47` |
+| `deployment/docker-compose/repository-to-btm.local.yml` | `b51f74679a2236f83f78882c68ede9765f977d71d4018fd8196429821d2821bb` |
+| `services/repository-source-service/Dockerfile` | `cd234c99a3f5d94a93a27a2674c904022bc8de1fe0ea97cff9b53e56938086e0` |
+| `services/repository-source-service/build.gradle.kts` | `e7a60707af55b469c7468a5ea3bb648d638e6b1ded7bf32278c61d7b1d119d08` |
+| `services/query-report-api-service/build.gradle.kts` | `a2c358ed234b60d83fb5317e3cf1ba2487085098cc67c8d1fa905acc80057a0c` |
 | `forensic-ui/package.json` | `cdb23841e48ee73a4dbddac5e2fafb7f134f3be77631e5ece5931c58d884f57b` |
 
 ## Staleness Rules

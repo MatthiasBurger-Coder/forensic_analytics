@@ -2,17 +2,27 @@
 
 ## Status
 
-Slice S08 target-name public API facade for FA-MSA-001.
+Slice S08/S11 target-name public API facade for FA-MSA-001 and
+FA-MVP-0001 repository checkout workspace routes.
 
-The service exposes the currently verified public repository-analysis routes
-from the transitional Gateway/OpenAPI contract under the target authority
-`query-report-api-service`:
+The service exposes the currently verified public routes from the transitional
+Gateway/OpenAPI contract under the target authority
+`query-report-api-service`.
+
+Repository-analysis routes:
 
 - `GET /health`
 - `GET /api/health`
 - `GET /api/status`
 - `POST /api/repository-analyses`
 - `GET /api/repository-analyses/{analysisRunId}`
+
+Repository checkout workspace routes:
+
+- `POST /api/workspace-metadata`
+- `POST /api/workspaces`
+- `GET /api/workspaces/{workspaceId}`
+- `POST /api/workspaces/{workspaceId}/branches/{workspaceBranchId}/refresh`
 
 `POST /api/repository-analyses` requires `X-Correlation-Id` and
 `Idempotency-Key`, validates a clean external HTTPS Git repository request,
@@ -25,13 +35,16 @@ contract and returns a public, redacted status envelope.
 
 The service is facade-only. It does not sequence workers, run analysis, manage
 repositories, control JavaParser or Joern, read private service databases,
-return workspace identifiers, return local paths, expose raw command output or
-leak unredacted downstream diagnostics.
+return local paths, expose raw command output or leak unredacted downstream
+diagnostics. For FA-MVP-0001 it may return opaque public repository checkout
+workspace IDs and branch IDs received through the repository-source owner API;
+those IDs are not filesystem paths, authorization decisions or platform
+workspace membership records.
 
-BTM byte delivery, replay, report assembly and full frontend integration
-remain later workflow slices. Planned OpenAPI routes are contract design
-evidence, not runtime implementation evidence until later slices implement and
-test them.
+BTM byte delivery, replay, report assembly, broader dashboard/list/query
+views and non-workspace frontend integrations remain later workflow slices.
+Planned OpenAPI routes are contract design evidence, not runtime
+implementation evidence until later slices implement and test them.
 
 S18 adds service-local executable OpenAPI contract ownership for the current
 repository-to-BTM submission/status routes. The service test
@@ -60,6 +73,19 @@ and tests owner-backed behavior. The facade still does not claim worker
 execution, generated BTM bytes, report readiness, replay readiness or semantic
 graph parity.
 
+## Repository Source Workspace Client
+
+The FA-MVP-0001 workspace routes call the repository-source owner API through
+service-local generated Protobuf classes from
+`contracts/grpc/repository-analysis.proto`. The generated classes stay inside
+this service build output and are not shared as Java implementation modules.
+
+`query-report-api-service` validates public REST headers and payloads, maps
+public DTOs to repository-source owner requests, redacts diagnostics and
+returns sanitized public workspace state. It does not checkout repositories,
+read repository-source H2 files, read repository-source workspace directories
+or expose raw Git output.
+
 Configuration keys:
 
 - `forensics.query-report-api.service.http.enabled`
@@ -68,6 +94,17 @@ Configuration keys:
 - `forensics.query-report-api.service.analysis-orchestrator.grpc.host`
 - `forensics.query-report-api.service.analysis-orchestrator.grpc.port`
 - `forensics.query-report-api.service.analysis-orchestrator.grpc.deadline-seconds`
+- `forensics.query-report-api.service.repository-source.grpc.host`
+- `forensics.query-report-api.service.repository-source.grpc.port`
+- `forensics.query-report-api.service.repository-source.grpc.deadline-seconds`
+- `forensics.query-report-api.service.workspace.schema-version`
+- `forensics.query-report-api.service.workspace.metadata.timeout-seconds`
+- `forensics.query-report-api.service.workspace.refresh.ephemeral`
+- `forensics.query-report-api.service.workspace.refresh.allow-shallow-clone`
+- `forensics.query-report-api.service.workspace.refresh.allow-partial-clone`
+- `forensics.query-report-api.service.workspace.refresh.allow-sparse-checkout`
+- `forensics.query-report-api.service.workspace.refresh.timeout-seconds`
+- `forensics.query-report-api.service.workspace.refresh.max-workspace-bytes`
 
 ## Local Runtime
 

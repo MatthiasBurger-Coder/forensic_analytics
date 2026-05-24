@@ -1,6 +1,6 @@
 # 7. Deployment View
 
-## 7.1 MVP Deployment View
+## 7.1 Long-Term Platform Deployment Reference
 
 ```text
 Developer Machine / CI Environment
@@ -17,6 +17,27 @@ Developer Machine / CI Environment
     ├── Simple Graph Projection
     └── LLM Diagnosis Adapter
 ```
+
+This view is the broader platform deployment direction from the EPIC baseline.
+It is not the verified FA-MVP-0001 runtime.
+
+### 7.1.1 Current FA-MVP-0001 Docker-Local View
+
+```text
+forensic-ui
+  -> query-report-api-service
+    -> repository-source-service
+       -> repository-source-workspaces volume
+       -> repository-source-data H2 volume
+```
+
+FA-MVP-0001 verifies Docker-local configuration for the repository-source
+workspace checkout foundation. `repository-source-service` owns the checkout
+volume and H2 data volume. No other service mounts or reads those private
+paths directly.
+
+This current MVP view does not claim JavaParser, Joern, BTM generation, replay,
+report, LLM, production database, Docker Swarm or Kubernetes readiness.
 
 ## 7.2 Later Deployment View
 

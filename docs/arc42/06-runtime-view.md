@@ -163,6 +163,12 @@ pending state to public `ACCEPTED`, `BTM_DELIVERY_NOT_READY` and incomplete
 diagnostics without claiming source snapshot availability, worker execution or
 generated BTM bytes.
 
+FA-MVP-0001 also verifies the repository checkout workspace owner API path:
+`query-report-api-service` maps public workspace REST requests to
+`repository-source-service` gRPC owner requests and maps owner responses back
+to sanitized public DTOs. It does not read repository-source H2 files,
+checkout directories or raw Git output.
+
 FA-MVP-0001 S08 verifies the frontend repository checkout workspace creation
 flow against the public query-report REST facade:
 

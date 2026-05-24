@@ -16,6 +16,10 @@ never part of the public contract.
   `/var/lib/forensic-analytics/repository-workspaces`
 - Docker profile H2 data root:
   `/var/lib/forensic-analytics/repository-source-data`
+- local H2 JDBC URL:
+  `jdbc:h2:file:build/repository-source-data/repository-source;AUTO_SERVER=FALSE;DB_CLOSE_DELAY=-1`
+- Docker H2 JDBC URL:
+  `jdbc:h2:file:/var/lib/forensic-analytics/repository-source-data/repository-source;AUTO_SERVER=FALSE;DB_CLOSE_DELAY=-1`
 
 The service accepts clean HTTPS repository URLs only. Local paths, `file:`
 URLs, SSH/SCP remotes, submodules, build execution and parser execution are
@@ -27,6 +31,10 @@ Repository checkout runs in a service-owned workspace. Public responses expose
 opaque workspace IDs, source snapshot IDs, relative source roots and artifact
 references only. Git command output and filesystem paths are not returned in
 public error descriptions.
+
+Repository checkout workspace, branch and idempotency state is persisted in a
+service-local H2 file adapter for the Docker-local MVP. H2 is not a production
+analytics persistence decision and is not shared with other services.
 
 ## Local Runtime
 

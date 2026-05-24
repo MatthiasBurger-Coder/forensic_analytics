@@ -24,7 +24,7 @@ tests.
 | `contracts/grpc/java-ast-source-facts-v1.schema.json` | `java-parser-analysis-service` source-fact artifact payload contract | Defines `application/vnd.forensic-analytics.java-ast-source-facts.v1+json`; consumers must map it into service-owned models. |
 | `contracts/grpc/joern-cpg-analysis.proto` | `joern-analysis-service` CPG/CFG/DFG semantic artifact contract | Planned initial contract with predecessor filename until renamed or superseded. |
 | `contracts/grpc/btm-generation.proto` | Optional later `btm-generation-service` contract | Not mandatory for FA-MSA-001 closure; generated artifact bytes and producer metadata stay with the producing service unless an explicit handoff contract transfers custody. |
-| `contracts/openapi/gateway-api.yaml` | `query-report-api-service` public REST/OpenAPI contract | Transitional filename. Current verified operations remain documented; planned operations are not runtime evidence. |
+| `contracts/openapi/gateway-api.yaml` | `query-report-api-service` public REST/OpenAPI contract | Transitional filename. Current verified operations include repository-analysis submission/status and FA-MVP-0001 workspace metadata/create/get/refresh; planned operations are not runtime evidence. |
 | `contracts/cli/gateway-cli-contract.md` | `cli-client` public API consumption contract | Transitional filename and command vocabulary. CLI must remain a public API consumer, not a business-logic owner. |
 | `contracts/events/analysis-events.md` | Event contract for FA-MSA-001 services | Planned initial message contract; no broker/runtime implementation is implied. |
 
@@ -63,6 +63,10 @@ Spring configuration or shared runtime libraries.
 - The transitional `gateway-api.yaml` filename does not make
   `forensic-gateway-service` the FA-MSA-001 authority; public query and report
   behavior belongs to `query-report-api-service`.
+- FA-MVP-0001 workspace routes are public facade operations only. They may
+  expose opaque repository checkout workspace IDs issued by
+  `repository-source-service`, but they must not expose private checkout paths,
+  repository-source H2 paths or raw Git diagnostics.
 
 ### Events
 

@@ -30,10 +30,11 @@ service slices, target service evidence and optional later services.
 The current platform direction supports two Analytics-owned input paths:
 server-side repository analysis and producer-supplied artifact package
 ingestion. Plugins trigger analysis on the Forensic Analytics server or submit
-producer-packaged artifacts as provenance-bearing inputs; Analytics prepares
-workspaces, checks out repositories when required, runs parser, Joern and BTM
-capabilities server-side where owned by the platform, and returns the artifacts
-needed by clients.
+producer-packaged artifacts as provenance-bearing inputs. The verified
+FA-MVP-0001 flow prepares repository checkout workspaces and persists
+repository-source workspace state; parser, Joern, BTM, replay, report and LLM
+behavior remain separate target capabilities unless a service-specific workflow
+slice has implemented and tested them.
 
 Public REST, CLI and gRPC contract vocabulary remains documented under
 `contracts/`. Contract vocabulary is not proof that a retired implementation
@@ -69,7 +70,14 @@ The nginx container serves the built Vite assets with SPA fallback. It does not 
 
 ### Server-Side Repository Analysis
 
-Repository analysis is server-bound. Analytics resolves repository source roots from server-side workspaces, scans Java source facts with the JavaParser adapter and can enrich the application result with Docker-based Joern artifacts. Joern analysis currently preserves call graph nodes and edges, methods, static call relations, control-flow relations, data-flow paths and semantic anchors as explicit semantic graph facts in the application result.
+Repository analysis is server-bound. The verified FA-MVP-0001 flow resolves
+repository metadata, creates or reuses repository checkout workspaces and
+branches, checks out the selected branch through `repository-source-service`
+and exposes sanitized public workspace state through `query-report-api-service`
+and `forensic-ui`. JavaParser source-fact scanning, Joern semantic enrichment,
+BTM generation, replay, report assembly and LLM context generation remain
+target capabilities that require their own verified service workflows before
+being described as current end-to-end platform behavior.
 
 When runtime debugging requires instrumentation, Analytics owns BTM generation from the server-side analysis and instrumentation plan. The plugin may receive server-generated BTM files and bind them to the target implementation through the runtime agent so runtime information can be collected during debugging. The plugin does not generate BTM files and does not become the analysis platform.
 

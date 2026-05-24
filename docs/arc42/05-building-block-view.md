@@ -221,6 +221,11 @@ not assign platform workspace membership or project administration ownership,
 and do not allow other services to read repository-source H2 files or private
 checkout directories.
 
+The H2 adapter used by FA-MVP-0001 is a repository-source-owned Docker-local
+MVP persistence adapter for checkout workspace, branch, repository preparation
+and idempotency records. It is not canonical analytics persistence and does
+not close the production database decision.
+
 `services/repository-analysis-service` remains historical predecessor
 evidence and rollback input. It is not a compatibility alias for
 `repository-source-service` and is not removed by S05.

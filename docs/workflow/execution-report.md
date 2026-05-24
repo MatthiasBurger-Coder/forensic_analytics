@@ -3,12 +3,13 @@
 ## Status
 
 Workflow execution is in progress. S00, S01, S02, S03, S04, S05, S06, S07, S08,
-S09 and S10 are complete. Product implementation has started in
+S09, S10 and S11 are complete. Product implementation has started in
 repository-source-service with the workspace domain model, in-memory and H2
 repositories, metadata resolution, checkout preparation, durable idempotency
 and branch refresh behavior, plus the repository-source gRPC owner API,
 query-report public REST facade and forensic-ui Create Workspace flow required
-by later Docker/runtime and integration slices.
+by later Docker/runtime and integration slices. S11 synchronized architecture,
+ADR, contract and service documentation for that implemented scope.
 
 `workflow execute` must run S00 first and then update this report after every
 slice with:
@@ -53,7 +54,7 @@ execution and contract-first sequencing.
 | S08 | Completed | Forensic UI Create Workspace flow, public workspace REST adapter, read-only metadata preview, idempotent save/refresh UI and sanitized diagnostics completed. |
 | S09 | Completed | Docker-local repository-source service volumes and runtime configuration completed. |
 | S10 | Completed | Security, leakage, idempotency, H2 restart and refresh regression gate completed. |
-| S11 | Not started | Documentation, arc42 and ADR closure. |
+| S11 | Completed | Documentation, arc42, ADR, contract and service README closure completed. |
 | S12 | Not started | Final quality gate and workflow handoff. |
 
 ## Slice S00 - Workflow Execution Preflight And Context Freeze
@@ -895,6 +896,134 @@ Checkpoint:
 
 - Commit SHA: `ac171b3f2d3851b59328f2bc8bd3ca3075cba7ed`.
 - Push result: pushed to `origin/feature/workflow-repository-workspace-checkout-h2-persistence-20260524`.
+
+## Slice S11 - Documentation, arc42 And ADR Closure
+
+Status: Completed.
+
+Owner and reviewers:
+
+- Senior Documentation Engineer
+- Senior System Architect
+- Senior Requirement Engineer
+- ADR Steward checklist
+- Documentation Sync checklist
+
+Changed files:
+
+- `contracts/openapi/README.md`
+- `docs/README.md`
+- `docs/adr/ADR-0023-h2-for-repository-source-mvp-persistence.md`
+- `docs/adr/README.md`
+- `docs/arc42/04-solution-strategy.md`
+- `docs/arc42/05-building-block-view.md`
+- `docs/arc42/06-runtime-view.md`
+- `docs/arc42/07-deployment-view.md`
+- `docs/arc42/09-architecture-decisions.md`
+- `docs/arc42/10-quality-requirements.md`
+- `docs/arc42/11-risks-and-technical-debt.md`
+- `docs/arc42/README.md`
+- `docs/architecture/contract-versioning.md`
+- `docs/architecture/current-build-and-test-map.md`
+- `docs/architecture/current-state.md`
+- `docs/architecture/service-boundaries.md`
+- `docs/architecture/service-communication-matrix.md`
+- `docs/architecture/service-migration-map.md`
+- `docs/contracts/contract-test-plan.md`
+- `docs/workflow/arc42-check-status.md`
+- `docs/workflow/context-pack.json`
+- `docs/workflow/context-pack.md`
+- `docs/workflow/execution-report.md`
+- `services/README.md`
+- `services/query-report-api-service/README.md`
+- `services/repository-source-service/README.md`
+
+Commands executed:
+
+```bash
+python3 -m json.tool docs/workflow/context-pack.json >/dev/null
+git diff --check
+```
+
+Result:
+
+- PASS for S11 documentation, arc42 and ADR closure.
+- Documentation now describes FA-MVP-0001 as repository checkout workspace
+  foundation only and separates it from JavaParser, Joern, BTM, replay, report,
+  LLM, production database, Docker Swarm and Kubernetes readiness.
+- `repository-source-service` is documented as the owner of checkout workspace,
+  branch, source snapshot, idempotency and service-local H2 MVP persistence
+  state.
+- `query-report-api-service` is documented as a sanitized public REST facade
+  that calls repository-source owner APIs and does not read H2 files, checkout
+  directories or raw Git output.
+- `forensic-ui` remains documented as a public REST-only browser client for the
+  Create Workspace flow.
+- `docs/workflow/context-pack.json` and `docs/workflow/context-pack.md` now
+  carry current hashes for S01-S10 changed governing artifacts, including
+  `gradle/verification-metadata.xml`.
+
+Requirement and architecture trace:
+
+- Requirement source: the user-provided FA-MVP-0001 requirement captured by
+  `docs/workflow/workflow.md` and accepted by
+  `docs/workflow/three-amigos-decision-record.md`. No dedicated
+  `docs/epics/FA-MVP-0001` file exists in this workflow.
+- Functional trace: metadata preview, workspace create/reuse, get workspace,
+  branch refresh, repository-source owner API, public REST facade and UI flow.
+- Non-functional trace: H2 reopen persistence, idempotency conflict
+  no-mutation, duplicate prevention, sanitized diagnostics and public DTO/UI
+  no-leakage behavior.
+- Architecture trace: no `workspace-service`; no cross-service private database
+  or checkout-directory access; H2 remains repository-source Docker-local MVP
+  persistence only.
+
+Subagent review:
+
+- Senior Documentation Engineer: PASS_WITH_UPDATES; required stale context
+  pack hashes, arc42 closure status, OpenAPI workspace route status, service
+  README limits and execution-report updates.
+- Senior System Architect: PASS_WITH_UPDATES; required H2 ADR coverage,
+  deployment-current-versus-target wording, arc42 closure status and
+  no-overclaiming of parser, Joern, BTM, replay, report, LLM, Swarm or
+  Kubernetes readiness.
+- Senior Requirement Engineer: PASS_WITH_UPDATES; confirmed FA-MVP-0001 source
+  traceability through workflow and Three Amigos records, classified
+  requirements, and recorded the missing dedicated EPIC file as a limitation
+  rather than an execution blocker.
+
+ADR and documentation sync:
+
+- ADR-0023 records H2 as repository-source-owned Docker-local MVP persistence
+  only.
+- OD-001 remains open for production relational database selection.
+- arc42, architecture docs, contract docs, service READMEs and workflow
+  context/report files were synchronized with S01-S10 implementation evidence.
+
+Limitations and carry-forward notes:
+
+- S11 is documentation-only and does not execute Gradle, npm, Docker image
+  build, Compose startup, health-check smoke tests, live repository checkout or
+  restart of running containers.
+- A dedicated FA-MVP-0001 EPIC artifact under `docs/epics` remains a possible
+  future requirement-governance cleanup.
+- Full local quality with coverage tasks remains owned by S12 final gate.
+
+CP_RECORD:
+
+- workflowVersion: `fa-mvp-0001-repository-workspace-checkout-h2-persistence-20260524-v1`
+- sliceId: `S11`
+- sliceTitle: `Documentation, arc42 And ADR Closure`
+- responsibleAgent: `senior-documentation-engineer`
+- qualityGateResult: `PASS`
+- rollbackReference: `revert the S11 checkpoint commit after CP_COMMIT; before commit, restore the listed S11 files from HEAD`
+- arc42Updated: `updated for FA-MVP-0001 repository checkout workspace, H2 MVP persistence, public facade, Docker-local volume and quality/risk closure`
+- adrUpdated: `ADR-0023 added; ADR README and arc42 decision list updated`
+
+Checkpoint:
+
+- Commit SHA: `pending`.
+- Push result: `pending`.
 
 ## Slice S01 - Requirement Terminology And Data Ownership Gate
 

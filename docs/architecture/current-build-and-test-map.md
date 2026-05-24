@@ -198,7 +198,10 @@ Earlier FA-MSA-001 service-slice evidence adds a service-local Dockerfile for
 `services/repository-source-service`. This is target-service container
 packaging evidence only; Compose, Swarm and Kubernetes readiness for the
 FA-MSA-001 target landscape remains future work until descriptors and
-validation commands exist.
+validation commands exist. FA-MVP-0001 S09 adds Docker-local Compose model
+evidence for repository-source private workspace and H2 data volumes, but does
+not claim image startup, health-check smoke testing, Swarm or Kubernetes
+readiness.
 
 Earlier FA-MSA-001 service-slice evidence adds a service-local Dockerfile for
 `services/ingestion-service`.
@@ -239,7 +242,8 @@ target landscape remains future work until descriptors and validation commands
 exist. The service uses local HTTP port `8080`, points at
 `analysis-orchestrator-service` gRPC port `9098`, and remains a public facade
 for verified repository-analysis routes plus pending/status-only orchestrator
-readiness. S08 does not claim Docker image build readiness; Docker
+readiness and the FA-MVP-0001 workspace routes backed by repository-source
+owner APIs. S08/S11 do not claim Docker image build readiness; Docker
 build-context verification remains later deployment work.
 
 Slice 13 adds `services:testbed` without a Dockerfile or runtime service
@@ -261,9 +265,10 @@ default-skipped WildFly hardening scenario as historical targeted evidence.
 That work does not verify Docker image builds, Docker Compose startup, service
 health probes, Docker Swarm or Kubernetes commands for the FA-MSA-001 target
 landscape.
-The local repository-to-BTM Compose descriptor remains transitional
-environment evidence only until a separate runtime-deployment slice verifies
-image builds, startup, health checks and cleanup commands.
+The local repository-to-BTM Compose descriptor is verified as Docker-local
+configuration evidence after S09. It remains transitional environment evidence
+only until a separate runtime-deployment slice verifies image builds, startup,
+health checks and cleanup commands.
 
 No separate Swarm or Kubernetes workflow handoff artifact is present in this
 repository. Future deployment workflows must create and verify
