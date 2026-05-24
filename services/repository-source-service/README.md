@@ -14,6 +14,8 @@ never part of the public contract.
 - health port: `8083`
 - Docker profile workspace root:
   `/var/lib/forensic-analytics/repository-workspaces`
+- Docker profile H2 data root:
+  `/var/lib/forensic-analytics/repository-source-data`
 
 The service accepts clean HTTPS repository URLs only. Local paths, `file:`
 URLs, SSH/SCP remotes, submodules, build execution and parser execution are
@@ -42,5 +44,18 @@ Run the service locally:
 ```
 
 The default health endpoint listens on `127.0.0.1:8083` and the service gRPC
-port listens on `127.0.0.1:9092`. S03 does not claim Docker Compose, Swarm or
-Kubernetes runtime readiness for this target service.
+port listens on `127.0.0.1:9092`.
+
+For local Docker Compose, `deployment/docker-compose/repository-to-btm.local.yml`
+publishes this service on `127.0.0.1:18087` for health and
+`127.0.0.1:19097` for gRPC. The descriptor mounts
+`repository-source-workspaces` at
+`/var/lib/forensic-analytics/repository-workspaces` and
+`repository-source-data` at
+`/var/lib/forensic-analytics/repository-source-data` only into
+`repository-source-service`.
+
+Docker named volumes preserve checkout and H2 state across container restart
+while the volumes are retained. Removing volumes, for example with
+`docker compose down -v`, removes that local MVP state. This service README
+does not claim Docker Swarm or Kubernetes runtime readiness.

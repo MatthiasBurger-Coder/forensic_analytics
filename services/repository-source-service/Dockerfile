@@ -12,7 +12,7 @@ WORKDIR /opt/repository-source-service
 
 RUN groupadd --system repository-source \
     && useradd --system --gid repository-source --home-dir /opt/repository-source-service --no-create-home repository-source \
-    && mkdir -p /var/lib/forensic-analytics/repository-workspaces \
+    && mkdir -p /var/lib/forensic-analytics/repository-workspaces /var/lib/forensic-analytics/repository-source-data \
     && chown -R repository-source:repository-source /opt/repository-source-service /var/lib/forensic-analytics
 
 COPY ${SERVICE_JAR} /opt/repository-source-service/app.jar

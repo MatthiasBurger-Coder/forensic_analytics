@@ -2,8 +2,8 @@
 
 ## Status
 
-Workflow execution is in progress. S00, S01, S02, S03, S04, S05, S06, S07 and
-S08 are complete. Product implementation has started in
+Workflow execution is in progress. S00, S01, S02, S03, S04, S05, S06, S07, S08
+and S09 are complete. Product implementation has started in
 repository-source-service with the workspace domain model, in-memory and H2
 repositories, metadata resolution, checkout preparation, durable idempotency
 and branch refresh behavior, plus the repository-source gRPC owner API,
@@ -51,7 +51,7 @@ execution and contract-first sequencing.
 | S06 | Completed | Repository-source gRPC owner API endpoint, runtime wiring and sanitized error mapping completed. |
 | S07 | Completed | Query-report public REST facade, repository-source owner gRPC client, public DTO validation and OpenAPI alignment completed. |
 | S08 | Completed | Forensic UI Create Workspace flow, public workspace REST adapter, read-only metadata preview, idempotent save/refresh UI and sanitized diagnostics completed. |
-| S09 | Not started | Docker-local volumes and runtime configuration. |
+| S09 | Completed | Docker-local repository-source service volumes and runtime configuration completed. |
 | S10 | Not started | Security, leakage, idempotency and restart integration gate. |
 | S11 | Not started | Documentation, arc42 and ADR closure. |
 | S12 | Not started | Final quality gate and workflow handoff. |
@@ -645,6 +645,135 @@ Checkpoint:
 - Commit SHA: `d35041a369414ac4371f6a8ecf5b1450287bedcd`.
 - Push result: pushed to
   `origin/feature/workflow-repository-workspace-checkout-h2-persistence-20260524`.
+
+## Slice S09 - Docker Local Volumes And Runtime Configuration
+
+Status: Completed.
+
+Owner and reviewers:
+
+- Senior DevOps
+- Senior Analysis Storage Architect
+- Senior Git Workspace Specialist
+- Senior Security Sandbox Engineer
+- Microservice Runtime Readiness Expert
+- Senior Tester
+
+Changed files:
+
+- `deployment/docker-compose/README.md`
+- `deployment/docker-compose/repository-to-btm.local.yml`
+- `docs/arc42/07-deployment-view.md`
+- `services/repository-source-service/Dockerfile`
+- `services/repository-source-service/README.md`
+
+Read-only verified files:
+
+- `services/repository-source-service/src/main/resources/application-docker.properties`
+
+Commands executed:
+
+```bash
+git status --short --branch
+docker compose -f deployment/docker-compose/repository-to-btm.local.yml config
+./gradlew :services:repository-source-service:test --dependency-verification strict --console=plain --stacktrace
+./gradlew --no-daemon :services:repository-source-service:bootJar --dependency-verification strict --console=plain --stacktrace
+docker compose -f deployment/docker-compose/repository-to-btm.local.yml config
+git diff --check
+```
+
+Result:
+
+- PASS for S09 Docker-local volume and runtime configuration.
+- `repository-source-service` Docker image setup now creates both
+  `/var/lib/forensic-analytics/repository-workspaces` and
+  `/var/lib/forensic-analytics/repository-source-data` before switching to the
+  non-root `repository-source` user.
+- `deployment/docker-compose/repository-to-btm.local.yml` now includes
+  `repository-source-service` with host ports `127.0.0.1:18087` and
+  `127.0.0.1:19097`, avoiding collisions with the transitional
+  `repository-analysis-service` ports.
+- Compose mounts `repository-source-workspaces` only at
+  `/var/lib/forensic-analytics/repository-workspaces` in
+  `repository-source-service`.
+- Compose mounts `repository-source-data` only at
+  `/var/lib/forensic-analytics/repository-source-data` in
+  `repository-source-service`.
+- No other service in the descriptor mounts repository-source private checkout
+  or H2 data volumes.
+- `application-docker.properties` was verified to already point the repository
+  workspace root and H2 JDBC file URL at those Docker container roots.
+
+Requirement and architecture trace:
+
+- Requirement type: Docker-local MVP deployment, persistence ownership,
+  security boundary and quality-gate requirement.
+- Traceability: FA-MVP-0001 sections 9 and 10 require service-local H2 data and
+  repository workspace volumes owned by `repository-source-service`.
+- Data ownership: repository-source checkout bytes and H2 data stay private to
+  `repository-source-service`; other services must use owner APIs.
+- Runtime readiness: S09 records Compose model validation, repository-source
+  `test` and repository-source `bootJar` evidence only. Docker image build,
+  Compose startup and health probes remain optional evidence because this slice
+  does not claim full runtime readiness.
+
+Subagent review:
+
+- Senior DevOps: PASS to start; required adding the data path to the Dockerfile,
+  adding repository-source service-owned named volumes and avoiding port
+  collisions.
+- Senior Analysis Storage Architect: PASS to start; required keeping checkout
+  bytes and H2 state in separate service-owned volumes and documenting restart
+  semantics.
+- Senior Git Workspace Specialist: PASS to start; required using named volumes,
+  no branch-name path exposure and no private volume sharing.
+- Senior Security Sandbox Engineer: initial blockers for an out-of-scope
+  `deployment/README.md` change and stale arc42 section 7.7 were resolved.
+  Final re-review PASS.
+- Microservice Runtime Readiness Expert: PASS; docs stay Docker-local MVP scoped
+  and do not claim Swarm, Kubernetes, production or full runtime readiness.
+- Senior Tester: initial blocker for stale arc42 section 7.7 was resolved. Final
+  re-review PASS after repository-source tests, bootJar, Compose config and
+  `git diff --check` passed.
+
+Documentation sync:
+
+- `deployment/docker-compose/README.md` documents the repository-source service,
+  its two named volumes, local verification commands and optional runtime-check
+  boundary.
+- `services/repository-source-service/README.md` documents the Docker H2 data
+  root and local Compose host ports.
+- `docs/arc42/07-deployment-view.md` records repository-source Docker-local
+  volume ownership, no direct cross-service volume access and no Swarm or
+  Kubernetes readiness claim.
+- ADRs remain unchanged; S09 implements the already approved service-local H2
+  and service-owned volume decision without adding a new persistence technology
+  or cross-service database coupling.
+
+Limitations and carry-forward notes:
+
+- Docker image build, Compose startup, health checks and restart-persistence
+  runtime proof were not executed in S09 because the workflow marks those checks
+  as optional external evidence unless actually executed. S10 remains the
+  integration gate for security, leakage, idempotency and restart evidence.
+- The root `deployment/README.md` was intentionally left unchanged because it is
+  outside the S09 file lock.
+
+CP_RECORD:
+
+- workflowVersion: `fa-mvp-0001-repository-workspace-checkout-h2-persistence-20260524-v1`
+- sliceId: `S09`
+- sliceTitle: `Docker Local Volumes And Runtime Configuration`
+- responsibleAgent: `senior-devops`
+- qualityGateResult: `PASS`
+- rollbackReference: `revert the S09 checkpoint commit after CP_COMMIT; before commit, restore the listed S09 files from HEAD`
+- arc42Updated: `updated docs/arc42/07-deployment-view.md with verified S09 Docker-local repository-source volume ownership`
+- adrUpdated: `not updated; no S09 ADR change recorded`
+
+Checkpoint:
+
+- Commit SHA: `pending`.
+- Push result: `pending`.
 
 ## Slice S01 - Requirement Terminology And Data Ownership Gate
 
