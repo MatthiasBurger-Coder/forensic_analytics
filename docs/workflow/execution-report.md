@@ -114,5 +114,6 @@ Limitations and carry-forward notes:
 
 Checkpoint:
 
-- Commit SHA: pending.
-- Push result: pending.
+- Commit SHA: `c9f4dba5a80e5da7a9f994ccfde3b29f5dea91c8`.
+- Push result: pushed to
+  `origin/feature/workflow-repository-workspace-checkout-h2-persistence-20260524`.
