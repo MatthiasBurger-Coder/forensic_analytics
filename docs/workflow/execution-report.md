@@ -2,11 +2,12 @@
 
 ## Status
 
-Workflow execution is in progress. S00, S01, S02, S03, S04 and S05 are
+Workflow execution is in progress. S00, S01, S02, S03, S04, S05 and S06 are
 complete. Product implementation has started in repository-source-service with
 the workspace domain model, in-memory and H2 repositories, metadata
 resolution, checkout preparation, durable idempotency and branch refresh
-behavior required by later facade and runtime slices.
+behavior, plus the repository-source gRPC owner API required by later facade
+and runtime slices.
 
 `workflow execute` must run S00 first and then update this report after every
 slice with:
@@ -46,7 +47,7 @@ execution and contract-first sequencing.
 | S03 | Completed | Repository-source workspace aggregate, branch aggregate, repository identity, in-memory workspace repository and idempotent workspace/branch application use cases added. |
 | S04 | Completed | Metadata preview, verified default-branch fallback, branch checkout preparation, checkout reuse and manual refresh behavior added behind repository-source application ports and Git/filesystem adapters. |
 | S05 | Completed | H2 dependency, schema, persistence adapters, durable idempotency port, restart-safe filesystem cleanup and S05 scope repair completed. |
-| S06 | Not started | Repository-source gRPC endpoint and error mapping. |
+| S06 | Completed | Repository-source gRPC owner API endpoint, runtime wiring and sanitized error mapping completed. |
 | S07 | Not started | Query-report public REST facade. |
 | S08 | Not started | Forensic UI Create Workspace flow. |
 | S09 | Not started | Docker-local volumes and runtime configuration. |
@@ -257,6 +258,80 @@ Checkpoint:
 - Commit SHA: `6555aaa8d36ec31d08c413a40714fe46880db8c2`.
 - Push result: pushed to
   `origin/feature/workflow-repository-workspace-checkout-h2-persistence-20260524`.
+
+## Slice S06 - Repository Source gRPC Endpoint And Error Mapping
+
+Status: Completed.
+
+Owner and reviewers:
+
+- Senior gRPC / Protobuf Specialist
+- Senior Java Backend
+- Senior Tester
+- Senior Requirement Engineer
+- Observability / error-mapping checklist handled locally because the runtime
+  subagent limit blocked the fifth reviewer thread.
+
+Changed files:
+
+- `docs/workflow/execution-report.md`
+- `services/repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/adapter/in/grpc/RepositorySourceGrpcEndpoint.java`
+- `services/repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/adapter/out/id/UuidRepositoryWorkspaceIdGenerator.java`
+- `services/repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/RepositorySourceServiceConfiguration.java`
+- `services/repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/adapter/in/grpc/RepositorySourceGrpcEndpointMappingTest.java`
+- `services/repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/adapter/in/grpc/RepositorySourceGrpcEndpointTest.java`
+
+Commands executed:
+
+```bash
+git status --short --branch
+git diff --check
+./gradlew :services:repository-source-service:test --tests "*RepositorySourceGrpcEndpointTest" --tests "*RepositorySourceGrpcEndpointMappingTest" --tests "*RepositorySourceContractTest" --dependency-verification strict --console=plain --stacktrace
+./gradlew :services:repository-source-service:test --dependency-verification strict --console=plain --stacktrace
+```
+
+Result:
+
+- PASS for S06 repository-source gRPC endpoint and error mapping.
+- Existing owner API RPCs from `contracts/grpc/repository-analysis.proto` are
+  now implemented by `RepositorySourceGrpcEndpoint`: metadata preview,
+  create-or-reuse workspace with checkout, get workspace and refresh branch.
+- The endpoint maps only at the gRPC adapter boundary and delegates workspace
+  behavior to `RepositoryWorkspaceApplicationService`; no protobuf generated
+  types were introduced into domain or application packages.
+- Production bootstrap now wires `RepositoryWorkspaceApplicationService`,
+  `GitRepositoryMetadataAdapter`, shared repository-source idempotency
+  persistence and a UUID-backed opaque workspace id generator.
+- Workspace branch statuses are mapped to the existing protobuf enum without
+  field-number or contract-shape changes.
+- Validation errors, idempotency conflicts, missing workspace/preparation
+  state, checkout/workspace failures and persistence failures map to controlled
+  sanitized gRPC statuses.
+- Endpoint regression coverage verifies metadata preview without checkout
+  mutation, workspace create/replay/get, refresh `UP_TO_DATE` and `UPDATED`,
+  idempotency conflict, missing workspace/branch and invalid/private input
+  redaction.
+
+Documentation sync:
+
+- ADR-0010 and ADR-0018 were checked; S06 implements the already-authored
+  logical gRPC owner API contract and does not change protobuf field numbers.
+- Requirement trace is to FA-MVP-0001 metadata preview, create workspace,
+  idempotent checkout and manual branch refresh behavior.
+- `docs/arc42/06-runtime-view.md` contains stale slice-number wording from an
+  earlier workflow. Requirement review classified this as documentation drift
+  to carry to S11 final synchronization, not an S06 implementation blocker.
+
+Limitations and carry-forward notes:
+
+- Public REST/OpenAPI mapping remains owned by S07.
+- Frontend behavior remains owned by S08.
+- Docker-local volume/runtime verification remains owned by S09 and S10.
+
+Checkpoint:
+
+- Commit SHA: `pending`.
+- Push result: pending.
 
 ## Slice S01 - Requirement Terminology And Data Ownership Gate
 

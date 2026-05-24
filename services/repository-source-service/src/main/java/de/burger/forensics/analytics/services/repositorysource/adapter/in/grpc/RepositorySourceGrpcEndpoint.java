@@ -10,16 +10,29 @@ import de.burger.forensics.analytics.repositoryanalysis.v1.CheckoutResult;
 import de.burger.forensics.analytics.repositoryanalysis.v1.CheckoutStatus;
 import de.burger.forensics.analytics.repositoryanalysis.v1.CleanupRepositoryWorkspaceRequest;
 import de.burger.forensics.analytics.repositoryanalysis.v1.CleanupRepositoryWorkspaceResponse;
+import de.burger.forensics.analytics.repositoryanalysis.v1.CreateRepositoryWorkspaceRequest;
+import de.burger.forensics.analytics.repositoryanalysis.v1.CreateRepositoryWorkspaceResponse;
 import de.burger.forensics.analytics.repositoryanalysis.v1.Diagnostic;
 import de.burger.forensics.analytics.repositoryanalysis.v1.DiagnosticSeverity;
 import de.burger.forensics.analytics.repositoryanalysis.v1.GetRepositoryPreparationRequest;
+import de.burger.forensics.analytics.repositoryanalysis.v1.GetRepositoryWorkspaceRequest;
+import de.burger.forensics.analytics.repositoryanalysis.v1.MetadataPreviewPolicy;
 import de.burger.forensics.analytics.repositoryanalysis.v1.OperationStatus;
 import de.burger.forensics.analytics.repositoryanalysis.v1.PackageAvailability;
 import de.burger.forensics.analytics.repositoryanalysis.v1.PrepareRepositoryRequest;
 import de.burger.forensics.analytics.repositoryanalysis.v1.PrepareRepositoryResponse;
+import de.burger.forensics.analytics.repositoryanalysis.v1.PreviewRepositoryWorkspaceMetadataRequest;
+import de.burger.forensics.analytics.repositoryanalysis.v1.PreviewRepositoryWorkspaceMetadataResponse;
+import de.burger.forensics.analytics.repositoryanalysis.v1.RefreshRepositoryWorkspaceBranchRequest;
+import de.burger.forensics.analytics.repositoryanalysis.v1.RefreshRepositoryWorkspaceBranchResponse;
 import de.burger.forensics.analytics.repositoryanalysis.v1.RepositoryAnalysisServiceGrpc;
+import de.burger.forensics.analytics.repositoryanalysis.v1.RepositoryIdentity;
 import de.burger.forensics.analytics.repositoryanalysis.v1.RepositoryPreparation;
 import de.burger.forensics.analytics.repositoryanalysis.v1.RepositoryReference;
+import de.burger.forensics.analytics.repositoryanalysis.v1.RepositoryWorkspace;
+import de.burger.forensics.analytics.repositoryanalysis.v1.RepositoryWorkspaceBranch;
+import de.burger.forensics.analytics.repositoryanalysis.v1.RepositoryWorkspaceBranchSelector;
+import de.burger.forensics.analytics.repositoryanalysis.v1.RepositoryWorkspaceBranchStatus;
 import de.burger.forensics.analytics.repositoryanalysis.v1.RepositoryWorkspaceStatus;
 import de.burger.forensics.analytics.repositoryanalysis.v1.RevisionSelector;
 import de.burger.forensics.analytics.repositoryanalysis.v1.SourcePackageDescriptor;
@@ -30,8 +43,12 @@ import de.burger.forensics.analytics.repositoryanalysis.v1.WorkspacePolicy;
 import de.burger.forensics.analytics.services.repositorysource.application.IdempotencyConflictException;
 import de.burger.forensics.analytics.services.repositorysource.application.RepositorySourceApplicationService;
 import de.burger.forensics.analytics.services.repositorysource.application.RepositoryPreparationNotFoundException;
+import de.burger.forensics.analytics.services.repositorysource.application.RepositoryWorkspaceApplicationService;
+import de.burger.forensics.analytics.services.repositorysource.application.RepositoryWorkspaceNotFoundException;
+import de.burger.forensics.analytics.services.repositorysource.application.port.RepositoryMetadataPreviewPolicy;
 import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.AnalysisRunId;
 import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.SourceSnapshotId;
+import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.WorkspaceBranchId;
 import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.WorkspaceId;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
@@ -42,9 +59,17 @@ import static de.burger.forensics.analytics.services.repositorysource.domain.Rep
 
 public final class RepositorySourceGrpcEndpoint extends RepositoryAnalysisServiceGrpc.RepositoryAnalysisServiceImplBase {
     private final RepositorySourceApplicationService applicationService;
+    private final RepositoryWorkspaceApplicationService workspaceApplicationService;
 
-    public RepositorySourceGrpcEndpoint(RepositorySourceApplicationService applicationService) {
+    public RepositorySourceGrpcEndpoint(
+        RepositorySourceApplicationService applicationService,
+        RepositoryWorkspaceApplicationService workspaceApplicationService
+    ) {
         this.applicationService = Objects.requireNonNull(applicationService, "application service must not be null");
+        this.workspaceApplicationService = Objects.requireNonNull(
+            workspaceApplicationService,
+            "workspace application service must not be null"
+        );
     }
 
     @Override
@@ -118,6 +143,110 @@ public final class RepositorySourceGrpcEndpoint extends RepositoryAnalysisServic
         }
     }
 
+    @Override
+    public void previewRepositoryWorkspaceMetadata(
+        PreviewRepositoryWorkspaceMetadataRequest request,
+        StreamObserver<PreviewRepositoryWorkspaceMetadataResponse> responseObserver
+    ) {
+        try {
+            requireText(request.getRequestId(), "request id");
+            var preview = workspaceApplicationService.previewRepositoryWorkspaceMetadata(
+                request.getSchemaVersion(),
+                request.getCorrelationId(),
+                repository(request.getRepository()),
+                metadataPolicy(request.getMetadataPolicy()),
+                request.getSafeAttributesMap()
+            );
+            var builder = PreviewRepositoryWorkspaceMetadataResponse.newBuilder()
+                .setRepository(repositoryIdentity(preview.repository()))
+                .setWorkspaceTitle(preview.workspaceTitle().value())
+                .setStatus(status("METADATA_RESOLVED", "Repository metadata resolved", request.getCorrelationId()))
+                .putAllSafeAttributes(preview.safeAttributes());
+            preview.diagnostics().forEach(diagnostic -> builder.addDiagnostics(diagnostic(diagnostic)));
+            responseObserver.onNext(builder.build());
+            responseObserver.onCompleted();
+        } catch (RuntimeException error) {
+            responseObserver.onError(status(error).asRuntimeException());
+        }
+    }
+
+    @Override
+    public void createRepositoryWorkspace(
+        CreateRepositoryWorkspaceRequest request,
+        StreamObserver<CreateRepositoryWorkspaceResponse> responseObserver
+    ) {
+        try {
+            requireText(request.getRequestId(), "request id");
+            var workspace = workspaceApplicationService.createOrReuseRepositoryWorkspaceWithCheckout(
+                request.getIdempotencyKey(),
+                request.getSchemaVersion(),
+                request.getCorrelationId(),
+                repository(request.getRepository()),
+                branchSelector(request.getBranchSelector()),
+                workspacePolicy(request.getWorkspacePolicy()),
+                request.getSafeAttributesMap()
+            );
+            responseObserver.onNext(CreateRepositoryWorkspaceResponse.newBuilder()
+                .setWorkspace(repositoryWorkspace(workspace))
+                .setStatus(status("WORKSPACE_READY", "Repository workspace ready", request.getCorrelationId()))
+                .build());
+            responseObserver.onCompleted();
+        } catch (RuntimeException error) {
+            responseObserver.onError(status(error).asRuntimeException());
+        }
+    }
+
+    @Override
+    public void getRepositoryWorkspace(
+        GetRepositoryWorkspaceRequest request,
+        StreamObserver<RepositoryWorkspace> responseObserver
+    ) {
+        try {
+            requireText(request.getRequestId(), "request id");
+            requireText(request.getCorrelationId(), "correlation id");
+            responseObserver.onNext(repositoryWorkspace(workspaceApplicationService.getRepositoryWorkspace(
+                new WorkspaceId(request.getWorkspaceId())
+            )));
+            responseObserver.onCompleted();
+        } catch (RuntimeException error) {
+            responseObserver.onError(status(error).asRuntimeException());
+        }
+    }
+
+    @Override
+    public void refreshRepositoryWorkspaceBranch(
+        RefreshRepositoryWorkspaceBranchRequest request,
+        StreamObserver<RefreshRepositoryWorkspaceBranchResponse> responseObserver
+    ) {
+        try {
+            requireText(request.getRequestId(), "request id");
+            var result = workspaceApplicationService.refreshRepositoryWorkspaceBranch(
+                request.getIdempotencyKey(),
+                request.getSchemaVersion(),
+                request.getCorrelationId(),
+                new WorkspaceId(request.getWorkspaceId()),
+                new WorkspaceBranchId(request.getWorkspaceBranchId()),
+                workspacePolicy(request.getWorkspacePolicy()),
+                request.getSafeAttributesMap()
+            );
+            var builder = RefreshRepositoryWorkspaceBranchResponse.newBuilder()
+                .setBranch(repositoryWorkspaceBranch(result.branch()))
+                .setChanged(result.changed())
+                .setPreviousCommit(result.previousCommit())
+                .setStatus(status(
+                    result.changed() ? "BRANCH_UPDATED" : "BRANCH_UP_TO_DATE",
+                    result.changed() ? "Repository branch updated" : "Repository branch is up to date",
+                    request.getCorrelationId()
+                ))
+                .putAllSafeAttributes(result.safeAttributes());
+            result.diagnostics().forEach(diagnostic -> builder.addDiagnostics(diagnostic(diagnostic)));
+            responseObserver.onNext(builder.build());
+            responseObserver.onCompleted();
+        } catch (RuntimeException error) {
+            responseObserver.onError(status(error).asRuntimeException());
+        }
+    }
+
     private static de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.RepositoryReference repository(
         RepositoryReference repository
     ) {
@@ -137,6 +266,19 @@ public final class RepositorySourceGrpcEndpoint extends RepositoryAnalysisServic
             revision.getCommit(),
             revision.getCommitRequired()
         );
+    }
+
+    private static de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.RepositoryWorkspaceBranchSelector branchSelector(
+        RepositoryWorkspaceBranchSelector selector
+    ) {
+        return new de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.RepositoryWorkspaceBranchSelector(
+            selector.getBranch(),
+            selector.getCommit()
+        );
+    }
+
+    private static RepositoryMetadataPreviewPolicy metadataPolicy(MetadataPreviewPolicy policy) {
+        return new RepositoryMetadataPreviewPolicy(policy.getTimeoutSeconds());
     }
 
     private static de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.WorkspacePolicy workspacePolicy(
@@ -168,6 +310,57 @@ public final class RepositorySourceGrpcEndpoint extends RepositoryAnalysisServic
             .setUpdatedAt(preparation.updatedAt().toString())
             .putAllSafeAttributes(preparation.safeAttributes());
         preparation.diagnostics().forEach(diagnostic -> builder.addDiagnostics(diagnostic(diagnostic)));
+        return builder.build();
+    }
+
+    private static RepositoryIdentity repositoryIdentity(
+        de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.RepositoryIdentity repository
+    ) {
+        return RepositoryIdentity.newBuilder()
+            .setRepositoryKey(repository.repositoryKey().value())
+            .setRepositoryUrl(repository.repositoryUrl())
+            .setRepositoryHost(repository.repositoryHost())
+            .setRepositoryOwner(repository.repositoryOwner())
+            .setRepositoryName(repository.repositoryName())
+            .setDefaultBranch(repository.defaultBranch())
+            .build();
+    }
+
+    private static RepositoryWorkspace repositoryWorkspace(
+        de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.RepositoryWorkspace workspace
+    ) {
+        var builder = RepositoryWorkspace.newBuilder()
+            .setWorkspaceId(workspace.workspaceId().value())
+            .setWorkspaceTitle(workspace.workspaceTitle().value())
+            .setRepository(repositoryIdentity(workspace.repository()))
+            .setStatus(workspaceStatus(workspace.status()))
+            .setCreatedAt(workspace.createdAt().toString())
+            .setUpdatedAt(workspace.updatedAt().toString())
+            .putAllSafeAttributes(workspace.safeAttributes());
+        workspace.branches().forEach(branch -> builder.addBranches(repositoryWorkspaceBranch(branch)));
+        workspace.diagnostics().forEach(diagnostic -> builder.addDiagnostics(diagnostic(diagnostic)));
+        return builder.build();
+    }
+
+    private static RepositoryWorkspaceBranch repositoryWorkspaceBranch(
+        de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.RepositoryWorkspaceBranch branch
+    ) {
+        var builder = RepositoryWorkspaceBranch.newBuilder()
+            .setWorkspaceBranchId(branch.workspaceBranchId().value())
+            .setWorkspaceId(branch.workspaceId().value())
+            .setRepositoryBranch(branch.repositoryBranch())
+            .setRequestedCommit(branch.requestedCommit())
+            .setResolvedCommit(branch.resolvedCommit())
+            .setStatus(branchStatus(branch.status()))
+            .setLastUpdatedAt(branch.lastUpdatedAt().toString());
+        if (branch.sourceSnapshotId() != null) {
+            builder.setSourceSnapshotId(branch.sourceSnapshotId().value());
+        }
+        if (branch.lastCheckedAt() != null) {
+            builder.setLastCheckedAt(branch.lastCheckedAt().toString());
+        }
+        branch.sourceRoots().forEach(sourceRoot -> builder.addSourceRoots(sourceRoot(sourceRoot)));
+        branch.diagnostics().forEach(diagnostic -> builder.addDiagnostics(diagnostic(diagnostic)));
         return builder.build();
     }
 
@@ -332,7 +525,7 @@ public final class RepositorySourceGrpcEndpoint extends RepositoryAnalysisServic
     }
 
     static Status status(RuntimeException error) {
-        if (error instanceof RepositoryPreparationNotFoundException) {
+        if (error instanceof RepositoryPreparationNotFoundException || error instanceof RepositoryWorkspaceNotFoundException) {
             return Status.NOT_FOUND.withDescription(error.getMessage());
         }
         if (error instanceof IdempotencyConflictException) {
@@ -342,9 +535,26 @@ public final class RepositorySourceGrpcEndpoint extends RepositoryAnalysisServic
             return Status.INVALID_ARGUMENT.withDescription("Invalid repository source request");
         }
         if (error instanceof IllegalStateException) {
-            return Status.FAILED_PRECONDITION.withDescription("Repository preparation failed");
+            return stateStatus(error);
         }
         return Status.INTERNAL.withDescription("Repository source service failed");
+    }
+
+    private static Status stateStatus(RuntimeException error) {
+        var message = Objects.toString(error.getMessage(), "").toLowerCase(java.util.Locale.ROOT);
+        if (message.startsWith("failed to save") || message.startsWith("failed to load")
+            || message.startsWith("failed to initialize") || message.contains("h2")
+            || message.contains("idempotency")) {
+            return Status.INTERNAL.withDescription("Repository source persistence failed");
+        }
+        if (message.contains("workspace branch checkout")) {
+            return Status.FAILED_PRECONDITION.withDescription("Repository workspace checkout failed");
+        }
+        if (message.contains("repository workspace") || message.contains("branch workspace")
+            || message.contains("workspace path") || message.contains("workspace byte quota")) {
+            return Status.FAILED_PRECONDITION.withDescription("Repository workspace operation failed");
+        }
+        return Status.FAILED_PRECONDITION.withDescription("Repository preparation failed");
     }
 
     static CheckoutStatus checkoutStatus(
@@ -366,6 +576,19 @@ public final class RepositorySourceGrpcEndpoint extends RepositoryAnalysisServic
             case CHECKED_OUT -> RepositoryWorkspaceStatus.REPOSITORY_WORKSPACE_STATUS_CHECKED_OUT;
             case CLEANED -> RepositoryWorkspaceStatus.REPOSITORY_WORKSPACE_STATUS_CLEANED;
             case FAILED -> RepositoryWorkspaceStatus.REPOSITORY_WORKSPACE_STATUS_FAILED;
+        };
+    }
+
+    static RepositoryWorkspaceBranchStatus branchStatus(
+        de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.RepositoryWorkspaceBranchStatus status
+    ) {
+        return switch (status) {
+            case CHECKING_OUT -> RepositoryWorkspaceBranchStatus.REPOSITORY_WORKSPACE_BRANCH_STATUS_CHECKING_OUT;
+            case CHECKED_OUT -> RepositoryWorkspaceBranchStatus.REPOSITORY_WORKSPACE_BRANCH_STATUS_CHECKED_OUT;
+            case UP_TO_DATE -> RepositoryWorkspaceBranchStatus.REPOSITORY_WORKSPACE_BRANCH_STATUS_UP_TO_DATE;
+            case UPDATING -> RepositoryWorkspaceBranchStatus.REPOSITORY_WORKSPACE_BRANCH_STATUS_UPDATING;
+            case UPDATED -> RepositoryWorkspaceBranchStatus.REPOSITORY_WORKSPACE_BRANCH_STATUS_UPDATED;
+            case FAILED -> RepositoryWorkspaceBranchStatus.REPOSITORY_WORKSPACE_BRANCH_STATUS_FAILED;
         };
     }
 
