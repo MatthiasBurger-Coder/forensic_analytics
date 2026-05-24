@@ -2,7 +2,8 @@
 
 ## Status
 
-Workflow created. Implementation has not started.
+Workflow execution started. S00 completed the workflow-execute preflight and
+context freeze. Product implementation has not started.
 
 `workflow execute` must run S00 first and then update this report after every
 slice with:
@@ -36,7 +37,7 @@ execution and contract-first sequencing.
 
 | Slice | Status | Notes |
 |---|---|---|
-| S00 | Not started | Workflow execution preflight must verify branch and context pack. |
+| S00 | Completed | Branch/worktree verified, context-pack JSON valid, governing hashes matched, S3D dependency graph passed after normalizing reviewer IDs and branch/process wording. |
 | S01 | Not started | Requirement terminology and data ownership gate. |
 | S02 | Not started | Contract-first public REST and repository-source owner API. |
 | S03 | Not started | Repository-source workspace domain and in-memory use cases. |
@@ -49,3 +50,69 @@ execution and contract-first sequencing.
 | S10 | Not started | Security, leakage, idempotency and restart integration gate. |
 | S11 | Not started | Documentation, arc42 and ADR closure. |
 | S12 | Not started | Final quality gate and workflow handoff. |
+
+## Slice S00 - Workflow Execution Preflight And Context Freeze
+
+Status: Completed.
+
+Owner and reviewers:
+
+- Senior Workflow Architect
+- Senior Requirement Engineer
+- Senior System Architect
+- Senior Tester
+- Senior Swarm Orchestrator / S3D
+
+Changed files:
+
+- `docs/workflow/workflow.md`
+- `docs/workflow/context-pack.md`
+- `docs/workflow/context-pack.json`
+- `docs/workflow/role-ownership.md`
+- `docs/workflow/execution-report.md`
+
+Commands executed:
+
+```bash
+git rev-parse --show-toplevel
+git branch --show-current
+git show-ref --verify --quiet refs/heads/feature/workflow-repository-workspace-checkout-h2-persistence-20260524
+git status --short --branch
+git status --short
+python3 -m json.tool docs/workflow/context-pack.json >/dev/null
+git diff --check
+```
+
+Additional validation:
+
+- Verified all hashes recorded in `docs/workflow/context-pack.json`.
+- Reran S3D after reviewer ID normalization.
+- Verified `senior-security-sandbox-engineer` resolves to
+  `.agents/roles/senior-security-sandbox-engineer.md`.
+- Verified `git_commit_reviewer` resolves to
+  `.codex/agents/git_commit_reviewer.toml`.
+
+Result:
+
+- PASS for S00 preflight and context freeze.
+- S3D execution order remains:
+  `S00 -> S01 -> S02 -> S03 -> S04 -> S05 -> S06 -> S07 -> S08/S09 -> S10 -> S11 -> S12`.
+- S08 and S09 may run in parallel only after S07 freezes public DTOs and
+  configuration names and S3D confirms disjoint locks.
+
+Limitations and carry-forward notes:
+
+- Gradle and npm were not executed because S00 changes workflow documentation
+  only and affects no product module.
+- `docs/arc42/README.md` still contains stale branch wording from an older
+  workflow. Senior System Architect and S3D agreed this is not an S00 blocker;
+  carry it to S01 if arc42 ownership text is touched, otherwise S11 final
+  documentation synchronization.
+- S01 must still resolve or document the existing `Workspace` terminology
+  collision between FA-MVP-0001 checkout workspace state and broader platform
+  workspace terminology.
+
+Checkpoint:
+
+- Commit SHA: pending.
+- Push result: pending.

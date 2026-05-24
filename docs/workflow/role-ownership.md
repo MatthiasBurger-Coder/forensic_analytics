@@ -4,17 +4,17 @@
 |---|---|---|
 | S00 Workflow Execution Preflight And Context Freeze | Senior Workflow Architect | Requirement Engineer, System Architect, Tester |
 | S01 Requirement Terminology And Data Ownership Gate | Senior Requirement Engineer | System Architect, Data Ownership, Storage, Microservice Expert, Tester |
-| S02 Contract-First Workspace API And Owner API | Contract Governance Expert | gRPC/Proto, Java Backend, React Frontend, Tester, Security |
-| S03 Repository Source Workspace Domain And In-Memory Use Cases | Senior Java Backend | System Architect, Git Workspace, Tester, Security |
-| S04 Repository Metadata Resolution And Branch Checkout Refresh | Senior Git Workspace Specialist | Java Backend, Security, Resilience, Tester |
-| S05 H2 Dependency, Schema And Persistence Adapters | Senior Analysis Storage Architect | Data Ownership, Java Backend, DevOps, Security, Tester |
+| S02 Contract-First Workspace API And Owner API | Contract Governance Expert | gRPC/Proto, Java Backend, React Frontend, Tester, Senior Security/Sandbox Engineer |
+| S03 Repository Source Workspace Domain And In-Memory Use Cases | Senior Java Backend | System Architect, Git Workspace, Tester, Senior Security/Sandbox Engineer |
+| S04 Repository Metadata Resolution And Branch Checkout Refresh | Senior Git Workspace Specialist | Java Backend, Senior Security/Sandbox Engineer, Resilience, Tester |
+| S05 H2 Dependency, Schema And Persistence Adapters | Senior Analysis Storage Architect | Data Ownership, Java Backend, DevOps, Senior Security/Sandbox Engineer, Tester |
 | S06 Repository Source gRPC Endpoint And Error Mapping | Senior gRPC/Proto Specialist | Java Backend, Contract Governance, Tester, Observability |
-| S07 Query Report Public Workspace REST Facade | Senior Java Backend | Contract Governance, gRPC/Proto, Security, Frontend, Tester |
-| S08 Forensic UI Create Workspace Flow | Senior React Frontend | UX Designer, Contract Governance, Security, Tester |
-| S09 Docker Local Volumes And Runtime Configuration | Senior DevOps | Storage, Git Workspace, Security, Runtime Readiness, Tester |
-| S10 Security, Leakage, Idempotency And Restart Integration Gate | Senior Tester | Security, Resilience, System Architect, Backend, Frontend, DevOps |
+| S07 Query Report Public Workspace REST Facade | Senior Java Backend | Contract Governance, gRPC/Proto, Senior Security/Sandbox Engineer, Frontend, Tester |
+| S08 Forensic UI Create Workspace Flow | Senior React Frontend | UX Designer, Contract Governance, Senior Security/Sandbox Engineer, Tester |
+| S09 Docker Local Volumes And Runtime Configuration | Senior DevOps | Storage, Git Workspace, Senior Security/Sandbox Engineer, Runtime Readiness, Tester |
+| S10 Security, Leakage, Idempotency And Restart Integration Gate | Senior Tester | Senior Security/Sandbox Engineer, Resilience, System Architect, Backend, Frontend, DevOps |
 | S11 Documentation, arc42 And ADR Closure | Senior Documentation Engineer | System Architect, ADR Steward, Documentation Sync, DevOps, Tester |
-| S12 Final Quality Gate And Workflow Handoff | Quality Gate Orchestrator | DevOps, Tester, System Architect, Git Commit Reviewer |
+| S12 Final Quality Gate And Workflow Handoff | Quality Gate Orchestrator | DevOps, Tester, System Architect, `git_commit_reviewer` |
 
 ## Subagent Use
 
@@ -29,3 +29,7 @@ Subagents must:
 - avoid branch switching;
 - avoid reverting unrelated user or agent changes;
 - return changed paths, verification commands and blockers.
+
+Reviewer identifiers in workflow metadata are resolved against `.agents/roles`,
+`.agents/skills` and callable Codex agent definitions under `.codex/agents`.
+`git_commit_reviewer` is verified by `.codex/agents/git_commit_reviewer.toml`.

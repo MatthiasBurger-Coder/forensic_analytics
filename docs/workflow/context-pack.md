@@ -13,7 +13,7 @@ files or skill files.
 | Workflow version | `fa-mvp-0001-repository-workspace-checkout-h2-persistence-20260524-v1` |
 | Requirement ID | `FA-MVP-0001` |
 | Workflow branch | `feature/workflow-repository-workspace-checkout-h2-persistence-20260524` |
-| Process strand | `workflow create` now; `workflow execute` later |
+| Process strand | `workflow execute` |
 | Execution profile | `FULL_PATH` |
 | Decision | `PROCEED_WITH_ACCEPTED_ASSUMPTIONS` |
 
@@ -57,7 +57,7 @@ files or skill files.
 - Senior Analysis Storage Architect
 - Senior Git Workspace Specialist
 - Senior DevOps Engineer
-- Security / Sandbox Reviewer
+- Senior Security/Sandbox Engineer
 - Resilience Reviewer
 - Senior UX Designer
 - Senior Documentation Engineer

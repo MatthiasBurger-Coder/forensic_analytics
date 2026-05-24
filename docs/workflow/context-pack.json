@@ -2,7 +2,7 @@
   "workflowVersion": "fa-mvp-0001-repository-workspace-checkout-h2-persistence-20260524-v1",
   "requirementId": "FA-MVP-0001",
   "workflowBranch": "feature/workflow-repository-workspace-checkout-h2-persistence-20260524",
-  "processStrand": "workflow create",
+  "processStrand": "workflow execute",
   "executionProfile": "FULL_PATH",
   "decision": "PROCEED_WITH_ACCEPTED_ASSUMPTIONS",
   "affectedAreas": [
@@ -48,7 +48,7 @@
     "senior-analysis-storage-architect",
     "senior-git-workspace-specialist",
     "senior-devops",
-    "security-sandbox-specialist",
+    "senior-security-sandbox-engineer",
     "resilience-engineering",
     "senior-ux-designer",
     "senior-documentation-engineer",
