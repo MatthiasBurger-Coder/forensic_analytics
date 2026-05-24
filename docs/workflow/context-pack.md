@@ -113,8 +113,8 @@ docker compose -f deployment/docker-compose/repository-to-btm.local.yml config
 | `.agents/skills/three-amigos-requirement-gatekeeper/SKILL.md` | `95c04f47127f5149bb39a7e1b82b2690803cc765cad5d18274a82d415931e9ad` |
 | `.agents/skills/execution-profile-router/SKILL.md` | `40b7a5c9a2d8896b3e2f8c384300979a13d7d35986a5bd4bc4d3b5760a7d52b7` |
 | `.agents/skills/workflow-slice/SKILL.md` | `f58db9f89a32d6312c767d3d954aaf374a7bbe12c25915c0101489c990a54976` |
-| `contracts/grpc/repository-analysis.proto` | `452a5defb7110624beec86aa55313bbba9b0be6da062d9d96c8d5075af9339d4` |
-| `contracts/openapi/gateway-api.yaml` | `083494fb29700e5e034e4b58630648d0ec5ad499f87ea4add0c90629fdbc0436` |
+| `contracts/grpc/repository-analysis.proto` | `e28a63411b0c62380b139312ef288fcfb68c2b231ebf5bf3c7fa9d0a2b6a02e6` |
+| `contracts/openapi/gateway-api.yaml` | `59e051d0a1ab3889d05dcbd426c38df67d6c9b45196e0d52050622bfe440d9c6` |
 | `gradle/libs.versions.toml` | `6dda5d048c065e48e2e94c40a18f5ce6e6de9929261b6a791338ac7ecc1a68bb` |
 | `deployment/docker-compose/repository-to-btm.local.yml` | `775f7ca20a42c85280375d6ac8e03cc9ae8da5ed9f6e92a07512c8b95eb46061` |
 | `services/repository-source-service/Dockerfile` | `51c3a5a5bc4f15b24948ae29ed4d30b27377d026990a0ad11f666a8eb08d513e` |

@@ -29,14 +29,17 @@ service-local `GatewayOpenApiContractTest` for
 
 ## Minimum Slice 02 Verification
 
-Slice 02 is contract and contract-test only. Required verification:
+Slice 02 is contract and contract-test only for FA-MVP-0001 public workspace
+REST and repository-source owner API contracts. Required verification:
 
 ```bash
 git diff --check
 ./gradlew :services:query-report-api-service:test --tests '*GatewayOpenApiContractTest' --dependency-verification strict --console=plain --stacktrace
-./gradlew :services:btm-generation-service:generateProto --dependency-verification strict --console=plain --stacktrace
-./gradlew :services:btm-generation-service:test --tests '*BtmGenerationContractTest' --dependency-verification strict --console=plain --stacktrace
+./gradlew :services:repository-source-service:test --tests '*RepositorySourceContractTest' --dependency-verification strict --console=plain --stacktrace
 ```
+
+S02 must not implement REST controllers, gRPC endpoint handlers, owner API
+clients or persistence adapters. It approves additive contract shape only.
 
 ## Minimum Slice 18 Public API Verification
 

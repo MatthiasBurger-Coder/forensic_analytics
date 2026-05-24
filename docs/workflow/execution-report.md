@@ -2,8 +2,9 @@
 
 ## Status
 
-Workflow execution started. S00 completed the workflow-execute preflight and
-context freeze. Product implementation has not started.
+Workflow execution is in progress. S00, S01 and S02 are complete. Product
+implementation has not started; S02 froze the planned REST and gRPC contracts
+for later implementation slices.
 
 `workflow execute` must run S00 first and then update this report after every
 slice with:
@@ -39,7 +40,7 @@ execution and contract-first sequencing.
 |---|---|---|
 | S00 | Completed | Branch/worktree verified, context-pack JSON valid, governing hashes matched, S3D dependency graph passed after normalizing reviewer IDs and branch/process wording. |
 | S01 | Completed | Workspace terminology split into platform workspace and repository checkout workspace; repository-source ownership, H2 MVP scope and query-report facade boundary documented. |
-| S02 | Not started | Contract-first public REST and repository-source owner API. |
+| S02 | Completed | Contract-first public REST and repository-source owner API frozen with security and idempotency contract tests. |
 | S03 | Not started | Repository-source workspace domain and in-memory use cases. |
 | S04 | Not started | Metadata resolution, checkout and branch refresh. |
 | S05 | Not started | H2 dependency, schema and persistence adapters. |
@@ -185,3 +186,68 @@ Checkpoint:
 - Commit SHA: `4f7c076f91b30f76f44ac38bb4cb9d3797a677bf`.
 - Push result: pushed to
   `origin/feature/workflow-repository-workspace-checkout-h2-persistence-20260524`.
+
+## Slice S02 - Contract-First Workspace API And Owner API
+
+Status: Completed; checkpoint commit pending.
+
+Owner and reviewers:
+
+- Contract Governance / Contract-First API Steward
+- Senior gRPC Proto Specialist
+- Senior Java Backend
+- Senior React Frontend
+- Senior Security Sandbox Engineer
+- Senior Tester
+
+Changed files:
+
+- `contracts/openapi/gateway-api.yaml`
+- `contracts/openapi/README.md`
+- `contracts/grpc/repository-analysis.proto`
+- `docs/contracts/contract-test-plan.md`
+- `docs/workflow/context-pack.md`
+- `docs/workflow/context-pack.json`
+- `docs/workflow/execution-report.md`
+- `services/query-report-api-service/src/test/java/de/burger/forensics/analytics/services/queryreportapi/adapter/in/http/GatewayOpenApiContractTest.java`
+- `services/repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/adapter/in/grpc/RepositorySourceContractTest.java`
+
+Commands executed:
+
+```bash
+git status --short --branch
+git diff --check
+python3 -m json.tool docs/workflow/context-pack.json
+./gradlew :services:query-report-api-service:test --tests "*GatewayOpenApiContractTest" --dependency-verification strict --console=plain --stacktrace
+./gradlew :services:repository-source-service:test --tests "*RepositorySourceContractTest" --dependency-verification strict --console=plain --stacktrace
+./gradlew :services:query-report-api-service:test --dependency-verification strict --console=plain --stacktrace
+./gradlew :services:repository-source-service:test --dependency-verification strict --console=plain --stacktrace
+./gradlew test --dependency-verification strict --console=plain --stacktrace
+```
+
+Result:
+
+- PASS for S02 contract-first slice.
+- Public REST contracts now include planned workspace metadata, create/reuse
+  workspace, get workspace and refresh branch routes.
+- Repository-source gRPC contract now includes additive owner API methods for
+  repository workspace metadata, create/reuse workspace, get workspace and
+  refresh branch.
+- Contract tests lock the new routes, RPC names, field numbers, branch status
+  enum values, explicit `409` idempotency conflicts, sanitized public messages
+  and private-path/raw-output leakage constraints.
+- Security review blockers for special-use URL targets, no-query wording,
+  idempotency conflict responses and safe public error messages were resolved.
+
+Limitations and carry-forward notes:
+
+- S02 is contract and test coverage only. It intentionally does not implement
+  REST controllers, gRPC endpoint handlers, repository-source clients,
+  workspace use cases, persistence adapters, Docker volumes or frontend flows.
+- Gradle emitted Java/protobuf/netty deprecation and native-access warnings;
+  they did not fail the S02 gates.
+
+Checkpoint:
+
+- Commit SHA: pending.
+- Push result: pending.

@@ -11,7 +11,7 @@ option java_outer_classname = "RepositoryAnalysisProto";
 // FA-MSA-001 contract for repository checkout and source snapshot
 // preparation. The contract is intentionally strict for a networked service:
 // repository URLs must be clean HTTPS URLs without userinfo, credentials,
-// query secrets or fragments. Local paths, file URLs, SSH, SCP-style remotes,
+// query strings or fragments. Local paths, file URLs, SSH, SCP-style remotes,
 // submodules, build execution, parser execution and private workspace-path
 // handoff are out of scope for this service contract.
 //
@@ -31,6 +31,18 @@ service RepositoryAnalysisService {
 
   rpc CleanupRepositoryWorkspace(CleanupRepositoryWorkspaceRequest)
       returns (CleanupRepositoryWorkspaceResponse);
+
+  rpc PreviewRepositoryWorkspaceMetadata(PreviewRepositoryWorkspaceMetadataRequest)
+      returns (PreviewRepositoryWorkspaceMetadataResponse);
+
+  rpc CreateRepositoryWorkspace(CreateRepositoryWorkspaceRequest)
+      returns (CreateRepositoryWorkspaceResponse);
+
+  rpc GetRepositoryWorkspace(GetRepositoryWorkspaceRequest)
+      returns (RepositoryWorkspace);
+
+  rpc RefreshRepositoryWorkspaceBranch(RefreshRepositoryWorkspaceBranchRequest)
+      returns (RefreshRepositoryWorkspaceBranchResponse);
 }
 
 message PrepareRepositoryRequest {
@@ -130,8 +142,151 @@ message CleanupRepositoryWorkspaceResponse {
   repeated Diagnostic diagnostics = 4;
 }
 
+message PreviewRepositoryWorkspaceMetadataRequest {
+  // Required, non-blank.
+  string request_id = 1;
+  // Required, non-blank.
+  string schema_version = 2;
+  // Required, non-blank.
+  string correlation_id = 3;
+  // Required. The repository URL must be clean HTTPS and must resolve outside
+  // localhost, private, loopback, link-local and special-use networks.
+  RepositoryReference repository = 4;
+  // Required. Metadata lookup timeout must be positive and bounded.
+  MetadataPreviewPolicy metadata_policy = 5;
+  map<string, string> safe_attributes = 6;
+}
+
+message MetadataPreviewPolicy {
+  int64 timeout_seconds = 1;
+}
+
+message PreviewRepositoryWorkspaceMetadataResponse {
+  RepositoryIdentity repository = 1;
+  // Human-readable label derived from repository metadata. It is never a path
+  // or security identifier.
+  string workspace_title = 2;
+  OperationStatus status = 3;
+  repeated Diagnostic diagnostics = 4;
+  map<string, string> safe_attributes = 5;
+}
+
+message CreateRepositoryWorkspaceRequest {
+  // Required, non-blank.
+  string request_id = 1;
+  // Required, non-blank. Same key plus same fingerprint returns the same
+  // workspace result; same key plus different fingerprint is a conflict.
+  string idempotency_key = 2;
+  // Required, non-blank.
+  string schema_version = 3;
+  // Required, non-blank.
+  string correlation_id = 4;
+  // Required.
+  RepositoryReference repository = 5;
+  // Optional branch/commit selector. If branch is absent, the service resolves
+  // the default branch through its metadata resolution rules.
+  RepositoryWorkspaceBranchSelector branch_selector = 6;
+  // Required. Timeout and quota must be positive and bounded.
+  WorkspacePolicy workspace_policy = 7;
+  map<string, string> safe_attributes = 8;
+}
+
+message CreateRepositoryWorkspaceResponse {
+  RepositoryWorkspace workspace = 1;
+  OperationStatus status = 2;
+}
+
+message GetRepositoryWorkspaceRequest {
+  // Required, non-blank.
+  string request_id = 1;
+  // Required, non-blank.
+  string correlation_id = 2;
+  // Required, opaque and non-path.
+  string workspace_id = 3;
+}
+
+message RefreshRepositoryWorkspaceBranchRequest {
+  // Required, non-blank.
+  string request_id = 1;
+  // Required, non-blank. Refresh is idempotent for the same workspace branch
+  // fingerprint; the same key plus a different fingerprint is a conflict.
+  string idempotency_key = 2;
+  // Required, non-blank.
+  string schema_version = 3;
+  // Required, non-blank.
+  string correlation_id = 4;
+  // Required, opaque and non-path.
+  string workspace_id = 5;
+  // Required, opaque and non-path.
+  string workspace_branch_id = 6;
+  // Required. Timeout and quota must be positive and bounded.
+  WorkspacePolicy workspace_policy = 7;
+  map<string, string> safe_attributes = 8;
+}
+
+message RefreshRepositoryWorkspaceBranchResponse {
+  RepositoryWorkspaceBranch branch = 1;
+  bool changed = 2;
+  string previous_commit = 3;
+  OperationStatus status = 4;
+  repeated Diagnostic diagnostics = 5;
+  map<string, string> safe_attributes = 6;
+}
+
+message RepositoryIdentity {
+  // Normalized host/owner/repository key, without protocol, credentials, query
+  // string or fragment.
+  string repository_key = 1;
+  // Sanitized clean HTTPS URL.
+  string repository_url = 2;
+  string repository_host = 3;
+  string repository_owner = 4;
+  string repository_name = 5;
+  string default_branch = 6;
+}
+
+message RepositoryWorkspace {
+  // Opaque service-generated ID, not a path.
+  string workspace_id = 1;
+  // Human-readable label derived from repository metadata. It is never a path
+  // or security identifier.
+  string workspace_title = 2;
+  RepositoryIdentity repository = 3;
+  RepositoryWorkspaceStatus status = 4;
+  string created_at = 5;
+  string updated_at = 6;
+  repeated RepositoryWorkspaceBranch branches = 7;
+  repeated Diagnostic diagnostics = 8;
+  map<string, string> safe_attributes = 9;
+}
+
+message RepositoryWorkspaceBranch {
+  // Opaque service-generated ID, not a path and not derived from the branch
+  // name.
+  string workspace_branch_id = 1;
+  string workspace_id = 2;
+  // Repository branch name as data only. It must never be used directly as a
+  // directory name.
+  string repository_branch = 3;
+  string requested_commit = 4;
+  string resolved_commit = 5;
+  string source_snapshot_id = 6;
+  RepositoryWorkspaceBranchStatus status = 7;
+  repeated SourceRoot source_roots = 8;
+  string last_checked_at = 9;
+  string last_updated_at = 10;
+  repeated Diagnostic diagnostics = 11;
+}
+
+message RepositoryWorkspaceBranchSelector {
+  // Optional selected branch. If blank, the service resolves the default
+  // branch. Unsafe option-like refs are forbidden.
+  string branch = 1;
+  string commit = 2;
+}
+
 message RepositoryReference {
-  // Must be HTTPS without userinfo, credentials, query secrets or fragments.
+  // Must be HTTPS without userinfo, credentials, query strings or fragments.
   // Required, non-blank.
   string remote_url = 1;
   // Optional provider label. When present, non-blank and non-sensitive.
@@ -287,6 +442,16 @@ enum RepositoryWorkspaceStatus {
   REPOSITORY_WORKSPACE_STATUS_CHECKED_OUT = 2;
   REPOSITORY_WORKSPACE_STATUS_CLEANED = 3;
   REPOSITORY_WORKSPACE_STATUS_FAILED = 4;
+}
+
+enum RepositoryWorkspaceBranchStatus {
+  REPOSITORY_WORKSPACE_BRANCH_STATUS_UNSPECIFIED = 0;
+  REPOSITORY_WORKSPACE_BRANCH_STATUS_CHECKING_OUT = 1;
+  REPOSITORY_WORKSPACE_BRANCH_STATUS_CHECKED_OUT = 2;
+  REPOSITORY_WORKSPACE_BRANCH_STATUS_UP_TO_DATE = 3;
+  REPOSITORY_WORKSPACE_BRANCH_STATUS_UPDATING = 4;
+  REPOSITORY_WORKSPACE_BRANCH_STATUS_UPDATED = 5;
+  REPOSITORY_WORKSPACE_BRANCH_STATUS_FAILED = 6;
 }
 
 enum SourceSnapshotCompleteness {

@@ -15,10 +15,18 @@ predecessor Gateway evidence and S08 `query-report-api-service` target-service
 tests. Operations marked `planned-initial` are logical target contracts and are
 not implementation evidence until later service slices implement and test them.
 
+FA-MVP-0001 adds planned repository checkout workspace routes under the
+`Workspaces` tag. These routes belong to `query-report-api-service` as a
+sanitized public facade only. The repository checkout workspace, branch state,
+source snapshot references, private checkout paths and H2 persistence remain
+owned by `repository-source-service`.
+
 Slice S18 moves executable OpenAPI contract-test ownership to
 `query-report-api-service`. The service-local executable OpenAPI contract test
 `GatewayOpenApiContractTest` reads `gateway-api.yaml` directly and verifies the
 current repository-to-BTM submission/status contract without changing the
-public API shape. The legacy `forensic-analytics-rest` contract test is
+public API shape. FA-MVP-0001 S02 extends that test with planned workspace
+route coverage before S07 implements the facade. The legacy
+`forensic-analytics-rest` contract test is
 historical predecessor evidence after S05 source-tree removal; compatibility
 wording remains provenance only, not an active rollback runtime claim.
