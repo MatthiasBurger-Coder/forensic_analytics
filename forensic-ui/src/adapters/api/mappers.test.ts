@@ -1,11 +1,12 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  mapBranchRefreshDto,
   mapBackendStatus,
   mapRepositoryAnalysisDto,
   mapWorkspaceDto,
   mapWorkspaceListDto,
-  mapWorkspaceViewsFromAnalyses
+  mapWorkspaceMetadataDto
 } from "@/adapters/api/mappers";
 
 describe("API DTO mapping", () => {
@@ -96,57 +97,97 @@ describe("API DTO mapping", () => {
     expect(analysis.diagnostics[0].message).toBe("checkout completed");
   });
 
-  it("maps backend workspace views from REST", () => {
+  it("maps repository workspace metadata from REST without deriving it locally", () => {
+    const metadata = mapWorkspaceMetadataDto({
+      repositoryKey: "github.com/wildfly/wildfly",
+      repositoryHost: "github.com",
+      repositoryOwner: "wildfly",
+      repositoryName: "wildfly",
+      workspaceTitle: "wildfly",
+      defaultBranch: "main",
+      diagnostics: []
+    });
+
+    expect(metadata).toMatchObject({
+      repositoryKey: "github.com/wildfly/wildfly",
+      repositoryHost: "github.com",
+      repositoryOwner: "wildfly",
+      repositoryName: "wildfly",
+      workspaceTitle: "wildfly",
+      defaultBranch: "main"
+    });
+  });
+
+  it("maps repository checkout workspaces and sanitizes branch diagnostics", () => {
     const workspaces = mapWorkspaceListDto({
       items: [
         {
           workspaceId: "workspace-1",
-          name: null,
-          status: null,
-          createdAt: null,
-          updatedAt: null,
-          repositoryAnalyses: [
+          workspaceTitle: "wildfly",
+          repository: {
+            repositoryKey: "github.com/wildfly/wildfly",
+            repositoryUrl: "https://github.com/wildfly/wildfly.git",
+            repositoryHost: "github.com",
+            repositoryOwner: "wildfly",
+            repositoryName: "wildfly",
+            defaultBranch: "main"
+          },
+          status: "READY",
+          branches: [
             {
-              analysisRunId: "run-1",
-              workspaceId: "workspace-1",
-              repositoryUrl: "https://example.invalid/project.git",
-              branch: "main",
-              status: "REGISTERED",
-              diagnostics: ["checkout completed"]
+              workspaceBranchId: "workspace-branch-1",
+              repositoryBranch: "main",
+              status: "CHECKED_OUT",
+              resolvedCommit: "abc1234",
+              sourceSnapshotId: "source-snapshot-1",
+              sourceRoots: ["src/main/java", "/var/lib/forensic-analytics/repository-workspaces/workspace-1"],
+              diagnostics: [
+                {
+                  severity: "ERROR",
+                  message:
+                    "raw stdout token=secret jdbc:h2:file:/var/lib/forensic-analytics/repository-source-data/repository-source",
+                  source: "C:\\Users\\private\\File.java"
+                }
+              ]
             }
-          ]
+          ],
+          diagnostics: []
         }
       ]
     });
 
     expect(workspaces[0].workspaceId).toBe("workspace-1");
-    expect(workspaces[0].status).toBeNull();
-    expect(workspaces[0].repositoryAnalyses[0].analysisRunId).toBe("run-1");
-    expect(workspaces[0].diagnostics[0].message).toBe("checkout completed");
-    expect(mapWorkspaceDto({ workspaceId: "workspace-2" }).status).toBeNull();
+    expect(workspaces[0].workspaceTitle).toBe("wildfly");
+    expect(workspaces[0].status).toBe("READY");
+    expect(workspaces[0].repository.repositoryKey).toBe("github.com/wildfly/wildfly");
+    expect(workspaces[0].branches[0].status).toBe("CHECKED_OUT");
+    expect(workspaces[0].branches[0].sourceRoots[1]).toContain("[local-path]");
+    expect(workspaces[0].branches[0].diagnostics[0].message).toContain(
+      "[stream-redacted]"
+    );
+    expect(workspaces[0].branches[0].diagnostics[0].message).not.toContain(
+      "secret"
+    );
+    expect(workspaces[0].branches[0].diagnostics[0].source).toBe("[local-path]");
+    expect(mapWorkspaceDto({ workspaceId: "workspace-2" }).status).toBe(
+      "UNKNOWN"
+    );
   });
 
-  it("derives workspace views only from repository analyses with workspace evidence", () => {
-    const withWorkspace = mapRepositoryAnalysisDto({
-      analysisRunId: "run-1",
-      workspaceId: "workspace-1",
-      repositoryUrl: "https://example.invalid/project.git",
-      status: "REGISTERED"
-    });
-    const withoutWorkspace = mapRepositoryAnalysisDto({
-      analysisRunId: "run-2",
-      repositoryUrl: "https://example.invalid/other.git",
-      status: "REGISTERED"
+  it("maps repository checkout branch refresh results", () => {
+    const refresh = mapBranchRefreshDto({
+      workspaceBranchId: "workspace-branch-1",
+      repositoryBranch: "main",
+      status: "UP_TO_DATE",
+      changed: false,
+      previousCommit: "abc1234",
+      resolvedCommit: "abc1234",
+      sourceSnapshotId: "source-snapshot-1",
+      diagnostics: []
     });
 
-    const workspaces = mapWorkspaceViewsFromAnalyses([
-      withWorkspace,
-      withoutWorkspace
-    ]);
-
-    expect(workspaces).toHaveLength(1);
-    expect(workspaces[0].workspaceId).toBe("workspace-1");
-    expect(workspaces[0].repositoryAnalyses).toHaveLength(1);
-    expect(workspaces[0]).not.toHaveProperty("analysisRunIds");
+    expect(refresh.changed).toBe(false);
+    expect(refresh.status).toBe("UP_TO_DATE");
+    expect(refresh.resolvedCommit).toBe("abc1234");
   });
 });

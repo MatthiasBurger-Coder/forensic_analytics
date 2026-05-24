@@ -90,6 +90,9 @@ const servicesWithStartResult = (
     startRepositoryAnalysis: vi.fn().mockResolvedValue(result)
   },
   workspaces: {
+    previewMetadata: vi.fn(),
+    createWorkspace: vi.fn(),
+    refreshBranch: vi.fn(),
     listWorkspaces: vi.fn(),
     getWorkspace: vi.fn()
   },

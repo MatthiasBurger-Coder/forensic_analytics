@@ -13,6 +13,7 @@ import { AnalysisJobDetailPage } from "@/pages/analysis-jobs/AnalysisJobDetailPa
 import { BackendUnavailablePage } from "@/pages/backend-unavailable/BackendUnavailablePage";
 import { CreateRepositoryAnalysisPage } from "@/pages/repository-analysis/CreateRepositoryAnalysisPage";
 import { SettingsPage } from "@/pages/settings/SettingsPage";
+import { CreateWorkspacePage } from "@/pages/workspaces/CreateWorkspacePage";
 
 export const App = ({ services }: { services: ApplicationServices }) => (
   <ApplicationServicesProvider services={services}>
@@ -20,13 +21,22 @@ export const App = ({ services }: { services: ApplicationServices }) => (
       <BrowserRouter>
         <Routes>
           <Route element={<AppShell />}>
-            <Route
-              index
-              element={<Navigate to="/repository-analyses/new" replace />}
-            />
+            <Route index element={<Navigate to="/workspaces" replace />} />
             <Route
               path="workspaces"
-              element={<Navigate to="/repository-analyses/new" replace />}
+              element={
+                <RouteBoundary>
+                  <CreateWorkspacePage />
+                </RouteBoundary>
+              }
+            />
+            <Route
+              path="workspaces/new"
+              element={
+                <RouteBoundary>
+                  <CreateWorkspacePage />
+                </RouteBoundary>
+              }
             />
             <Route
               path="repository-analyses/new"

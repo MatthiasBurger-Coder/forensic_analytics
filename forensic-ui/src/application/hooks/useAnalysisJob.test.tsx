@@ -105,6 +105,9 @@ const servicesWithJobs = (
       startRepositoryAnalysis: vi.fn()
     },
     workspaces: {
+      previewMetadata: vi.fn(),
+      createWorkspace: vi.fn(),
+      refreshBranch: vi.fn(),
       listWorkspaces: vi.fn(),
       getWorkspace: vi.fn()
     },

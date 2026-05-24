@@ -29,6 +29,23 @@ Update arc42 when the corresponding slice changes verified behavior:
 | S09 | Update deployment view for Docker-local repository-source data/workspace volumes. |
 | S11 | Perform final arc42 synchronization and ADR decision check. |
 
+## Execution Updates
+
+### S08 Frontend Context
+
+Status: Updated.
+
+`docs/arc42/06-runtime-view.md` now records the verified FA-MVP-0001 frontend
+Create Workspace runtime flow after public API and UI behavior were
+implemented. The update is limited to the current public query-report REST
+workspace routes, read-only API-derived `workspaceTitle`, idempotent save and
+refresh UI behavior, sanitized diagnostics and browser boundary exclusions.
+
+The S08 arc42 update does not claim Docker-local volume verification, H2 restart
+verification, JavaParser, Joern, BTM generation, replay, report, LLM, Neo4j,
+Kafka, vector storage, Kubernetes or full platform workspace lifecycle
+behavior.
+
 ## STOP Conditions
 
 Stop if arc42 would need to claim:

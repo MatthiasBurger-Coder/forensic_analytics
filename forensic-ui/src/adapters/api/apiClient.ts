@@ -7,14 +7,28 @@ import type {
   RepositoryAnalysis,
   StartRepositoryAnalysisCommand
 } from "@/domain/repositoryAnalysis";
+import type {
+  CreateWorkspaceCommand,
+  GetWorkspaceCommand,
+  PreviewWorkspaceMetadataCommand,
+  RefreshWorkspaceBranchCommand
+} from "@/domain/workspace";
 
 import { resolveApiConfig, type ApiConfig } from "./config";
-import type { RepositoryAnalysisDto } from "./dtos";
+import type {
+  BranchRefreshResponseDto,
+  RepositoryAnalysisDto,
+  WorkspaceDto,
+  WorkspaceMetadataResponseDto
+} from "./dtos";
 import { HttpClient, type Delay, type Fetcher } from "./httpClient";
 import {
   mapAnalysisJobDto,
+  mapBranchRefreshDto,
   mapRepositoryAnalysisDto,
-  mapRepositoryAnalysisListDto
+  mapRepositoryAnalysisListDto,
+  mapWorkspaceDto,
+  mapWorkspaceMetadataDto
 } from "./mappers";
 
 export interface ApiClientOptions extends Partial<ApiConfig> {
@@ -73,18 +87,72 @@ export const createApiClient = (
   };
 
   const workspaces: WorkspacePort = {
+    async previewMetadata(command, signal) {
+      validateWorkspaceMetadataCommand(command);
+      const response = await http.requestJson<WorkspaceMetadataResponseDto>(
+        "/workspace-metadata",
+        {
+          method: "POST",
+          headers: mutationHeaders(command),
+          body: {
+            repositoryUrl: command.repositoryUrl
+          },
+          signal
+        }
+      );
+
+      return mapWorkspaceMetadataDto(response);
+    },
+    async createWorkspace(command, signal) {
+      validateCreateWorkspaceCommand(command);
+      const response = await http.requestJson<WorkspaceDto>("/workspaces", {
+        method: "POST",
+        headers: mutationHeaders(command),
+        body: {
+          repositoryUrl: command.repositoryUrl,
+          selectedBranch: command.selectedBranch,
+          workspacePolicy: command.workspacePolicy
+        },
+        signal
+      });
+
+      return mapWorkspaceDto(response);
+    },
+    async refreshBranch(command, signal) {
+      validateRefreshWorkspaceBranchCommand(command);
+      const response = await http.requestJson<BranchRefreshResponseDto>(
+        `/workspaces/${encodeURIComponent(command.workspaceId)}/branches/${encodeURIComponent(command.workspaceBranchId)}/refresh`,
+        {
+          method: "POST",
+          headers: mutationHeaders(command),
+          signal
+        }
+      );
+
+      return mapBranchRefreshDto(response);
+    },
     async listWorkspaces(signal) {
       void signal;
 
       return [];
     },
-    async getWorkspace(workspaceId, signal) {
-      void signal;
-
-      throw new ApplicationError(
-        "VALIDATION_ERROR",
-        `Gateway workspace route is not available for workspace ${workspaceId}.`
+    async getWorkspace(command, signal) {
+      const request =
+        typeof command === "string"
+          ? { workspaceId: command, correlationId: createGatewayMetadata("workspace").correlationId }
+          : command;
+      validateGetWorkspaceCommand(request);
+      const response = await http.requestJson<WorkspaceDto>(
+        `/workspaces/${encodeURIComponent(request.workspaceId)}`,
+        {
+          headers: {
+            "X-Correlation-Id": request.correlationId
+          },
+          signal
+        }
       );
+
+      return mapWorkspaceDto(response);
     }
   };
 
@@ -169,6 +237,90 @@ const validateStartCommand = (command: StartRepositoryAnalysisCommand): void => 
     );
   }
 };
+
+const validateWorkspaceMetadataCommand = (
+  command: PreviewWorkspaceMetadataCommand
+): void => {
+  validateRequiredText(
+    [
+      ["repositoryUrl", command.repositoryUrl],
+      ["correlationId", command.correlationId],
+      ["idempotencyKey", command.idempotencyKey]
+    ],
+    "previewing repository workspace metadata"
+  );
+};
+
+const validateCreateWorkspaceCommand = (
+  command: CreateWorkspaceCommand
+): void => {
+  validateRequiredText(
+    [
+      ["repositoryUrl", command.repositoryUrl],
+      ["correlationId", command.correlationId],
+      ["idempotencyKey", command.idempotencyKey]
+    ],
+    "creating a repository workspace"
+  );
+
+  if (
+    command.workspacePolicy.timeoutSeconds < 1 ||
+    command.workspacePolicy.maxWorkspaceBytes < 1
+  ) {
+    throw new ApplicationError(
+      "VALIDATION_ERROR",
+      "Workspace timeout and byte limits must be positive."
+    );
+  }
+};
+
+const validateGetWorkspaceCommand = (command: GetWorkspaceCommand): void => {
+  validateRequiredText(
+    [
+      ["workspaceId", command.workspaceId],
+      ["correlationId", command.correlationId]
+    ],
+    "loading a repository workspace"
+  );
+};
+
+const validateRefreshWorkspaceBranchCommand = (
+  command: RefreshWorkspaceBranchCommand
+): void => {
+  validateRequiredText(
+    [
+      ["workspaceId", command.workspaceId],
+      ["workspaceBranchId", command.workspaceBranchId],
+      ["correlationId", command.correlationId],
+      ["idempotencyKey", command.idempotencyKey]
+    ],
+    "refreshing a repository workspace branch"
+  );
+};
+
+const validateRequiredText = (
+  fields: Array<[string, string]>,
+  action: string
+): void => {
+  const missingText = fields.find(
+    ([, value]) => typeof value !== "string" || !value.trim()
+  );
+
+  if (missingText) {
+    throw new ApplicationError(
+      "VALIDATION_ERROR",
+      `${missingText[0]} is required before ${action}.`
+    );
+  }
+};
+
+const mutationHeaders = (command: {
+  correlationId: string;
+  idempotencyKey: string;
+}): Record<string, string> => ({
+  "X-Correlation-Id": command.correlationId,
+  "Idempotency-Key": command.idempotencyKey
+});
 
 const withSubmittedCommand = (
   analysis: RepositoryAnalysis,

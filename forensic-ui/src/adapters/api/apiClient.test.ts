@@ -43,7 +43,7 @@ describe("API client resilience", () => {
     expect(analysis.status.backendStatus).toBe("REGISTERED");
   });
 
-  it("does not call planned Gateway list and workspace routes", async () => {
+  it("does not call planned Gateway list and diagnostics routes", async () => {
     const fetcher = vi.fn();
     const client = createApiClient({
       baseUrl: "https://backend.invalid/api",
@@ -58,11 +58,100 @@ describe("API client resilience", () => {
     ).resolves.toEqual([]);
     await expect(client.workspaces.listWorkspaces()).resolves.toEqual([]);
     await expect(client.diagnostics.collectDiagnostics()).resolves.toEqual([]);
-    await expect(client.workspaces.getWorkspace("workspace-1")).rejects.toMatchObject({
-      category: "VALIDATION_ERROR"
-    });
 
     expect(fetcher).not.toHaveBeenCalled();
+  });
+
+  it("uses only public workspace REST routes for metadata, create, get and refresh", async () => {
+    const fetcher = vi
+      .fn()
+      .mockResolvedValueOnce(
+        jsonResponse({
+          repositoryKey: "github.com/wildfly/wildfly",
+          repositoryHost: "github.com",
+          repositoryOwner: "wildfly",
+          repositoryName: "wildfly",
+          workspaceTitle: "wildfly",
+          defaultBranch: "main",
+          diagnostics: []
+        })
+      )
+      .mockResolvedValueOnce(jsonResponse(workspaceResponse()))
+      .mockResolvedValueOnce(jsonResponse(workspaceResponse()))
+      .mockResolvedValueOnce(
+        jsonResponse({
+          workspaceBranchId: "workspace-branch-1",
+          repositoryBranch: "main",
+          status: "UP_TO_DATE",
+          changed: false,
+          resolvedCommit: "abc1234",
+          diagnostics: []
+        })
+      );
+    const client = createApiClient({
+      baseUrl: "https://backend.invalid/api",
+      timeoutMs: 1000,
+      maxGetAttempts: 1,
+      baseRetryDelayMs: 1,
+      fetcher
+    });
+
+    await client.workspaces.previewMetadata({
+      repositoryUrl: "https://github.com/wildfly/wildfly.git",
+      correlationId: "correlation-metadata",
+      idempotencyKey: "idem-metadata"
+    });
+    await client.workspaces.createWorkspace({
+      repositoryUrl: "https://github.com/wildfly/wildfly.git",
+      selectedBranch: "main",
+      workspacePolicy: {
+        ephemeral: false,
+        allowShallowClone: true,
+        allowPartialClone: false,
+        allowSparseCheckout: false,
+        timeoutSeconds: 60,
+        maxWorkspaceBytes: 1073741824
+      },
+      correlationId: "correlation-create",
+      idempotencyKey: "idem-create"
+    });
+    await client.workspaces.getWorkspace({
+      workspaceId: "workspace-1",
+      correlationId: "correlation-get"
+    });
+    await client.workspaces.refreshBranch({
+      workspaceId: "workspace-1",
+      workspaceBranchId: "workspace-branch-1",
+      correlationId: "correlation-refresh",
+      idempotencyKey: "idem-refresh"
+    });
+
+    expect(fetcher).toHaveBeenCalledTimes(4);
+    expect(fetcher.mock.calls.map(([url]) => url)).toEqual([
+      "https://backend.invalid/api/workspace-metadata",
+      "https://backend.invalid/api/workspaces",
+      "https://backend.invalid/api/workspaces/workspace-1",
+      "https://backend.invalid/api/workspaces/workspace-1/branches/workspace-branch-1/refresh"
+    ]);
+    expect(fetcher.mock.calls.map(([url]) => url)).not.toContain(
+      "https://github.com/wildfly/wildfly.git"
+    );
+    expect((fetcher.mock.calls[0][1] as RequestInit).headers).toMatchObject({
+      "X-Correlation-Id": "correlation-metadata",
+      "Idempotency-Key": "idem-metadata"
+    });
+    expect(JSON.parse(String((fetcher.mock.calls[1][1] as RequestInit).body))).toMatchObject({
+      repositoryUrl: "https://github.com/wildfly/wildfly.git",
+      selectedBranch: "main"
+    });
+    expect((fetcher.mock.calls[2][1] as RequestInit).headers).toMatchObject({
+      "X-Correlation-Id": "correlation-get"
+    });
+    expect((fetcher.mock.calls[3][1] as RequestInit).headers).toMatchObject({
+      "X-Correlation-Id": "correlation-refresh",
+      "Idempotency-Key": "idem-refresh"
+    });
+    expect((fetcher.mock.calls[3][1] as RequestInit).body).toBeUndefined();
   });
 
   it("sends required Gateway correlation metadata for status reads", async () => {
@@ -208,6 +297,102 @@ describe("API client resilience", () => {
   });
 
   it.each([
+    [
+      "metadata preview",
+      (client: ReturnType<typeof createApiClient>) =>
+        client.workspaces.previewMetadata({
+          repositoryUrl: "https://github.com/wildfly/wildfly.git",
+          correlationId: "correlation-metadata",
+          idempotencyKey: "idem-metadata"
+        })
+    ],
+    [
+      "workspace create",
+      (client: ReturnType<typeof createApiClient>) =>
+        client.workspaces.createWorkspace({
+          repositoryUrl: "https://github.com/wildfly/wildfly.git",
+          selectedBranch: "main",
+          workspacePolicy: {
+            ephemeral: false,
+            allowShallowClone: true,
+            allowPartialClone: false,
+            allowSparseCheckout: false,
+            timeoutSeconds: 60,
+            maxWorkspaceBytes: 1073741824
+          },
+          correlationId: "correlation-create",
+          idempotencyKey: "idem-create"
+        })
+    ],
+    [
+      "branch refresh",
+      (client: ReturnType<typeof createApiClient>) =>
+        client.workspaces.refreshBranch({
+          workspaceId: "workspace-1",
+          workspaceBranchId: "workspace-branch-1",
+          correlationId: "correlation-refresh",
+          idempotencyKey: "idem-refresh"
+        })
+    ]
+  ])("does not retry workspace POST mutation %s", async (_name, action) => {
+    const fetcher = vi.fn().mockResolvedValue(
+      jsonResponse(
+        {
+          code: "BACKEND_UNAVAILABLE",
+          message: "Backend unavailable",
+          retryable: true
+        },
+        503
+      )
+    );
+    const client = createApiClient({
+      baseUrl: "https://backend.invalid/api",
+      timeoutMs: 1000,
+      maxGetAttempts: 3,
+      baseRetryDelayMs: 1,
+      delay: async () => undefined,
+      fetcher
+    });
+
+    await expect(action(client)).rejects.toBeInstanceOf(ApplicationError);
+
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  });
+
+  it("maps public idempotency conflicts from workspace routes", async () => {
+    const fetcher = vi.fn().mockResolvedValue(
+      jsonResponse(
+        {
+          code: "IDEMPOTENCY_CONFLICT",
+          message: "The idempotency key was already used with different input.",
+          retryable: false,
+          correlationId: "correlation-1",
+          diagnostics: []
+        },
+        409
+      )
+    );
+    const client = createApiClient({
+      baseUrl: "https://backend.invalid/api",
+      timeoutMs: 1000,
+      maxGetAttempts: 1,
+      baseRetryDelayMs: 1,
+      fetcher
+    });
+
+    await expect(
+      client.workspaces.previewMetadata({
+        repositoryUrl: "https://github.com/wildfly/wildfly.git",
+        correlationId: "correlation-1",
+        idempotencyKey: "idem-1"
+      })
+    ).rejects.toMatchObject({
+      category: "IDEMPOTENCY_CONFLICT",
+      correlationId: "correlation-1"
+    });
+  });
+
+  it.each([
     ["correlationId", { correlationId: " " }],
     ["idempotencyKey", { idempotencyKey: " " }]
   ])("rejects missing Gateway %s metadata before POST", async (_field, patch) => {
@@ -240,6 +425,32 @@ const jsonResponse = (body: unknown, status = 200) =>
       "Content-Type": "application/json"
     }
   });
+
+const workspaceResponse = () => ({
+  workspaceId: "workspace-1",
+  workspaceTitle: "wildfly",
+  repository: {
+    repositoryKey: "github.com/wildfly/wildfly",
+    repositoryUrl: "https://github.com/wildfly/wildfly.git",
+    repositoryHost: "github.com",
+    repositoryOwner: "wildfly",
+    repositoryName: "wildfly",
+    defaultBranch: "main"
+  },
+  status: "READY",
+  branches: [
+    {
+      workspaceBranchId: "workspace-branch-1",
+      repositoryBranch: "main",
+      status: "CHECKED_OUT",
+      resolvedCommit: "abc1234",
+      sourceSnapshotId: "source-snapshot-1",
+      sourceRoots: ["src/main/java"],
+      diagnostics: []
+    }
+  ],
+  diagnostics: []
+});
 
 const command = (): StartRepositoryAnalysisCommand => ({
   requestId: "request-1",

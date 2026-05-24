@@ -2,12 +2,13 @@
 
 ## Status
 
-Workflow execution is in progress. S00, S01, S02, S03, S04, S05, S06 and S07 are
-complete. Product implementation has started in repository-source-service with
-the workspace domain model, in-memory and H2 repositories, metadata
-resolution, checkout preparation, durable idempotency and branch refresh
-behavior, plus the repository-source gRPC owner API and query-report public
-REST facade required by later UI and runtime slices.
+Workflow execution is in progress. S00, S01, S02, S03, S04, S05, S06, S07 and
+S08 are complete. Product implementation has started in
+repository-source-service with the workspace domain model, in-memory and H2
+repositories, metadata resolution, checkout preparation, durable idempotency
+and branch refresh behavior, plus the repository-source gRPC owner API,
+query-report public REST facade and forensic-ui Create Workspace flow required
+by later Docker/runtime and integration slices.
 
 `workflow execute` must run S00 first and then update this report after every
 slice with:
@@ -49,7 +50,7 @@ execution and contract-first sequencing.
 | S05 | Completed | H2 dependency, schema, persistence adapters, durable idempotency port, restart-safe filesystem cleanup and S05 scope repair completed. |
 | S06 | Completed | Repository-source gRPC owner API endpoint, runtime wiring and sanitized error mapping completed. |
 | S07 | Completed | Query-report public REST facade, repository-source owner gRPC client, public DTO validation and OpenAPI alignment completed. |
-| S08 | Not started | Forensic UI Create Workspace flow. |
+| S08 | Completed | Forensic UI Create Workspace flow, public workspace REST adapter, read-only metadata preview, idempotent save/refresh UI and sanitized diagnostics completed. |
 | S09 | Not started | Docker-local volumes and runtime configuration. |
 | S10 | Not started | Security, leakage, idempotency and restart integration gate. |
 | S11 | Not started | Documentation, arc42 and ADR closure. |
@@ -461,6 +462,188 @@ Checkpoint:
 - Commit SHA: `cdecc95dab5036b8d7f83d3e835306688eb76ee0`.
 - Push result: pushed to
   `origin/feature/workflow-repository-workspace-checkout-h2-persistence-20260524`.
+
+## Slice S08 - Forensic UI Create Workspace Flow
+
+Status: Completed.
+
+Owner and reviewers:
+
+- Senior React Frontend
+- Senior UX Designer
+- Contract Governance Expert
+- Senior Security Sandbox Engineer
+- Senior Tester
+- Senior Requirement Engineer
+
+Changed files:
+
+- `forensic-ui/README.md`
+- `forensic-ui/src/adapters/api/apiClient.ts`
+- `forensic-ui/src/adapters/api/apiClient.test.ts`
+- `forensic-ui/src/adapters/api/dtos.ts`
+- `forensic-ui/src/adapters/api/httpClient.ts`
+- `forensic-ui/src/adapters/api/mappers.ts`
+- `forensic-ui/src/adapters/api/mappers.test.ts`
+- `forensic-ui/src/app/App.tsx`
+- `forensic-ui/src/app/App.test.tsx`
+- `forensic-ui/src/application/errors.ts`
+- `forensic-ui/src/application/hooks/useAnalysisJob.test.tsx`
+- `forensic-ui/src/application/ports/workspacePort.ts`
+- `forensic-ui/src/domain/workspace.ts`
+- `forensic-ui/src/layouts/AppShell.tsx`
+- `forensic-ui/src/pages/repository-analysis/CreateRepositoryAnalysisPage.test.tsx`
+- `forensic-ui/src/pages/workspaces/CreateWorkspacePage.tsx`
+- `forensic-ui/src/pages/workspaces/CreateWorkspacePage.test.tsx`
+- `forensic-ui/src/pages/workspaces/WorkspaceListPage.tsx`
+- `forensic-ui/src/shared/safeText.ts`
+- `forensic-ui/src/styles.css`
+- `forensic-ui/src/widgets/DiagnosticList.tsx`
+- `docs/arc42/06-runtime-view.md`
+- `docs/workflow/arc42-check-status.md`
+- `docs/workflow/execution-report.md`
+
+Commands executed:
+
+```bash
+git status --short --branch
+cd forensic-ui && npm ci
+cd forensic-ui && npm run test -- CreateWorkspacePage apiClient mappers
+cd forensic-ui && npm run test -- CreateWorkspacePage apiClient App
+cd forensic-ui && npm run test
+cd forensic-ui && npm run build
+git diff --check
+```
+
+Result:
+
+- PASS for S08 forensic-ui Create Workspace flow.
+- The first visible workspace route is now the Create Workspace experience on
+  `/`, `/workspaces` and `/workspaces/new`.
+- The frontend uses only the verified public query-report REST routes:
+  `POST /api/workspace-metadata`, `POST /api/workspaces`,
+  `GET /api/workspaces/{workspaceId}` and
+  `POST /api/workspaces/{workspaceId}/branches/{workspaceBranchId}/refresh`.
+- Repository metadata, repository key, repository name, workspace title and
+  default branch are rendered only from public REST responses. The UI does not
+  parse the repository URL as confirmed metadata.
+- `workspaceTitle` is displayed as read-only metadata and is never editable.
+- If metadata preview returns no default branch, the selected branch remains
+  blank and save sends `selectedBranch: null`; repository default-branch
+  resolution remains a backend responsibility.
+- Repository URL changes clear metadata, workspace, refresh and selected branch
+  state, and stale metadata responses are ignored if they arrive after the URL
+  changed.
+- Save and refresh operations keep stable idempotency keys for retries of the
+  same semantic operation and create a new key only when the repository,
+  selected branch or workspace policy fingerprint changes.
+- Manual branch refresh uses the public refresh endpoint with correlation and
+  idempotency headers and no request body.
+- Diagnostics are sanitized during DTO mapping and again during rendering for
+  local paths, repository-source storage names, raw stdout/stderr, JDBC/H2 URLs,
+  credential URLs and secret-like assignments.
+
+Subagent review:
+
+- Senior React Frontend: PASS; public REST usage, frontend boundaries,
+  workspace DTOs, route/nav behavior and idempotency state were accepted.
+- Contract Governance Expert checklist: APPROVED_FOR_SLICE; S08 consumes the
+  S07-verified public workspace REST contract without changing OpenAPI or
+  protobuf files, keeps DTOs service/client-local, preserves public error and
+  idempotency semantics, and adds frontend API-client regression tests for the
+  public routes.
+- Senior Security Sandbox Engineer: PASS; no browser Git, gRPC, WebSocket,
+  SSE, internal service, filesystem or repository-source-service access was
+  found, and diagnostics rendering remained sanitized.
+- Senior Tester: initial blockers for local default-branch inference and
+  missing gate evidence were resolved. Final re-review PASS after null default
+  branch, stale branch, idempotency, diagnostics, refresh and routing tests.
+- Senior UX Designer: initial blockers for stale branch carry-over, idle
+  progress wording and stale metadata races were resolved with targeted tests
+  and request guards.
+- Senior Requirement Engineer: implementation traceability passed; S08
+  closure required this execution-report update and an arc42 runtime-view
+  frontend context update.
+
+Documentation sync:
+
+- `forensic-ui/README.md` now documents the verified workspace public REST flow
+  and browser-side boundary exclusions.
+- `docs/arc42/06-runtime-view.md` records the verified S08 UI workspace
+  runtime flow without claiming Docker, JavaParser, Joern, BTM, report, replay
+  or LLM behavior.
+- `docs/workflow/arc42-check-status.md` records the S08 frontend context
+  update.
+- ADR-0010 and ADR-0018 remain unchanged; S08 adds no new service ownership,
+  persistence or contract decision.
+
+Contract governance record:
+
+- Protocol: public REST over HTTP through query-report-api-service.
+- Contract file: `contracts/openapi/gateway-api.yaml`, verified and implemented
+  in S07; S08 does not modify the public contract.
+- Versioning policy: no breaking or additive contract change in S08.
+- Producer: `query-report-api-service`.
+- Consumer: `forensic-ui`.
+- Request model: `WorkspaceMetadataRequest`, `CreateWorkspaceRequest`,
+  path-only get workspace and path-only branch refresh.
+- Response model: `WorkspaceMetadataResponse`,
+  `RepositoryCheckoutWorkspaceResponse` and
+  `RepositoryCheckoutBranchRefreshResponse`.
+- Event model: not applicable.
+- Error/status model: existing public `ErrorEnvelope`,
+  `IDEMPOTENCY_CONFLICT`, validation/not-found/backend-unavailable/timeout
+  categories and workspace/branch status enums from S07.
+- Idempotency/retry expectations: metadata preview, create and refresh use
+  `Idempotency-Key`; POST mutations are not retried by `HttpClient`, while UI
+  retry of the same semantic save or refresh reuses the same key.
+- Timeout/deadline/cancellation expectations: browser requests use the existing
+  API client timeout and abort behavior; S08 adds no new transport deadline
+  contract.
+- Compatibility impact: none; no OpenAPI, protobuf or event contract file is
+  changed in S08.
+- Generated-code boundary: no generated transport classes or shared Java DTOs
+  enter frontend domain/application code.
+- Contract tests: `forensic-ui/src/adapters/api/apiClient.test.ts` verifies
+  public route targets, headers, bodies, no refresh body, no repository URL
+  fetch target and no workspace POST retries.
+- Required reviewers: Senior React Frontend, Contract Governance Expert,
+  Senior Security Sandbox Engineer, Senior Tester and Senior UX Designer.
+- Decision: `APPROVED_FOR_SLICE`.
+- Callable subagent note: no exact callable `contract-governance-expert`
+  subagent was available in this runtime; the project
+  `contract-governance-expert` and `contract-first-api-steward` skill
+  checklists were applied as the required role review evidence.
+
+Limitations and carry-forward notes:
+
+- S08 intentionally does not implement Docker-local volumes, repository-source
+  data-volume restart checks or cross-service Docker verification. Those remain
+  owned by S09 and S10.
+- S08 intentionally does not implement JavaParser, Joern, BTM generation,
+  replay, reports, LLM context, Neo4j, vector storage, Kafka or Kubernetes
+  behavior.
+- A filtered Vitest run by test-file substring intermittently hit a local
+  Vitest fork-worker startup timeout under WSL. The workflow-required full
+  `npm run test` was rerun sequentially and passed with 48 tests.
+- Vitest emits existing React Router v7 future-flag warnings in route tests;
+  these warnings do not fail the S08 gate.
+
+CP_RECORD:
+
+- workflowVersion: `fa-mvp-0001-repository-workspace-checkout-h2-persistence-20260524-v1`
+- sliceId: `S08`
+- sliceTitle: `Forensic UI Create Workspace Flow`
+- responsibleAgent: `senior-react-frontend`
+- qualityGateResult: `PASS`
+- rollbackReference: `revert the S08 checkpoint commit after CP_COMMIT; before commit, restore the listed S08 files from HEAD`
+- arc42Updated: `updated docs/arc42/06-runtime-view.md with verified S08 frontend workspace runtime flow`
+- adrUpdated: `not updated; no S08 ADR change recorded`
+
+Checkpoint:
+
+- Commit SHA: `pending checkpoint commit`.
+- Push result: `pending checkpoint push`.
 
 ## Slice S01 - Requirement Terminology And Data Ownership Gate
 
