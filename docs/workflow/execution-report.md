@@ -458,8 +458,8 @@ CP_RECORD:
 
 Checkpoint:
 
-- Commit SHA: `pending until S07 checkpoint commit is created`.
-- Push result: `pending until S07 checkpoint push is completed`.
+- Commit SHA: `cdecc95dab5036b8d7f83d3e835306688eb76ee0`.
+- Push result: `pending until S07 report finalizer is pushed`.
 
 ## Slice S01 - Requirement Terminology And Data Ownership Gate
 
