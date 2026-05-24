@@ -19,5 +19,6 @@ Slice S18 moves executable OpenAPI contract-test ownership to
 `query-report-api-service`. The service-local executable OpenAPI contract test
 `GatewayOpenApiContractTest` reads `gateway-api.yaml` directly and verifies the
 current repository-to-BTM submission/status contract without changing the
-public API shape. The legacy `forensic-analytics-rest` contract test remains
-rollback evidence until a later removal slice proves caller-free retirement.
+public API shape. The legacy `forensic-analytics-rest` contract test is
+historical predecessor evidence after S05 source-tree removal; compatibility
+wording remains provenance only, not an active rollback runtime claim.

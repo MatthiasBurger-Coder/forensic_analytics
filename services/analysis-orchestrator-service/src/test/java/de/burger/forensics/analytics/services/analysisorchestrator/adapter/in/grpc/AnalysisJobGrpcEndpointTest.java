@@ -306,6 +306,50 @@ class AnalysisJobGrpcEndpointTest {
     }
 
     @Test
+    void defensiveRepositoryToBtmEnumMappingsRemainExplicit() throws Exception {
+        assertEquals(
+            RepositoryToBtmOrchestrationState.REPOSITORY_TO_BTM_ORCHESTRATION_STATE_ACCEPTED,
+            invokePrivateRepositoryToBtmState(de.burger.forensics.analytics.services.analysisorchestrator.domain.RepositoryToBtmOrchestrationState.ACCEPTED)
+        );
+        assertEquals(
+            RepositoryToBtmOrchestrationState.REPOSITORY_TO_BTM_ORCHESTRATION_STATE_READY_FOR_BTM_DELIVERY,
+            invokePrivateRepositoryToBtmState(
+                de.burger.forensics.analytics.services.analysisorchestrator.domain.RepositoryToBtmOrchestrationState.READY_FOR_BTM_DELIVERY
+            )
+        );
+        assertEquals(
+            RepositoryToBtmOrchestrationState.REPOSITORY_TO_BTM_ORCHESTRATION_STATE_INCOMPLETE,
+            invokePrivateRepositoryToBtmState(de.burger.forensics.analytics.services.analysisorchestrator.domain.RepositoryToBtmOrchestrationState.INCOMPLETE)
+        );
+        assertEquals(
+            RepositoryToBtmOrchestrationState.REPOSITORY_TO_BTM_ORCHESTRATION_STATE_FAILED,
+            invokePrivateRepositoryToBtmState(de.burger.forensics.analytics.services.analysisorchestrator.domain.RepositoryToBtmOrchestrationState.FAILED)
+        );
+        assertEquals(
+            BtmDeliveryReadiness.BTM_DELIVERY_READINESS_READY,
+            invokePrivateBtmDeliveryReadiness(de.burger.forensics.analytics.services.analysisorchestrator.domain.BtmDeliveryReadiness.READY)
+        );
+        assertEquals(
+            BtmDeliveryReadiness.BTM_DELIVERY_READINESS_UNAVAILABLE,
+            invokePrivateBtmDeliveryReadiness(de.burger.forensics.analytics.services.analysisorchestrator.domain.BtmDeliveryReadiness.UNAVAILABLE)
+        );
+        assertEquals(
+            BtmDeliveryReadiness.BTM_DELIVERY_READINESS_UNKNOWN,
+            invokePrivateBtmDeliveryReadiness(de.burger.forensics.analytics.services.analysisorchestrator.domain.BtmDeliveryReadiness.UNKNOWN)
+        );
+        assertEquals(
+            RepositoryToBtmDiagnosticSeverity.REPOSITORY_TO_BTM_DIAGNOSTIC_SEVERITY_WARNING,
+            invokePrivateRepositoryToBtmSeverity(
+                de.burger.forensics.analytics.services.analysisorchestrator.domain.RepositoryToBtmDiagnosticSeverity.WARNING
+            )
+        );
+        assertEquals(
+            RepositoryToBtmDiagnosticSeverity.REPOSITORY_TO_BTM_DIAGNOSTIC_SEVERITY_ERROR,
+            invokePrivateRepositoryToBtmSeverity(de.burger.forensics.analytics.services.analysisorchestrator.domain.RepositoryToBtmDiagnosticSeverity.ERROR)
+        );
+    }
+
+    @Test
     void mapsRetryableFailureAndDeadLetterFailure() {
         stub.submitAnalysisJob(submitRequest("submit-retry", "job-retry", AnalysisWorkerKind.ANALYSIS_WORKER_KIND_JOERN_ANALYSIS));
         stub.leaseAnalysisJob(leaseRequest("lease-retry", "worker-a", AnalysisWorkerKind.ANALYSIS_WORKER_KIND_JOERN_ANALYSIS));
@@ -699,6 +743,36 @@ class AnalysisJobGrpcEndpointTest {
 
     private static Object invokePrivateRequired(Object value, String message) throws Exception {
         return invokePrivate("required", new Class<?>[] {Object.class, String.class}, value, message);
+    }
+
+    private static RepositoryToBtmOrchestrationState invokePrivateRepositoryToBtmState(
+        de.burger.forensics.analytics.services.analysisorchestrator.domain.RepositoryToBtmOrchestrationState state
+    ) throws Exception {
+        return invokePrivate(
+            "toProto",
+            new Class<?>[] {de.burger.forensics.analytics.services.analysisorchestrator.domain.RepositoryToBtmOrchestrationState.class},
+            state
+        );
+    }
+
+    private static BtmDeliveryReadiness invokePrivateBtmDeliveryReadiness(
+        de.burger.forensics.analytics.services.analysisorchestrator.domain.BtmDeliveryReadiness readiness
+    ) throws Exception {
+        return invokePrivate(
+            "toProto",
+            new Class<?>[] {de.burger.forensics.analytics.services.analysisorchestrator.domain.BtmDeliveryReadiness.class},
+            readiness
+        );
+    }
+
+    private static RepositoryToBtmDiagnosticSeverity invokePrivateRepositoryToBtmSeverity(
+        de.burger.forensics.analytics.services.analysisorchestrator.domain.RepositoryToBtmDiagnosticSeverity severity
+    ) throws Exception {
+        return invokePrivate(
+            "toProto",
+            new Class<?>[] {de.burger.forensics.analytics.services.analysisorchestrator.domain.RepositoryToBtmDiagnosticSeverity.class},
+            severity
+        );
     }
 
     @SuppressWarnings("unchecked")

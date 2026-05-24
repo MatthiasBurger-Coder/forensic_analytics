@@ -67,15 +67,15 @@ query API responsibility moves first to `query-report-api-service`.
 
 These target-name service roots, the public API client boundary and the
 deployment observability boundary are additive migration evidence. Their
-predecessor service directories and legacy modules remain rollback/current
-state evidence until later retirement slices prove caller migration, parity and
-quality gates.
+predecessor service directories and legacy source trees are historical
+pre-retirement evidence until the final legacy source-tree retirement workflow
+proves caller migration, deletion, architecture closure and quality gates.
 
 S11 creates `services/cli-client` as an independently buildable public API
 client. It must not be treated as a productive backend service. The legacy
-`forensic-analytics-cli` module remains current-state evidence for local
-`analyze` and `ingest-request` behavior and must not be silently routed through
-the public API.
+CLI source tree records historical local `analyze` and `ingest-request`
+behavior before final retirement; target client behavior must not be silently
+routed through the public API.
 
 S12 creates `services/observability-stack` as deployment-oriented
 observability policy material. It is not a shared Java logging or
@@ -83,15 +83,15 @@ observability module, and it does not claim Docker Compose, Swarm or
 Kubernetes runtime readiness.
 
 S13 creates `services/testbed` as non-production integration and system-test
-infrastructure. It preserves the current `forensic-analytics-testbed` coverage
-in a service-root location while the legacy module remains active as rollback
-and current quality-gate evidence.
+infrastructure. It preserves predecessor testbed coverage in a service-root
+location as service-root regression evidence; the legacy testbed source tree is
+historical rollback evidence pending final retirement.
 
 S14 records `NO_REMOVAL_SAFE` for direct legacy module retirement. The
-retained `forensic-analytics-*` modules are still legacy in-process and
-rollback evidence, not shared service implementation modules for productive
-target services. Later retirement slices must remove only verified
-caller-free paths.
+previously retained legacy source trees are historical in-process and rollback
+evidence, not shared service implementation modules for productive target
+services. The final legacy source-tree retirement workflow must remove only
+verified caller-free paths.
 
 ## Local Runtime Evidence
 

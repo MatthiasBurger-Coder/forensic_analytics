@@ -45,14 +45,19 @@ Forensics Platform Environment
 
 ## 7.4 gRPC Ingestion Configuration
 
-The bootstrap module can start the gRPC ingestion server. The default port is `9090`.
+The predecessor bootstrap module documented gRPC ingestion startup before
+FA-MSA-001 service extraction. It is historical pre-retirement evidence, not a
+current executable runtime unit. The verified current service-local ingestion
+runtime is owned by `services:ingestion-service` and
+`services:forensic-ingestion-service`; both document gRPC on port `9090` with
+service-owned health endpoints.
 
 ```properties
-forensics.analytics.ingestion.grpc.enabled=true
-forensics.analytics.ingestion.grpc.port=9090
+forensics.ingestion.service.grpc.port=9090
 ```
 
-Environment variable equivalents:
+Predecessor environment variable names are retained only as historical
+configuration evidence:
 
 ```text
 FORENSICS_ANALYTICS_INGESTION_GRPC_ENABLED=true
@@ -61,19 +66,21 @@ FORENSICS_ANALYTICS_INGESTION_GRPC_PORT=9090
 
 ## 7.5 Spring Boot Deployment Direction
 
-ADR-0006 accepts `forensic-analytics-boot-app` as the outer server boundary. The Boot app owns Spring Boot startup, typed configuration, profiles and adapter lifecycle wiring for verified inbound adapters.
+ADR-0006 documented the predecessor Boot application as the outer server
+boundary before FA-MSA-001 service extraction. The final legacy source-tree
+retirement workflow treats that predecessor source tree as historical
+pre-retirement evidence, not as a current executable deployment unit.
 
-A minimal Boot startup does not require a database, Joern container, graph database, vector database or live LLM provider. The existing bootstrap module remains available while parity is phased in.
+Spring Boot startup, typed configuration, profiles and adapter lifecycle wiring
+are service-local responsibilities in the current `services:*` project model.
+Operators must use verified service-local Gradle paths when building or
+starting a Spring service. Source-tree deletion alone does not prove Docker,
+Swarm, Kubernetes or production health-check readiness.
 
-Boot configuration is provided through `application.properties` and profile-specific `.properties` files. The `docker` and `prod` profiles disable gRPC and REST by default; operators must explicitly enable the inbound adapter they intend to expose.
-
-The Boot app can be packaged with:
-
-```bash
-./gradlew :forensic-analytics-boot-app:bootJar --dependency-verification strict --console=plain --stacktrace
-```
-
-The Docker baseline lives under `docker/boot-app/`. It copies only the generated Boot jar, defines `/var/lib/forensic-analytics/workspaces` as the workspace volume and does not define an Actuator healthcheck because no accepted health endpoint exists yet.
+The retired Boot-app Docker baseline is no longer a runnable deployment target.
+Target services may claim container readiness only when the service owns a
+Dockerfile or deployment descriptor and the corresponding verification command
+has passed.
 
 ## 7.6 Microservice Deployment Boundaries
 
@@ -330,23 +337,21 @@ The service-local testbed gate is:
 `services/testbed` is not a productive backend service. It does not add a
 Dockerfile, Docker Compose service, Docker Swarm stack or Kubernetes manifest
 in S13. The local Compose descriptor is validated as model syntax only; S13
-does not build images, start Compose or perform health probes. The legacy
-`forensic-analytics-testbed` module remains active until S15 through S18
-replace or deprecate retained testbed/runtime blockers and S19 proves
-caller-free status, rollback evidence and the required quality gate.
+does not build images, start Compose or perform health probes. The predecessor
+testbed source tree was retired by S05; remaining testbed evidence is
+service-local under `services:testbed` plus historical documentation.
 
-S15 keeps the service-root WildFly hardening scenario as non-production
-deployment evidence that is skipped by default unless an explicit WildFly
-branch or commit is provided. S15 does not promote `services:testbed` into a
-runtime service and does not add a Dockerfile, Compose service, Swarm stack,
-Kubernetes manifest or health probe.
+Earlier WildFly hardening work keeps the service-root scenario as
+non-production deployment evidence that is skipped by default unless an
+explicit WildFly branch or commit is provided. It does not promote
+`services:testbed` into a runtime service and does not add a Dockerfile,
+Compose service, Swarm stack, Kubernetes manifest or health probe.
 
-Slice S14 does not remove deployment or runtime paths. It records
-`NO_REMOVAL_SAFE` when caller scans still find active legacy module use. The
-Boot app, Bootstrap runtime and retained `forensic-analytics-*` modules remain
-legacy in-process and rollback deployment evidence until S15 through S18
-migrate or deprecate the remaining paths and S19 proves each removal candidate
-caller-free.
+Slice S14 did not remove deployment or runtime paths. That historical
+`NO_REMOVAL_SAFE` result is superseded by S05 source-tree retirement. The
+predecessor Boot and Bootstrap source trees are now deleted historical
+deployment evidence, not active deployment units. S06 records the architecture
+closure and S07 owns final release-readiness evidence.
 
 ## 7.7 Local Repository-to-BTM Transitional Landscape
 
@@ -390,9 +395,10 @@ The descriptor is current evidence only. It is not a readiness claim for the
 FA-MSA-001 target landscape until the target services exist and are verified by
 their own build, start, healthcheck, Docker and quality gates.
 
-S20 must close the workflow by verifying the mandatory FA-MSA-001 target
-service build tasks, service-owned Dockerfiles, Docker healthcheck definitions,
-service-local configuration files and architecture tests. That closure remains
+The S07 final release-readiness slice must close the active workflow by
+verifying the mandatory FA-MSA-001 target service build tasks, service-owned
+Dockerfiles, Docker healthcheck definitions, service-local configuration files
+and architecture tests. That closure remains
 limited to service-local build and packaging evidence plus the repository
 quality gate; it must not claim Docker image-build, Docker Compose startup,
 Docker Swarm or Kubernetes runtime readiness for the target landscape unless

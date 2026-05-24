@@ -179,10 +179,10 @@ client
 `cli-client` is a public API client only. S09 implements repository-to-BTM job
 submission through `query-report-api-service` HTTP/OpenAPI using the
 transitional `gateway-submit` compatibility vocabulary. Legacy local CLI
-commands remain predecessor rollback evidence. S16 explicitly deprecates local
-`analyze` and `ingest-request` as target `cli-client` behavior; they are not
-silently routed to the public API. Status and report CLI reads require later
-explicit command mappings.
+command names remain predecessor/deprecation vocabulary after S05 source-tree
+retirement. S16 explicitly deprecates local `analyze` and `ingest-request` as
+target `cli-client` behavior; they are not silently routed to the public API.
+Status and report CLI reads require later explicit command mappings.
 
 S18 makes the current public API contract executable from the surviving target
 service side: `query-report-api-service` owns a service-local
@@ -222,7 +222,7 @@ predecessor wire shape explicitly.
 S17 confirms that the former mini and real repository E2E path is not a target
 runtime flow. `AnalyzeRepository`, local or file repository checkout and
 monolith analysis-session registration remain deprecated target behavior and
-legacy rollback evidence only. Target runtime evidence is narrower:
+historical predecessor evidence only. Target runtime evidence is narrower:
 `repository-source-service` owns clean HTTPS repository preparation, opaque
 workspace IDs, cleanup and source snapshot descriptors; `ingestion-service`
 returns `UNIMPLEMENTED` for `AnalyzeRepository`; and

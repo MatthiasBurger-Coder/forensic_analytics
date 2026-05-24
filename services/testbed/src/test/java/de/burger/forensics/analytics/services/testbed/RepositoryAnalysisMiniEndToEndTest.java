@@ -71,12 +71,15 @@ class RepositoryAnalysisMiniEndToEndTest {
         );
         assertContainsAll(
             testbedReadme,
-            "S17",
+            "S03",
             "AnalyzeRepository",
             "deprecated",
             "not session-registration parity"
         );
-        assertFalse(testbedReadme.contains("S17 proves completed local repository analysis parity"));
+        assertFalse(testbedReadme.contains("S03 proves completed local repository analysis parity"));
+        assertFalse(testbedReadme.contains("legacy module remains active"));
+        assertFalse(testbedReadme.contains("current-quality-gate evidence"));
+        assertFalse(testbedReadme.contains("root quality gate still includes `forensic-analytics-testbed`"));
     }
 
     private static void assertContainsAll(String content, String... expectedFragments) {

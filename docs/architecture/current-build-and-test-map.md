@@ -28,24 +28,8 @@ JaCoCo XML and HTML reports.
 
 ## Included Gradle Modules
 
-Verified from `settings.gradle.kts`:
+Verified from `settings.gradle.kts` after ADR-0022 and S05:
 
-- `forensic-analytics-domain`
-- `forensic-analytics-application`
-- `forensic-analytics-engine`
-- `forensic-analytics-logging`
-- `forensic-analytics-observability`
-- `forensic-analytics-adapter-repository-source`
-- `forensic-analytics-adapter-javaparser`
-- `forensic-analytics-adapter-joern-docker`
-- `forensic-analytics-cli`
-- `forensic-analytics-testbed`
-- `forensic-analytics-persistence`
-- `forensic-analytics-ingestion-grpc`
-- `forensic-analytics-ingestion-request`
-- `forensic-analytics-rest`
-- `forensic-analytics-bootstrap`
-- `forensic-analytics-boot-app`
 - `services:btm-generation-service`
 - `services:joern-cpg-analysis-service`
 - `services:joern-analysis-service`
@@ -63,8 +47,8 @@ Verified from `settings.gradle.kts`:
 - `services:testbed`
 - `services:forensic-gateway-service`
 
-Sixteen service-specific Gradle projects under `services/**` are now
-registered.
+Sixteen service-specific Gradle projects under `services/**` are registered.
+No `forensic-analytics-*` Gradle project remains in the active model.
 `services:repository-source-service`, `services:ingestion-service` and
 `services:java-parser-analysis-service`, `services:joern-analysis-service` and
 `services:analysis-orchestrator-service` and
@@ -125,28 +109,29 @@ The full local gate must call `checkPackageCoverage` explicitly.
 
 ## Current Test Layout
 
-Verified Java test sources exist under module-local `src/test/java` trees.
-The test suite covers domain, application, adapters, gRPC ingestion,
-persistence, REST, CLI, bootstrap, Boot, logging, observability and testbed
-scenarios.
+Verified Java test sources exist under service-local `src/test/java` trees.
+The active test suite covers registered service projects and service-local
+contract, architecture and regression scenarios. Former monolith module tests
+are historical pre-retirement evidence after S05.
 
-`forensic-analytics-testbed` now includes a deterministic local real
-repository E2E fixture under `src/test/resources/repository-e2e/`. The
-corresponding `RepositoryAnalysisRealRepositoryEndToEndTest` materializes that
-fixture as a local Git repository, pins a commit, sends a plugin-style in-process
-gRPC request and verifies checkout, source-root detection, session storage and
-workspace cleanup without external network access or target build execution.
+`services:testbed` includes the deterministic local real repository E2E
+fixture under `src/test/resources/repository-e2e/`. The corresponding
+service-root testbed coverage materializes that fixture as a local Git
+repository, pins a commit, and verifies the retained regression surface without
+restoring a shared monolith testbed module.
 
-WildFly large-repository hardening is available as an opt-in testbed scenario
-through `WildFlyRepositoryHardeningTest`. It is skipped by default unless
+WildFly large-repository hardening is available as an opt-in service-root
+testbed scenario through `WildFlyRepositoryHardeningTest`. It is skipped by
+default unless
 `FORENSIC_ANALYTICS_WILDFLY_HARDENING=true` and an explicit WildFly branch or
 commit is provided. The runbook is `docs/testing/wildfly-hardening.md`.
 
 Slice 13 verifies the same testbed coverage under `services:testbed` in package
 `de.burger.forensics.analytics.services.testbed`, including the default-skipped
-WildFly hardening scenario. The legacy
-`forensic-analytics-testbed` module remains part of the root quality gate until
-a later retirement slice proves migration parity and rollback evidence.
+WildFly hardening scenario. The predecessor `forensic-analytics-testbed` source
+tree is historical quality evidence; the repository root quality gate is
+service-only and final retirement is governed by S05 deletion plus S06/S07
+closure.
 
 Architecture tests were verified in these areas:
 
@@ -187,8 +172,7 @@ configuration or tests.
 
 Existing Docker material:
 
-- `docker/boot-app/Dockerfile`
-- `docker/boot-app/README.md`
+- `docker/boot-app/README.md` as historical Boot-app Docker documentation
 - `docker/joern/Dockerfile`
 - `docker/joern/docker-compose.joern.yml`
 - `docker/joern/scripts/**`
@@ -210,24 +194,26 @@ docker compose --env-file docker/joern/.env -f docker/joern/docker-compose.joern
 No Boot jar build, Boot Docker image build, frontend image build, Swarm command
 or Kubernetes command was executed as part of Slice 00.
 
-Slice 05 adds a service-local Dockerfile for
+Earlier FA-MSA-001 service-slice evidence adds a service-local Dockerfile for
 `services/repository-source-service`. This is target-service container
 packaging evidence only; Compose, Swarm and Kubernetes readiness for the
 FA-MSA-001 target landscape remains future work until descriptors and
 validation commands exist.
 
-Slice 06 adds a service-local Dockerfile for `services/ingestion-service`.
+Earlier FA-MSA-001 service-slice evidence adds a service-local Dockerfile for
+`services/ingestion-service`.
 This is target-service container packaging evidence only; Compose, Swarm and
 Kubernetes readiness for the FA-MSA-001 target landscape remains future work
 until descriptors and validation commands exist.
 
-FA-MSA-001-LMR S05 adds a service-local Dockerfile for
+Earlier FA-MSA-001 service-slice evidence adds a service-local Dockerfile for
 `services/java-parser-analysis-service`. This is target-service container
 packaging evidence only; Compose, Swarm and Kubernetes readiness for the
 FA-MSA-001 target landscape remains future work until descriptors and
 validation commands exist.
 
-FA-MSA-001-LMR S06 adds a service-local Dockerfile for `services/joern-analysis-service`.
+Earlier FA-MSA-001 service-slice evidence adds a service-local Dockerfile for
+`services/joern-analysis-service`.
 This is target-service container packaging evidence only; Compose, Swarm and
 Kubernetes readiness for the FA-MSA-001 target landscape remains future work
 until descriptors and validation commands exist. The service uses local gRPC
@@ -237,7 +223,7 @@ into the Docker build context. Docker image build or Joern runtime smoke
 testing is optional external verification because it may pull the
 digest-pinned Joern base image or create local container state.
 
-FA-MSA-001-LMR S07 keeps a service-local Dockerfile for
+Earlier FA-MSA-001 service-slice evidence keeps a service-local Dockerfile for
 `services/analysis-orchestrator-service`. This is target-service container
 packaging evidence only; Compose, Swarm and Kubernetes readiness for the
 FA-MSA-001 target landscape remains future work until descriptors and
@@ -246,7 +232,7 @@ port `8089`, distinct from predecessor Analysis Store and earlier target
 service ports. S07 does not claim Docker image build readiness; Docker
 build-context verification remains later deployment work.
 
-FA-MSA-001-LMR S08 keeps a service-local Dockerfile for
+Earlier FA-MSA-001 service-slice evidence keeps a service-local Dockerfile for
 `services/query-report-api-service`. This is target-service container packaging
 evidence only; Compose, Swarm and Kubernetes readiness for the FA-MSA-001
 target landscape remains future work until descriptors and validation commands
@@ -261,18 +247,20 @@ descriptor. It may use verified local deployment descriptors as test
 environment evidence, but S13 does not add Compose, Swarm or Kubernetes
 readiness.
 
-Slice 14 is a retirement-readiness documentation and evidence gate. It does
-not remove any Gradle module, source tree or default runtime path because
-caller scans still find active build, production and test references to the
-retained `forensic-analytics-*` modules. A later removal slice must name a
-caller-free candidate and run the full local quality gate.
+Slice 14 was a historical retirement-readiness documentation and evidence gate.
+It did not remove any Gradle module, source tree or default runtime path because
+caller scans at that time found build, production and test references to
+retained `forensic-analytics-*` modules. ADR-0022 and the active
+final-retirement workflow supersede that evidence with S04 documentation
+cleanup, S05 deletion, S06 architecture closure and S07 release readiness.
 
-Slice 15 relocates broad logging and Spring architecture checks from the
+Earlier Slice 15 relocated broad logging and Spring architecture checks from the
 legacy-dependent `services:testbed` classpath into service-local architecture
 tests for the productive target services. `services:testbed` keeps only the
-default-skipped WildFly hardening scenario in its S15 targeted gate. S15 does
-not verify Docker image builds, Docker Compose startup, service health probes,
-Docker Swarm or Kubernetes commands for the FA-MSA-001 target landscape.
+default-skipped WildFly hardening scenario as historical targeted evidence.
+That work does not verify Docker image builds, Docker Compose startup, service
+health probes, Docker Swarm or Kubernetes commands for the FA-MSA-001 target
+landscape.
 The local repository-to-BTM Compose descriptor remains transitional
 environment evidence only until a separate runtime-deployment slice verifies
 image builds, startup, health checks and cleanup commands.
@@ -311,32 +299,28 @@ Gradle test task because they remain README-only planned service roots and are
 deferred from repository-to-BTM acceptance. The build-artifact worker has no
 Gradle task until a later slice creates the service root.
 
-Slice 18 does not remove any `forensic-analytics-*` module from the Gradle
-build. Those modules remain part of the current quality gate as legacy
-in-process and rollback paths until a later slice proves caller removal,
-replacement parity and rollback evidence.
+Earlier Slice 18 did not remove any `forensic-analytics-*` source tree. That
+prior evidence is superseded by the final-retirement workflow: the verified
+Gradle project model is service-only under `services:*`, S05 removed the legacy
+source trees, and S06/S07 close architecture and release-readiness evidence.
 
-Slice 19 also leaves the Gradle module list unchanged. Removal is blocked
-until caller-verification searches prove that a module has no remaining
-production or test caller and parity or explicit deprecation tests exist.
+## Historical E2E/WildFly/CLI Workflow Verification
 
-## Active E2E/WildFly/CLI Workflow Verification
+Workflow `e2e-wildfly-cli-deploy-20260521-v1` added historical verification
+evidence without changing the service-only target topology:
 
-Workflow `e2e-wildfly-cli-deploy-20260521-v1` adds current verification
-evidence without changing the default build topology:
-
-- a deterministic local real repository E2E fixture in
-  `forensic-analytics-testbed`;
+- a deterministic local real repository E2E fixture that later moved to
+  service-root testbed evidence;
 - an opt-in WildFly hardening scenario that is skipped by default unless an
   explicit external WildFly branch or commit is provided;
 - an explicit CLI `gateway-submit` command for Gateway/public API submission;
-- a caller inventory showing that local `analyze`, REST, Bootstrap, Boot,
-  Engine, Ingestion Request and Testbed paths remain active legacy callers;
+- a predecessor caller inventory for local `analyze`, REST, Bootstrap, Boot,
+  Engine, Ingestion Request and Testbed paths;
 - a separate Swarm and Kubernetes deployment workflow request, with no stack
   files, manifests or readiness claims added by this workflow.
 
-The workflow full local quality gate remains a deletion and closure
-requirement for S19 and S20:
+The full local quality gate remains a deletion and closure requirement for the
+active S07 release-readiness slice:
 
 ```bash
 ./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace
