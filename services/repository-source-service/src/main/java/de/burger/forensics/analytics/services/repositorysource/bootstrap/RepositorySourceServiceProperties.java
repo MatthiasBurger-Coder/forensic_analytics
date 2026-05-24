@@ -115,7 +115,9 @@ public record RepositorySourceServiceProperties(
             return false;
         }
         return isPathOrChild(normalized, "build/repository-source-data")
+            || isPathOrChild(normalized, "./build/repository-source-data")
             || isPathOrChild(normalized, "build/repository-source-test-data")
+            || isPathOrChild(normalized, "./build/repository-source-test-data")
             || isPathOrChild(normalized, "/var/lib/forensic-analytics/repository-source-data");
     }
 

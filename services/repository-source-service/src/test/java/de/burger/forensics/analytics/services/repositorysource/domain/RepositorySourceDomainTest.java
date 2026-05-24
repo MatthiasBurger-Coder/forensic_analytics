@@ -149,6 +149,8 @@ class RepositorySourceDomainTest {
     void rejectsRepositoryWorkspaceBranchWhenSnapshotOrWorkspaceIdentityDoesNotMatch() {
         var workspaceId = new WorkspaceId("workspace-0001");
         var otherWorkspaceId = new WorkspaceId("workspace-0002");
+        var firstBranch = branch(workspaceId, new WorkspaceBranchId("workspace-branch-0001"), "feature/workspace-ui");
+        var duplicateName = branch(workspaceId, new WorkspaceBranchId("workspace-branch-0002"), "feature/workspace-ui");
 
         assertThrows(IllegalArgumentException.class, () -> new RepositoryWorkspace(
             workspaceId,
@@ -161,6 +163,28 @@ class RepositorySourceDomainTest {
             List.of(),
             Map.of()
         ));
+        assertThrows(IllegalArgumentException.class, () -> new RepositoryWorkspace(
+            workspaceId,
+            WorkspaceTitle.fromRepositoryName(REPOSITORY_IDENTITY.repositoryName()),
+            REPOSITORY_IDENTITY,
+            RepositoryWorkspaceStatus.READY,
+            Instant.EPOCH,
+            Instant.EPOCH,
+            List.of(firstBranch, firstBranch),
+            List.of(),
+            Map.of()
+        ));
+        assertThrows(IllegalArgumentException.class, () -> new RepositoryWorkspace(
+            workspaceId,
+            WorkspaceTitle.fromRepositoryName(REPOSITORY_IDENTITY.repositoryName()),
+            REPOSITORY_IDENTITY,
+            RepositoryWorkspaceStatus.READY,
+            Instant.EPOCH,
+            Instant.EPOCH,
+            List.of(firstBranch, duplicateName),
+            List.of(),
+            Map.of()
+        ));
         assertThrows(IllegalArgumentException.class, () -> new RepositoryWorkspaceBranch(
             new WorkspaceBranchId("workspace-branch-0001"),
             workspaceId,
@@ -169,6 +193,32 @@ class RepositorySourceDomainTest {
             "",
             null,
             RepositoryWorkspaceBranchStatus.CHECKED_OUT,
+            List.of(),
+            null,
+            Instant.EPOCH,
+            List.of()
+        ));
+        assertThrows(IllegalArgumentException.class, () -> new RepositoryWorkspaceBranch(
+            new WorkspaceBranchId("workspace-branch-0001"),
+            workspaceId,
+            "-main",
+            "",
+            "",
+            null,
+            RepositoryWorkspaceBranchStatus.CHECKING_OUT,
+            List.of(),
+            null,
+            Instant.EPOCH,
+            List.of()
+        ));
+        assertThrows(IllegalArgumentException.class, () -> new RepositoryWorkspaceBranch(
+            new WorkspaceBranchId("workspace-branch-0001"),
+            workspaceId,
+            "main",
+            "not-a-commit",
+            "",
+            null,
+            RepositoryWorkspaceBranchStatus.CHECKING_OUT,
             List.of(),
             null,
             Instant.EPOCH,
@@ -212,6 +262,7 @@ class RepositorySourceDomainTest {
 
     @Test
     void rejectsUnsafeRepositoryReferencesAndSafeAttributes() {
+        assertEquals("example.com/acme/demo", RepositoryKey.of("Example.COM", "ACME", "demo.git").value());
         assertThrows(IllegalArgumentException.class, () -> new RepositoryReference("http://example.com/repo.git", "", Map.of()));
         assertThrows(IllegalArgumentException.class, () -> new RepositoryReference("file:///tmp/repo", "", Map.of()));
         assertThrows(IllegalArgumentException.class, () -> new RepositoryReference("/tmp/repo", "", Map.of()));
@@ -229,8 +280,27 @@ class RepositorySourceDomainTest {
         assertThrows(IllegalArgumentException.class, () -> new RepositoryReference("https://[fc00::1]/repo.git", "", Map.of()));
         assertThrows(IllegalArgumentException.class, () -> new RepositoryReference("https://[fd00::1]/repo.git", "", Map.of()));
         assertThrows(IllegalArgumentException.class, () -> new RepositoryReference("https://[fe80::1]/repo.git", "", Map.of()));
+        assertThrows(IllegalArgumentException.class, () -> new RepositoryReference("https://[ff00::1]/repo.git", "", Map.of()));
+        assertThrows(IllegalArgumentException.class, () -> new RepositoryReference("https://[2001:db8::1]/repo.git", "", Map.of()));
+        assertThrows(IllegalArgumentException.class, () -> new RepositoryReference("https://[fe80::1%eth0]/repo.git", "", Map.of()));
         assertThrows(IllegalArgumentException.class, () -> new RepositoryReference("https://example.com/repo.git", "", Map.of("token", "x")));
         assertThrows(IllegalArgumentException.class, () -> new RepositoryReference("https://example.com/repo.git", "", Map.of("path", "/home/user/repo")));
+        assertThrows(IllegalArgumentException.class, () -> new RepositoryIdentity(
+            RepositoryKey.of("example.com", "acme", "demo"),
+            "https://other.example/acme/demo.git",
+            "example.com",
+            "acme",
+            "demo",
+            "main"
+        ));
+        assertThrows(IllegalArgumentException.class, () -> new RepositoryIdentity(
+            RepositoryKey.of("example.com", "acme", "demo"),
+            "https://example.com/acme/other.git",
+            "example.com",
+            "acme",
+            "demo",
+            "main"
+        ));
     }
 
     @Test

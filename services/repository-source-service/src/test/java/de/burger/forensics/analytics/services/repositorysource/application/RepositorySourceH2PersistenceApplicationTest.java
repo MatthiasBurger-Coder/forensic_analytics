@@ -6,18 +6,35 @@ import de.burger.forensics.analytics.services.repositorysource.application.port.
 import de.burger.forensics.analytics.services.repositorysource.application.port.RepositoryMetadataPort;
 import de.burger.forensics.analytics.services.repositorysource.application.port.RepositoryMetadataPreviewPolicy;
 import de.burger.forensics.analytics.services.repositorysource.application.port.RepositoryMetadataResolution;
+import de.burger.forensics.analytics.services.repositorysource.application.port.RepositorySourceIdempotencyRecord;
 import de.burger.forensics.analytics.services.repositorysource.application.port.RepositoryWorkspaceIdGenerator;
 import de.burger.forensics.analytics.services.repositorysource.application.port.RepositoryWorkspacePort;
 import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.AnalysisRunId;
+import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.ArtifactByteAccess;
+import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.ArtifactByteCustody;
+import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.ArtifactReference;
+import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.BuildOutputPackageDescriptor;
+import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.BuildOutputProducer;
+import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.BuildOutputProducerCandidate;
+import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.BuildOutputProducerStatus;
+import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.BuildOutputResolution;
 import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.CheckoutResult;
 import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.CheckoutStatus;
 import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.Diagnostic;
+import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.PackageAvailability;
 import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.RepositoryIdentity;
+import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.RepositoryKey;
+import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.RepositoryPreparation;
 import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.RepositoryReference;
 import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.RepositoryWorkspaceBranchSelector;
+import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.RepositoryWorkspaceBranchStatus;
 import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.RepositoryWorkspaceStatus;
 import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.RevisionSelector;
+import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.SourcePackageDescriptor;
 import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.SourceRoot;
+import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.SourceSnapshot;
+import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.SourceSnapshotCompleteness;
+import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.SourceSnapshotId;
 import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.WorkspaceBranchId;
 import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.WorkspaceId;
 import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.WorkspacePolicy;
@@ -364,6 +381,117 @@ class RepositorySourceH2PersistenceApplicationTest {
         assertEquals(0, replayCheckout.calls);
     }
 
+    @Test
+    void emptyLookupsAndExpiringIdempotencyRecordsRoundTrip() {
+        var adapter = adapter();
+        var expiresAt = Instant.parse("2026-05-24T10:00:00Z");
+
+        assertTrue(adapter.findByRunAndSnapshot(new AnalysisRunId("missing-run"), new SourceSnapshotId("source-snapshot-missing")).isEmpty());
+        assertTrue(adapter.findByRunAndWorkspace(new AnalysisRunId("missing-run"), new WorkspaceId("workspace-missing")).isEmpty());
+        assertTrue(adapter.findById(new WorkspaceId("workspace-missing")).isEmpty());
+        assertTrue(adapter.findByRepositoryKey(new RepositoryKey("example.com/acme/missing")).isEmpty());
+        assertTrue(adapter.findBranch(new WorkspaceId("workspace-missing"), new WorkspaceBranchId("workspace-branch-missing")).isEmpty());
+        assertTrue(adapter.find("CREATE_WORKSPACE", "missing-key").isEmpty());
+
+        adapter.save(new RepositorySourceIdempotencyRecord(
+            "idem-expiring",
+            "CREATE_WORKSPACE",
+            "fingerprint",
+            "REPOSITORY_WORKSPACE",
+            "workspace-0001",
+            "",
+            "COMPLETED",
+            CLOCK.instant(),
+            expiresAt
+        ));
+
+        var loaded = adapter.find("CREATE_WORKSPACE", "idem-expiring").orElseThrow();
+        assertEquals(expiresAt, loaded.expiresAt());
+        assertEquals("", loaded.resultPayload());
+    }
+
+    @Test
+    void workspaceBranchBeforeCheckoutPersistsNullableSnapshotAndLastCheckedAt() {
+        var adapter = adapter();
+        var service = workspaceService(adapter, new FakeWorkspacePort(), new SequencedCheckoutPort("b".repeat(40)));
+        var workspace = service.createOrReuseRepositoryWorkspace("workspace-key", RepositoryIdentity.from(repository(), "main"), Map.of());
+        var branch = service.createOrReuseRepositoryWorkspaceBranch(
+            "branch-key",
+            workspace.workspaceId(),
+            new RepositoryWorkspaceBranchSelector("main", "")
+        );
+
+        var loaded = adapter.findBranch(workspace.workspaceId(), branch.workspaceBranchId()).orElseThrow();
+
+        assertEquals(RepositoryWorkspaceBranchStatus.CHECKING_OUT, loaded.status());
+        assertEquals(null, loaded.sourceSnapshotId());
+        assertEquals(null, loaded.lastCheckedAt());
+        assertEquals(List.of(), loaded.sourceRoots());
+    }
+
+    @Test
+    void legacyPreparationRowsWithoutSnapshotJsonRebuildSnapshotDescriptor() throws Exception {
+        var adapter = adapter();
+        var prepared = preparationService(adapter, new FakeWorkspacePort(), new SequencedCheckoutPort("b".repeat(40))).prepare(
+            "prepare-key",
+            "schema-v1",
+            "correlation-1",
+            new AnalysisRunId("run-1"),
+            repository(),
+            revision(),
+            policy(),
+            Map.of()
+        );
+
+        clearSourceSnapshotJson(prepared.analysisRunId(), prepared.sourceSnapshotId());
+
+        var loaded = adapter().findByRunAndSnapshot(prepared.analysisRunId(), prepared.sourceSnapshotId()).orElseThrow();
+        assertEquals(prepared.sourceSnapshotId(), loaded.sourceSnapshot().sourceSnapshotId());
+        assertEquals(
+            "snapshots/" + prepared.sourceSnapshotId().value() + "/manifest.json",
+            loaded.sourceSnapshot().manifestArtifact().reference()
+        );
+        assertEquals("repository-source-service", loaded.sourceSnapshot().sourcePackage().producerService());
+        assertEquals("build-artifact-worker-service", loaded.sourceSnapshot().buildOutputPackage().producerService());
+    }
+
+    @Test
+    void sourceSnapshotPackageArtifactsRoundTripThroughH2SnapshotJson() {
+        var adapter = adapter();
+        var sourceSnapshotId = new SourceSnapshotId("source-snapshot-artifacts");
+        var preparation = new RepositoryPreparation(
+            new AnalysisRunId("run-artifacts"),
+            sourceSnapshotId,
+            new WorkspaceId("workspace-artifacts"),
+            repository(),
+            revision(),
+            checkoutResult(),
+            sourceSnapshotWithPackageArtifacts(sourceSnapshotId),
+            RepositoryWorkspaceStatus.CHECKED_OUT,
+            CLOCK.instant(),
+            CLOCK.instant(),
+            List.of(Diagnostic.info("CHECKED_OUT", "Repository checkout completed")),
+            Map.of("tenant", "demo")
+        );
+
+        adapter.save(preparation);
+
+        var loaded = adapter.findByRunAndSnapshot(preparation.analysisRunId(), sourceSnapshotId).orElseThrow();
+        assertEquals(
+            "snapshots/source-snapshot-artifacts/source-package.zip",
+            loaded.sourceSnapshot().sourcePackage().packageArtifact().reference()
+        );
+        assertEquals(
+            "snapshots/source-snapshot-artifacts/build-output-manifest.json",
+            loaded.sourceSnapshot().buildOutputPackage().manifestArtifact().reference()
+        );
+        assertEquals(
+            "snapshots/source-snapshot-artifacts/build-output.zip",
+            loaded.sourceSnapshot().buildOutputPackage().packageArtifact().reference()
+        );
+        assertEquals(BuildOutputProducer.BUILD_ARTIFACT_WORKER, loaded.sourceSnapshot().buildOutputPackage().resolution().selectedProducer());
+    }
+
     private RepositorySourceApplicationService preparationService(
         H2RepositorySourcePersistenceAdapter adapter,
         FakeWorkspacePort workspacePort,
@@ -413,6 +541,19 @@ class RepositorySourceH2PersistenceApplicationTest {
         }
     }
 
+    private void clearSourceSnapshotJson(AnalysisRunId analysisRunId, SourceSnapshotId sourceSnapshotId) throws Exception {
+        try (var connection = DriverManager.getConnection(h2JdbcUrl(), "sa", "");
+             var statement = connection.prepareStatement("""
+                 UPDATE repository_preparation
+                 SET source_snapshot_json = ''
+                 WHERE analysis_run_id = ? AND source_snapshot_id = ?
+                 """)) {
+            statement.setString(1, analysisRunId.value());
+            statement.setString(2, sourceSnapshotId.value());
+            statement.executeUpdate();
+        }
+    }
+
     private static final class FailingRepositoryWorkspaceIdGenerator implements RepositoryWorkspaceIdGenerator {
         @Override
         public WorkspaceId newWorkspaceId() {
@@ -435,6 +576,84 @@ class RepositorySourceH2PersistenceApplicationTest {
 
     private static WorkspacePolicy policy() {
         return new WorkspacePolicy(true, true, false, false, 60, 100_000);
+    }
+
+    private static CheckoutResult checkoutResult() {
+        return new CheckoutResult(
+            CheckoutStatus.CHECKED_OUT,
+            repository().remoteUrl(),
+            "b".repeat(40),
+            "main",
+            "",
+            true,
+            5,
+            List.of(Diagnostic.info("GIT_CHECKOUT_COMPLETED", "Repository checkout completed")),
+            false,
+            false,
+            List.of(new SourceRoot("src/main/java", "java"))
+        );
+    }
+
+    private static SourceSnapshot sourceSnapshotWithPackageArtifacts(SourceSnapshotId sourceSnapshotId) {
+        return new SourceSnapshot(
+            sourceSnapshotId,
+            SourceSnapshotCompleteness.COMPLETE,
+            List.of(new SourceRoot("src/main/java", "java")),
+            artifact("snapshots/source-snapshot-artifacts/manifest.json", "manifest", "a".repeat(64), 128),
+            List.of(),
+            new SourcePackageDescriptor(
+                PackageAvailability.AVAILABLE,
+                artifact("snapshots/source-snapshot-artifacts/source-manifest.json", "manifest", "b".repeat(64), 129),
+                artifact("snapshots/source-snapshot-artifacts/source-package.zip", "application/zip", "c".repeat(64), 1024),
+                "source-package-descriptor-v1",
+                "repository-source-service",
+                byteAccess("repository-source-service", "repository-source.v1.SourcePackage"),
+                SourceSnapshotCompleteness.COMPLETE
+            ),
+            new BuildOutputPackageDescriptor(
+                PackageAvailability.AVAILABLE,
+                artifact("snapshots/source-snapshot-artifacts/build-output-manifest.json", "manifest", "d".repeat(64), 130),
+                artifact("snapshots/source-snapshot-artifacts/build-output.zip", "application/zip", "e".repeat(64), 2048),
+                "build-output-package-descriptor-v1",
+                "build-artifact-worker-service",
+                byteAccess("build-artifact-worker-service", "build-artifact-worker.v1.BuildOutputPackage"),
+                SourceSnapshotCompleteness.COMPLETE,
+                buildOutputResolution(),
+                "gradle"
+            )
+        );
+    }
+
+    private static BuildOutputResolution buildOutputResolution() {
+        return new BuildOutputResolution(
+            List.of(
+                new BuildOutputProducerCandidate(BuildOutputProducer.ARTIFACT_STORE, BuildOutputProducerStatus.NOT_CONFIGURED, "", List.of()),
+                new BuildOutputProducerCandidate(BuildOutputProducer.ARTIFACTORY, BuildOutputProducerStatus.NOT_CONFIGURED, "", List.of()),
+                new BuildOutputProducerCandidate(BuildOutputProducer.JENKINS, BuildOutputProducerStatus.NOT_CONFIGURED, "", List.of()),
+                new BuildOutputProducerCandidate(
+                    BuildOutputProducer.BUILD_ARTIFACT_WORKER,
+                    BuildOutputProducerStatus.AVAILABLE,
+                    "snapshots/source-snapshot-artifacts/build-output.zip",
+                    List.of(Diagnostic.info("BUILD_OUTPUT_AVAILABLE", "Build output package available"))
+                )
+            ),
+            BuildOutputProducer.BUILD_ARTIFACT_WORKER,
+            false,
+            List.of()
+        );
+    }
+
+    private static ArtifactReference artifact(String reference, String type, String sha256, long sizeBytes) {
+        return new ArtifactReference(reference, type, sha256, sizeBytes);
+    }
+
+    private static ArtifactByteAccess byteAccess(String ownerService, String contract) {
+        return new ArtifactByteAccess(
+            ownerService,
+            contract,
+            "source-snapshot/source-snapshot-artifacts",
+            ArtifactByteCustody.PRODUCER_RETAINED
+        );
     }
 
     private static final class FakeWorkspacePort implements RepositoryWorkspacePort {

@@ -140,6 +140,10 @@ public final class RepositorySourceDomain {
             }
             repositoryOwner = normalizedRepositoryPart(repositoryOwner, "repository owner");
             repositoryName = normalizedRepositoryPart(stripGitSuffix(repositoryName), "repository name");
+            var pathIdentity = repositoryPathIdentity(uri);
+            if (!repositoryOwner.equals(pathIdentity.owner()) || !repositoryName.equals(pathIdentity.repositoryName())) {
+                throw new IllegalArgumentException("repository identity must match repository url path");
+            }
             if (!repositoryKey.equals(RepositoryKey.of(repositoryHost, repositoryOwner, repositoryName))) {
                 throw new IllegalArgumentException("repository key must match repository identity");
             }
@@ -148,16 +152,16 @@ public final class RepositorySourceDomain {
 
         public static RepositoryIdentity from(RepositoryReference repository, String defaultBranch) {
             var uri = URI.create(repository.remoteUrl());
-            var segments = Arrays.stream(Objects.requireNonNullElse(uri.getPath(), "").split("/"))
-                .filter(segment -> !segment.isBlank())
-                .toList();
-            if (segments.size() < 2) {
-                throw new IllegalArgumentException("repository url must contain owner and repository name");
-            }
-            var owner = segments.get(segments.size() - 2);
-            var name = stripGitSuffix(segments.get(segments.size() - 1));
+            var pathIdentity = repositoryPathIdentity(uri);
             var host = normalizedHost(uri.getHost());
-            return new RepositoryIdentity(RepositoryKey.of(host, owner, name), repository.remoteUrl(), host, owner, name, defaultBranch);
+            return new RepositoryIdentity(
+                RepositoryKey.of(host, pathIdentity.owner(), pathIdentity.repositoryName()),
+                repository.remoteUrl(),
+                host,
+                pathIdentity.owner(),
+                pathIdentity.repositoryName(),
+                defaultBranch
+            );
         }
     }
 
@@ -801,6 +805,22 @@ public final class RepositorySourceDomain {
     private static String stripGitSuffix(String value) {
         var name = requireText(value, "repository name");
         return name.endsWith(".git") ? name.substring(0, name.length() - 4) : name;
+    }
+
+    private static RepositoryPathIdentity repositoryPathIdentity(URI uri) {
+        var segments = Arrays.stream(Objects.requireNonNullElse(uri.getPath(), "").split("/"))
+            .filter(segment -> !segment.isBlank())
+            .toList();
+        if (segments.size() < 2) {
+            throw new IllegalArgumentException("repository url must contain owner and repository name");
+        }
+        return new RepositoryPathIdentity(
+            normalizedRepositoryPart(segments.get(segments.size() - 2), "repository owner"),
+            normalizedRepositoryPart(stripGitSuffix(segments.get(segments.size() - 1)), "repository name")
+        );
+    }
+
+    private record RepositoryPathIdentity(String owner, String repositoryName) {
     }
 
     private static void requireWorkspaceBranchesMatch(

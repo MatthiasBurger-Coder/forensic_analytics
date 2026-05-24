@@ -17,7 +17,7 @@ never part of the public contract.
 - Docker profile H2 data root:
   `/var/lib/forensic-analytics/repository-source-data`
 - local H2 JDBC URL:
-  `jdbc:h2:file:build/repository-source-data/repository-source;AUTO_SERVER=FALSE;DB_CLOSE_DELAY=-1`
+  `jdbc:h2:file:./build/repository-source-data/repository-source;AUTO_SERVER=FALSE;DB_CLOSE_DELAY=-1`
 - Docker H2 JDBC URL:
   `jdbc:h2:file:/var/lib/forensic-analytics/repository-source-data/repository-source;AUTO_SERVER=FALSE;DB_CLOSE_DELAY=-1`
 

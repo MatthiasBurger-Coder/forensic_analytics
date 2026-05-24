@@ -3,13 +3,16 @@
 ## Status
 
 Workflow execution is in progress. S00, S01, S02, S03, S04, S05, S06, S07, S08,
-S09, S10 and S11 are complete. Product implementation has started in
+S09, S10, S11 and S12 are complete pending checkpoint finalization. Product implementation has started in
 repository-source-service with the workspace domain model, in-memory and H2
 repositories, metadata resolution, checkout preparation, durable idempotency
 and branch refresh behavior, plus the repository-source gRPC owner API,
 query-report public REST facade and forensic-ui Create Workspace flow required
 by later Docker/runtime and integration slices. S11 synchronized architecture,
-ADR, contract and service documentation for that implemented scope.
+ADR, contract and service documentation for that implemented scope. S12 ran the
+final quality gate, frontend gate and a live browser sandbox against the built
+backend services, then repaired the quality and runtime defects found during
+that verification.
 
 `workflow execute` must run S00 first and then update this report after every
 slice with:
@@ -55,7 +58,7 @@ execution and contract-first sequencing.
 | S09 | Completed | Docker-local repository-source service volumes and runtime configuration completed. |
 | S10 | Completed | Security, leakage, idempotency, H2 restart and refresh regression gate completed. |
 | S11 | Completed | Documentation, arc42, ADR, contract and service README closure completed. |
-| S12 | Not started | Final quality gate and workflow handoff. |
+| S12 | Completed | Final quality gate, frontend gate, live UI/backend sandbox and S12 quality-failure scope repair completed; checkpoint finalizer pending. |
 
 ## Slice S00 - Workflow Execution Preflight And Context Freeze
 
@@ -1342,3 +1345,177 @@ Checkpoint:
 - Commit SHA: `9872473222e865a481f819863ff4ae324b048db3`.
 - Push result: pushed to
   `origin/feature/workflow-repository-workspace-checkout-h2-persistence-20260524`.
+
+## Slice S12 - Final Quality Gate And Workflow Handoff
+
+Status: Completed, checkpoint finalizer pending.
+
+Owner and reviewers:
+
+- Quality Gate Orchestrator
+- Senior Tester
+- Senior React Frontend
+- Senior System Architect
+- Senior Requirement Engineer
+- Git Commit Reviewer
+
+S12 scope repair:
+
+- The first S12 quality gate exposed stale testbed expectations and package
+  branch coverage failures in the query-report and repository-source slices.
+  The repair stayed inside FA-MVP-0001 acceptance criteria and added targeted
+  regression coverage instead of weakening the quality gate.
+- A live browser sandbox later found that the repository-source Boot JAR failed
+  to start with H2 persistence because the combined H2 adapter provides three
+  repository port beans and Spring could not disambiguate constructor
+  parameters without qualifiers. The bootstrap wiring was repaired with
+  explicit qualifiers and covered by a Spring context test that starts gRPC and
+  health endpoints with H2 persistence.
+- This widened S12 beyond its original report-only file lock. The widening is
+  treated as a typed `TEST_FAILURE` / `BUILD_FAILURE` repair discovered by the
+  required final gate and live sandbox verification.
+
+Changed files:
+
+- `docs/workflow/execution-report.md`
+- `services/query-report-api-service/src/test/java/de/burger/forensics/analytics/services/queryreportapi/adapter/in/http/QueryReportApiHttpAdapterTest.java`
+- `services/query-report-api-service/src/test/java/de/burger/forensics/analytics/services/queryreportapi/application/QueryReportApiRepositoryAnalysisSubmissionServiceTest.java`
+- `services/query-report-api-service/src/test/java/de/burger/forensics/analytics/services/queryreportapi/domain/QueryReportApiWorkspaceTest.java`
+- `services/repository-source-service/README.md`
+- `services/repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/RepositorySourceServiceConfiguration.java`
+- `services/repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/RepositorySourceServiceProperties.java`
+- `services/repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/RepositorySourceServicePropertiesConfiguration.java`
+- `services/repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/domain/RepositorySourceDomain.java`
+- `services/repository-source-service/src/main/resources/application-test.properties`
+- `services/repository-source-service/src/main/resources/application.properties`
+- `services/repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/adapter/out/id/UuidRepositoryWorkspaceIdGeneratorTest.java`
+- `services/repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/application/port/RepositorySourcePortValueObjectTest.java`
+- `services/repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/application/RepositorySourceApplicationServiceTest.java`
+- `services/repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/application/RepositorySourceH2PersistenceApplicationTest.java`
+- `services/repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/RepositorySourceServiceApplicationTest.java`
+- `services/repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/domain/RepositorySourceDomainTest.java`
+- `services/testbed/src/test/java/de/burger/forensics/analytics/services/testbed/RepositoryAnalysisRealRepositoryEndToEndTest.java`
+
+Commands executed:
+
+```bash
+git status --short --branch
+git diff --check
+./gradlew :services:query-report-api-service:test --dependency-verification strict --console=plain --stacktrace
+./gradlew :services:repository-source-service:test --dependency-verification strict --console=plain --stacktrace
+./gradlew jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace
+./gradlew :services:repository-source-service:bootJar :services:query-report-api-service:bootJar --dependency-verification strict --console=plain --stacktrace
+cd forensic-ui && npm run test
+cd forensic-ui && npm run build
+node /tmp/fa-ui-live-clicktest/run-live-clicktest.cjs
+./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace
+```
+
+Live sandbox evidence:
+
+- Sandbox harness location: `/tmp/fa-ui-live-clicktest/run-live-clicktest.cjs`.
+- Built service artifacts:
+  `services/repository-source-service/build/libs/repository-source-service-0.1.0-SNAPSHOT.jar`
+  and
+  `services/query-report-api-service/build/libs/query-report-api-service-0.1.0-SNAPSHOT.jar`.
+- UI artifact: `forensic-ui/dist`, served through a Same-Origin sandbox proxy.
+- Public HTTPS fixture repository:
+  `https://github.com/spring-guides/gs-maven.git`.
+- Sandbox run id: `live-ui-clicktest-1779659363206`.
+- Created workspace:
+  `workspace-40292df2-3e2e-4e81-9f12-3144256f1726`.
+- Created workspace branch:
+  `workspace-branch-3b9033e3-ebc0-490d-aecb-a43dd99314ba`.
+- Resolved commit:
+  `c65883f80b35bac86bb2580944de9146e2c6a55a`.
+- Detected source roots:
+  `complete/src/main/java` and `initial/src/main/java`.
+- H2 persistence file:
+  `build/repository-source-data/live-ui-clicktest-1779659363206/repository-source.mv.db`.
+- Checkout proof:
+  `build/repository-source-workspaces/live-ui-clicktest-1779659363206/workspace-40292df2-3e2e-4e81-9f12-3144256f1726/branches/workspace-branch-3b9033e3-ebc0-490d-aecb-a43dd99314ba/checkout/.git`.
+- Screenshots:
+  `/tmp/fa-ui-live-clicktest/workspace-ready.png` and
+  `/tmp/fa-ui-live-clicktest/branch-up-to-date.png`.
+
+Live sandbox assertions:
+
+- UI clicked through repository URL entry, metadata preview, Save and Update
+  Branch on `/workspaces`.
+- Browser requests used the public REST facade:
+  `POST /api/workspace-metadata`, `POST /api/workspaces`,
+  `GET /api/workspaces/{workspaceId}` and
+  `POST /api/workspaces/{workspaceId}/branches/{workspaceBranchId}/refresh`.
+- The harness verified `X-Correlation-Id` and `Idempotency-Key` headers for
+  metadata preview, create and refresh operations.
+- Metadata preview returned repository key
+  `github.com/spring-guides/gs-maven`, repository name `gs-maven`, workspace
+  title `gs-maven` and default branch `main` without creating a workspace
+  directory.
+- Create workspace returned opaque workspace and branch ids, status `READY`,
+  branch status `CHECKED_OUT`, relative source roots and no filesystem paths.
+- Same idempotency key plus same create body replayed the same workspace and
+  branch ids; same idempotency key plus different branch returned
+  `409 IDEMPOTENCY_CONFLICT`.
+- `GET /api/workspaces/{workspaceId}` returned the same state before and after
+  restarting `repository-source-service` with the same H2 file path.
+- Refresh returned `UP_TO_DATE`, `changed=false` and the original resolved
+  commit; repeated refresh with the same idempotency key replayed the same
+  result.
+- REST response bodies and rendered UI text were scanned for local path, H2
+  JDBC URL, raw stdout/stderr, repository workspace/data path and credential
+  leakage markers.
+
+Result:
+
+- PASS for final backend and frontend quality gates.
+- PASS for live UI plus backend integration sandbox.
+- The final full local gate after the H2 qualifier repair completed with:
+  `BUILD SUCCESSFUL in 25m 10s`, `206 actionable tasks: 206 executed`.
+- `checkPackageCoverage` reported all package line and branch coverage values
+  at or above threshold. Repository-source coverage after S12 includes
+  `repositorysource.bootstrap` branch coverage `83.96%`,
+  `repositorysource.application` branch coverage `82.00%` and
+  `repositorysource.adapter.out.h2` branch coverage `82.76%`. Query-report
+  coverage includes `queryreportapi.domain` branch coverage `86.71%` and
+  `queryreportapi.adapter.in.http` branch coverage `87.95%`.
+
+Subagent review:
+
+- Senior React Frontend confirmed the UI selectors, progress states, request
+  header/body expectations and no-leak checks used by the sandbox harness.
+- Senior Tester recommended the exact two-layer live strategy used here:
+  backend live REST integration plus browser click test through a Same-Origin
+  proxy, with restart persistence and idempotency evidence.
+- Senior Requirement Engineer accepted the S12 quality repair only if this
+  execution report records the widened scope, commands, changed files, final
+  gate result and reviewer path.
+- Senior System Architect and Git Commit Reviewer are assigned final
+  checkpoint-readiness review before staging.
+
+Limitations and carry-forward notes:
+
+- The live sandbox uses a public GitHub HTTPS fixture, so it is an integration
+  smoke test rather than a deterministic unit test. Local/file/private Git
+  remotes remain intentionally rejected by the repository-source security
+  rules.
+- The Playwright harness is deliberately kept outside the repository because
+  FA-MVP-0001 did not introduce an e2e test package or Playwright dependency.
+- Java/protobuf/netty warnings about deprecated `Unsafe` access and future
+  native-access restrictions remain non-failing upstream dependency warnings.
+
+CP_RECORD:
+
+- workflowVersion: `fa-mvp-0001-repository-workspace-checkout-h2-persistence-20260524-v1`
+- sliceId: `S12`
+- sliceTitle: `Final Quality Gate And Workflow Handoff`
+- responsibleAgent: `quality-gate-orchestrator`
+- qualityGateResult: `PASS`
+- rollbackReference: `revert the S12 checkpoint commit after CP_COMMIT; before commit, restore the listed S12 files from HEAD`
+- arc42Updated: `checked; no additional arc42 change required after S11`
+- adrUpdated: `checked; no additional ADR change required after S11`
+
+Checkpoint:
+
+- Commit SHA: pending S12 checkpoint commit.
+- Push result: pending S12 checkpoint push.

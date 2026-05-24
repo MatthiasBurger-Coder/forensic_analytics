@@ -202,6 +202,8 @@ class QueryReportApiHttpAdapterTest {
             var port = server.getAddress().getPort();
 
             assertEquals(405, response(port, "/api/status", "PUT").code());
+            assertEquals(405, response(port, "/health", "POST", "", null, null).code());
+            assertEquals(405, response(port, "/api/workspaces/workspace-0001", "POST", "", "correlation-1", "idem-known-get").code());
             assertEquals(404, response(port, "/api/unknown", "POST", "{}", "correlation-1", "idem-404").code());
             assertEquals(400, response(
                 port,
@@ -268,6 +270,19 @@ class QueryReportApiHttpAdapterTest {
             assertEquals("correlation-1", response.correlationId());
             assertTrue(response.body().contains("\"retryable\":true"));
             assertFalse(response.body().contains("/tmp"));
+            var status = response(
+                failing.getAddress().getPort(),
+                "/api/repository-analyses/analysis-run-1",
+                "GET",
+                "",
+                "correlation-status-fails",
+                null
+            );
+
+            assertEquals(503, status.code());
+            assertEquals("correlation-status-fails", status.correlationId());
+            assertTrue(status.body().contains("\"retryable\":true"));
+            assertFalse(status.body().contains("/tmp"));
         } finally {
             failing.stop(0);
         }
@@ -555,6 +570,103 @@ class QueryReportApiHttpAdapterTest {
             assertSafePublicBody(refreshed.body());
         } finally {
             leaking.stop(0);
+        }
+    }
+
+    @Test
+    void mapsWorkspaceRouteValidationAndBackendFailures() throws Exception {
+        var server = server();
+        try {
+            var port = server.getAddress().getPort();
+
+            assertEquals(404, response(port, "/api/workspaces/", "GET", "", "correlation-1", null).code());
+            assertEquals(404, response(port, "/api/workspaces/workspace-0001%5Cbranch", "GET", "", "correlation-1", null).code());
+            assertEquals(404, response(port, "/api/repository-analyses/", "GET", "", "correlation-1", null).code());
+            assertEquals(404, response(port, "/api/repository-analyses/analysis-run-1/extra", "GET", "", "correlation-1", null).code());
+            assertEquals(404, response(port, "/api/workspaces/workspace-0001/branches/workspace-branch-0001", "GET", "", "correlation-1", null).code());
+            assertEquals(400, response(
+                port,
+                "/api/workspaces//branches/workspace-branch-0001/refresh",
+                "POST",
+                "",
+                "correlation-1",
+                "idem-invalid-refresh-workspace-route"
+            ).code());
+            assertEquals(400, response(
+                port,
+                "/api/workspaces/workspace-0001/branches//refresh",
+                "POST",
+                "",
+                "correlation-1",
+                "idem-invalid-refresh-route"
+            ).code());
+            assertEquals(400, response(
+                port,
+                "/api/workspaces/workspace-0001/branches/workspace-branch-0001/extra/refresh",
+                "POST",
+                "",
+                "correlation-1",
+                "idem-invalid-refresh-branch-route"
+            ).code());
+            assertEquals(400, response(
+                port,
+                "/api/workspace-metadata",
+                "POST",
+                "x".repeat(64 * 1024 + 1),
+                "correlation-1",
+                "idem-too-large-workspace"
+            ).code());
+            assertEquals(400, response(
+                port,
+                "/api/workspaces",
+                "POST",
+                validWorkspaceRequest().replace("\"ephemeral\": false,", ""),
+                "correlation-1",
+                "idem-missing-workspace-boolean"
+            ).code());
+        } finally {
+            server.stop(0);
+        }
+
+        var failing = server(new FakePreparationPort(), new FailingWorkspacePort());
+        try {
+            var port = failing.getAddress().getPort();
+            var metadata = response(
+                port,
+                "/api/workspace-metadata",
+                "POST",
+                workspaceMetadataRequest(),
+                "correlation-failing-metadata",
+                "idem-failing-metadata"
+            );
+            var loaded = response(
+                port,
+                "/api/workspaces/workspace-0001",
+                "GET",
+                "",
+                "correlation-failing-get",
+                null
+            );
+            var refreshed = response(
+                port,
+                "/api/workspaces/workspace-0001/branches/workspace-branch-0001/refresh",
+                "POST",
+                "",
+                "correlation-failing-refresh",
+                "idem-failing-refresh"
+            );
+
+            assertEquals(503, metadata.code());
+            assertEquals(503, loaded.code());
+            assertEquals(503, refreshed.code());
+            assertTrue(metadata.body().contains("\"code\":\"BACKEND_UNAVAILABLE\""));
+            assertTrue(loaded.body().contains("\"code\":\"BACKEND_UNAVAILABLE\""));
+            assertTrue(refreshed.body().contains("\"code\":\"BACKEND_UNAVAILABLE\""));
+            assertSafePublicBody(metadata.body());
+            assertSafePublicBody(loaded.body());
+            assertSafePublicBody(refreshed.body());
+        } finally {
+            failing.stop(0);
         }
     }
 

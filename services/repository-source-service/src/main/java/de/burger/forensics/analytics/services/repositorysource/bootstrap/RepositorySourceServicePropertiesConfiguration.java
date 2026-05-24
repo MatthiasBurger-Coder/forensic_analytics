@@ -34,7 +34,7 @@ public class RepositorySourceServicePropertiesConfiguration {
                     text(
                         environment,
                         "forensics.repository-source.service.persistence.h2.jdbc-url",
-                        "jdbc:h2:file:build/repository-source-data/repository-source;AUTO_SERVER=FALSE;DB_CLOSE_DELAY=-1"
+                        "jdbc:h2:file:./build/repository-source-data/repository-source;AUTO_SERVER=FALSE;DB_CLOSE_DELAY=-1"
                     ),
                     text(environment, "forensics.repository-source.service.persistence.h2.username", "sa"),
                     text(environment, "forensics.repository-source.service.persistence.h2.password", "")

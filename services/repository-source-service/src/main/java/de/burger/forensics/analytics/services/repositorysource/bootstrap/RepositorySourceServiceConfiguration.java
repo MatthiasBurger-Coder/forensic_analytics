@@ -20,6 +20,7 @@ import de.burger.forensics.analytics.services.repositorysource.application.port.
 import de.burger.forensics.analytics.services.repositorysource.application.port.RepositoryWorkspaceIdGenerator;
 import de.burger.forensics.analytics.services.repositorysource.application.port.RepositoryWorkspacePort;
 import de.burger.forensics.analytics.services.repositorysource.application.port.RepositoryWorkspaceRepository;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -90,8 +91,8 @@ public class RepositorySourceServiceConfiguration {
 
     @Bean
     public RepositorySourceApplicationService repositorySourceApplicationService(
-        RepositoryPreparationRepository repository,
-        RepositorySourceIdempotencyRepository idempotencyRepository,
+        @Qualifier("repositoryPreparationRepository") RepositoryPreparationRepository repository,
+        @Qualifier("repositorySourceIdempotencyRepository") RepositorySourceIdempotencyRepository idempotencyRepository,
         RepositoryWorkspacePort workspacePort,
         RepositoryCheckoutPort checkoutPort,
         Clock repositorySourceClock
@@ -107,9 +108,9 @@ public class RepositorySourceServiceConfiguration {
 
     @Bean
     public RepositoryWorkspaceApplicationService repositoryWorkspaceApplicationService(
-        RepositoryWorkspaceRepository repository,
+        @Qualifier("repositoryWorkspaceRepository") RepositoryWorkspaceRepository repository,
         RepositoryWorkspaceIdGenerator idGenerator,
-        RepositorySourceIdempotencyRepository idempotencyRepository,
+        @Qualifier("repositorySourceIdempotencyRepository") RepositorySourceIdempotencyRepository idempotencyRepository,
         RepositoryWorkspacePort workspacePort,
         RepositoryCheckoutPort checkoutPort,
         RepositoryMetadataPort metadataPort,
