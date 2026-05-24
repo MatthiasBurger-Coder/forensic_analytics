@@ -551,7 +551,11 @@ affected_files:
   - gradle/libs.versions.toml
   - gradle/verification-metadata.xml
   - services/repository-source-service/build.gradle.kts
+  - services/repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/application/RepositorySourceApplicationService.java
+  - services/repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/application/RepositoryWorkspaceApplicationService.java
+  - services/repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/application/port/**
   - services/repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/adapter/out/h2/**
+  - services/repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/adapter/out/memory/**
   - services/repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/**
   - services/repository-source-service/src/main/resources/application.properties
   - services/repository-source-service/src/main/resources/application-docker.properties
@@ -587,6 +591,15 @@ stop_conditions:
   - repository-source H2 files are read by another service
   - strict dependency verification cannot be restored
 ```
+
+Scope repair note: S05 may add the application-level durable idempotency port
+and adapt repository-source application services to consult persisted
+idempotency records before checkout, cleanup or refresh side effects. This
+repair is required because the S04 implementation still keeps idempotency
+replay state in private in-memory maps. S05 may also extend the existing
+`adapter/out/memory/**` fallback with an in-memory implementation of the new
+idempotency port so property-based `memory|h2` adapter selection remains
+testable.
 
 Purpose: add the H2 dependency, service-local schema initializer, configurable
 adapter selection, H2-backed preparation/workspace/branch/idempotency

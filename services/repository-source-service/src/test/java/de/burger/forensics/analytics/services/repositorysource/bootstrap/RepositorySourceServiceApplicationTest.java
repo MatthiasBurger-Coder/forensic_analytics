@@ -61,7 +61,8 @@ class RepositorySourceServiceApplicationTest {
         var properties = new RepositorySourceServiceProperties(
             new RepositorySourceServiceProperties.Grpc(false, "127.0.0.1", 0),
             new RepositorySourceServiceProperties.Health(false, "127.0.0.1", 0),
-            new RepositorySourceServiceProperties.Workspace(Path.of("build/test-workspaces"))
+            new RepositorySourceServiceProperties.Workspace(Path.of("build/test-workspaces")),
+            memoryPersistence()
         );
         var grpc = new GrpcServerLifecycle(properties, null);
         var health = new HealthHttpServerLifecycle(properties, grpc);
@@ -90,16 +91,25 @@ class RepositorySourceServiceApplicationTest {
         assertThrows(NullPointerException.class, () -> new RepositorySourceServiceProperties(
             null,
             new RepositorySourceServiceProperties.Health(true, "127.0.0.1", 0),
-            new RepositorySourceServiceProperties.Workspace(Path.of("build/test-workspaces"))
+            new RepositorySourceServiceProperties.Workspace(Path.of("build/test-workspaces")),
+            memoryPersistence()
         ));
         assertThrows(NullPointerException.class, () -> new RepositorySourceServiceProperties(
             new RepositorySourceServiceProperties.Grpc(true, "127.0.0.1", 0),
             null,
-            new RepositorySourceServiceProperties.Workspace(Path.of("build/test-workspaces"))
+            new RepositorySourceServiceProperties.Workspace(Path.of("build/test-workspaces")),
+            memoryPersistence()
         ));
         assertThrows(NullPointerException.class, () -> new RepositorySourceServiceProperties(
             new RepositorySourceServiceProperties.Grpc(true, "127.0.0.1", 0),
             new RepositorySourceServiceProperties.Health(true, "127.0.0.1", 0),
+            null,
+            memoryPersistence()
+        ));
+        assertThrows(NullPointerException.class, () -> new RepositorySourceServiceProperties(
+            new RepositorySourceServiceProperties.Grpc(true, "127.0.0.1", 0),
+            new RepositorySourceServiceProperties.Health(true, "127.0.0.1", 0),
+            new RepositorySourceServiceProperties.Workspace(Path.of("build/test-workspaces")),
             null
         ));
         assertThrows(IllegalArgumentException.class, () -> new RepositorySourceServiceProperties.Grpc(true, " ", 0));
@@ -108,11 +118,29 @@ class RepositorySourceServiceApplicationTest {
         assertThrows(IllegalArgumentException.class, () -> new RepositorySourceServiceProperties.Health(true, "127.0.0.1", 65_536));
         assertThrows(IllegalArgumentException.class, () -> new RepositorySourceServiceProperties.Health(true, null, 0));
         assertThrows(NullPointerException.class, () -> new RepositorySourceServiceProperties.Workspace(null));
+        assertThrows(IllegalArgumentException.class, () -> new RepositorySourceServiceProperties.Persistence("postgres", h2()));
+        assertThrows(IllegalArgumentException.class, () -> new RepositorySourceServiceProperties.H2(" ", "sa", ""));
+        assertThrows(IllegalArgumentException.class, () -> new RepositorySourceServiceProperties.H2(
+            "jdbc:h2:tcp://127.0.0.1/~/repository-source",
+            "sa",
+            ""
+        ));
+        assertThrows(IllegalArgumentException.class, () -> new RepositorySourceServiceProperties.H2(
+            "jdbc:h2:file:../repository-source;AUTO_SERVER=FALSE",
+            "sa",
+            ""
+        ));
+        assertThrows(IllegalArgumentException.class, () -> new RepositorySourceServiceProperties.H2(
+            "jdbc:h2:file:build/repository-source-data/repository-source;INIT=RUNSCRIPT FROM 'classpath:init.sql'",
+            "sa",
+            ""
+        ));
 
         var properties = new RepositorySourceServiceProperties(
             new RepositorySourceServiceProperties.Grpc(true, "127.0.0.1", 0),
             new RepositorySourceServiceProperties.Health(true, "127.0.0.1", 0),
-            new RepositorySourceServiceProperties.Workspace(Path.of("build/test-workspaces"))
+            new RepositorySourceServiceProperties.Workspace(Path.of("build/test-workspaces")),
+            memoryPersistence()
         );
         var grpc = new GrpcServerLifecycle(properties, null);
         var health = new HealthHttpServerLifecycle(properties, grpc);
@@ -128,6 +156,18 @@ class RepositorySourceServiceApplicationTest {
     private static int healthResponseCode(int port) throws Exception {
         var connection = URI.create("http://127.0.0.1:" + port + "/health").toURL().openConnection();
         return ((java.net.HttpURLConnection) connection).getResponseCode();
+    }
+
+    private static RepositorySourceServiceProperties.Persistence memoryPersistence() {
+        return new RepositorySourceServiceProperties.Persistence("memory", h2());
+    }
+
+    private static RepositorySourceServiceProperties.H2 h2() {
+        return new RepositorySourceServiceProperties.H2(
+            "jdbc:h2:file:build/repository-source-test-data/repository-source",
+            "sa",
+            ""
+        );
     }
 
 }

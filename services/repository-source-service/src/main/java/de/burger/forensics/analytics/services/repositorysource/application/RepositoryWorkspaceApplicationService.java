@@ -5,6 +5,8 @@ import de.burger.forensics.analytics.services.repositorysource.application.port.
 import de.burger.forensics.analytics.services.repositorysource.application.port.RepositoryMetadataPort;
 import de.burger.forensics.analytics.services.repositorysource.application.port.RepositoryMetadataPreviewPolicy;
 import de.burger.forensics.analytics.services.repositorysource.application.port.RepositoryMetadataResolution;
+import de.burger.forensics.analytics.services.repositorysource.application.port.RepositorySourceIdempotencyRecord;
+import de.burger.forensics.analytics.services.repositorysource.application.port.RepositorySourceIdempotencyRepository;
 import de.burger.forensics.analytics.services.repositorysource.application.port.RepositoryWorkspacePort;
 import de.burger.forensics.analytics.services.repositorysource.application.port.RepositoryWorkspaceIdGenerator;
 import de.burger.forensics.analytics.services.repositorysource.application.port.RepositoryWorkspaceRepository;
@@ -26,7 +28,6 @@ import de.burger.forensics.analytics.services.repositorysource.domain.Repository
 import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.WorkspaceTitle;
 
 import java.time.Clock;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -35,20 +36,25 @@ import static de.burger.forensics.analytics.services.repositorysource.domain.Rep
 import static de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.safeAttributes;
 
 public final class RepositoryWorkspaceApplicationService {
+    private static final String OPERATION_CREATE_WORKSPACE = "CREATE_WORKSPACE";
+    private static final String OPERATION_CREATE_WORKSPACE_BRANCH = "CREATE_WORKSPACE_BRANCH";
+    private static final String OPERATION_CHECKOUT_WORKSPACE_BRANCH = "CHECKOUT_WORKSPACE_BRANCH";
+    private static final String OPERATION_REFRESH_WORKSPACE_BRANCH = "REFRESH_WORKSPACE_BRANCH";
+    private static final String RESULT_WORKSPACE = "REPOSITORY_WORKSPACE";
+    private static final String RESULT_WORKSPACE_BRANCH = "REPOSITORY_WORKSPACE_BRANCH";
+    private static final String RESULT_BRANCH_REFRESH = "REPOSITORY_WORKSPACE_BRANCH_REFRESH";
     private final RepositoryWorkspaceRepository repository;
     private final RepositoryWorkspaceIdGenerator idGenerator;
     private final RepositoryWorkspacePort workspacePort;
     private final RepositoryCheckoutPort checkoutPort;
     private final RepositoryMetadataPort metadataPort;
     private final Clock clock;
-    private final Map<String, IdempotentResult<RepositoryWorkspace>> workspaceCreateResults = new HashMap<>();
-    private final Map<String, IdempotentResult<RepositoryWorkspaceBranch>> branchCreateResults = new HashMap<>();
-    private final Map<String, IdempotentResult<RepositoryWorkspace>> workspaceCheckoutResults = new HashMap<>();
-    private final Map<String, IdempotentResult<RefreshRepositoryWorkspaceBranchResult>> branchRefreshResults = new HashMap<>();
+    private final RepositorySourceIdempotency idempotency;
 
     public RepositoryWorkspaceApplicationService(
         RepositoryWorkspaceRepository repository,
         RepositoryWorkspaceIdGenerator idGenerator,
+        RepositorySourceIdempotencyRepository idempotencyRepository,
         RepositoryWorkspacePort workspacePort,
         RepositoryCheckoutPort checkoutPort,
         RepositoryMetadataPort metadataPort,
@@ -60,6 +66,7 @@ public final class RepositoryWorkspaceApplicationService {
         this.checkoutPort = Objects.requireNonNull(checkoutPort, "checkout port must not be null");
         this.metadataPort = Objects.requireNonNull(metadataPort, "metadata port must not be null");
         this.clock = Objects.requireNonNull(clock, "clock must not be null");
+        this.idempotency = new RepositorySourceIdempotency(idempotencyRepository, clock);
     }
 
     public synchronized RepositoryWorkspaceMetadataPreview previewRepositoryWorkspaceMetadata(
@@ -93,15 +100,22 @@ public final class RepositoryWorkspaceApplicationService {
         Objects.requireNonNull(repositoryIdentity, "repository identity must not be null");
         var safeAttributes = safeAttributes(attributes);
         var fingerprint = String.join("|", repositoryIdentity.repositoryKey().value(), safeAttributes.toString());
-        var replay = workspaceCreateResults.get(key);
-        if (replay != null) {
-            return replay.sameFingerprintOrThrow(fingerprint);
-        }
-
-        var workspace = repository.findByRepositoryKey(repositoryIdentity.repositoryKey())
-            .orElseGet(() -> createWorkspace(repositoryIdentity, safeAttributes));
-        workspaceCreateResults.put(key, new IdempotentResult<>(fingerprint, workspace));
-        return workspace;
+        return idempotency.replayOrExecute(
+            OPERATION_CREATE_WORKSPACE,
+            key,
+            fingerprint,
+            this::replayWorkspace,
+            () -> {
+                var workspace = repository.findByRepositoryKey(repositoryIdentity.repositoryKey())
+                    .orElseGet(() -> createWorkspace(repositoryIdentity, safeAttributes));
+                return new RepositorySourceIdempotency.CompletedResult<>(
+                    RESULT_WORKSPACE,
+                    workspace.workspaceId().value(),
+                    RepositorySourceIdempotencyPayloads.workspace(workspace),
+                    workspace
+                );
+            }
+        );
     }
 
     public synchronized RepositoryWorkspaceBranch createOrReuseRepositoryWorkspaceBranch(
@@ -114,19 +128,26 @@ public final class RepositoryWorkspaceApplicationService {
         Objects.requireNonNull(branchSelector, "branch selector must not be null");
         var repositoryBranch = branchSelector.requireBranch();
         var fingerprint = String.join("|", workspaceId.value(), repositoryBranch, branchSelector.commit());
-        var replay = branchCreateResults.get(key);
-        if (replay != null) {
-            return replay.sameFingerprintOrThrow(fingerprint);
-        }
-
-        var workspace = getRepositoryWorkspace(workspaceId);
-        var branch = workspace.branches().stream()
-            .filter(existing -> existing.repositoryBranch().equals(repositoryBranch))
-            .findFirst()
-            .map(existing -> sameRequestedCommitOrThrow(existing, branchSelector))
-            .orElseGet(() -> createBranch(workspace, branchSelector));
-        branchCreateResults.put(key, new IdempotentResult<>(fingerprint, branch));
-        return branch;
+        return idempotency.replayOrExecute(
+            OPERATION_CREATE_WORKSPACE_BRANCH,
+            key,
+            fingerprint,
+            record -> replayBranch(workspaceId, record),
+            () -> {
+                var workspace = getRepositoryWorkspace(workspaceId);
+                var branch = workspace.branches().stream()
+                    .filter(existing -> existing.repositoryBranch().equals(repositoryBranch))
+                    .findFirst()
+                    .map(existing -> sameRequestedCommitOrThrow(existing, branchSelector))
+                    .orElseGet(() -> createBranch(workspace, branchSelector));
+                return new RepositorySourceIdempotency.CompletedResult<>(
+                    RESULT_WORKSPACE_BRANCH,
+                    branch.workspaceBranchId().value(),
+                    RepositorySourceIdempotencyPayloads.branch(branch),
+                    branch
+                );
+            }
+        );
     }
 
     public synchronized RepositoryWorkspace createOrReuseRepositoryWorkspaceWithCheckout(
@@ -151,28 +172,31 @@ public final class RepositoryWorkspaceApplicationService {
         );
         var resolvedSelector = resolvedBranchSelector(branchSelector, metadata);
         var fingerprint = workspaceCheckoutFingerprint(metadata.repository(), resolvedSelector, workspacePolicy, safeAttributes);
-        var replay = workspaceCheckoutResults.get(key);
-        if (replay != null) {
-            return replay.sameFingerprintOrThrow(fingerprint);
-        }
-
-        var workspace = repository.findByRepositoryKey(metadata.repository().repositoryKey())
-            .orElseGet(() -> createWorkspace(metadata.repository(), safeAttributes));
-        var branch = workspace.branches().stream()
-            .filter(existing -> existing.repositoryBranch().equals(resolvedSelector.requireBranch()))
-            .findFirst()
-            .map(existing -> sameRequestedCommitOrThrow(existing, resolvedSelector))
-            .orElseGet(() -> createBranch(workspace, resolvedSelector));
-        if (hasCompletedCheckout(branch)) {
-            var existingWorkspace = getRepositoryWorkspace(workspace.workspaceId());
-            workspaceCheckoutResults.put(key, new IdempotentResult<>(fingerprint, existingWorkspace));
-            return existingWorkspace;
-        }
-
-        checkoutWorkspaceBranch(workspace, branch, repositoryReference, resolvedSelector, workspacePolicy);
-        var result = getRepositoryWorkspace(workspace.workspaceId());
-        workspaceCheckoutResults.put(key, new IdempotentResult<>(fingerprint, result));
-        return result;
+        return idempotency.replayOrExecute(
+            OPERATION_CHECKOUT_WORKSPACE_BRANCH,
+            key,
+            fingerprint,
+            this::replayWorkspace,
+            () -> {
+                var workspace = repository.findByRepositoryKey(metadata.repository().repositoryKey())
+                    .orElseGet(() -> createWorkspace(metadata.repository(), safeAttributes));
+                var branch = workspace.branches().stream()
+                    .filter(existing -> existing.repositoryBranch().equals(resolvedSelector.requireBranch()))
+                    .findFirst()
+                    .map(existing -> sameRequestedCommitOrThrow(existing, resolvedSelector))
+                    .orElseGet(() -> createBranch(workspace, resolvedSelector));
+                if (!hasCompletedCheckout(branch)) {
+                    checkoutWorkspaceBranch(workspace, branch, repositoryReference, resolvedSelector, workspacePolicy);
+                }
+                var result = getRepositoryWorkspace(workspace.workspaceId());
+                return new RepositorySourceIdempotency.CompletedResult<>(
+                    RESULT_WORKSPACE,
+                    result.workspaceId().value(),
+                    RepositorySourceIdempotencyPayloads.workspace(result),
+                    result
+                );
+            }
+        );
     }
 
     public synchronized RefreshRepositoryWorkspaceBranchResult refreshRepositoryWorkspaceBranch(
@@ -200,33 +224,40 @@ public final class RepositoryWorkspaceApplicationService {
             workspacePolicyFingerprint(workspacePolicy),
             safeAttributes.toString()
         );
-        var replay = branchRefreshResults.get(key);
-        if (replay != null) {
-            return replay.sameFingerprintOrThrow(fingerprint);
-        }
-        if (branch.resolvedCommit().isBlank() || branch.sourceSnapshotId() == null) {
-            throw new IllegalArgumentException("repository workspace branch must be checked out before refresh");
-        }
-
-        saveBranch(workspace, branchWithStatus(
-            branch,
-            RepositoryWorkspaceBranchStatus.UPDATING,
-            branch.resolvedCommit(),
-            branch.sourceSnapshotId(),
-            branch.sourceRoots(),
-            branch.diagnostics()
-        ));
-        var checkout = checkoutForBranch(
-            workspace,
-            branch,
-            repositoryReference(workspace.repository()),
-            refreshSelector(branch),
-            workspacePolicy,
-            false
+        return idempotency.replayOrExecute(
+            OPERATION_REFRESH_WORKSPACE_BRANCH,
+            key,
+            fingerprint,
+            record -> replayRefresh(workspaceId, safeAttributes, record),
+            () -> {
+                if (branch.resolvedCommit().isBlank() || branch.sourceSnapshotId() == null) {
+                    throw new IllegalArgumentException("repository workspace branch must be checked out before refresh");
+                }
+                saveBranch(workspace, branchWithStatus(
+                    branch,
+                    RepositoryWorkspaceBranchStatus.UPDATING,
+                    branch.resolvedCommit(),
+                    branch.sourceSnapshotId(),
+                    branch.sourceRoots(),
+                    branch.diagnostics()
+                ));
+                var checkout = checkoutForBranch(
+                    workspace,
+                    branch,
+                    repositoryReference(workspace.repository()),
+                    refreshSelector(branch),
+                    workspacePolicy,
+                    false
+                );
+                var result = refreshResult(branch, checkout, safeAttributes);
+                return new RepositorySourceIdempotency.CompletedResult<>(
+                    RESULT_BRANCH_REFRESH,
+                    refreshReference(result),
+                    RepositorySourceIdempotencyPayloads.refresh(result),
+                    result
+                );
+            }
         );
-        var result = refreshResult(branch, checkout, safeAttributes);
-        branchRefreshResults.put(key, new IdempotentResult<>(fingerprint, result));
-        return result;
     }
 
     public synchronized RepositoryWorkspace getRepositoryWorkspace(WorkspaceId workspaceId) {
@@ -526,12 +557,66 @@ public final class RepositoryWorkspaceApplicationService {
         );
     }
 
-    private record IdempotentResult<T>(String fingerprint, T result) {
-        private T sameFingerprintOrThrow(String requestedFingerprint) {
-            if (!fingerprint.equals(requestedFingerprint)) {
-                throw new IdempotencyConflictException("idempotency key was reused with different input");
-            }
-            return result;
+    private RepositoryWorkspace replayWorkspace(RepositorySourceIdempotencyRecord record) {
+        if (!RESULT_WORKSPACE.equals(record.resultType())) {
+            throw new RepositoryWorkspaceNotFoundException("repository workspace idempotency result was not found");
         }
+        if (!record.resultPayload().isBlank()) {
+            return RepositorySourceIdempotencyPayloads.workspace(record.resultPayload());
+        }
+        return getRepositoryWorkspace(new WorkspaceId(record.resultReference()));
+    }
+
+    private RepositoryWorkspaceBranch replayBranch(WorkspaceId workspaceId, RepositorySourceIdempotencyRecord record) {
+        if (!RESULT_WORKSPACE_BRANCH.equals(record.resultType())) {
+            throw new RepositoryWorkspaceNotFoundException("repository workspace branch idempotency result was not found");
+        }
+        if (!record.resultPayload().isBlank()) {
+            return RepositorySourceIdempotencyPayloads.branch(record.resultPayload());
+        }
+        return repository.findBranch(workspaceId, new WorkspaceBranchId(record.resultReference()))
+            .orElseThrow(() -> new RepositoryWorkspaceNotFoundException("repository workspace branch was not found"));
+    }
+
+    private RefreshRepositoryWorkspaceBranchResult replayRefresh(
+        WorkspaceId workspaceId,
+        Map<String, String> safeAttributes,
+        RepositorySourceIdempotencyRecord record
+    ) {
+        if (!RESULT_BRANCH_REFRESH.equals(record.resultType())) {
+            throw new RepositoryWorkspaceNotFoundException("repository workspace branch refresh result was not found");
+        }
+        if (!record.resultPayload().isBlank()) {
+            return RepositorySourceIdempotencyPayloads.refresh(record.resultPayload());
+        }
+        var parts = splitReference(record.resultReference(), 4);
+        var branch = repository.findBranch(workspaceId, new WorkspaceBranchId(parts[3]))
+            .orElseThrow(() -> new RepositoryWorkspaceNotFoundException("repository workspace branch was not found"));
+        return new RefreshRepositoryWorkspaceBranchResult(
+            branch,
+            Boolean.parseBoolean(parts[0]),
+            parts[1],
+            new SourceSnapshotId(parts[2]),
+            branch.diagnostics(),
+            safeAttributes
+        );
+    }
+
+    private static String refreshReference(RefreshRepositoryWorkspaceBranchResult result) {
+        return String.join(
+            "|",
+            Boolean.toString(result.changed()),
+            result.previousCommit(),
+            result.previousSourceSnapshotId().value(),
+            result.branch().workspaceBranchId().value()
+        );
+    }
+
+    private static String[] splitReference(String reference, int expectedParts) {
+        var parts = reference.split("\\|", -1);
+        if (parts.length != expectedParts) {
+            throw new IllegalStateException("Idempotency result reference is invalid");
+        }
+        return parts;
     }
 }

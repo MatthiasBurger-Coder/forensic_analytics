@@ -2,11 +2,11 @@
 
 ## Status
 
-Workflow execution is in progress. S00, S01, S02, S03 and S04 are complete.
-Product implementation has started in repository-source-service with the
-workspace domain model, in-memory repositories, metadata resolution, checkout
-preparation and branch refresh behavior required by later persistence and
-facade slices.
+Workflow execution is in progress. S00, S01, S02, S03, S04 and S05 are
+complete. Product implementation has started in repository-source-service with
+the workspace domain model, in-memory and H2 repositories, metadata
+resolution, checkout preparation, durable idempotency and branch refresh
+behavior required by later facade and runtime slices.
 
 `workflow execute` must run S00 first and then update this report after every
 slice with:
@@ -45,7 +45,7 @@ execution and contract-first sequencing.
 | S02 | Completed | Contract-first public REST and repository-source owner API frozen with security and idempotency contract tests. |
 | S03 | Completed | Repository-source workspace aggregate, branch aggregate, repository identity, in-memory workspace repository and idempotent workspace/branch application use cases added. |
 | S04 | Completed | Metadata preview, verified default-branch fallback, branch checkout preparation, checkout reuse and manual refresh behavior added behind repository-source application ports and Git/filesystem adapters. |
-| S05 | Not started | H2 dependency, schema and persistence adapters. |
+| S05 | Completed | H2 dependency, schema, persistence adapters, durable idempotency port, restart-safe filesystem cleanup and S05 scope repair completed. |
 | S06 | Not started | Repository-source gRPC endpoint and error mapping. |
 | S07 | Not started | Query-report public REST facade. |
 | S08 | Not started | Forensic UI Create Workspace flow. |
@@ -121,6 +121,141 @@ Checkpoint:
 - S00 report finalizer SHA: `c9d5f43a7f519486c67bc3f7763b5ade60457bca`.
 - Push result: pushed to
   `origin/feature/workflow-repository-workspace-checkout-h2-persistence-20260524`.
+
+## Slice S05 - H2 Dependency, Schema And Persistence Adapters
+
+Status: Completed.
+
+Pre-implementation scope repair:
+
+- Senior Analysis Storage Architect, Senior Java Backend and Senior Security
+  Sandbox Engineer blocked S05 as originally listed because durable
+  idempotency cannot be implemented only in the H2 adapter/bootstrap scope.
+- Current idempotency replay state still lives in private in-memory maps inside
+  `RepositorySourceApplicationService` and
+  `RepositoryWorkspaceApplicationService`.
+- User approved continuing S05 by adding the application-level durable
+  idempotency port and required application-service changes to the S05 scope.
+- `docs/workflow/workflow.md` was updated so S05 explicitly covers
+  `application/RepositorySourceApplicationService.java`,
+  `application/RepositoryWorkspaceApplicationService.java` and
+  `application/port/**`.
+- The repaired scope also includes `adapter/out/memory/**` so the new
+  idempotency port can preserve the existing explicit in-memory fallback for
+  tests and property-based adapter selection.
+- S05 must still keep JDBC/H2 classes in `adapter/out/h2` and bootstrap only;
+  domain and application code may depend on ports but must not import SQL, JDBC
+  or H2 APIs.
+
+Owner and reviewers:
+
+- Senior Analysis Storage Architect
+- Data Ownership / Persistence Steward
+- Senior Java Backend
+- Senior Security Sandbox Engineer
+- Senior DevOps
+- Senior Tester
+
+Changed files:
+
+- `docs/workflow/workflow.md`
+- `docs/workflow/execution-report.md`
+- `gradle/libs.versions.toml`
+- `gradle/verification-metadata.xml`
+- `services/repository-source-service/build.gradle.kts`
+- `services/repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/adapter/out/filesystem/FileSystemRepositoryWorkspaceAdapter.java`
+- `services/repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/adapter/out/h2/H2RepositorySourcePersistenceAdapter.java`
+- `services/repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/adapter/out/memory/InMemoryRepositorySourceIdempotencyRepository.java`
+- `services/repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/application/RepositorySourceApplicationService.java`
+- `services/repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/application/RepositorySourceIdempotency.java`
+- `services/repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/application/RepositorySourceIdempotencyPayloads.java`
+- `services/repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/application/RepositoryWorkspaceApplicationService.java`
+- `services/repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/application/port/RepositorySourceIdempotencyRecord.java`
+- `services/repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/application/port/RepositorySourceIdempotencyRepository.java`
+- `services/repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/RepositorySourceServiceConfiguration.java`
+- `services/repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/RepositorySourceServiceProperties.java`
+- `services/repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/RepositorySourceServicePropertiesConfiguration.java`
+- `services/repository-source-service/src/main/resources/application.properties`
+- `services/repository-source-service/src/main/resources/application-docker.properties`
+- `services/repository-source-service/src/main/resources/application-test.properties`
+- `services/repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/adapter/in/grpc/RepositorySourceGrpcEndpointTest.java`
+- `services/repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/adapter/out/filesystem/FileSystemRepositoryWorkspaceAdapterTest.java`
+- `services/repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/adapter/out/h2/H2RepositorySourcePersistenceAdapterTest.java`
+- `services/repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/application/RepositorySourceApplicationServiceTest.java`
+- `services/repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/application/RepositorySourceH2PersistenceApplicationTest.java`
+- `services/repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/RepositorySourceServiceApplicationTest.java`
+- `services/repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/quality/RepositorySourceServiceArchitectureTest.java`
+
+Commands executed:
+
+```bash
+git status --short --branch --untracked-files=all
+git diff --check
+./gradlew :services:repository-source-service:test --tests "*RepositorySourceApplicationServiceTest" --tests "*RepositorySourceH2PersistenceApplicationTest" --tests "*H2RepositorySourcePersistenceAdapterTest" --dependency-verification strict --console=plain --stacktrace
+./gradlew :services:repository-source-service:test --tests "*FileSystemRepositoryWorkspaceAdapterTest" --dependency-verification strict --console=plain --stacktrace
+./gradlew :services:repository-source-service:test --dependency-verification strict --console=plain --stacktrace
+```
+
+Result:
+
+- PASS for S05 after scope repair and re-review.
+- H2 dependency `com.h2database:h2:2.4.240` was added service-locally with
+  strict verification metadata.
+- `repository-source-service` now selects `h2` or `memory` persistence by
+  property and defaults local/docker to H2 while test profile remains memory.
+- H2 schema initialization creates service-local `workspace`,
+  `workspace_branch`, `repository_preparation` and `idempotency_record`
+  tables.
+- H2 persistence reloads workspace, branch, preparation, source snapshot,
+  checkout diagnostics and idempotency payload state across adapter reopen.
+- Durable idempotency is exposed through an application port and implemented by
+  both H2 and in-memory adapters.
+- Idempotency operation names are unique across repository preparation and
+  workspace checkout flows.
+- Idempotency replay records immutable result payloads so retries after cleanup
+  or later branch refresh return the original result shape and do not rerun
+  checkout, cleanup or refresh side effects.
+- The filesystem workspace adapter can clean deterministic workspace and branch
+  directories after adapter/service restart without exposing those paths.
+- H2 JDBC URLs are restricted to service-owned local/test/docker data roots and
+  reject remote H2 modes, traversal/home paths and unsafe `INIT`/`RUNSCRIPT` or
+  `AUTO_SERVER` options.
+- ArchUnit coverage blocks JDBC, SQL and H2 dependencies from
+  repository-source domain/application packages.
+
+Subagent re-review:
+
+- Senior Analysis Storage Architect: PASS after H2 field fidelity and
+  idempotency payload fixes.
+- Senior Security Sandbox Engineer: PASS after H2 URL hardening and operation
+  namespace fix.
+- Senior DevOps: PASS for Gradle catalog, dependency verification metadata,
+  runtime dependency scope, property binding and adapter selection.
+- Senior Tester: PASS for S05 test adequacy after H2 diagnostics/revision,
+  source snapshot, updated refresh replay and unsafe URL coverage; initial
+  report-evidence blocker resolved by this S05 section.
+- Senior Java Backend identified restart cleanup with persisted H2 state and
+  in-memory filesystem path maps; the adapter was repaired and covered by
+  `FileSystemRepositoryWorkspaceAdapterTest`.
+
+Documentation sync:
+
+- arc42/data-ownership documentation already records repository-source H2 as
+  service-local MVP persistence and no arc42 content change was needed in S05.
+- ADR-0013 was checked; S05 preserves one owner and one write path for
+  repository-source H2 data and introduces no cross-service database coupling.
+
+Limitations and carry-forward notes:
+
+- Dockerfile and Compose volume creation/mounting are still owned by S09.
+- Public REST, OpenAPI facade wiring and GUI behavior remain owned by S07 and
+  S08.
+- H2 remains an MVP-local adapter only, not a production persistence decision.
+
+Checkpoint:
+
+- Commit SHA: pending.
+- Push result: pending.
 
 ## Slice S01 - Requirement Terminology And Data Ownership Gate
 

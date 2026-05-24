@@ -1,6 +1,7 @@
 package de.burger.forensics.analytics.services.repositorysource.application;
 
 import de.burger.forensics.analytics.services.repositorysource.adapter.out.memory.InMemoryRepositoryPreparationRepository;
+import de.burger.forensics.analytics.services.repositorysource.adapter.out.memory.InMemoryRepositorySourceIdempotencyRepository;
 import de.burger.forensics.analytics.services.repositorysource.adapter.out.memory.InMemoryRepositoryWorkspaceRepository;
 import de.burger.forensics.analytics.services.repositorysource.application.port.PreparedWorkspace;
 import de.burger.forensics.analytics.services.repositorysource.application.port.RepositoryCheckoutPort;
@@ -39,7 +40,6 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -48,6 +48,7 @@ class RepositorySourceApplicationServiceTest {
     private final FakeWorkspacePort workspacePort = new FakeWorkspacePort();
     private final RepositorySourceApplicationService service = new RepositorySourceApplicationService(
         new InMemoryRepositoryPreparationRepository(),
+        new InMemoryRepositorySourceIdempotencyRepository(),
         workspacePort,
         new FakeCheckoutPort(),
         CLOCK
@@ -79,7 +80,7 @@ class RepositorySourceApplicationServiceTest {
         var cleaned = service.cleanup("cleanup-key", "correlation-1", runId(), prepared.workspaceId());
         var sameCleaned = service.cleanup("cleanup-key", "correlation-1", runId(), prepared.workspaceId());
 
-        assertSame(prepared, samePrepared);
+        assertEquals(prepared, samePrepared);
         assertEquals(prepared, loaded);
         assertEquals("source-snapshot-", prepared.sourceSnapshotId().value().substring(0, 16));
         assertEquals("snapshots/" + prepared.sourceSnapshotId().value() + "/manifest.json", prepared.sourceSnapshot().manifestArtifact().reference());
@@ -91,7 +92,7 @@ class RepositorySourceApplicationServiceTest {
         assertEquals(BuildOutputProducer.UNSPECIFIED, prepared.sourceSnapshot().buildOutputPackage().resolution().selectedProducer());
         assertEquals("auto-detect", prepared.sourceSnapshot().buildOutputPackage().buildSystem());
         assertEquals(RepositoryWorkspaceStatus.CLEANED, cleaned.workspaceStatus());
-        assertSame(cleaned, sameCleaned);
+        assertEquals(cleaned, sameCleaned);
         assertEquals(1, workspacePort.cleaned);
     }
 
@@ -125,7 +126,7 @@ class RepositorySourceApplicationServiceTest {
             secondAttributes
         );
 
-        assertSame(prepared, replayed);
+        assertEquals(prepared, replayed);
         assertEquals(List.of("a", "z"), List.copyOf(prepared.safeAttributes().keySet()));
     }
 
@@ -186,6 +187,7 @@ class RepositorySourceApplicationServiceTest {
         var failingWorkspacePort = new FakeWorkspacePort();
         var failingService = new RepositorySourceApplicationService(
             new InMemoryRepositoryPreparationRepository(),
+            new InMemoryRepositorySourceIdempotencyRepository(),
             failingWorkspacePort,
             (workspace, repository, revision, policy) -> {
                 throw new IllegalStateException("checkout failed");
@@ -227,7 +229,7 @@ class RepositorySourceApplicationServiceTest {
             Map.of("tenant", "demo")
         );
 
-        assertSame(workspace, replayed);
+        assertEquals(workspace, replayed);
         assertEquals(workspace, reusedWithNewKey);
         assertEquals("workspace-0001", workspace.workspaceId().value());
         assertEquals("demo", workspace.workspaceTitle().value());
@@ -294,7 +296,7 @@ class RepositorySourceApplicationServiceTest {
             List.of(Diagnostic.info("CHECKED_OUT", "Repository checkout completed"))
         );
 
-        assertSame(branch, replayed);
+        assertEquals(branch, replayed);
         assertEquals("workspace-branch-0001", branch.workspaceBranchId().value());
         assertEquals("feature/workspace-ui", branch.repositoryBranch());
         assertEquals(RepositoryWorkspaceBranchStatus.CHECKING_OUT, started.status());
@@ -399,7 +401,7 @@ class RepositorySourceApplicationServiceTest {
             Map.of("tenant", "demo")
         );
 
-        assertSame(workspace, replayed);
+        assertEquals(workspace, replayed);
         assertEquals("main", workspace.branches().getFirst().repositoryBranch());
         assertEquals(RepositoryWorkspaceBranchStatus.CHECKED_OUT, workspace.branches().getFirst().status());
         assertEquals("b".repeat(40), workspace.branches().getFirst().resolvedCommit());
@@ -476,7 +478,8 @@ class RepositorySourceApplicationServiceTest {
             Map.of()
         );
 
-        assertSame(upToDate, replayed);
+        assertEquals(upToDate.changed(), replayed.changed());
+        assertEquals(upToDate.branch(), replayed.branch());
         assertFalse(upToDate.changed());
         assertEquals(RepositoryWorkspaceBranchStatus.UP_TO_DATE, upToDate.branch().status());
         assertEquals(checkedOut.sourceSnapshotId(), upToDate.branch().sourceSnapshotId());
@@ -587,6 +590,7 @@ class RepositorySourceApplicationServiceTest {
         return new RepositoryWorkspaceApplicationService(
             new InMemoryRepositoryWorkspaceRepository(),
             idGenerator,
+            new InMemoryRepositorySourceIdempotencyRepository(),
             workspacePort,
             checkoutPort,
             metadataPort,

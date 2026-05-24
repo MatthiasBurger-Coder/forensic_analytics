@@ -26,6 +26,9 @@ class RepositorySourceServiceArchitectureTest {
                 "org.springframework..",
                 "io.grpc..",
                 "com.google.protobuf..",
+                "java.sql..",
+                "javax.sql..",
+                "org.h2..",
                 "de.burger.forensics.analytics.repositoryanalysis.v1..",
                 "de.burger.forensics.analytics.javaastanalysis.v1..",
                 "de.burger.forensics.analytics.analysisjob.v1.."

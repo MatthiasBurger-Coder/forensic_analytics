@@ -69,12 +69,12 @@ public final class FileSystemRepositoryWorkspaceAdapter implements RepositoryWor
 
     @Override
     public synchronized void cleanup(WorkspaceId workspaceId) {
-        var workspace = workspaces.remove(workspaceId);
-        if (workspace == null) {
-            return;
-        }
         try {
             var root = ensuredRoot();
+            var workspace = workspaces.remove(workspaceId);
+            if (workspace == null) {
+                workspace = root.resolve(workspaceId.value());
+            }
             var checked = requireExistingInsideRoot(root, workspace);
             if (checked.equals(root)) {
                 throw new IllegalStateException("Refusing to clean workspace root");
@@ -138,12 +138,12 @@ public final class FileSystemRepositoryWorkspaceAdapter implements RepositoryWor
 
     @Override
     public synchronized void cleanupBranchCheckout(WorkspaceId workspaceId, WorkspaceBranchId workspaceBranchId) {
-        var branchWorkspace = branchWorkspaces.remove(new BranchWorkspaceKey(workspaceId, workspaceBranchId));
-        if (branchWorkspace == null) {
-            return;
-        }
         try {
             var root = ensuredRoot();
+            var branchWorkspace = branchWorkspaces.remove(new BranchWorkspaceKey(workspaceId, workspaceBranchId));
+            if (branchWorkspace == null) {
+                branchWorkspace = root.resolve(workspaceId.value()).resolve("branches").resolve(workspaceBranchId.value());
+            }
             var checked = requireExistingInsideRoot(root, branchWorkspace);
             if (checked.equals(root)) {
                 throw new IllegalStateException("Refusing to clean workspace root");

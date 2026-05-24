@@ -12,6 +12,7 @@ import de.burger.forensics.analytics.repositoryanalysis.v1.RepositoryWorkspaceSt
 import de.burger.forensics.analytics.repositoryanalysis.v1.RevisionSelector;
 import de.burger.forensics.analytics.repositoryanalysis.v1.WorkspacePolicy;
 import de.burger.forensics.analytics.services.repositorysource.adapter.out.memory.InMemoryRepositoryPreparationRepository;
+import de.burger.forensics.analytics.services.repositorysource.adapter.out.memory.InMemoryRepositorySourceIdempotencyRepository;
 import de.burger.forensics.analytics.services.repositorysource.application.RepositorySourceApplicationService;
 import de.burger.forensics.analytics.services.repositorysource.application.port.PreparedWorkspace;
 import de.burger.forensics.analytics.services.repositorysource.application.port.RepositoryCheckoutPort;
@@ -56,6 +57,7 @@ class RepositorySourceGrpcEndpointTest {
         var repository = new InMemoryRepositoryPreparationRepository();
         var applicationService = new RepositorySourceApplicationService(
             repository,
+            new InMemoryRepositorySourceIdempotencyRepository(),
             new FakeWorkspacePort(),
             new FakeCheckoutPort(),
             Clock.fixed(Instant.parse("2026-05-16T10:15:30Z"), ZoneOffset.UTC)
@@ -283,6 +285,7 @@ class RepositorySourceGrpcEndpointTest {
         var repository = new InMemoryRepositoryPreparationRepository();
         var applicationService = new RepositorySourceApplicationService(
             repository,
+            new InMemoryRepositorySourceIdempotencyRepository(),
             new FakeWorkspacePort(),
             checkoutPort,
             Clock.fixed(Instant.parse("2026-05-16T10:15:30Z"), ZoneOffset.UTC)

@@ -8,6 +8,7 @@ dependencies {
     implementation(libs.grpc.netty.shaded)
     implementation(libs.grpc.protobuf)
     implementation(libs.grpc.stub)
+    implementation(libs.gson)
     implementation(libs.protobuf.java)
     implementation(libs.spring.boot) {
         exclude(group = "io.micrometer")
@@ -16,6 +17,7 @@ dependencies {
         exclude(group = "io.micrometer")
     }
     compileOnly(libs.javax.annotation.api)
+    runtimeOnly(libs.h2)
 
     testImplementation(libs.grpc.inprocess)
     testImplementation(libs.spring.test)

@@ -96,6 +96,39 @@ class FileSystemRepositoryWorkspaceAdapterTest {
     }
 
     @Test
+    void cleansPreparedWorkspaceAfterAdapterRestart() throws Exception {
+        var first = new FileSystemRepositoryWorkspaceAdapter(root);
+        var workspace = first.prepare(
+            new AnalysisRunId("run-1"),
+            new WorkspacePolicy(true, true, false, false, 60, 100_000)
+        );
+        Files.writeString(workspace.workspacePath().resolve("marker.txt"), "demo");
+
+        new FileSystemRepositoryWorkspaceAdapter(root).cleanup(workspace.workspaceId());
+
+        assertFalse(Files.exists(workspace.workspacePath()));
+        assertTrue(Files.exists(root));
+    }
+
+    @Test
+    void cleansBranchCheckoutAfterAdapterRestart() throws Exception {
+        var first = new FileSystemRepositoryWorkspaceAdapter(root);
+        var workspaceId = new WorkspaceId("workspace-0001");
+        var workspaceBranchId = new WorkspaceBranchId("workspace-branch-0001");
+        var prepared = first.prepareBranchCheckout(
+            workspaceId,
+            workspaceBranchId,
+            new WorkspacePolicy(true, true, false, false, 60, 100_000)
+        );
+        Files.writeString(prepared.workspacePath().resolve("marker.txt"), "demo");
+
+        new FileSystemRepositoryWorkspaceAdapter(root).cleanupBranchCheckout(workspaceId, workspaceBranchId);
+
+        assertFalse(Files.exists(prepared.workspacePath()));
+        assertTrue(Files.exists(root.resolve(workspaceId.value())));
+    }
+
+    @Test
     void rejectsEscapedWorkspaceMappingsDuringCleanup() {
         var escapedWorkspace = new WorkspaceId("workspace-escaped");
         var escaped = new FileSystemRepositoryWorkspaceAdapter(root, Map.of(escapedWorkspace, root.resolveSibling("outside")));
