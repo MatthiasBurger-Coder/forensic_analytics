@@ -1,118 +1,72 @@
-# Three Amigos Decision Record
+# Three Amigos Decision Record: FA-MVP-0001
 
-## Workflow
+## Decision
 
-| Field | Value |
-|---|---|
-| Workflow version | `fa-msa-001-legacy-module-retirement-20260522-v2` |
-| Requirement ID | `FA-MSA-001-LMR` |
-| Parent requirement | `FA-MSA-001` |
-| Decision | `READY_FOR_WORKFLOW` after S14 workflow-create refinement |
-| Confidence | 94 percent for refined no-deletion S14 readiness gate and S15-S20 follow-up sequence |
-| Execution profile | `FULL_PATH` |
+`PROCEED_WITH_ACCEPTED_ASSUMPTIONS`
+
+Confidence: 88 percent.
 
 ## Normalized Requirement
 
-Create an executable workflow that retires all remaining
-`forensic-analytics-*` legacy modules after the platform has been migrated to
-the accepted FA-MSA-001 microservice target landscape. The workflow must not
-delete modules until caller-free evidence, service-local parity, rollback or
-deprecation notes and the applicable `QUALITY.md` gate exist.
-
-2026-05-22 refinement: workflow execution of S03 proved the previous
-early-retirement shape was unsafe. The target requirement is now normalized as:
-by closure, no productive `forensic-analytics-*` Gradle module remains
-registered or referenced; every removed behavior must first be implemented in
-the owning target service or explicitly deprecated with tests, migration notes
-and rollback evidence.
-
-2026-05-22 S14 refinement: workflow execution reached the final deletion gate
-and all S14 reviewers stopped deletion. Productive services are clean under the
-checked main-source and productive-build scans, but `services:testbed` still
-keeps 13 test-scoped legacy dependencies and legacy imports as
-rollback/regression evidence. S14 is therefore refined into a
-`NO_REMOVAL_SAFE` readiness reconciliation gate. S15 through S18 now own the
-remaining testbed, runtime, public API, boot/bootstrap and persistence exit
-work. S19 is the first deletion-capable slice, and S20 is closure.
-
-## Requirement Classification
-
-- Functional requirement: migrate remaining legacy runtime behavior to
-  service-local boundaries.
-- Architecture constraint: no shared Java implementation modules and no direct
-  service-to-service Gradle project dependencies.
-- Quality-gate requirement: targeted checks per slice, repository minimum gate
-  for product changes and full local gate before final removal.
-- Data ownership requirement: every persisted or stored category has one owner
-  before `forensic-analytics-persistence` is removed.
-- Deployment requirement: service runtime readiness must be proven before boot
-  and bootstrap paths are removed.
-- Security requirement: repository workspaces, diagnostics and runtime payloads
-  stay isolated and redacted.
-- Observability requirement: service-local diagnostics replace shared logging
-  or observability Java modules.
+Build the first MVP repository checkout workspace flow by extending the
+existing `repository-source-service`, exposing sanitized public REST through
+`query-report-api-service` and adding a `forensic-ui` Create Workspace flow.
+Persist repository workspace, branch and idempotency state in service-local H2
+for the Docker-local MVP. Do not introduce a new `workspace-service` or any
+analysis pipeline behavior.
 
 ## Five-Role Review
 
 | Role | Finding |
 |---|---|
-| Senior Requirement Engineer | READY AFTER S14 REFINEMENT. S14 must record readiness and blockers, not delete; follow-up slices must resolve testbed/runtime blockers before removal. |
-| Senior System Architect | READY AFTER S14 REFINEMENT. S14 conflicts with architecture docs when deletion-oriented; removal moves to S19 after S15-S18. |
-| Senior Java Backend Developer | READY WITH STOP CONDITIONS. Testbed scenarios cannot be directly ported without fabricating parity; target-service behavior must be implemented or explicitly deprecated first. |
-| Senior React Frontend Developer | NO DIRECT FRONTEND IMPLEMENTATION. S08/S09 must preserve or version public API and CLI behavior before caller migration. |
-| Senior Tester | READY WITH TESTBED GATES. Existing regression coverage may be removed only after service-local parity or explicit deprecation tests exist. |
+| Senior Requirement Engineer | The user request is detailed and acceptance-oriented, but `FA-MVP-0001` is not present under `docs/epics`. Workflow may proceed by treating the user-provided requirement as the source requirement and recording the checkout-workspace assumption. |
+| Senior System Architect | Repository checkout workspace ownership belongs to `repository-source-service`. Public REST belongs to `query-report-api-service`. H2 is service-local MVP persistence only. A new `workspace-service` is forbidden. |
+| Senior Java Backend Developer | Existing symbols verify `prepare`, `get`, `cleanup`, `RepositoryPreparationRepository`, `RepositoryWorkspacePort` and `RepositoryCheckoutPort`. `Workspace`, `WorkspaceBranch`, `RepositoryIdentity`, H2 and branch refresh are new and must be introduced behind ports. |
+| Senior React Frontend Developer | The UI has a suitable React/Vite boundary but no verified workspace create API. Frontend implementation must wait for contract-first public REST and must not infer metadata from URL strings. |
+| Senior Tester | Regression-first slices are required for H2 persistence, idempotency replay/conflict, branch refresh, path leakage, public REST and UI behavior. Strict dependency verification remains mandatory. |
 
 ## Specialist Findings
 
-| Specialist | Finding |
-|---|---|
-| Microservice Senior Expert | Legacy modules are not microservices. Every target service must own local domain/application/adapter/bootstrap code and avoid shared Java modules. |
-| Contract-First API Steward | Runtime and CLI callers must move behind REST/OpenAPI, gRPC, event or file contracts before in-process adapters are removed. |
-| Data Ownership and Persistence Steward | `forensic-analytics-persistence` removal is unsafe until service-local ownership and replacement behavior are proven. |
-| Senior DevOps Engineer | `settings.gradle.kts` deregistration and source-tree deletion belong near the end, after all targeted service checks and the full quality gate. |
-| Senior Security/Sandbox Engineer | Repository checkout and Joern work require isolation and leakage checks before legacy paths are retired. |
+- Contract Governance: public `/workspaces` routes currently conflict with
+  OpenAPI tests that assert workspace fields are absent; S02 must replace that
+  absence with explicit contract coverage.
+- Data Ownership/Persistence: repository-source owns H2 tables and workspace
+  paths; no cross-service database access is allowed.
+- Security/Sandbox: repository input must remain HTTPS-only, no local/private
+  targets, no submodules and no build execution.
+- DevOps: H2 requires version catalog and verification metadata changes.
+  Docker must create and own `/var/lib/forensic-analytics/repository-source-data`.
+- Git Workspace: branch names must never become directory names and cleanup
+  must remain inside the configured root.
 
-## Architecture And Evidence Integrity Validation
+## Accepted Assumptions
 
-- ADR-0017 defines FA-MSA-001 target services and forbids shared Java
-  implementation modules.
-- `settings.gradle.kts` still registers all legacy modules.
-- Build files still contain direct `project(":forensic-analytics-*")`
-  dependencies.
-- Current coupling documentation records non-empty production and test callers.
-- Static analysis facts, runtime trace facts, reports and LLM hypotheses must
-  remain distinct throughout migration.
+1. `Workspace` means repository-source checkout workspace state, not platform
+   membership, authorization, project lifecycle or tenant administration.
+2. H2 is an MVP adapter for durable repository-source state and is not the
+   canonical production analytics store.
+3. The user-provided FA-MVP-0001 requirement is the current source requirement
+   until an EPIC file is added or linked by a later documentation slice.
+4. Public API shape is not implemented yet and must be introduced contract-first.
+5. Docker-local volume support does not imply Swarm, Kubernetes or production
+   deployment readiness.
 
-## Dependency And Deadlock Validation
+## Blockers Resolved For Workflow Creation
 
-The refined workflow is acyclic. S03 through S06 are service parity and handoff
-readiness slices after S02, not deletion slices. S10 can also run after S02.
-Execution defaults to one slice at a time unless the orchestrator confirms
-disjoint locks.
+- Branch isolation was established on
+  `feature/workflow-repository-workspace-checkout-h2-persistence-20260524`.
+- The previous `docs/workflow/**` content belonged to FA-MSA-001-LMR and was
+  regenerated for this workflow branch.
+- Callable subagents were available and used for read-only requirement,
+  architecture, DevOps, workflow, backend, frontend and test reviews.
 
-```text
-S00 -> S01 -> S02 -> S03/S04/S05/S06/S10
-S03/S04/S05/S06 -> S07 -> S08 -> S09
-S07/S08/S10 -> S11 -> S12 -> S13 -> S14(no-deletion readiness)
-S14 -> S15/S16/S17/S18 -> S19(final removal) -> S20
-```
+## Remaining Execution Stop Conditions
 
-## Open Questions
+Workflow execution must stop if:
 
-- Whether local/file repository input remains target behavior or becomes
-  explicit deprecation is resolved inside S03 before repository-source removal.
-- During execution, any missing service owner, contract field, rollback path or
-  test parity proof stops the relevant slice.
-
-## Blockers
-
-No blocker prevents workflow refinement. Direct module deletion remains blocked
-until S15 through S18 remove or deprecate the remaining testbed/runtime/public
-API/ownership blockers and S19 records caller-free evidence, rollback notes and
-required quality-gate success.
-
-## Decision
-
-`READY_FOR_WORKFLOW` after S14 refinement. Resume execution at S14 as a
-no-deletion retirement readiness reconciliation slice, then continue through
-S15-S18 before any S19 removal candidate is attempted.
+- repository docs contradict the checkout-workspace interpretation;
+- contract-first public REST or owner API shape cannot be verified;
+- H2 schema/table names are unclear after data ownership review;
+- default branch resolution would require silently accepting missing branch and
+  commit without contract approval;
+- implementation would expose private paths or fabricate repository evidence.

@@ -1,89 +1,102 @@
-# Quality And Leakage Gates
+# Quality And Leakage Gates: FA-MVP-0001
 
-## Authoritative Quality Source
+## Authority
 
-`QUALITY.md` is authoritative for all workflow execution quality decisions.
+`QUALITY.md` is the authoritative quality contract.
 
-Minimum command:
+Minimum repository command:
 
 ```bash
 ./gradlew test --dependency-verification strict --console=plain --stacktrace
 ```
 
-Full local gate:
+Full local quality gate:
 
 ```bash
 ./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace
 ```
 
-## Workflow Creation Gate
+## Targeted Gates
 
-Workflow creation is documentation-only. Required verification:
-
-```bash
-git diff --check
-```
-
-## Slice Gate Pattern
-
-Each execution slice must run:
-
-1. The targeted service/module tests named in the slice.
-2. Scoped readiness scans for the target service or caller group changed by the
-   slice.
-3. `git diff --check`.
-4. The repository minimum gate for production Java, tests, Gradle, contracts,
-   runtime wiring or deployment changes.
-5. Full caller-free scans and the full local gate only in S19 final removal
-   and S20 closure slices.
-
-## Leakage Checks
-
-For service migration readiness slices, run targeted scans proving the target
-service touched by the slice does not depend on central legacy implementation
-modules:
+Repository Source:
 
 ```bash
-bash -lc 'if rg -n -P "^import\s+de\.burger\.forensics\.analytics\.(application|domain|adapter|persistence|rest|cli|engine|logging|observability|bootstrap|boot|ingestion\.request|ingestion\.grpc)\b" services -S -g "*.java"; then exit 1; else test $? -eq 1; fi'
+./gradlew :services:repository-source-service:test --dependency-verification strict --console=plain --stacktrace
 ```
 
-Earlier parity and handoff slices must not use full-repository zero-reference
-scans as success criteria while the legacy module is intentionally retained as
-rollback or regression evidence. Those scans belong to the final removal gate.
-
-S14 is a readiness reconciliation gate after the S14 deletion stop. It records
-remaining references as evidence and must not delete modules or deregister
-Gradle projects. From S15 through S18, targeted slices remove or deprecate the
-remaining testbed, runtime, public API and ownership blockers before any
-physical deletion is attempted.
-
-For S19 final removal, prove no legacy build references remain:
+Query Report API:
 
 ```bash
-bash -lc 'if rg -n "forensic-analytics-(adapter-javaparser|adapter-joern-docker|adapter-repository-source|application|boot-app|bootstrap|cli|domain|engine|ingestion-grpc|ingestion-request|logging|observability|persistence|rest|testbed)" settings.gradle.kts build.gradle.kts services -g "*.kts" -g "!**/build/**"; then exit 1; else test $? -eq 1; fi'
+./gradlew :services:query-report-api-service:test --dependency-verification strict --console=plain --stacktrace
 ```
+
+Frontend:
+
+```bash
+cd forensic-ui
+npm ci
+npm run test
+npm run build
+```
+
+Docker model:
+
+```bash
+docker compose -f deployment/docker-compose/repository-to-btm.local.yml config
+```
+
+H2 dependency metadata repair, only when strict dependency verification reports
+missing H2 metadata:
+
+```bash
+./gradlew --write-verification-metadata sha256 :services:repository-source-service:test
+./gradlew :services:repository-source-service:test --dependency-verification strict --console=plain --stacktrace
+```
+
+## Leakage Gates
+
+Public REST, gRPC and UI tests must verify that none of the following leak into
+public responses:
+
+- absolute filesystem paths;
+- `/var/lib/forensic-analytics/repository-workspaces`;
+- `/var/lib/forensic-analytics/repository-source-data`;
+- `repository-workspaces`;
+- raw stdout;
+- raw stderr;
+- credentials;
+- tokens;
+- passwords;
+- authorization headers;
+- private network details;
+- local repository paths.
 
 ## Evidence Integrity Gates
 
-Execution must stop when a change would:
+Tests must verify:
 
-- treat static analysis as runtime execution evidence;
-- hide unresolved symbols or missing trace fields;
-- replace observed trace values with inferred values;
-- store LLM output as verified evidence;
-- collapse confirmed evidence, derived analysis, unresolved gaps and
-  hypotheses into one ambiguous field;
-- remove the only regression coverage for behavior being retired;
-- claim a legacy module is removable while `services:testbed` still uses it as
-  the only parity, rollback or hardening evidence.
+- `workspaceTitle` is derived from repository name and is read-only.
+- `workspaceTitle` is never used as a path or security key.
+- `WorkspaceId` and `WorkspaceBranchId` are opaque.
+- branch names are stored as data and never used directly as directories.
+- same idempotency key plus same fingerprint returns the same result.
+- same idempotency key plus different fingerprint returns a controlled conflict
+  without mutation.
+- branch refresh returns `UP_TO_DATE` when the commit is unchanged.
+- branch refresh returns `UPDATED` and creates a new source snapshot reference
+  when the commit changes.
+- missing or unresolved repository facts are represented as diagnostics, not
+  fabricated evidence.
 
-## Failure Routing
+## Optional External Checks
 
-| Failure | Route |
-|---|---|
-| Build failure | Senior DevOps and responsible implementation owner |
-| Test failure | Senior Tester and responsible implementation owner |
-| Architecture violation | Senior System Architect and Microservice Senior Expert |
-| Contract mismatch | Contract-First API Steward and relevant contract specialist |
-| Persistence ownership conflict | Senior Analysis Storage Architect and Data Ownership Steward |
-| Unknown or repeated failure | Root Architect escalation after maxRetries = 3 |
+Docker image build and runtime checks are valuable but external:
+
+```bash
+./gradlew --no-daemon :services:repository-source-service:bootJar --dependency-verification strict --console=plain --stacktrace
+docker build -f services/repository-source-service/Dockerfile --build-arg SERVICE_JAR=services/repository-source-service/build/libs/repository-source-service-0.1.0-SNAPSHOT.jar -t forensic-analytics/repository-source-service:local .
+docker compose -f deployment/docker-compose/repository-to-btm.local.yml up -d
+```
+
+These checks may require Docker and network access. Do not claim they passed
+unless executed. Report skipped external checks explicitly.

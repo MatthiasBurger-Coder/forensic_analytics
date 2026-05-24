@@ -1,46 +1,40 @@
-# arc42 Check Status
+# arc42 Check Status: FA-MVP-0001
 
-## Workflow Creation Status
+## Creation-Time Status
 
-Status: checked for workflow creation.
+arc42 was checked during workflow creation. No arc42 production architecture
+content was changed in this `workflow create` turn because implementation has
+not started yet.
 
-This workflow was created from the existing FA-MSA-001 architecture baseline.
-No product source or runtime behavior was changed during workflow creation, so
-arc42 content is not updated in this creation slice.
+Relevant checked files:
 
-## Required Execution Updates
+- `docs/arc42/02-architecture-constraints.md`
+- `docs/arc42/05-building-block-view.md`
+- `docs/arc42/06-runtime-view.md`
+- `docs/arc42/07-deployment-view.md`
+- `docs/arc42/08-crosscutting-concepts.md`
+- `docs/arc42/10-quality-requirements.md`
+- `docs/arc42/11-risks-and-technical-debt.md`
 
-Execution slices must update arc42 when actual behavior changes:
+## Required Updates During Execution
 
-| Slice | arc42 Area |
+Update arc42 when the corresponding slice changes verified behavior:
+
+| Slice | arc42 impact |
 |---|---|
-| S02 | Communication matrix and runtime view when contract behavior changes |
-| S03 | Repository source ownership, runtime and deployment notes |
-| S04 | Ingestion boundary, contracts and payload custody |
-| S05 | Static source analysis ownership and limitations |
-| S06 | Joern runtime, CPG artifact ownership and deployment constraints |
-| S07 | Orchestration, shared domain/application split and runtime view |
-| S08 | Public API, boot/bootstrap retirement and deployment view |
-| S09 | CLI client context and user-visible API consumption |
-| S10 | Crosscutting logging, diagnostics and observability |
-| S11 | Data ownership and persistence concepts |
-| S12 | Building block view and architecture constraints |
-| S13 | Testbed and integration environment |
-| S14 | Retirement readiness, `NO_REMOVAL_SAFE` blockers and retained rollback evidence |
-| S15 | Testbed architecture checks and hardening ownership |
-| S16 | Testbed runtime scenario replacement or deprecation |
-| S17 | Repository checkout and ingestion replacement evidence |
-| S18 | Public API, boot/bootstrap and persistence ownership exit |
-| S19 | Final build/module topology for verified caller-free candidates |
-| S20 | Final readiness, risks and technical debt |
+| S01 | Clarify repository-source checkout workspace ownership if current architecture text is ambiguous. |
+| S02 | Update service communication and public API notes if contracts change. |
+| S03-S06 | Update building block/runtime/persistence notes for repository-source workspace and H2 behavior. |
+| S08 | Update frontend context only after public API and UI behavior are implemented. |
+| S09 | Update deployment view for Docker-local repository-source data/workspace volumes. |
+| S11 | Perform final arc42 synchronization and ADR decision check. |
 
-## Stop Conditions
+## STOP Conditions
 
-Stop execution when docs claim:
+Stop if arc42 would need to claim:
 
-- a module is removed while it is still registered or referenced;
-- a service is independently deployable without verified build/start/container
-  evidence;
-- Swarm or Kubernetes readiness without repository manifests and commands;
-- persistence ownership without an explicit service owner;
-- generated or inferred output as verified forensic evidence.
+- H2 as canonical production analytics persistence;
+- Docker Swarm or Kubernetes readiness;
+- JavaParser, Joern, BTM, replay, report or LLM behavior;
+- service-private workspace volume sharing with other services;
+- broader platform workspace lifecycle ownership.
