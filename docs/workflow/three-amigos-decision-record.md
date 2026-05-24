@@ -51,6 +51,23 @@ analysis pipeline behavior.
 5. Docker-local volume support does not imply Swarm, Kubernetes or production
    deployment readiness.
 
+## S01 Terminology And Ownership Resolution
+
+S01 resolves the documentation blocker by splitting the unqualified workspace
+term into two explicitly separate concepts:
+
+- Platform workspace: the deferred organizational, membership,
+  authorization, project lifecycle, asset, audit and retention boundary.
+- Repository checkout workspace: the FA-MVP-0001
+  `repository-source-service` aggregate for one normalized repository identity,
+  branch-level checkout state and source snapshot references.
+
+Only the repository checkout workspace is in scope for FA-MVP-0001. It is
+owned and written by `repository-source-service`; `query-report-api-service`
+may expose sanitized public REST DTOs through owner APIs only. H2 remains a
+repository-source Docker-local MVP adapter and does not resolve the broader
+platform relational database decision.
+
 ## Blockers Resolved For Workflow Creation
 
 - Branch isolation was established on

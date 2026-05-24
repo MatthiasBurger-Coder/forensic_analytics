@@ -23,7 +23,12 @@ Important IDs:
 - `parentSpanId`
 - `incidentId`
 
-## 8.2 Workspace and Project Boundary
+## 8.2 Platform Workspace and Project Boundary
+
+This section describes the broader platform workspace concept: organizational
+scope, access control, project membership, assets, audit and retention. It is
+deferred platform administration context after the FA-MSA-001 legacy source
+retirement and is not the FA-MVP-0001 repository checkout workspace.
 
 Workspace-enabled features use `workspaceId` as the top-level organizational and access boundary. A project belongs to exactly one workspace, and project-scoped domain objects carry workspace context explicitly so later application, adapter and storage slices can reject cross-workspace access before reading or writing evidence.
 
@@ -47,7 +52,32 @@ The workspace canvas is an application-layer projection for UI adapters. It retu
 
 Security policy checks are available as application services for inbound adapters. They verify workspace existence, membership, role permissions, project assignment and project-to-workspace ownership before adapters delegate into use cases. Project object-scope failures are reported as not found in the requested workspace to avoid cross-workspace leakage.
 
-## 8.3 Runtime Data Sensitivity
+## 8.3 Repository Checkout Workspace Boundary
+
+FA-MVP-0001 uses `Workspace` in a narrower repository-source sense. A
+repository checkout workspace is a `repository-source-service` owned aggregate
+for one normalized repository identity. It can contain multiple branch-level
+workspace records and source snapshot references, but it is not a tenant,
+membership, authorization, project lifecycle, asset, audit or retention
+boundary.
+
+Repository checkout workspace identifiers are opaque and service-owned.
+Workspace titles are human-readable labels derived from repository metadata and
+must never be used as filesystem paths, authorization keys or security
+decisions. Repository branch names are data values and must not become
+directory names.
+
+Repository checkout directories and Docker-local H2 files are private
+repository-source storage. Other services may consume only owner-issued source
+snapshot IDs, artifact references, sanitized diagnostics and public or owner
+API responses. Public REST DTOs must not expose private paths, H2 paths, raw
+Git stdout or stderr, credentials, tokens or private network details.
+
+H2 in FA-MVP-0001 is an MVP-local repository-source persistence adapter only.
+It is not shared service storage, not canonical analytics persistence and not a
+production database decision for the broader platform.
+
+## 8.4 Runtime Data Sensitivity
 
 Runtime data must be treated as sensitive by default.
 
@@ -63,15 +93,15 @@ Supported mechanisms:
 - Encryption
 - Auditing
 
-## 8.4 Evidence-Based LLM Usage
+## 8.5 Evidence-Based LLM Usage
 
 LLM analysis must be based on curated evidence packages. The LLM must not invent missing facts. If evidence is insufficient, the diagnosis must state the limitation.
 
-## 8.5 Graph and Vector Projections
+## 8.6 Graph and Vector Projections
 
 Graph DB and Vector DB are projections from the canonical analysis model. They are optimized views, not the source of truth.
 
-## 8.6 Ambiguity Handling
+## 8.7 Ambiguity Handling
 
 Ambiguous mappings between JavaParser, Joern, Byteman rules and runtime events must be marked with confidence levels. Unclear mappings must not be silently accepted.
 
@@ -115,11 +145,11 @@ artifact byte references are immutable: repeating a write for identical bytes is
 idempotent, while different bytes for an existing reference are rejected instead
 of replacing prior evidence.
 
-## 8.7 Replay Uncertainty
+## 8.8 Replay Uncertainty
 
 The replay must explicitly show missing, incomplete or uncertain event chains.
 
-## 8.8 Operational Observability
+## 8.9 Operational Observability
 
 Operational observability is scoped to non-core operational boundaries. Under
 FA-MSA-001, `observability-stack` owns deployment and configuration material
@@ -155,7 +185,7 @@ gap remains owned by a contract-authorized ingestion refinement slice.
 
 Automatic method logging records method operation names, phases, durations, correlation IDs and exception categories only. It must not record arguments, return values, raw exception messages, stack frames or evidence payloads.
 
-## 8.9 Spring Boot Boundary
+## 8.10 Spring Boot Boundary
 
 Spring Boot is a server bootstrap and adapter wiring concern. It may configure outer modules and lifecycle adapters, but it must not become a domain or application dependency.
 
@@ -168,7 +198,7 @@ services may depend on Spring only from their `bootstrap..` packages, while
 legacy-dependent testbed classpath after those service-local replacements are
 present and passing.
 
-## 8.10 Engineering Governance and Documentation Synchronization
+## 8.11 Engineering Governance and Documentation Synchronization
 
 Repository governance uses three process strands:
 
@@ -211,7 +241,7 @@ recommendation to refine the workflow.
 
 Documentation synchronization must keep `AGENTS.md`, `QUALITY.md`, process docs, workflow docs, skill-audit docs, arc42 and ADR references consistent. Planned behavior is not implemented behavior.
 
-## 8.11 Agent Governance
+## 8.12 Agent Governance
 
 Agent Governance is a crosscutting engineering concept.
 

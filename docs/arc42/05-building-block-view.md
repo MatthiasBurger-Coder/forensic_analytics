@@ -213,6 +213,14 @@ Dockerfile. It keeps the predecessor `repository-analysis.proto` filename and
 wire service name as a transitional external contract only; generated transport
 classes remain inside the service build.
 
+FA-MVP-0001 extends the repository-source boundary with a repository checkout
+workspace aggregate, branch state, repository identity, source snapshot
+references and durable idempotency. Those concepts are service-owned
+repository-source state only. They do not introduce a `workspace-service`, do
+not assign platform workspace membership or project administration ownership,
+and do not allow other services to read repository-source H2 files or private
+checkout directories.
+
 `services/repository-analysis-service` remains historical predecessor
 evidence and rollback input. It is not a compatibility alias for
 `repository-source-service` and is not removed by S05.
@@ -285,6 +293,11 @@ execution until later slices wire verified owner services.
 The query/report API service is the public facade for status, query and report
 responses. It must use owner APIs and must not perform analysis execution or
 read private service databases.
+
+For FA-MVP-0001, `query-report-api-service` may expose only sanitized public
+workspace REST DTOs and must call the repository-source owner API. It must not
+own Git checkout behavior, repository-source H2 files, private workspace paths,
+raw Git output, source package bytes or repository-source domain state.
 
 Slice S08 adds `services/query-report-api-service` as target-service
 implementation evidence for the FA-MSA-001 public API facade boundary. It is

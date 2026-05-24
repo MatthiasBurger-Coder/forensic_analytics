@@ -38,7 +38,7 @@ execution and contract-first sequencing.
 | Slice | Status | Notes |
 |---|---|---|
 | S00 | Completed | Branch/worktree verified, context-pack JSON valid, governing hashes matched, S3D dependency graph passed after normalizing reviewer IDs and branch/process wording. |
-| S01 | Not started | Requirement terminology and data ownership gate. |
+| S01 | Completed | Workspace terminology split into platform workspace and repository checkout workspace; repository-source ownership, H2 MVP scope and query-report facade boundary documented. |
 | S02 | Not started | Contract-first public REST and repository-source owner API. |
 | S03 | Not started | Repository-source workspace domain and in-memory use cases. |
 | S04 | Not started | Metadata resolution, checkout and branch refresh. |
@@ -115,5 +115,72 @@ Limitations and carry-forward notes:
 Checkpoint:
 
 - Commit SHA: `c9f4dba5a80e5da7a9f994ccfde3b29f5dea91c8`.
+- S00 report finalizer SHA: `c9d5f43a7f519486c67bc3f7763b5ade60457bca`.
 - Push result: pushed to
   `origin/feature/workflow-repository-workspace-checkout-h2-persistence-20260524`.
+
+## Slice S01 - Requirement Terminology And Data Ownership Gate
+
+Status: Completed.
+
+Owner and reviewers:
+
+- Senior Requirement Engineer
+- Senior System Architect
+- Data Ownership / Senior Analysis Storage Architect
+- Microservice Senior Expert
+- Senior Tester
+
+Changed files:
+
+- `docs/architecture/data-ownership.md`
+- `docs/architecture/service-boundaries.md`
+- `docs/arc42/05-building-block-view.md`
+- `docs/arc42/08-crosscutting-concepts.md`
+- `docs/arc42/09-architecture-decisions.md`
+- `docs/arc42/12-glossary.md`
+- `docs/arc42/README.md`
+- `docs/workflow/three-amigos-decision-record.md`
+- `docs/workflow/execution-report.md`
+
+Commands executed:
+
+```bash
+git branch --show-current
+git status --short --branch
+git diff --name-only
+git diff --check
+python3 -m json.tool docs/workflow/context-pack.json >/dev/null
+```
+
+Result:
+
+- PASS for S01 terminology and data ownership gate.
+- The broader platform workspace concept is now explicitly separate from
+  FA-MVP-0001 repository checkout workspace state.
+- `repository-source-service` is documented as the owner and only writer for
+  repository checkout workspace state, branch state, source snapshot
+  references and repository-source idempotency.
+- H2 is documented as repository-source Docker-local MVP persistence only, not
+  shared storage, canonical analytics persistence or a production database
+  decision.
+- `query-report-api-service` is documented as a sanitized public REST facade
+  that must call owner APIs and must not read repository-source H2 files,
+  private checkout directories or raw Git output.
+- No `workspace-service` is introduced.
+
+Limitations and carry-forward notes:
+
+- No H2 table names, owner API fields, public REST routes or schema fields were
+  introduced in S01; those remain owned by later contract and persistence
+  slices.
+- Gradle and npm were not executed because S01 changes documentation only and
+  affects no product module.
+- FA-MVP-0001 still uses the user-provided requirement text as the active
+  feature requirement source until a later documentation slice adds or links an
+  EPIC artifact.
+
+Checkpoint:
+
+- Commit SHA: pending.
+- Push result: pending.

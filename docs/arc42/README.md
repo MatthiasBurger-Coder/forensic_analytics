@@ -32,6 +32,12 @@ The EPIC remains the product and requirement baseline. The arc42 documentation t
 
 ## Governance Check Status
 
+FA-MVP-0001 workflow execution is currently checking repository checkout
+workspace terminology and data ownership on branch
+`feature/workflow-repository-workspace-checkout-h2-persistence-20260524`.
+S01 distinguishes the deferred platform workspace administration concept from
+the repository-source-owned repository checkout workspace used by FA-MVP-0001.
+
 The Governance Performance Optimization workflow was checked for workflow
 creation on branch `architecture/workflow-governance-performance-20260521`.
 The workflow affects process-governance architecture only. It does not change
@@ -130,5 +136,5 @@ arc42 sections updated for agent governance:
 - Risks and Technical Debt
 - Glossary
 
-Current workflow branch:
+Historical governance workflow branch:
 `architecture/workflow-governance-performance-20260521`.

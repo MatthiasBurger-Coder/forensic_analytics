@@ -54,12 +54,19 @@ Owns:
 
 - repository access;
 - branch and commit resolution;
+- repository checkout workspace aggregate state;
+- repository checkout branch state;
 - checkout, clone and fetch;
 - workspace leases and cleanup;
+- service-local durable idempotency for repository-source operations;
 - source package byte custody;
 - source snapshot descriptors;
+- source snapshot references;
 - accepted source snapshot metadata;
-- checkout diagnostics.
+- checkout diagnostics;
+- Docker-local MVP H2 persistence for repository checkout workspace,
+  branch and idempotency state after FA-MVP-0001 persistence slices verify
+  the adapter.
 
 Non-scope:
 
@@ -68,6 +75,8 @@ Non-scope:
 - BTM generation;
 - report generation;
 - incident analysis;
+- platform workspace lifecycle, membership, project, asset, audit or
+  retention administration;
 - canonical evidence persistence outside repository source metadata.
 
 Inbound communication:
@@ -111,6 +120,10 @@ Stop conditions:
 
 - another service accesses repository workspace internals directly;
 - workspace paths are used as hidden coupling;
+- H2 files, private checkout directories or raw Git output are consumed by
+  another service;
+- repository checkout workspace state is reinterpreted as platform workspace
+  membership or project administration;
 - checkout executes repository hooks, build scripts or repository-supplied
   tools without an approved sandbox decision;
 - source snapshot identity is guessed.
@@ -400,6 +413,8 @@ Owns:
 
 - REST/OpenAPI facade;
 - client-facing status and error translation;
+- sanitized public workspace REST DTOs after FA-MVP-0001 contract slices
+  approve them;
 - report/query response assembly from owner APIs;
 - public read models and cache state;
 - generated report package state;
@@ -411,7 +426,9 @@ Non-scope:
 - analysis execution;
 - repository checkout;
 - JavaParser or Joern processing;
-- private persistence access;
+- private persistence access, including repository-source H2 files;
+- private repository-source checkout directories or workspace paths;
+- raw Git stdout or stderr handling;
 - canonical repository, ingestion, static analysis, semantic analysis or
   orchestration facts;
 - artifact bytes outside generated report or LLM-ready packages;
@@ -460,7 +477,8 @@ Stop conditions:
 - public responses leak private paths, secrets, raw diagnostics or unverified
   hypotheses as evidence;
 - API code performs analysis execution or direct worker orchestration;
-- API code reads private service databases.
+- API code reads private service databases, repository-source H2 files or
+  private repository checkout workspaces.
 
 ## `cli-client`
 

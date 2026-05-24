@@ -33,7 +33,7 @@
 
 | ID | Open Decision | Notes |
 |---|---|---|
-| OD-001 | Initial relational database | Not selected in EPIC v0.2 |
+| OD-001 | Initial relational database | Not selected in EPIC v0.2. FA-MVP-0001 H2 is repository-source Docker-local MVP persistence only and does not close this production database decision. |
 | OD-002 | Initial Graph DB | Not selected in EPIC v0.2 |
 | OD-003 | Initial Vector DB | Not selected in EPIC v0.2 |
 | OD-004 | Runtime ingestion mode | JSONL likely for MVP, HTTP collector later |
