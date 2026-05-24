@@ -45,13 +45,18 @@ public final class GitRepositoryCheckoutAdapter implements RepositoryCheckoutPor
         WorkspacePolicy policy
     ) {
         var startedNanos = System.nanoTime();
-        var repoPath = workspace.workspacePath().resolve("repository").toAbsolutePath().normalize();
+        var repoPath = workspace.workspacePath().resolve("checkout").toAbsolutePath().normalize();
         var timeout = Duration.ofSeconds(policy.timeoutSeconds());
         var remoteHost = remoteHostValidator.requirePubliclyRoutable(repository);
-        var cloneArguments = cloneArguments(repository, revision, policy, repoPath, remoteHost);
-        runOrThrow(workspace.workspacePath(), timeout, cloneArguments);
-        if (revision.hasBranch() && !policy.allowShallowClone()) {
-            runOrThrow(repoPath, timeout, List.of("checkout", "--quiet", revision.branch()));
+        var existingCheckout = Files.isDirectory(repoPath.resolve(".git"));
+        if (existingCheckout) {
+            runOrThrow(repoPath, timeout, fetchArguments(repository, revision, remoteHost));
+        } else {
+            runOrThrow(workspace.workspacePath(), timeout, cloneArguments(repository, revision, policy, repoPath, remoteHost));
+        }
+        if (revision.hasBranch() && (existingCheckout || !policy.allowShallowClone())) {
+            var branchRef = existingCheckout ? "refs/remotes/origin/" + revision.branch() : revision.branch();
+            runOrThrow(repoPath, timeout, List.of("checkout", "--quiet", "--no-recurse-submodules", branchRef));
         }
         if (revision.hasCommit()) {
             runOrThrow(repoPath, timeout, List.of("rev-parse", "--verify", revision.commit() + "^{commit}"));
@@ -63,14 +68,13 @@ public final class GitRepositoryCheckoutAdapter implements RepositoryCheckoutPor
                     "refs/remotes/origin/" + revision.branch()
                 ));
             }
-            runOrThrow(repoPath, timeout, List.of("checkout", "--quiet", "--detach", revision.commit()));
+            runOrThrow(repoPath, timeout, List.of("checkout", "--quiet", "--no-recurse-submodules", "--detach", revision.commit()));
         }
         var resolvedCommit = runOrThrow(repoPath, timeout, List.of("rev-parse", "HEAD")).trimmedOutput();
-        var resolvedRemote = runOrThrow(repoPath, timeout, List.of("remote", "get-url", "origin")).trimmedOutput();
         enforceWorkspaceQuota(workspace.workspacePath(), policy.maxWorkspaceBytes());
         return new CheckoutResult(
             CheckoutStatus.CHECKED_OUT,
-            resolvedRemote,
+            repository.remoteUrl(),
             resolvedCommit,
             revision.branch(),
             revision.commit(),
@@ -141,6 +145,28 @@ public final class GitRepositoryCheckoutAdapter implements RepositoryCheckoutPor
         arguments.add("--");
         arguments.add(repository.remoteUrl());
         arguments.add(repoPath.toString());
+        return arguments;
+    }
+
+    private static List<String> fetchArguments(
+        RepositoryReference repository,
+        RevisionSelector revision,
+        RemoteHostValidator.ValidatedRemoteHost remoteHost
+    ) {
+        var arguments = new ArrayList<String>();
+        remoteHost.curlResolveOptions().forEach(resolveOption -> {
+            arguments.add("-c");
+            arguments.add("http.curloptResolve=" + resolveOption);
+        });
+        arguments.add("fetch");
+        arguments.add("--quiet");
+        arguments.add("--no-tags");
+        arguments.add("--prune");
+        arguments.add("--no-recurse-submodules");
+        arguments.add(repository.remoteUrl());
+        if (revision.hasBranch()) {
+            arguments.add("+refs/heads/" + revision.branch() + ":refs/remotes/origin/" + revision.branch());
+        }
         return arguments;
     }
 }

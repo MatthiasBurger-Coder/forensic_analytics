@@ -2,10 +2,11 @@
 
 ## Status
 
-Workflow execution is in progress. S00, S01, S02 and S03 are complete. Product
-implementation has started in repository-source-service with the workspace
-domain model, in-memory repositories and application use cases required by
-later checkout and persistence slices.
+Workflow execution is in progress. S00, S01, S02, S03 and S04 are complete.
+Product implementation has started in repository-source-service with the
+workspace domain model, in-memory repositories, metadata resolution, checkout
+preparation and branch refresh behavior required by later persistence and
+facade slices.
 
 `workflow execute` must run S00 first and then update this report after every
 slice with:
@@ -43,7 +44,7 @@ execution and contract-first sequencing.
 | S01 | Completed | Workspace terminology split into platform workspace and repository checkout workspace; repository-source ownership, H2 MVP scope and query-report facade boundary documented. |
 | S02 | Completed | Contract-first public REST and repository-source owner API frozen with security and idempotency contract tests. |
 | S03 | Completed | Repository-source workspace aggregate, branch aggregate, repository identity, in-memory workspace repository and idempotent workspace/branch application use cases added. |
-| S04 | Not started | Metadata resolution, checkout and branch refresh. |
+| S04 | Completed | Metadata preview, verified default-branch fallback, branch checkout preparation, checkout reuse and manual refresh behavior added behind repository-source application ports and Git/filesystem adapters. |
 | S05 | Not started | H2 dependency, schema and persistence adapters. |
 | S06 | Not started | Repository-source gRPC endpoint and error mapping. |
 | S07 | Not started | Query-report public REST facade. |
@@ -337,3 +338,103 @@ Checkpoint:
 - Commit SHA: `c059aa89d4832d56c154ecb8f03963052ec7a2f9`.
 - Push result: pushed to
   `origin/feature/workflow-repository-workspace-checkout-h2-persistence-20260524`.
+
+## Slice S04 - Repository Metadata Resolution And Branch Checkout Refresh
+
+Status: Completed.
+
+Owner and reviewers:
+
+- Senior Git Workspace Specialist
+- Senior Java Backend
+- Senior Security Sandbox Engineer
+- Resilience Engineering checklist
+- Senior Tester
+
+Changed files:
+
+- `services/repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/application/RepositoryWorkspaceApplicationService.java`
+- `services/repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/application/RepositoryWorkspaceMetadataPreview.java`
+- `services/repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/application/RefreshRepositoryWorkspaceBranchResult.java`
+- `services/repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/application/RepositorySourceSnapshotFactory.java`
+- `services/repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/application/RepositorySourceApplicationService.java`
+- `services/repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/application/port/RepositoryMetadataPort.java`
+- `services/repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/application/port/RepositoryMetadataPreviewPolicy.java`
+- `services/repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/application/port/RepositoryMetadataResolution.java`
+- `services/repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/application/port/RepositoryWorkspacePort.java`
+- `services/repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/adapter/out/git/GitRepositoryMetadataAdapter.java`
+- `services/repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/adapter/out/git/GitRepositoryCheckoutAdapter.java`
+- `services/repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/adapter/out/git/SafeGitCommandRunner.java`
+- `services/repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/adapter/out/filesystem/FileSystemRepositoryWorkspaceAdapter.java`
+- `services/repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/application/RepositorySourceApplicationServiceTest.java`
+- `services/repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/adapter/out/git/GitRepositoryMetadataAdapterTest.java`
+- `services/repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/adapter/out/git/GitRepositoryCheckoutAdapterTest.java`
+- `services/repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/adapter/out/git/SafeGitCommandRunnerTest.java`
+- `services/repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/adapter/out/filesystem/FileSystemRepositoryWorkspaceAdapterTest.java`
+- `services/repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/adapter/in/grpc/RepositorySourceGrpcEndpointTest.java`
+- `docs/workflow/execution-report.md`
+
+Commands executed:
+
+```bash
+git status --short --branch
+git diff --check
+./gradlew :services:repository-source-service:test --tests "*RepositorySourceApplicationServiceTest" --tests "*RepositorySourceGrpcEndpointTest" --dependency-verification strict --console=plain --stacktrace
+./gradlew :services:repository-source-service:test --tests "*GitRepositoryMetadataAdapterTest" --tests "*GitRepositoryCheckoutAdapterTest" --tests "*SafeGitCommandRunnerTest" --tests "*FileSystemRepositoryWorkspaceAdapterTest" --dependency-verification strict --console=plain --stacktrace
+./gradlew :services:repository-source-service:test --tests "*RepositorySourceApplicationServiceTest" --tests "*GitRepositoryMetadataAdapterTest" --tests "*GitRepositoryCheckoutAdapterTest" --tests "*FileSystemRepositoryWorkspaceAdapterTest" --dependency-verification strict --console=plain --stacktrace
+./gradlew :services:repository-source-service:test --dependency-verification strict --console=plain --stacktrace
+```
+
+Result:
+
+- PASS for S04 repository-source metadata, checkout and refresh slice.
+- Repository metadata preview is available behind an application port and Git
+  metadata adapter without persisting a workspace or invoking public endpoint
+  mappings.
+- Default branch resolution uses safe `ls-remote --symref` metadata lookup and
+  only falls back to `main` or `master` when those branch refs are verified.
+  Fallback evidence is labeled with `DEFAULT_BRANCH_FALLBACK`.
+- Workspace branch checkout uses repository-source application orchestration,
+  opaque workspace and branch ids, the existing checkout adapter and shared
+  deterministic source snapshot id creation.
+- Existing branch refresh fetches from the validated request URL instead of
+  trusting local `origin`, keeps submodule recursion disabled, and never uses
+  repository branch names as filesystem path segments.
+- Refresh returns `UP_TO_DATE` without creating a new source snapshot when the
+  commit is unchanged, and returns `UPDATED` with previous commit and previous
+  source snapshot id when the commit changes.
+- Branch workspace preparation uses realpath and symlink checks under the
+  configured repository-source workspace root.
+- Review blockers for refresh idempotency fingerprints, fallback diagnostics,
+  local-origin trust, symlink root escape and destructive refresh cleanup were
+  resolved.
+
+Limitations and carry-forward notes:
+
+- S04 intentionally does not implement gRPC endpoint owner API mappings, public
+  REST routes, H2 persistence, Docker volumes, bootstrap wiring or frontend
+  behavior. Those remain owned by later slices.
+- Refresh result preserves previous commit and previous source snapshot id in
+  the application result, but durable snapshot history remains a later H2
+  persistence concern.
+- Gradle emitted Java/protobuf/netty deprecation and native-access warnings;
+  they did not fail the S04 gates.
+- A concurrent local attempt to run two Gradle `test` tasks for the same module
+  in parallel failed with a Gradle test-result file race; the required service
+  test was rerun sequentially and passed.
+
+CP_RECORD:
+
+- workflowVersion: `fa-mvp-0001-repository-workspace-checkout-h2-persistence-20260524-v1`
+- sliceId: `S04`
+- sliceTitle: `Repository Metadata Resolution And Branch Checkout Refresh`
+- responsibleAgent: `senior-git-workspace-specialist`
+- qualityGateResult: `PASS`
+- rollbackReference: `revert the S04 checkpoint commit after CP_COMMIT; before commit, restore the listed S04 files from HEAD`
+- arc42Updated: `not updated; runtime and final architecture synchronization remain assigned to S11`
+- adrUpdated: `not updated; no S04 ADR change recorded`
+
+Checkpoint:
+
+- Commit SHA: pending until the S04 checkpoint commit is created.
+- Push result: pending until the S04 checkpoint is pushed.

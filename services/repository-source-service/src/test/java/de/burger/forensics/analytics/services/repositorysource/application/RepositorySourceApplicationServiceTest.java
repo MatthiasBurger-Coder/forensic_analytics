@@ -4,6 +4,9 @@ import de.burger.forensics.analytics.services.repositorysource.adapter.out.memor
 import de.burger.forensics.analytics.services.repositorysource.adapter.out.memory.InMemoryRepositoryWorkspaceRepository;
 import de.burger.forensics.analytics.services.repositorysource.application.port.PreparedWorkspace;
 import de.burger.forensics.analytics.services.repositorysource.application.port.RepositoryCheckoutPort;
+import de.burger.forensics.analytics.services.repositorysource.application.port.RepositoryMetadataPort;
+import de.burger.forensics.analytics.services.repositorysource.application.port.RepositoryMetadataPreviewPolicy;
+import de.burger.forensics.analytics.services.repositorysource.application.port.RepositoryMetadataResolution;
 import de.burger.forensics.analytics.services.repositorysource.application.port.RepositoryWorkspaceIdGenerator;
 import de.burger.forensics.analytics.services.repositorysource.application.port.RepositoryWorkspacePort;
 import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.AnalysisRunId;
@@ -28,11 +31,14 @@ import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -344,6 +350,208 @@ class RepositorySourceApplicationServiceTest {
         ));
     }
 
+    @Test
+    void previewsRepositoryMetadataWithoutPreparingCheckoutWorkspace() {
+        var workspacePort = new FakeWorkspacePort();
+        var checkoutPort = new SequencedCheckoutPort("b".repeat(40));
+        var metadataPort = new FakeMetadataPort("main", true);
+        var workspaceService = workspaceService(new FixedRepositoryWorkspaceIdGenerator(), workspacePort, checkoutPort, metadataPort);
+
+        var preview = workspaceService.previewRepositoryWorkspaceMetadata(
+            "schema-v1",
+            "correlation-1",
+            repository(),
+            new RepositoryMetadataPreviewPolicy(30),
+            Map.of("tenant", "demo")
+        );
+
+        assertEquals("example.com/acme/demo", preview.repository().repositoryKey().value());
+        assertEquals("main", preview.repository().defaultBranch());
+        assertEquals("demo", preview.workspaceTitle().value());
+        assertEquals(1, metadataPort.calls);
+        assertEquals(0, workspacePort.branchCheckouts);
+        assertEquals(0, checkoutPort.calls);
+    }
+
+    @Test
+    void createsWorkspaceAndChecksOutResolvedDefaultBranchIdempotently() {
+        var idGenerator = new FixedRepositoryWorkspaceIdGenerator();
+        var workspacePort = new FakeWorkspacePort();
+        var checkoutPort = new SequencedCheckoutPort("b".repeat(40));
+        var workspaceService = workspaceService(idGenerator, workspacePort, checkoutPort, new FakeMetadataPort("main", true));
+
+        var workspace = workspaceService.createOrReuseRepositoryWorkspaceWithCheckout(
+            "checkout-key",
+            "schema-v1",
+            "correlation-1",
+            repository(),
+            new RepositoryWorkspaceBranchSelector("", ""),
+            policy(),
+            Map.of("tenant", "demo")
+        );
+        var replayed = workspaceService.createOrReuseRepositoryWorkspaceWithCheckout(
+            "checkout-key",
+            "schema-v1",
+            "correlation-1",
+            repository(),
+            new RepositoryWorkspaceBranchSelector("", ""),
+            policy(),
+            Map.of("tenant", "demo")
+        );
+
+        assertSame(workspace, replayed);
+        assertEquals("main", workspace.branches().getFirst().repositoryBranch());
+        assertEquals(RepositoryWorkspaceBranchStatus.CHECKED_OUT, workspace.branches().getFirst().status());
+        assertEquals("b".repeat(40), workspace.branches().getFirst().resolvedCommit());
+        assertEquals("source-snapshot-", workspace.branches().getFirst().sourceSnapshotId().value().substring(0, 16));
+        assertEquals(1, idGenerator.workspaceIds);
+        assertEquals(1, idGenerator.branchIds);
+        assertEquals(1, workspacePort.branchCheckouts);
+        assertEquals(1, checkoutPort.calls);
+    }
+
+    @Test
+    void rejectsUnresolvedDefaultBranchBeforeWorkspaceMutation() {
+        var idGenerator = new FixedRepositoryWorkspaceIdGenerator();
+        var workspacePort = new FakeWorkspacePort();
+        var checkoutPort = new SequencedCheckoutPort("b".repeat(40));
+        var workspaceService = workspaceService(idGenerator, workspacePort, checkoutPort, new FakeMetadataPort("", false));
+
+        assertThrows(IllegalArgumentException.class, () -> workspaceService.createOrReuseRepositoryWorkspaceWithCheckout(
+            "checkout-key",
+            "schema-v1",
+            "correlation-1",
+            repository(),
+            new RepositoryWorkspaceBranchSelector("", ""),
+            policy(),
+            Map.of()
+        ));
+        assertEquals(0, idGenerator.workspaceIds);
+        assertEquals(0, workspacePort.branchCheckouts);
+        assertEquals(0, checkoutPort.calls);
+    }
+
+    @Test
+    void refreshesWorkspaceBranchAsUpToDateOrUpdatedIdempotently() {
+        var idGenerator = new FixedRepositoryWorkspaceIdGenerator();
+        var workspacePort = new FakeWorkspacePort();
+        var checkoutPort = new SequencedCheckoutPort("b".repeat(40), "b".repeat(40), "c".repeat(40));
+        var workspaceService = workspaceService(idGenerator, workspacePort, checkoutPort, new FakeMetadataPort("main", true));
+        var workspace = workspaceService.createOrReuseRepositoryWorkspaceWithCheckout(
+            "checkout-key",
+            "schema-v1",
+            "correlation-1",
+            repository(),
+            new RepositoryWorkspaceBranchSelector("main", ""),
+            policy(),
+            Map.of()
+        );
+        var checkedOut = workspace.branches().getFirst();
+
+        var upToDate = workspaceService.refreshRepositoryWorkspaceBranch(
+            "refresh-same",
+            "schema-v1",
+            "correlation-1",
+            workspace.workspaceId(),
+            checkedOut.workspaceBranchId(),
+            policy(),
+            Map.of()
+        );
+        var replayed = workspaceService.refreshRepositoryWorkspaceBranch(
+            "refresh-same",
+            "schema-v1",
+            "correlation-1",
+            workspace.workspaceId(),
+            checkedOut.workspaceBranchId(),
+            policy(),
+            Map.of()
+        );
+        var updated = workspaceService.refreshRepositoryWorkspaceBranch(
+            "refresh-new",
+            "schema-v1",
+            "correlation-1",
+            workspace.workspaceId(),
+            checkedOut.workspaceBranchId(),
+            policy(),
+            Map.of()
+        );
+
+        assertSame(upToDate, replayed);
+        assertFalse(upToDate.changed());
+        assertEquals(RepositoryWorkspaceBranchStatus.UP_TO_DATE, upToDate.branch().status());
+        assertEquals(checkedOut.sourceSnapshotId(), upToDate.branch().sourceSnapshotId());
+        assertTrue(updated.changed());
+        assertEquals(RepositoryWorkspaceBranchStatus.UPDATED, updated.branch().status());
+        assertEquals("b".repeat(40), updated.previousCommit());
+        assertEquals(checkedOut.sourceSnapshotId(), updated.previousSourceSnapshotId());
+        assertEquals("c".repeat(40), updated.branch().resolvedCommit());
+        assertNotEquals(checkedOut.sourceSnapshotId(), updated.branch().sourceSnapshotId());
+        assertEquals(3, checkoutPort.calls);
+    }
+
+    @Test
+    void rejectsRefreshIdempotencyConflictBeforeNewCheckout() {
+        var workspacePort = new FakeWorkspacePort();
+        var checkoutPort = new SequencedCheckoutPort("b".repeat(40), "b".repeat(40));
+        var workspaceService = workspaceService(new FixedRepositoryWorkspaceIdGenerator(), workspacePort, checkoutPort, new FakeMetadataPort("main", true));
+        var workspace = workspaceService.createOrReuseRepositoryWorkspaceWithCheckout(
+            "checkout-key",
+            "schema-v1",
+            "correlation-1",
+            repository(),
+            new RepositoryWorkspaceBranchSelector("main", ""),
+            policy(),
+            Map.of()
+        );
+        var branch = workspace.branches().getFirst();
+        workspaceService.refreshRepositoryWorkspaceBranch(
+            "refresh-key",
+            "schema-v1",
+            "correlation-1",
+            workspace.workspaceId(),
+            branch.workspaceBranchId(),
+            policy(),
+            Map.of()
+        );
+
+        assertThrows(IdempotencyConflictException.class, () -> workspaceService.refreshRepositoryWorkspaceBranch(
+            "refresh-key",
+            "schema-v1",
+            "correlation-1",
+            workspace.workspaceId(),
+            branch.workspaceBranchId(),
+            new WorkspacePolicy(true, true, false, false, 30, 100_000),
+            Map.of()
+        ));
+        assertThrows(IdempotencyConflictException.class, () -> workspaceService.refreshRepositoryWorkspaceBranch(
+            "refresh-key",
+            "schema-v1",
+            "correlation-1",
+            workspace.workspaceId(),
+            branch.workspaceBranchId(),
+            policy(),
+            Map.of("tenant", "other")
+        ));
+        assertEquals(2, checkoutPort.calls);
+
+        var otherBranch = workspaceService.createOrReuseRepositoryWorkspaceBranch(
+            "branch-other",
+            workspace.workspaceId(),
+            new RepositoryWorkspaceBranchSelector("release/1.0", "")
+        );
+
+        assertThrows(IdempotencyConflictException.class, () -> workspaceService.refreshRepositoryWorkspaceBranch(
+            "refresh-key",
+            "schema-v1",
+            "correlation-1",
+            workspace.workspaceId(),
+            otherBranch.workspaceBranchId(),
+            policy(),
+            Map.of()
+        ));
+        assertEquals(2, checkoutPort.calls);
+    }
+
     private static AnalysisRunId runId() {
         return new AnalysisRunId("run-1");
     }
@@ -367,9 +575,21 @@ class RepositorySourceApplicationServiceTest {
     private static RepositoryWorkspaceApplicationService workspaceService(
         FixedRepositoryWorkspaceIdGenerator idGenerator
     ) {
+        return workspaceService(idGenerator, new FakeWorkspacePort(), new SequencedCheckoutPort("b".repeat(40)), new FakeMetadataPort("main", true));
+    }
+
+    private static RepositoryWorkspaceApplicationService workspaceService(
+        FixedRepositoryWorkspaceIdGenerator idGenerator,
+        FakeWorkspacePort workspacePort,
+        RepositoryCheckoutPort checkoutPort,
+        RepositoryMetadataPort metadataPort
+    ) {
         return new RepositoryWorkspaceApplicationService(
             new InMemoryRepositoryWorkspaceRepository(),
             idGenerator,
+            workspacePort,
+            checkoutPort,
+            metadataPort,
             CLOCK
         );
     }
@@ -418,6 +638,7 @@ class RepositorySourceApplicationServiceTest {
 
     private static final class FakeWorkspacePort implements RepositoryWorkspacePort {
         private int cleaned;
+        private int branchCheckouts;
 
         @Override
         public PreparedWorkspace prepare(AnalysisRunId analysisRunId, WorkspacePolicy policy) {
@@ -425,7 +646,22 @@ class RepositorySourceApplicationServiceTest {
         }
 
         @Override
+        public PreparedWorkspace prepareBranchCheckout(
+            WorkspaceId workspaceId,
+            WorkspaceBranchId workspaceBranchId,
+            WorkspacePolicy policy
+        ) {
+            branchCheckouts++;
+            return new PreparedWorkspace(workspaceId, Path.of("memory", workspaceId.value(), "branches", workspaceBranchId.value()));
+        }
+
+        @Override
         public void cleanup(WorkspaceId workspaceId) {
+            cleaned++;
+        }
+
+        @Override
+        public void cleanupBranchCheckout(WorkspaceId workspaceId, WorkspaceBranchId workspaceBranchId) {
             cleaned++;
         }
     }
@@ -450,6 +686,63 @@ class RepositorySourceApplicationServiceTest {
                 false,
                 false,
                 List.of(new SourceRoot("src/main/java", "java"))
+            );
+        }
+    }
+
+    private static final class SequencedCheckoutPort implements RepositoryCheckoutPort {
+        private final List<String> commits;
+        private int calls;
+
+        private SequencedCheckoutPort(String... commits) {
+            this.commits = new ArrayList<>(List.of(commits));
+        }
+
+        @Override
+        public CheckoutResult checkout(
+            PreparedWorkspace workspace,
+            RepositoryReference repository,
+            RevisionSelector revision,
+            WorkspacePolicy policy
+        ) {
+            calls++;
+            var commit = commits.isEmpty() ? "b".repeat(40) : commits.removeFirst();
+            return new CheckoutResult(
+                CheckoutStatus.CHECKED_OUT,
+                repository.remoteUrl(),
+                commit,
+                revision.branch(),
+                revision.commit(),
+                true,
+                5,
+                List.of(Diagnostic.info("OK", "checkout")),
+                false,
+                false,
+                List.of(new SourceRoot("src/main/java", "java"))
+            );
+        }
+    }
+
+    private static final class FakeMetadataPort implements RepositoryMetadataPort {
+        private final String defaultBranch;
+        private final boolean resolved;
+        private int calls;
+
+        private FakeMetadataPort(String defaultBranch, boolean resolved) {
+            this.defaultBranch = defaultBranch;
+            this.resolved = resolved;
+        }
+
+        @Override
+        public RepositoryMetadataResolution resolveMetadata(
+            RepositoryReference repository,
+            RepositoryMetadataPreviewPolicy policy
+        ) {
+            calls++;
+            return new RepositoryMetadataResolution(
+                RepositoryIdentity.from(repository, defaultBranch),
+                resolved,
+                List.of(Diagnostic.info("DEFAULT_BRANCH_RESOLVED", "Repository default branch resolved"))
             );
         }
     }

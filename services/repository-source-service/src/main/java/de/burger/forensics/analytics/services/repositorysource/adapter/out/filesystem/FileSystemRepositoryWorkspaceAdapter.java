@@ -3,11 +3,13 @@ package de.burger.forensics.analytics.services.repositorysource.adapter.out.file
 import de.burger.forensics.analytics.services.repositorysource.application.port.PreparedWorkspace;
 import de.burger.forensics.analytics.services.repositorysource.application.port.RepositoryWorkspacePort;
 import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.AnalysisRunId;
+import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.WorkspaceBranchId;
 import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.WorkspaceId;
 import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.WorkspacePolicy;
 
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
@@ -21,6 +23,7 @@ import static java.nio.file.FileVisitResult.CONTINUE;
 public final class FileSystemRepositoryWorkspaceAdapter implements RepositoryWorkspacePort {
     private final Path configuredRoot;
     private final Map<WorkspaceId, Path> workspaces = new HashMap<>();
+    private final Map<BranchWorkspaceKey, Path> branchWorkspaces = new HashMap<>();
 
     public FileSystemRepositoryWorkspaceAdapter(Path configuredRoot) {
         this(configuredRoot, new HashMap<>());
@@ -46,6 +49,25 @@ public final class FileSystemRepositoryWorkspaceAdapter implements RepositoryWor
     }
 
     @Override
+    public synchronized PreparedWorkspace prepareBranchCheckout(
+        WorkspaceId workspaceId,
+        WorkspaceBranchId workspaceBranchId,
+        WorkspacePolicy policy
+    ) {
+        try {
+            var root = ensuredRoot();
+            var workspace = createDirectoryInsideRoot(root, root.resolve(workspaceId.value()));
+            var branches = createDirectoryInsideRoot(root, workspace.resolve("branches"));
+            var branchWorkspace = createDirectoryInsideRoot(root, branches.resolve(workspaceBranchId.value()));
+            workspaces.putIfAbsent(workspaceId, workspace);
+            branchWorkspaces.put(new BranchWorkspaceKey(workspaceId, workspaceBranchId), branchWorkspace);
+            return new PreparedWorkspace(workspaceId, branchWorkspace);
+        } catch (IOException error) {
+            throw new IllegalStateException("Failed to prepare repository branch workspace", error);
+        }
+    }
+
+    @Override
     public synchronized void cleanup(WorkspaceId workspaceId) {
         var workspace = workspaces.remove(workspaceId);
         if (workspace == null) {
@@ -53,7 +75,7 @@ public final class FileSystemRepositoryWorkspaceAdapter implements RepositoryWor
         }
         try {
             var root = ensuredRoot();
-            var checked = requireInsideRoot(root, workspace.toAbsolutePath().normalize());
+            var checked = requireExistingInsideRoot(root, workspace);
             if (checked.equals(root)) {
                 throw new IllegalStateException("Refusing to clean workspace root");
             }
@@ -76,6 +98,22 @@ public final class FileSystemRepositoryWorkspaceAdapter implements RepositoryWor
         return normalized;
     }
 
+    private static Path createDirectoryInsideRoot(Path root, Path candidate) throws IOException {
+        var normalized = requireInsideRoot(root, candidate);
+        if (Files.isSymbolicLink(normalized)) {
+            throw new IllegalStateException("Workspace path escaped configured root");
+        }
+        Files.createDirectories(normalized);
+        return requireInsideRoot(root, normalized.toRealPath(LinkOption.NOFOLLOW_LINKS));
+    }
+
+    private static Path requireExistingInsideRoot(Path root, Path candidate) throws IOException {
+        if (!Files.exists(candidate, LinkOption.NOFOLLOW_LINKS)) {
+            return requireInsideRoot(root, candidate);
+        }
+        return requireInsideRoot(root, candidate.toRealPath(LinkOption.NOFOLLOW_LINKS));
+    }
+
     private static void deleteRecursively(Path target) throws IOException {
         if (!Files.exists(target)) {
             return;
@@ -96,5 +134,26 @@ public final class FileSystemRepositoryWorkspaceAdapter implements RepositoryWor
                 return CONTINUE;
             }
         });
+    }
+
+    @Override
+    public synchronized void cleanupBranchCheckout(WorkspaceId workspaceId, WorkspaceBranchId workspaceBranchId) {
+        var branchWorkspace = branchWorkspaces.remove(new BranchWorkspaceKey(workspaceId, workspaceBranchId));
+        if (branchWorkspace == null) {
+            return;
+        }
+        try {
+            var root = ensuredRoot();
+            var checked = requireExistingInsideRoot(root, branchWorkspace);
+            if (checked.equals(root)) {
+                throw new IllegalStateException("Refusing to clean workspace root");
+            }
+            deleteRecursively(checked);
+        } catch (IOException error) {
+            throw new IllegalStateException("Failed to clean repository branch workspace", error);
+        }
+    }
+
+    private record BranchWorkspaceKey(WorkspaceId workspaceId, WorkspaceBranchId workspaceBranchId) {
     }
 }

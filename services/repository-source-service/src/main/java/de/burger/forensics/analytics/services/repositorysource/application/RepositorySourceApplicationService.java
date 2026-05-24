@@ -34,7 +34,6 @@ import java.util.Objects;
 
 import static de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.requireText;
 import static de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.safeAttributes;
-import static de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.sha256Hex;
 
 public final class RepositorySourceApplicationService {
     private final RepositoryPreparationRepository repository;
@@ -86,13 +85,21 @@ public final class RepositorySourceApplicationService {
         var safeAttributes = safeAttributes(attributes);
         var workspace = workspacePort.prepare(analysisRunId, workspacePolicy);
         var checkout = checkoutWithCleanupOnFailure(repositoryReference, revision, workspacePolicy, workspace);
-        var manifestSha = manifestSha256(repositoryReference, revision, checkout.sourceRoots(), checkout.resolvedCommit());
+        var manifestSha = RepositorySourceSnapshotFactory.manifestSha256(
+            repositoryReference,
+            revision,
+            checkout.sourceRoots(),
+            checkout.resolvedCommit()
+        );
         var sourceSnapshotId = SourceSnapshotId.deterministic(repositoryReference, revision, checkout.resolvedCommit(), manifestSha);
         var manifest = new ArtifactReference(
             "snapshots/" + sourceSnapshotId.value() + "/manifest.json",
             "application/json",
             manifestSha,
-            manifestPayload(repositoryReference, revision, checkout.resolvedCommit(), checkout.sourceRoots()).getBytes(StandardCharsets.UTF_8).length
+            RepositorySourceSnapshotFactory
+                .manifestPayload(repositoryReference, revision, checkout.resolvedCommit(), checkout.sourceRoots())
+                .getBytes(StandardCharsets.UTF_8)
+                .length
         );
         var sourceSnapshot = new SourceSnapshot(
             sourceSnapshotId,
@@ -192,31 +199,6 @@ public final class RepositorySourceApplicationService {
             workspacePort.cleanup(workspace.workspaceId());
             throw error;
         }
-    }
-
-    private static String manifestSha256(
-        RepositoryReference repository,
-        RevisionSelector revision,
-        List<de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.SourceRoot> sourceRoots,
-        String resolvedCommit
-    ) {
-        return sha256Hex(manifestPayload(repository, revision, resolvedCommit, sourceRoots));
-    }
-
-    private static String manifestPayload(
-        RepositoryReference repository,
-        RevisionSelector revision,
-        String resolvedCommit,
-        List<de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.SourceRoot> sourceRoots
-    ) {
-        return String.join(
-            "\n",
-            repository.remoteUrl(),
-            revision.branch(),
-            revision.commit(),
-            resolvedCommit,
-            sourceRoots.toString()
-        );
     }
 
     private static SourcePackageDescriptor sourcePackage(SourceSnapshotId sourceSnapshotId, ArtifactReference manifest) {

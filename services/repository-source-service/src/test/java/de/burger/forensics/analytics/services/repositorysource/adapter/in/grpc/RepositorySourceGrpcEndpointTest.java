@@ -22,6 +22,7 @@ import de.burger.forensics.analytics.services.repositorysource.domain.Repository
 import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.CheckoutStatus;
 import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.Diagnostic;
 import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.SourceRoot;
+import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.WorkspaceBranchId;
 import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.WorkspaceId;
 import io.grpc.ManagedChannel;
 import io.grpc.Server;
@@ -327,7 +328,20 @@ class RepositorySourceGrpcEndpointTest {
         }
 
         @Override
+        public PreparedWorkspace prepareBranchCheckout(
+            WorkspaceId workspaceId,
+            WorkspaceBranchId workspaceBranchId,
+            de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.WorkspacePolicy policy
+        ) {
+            return new PreparedWorkspace(workspaceId, Path.of("memory", workspaceId.value(), "branches", workspaceBranchId.value()));
+        }
+
+        @Override
         public void cleanup(WorkspaceId workspaceId) {
+        }
+
+        @Override
+        public void cleanupBranchCheckout(WorkspaceId workspaceId, WorkspaceBranchId workspaceBranchId) {
         }
     }
 
