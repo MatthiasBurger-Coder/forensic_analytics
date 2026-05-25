@@ -243,7 +243,10 @@ affected_contracts:
   - POST /workspaces/{workspaceId}/branches/{workspaceBranchId}/refresh
 dependencies: []
 parallel_group: G01
-file_locks: []
+module_locks:
+  - forensic-ui
+file_locks:
+  - docs/workflow/execution-report.md
 contract_locks:
   - public-workspace-branches-read-only
 architecture_locks:
@@ -288,6 +291,8 @@ affected_contracts: []
 dependencies:
   - S01
 parallel_group: G02
+module_locks:
+  - forensic-ui
 file_locks:
   - forensic-ui/src/pages/workspaces/WorkspaceListPage.tsx
   - forensic-ui/src/styles.css
@@ -337,6 +342,8 @@ affected_contracts:
 dependencies:
   - S02
 parallel_group: G03
+module_locks:
+  - forensic-ui
 file_locks:
   - forensic-ui/src/pages/workspaces/WorkspaceListPage.test.tsx
   - forensic-ui/src/adapters/api/mappers.test.ts
@@ -389,6 +396,8 @@ affected_contracts: []
 dependencies:
   - S03
 parallel_group: G04
+module_locks:
+  - forensic-ui
 file_locks:
   - docs/workflow/execution-report.md
   - docs/workflow/arc42-check-status.md
@@ -402,6 +411,7 @@ quality_gates:
     - cd forensic-ui && npm run build
   required:
     - ./gradlew test --dependency-verification strict --console=plain --stacktrace
+    - ./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace
 documentation:
   arc42: checked or updated
   adr: no new ADR expected for UI-only scope

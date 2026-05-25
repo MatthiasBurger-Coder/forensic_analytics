@@ -346,7 +346,6 @@ td {
   overflow-wrap: anywhere;
 }
 
-.workspace-branch-cell,
 .status-stack,
 .table-actions {
   display: flex;
@@ -354,14 +353,29 @@ td {
   align-items: center;
 }
 
-.workspace-branch-cell,
 .status-stack {
   flex-wrap: wrap;
+}
+
+.workspace-branch-cell {
+  display: grid;
+  gap: 7px;
+  min-width: 230px;
+}
+
+.workspace-branch-select {
+  min-width: 220px;
+}
+
+.workspace-branch-meta {
+  display: grid;
+  gap: 3px;
 }
 
 .workspace-branch-cell small {
   color: #94a09b;
   font-size: 0.78rem;
+  overflow-wrap: anywhere;
 }
 
 .table-actions {

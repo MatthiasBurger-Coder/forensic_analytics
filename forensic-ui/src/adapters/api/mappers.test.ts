@@ -148,6 +148,15 @@ describe("API DTO mapping", () => {
                   source: "C:\\Users\\private\\File.java"
                 }
               ]
+            },
+            {
+              workspaceBranchId: "workspace-branch-2",
+              repositoryBranch: "release/1.0",
+              status: "UP_TO_DATE",
+              resolvedCommit: "def5678",
+              sourceSnapshotId: "source-snapshot-2",
+              sourceRoots: [],
+              diagnostics: []
             }
           ],
           diagnostics: []
@@ -176,6 +185,10 @@ describe("API DTO mapping", () => {
     expect(workspaces[0].repository.repositoryKey).toBe("github.com/wildfly/wildfly");
     expect(workspaces[0].repository.repositoryUrl).toBe("");
     expect(workspaces[0].repository.defaultBranch).toBeNull();
+    expect(workspaces[0].branches.map((branch) => branch.workspaceBranchId))
+      .toEqual(["workspace-branch-1", "workspace-branch-2"]);
+    expect(workspaces[0].branches.map((branch) => branch.repositoryBranch))
+      .toEqual(["main", "release/1.0"]);
     expect(workspaces[0].branches[0].status).toBe("CHECKED_OUT");
     expect(workspaces[0].branches[0].sourceRoots[1]).toContain("[local-path]");
     expect(workspaces[0].branches[0].diagnostics[0].message).toContain(

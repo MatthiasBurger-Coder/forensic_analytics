@@ -55,15 +55,51 @@ workflow is recut contract-first.
 
 | Slice | Status | Notes |
 |---|---|---|
-| S01 | Not started | To run under `workflow execute`. |
-| S02 | Not started | To run after S01. |
-| S03 | Not started | To run after S02. |
-| S04 | Not started | To run after S03. |
+| S01 | Completed | Subagent and local read-only reviews confirmed that existing public `branches[]` records are sufficient for UI-only selection and refresh by `workspaceBranchId`; no remote Git branch discovery or new REST/gRPC contract is required. |
+| S02 | Completed | `WorkspaceListPage.tsx` now renders one row per workspace and an accessible branch selector populated only from that workspace's public `branches[]`. Refresh targets the selected branch ID. |
+| S03 | Completed | Workspaces page, mapper and API client tests cover multi-branch order, selected branch refresh, per-workspace selection, missing branch fallback and no-branch disabled refresh behavior. |
+| S04 | Completed | Workflow metadata was refined for explicit S3D locks, quality gates were executed, diffs were inspected and arc42 status was synchronized. |
+
+## Workflow Execute Notes
+
+`workflow execute with subagents` started on the verified workflow branch
+`feature/workflow-branch-selection-20260525`.
+
+S3D initially reported an orchestration blocker because the checked workflow
+metadata did not explicitly declare `module_locks`, S01 report-note file
+ownership or the full local S04 quality gate. After self-review, the blocker
+was refined by making those already-documented constraints explicit in
+`docs/workflow/workflow.md`. The refinement did not expand product scope.
+
+Completed S01 subagent reviews verified:
+
+- `GET /workspaces` exposes public `branches[]` records with
+  `workspaceBranchId` and `repositoryBranch`;
+- branch refresh is already exposed as
+  `POST /workspaces/{workspaceId}/branches/{workspaceBranchId}/refresh`;
+- gRPC repository-source workspace records and refresh requests preserve the
+  opaque branch ID;
+- frontend domain and port types already support selecting and refreshing a
+  public workspace branch record.
+
+No backend, contract, persistence, Docker, analysis, replay, graph, LLM or
+plugin files were changed.
 
 ## Quality Status
 
-No product tests were run during workflow creation. Documentation validation
-for this turn is limited to diff inspection and `git diff --check`.
+Executed under WSL from `/mnt/d/Projects/forensic_analytics`:
+
+| Command | Result |
+|---|---|
+| `cd forensic-ui && npm run test -- src/pages/workspaces/WorkspaceListPage.test.tsx` | Passed: 1 file, 10 tests. |
+| `cd forensic-ui && npm run test -- src/pages/workspaces/WorkspaceListPage.test.tsx src/adapters/api/mappers.test.ts src/adapters/api/apiClient.test.ts` | Passed: 3 files, 55 tests. |
+| `cd forensic-ui && npm run build` | Passed. |
+| `./gradlew test --dependency-verification strict --console=plain --stacktrace` | Passed. |
+| `./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace` | Passed. |
+
+The first full local gate attempt exceeded the tool timeout while still
+running. The exact same command was rerun with a longer timeout and completed
+successfully.
 
 ## Current Risks
 
