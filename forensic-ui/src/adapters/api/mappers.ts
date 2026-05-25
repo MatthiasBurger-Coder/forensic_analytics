@@ -15,6 +15,7 @@ import type {
   Workspace,
   WorkspaceBranch,
   WorkspaceBranchStatus,
+  WorkspaceCleanupResult,
   WorkspaceMetadata,
   WorkspaceStatus
 } from "@/domain/workspace";
@@ -23,10 +24,14 @@ import { sanitizeDiagnosticText } from "@/shared/safeText";
 import type {
   BranchRefreshResponseDto,
   DiagnosticDto,
+  PublicRepositoryIdentityDto,
   RepositoryAnalysisDto,
   RepositoryIdentityDto,
   WorkspaceBranchDto,
+  WorkspaceCleanupResponseDto,
   WorkspaceDto,
+  WorkspaceListItemDto,
+  WorkspaceListDto,
   WorkspaceMetadataResponseDto
 } from "./dtos";
 
@@ -136,7 +141,7 @@ export const mapWorkspaceDto = (dto: WorkspaceDto): Workspace => {
   };
 };
 
-export const mapWorkspaceListDto = (value: unknown): Workspace[] => {
+export const mapWorkspaceListDto = (value: WorkspaceListDto | unknown): Workspace[] => {
   const items = Array.isArray(value)
     ? value
     : isRecord(value) && Array.isArray(value.items)
@@ -145,7 +150,7 @@ export const mapWorkspaceListDto = (value: unknown): Workspace[] => {
 
   return items
     .filter(isRecord)
-    .map((item) => mapWorkspaceDto(item as WorkspaceDto));
+    .map((item) => mapWorkspaceListItemDto(item as WorkspaceListItemDto));
 };
 
 export const mapWorkspaceMetadataDto = (
@@ -173,6 +178,14 @@ export const mapBranchRefreshDto = (
   diagnostics: diagnostics(dto.diagnostics)
 });
 
+export const mapWorkspaceCleanupDto = (
+  dto: WorkspaceCleanupResponseDto
+): WorkspaceCleanupResult => ({
+  workspaceId: textOrEmpty(dto.workspaceId),
+  status: cleanupStatus(dto.status),
+  diagnostics: publicDiagnostics(dto.diagnostics)
+});
+
 export const mapDiagnosticDto = (
   dto: DiagnosticDto,
   index: number
@@ -180,7 +193,7 @@ export const mapDiagnosticDto = (
   id: textOrNull(dto.id) ?? `diagnostic-${index}`,
   severity: severity(dto.severity),
   code: textOrNull(dto.code),
-  message: sanitizeDiagnosticText(dto.message),
+  message: sanitizePublicDiagnosticText(dto.message),
   source: sanitizedOptionalText(dto.source),
   observedAt: textOrNull(dto.observedAt) ?? textOrNull(dto.timestamp)
 });
@@ -194,6 +207,27 @@ const diagnostics = (value: unknown): DiagnosticMessage[] =>
       )
     : [];
 
+const publicDiagnostics = (value: unknown): DiagnosticMessage[] =>
+  Array.isArray(value)
+    ? value.map((item, index) =>
+        isRecord(item)
+          ? mapPublicDiagnosticDto(item as DiagnosticDto, index)
+          : mapPublicDiagnosticDto({ message: item }, index)
+      )
+    : [];
+
+const mapPublicDiagnosticDto = (
+  dto: DiagnosticDto,
+  index: number
+): DiagnosticMessage => ({
+  id: textOrNull(dto.id) ?? `diagnostic-${index}`,
+  severity: severity(dto.severity),
+  code: textOrNull(dto.code),
+  message: sanitizePublicDiagnosticText(dto.message),
+  source: publicSanitizedOptionalText(dto.source),
+  observedAt: textOrNull(dto.observedAt) ?? textOrNull(dto.timestamp)
+});
+
 const mapRepositoryIdentityDto = (
   dto: RepositoryIdentityDto
 ): RepositoryIdentity => ({
@@ -205,11 +239,40 @@ const mapRepositoryIdentityDto = (
   defaultBranch: textOrNull(dto.defaultBranch)
 });
 
+const mapPublicRepositoryIdentityDto = (
+  dto: PublicRepositoryIdentityDto
+): RepositoryIdentity => ({
+  repositoryKey: textOrEmpty(dto.repositoryKey),
+  repositoryUrl: "",
+  repositoryHost: textOrEmpty(dto.repositoryHost),
+  repositoryOwner: textOrNull(dto.repositoryOwner),
+  repositoryName: textOrEmpty(dto.repositoryName),
+  defaultBranch: null
+});
+
+const mapWorkspaceListItemDto = (dto: WorkspaceListItemDto): Workspace => ({
+  workspaceId: textOrEmpty(dto.workspaceId),
+  workspaceTitle: textOrEmpty(dto.workspaceTitle),
+  repository: mapPublicRepositoryIdentityDto(
+    isRecord(dto.repository) ? (dto.repository as PublicRepositoryIdentityDto) : {}
+  ),
+  branches: publicWorkspaceBranchArray(dto.branches),
+  status: workspaceStatus(dto.status),
+  diagnostics: publicDiagnostics(dto.diagnostics)
+});
+
 const workspaceBranchArray = (value: unknown): WorkspaceBranch[] =>
   Array.isArray(value)
     ? value
         .filter(isRecord)
         .map((item) => mapWorkspaceBranchDto(item as WorkspaceBranchDto))
+    : [];
+
+const publicWorkspaceBranchArray = (value: unknown): WorkspaceBranch[] =>
+  Array.isArray(value)
+    ? value
+        .filter(isRecord)
+        .map((item) => mapPublicWorkspaceBranchDto(item as WorkspaceBranchDto))
     : [];
 
 const mapWorkspaceBranchDto = (dto: WorkspaceBranchDto): WorkspaceBranch => ({
@@ -220,6 +283,16 @@ const mapWorkspaceBranchDto = (dto: WorkspaceBranchDto): WorkspaceBranch => ({
   sourceSnapshotId: textOrNull(dto.sourceSnapshotId),
   sourceRoots: stringArray(dto.sourceRoots).map(sanitizeDiagnosticText),
   diagnostics: diagnostics(dto.diagnostics)
+});
+
+const mapPublicWorkspaceBranchDto = (dto: WorkspaceBranchDto): WorkspaceBranch => ({
+  workspaceBranchId: textOrEmpty(dto.workspaceBranchId),
+  repositoryBranch: textOrEmpty(dto.repositoryBranch),
+  status: branchStatus(dto.status),
+  resolvedCommit: textOrNull(dto.resolvedCommit),
+  sourceSnapshotId: textOrNull(dto.sourceSnapshotId),
+  sourceRoots: stringArray(dto.sourceRoots).map(sanitizePublicDiagnosticText),
+  diagnostics: publicDiagnostics(dto.diagnostics)
 });
 
 const severity = (value: unknown): DiagnosticSeverity => {
@@ -249,8 +322,17 @@ const textOrNull = (value: unknown): string | null =>
 const sanitizedOptionalText = (value: unknown): string | null => {
   const text = textOrNull(value);
 
-  return text === null ? null : sanitizeDiagnosticText(text);
+  return text === null ? null : sanitizePublicDiagnosticText(text);
 };
+
+const publicSanitizedOptionalText = (value: unknown): string | null => {
+  const text = textOrNull(value);
+
+  return text === null ? null : sanitizePublicDiagnosticText(text);
+};
+
+const sanitizePublicDiagnosticText = (value: unknown): string =>
+  sanitizeDiagnosticText(value).replace(/\bhttps?:\/\/[^\s<>"']+/gi, "[url-redacted]");
 
 const workspaceStatus = (value: unknown): WorkspaceStatus => {
   const normalized = textOrNull(value)?.toUpperCase();
@@ -268,6 +350,9 @@ const workspaceStatus = (value: unknown): WorkspaceStatus => {
 
   return "UNKNOWN";
 };
+
+const cleanupStatus = (value: unknown): WorkspaceStatus =>
+  workspaceStatus(value) === "CLEANED" ? "CLEANED" : "UNKNOWN";
 
 const branchStatus = (value: unknown): WorkspaceBranchStatus => {
   const normalized = textOrNull(value)?.toUpperCase();

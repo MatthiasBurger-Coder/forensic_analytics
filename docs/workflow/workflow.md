@@ -532,12 +532,17 @@ secondary_reviewers:
   - senior_tester
   - security_reviewer
 affected_files:
+  - forensic-ui/src/domain/workspace.ts
   - forensic-ui/src/application/ports/workspacePort.ts
+  - forensic-ui/src/adapters/api/httpClient.ts
   - forensic-ui/src/adapters/api/apiClient.ts
   - forensic-ui/src/adapters/api/dtos.ts
   - forensic-ui/src/adapters/api/mappers.ts
   - forensic-ui/src/adapters/api/apiClient.test.ts
   - forensic-ui/src/adapters/api/mappers.test.ts
+  - forensic-ui/src/app/App.test.tsx
+  - forensic-ui/src/pages/workspaces/CreateWorkspacePage.test.tsx
+  - forensic-ui/src/application/hooks/useAnalysisJob.test.tsx
 affected_modules:
   - forensic-ui
 affected_contracts:
@@ -546,8 +551,12 @@ dependencies:
   - S04
 parallel_group: G5
 file_locks:
+  - forensic-ui/src/domain/workspace.ts
   - forensic-ui/src/application/ports/workspacePort.ts
   - forensic-ui/src/adapters/api
+  - forensic-ui/src/app/App.test.tsx
+  - forensic-ui/src/pages/workspaces/CreateWorkspacePage.test.tsx
+  - forensic-ui/src/application/hooks/useAnalysisJob.test.tsx
 contract_locks:
   - public-workspaces-rest
 architecture_locks:

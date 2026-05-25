@@ -4,6 +4,7 @@ import {
   mapBranchRefreshDto,
   mapBackendStatus,
   mapRepositoryAnalysisDto,
+  mapWorkspaceCleanupDto,
   mapWorkspaceDto,
   mapWorkspaceListDto,
   mapWorkspaceMetadataDto
@@ -126,11 +127,9 @@ describe("API DTO mapping", () => {
           workspaceTitle: "wildfly",
           repository: {
             repositoryKey: "github.com/wildfly/wildfly",
-            repositoryUrl: "https://github.com/wildfly/wildfly.git",
             repositoryHost: "github.com",
             repositoryOwner: "wildfly",
-            repositoryName: "wildfly",
-            defaultBranch: "main"
+            repositoryName: "wildfly"
           },
           status: "READY",
           branches: [
@@ -145,12 +144,27 @@ describe("API DTO mapping", () => {
                 {
                   severity: "ERROR",
                   message:
-                    "raw stdout token=secret jdbc:h2:file:/var/lib/forensic-analytics/repository-source-data/repository-source",
+                    "raw stdout token=secret https://github.com/wildfly/wildfly.git jdbc:h2:file:/var/lib/forensic-analytics/repository-source-data/repository-source",
                   source: "C:\\Users\\private\\File.java"
                 }
               ]
             }
           ],
+          diagnostics: []
+        },
+        {
+          workspaceId: "workspace-2",
+          workspaceTitle: "empty",
+          repository: {
+            repositoryKey: "github.com/acme/empty",
+            repositoryHost: "github.com",
+            repositoryOwner: "acme",
+            repositoryName: "empty",
+            repositoryUrl: "https://github.com/acme/empty.git",
+            defaultBranch: "main"
+          },
+          status: "READY",
+          branches: [],
           diagnostics: []
         }
       ]
@@ -160,16 +174,56 @@ describe("API DTO mapping", () => {
     expect(workspaces[0].workspaceTitle).toBe("wildfly");
     expect(workspaces[0].status).toBe("READY");
     expect(workspaces[0].repository.repositoryKey).toBe("github.com/wildfly/wildfly");
+    expect(workspaces[0].repository.repositoryUrl).toBe("");
+    expect(workspaces[0].repository.defaultBranch).toBeNull();
     expect(workspaces[0].branches[0].status).toBe("CHECKED_OUT");
     expect(workspaces[0].branches[0].sourceRoots[1]).toContain("[local-path]");
     expect(workspaces[0].branches[0].diagnostics[0].message).toContain(
       "[stream-redacted]"
     );
+    expect(workspaces[0].branches[0].diagnostics[0].message).toContain(
+      "[url-redacted]"
+    );
     expect(workspaces[0].branches[0].diagnostics[0].message).not.toContain(
       "secret"
     );
+    expect(workspaces[0].branches[0].diagnostics[0].message).not.toContain(
+      "https://github.com/wildfly/wildfly.git"
+    );
     expect(workspaces[0].branches[0].diagnostics[0].source).toBe("[local-path]");
+    expect(workspaces[1].branches).toEqual([]);
+    expect(workspaces[1].repository.repositoryUrl).toBe("");
+    expect(workspaces[1].repository.defaultBranch).toBeNull();
     expect(mapWorkspaceDto({ workspaceId: "workspace-2" }).status).toBe(
+      "UNKNOWN"
+    );
+  });
+
+  it("maps repository checkout cleanup without confirming unknown states", () => {
+    const cleanup = mapWorkspaceCleanupDto({
+      workspaceId: "workspace-1",
+      status: "CLEANED",
+      diagnostics: [
+        {
+          severity: "INFO",
+          message: "cleaned raw stdout token=secret https://github.com/acme/private.git",
+          source: "/var/lib/forensic-analytics/repository-workspaces/workspace-1"
+        }
+      ]
+    });
+    const unknown = mapWorkspaceCleanupDto({
+      workspaceId: "workspace-2",
+      status: "READY",
+      diagnostics: []
+    });
+
+    expect(cleanup.workspaceId).toBe("workspace-1");
+    expect(cleanup.status).toBe("CLEANED");
+    expect(cleanup.diagnostics[0].message).toContain("[url-redacted]");
+    expect(cleanup.diagnostics[0].message).not.toContain("secret");
+    expect(cleanup.diagnostics[0].source).toBe("[local-path]");
+    expect(unknown.status).toBe("UNKNOWN");
+    expect(mapWorkspaceCleanupDto({ workspaceId: "workspace-3" }).status).toBe(
       "UNKNOWN"
     );
   });

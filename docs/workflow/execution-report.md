@@ -7,7 +7,8 @@ completed and pushed. S02 repository-source lifecycle behavior is completed
 and pushed. The workflow was refined after S02 to insert the missing
 repository-source owner gRPC endpoint slice before query-report facade work.
 S03 repository-source owner gRPC endpoint behavior is completed. S04
-query-report public facade behavior is completed.
+query-report public facade behavior is completed. S05 frontend workspace API
+adapter behavior is completed.
 
 ## Workflow
 
@@ -298,3 +299,66 @@ Notes:
 - First full quality-gate attempt failed at `checkPackageCoverage` with
   `queryreportapi.adapter.in.http` branch coverage at 79.31%. After the
   targeted route-validation repair, the full gate passed.
+
+### S05 Frontend Workspace API Adapter
+
+Status: completed.
+
+Subagent and role reviews:
+
+- Senior React Frontend: found the original S05 file scope too narrow because
+  delete support needs a domain command/result type, `HttpClient` `DELETE`
+  support and typed test mock updates.
+- Senior Tester: identified list/delete adapter coverage for route paths,
+  headers, no-body delete requests, idempotency conflicts, unsafe workspace
+  IDs and list-specific DTO mapping.
+- Security Reviewer: required list/delete mapping to avoid repository URL,
+  private path, raw stream and token exposure, and required frontend-side
+  workspace ID validation before delete requests.
+- Refinement review: Senior Workflow Architect 91%, Senior System Architect
+  96%, Senior Tester 88%. The user explicitly approved the S05 scope
+  refinement before implementation continued.
+
+Changes:
+
+- Added `DeleteWorkspaceCommand` and `WorkspaceCleanupResult` to the frontend
+  workspace domain model and exposed `deleteWorkspace` on `WorkspacePort`.
+- Replaced the placeholder `listWorkspaces` adapter with `GET /workspaces`
+  using generated correlation metadata.
+- Added `DELETE /workspaces/{workspaceId}` adapter support with correlation
+  and idempotency headers and no request body.
+- Extended `HttpClient` to support non-retried `DELETE` requests.
+- Added list-specific DTO mapping that ignores unexpected `repositoryUrl` and
+  `defaultBranch` fields and derives branch labels only from
+  `branches[].repositoryBranch`.
+- Added cleanup-response mapping that reports only `CLEANED` as cleanup
+  success and maps other cleanup states to `UNKNOWN`.
+- Hardened API diagnostic sanitization for public URL leakage in frontend
+  gateway responses.
+- Updated typed `WorkspacePort` test mocks after the interface expansion.
+- Refined S05 affected files and locks in `docs/workflow/workflow.md`.
+
+Verification:
+
+```bash
+cd forensic-ui && npm run test -- src/adapters/api/apiClient.test.ts src/adapters/api/mappers.test.ts src/app/App.test.tsx src/pages/workspaces/CreateWorkspacePage.test.tsx src/application/hooks/useAnalysisJob.test.tsx
+cd forensic-ui && npm run test
+cd forensic-ui && npm run build
+git diff --check
+./gradlew test --dependency-verification strict --console=plain --stacktrace
+./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace
+```
+
+Result: all final commands passed.
+
+Notes:
+
+- The first targeted frontend test attempt failed because one test reused the
+  same `Response` instance for two rejected requests; the fixture now returns
+  a fresh response per request and the targeted test passes.
+- `listWorkspaces` still returns `Workspace[]`; list-level diagnostics are not
+  surfaced in UI state in S05, but item, branch, cleanup and error diagnostics
+  remain sanitized and covered.
+- S05 intentionally does not change `WorkspaceListPage`, routing, navigation
+  labels or UI actions; S06 owns the visible Workspaces list/action
+  experience.

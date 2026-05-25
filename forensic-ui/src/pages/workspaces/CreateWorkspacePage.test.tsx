@@ -370,6 +370,7 @@ const servicesForWorkspaceFlow = (): ApplicationServices => ({
     createWorkspace: vi.fn().mockResolvedValue(workspace()),
     refreshBranch: vi.fn().mockResolvedValue(refreshUnchanged()),
     listWorkspaces: vi.fn(),
+    deleteWorkspace: vi.fn(),
     getWorkspace: vi.fn(),
     waitForWorkspaceCheckout: vi.fn().mockResolvedValue(workspace())
   },

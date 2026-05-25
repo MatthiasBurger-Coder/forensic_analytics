@@ -43,7 +43,7 @@ describe("API client resilience", () => {
     expect(analysis.status.backendStatus).toBe("REGISTERED");
   });
 
-  it("does not call planned Gateway list and diagnostics routes", async () => {
+  it("does not call planned Gateway analysis list and diagnostics routes", async () => {
     const fetcher = vi.fn();
     const client = createApiClient({
       baseUrl: "https://backend.invalid/api",
@@ -56,7 +56,6 @@ describe("API client resilience", () => {
     await expect(
       client.repositoryAnalysis.listRepositoryAnalyses()
     ).resolves.toEqual([]);
-    await expect(client.workspaces.listWorkspaces()).resolves.toEqual([]);
     await expect(client.diagnostics.collectDiagnostics()).resolves.toEqual([]);
 
     expect(fetcher).not.toHaveBeenCalled();
@@ -152,6 +151,64 @@ describe("API client resilience", () => {
       "Idempotency-Key": "idem-refresh"
     });
     expect((fetcher.mock.calls[3][1] as RequestInit).body).toBeUndefined();
+  });
+
+  it("uses the public workspace list route with generated correlation metadata", async () => {
+    const fetcher = vi.fn().mockResolvedValue(jsonResponse(workspaceListResponse()));
+    const client = createApiClient({
+      baseUrl: "https://backend.invalid/api",
+      timeoutMs: 1000,
+      maxGetAttempts: 1,
+      baseRetryDelayMs: 1,
+      fetcher
+    });
+
+    const workspaces = await client.workspaces.listWorkspaces();
+
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    expect(fetcher.mock.calls[0][0]).toBe("https://backend.invalid/api/workspaces");
+    expect((fetcher.mock.calls[0][1] as RequestInit).method).toBe("GET");
+    expect((fetcher.mock.calls[0][1] as RequestInit).headers).toMatchObject({
+      "X-Correlation-Id": expect.stringMatching(/^ui-workspace-list-/)
+    });
+    expect((fetcher.mock.calls[0][1] as RequestInit).headers).not.toMatchObject({
+      "Idempotency-Key": expect.any(String)
+    });
+    expect((fetcher.mock.calls[0][1] as RequestInit).body).toBeUndefined();
+    expect(workspaces[0].workspaceId).toBe("workspace-1");
+    expect(workspaces[0].branches[0].repositoryBranch).toBe("main");
+    expect(workspaces[0].repository.repositoryUrl).toBe("");
+    expect(workspaces[0].repository.defaultBranch).toBeNull();
+  });
+
+  it("uses the public workspace delete route with mutation metadata", async () => {
+    const fetcher = vi.fn().mockResolvedValue(jsonResponse(cleanupResponse()));
+    const client = createApiClient({
+      baseUrl: "https://backend.invalid/api",
+      timeoutMs: 1000,
+      maxGetAttempts: 1,
+      baseRetryDelayMs: 1,
+      fetcher
+    });
+
+    const cleanup = await client.workspaces.deleteWorkspace({
+      workspaceId: "workspace-1",
+      correlationId: "correlation-delete",
+      idempotencyKey: "idem-delete"
+    });
+
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    expect(fetcher.mock.calls[0][0]).toBe(
+      "https://backend.invalid/api/workspaces/workspace-1"
+    );
+    expect((fetcher.mock.calls[0][1] as RequestInit).method).toBe("DELETE");
+    expect((fetcher.mock.calls[0][1] as RequestInit).headers).toMatchObject({
+      "X-Correlation-Id": "correlation-delete",
+      "Idempotency-Key": "idem-delete"
+    });
+    expect((fetcher.mock.calls[0][1] as RequestInit).body).toBeUndefined();
+    expect(cleanup.workspaceId).toBe("workspace-1");
+    expect(cleanup.status).toBe("CLEANED");
   });
 
   it("sends required Gateway correlation metadata for status reads", async () => {
@@ -333,8 +390,17 @@ describe("API client resilience", () => {
           correlationId: "correlation-refresh",
           idempotencyKey: "idem-refresh"
         })
+    ],
+    [
+      "workspace delete",
+      (client: ReturnType<typeof createApiClient>) =>
+        client.workspaces.deleteWorkspace({
+          workspaceId: "workspace-1",
+          correlationId: "correlation-delete",
+          idempotencyKey: "idem-delete"
+        })
     ]
-  ])("does not retry workspace POST mutation %s", async (_name, action) => {
+  ])("does not retry workspace mutation %s", async (_name, action) => {
     const fetcher = vi.fn().mockResolvedValue(
       jsonResponse(
         {
@@ -360,8 +426,8 @@ describe("API client resilience", () => {
   });
 
   it("maps public idempotency conflicts from workspace routes", async () => {
-    const fetcher = vi.fn().mockResolvedValue(
-      jsonResponse(
+    const fetcher = vi.fn().mockImplementation(() =>
+      Promise.resolve(jsonResponse(
         {
           code: "IDEMPOTENCY_CONFLICT",
           message: "The idempotency key was already used with different input.",
@@ -370,7 +436,7 @@ describe("API client resilience", () => {
           diagnostics: []
         },
         409
-      )
+      ))
     );
     const client = createApiClient({
       baseUrl: "https://backend.invalid/api",
@@ -383,6 +449,16 @@ describe("API client resilience", () => {
     await expect(
       client.workspaces.previewMetadata({
         repositoryUrl: "https://github.com/wildfly/wildfly.git",
+        correlationId: "correlation-1",
+        idempotencyKey: "idem-1"
+      })
+    ).rejects.toMatchObject({
+      category: "IDEMPOTENCY_CONFLICT",
+      correlationId: "correlation-1"
+    });
+    await expect(
+      client.workspaces.deleteWorkspace({
+        workspaceId: "workspace-1",
         correlationId: "correlation-1",
         idempotencyKey: "idem-1"
       })
@@ -416,6 +492,135 @@ describe("API client resilience", () => {
 
     expect(fetcher).not.toHaveBeenCalled();
   });
+
+  it.each([
+    ["workspaceId", { workspaceId: " " }],
+    ["correlationId", { correlationId: " " }],
+    ["idempotencyKey", { idempotencyKey: " " }]
+  ])("rejects missing Gateway %s metadata before workspace delete", async (_field, patch) => {
+    const fetcher = vi.fn();
+    const client = createApiClient({
+      baseUrl: "https://backend.invalid/api",
+      timeoutMs: 1000,
+      maxGetAttempts: 1,
+      baseRetryDelayMs: 1,
+      fetcher
+    });
+
+    await expect(
+      client.workspaces.deleteWorkspace({
+        workspaceId: "workspace-1",
+        correlationId: "correlation-delete",
+        idempotencyKey: "idem-delete",
+        ...patch
+      })
+    ).rejects.toMatchObject({
+      category: "VALIDATION_ERROR"
+    });
+
+    expect(fetcher).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    "workspace-1/branch",
+    "workspace-1\\branch",
+    "../workspace-1",
+    "https://backend.invalid/workspace-1",
+    "token-workspace-1",
+    "project-1"
+  ])("rejects unsafe workspace delete id %s before fetch", async (workspaceId) => {
+    const fetcher = vi.fn();
+    const client = createApiClient({
+      baseUrl: "https://backend.invalid/api",
+      timeoutMs: 1000,
+      maxGetAttempts: 1,
+      baseRetryDelayMs: 1,
+      fetcher
+    });
+
+    await expect(
+      client.workspaces.deleteWorkspace({
+        workspaceId,
+        correlationId: "correlation-delete",
+        idempotencyKey: "idem-delete"
+      })
+    ).rejects.toMatchObject({
+      category: "VALIDATION_ERROR"
+    });
+
+    expect(fetcher).not.toHaveBeenCalled();
+  });
+
+  it("sanitizes workspace list and delete backend diagnostics", async () => {
+    const fetcher = vi
+      .fn()
+      .mockResolvedValueOnce(
+        jsonResponse({
+          code: "BACKEND_UNAVAILABLE",
+          message:
+            "raw stdout token=secret https://github.com/wildfly/wildfly.git C:\\Users\\private\\repo",
+          retryable: false,
+          correlationId: "correlation-list",
+          diagnostics: [
+            {
+              severity: "ERROR",
+              message:
+                "raw stderr password=secret https://github.com/acme/private.git /var/lib/forensic-analytics/repository-workspaces/workspace-1",
+              source: "C:\\Users\\private\\File.ts"
+            }
+          ]
+        }, 503)
+      )
+      .mockResolvedValueOnce(
+        jsonResponse({
+          code: "BACKEND_UNAVAILABLE",
+          message:
+            "raw stdout token=secret https://github.com/wildfly/wildfly.git C:\\Users\\private\\repo",
+          retryable: false,
+          correlationId: "correlation-delete",
+          diagnostics: [
+            {
+              severity: "ERROR",
+              message:
+                "raw stderr password=secret https://github.com/acme/private.git /var/lib/forensic-analytics/repository-workspaces/workspace-1",
+              source: "C:\\Users\\private\\File.ts"
+            }
+          ]
+        }, 503)
+      );
+    const client = createApiClient({
+      baseUrl: "https://backend.invalid/api",
+      timeoutMs: 1000,
+      maxGetAttempts: 1,
+      baseRetryDelayMs: 1,
+      fetcher
+    });
+
+    await expect(client.workspaces.listWorkspaces()).rejects.toMatchObject({
+      message: expect.stringContaining("[url-redacted]"),
+      diagnostics: [
+        expect.objectContaining({
+          message: expect.stringContaining("[url-redacted]"),
+          source: "[local-path]"
+        })
+      ]
+    });
+    await expect(
+      client.workspaces.deleteWorkspace({
+        workspaceId: "workspace-1",
+        correlationId: "correlation-delete",
+        idempotencyKey: "idem-delete"
+      })
+    ).rejects.toMatchObject({
+      message: expect.stringContaining("[url-redacted]"),
+      diagnostics: [
+        expect.objectContaining({
+          message: expect.stringContaining("[url-redacted]"),
+          source: "[local-path]"
+        })
+      ]
+    });
+  });
 });
 
 const jsonResponse = (body: unknown, status = 200) =>
@@ -425,6 +630,41 @@ const jsonResponse = (body: unknown, status = 200) =>
       "Content-Type": "application/json"
     }
   });
+
+const workspaceListResponse = () => ({
+  items: [
+    {
+      workspaceId: "workspace-1",
+      workspaceTitle: "wildfly",
+      repository: {
+        repositoryKey: "github.com/wildfly/wildfly",
+        repositoryHost: "github.com",
+        repositoryOwner: "wildfly",
+        repositoryName: "wildfly"
+      },
+      status: "READY",
+      branches: [
+        {
+          workspaceBranchId: "workspace-branch-1",
+          repositoryBranch: "main",
+          status: "CHECKED_OUT",
+          resolvedCommit: "abc1234",
+          sourceSnapshotId: "source-snapshot-1",
+          sourceRoots: ["src/main/java"],
+          diagnostics: []
+        }
+      ],
+      diagnostics: []
+    }
+  ],
+  diagnostics: []
+});
+
+const cleanupResponse = () => ({
+  workspaceId: "workspace-1",
+  status: "CLEANED",
+  diagnostics: []
+});
 
 const workspaceResponse = () => ({
   workspaceId: "workspace-1",

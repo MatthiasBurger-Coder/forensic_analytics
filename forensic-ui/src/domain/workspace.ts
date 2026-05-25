@@ -76,6 +76,12 @@ export interface BranchRefreshResult {
   diagnostics: DiagnosticMessage[];
 }
 
+export interface WorkspaceCleanupResult {
+  workspaceId: string;
+  status: WorkspaceStatus;
+  diagnostics: DiagnosticMessage[];
+}
+
 export interface PreviewWorkspaceMetadataCommand {
   repositoryUrl: string;
   correlationId: string;
@@ -103,6 +109,12 @@ export interface WaitForWorkspaceCheckoutCommand {
 export interface RefreshWorkspaceBranchCommand {
   workspaceId: string;
   workspaceBranchId: string;
+  correlationId: string;
+  idempotencyKey: string;
+}
+
+export interface DeleteWorkspaceCommand {
+  workspaceId: string;
   correlationId: string;
   idempotencyKey: string;
 }
