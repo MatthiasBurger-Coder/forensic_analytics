@@ -32,6 +32,30 @@ The EPIC remains the product and requirement baseline. The arc42 documentation t
 
 ## Governance Check Status
 
+The Workspaces Management View workflow was created on branch
+`feature/workflow-workspaces-management-20260525`. The workflow stays inside
+the FA-MVP-0001 repository checkout workspace scope and plans contract-first
+list, branch refresh and safe cleanup/delete behavior. It does not introduce a
+platform workspace administration service, hard-delete repository-source H2
+provenance, or expand JavaParser, Joern, BTM, replay, report, graph, vector,
+LLM, plugin or deployment behavior.
+
+Checked sections for this workflow:
+
+- Solution Strategy: checked for repository checkout workspace scope and
+  no analysis-pipeline expansion.
+- Building Block View: checked for repository-source ownership and query-report
+  public facade boundaries.
+- Runtime View: checked for planned `/workspaces` list and `/workspaces/new`
+  create flow; concrete behavior updates are deferred until implementation.
+- Crosscutting Concepts: checked for Repository Checkout Workspace versus
+  Platform Workspace separation.
+- Architecture Decisions: checked against ADR-0010, ADR-0013 and ADR-0023.
+- Quality Requirements: checked for deterministic list, safe cleanup,
+  idempotency and no-leak verification expectations.
+- Risks and Technical Debt: checked for delete semantics and list scalability
+  risks.
+
 FA-MVP-0001 workflow execution reached the S11 documentation closure gate on
 branch `feature/workflow-repository-workspace-checkout-h2-persistence-20260524`.
 The architecture documentation now distinguishes the deferred platform

@@ -1,82 +1,77 @@
-# Workflow: FA-MVP-0001 Repository Workspace Checkout MVP
+# Workflow: FA-MVP-0001-EXT-01 Workspaces Management View
 
 ## Workflow Version
 
 | Field | Value |
 |---|---|
-| Workflow version | `fa-mvp-0001-repository-workspace-checkout-h2-persistence-20260524-v1` |
-| Requirement ID | `FA-MVP-0001` |
-| Title | Repository Workspace Checkout MVP with H2 Persistence and Docker Volumes |
-| Workflow branch | `feature/workflow-repository-workspace-checkout-h2-persistence-20260524` |
+| Workflow version | `fa-mvp-0001-workspaces-management-extension-20260525-v1` |
+| Requirement ID | `FA-MVP-0001-EXT-01` |
+| Title | Workspaces navigation, list, branch refresh and safe delete workflow |
+| Workflow branch | `feature/workflow-workspaces-management-20260525` |
 | Creation status | Created by `workflow create`; implementation requires `workflow execute`. |
 | Process strand | `workflow execute`; workflow creation completed under `workflow create`. |
 | Execution profile | `FULL_PATH` |
-| Primary owner | `repository-source-service` |
+| Repository-source owner | `repository-source-service` |
 | Public API owner | `query-report-api-service` |
 | Frontend owner | `forensic-ui` |
 
 ## Executive Summary
 
-FA-MVP-0001 creates the first product-grade repository checkout workspace
-foundation. The operator can enter a Git HTTPS repository URL in the GUI,
-preview verified repository metadata, save or reuse a repository-level
-workspace, create or reuse a branch-level workspace branch, checkout the
-selected branch into a service-owned Docker volume, persist the resulting state
-in service-local H2 storage and manually refresh a branch later.
+This workflow extends the existing repository checkout workspace foundation with
+a first operator-facing Workspaces management view. The operator should see a
+primary `Workspaces` navigation entry, open a list of existing repository
+checkout workspaces, inspect `Workspace_ID`, workspace label and selected
+branch, create a new workspace, refresh the checked-out branch, and delete a
+workspace from the active list.
 
-This workflow is deliberately foundation-only. It does not run JavaParser,
-Joern, BTM generation, replay, report generation, LLM context generation or any
-repository build commands. Repository source checkout, branch state, source
-snapshot references, private workspace paths and H2 data remain owned by
-`repository-source-service`. `query-report-api-service` exposes only sanitized
-public REST DTOs and must call the repository-source owner API. The browser
-must never call Git remotes, internal services or gRPC directly.
+The workflow uses the existing FA-MVP-0001 repository checkout workspace
+meaning. It does not introduce the broader platform workspace administration
+model, a new `workspace-service`, or any analysis execution. Repository-source
+remains the owner of checkout workspace state and H2 persistence.
+Query-report-api remains the sanitized public REST facade. The browser calls
+only public REST.
 
-Existing read-only verification found a partial baseline: `repository-source-service`
-already owns `PrepareRepository`, `GetRepositoryPreparation` and
-`CleanupRepositoryWorkspace` through `RepositorySourceGrpcEndpoint`; it uses
-`GitRepositoryCheckoutAdapter`, `FileSystemRepositoryWorkspaceAdapter` and
-`SourceRootDetector`, but currently wires `InMemoryRepositoryPreparationRepository`.
-There is no verified `Workspace`, `WorkspaceBranch`, `RepositoryIdentity`, H2
-dependency, durable idempotency repository, metadata preview route, branch
-refresh use case, public `/workspaces` REST contract or UI workspace creation
-flow yet.
+Delete is planned as a safe cleanup lifecycle: private checkout files are
+cleaned through repository-source-owned ports, persisted metadata/provenance is
+retained and the public workspace state becomes `CLEANED`. Hard deletion of H2
+workspace records is out of scope. The default public list hides cleaned
+workspaces so the UI behavior matches operator expectation without losing
+forensic provenance.
 
 ## Target Picture
 
 ```text
 Operator
-  -> forensic-ui Create Workspace flow
+  -> forensic-ui /workspaces list
   -> query-report-api-service public REST
-  -> repository-source-service owner API
-  -> repository-source-service domain/application use cases
-  -> service-owned H2 file database
-  -> service-owned repository workspace volume
+  -> repository-source owner API
+  -> repository-source application use cases
+  -> repository-source H2 workspace and branch records
+  -> repository-source workspace filesystem cleanup/refresh ports
 ```
 
-Target repository hierarchy:
+Target UI routes:
 
 ```text
-Workspace
-  owns one RepositoryIdentity
-  contains many WorkspaceBranch records
-
-WorkspaceBranch
-  owns one checked-out branch state
-  references current SourceSnapshot
-  records requested and resolved commits
+/workspaces      -> Workspaces list
+/workspaces/new  -> Create repository workspace
 ```
 
-Allowed private path pattern:
+Target list row semantics:
 
 ```text
-/var/lib/forensic-analytics/repository-workspaces/<workspaceId>/branches/<workspaceBranchId>/checkout
+Workspace row = repository checkout workspace branch view
+
+Workspace_ID     = existing opaque workspaceId
+Workspace        = workspaceTitle, with repository key as fallback only if the
+                   public DTO does not provide a title
+Selected Branch  = branch.repositoryBranch from the public branches[] data
+Actions          = Add workspace, update/fetch selected branch, delete workspace
 ```
 
-Public responses expose opaque IDs, repository metadata, branch names,
-sanitized diagnostics, source roots and source snapshot IDs only. Public
-responses must not expose local filesystem paths, raw Git output, credentials,
-tokens, private network details or service-owned H2 paths.
+When a workspace has multiple branches, the UI renders one row per branch. A
+workspace without branches remains visible as a workspace row with selected
+branch marked unavailable and branch-refresh disabled.
 
 ## Verified Baseline
 
@@ -85,1022 +80,652 @@ Read-only workflow creation verification found:
 - Repository root: `/mnt/d/Projects/forensic_analytics`.
 - WSL is available and repository commands must use the WSL-mounted worktree.
 - Dedicated workflow branch is active:
-  `feature/workflow-repository-workspace-checkout-h2-persistence-20260524`.
-- The branch is based on `origin/main` and tracks
-  `origin/feature/workflow-repository-workspace-checkout-h2-persistence-20260524`.
+  `feature/workflow-workspaces-management-20260525`.
+- Local branch ref is verified:
+  `refs/heads/feature/workflow-workspaces-management-20260525`.
 - Working tree was clean before workflow regeneration.
-- The previous `docs/workflow/**` files described `FA-MSA-001-LMR`; they are
-  regenerated for this new workflow branch by the workflow-authoring rule.
+- The previous `docs/workflow/**` files targeted
+  `feature/workflow-repository-workspace-checkout-h2-persistence-20260524`
+  and have been regenerated for this workflow.
 - Quality authority is `QUALITY.md`.
 - Minimum quality command:
   `./gradlew test --dependency-verification strict --console=plain --stacktrace`.
 - Full local quality gate:
   `./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace`.
-- `gradle/libs.versions.toml` does not contain H2.
-- `gradle/verification-metadata.xml` does not contain `com.h2database:h2`.
-- `services/repository-source-service/build.gradle.kts` has no H2 dependency.
-- `RepositorySourceServiceConfiguration` currently wires
-  `InMemoryRepositoryPreparationRepository`.
-- `RepositorySourceDomain` contains `AnalysisRunId`, `SourceSnapshotId`,
-  `WorkspaceId`, `RepositoryReference`, `RevisionSelector`, `WorkspacePolicy`,
-  `CheckoutResult`, `SourceSnapshot` and `RepositoryPreparation`; it does not
-  contain `Workspace`, `WorkspaceBranch`, `RepositoryIdentity` or `RepositoryKey`.
-- `RepositorySourceApplicationService` currently exposes `prepare`, `get` and
-  `cleanup`.
-- Current repository-source ports are `RepositoryPreparationRepository`,
-  `RepositoryWorkspacePort`, `RepositoryCheckoutPort` and `PreparedWorkspace`.
-- `services/repository-source-service/src/main/resources/application-docker.properties`
-  uses `/var/lib/forensic-analytics/repository-workspaces`.
-- `services/repository-source-service/Dockerfile` creates only
-  `/var/lib/forensic-analytics/repository-workspaces`.
-- `deployment/docker-compose/repository-to-btm.local.yml` is transitional and
-  currently includes `repository-analysis-service`, not `repository-source-service`.
-- `query-report-api-service` currently exposes `/api/health`, `/api/status`,
-  `POST /api/repository-analyses` and
-  `GET /api/repository-analyses/{analysisRunId}`.
-- `contracts/openapi/gateway-api.yaml` is the transitional public REST contract
-  under `query-report-api-service` authority.
-- `GatewayOpenApiContractTest` currently asserts that `/workspaces`,
-  `workspaceId`, `workspaceName`, `WorkspaceList` and `resolvedRemoteUrl` are
-  absent from the public contract.
-- `forensic-ui` is a React/Vite app with verified scripts `npm run test` and
-  `npm run build`.
-- `forensic-ui` currently routes `/workspaces` to the repository-analysis create
-  flow and has placeholder workspace models/list behavior.
+- `forensic-ui/package.json` verifies frontend scripts `npm run test` and
+  `npm run build`; `forensic-ui/package-lock.json` is present for `npm ci`.
+- `forensic-ui/src/app/App.tsx` currently routes `/workspaces` to
+  `CreateWorkspacePage`.
+- `forensic-ui/src/pages/workspaces/WorkspaceListPage.tsx` already exists but
+  is not the active `/workspaces` route.
+- `forensic-ui/src/layouts/AppShell.tsx` currently labels the `/workspaces`
+  navigation item `Create workspace`.
+- `forensic-ui/src/application/ports/workspacePort.ts` already has
+  `listWorkspaces`, but no delete command.
+- `forensic-ui/src/adapters/api/apiClient.ts` currently implements
+  `listWorkspaces` as an empty-list stub.
+- `contracts/openapi/gateway-api.yaml` verifies public workspace metadata,
+  create, get, checkout-result and branch-refresh routes, but not
+  `GET /workspaces` or `DELETE /workspaces/{workspaceId}`.
+- `contracts/grpc/repository-analysis.proto` verifies owner API cleanup,
+  metadata preview, create, get and refresh operations, but no list operation.
+- Existing cleanup requires `analysis_run_id`, so it is not a verified delete
+  action for repository checkout workspace administration.
+- `RepositoryWorkspaceRepository` supports `save`, `findById`,
+  `findByRepositoryKey` and `findBranch`; it has no list or delete method.
+- `RepositoryWorkspaceApplicationService` supports workspace metadata preview,
+  create/reuse, get, checkout and branch refresh; no verified list/delete
+  workflow exists.
+- `H2RepositorySourcePersistenceAdapter` persists workspace and
+  workspace-branch state and owns repository-source H2 access.
 
 ## Requirement Clarification Decision
 
 | Field | Decision |
 |---|---|
-| Original request | Create a workflow for FA-MVP-0001 Repository Workspace Checkout MVP with H2 persistence, Docker volumes, public REST and UI flow. |
-| Interpreted intent | Create an executable, slice-based workflow for a repository-source-owned checkout workspace MVP. |
-| Change type | Feature foundation with persistence, public REST contract, frontend, Docker-local runtime and quality-gate impact. |
+| Original request | Add `Workspaces` entry and view that lists existing workspaces with Workspace_ID, workspace and selected branch, with add, update/fetch branch and delete actions. |
+| Interpreted intent | Extend the repository checkout workspace MVP with a management list and safe lifecycle actions. |
+| Change type | Product feature extension with REST/gRPC contract, persistence lifecycle, frontend routing and quality impact. |
 | Affected process strand | `workflow create` now; later `workflow execute`. |
-| Affected architecture area | Repository source ownership, service-local persistence, public facade, OpenAPI/gRPC contracts, frontend state, Docker-local deployment. |
-| Explicit requirements | Reuse `repository-source-service`; add repository-level `Workspace`, branch-level `WorkspaceBranch`, repository metadata, H2 file persistence, idempotency, branch refresh, Docker volumes, public REST endpoints and GUI flow. |
-| Implicit requirements | Contract-first public API changes, service-private data ownership, deterministic source snapshot references, no path leakage, strict dependency verification and restart-persistence tests. |
-| Accepted assumptions | `Workspace` in FA-MVP-0001 means repository checkout workspace state owned by `repository-source-service`, not broader organization/project membership workspace lifecycle. H2 is MVP-local service persistence, not the canonical analytics store. |
-| Non-goals | No new `workspace-service`; no JavaParser, Joern, BTM, replay, reports, LLM, PostgreSQL, Neo4j, Kafka, RabbitMQ, Swarm or Kubernetes implementation. |
-| Risks | Public `/workspaces` currently conflicts with OpenAPI tests; H2 and durable idempotency are new; default-branch resolution conflicts with current revision contract if branch/commit are both absent; frontend must not infer repository metadata. |
-| Open questions | Exact repository-source owner API shape must be settled in the contract-first slice. Whether the transitional Compose descriptor is expanded or a new local descriptor is created is owned by the DevOps slice. |
-| Blocking questions | None for workflow creation after recording accepted assumptions. Workflow execution must stop in the affected slice if a contract, table, field, task, route or ownership decision cannot be verified. |
-| Confidence | 88 percent. |
+| Affected architecture area | Repository-source ownership, query-report public facade, OpenAPI/gRPC contracts, React routing and list UX, H2-backed persistence state. |
+| Explicit requirements | Primary Workspaces navigation, list existing workspaces, show Workspace_ID, workspace and selected branch, add workspace, update/fetch branch, delete workspace. |
+| Accepted assumptions | Workspaces are repository checkout workspaces; `Workspace_ID` is existing `workspaceId`; workspace label is `workspaceTitle`; selected branch is each public branch row's `repositoryBranch`; list renders one row per branch; delete means cleanup and mark `CLEANED` while retaining metadata; default list hides cleaned workspaces. |
+| Non-goals | No platform workspace membership/project administration, no new `workspace-service`, no JavaParser, Joern, BTM, replay, reports, graph, vector, LLM, plugin or deployment expansion. |
+| Risks | Delete could be mistaken for hard evidence removal; selected branch could be misread as a top-level workspace field; unpaged lists may not scale; UI route changes may break existing tests; public DTOs must not leak private data. |
+| Open questions | Pagination/filtering and showing cleaned workspaces are deferred MVP questions. |
+| Blocking questions | None for workflow creation after the conservative assumptions above. Workflow execution must stop if the user rejects these assumptions or source/contracts contradict them. |
+| Confidence | 84 percent. |
 | Decision | `PROCEED_WITH_ACCEPTED_ASSUMPTIONS`. |
 
 ## Scope
 
 In scope:
 
-- Extend `repository-source-service` with service-owned `Workspace`,
-  `WorkspaceBranch`, `RepositoryIdentity`, `RepositoryKey`,
-  `WorkspaceTitle`, branch status and repository metadata concepts.
-- Add repository metadata resolution for clean HTTPS remotes.
-- Add default-branch resolution with explicit fallback diagnostics.
-- Add idempotent create/reuse workspace and branch use cases.
-- Add idempotent branch refresh.
-- Add service-local H2 persistence and schema initialization.
-- Preserve in-memory repositories for tests or configured fallback.
-- Add public REST workspace endpoints through `query-report-api-service`.
-- Update OpenAPI and contract tests before public endpoint implementation.
-- Add a repository-source owner API client in `query-report-api-service`.
-- Add `forensic-ui` Create Workspace flow after API contracts are verified.
-- Add Docker-local H2 data volume and preserve repository workspace volume.
-- Update deployment and arc42 documentation only for verified local-Docker
-  behavior.
-- Add deterministic tests for persistence, idempotency, branch refresh, path
-  redaction, public DTOs and UI behavior.
+- Add a contract-first public workspace list route.
+- Add a contract-first public workspace delete/cleanup route.
+- Add repository-source owner API support for deterministic list and safe
+  cleanup/mark-cleaned semantics.
+- Extend repository-source workspace repository ports and H2/memory adapters
+  without exposing H2 or filesystem paths outside repository-source.
+- Extend query-report-api facade ports, service and HTTP handler for list and
+  delete through owner APIs only.
+- Replace the frontend empty-list stub with real public REST list integration.
+- Add frontend delete command support only after the public delete contract is
+  verified.
+- Route `/workspaces` to the list view and keep `/workspaces/new` for create.
+- Render a scan-friendly Workspaces list with `Workspace ID`, `Workspace`,
+  `Selected branch`, status and actions.
+- Reuse the existing branch refresh route for update/fetch when a branch ID is
+  present.
+- Add no-leak tests for list/delete public responses and UI rendering.
+- Synchronize arc42 and workflow documentation for planned behavior only.
 
 Out of scope:
 
-- Creating a new `workspace-service`.
-- Running repository build commands.
-- Executing JavaParser, Joern, BTM generation, report generation, replay,
-  graph projection or LLM context generation.
-- Introducing PostgreSQL, Neo4j, vector databases, Kafka, RabbitMQ, Swarm or
-  Kubernetes readiness.
-- Sharing Java implementation, domain, DTO, utility, fixture, persistence or
-  error-model modules between services.
-- Allowing browser-to-Git or browser-to-gRPC calls.
-- Exposing private filesystem paths, H2 paths, raw stdout/stderr, credentials
-  or tokens.
-- Making `workspaceTitle` editable or using it as a path, authorization key or
-  security decision.
+- Hard-deleting repository-source H2 workspace or branch records.
+- Introducing a platform workspace service or membership/project lifecycle.
+- Running analysis, JavaParser, Joern, BTM generation, replay, reporting,
+  graph projection, vector indexing or LLM context generation.
+- Browser Git access, browser gRPC, direct internal service calls, local fake
+  workspace storage, direct H2 reads or direct filesystem reads from the UI or
+  query-report-api-service.
+- Changing production database decisions, Docker topology, Swarm or Kubernetes
+  readiness.
+- Weakening ArchUnit, dependency verification, coverage or redaction rules.
 
 ## Architecture Constraints
 
-- `repository-source-service` owns checkout, repository metadata, source root
-  detection, source snapshot references, workspace directories, H2 repository
-  tables and durable idempotency for repository-source operations.
+- `repository-source-service` owns repository checkout workspace records,
+  branch records, source snapshot references, H2 schema and private checkout
+  directories.
 - `query-report-api-service` owns public REST validation, public DTO mapping,
-  error redaction, idempotency header enforcement and owner API calls only.
-- `query-report-api-service` must not read repository-source H2 files, private
-  workspace directories or Git command output.
-- `forensic-ui` owns UI state and calls only public REST endpoints.
-- Service integration must remain contract-first through OpenAPI and
-  gRPC/protobuf or another documented owner API contract.
-- H2/JDBC classes must remain in repository-source outbound adapters and
-  bootstrap wiring. Domain and application code must not depend on JDBC, H2,
-  SQL result sets or Spring persistence APIs.
-- `WorkspaceBranch.repositoryBranch` is data, not a directory name.
-- Branch refresh must preserve previous snapshot evidence and create a new
-  source snapshot reference when the resolved commit changes.
-- Static source relationships, runtime traces, replay, reports and LLM outputs
-  are outside this workflow.
-- Diagnostics must represent missing evidence as unresolved, incomplete,
-  unknown or not available instead of fabricating repository facts.
+  correlation/idempotency headers, error redaction and owner API calls.
+- `forensic-ui` owns UI state and calls public REST only.
+- Public list and delete responses may expose only opaque workspace IDs,
+  branch IDs, workspace titles, repository keys or names, branch names, public
+  statuses, source snapshot IDs, relative source roots and sanitized
+  diagnostics.
+- H2 paths, private checkout paths, raw Git output, stdout/stderr, credentials,
+  tokens and internal service details must not cross the public API boundary.
+- Domain and application code must remain independent from HTTP, gRPC, H2,
+  JDBC, filesystem and React concerns.
+- Delete must be explicit cleanup/mark-cleaned behavior. A future hard-delete
+  policy requires a separate requirement, data ownership review and migration
+  or rollback strategy.
+- List ordering must be deterministic for stable inputs.
+- Branch refresh remains evidence-based: it updates a branch only from observed
+  Git remote state and must not fabricate commits, source roots or snapshots.
 
 ## Backend Assessment
 
-Backend impact is high. The workflow adds new repository-source domain models,
-ports, persistence, idempotency storage, branch refresh and metadata resolution.
-It also adds public API routing in `query-report-api-service`. Existing
-`PrepareRepository` logic must be reused where possible, but the current
-fresh-random-workspace model does not yet represent a repository-level
-workspace with multiple branches. Execution must verify each exact class,
-method, proto field, route and table before modifying implementation.
+Backend impact is high. The current backend has verified create/get/refresh
+workspace behavior but no list or delete workflow. Execution must introduce
+contracts first, then repository-source list and cleanup behavior, then the
+query-report facade. Every exact method, field, route and enum must be verified
+before implementation. Existing cleanup that requires `analysis_run_id` must
+not be reused as workspace deletion without a new verified contract.
 
 ## Frontend Assessment
 
-Frontend impact is high because the requested Create Workspace flow is not
-implemented today. The frontend already has an app shell, API adapter boundary,
-ports, hooks and repository-analysis creation page. It must not present
-repository metadata derived from the URL as confirmed evidence. Metadata,
-workspace title, branch choices, save result and refresh result must come from
-verified public API responses.
+Frontend impact is moderate to high. The React/Vite app already contains
+workspace domain models, list hook and list page skeleton, but the active route
+and API adapter do not expose the requested experience. Execution must activate
+the list route, keep create at `/workspaces/new`, update the sidebar label to
+`Workspaces`, wire real list/delete API calls, and add accessible async states
+for refresh and delete. UI rows must use public API branch data rather than
+derive a selected branch locally.
 
 ## Test Strategy
 
-Each implementation slice must be regression-first:
-
-1. Add or identify a deterministic failing test for the behavior.
-2. Implement the smallest verified change.
-3. Run the narrowest targeted test first.
-4. Run the affected service or frontend test.
-5. Run contract, architecture or Docker checks required by the slice.
-6. Run `git diff --check`.
-7. Run the minimum or full quality gate when the slice requires it.
-
-Default commands from `QUALITY.md`:
+Targeted checks must run before wider gates:
 
 ```bash
-./gradlew test --dependency-verification strict --console=plain --stacktrace
-./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace
-```
-
-Frontend commands:
-
-```bash
-cd forensic-ui
+cd /mnt/d/Projects/forensic_analytics
+./gradlew :services:repository-source-service:test --dependency-verification strict --console=plain --stacktrace
+./gradlew :services:query-report-api-service:test --dependency-verification strict --console=plain --stacktrace
+cd /mnt/d/Projects/forensic_analytics/forensic-ui
 npm ci
 npm run test
 npm run build
 ```
 
-Docker runtime checks are external and must be reported as skipped when Docker,
-base-image access or network access is unavailable. `validatePlugins` is not
-required unless Gradle plugin metadata, task inputs, task outputs or plugin
-implementation classes change.
+Repository minimum gate:
 
-## Resilience And Security Requirements
+```bash
+cd /mnt/d/Projects/forensic_analytics
+./gradlew test --dependency-verification strict --console=plain --stacktrace
+```
 
-- Only clean HTTPS repository URLs are allowed.
-- Reject userinfo, query strings, fragments, `file:` URLs, local paths, SSH,
-  SCP-style remotes, localhost and private IP ranges.
-- Do not checkout submodules.
-- Do not execute repository code or build commands.
-- Enforce bounded timeout and workspace byte quota.
-- Keep idempotency durable for H2-backed operations.
-- Same idempotency key plus same fingerprint returns the same result.
-- Same idempotency key plus different fingerprint returns a controlled
-  conflict without state mutation.
-- Partial checkout failures must not leave public success state.
-- Cleanup must not escape the configured workspace root.
-- Restart recovery must not infer missing state; unresolved or orphaned state
-  must be surfaced as diagnostics.
-- Correlation IDs must be propagated across public REST and owner API calls.
+Full local quality gate:
+
+```bash
+cd /mnt/d/Projects/forensic_analytics
+./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace
+```
+
+No mutation-testing, frontend lint, Playwright or Cypress command was verified
+for this workflow.
+
+## Resilience Requirements
+
+- List, refresh and delete requests must carry correlation IDs.
+- Mutating public requests must keep idempotency semantics.
+- Delete must reject or explicitly handle in-progress checkout/refresh states.
+- Refresh and delete actions in the UI must disable duplicate submissions while
+  in flight.
+- Backend failures must return sanitized, retryable/non-retryable error
+  envelopes without leaking private details.
+- Repeated list calls must be deterministic for stable stored state.
 
 ## Ordered Slices
 
-### Slice 00 - Workflow Execution Preflight And Context Freeze
+### Slice 01: Contract And Semantics Closure
 
-```yaml
-slice_id: S00
-profile: FULL_PATH
-owner: senior-workflow-architect
-secondary_reviewers:
-  - senior-requirement-engineer
-  - senior-system-architect
-  - senior-tester
-affected_files:
-  - docs/workflow/**
-affected_modules: []
-affected_contracts: []
-dependencies: []
-parallel_group: G00
-file_locks:
-  - docs/workflow/**
-contract_locks: []
-architecture_locks:
-  - workflow-create
-  - workflow-execute-preflight
-quality_gates:
-  targeted:
-    - 'git status --short --branch'
-    - 'python3 -m json.tool docs/workflow/context-pack.json >/dev/null'
-    - 'git diff --check'
-  required:
-    - 'git status --short'
-documentation:
-  arc42: checked
-  adr: checked
-stop_conditions:
-  - active branch is not feature/workflow-repository-workspace-checkout-h2-persistence-20260524
-  - working tree has unrelated or unclear changes
-  - context pack hashes drift without review
-```
+Purpose: Define and verify public REST and owner API contracts for workspace
+list and safe delete/cleanup before implementation.
 
-Purpose: freeze the workflow branch, active requirement, governing document
-hashes, role map, quality commands and accepted assumptions before any
-implementation slice modifies production files.
-
-### Slice 01 - Requirement Terminology And Data Ownership Gate
+Prerequisites: Active branch
+`feature/workflow-workspaces-management-20260525`; regenerated workflow read in
+full; accepted assumptions still valid.
 
 ```yaml
 slice_id: S01
 profile: FULL_PATH
-owner: senior-requirement-engineer
+owner: senior_system_architect
 secondary_reviewers:
-  - senior-system-architect
-  - data-ownership-persistence-steward
-  - senior-analysis-storage-architect
-  - microservice-senior-expert
-  - senior-tester
+  - senior_requirement_engineer
+  - senior_java_backend
+  - senior_tester
 affected_files:
-  - docs/workflow/three-amigos-decision-record.md
-  - docs/architecture/data-ownership.md
-  - docs/architecture/service-boundaries.md
-  - docs/arc42/05-building-block-view.md
-  - docs/arc42/08-crosscutting-concepts.md
-affected_modules: []
-affected_contracts: []
-dependencies:
-  - S00
-parallel_group: G01
+  - contracts/openapi/gateway-api.yaml
+  - contracts/grpc/repository-analysis.proto
+  - contracts/openapi/README.md
+  - contracts/grpc/README.md
+  - services/query-report-api-service/src/test/java/de/burger/forensics/analytics/services/queryreportapi/adapter/in/http/GatewayOpenApiContractTest.java
+  - services/repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/adapter/in/grpc/RepositorySourceContractTest.java
+affected_modules:
+  - contracts
+  - services:query-report-api-service
+  - services:repository-source-service
+affected_contracts:
+  - contracts/openapi/gateway-api.yaml
+  - contracts/grpc/repository-analysis.proto
+dependencies: []
+parallel_group: G1
 file_locks:
-  - docs/workflow/**
-  - docs/architecture/**
-  - docs/arc42/**
-contract_locks: []
+  - contracts/openapi/gateway-api.yaml
+  - contracts/grpc/repository-analysis.proto
+contract_locks:
+  - public-workspaces-rest
+  - repository-source-owner-api
 architecture_locks:
-  - repository-source-ownership
-  - no-workspace-service
+  - repository-source-owns-workspace-state
+  - query-report-public-facade-only
 quality_gates:
   targeted:
-    - 'git diff --check'
-  required: []
+    - ./gradlew :services:query-report-api-service:test --tests "*GatewayOpenApiContractTest" --dependency-verification strict --console=plain --stacktrace
+    - ./gradlew :services:repository-source-service:test --tests "*RepositorySourceContractTest" --dependency-verification strict --console=plain --stacktrace
+  required:
+    - ./gradlew test --dependency-verification strict --console=plain --stacktrace
 documentation:
-  arc42: update-if-ownership-text-drifts
-  adr: check-ADR-0009-ADR-0013-ADR-0017
+  arc42: docs/workflow/arc42-check-status.md
+  adr: docs/adr/ADR-0023-h2-for-repository-source-mvp-persistence.md
 stop_conditions:
-  - Workspace is reinterpreted as platform membership or organization workspace
-  - H2 is treated as shared or canonical analytics persistence
-  - a new workspace-service is introduced
-  - service ownership remains ambiguous
+  - Delete semantics cannot be expressed as cleanup plus retained metadata.
+  - Selected branch cannot be represented from public branch data.
+  - Contract changes would expose private paths or storage details.
+  - Field numbering or OpenAPI compatibility cannot be verified.
 ```
 
-Purpose: record that FA-MVP-0001 `Workspace` is a repository-source checkout
-aggregate only, not broader platform workspace administration. Confirm
-repository-source data ownership before implementation.
+Done criteria:
 
-### Slice 02 - Contract-First Workspace API And Owner API
+- OpenAPI documents `GET /workspaces` and the safe delete route.
+- Owner API contract supports list and safe cleanup/delete semantics.
+- Contract tests prove route shape, field stability and no hard-delete claim.
+- Documentation states default list behavior for cleaned workspaces.
+
+### Slice 02: Repository-Source List And Cleanup Lifecycle
+
+Purpose: Add deterministic repository-source list behavior and safe workspace
+cleanup lifecycle in application, memory adapter and H2 adapter.
+
+Prerequisites: Slice S01 completed and contracts verified.
 
 ```yaml
 slice_id: S02
 profile: FULL_PATH
-owner: contract-governance-expert
+owner: senior_java_backend
 secondary_reviewers:
-  - senior-grpc-proto-specialist
-  - senior-java-backend
-  - senior-react-frontend
-  - senior-tester
-  - senior-security-sandbox-engineer
+  - senior_system_architect
+  - senior_tester
+  - senior_security_sandbox_engineer
 affected_files:
-  - contracts/openapi/gateway-api.yaml
-  - contracts/openapi/README.md
-  - contracts/grpc/repository-analysis.proto
-  - services/query-report-api-service/src/test/java/de/burger/forensics/analytics/services/queryreportapi/adapter/in/http/GatewayOpenApiContractTest.java
-  - services/repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/adapter/in/grpc/RepositorySourceContractTest.java
-  - docs/contracts/contract-test-plan.md
+  - services/repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/application/RepositoryWorkspaceApplicationService.java
+  - services/repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/application/port/RepositoryWorkspaceRepository.java
+  - services/repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/adapter/out/memory/InMemoryRepositoryWorkspaceRepository.java
+  - services/repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/adapter/out/h2/H2RepositorySourcePersistenceAdapter.java
+  - services/repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/application/RepositorySourceApplicationServiceTest.java
+  - services/repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/application/RepositorySourceH2PersistenceApplicationTest.java
 affected_modules:
-  - services:query-report-api-service
   - services:repository-source-service
 affected_contracts:
-  - contracts/openapi/gateway-api.yaml
-  - contracts/grpc/repository-analysis.proto
+  - repository-source-owner-api
 dependencies:
   - S01
-parallel_group: G02
+parallel_group: G2
 file_locks:
-  - contracts/openapi/**
-  - contracts/grpc/**
-  - services/query-report-api-service/src/test/**
-  - services/repository-source-service/src/test/**
+  - services/repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/application
+  - services/repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/adapter/out
 contract_locks:
-  - public-workspace-rest
   - repository-source-owner-api
 architecture_locks:
-  - contract-first-service-communication
+  - repository-source-owns-h2
+  - domain-application-no-h2-dependency
 quality_gates:
   targeted:
-    - './gradlew :services:query-report-api-service:test --tests "*GatewayOpenApiContractTest" --dependency-verification strict --console=plain --stacktrace'
-    - './gradlew :services:repository-source-service:test --tests "*RepositorySourceContractTest" --dependency-verification strict --console=plain --stacktrace'
-    - 'git diff --check'
+    - ./gradlew :services:repository-source-service:test --dependency-verification strict --console=plain --stacktrace
   required:
-    - './gradlew :services:query-report-api-service:test --dependency-verification strict --console=plain --stacktrace'
-    - './gradlew :services:repository-source-service:test --dependency-verification strict --console=plain --stacktrace'
+    - ./gradlew test --dependency-verification strict --console=plain --stacktrace
 documentation:
-  arc42: check-service-communication
-  adr: check-ADR-0010-ADR-0018
+  arc42: docs/workflow/arc42-check-status.md
+  adr: docs/adr/ADR-0023-h2-for-repository-source-mvp-persistence.md
 stop_conditions:
-  - public REST routes are implemented before contract approval
-  - workspace DTOs expose filesystem paths or raw Git output
-  - owner API shape cannot be verified
-  - current OpenAPI no-workspace assertions are removed without replacement coverage
+  - Implementation would hard-delete H2 records.
+  - List ordering is nondeterministic.
+  - Cleanup would hide inconsistent or incomplete evidence instead of representing it.
+  - Query-report or UI ownership leaks into repository-source domain/application.
 ```
 
-Purpose: define the public REST routes, DTOs, error envelope, correlation and
-idempotency requirements, plus the internal repository-source owner API needed
-by `query-report-api-service`. This slice must settle whether new gRPC methods
-are added to `repository-analysis.proto` or another verified owner API is used.
+Done criteria:
 
-### Slice 03 - Repository Source Workspace Domain And In-Memory Use Cases
+- Repository-source can list non-cleaned workspaces deterministically.
+- Cleanup marks state as `CLEANED`, retains metadata and uses
+  repository-source-owned filesystem cleanup ports.
+- H2 and in-memory adapters implement the same observable repository behavior.
+- Tests cover list ordering, cleaned-workspace exclusion, cleanup idempotency,
+  in-progress rejection or explicit handling, and persistence reload behavior.
+
+### Slice 03: Query-Report Public Facade
+
+Purpose: Expose sanitized public list and delete routes through query-report
+API without reading repository-source storage directly.
+
+Prerequisites: S01 and S02 completed.
 
 ```yaml
 slice_id: S03
 profile: FULL_PATH
-owner: senior-java-backend
+owner: senior_java_backend
 secondary_reviewers:
-  - senior-system-architect
-  - senior-git-workspace-specialist
-  - senior-tester
-  - security-sandbox-specialist
+  - senior_system_architect
+  - senior_tester
+  - security_reviewer
 affected_files:
-  - services/repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/domain/**
-  - services/repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/application/**
-  - services/repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/application/port/**
-  - services/repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/adapter/out/memory/**
-  - services/repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/**
+  - services/query-report-api-service/src/main/java/de/burger/forensics/analytics/services/queryreportapi/application/port/RepositoryWorkspaceOwnerPort.java
+  - services/query-report-api-service/src/main/java/de/burger/forensics/analytics/services/queryreportapi/application/QueryReportApiWorkspaceService.java
+  - services/query-report-api-service/src/main/java/de/burger/forensics/analytics/services/queryreportapi/domain/QueryReportApiWorkspace.java
+  - services/query-report-api-service/src/main/java/de/burger/forensics/analytics/services/queryreportapi/adapter/in/http/QueryReportApiHttpHandler.java
+  - services/query-report-api-service/src/test/java/de/burger/forensics/analytics/services/queryreportapi/adapter/in/http/QueryReportApiHttpAdapterTest.java
+  - services/query-report-api-service/src/test/java/de/burger/forensics/analytics/services/queryreportapi/domain/QueryReportApiWorkspaceTest.java
 affected_modules:
-  - services:repository-source-service
+  - services:query-report-api-service
 affected_contracts:
-  - repository-source-domain
-dependencies:
-  - S02
-parallel_group: G03
-file_locks:
-  - services/repository-source-service/src/main/**
-  - services/repository-source-service/src/test/**
-contract_locks:
+  - public-workspaces-rest
   - repository-source-owner-api
+dependencies:
+  - S01
+  - S02
+parallel_group: G3
+file_locks:
+  - services/query-report-api-service/src/main/java/de/burger/forensics/analytics/services/queryreportapi
+  - services/query-report-api-service/src/test/java/de/burger/forensics/analytics/services/queryreportapi
+contract_locks:
+  - public-workspaces-rest
 architecture_locks:
-  - repository-source-hexagonal-boundary
+  - query-report-no-h2-or-filesystem-access
 quality_gates:
   targeted:
-    - './gradlew :services:repository-source-service:test --tests "*RepositorySourceDomainTest" --tests "*RepositorySourceApplicationServiceTest" --dependency-verification strict --console=plain --stacktrace'
-    - 'git diff --check'
+    - ./gradlew :services:query-report-api-service:test --dependency-verification strict --console=plain --stacktrace
   required:
-    - './gradlew :services:repository-source-service:test --dependency-verification strict --console=plain --stacktrace'
+    - ./gradlew test --dependency-verification strict --console=plain --stacktrace
 documentation:
-  arc42: update-if-domain-model-changes
-  adr: check
+  arc42: docs/workflow/arc42-check-status.md
+  adr: docs/adr/ADR-0010-contract-first-rest-and-grpc.md
 stop_conditions:
-  - WorkspaceId is derived from workspaceTitle or branch name
-  - branch names are used directly as directories
-  - default branch resolution requires guessing missing branch/commit contract behavior
-  - domain/application code depends on JDBC, H2, filesystem or Git adapter classes
+  - Query-report would read H2 tables or workspace directories directly.
+  - Public DTOs expose private paths, H2 paths, raw output, credentials or tokens.
+  - Delete lacks idempotency or correlation handling.
+  - Error mapping would turn unknown cleanup state into confirmed deletion.
 ```
 
-Purpose: introduce repository-source-owned `Workspace`, `WorkspaceBranch`,
-`RepositoryIdentity`, `RepositoryKey`, `WorkspaceTitle`, branch status and
-ports, with in-memory adapters or test doubles preserving existing tests.
+Done criteria:
 
-### Slice 04 - Repository Metadata Resolution And Branch Checkout Refresh
+- `GET /api/workspaces` returns sanitized public workspace list data.
+- Delete route delegates through owner API and returns safe status/diagnostics.
+- Tests cover route validation, correlation/idempotency headers, redaction and
+  backend failure mapping.
+
+### Slice 04: Frontend Workspace API Adapter
+
+Purpose: Replace placeholder workspace list behavior with public REST list
+integration and add delete command support behind verified contracts.
+
+Prerequisites: S03 completed and public REST DTO shape verified.
 
 ```yaml
 slice_id: S04
-profile: FULL_PATH
-owner: senior-git-workspace-specialist
+profile: NORMAL_PATH
+owner: senior_react_frontend
 secondary_reviewers:
-  - senior-java-backend
-  - security-sandbox-specialist
-  - resilience-engineering
-  - senior-tester
+  - senior_tester
+  - security_reviewer
 affected_files:
-  - services/repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/application/**
-  - services/repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/adapter/out/git/**
-  - services/repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/adapter/out/filesystem/**
-  - services/repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/**
+  - forensic-ui/src/application/ports/workspacePort.ts
+  - forensic-ui/src/adapters/api/apiClient.ts
+  - forensic-ui/src/adapters/api/dtos.ts
+  - forensic-ui/src/adapters/api/mappers.ts
+  - forensic-ui/src/adapters/api/apiClient.test.ts
+  - forensic-ui/src/adapters/api/mappers.test.ts
 affected_modules:
-  - services:repository-source-service
+  - forensic-ui
 affected_contracts:
-  - repository-source-owner-api
+  - public-workspaces-rest
 dependencies:
   - S03
-parallel_group: G04
+parallel_group: G4
 file_locks:
-  - services/repository-source-service/src/main/**
-  - services/repository-source-service/src/test/**
+  - forensic-ui/src/application/ports/workspacePort.ts
+  - forensic-ui/src/adapters/api
 contract_locks:
-  - repository-source-owner-api
+  - public-workspaces-rest
 architecture_locks:
-  - repository-source-workspace-safety
+  - frontend-public-rest-only
 quality_gates:
   targeted:
-    - './gradlew :services:repository-source-service:test --tests "*RepositorySourceApplicationServiceTest" --tests "*RepositorySourceGrpcEndpointTest" --dependency-verification strict --console=plain --stacktrace'
-    - 'git diff --check'
+    - cd forensic-ui && npm run test
+    - cd forensic-ui && npm run build
   required:
-    - './gradlew :services:repository-source-service:test --dependency-verification strict --console=plain --stacktrace'
+    - ./gradlew test --dependency-verification strict --console=plain --stacktrace
 documentation:
-  arc42: update-runtime-view-if-refresh-flow-added
-  adr: check
+  arc42: docs/workflow/arc42-check-status.md
+  adr: []
 stop_conditions:
-  - remote metadata lookup or refresh exposes raw stdout/stderr
-  - implementation executes repository code, submodules or builds
-  - branch refresh mutates previous source snapshot evidence destructively
-  - cleanup can escape configured workspace root
-  - unresolved default branch is silently converted to confirmed metadata
+  - Adapter would fabricate workspace rows from local placeholder state.
+  - Adapter would infer selected branch outside public DTO data.
+  - Delete route or DTO shape is not verified.
 ```
 
-Purpose: add metadata preview, default branch resolution, create/reuse branch
-checkout, source snapshot update and manual branch refresh behavior while
-reusing existing checkout and source-root detection where verified.
+Done criteria:
 
-### Slice 05 - H2 Dependency, Schema And Persistence Adapters
+- `listWorkspaces` calls the verified public list route with correlation
+  metadata.
+- Delete command is exposed through `WorkspacePort` only if the public delete
+  contract is verified.
+- API tests prove list/delete paths, headers, mapping and safe diagnostics.
+
+### Slice 05: Workspaces List UI And Actions
+
+Purpose: Activate the Workspaces navigation/list experience and wire add,
+refresh and delete actions.
+
+Prerequisites: S04 completed.
 
 ```yaml
 slice_id: S05
-profile: FULL_PATH
-owner: senior-analysis-storage-architect
+profile: NORMAL_PATH
+owner: senior_react_frontend
 secondary_reviewers:
-  - data-ownership-persistence-steward
-  - senior-java-backend
-  - senior-devops
-  - senior-security-sandbox-engineer
-  - senior-tester
+  - senior_ux_designer
+  - senior_tester
 affected_files:
-  - gradle/libs.versions.toml
-  - gradle/verification-metadata.xml
-  - services/repository-source-service/build.gradle.kts
-  - services/repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/application/RepositorySourceApplicationService.java
-  - services/repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/application/RepositoryWorkspaceApplicationService.java
-  - services/repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/application/port/**
-  - services/repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/adapter/out/h2/**
-  - services/repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/adapter/out/memory/**
-  - services/repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/**
-  - services/repository-source-service/src/main/resources/application.properties
-  - services/repository-source-service/src/main/resources/application-docker.properties
-  - services/repository-source-service/src/main/resources/application-test.properties
-  - services/repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/**
+  - forensic-ui/src/app/App.tsx
+  - forensic-ui/src/layouts/AppShell.tsx
+  - forensic-ui/src/pages/workspaces/WorkspaceListPage.tsx
+  - forensic-ui/src/pages/workspaces/CreateWorkspacePage.tsx
+  - forensic-ui/src/app/App.test.tsx
+  - forensic-ui/src/pages/workspaces/CreateWorkspacePage.test.tsx
+  - forensic-ui/src/styles.css
 affected_modules:
-  - services:repository-source-service
+  - forensic-ui
 affected_contracts:
-  - repository-source-h2-schema
+  - public-workspaces-rest
 dependencies:
   - S04
-parallel_group: G05
+parallel_group: G5
 file_locks:
-  - gradle/**
-  - services/repository-source-service/**
+  - forensic-ui/src/app
+  - forensic-ui/src/layouts
+  - forensic-ui/src/pages/workspaces
+  - forensic-ui/src/styles.css
 contract_locks:
-  - repository-source-h2-schema
+  - public-workspaces-rest
 architecture_locks:
-  - service-local-persistence
+  - frontend-state-separated-from-api-adapter
 quality_gates:
   targeted:
-    - './gradlew :services:repository-source-service:test --dependency-verification strict --console=plain --stacktrace'
-    - 'git diff --check'
+    - cd forensic-ui && npm run test
+    - cd forensic-ui && npm run build
   required:
-    - './gradlew :services:repository-source-service:test --dependency-verification strict --console=plain --stacktrace'
+    - ./gradlew test --dependency-verification strict --console=plain --stacktrace
 documentation:
-  arc42: update-persistence-note-if-H2-added
-  adr: check-ADR-0013
+  arc42: docs/workflow/arc42-check-status.md
+  adr: []
 stop_conditions:
-  - H2 dependency version or verification metadata cannot be verified
-  - JDBC/H2 leaks into domain or application packages
-  - schema creates shared cross-service tables
-  - repository-source H2 files are read by another service
-  - strict dependency verification cannot be restored
+  - UI uses a card-only summary that omits required list fields.
+  - UI labels unverified branch data as selected.
+  - Actions are not keyboard reachable or can double-submit.
+  - Text overlaps, truncates required IDs without accessible labels, or hides statuses by color alone.
 ```
 
-Scope repair note: S05 may add the application-level durable idempotency port
-and adapt repository-source application services to consult persisted
-idempotency records before checkout, cleanup or refresh side effects. This
-repair is required because the S04 implementation still keeps idempotency
-replay state in private in-memory maps. S05 may also extend the existing
-`adapter/out/memory/**` fallback with an in-memory implementation of the new
-idempotency port so property-based `memory|h2` adapter selection remains
-testable.
+Done criteria:
 
-Purpose: add the H2 dependency, service-local schema initializer, configurable
-adapter selection, H2-backed preparation/workspace/branch/idempotency
-repositories and restart-persistence tests. Preserve in-memory adapters where
-tests or fallback configuration require them.
+- Sidebar shows `Workspaces`; `/workspaces` renders the list.
+- `/workspaces/new` keeps the create flow.
+- List rows show Workspace ID, workspace label, selected branch, status and
+  actions.
+- Add navigates to create; refresh uses existing branch refresh behavior;
+  delete uses the verified public delete command.
+- Loading, empty, stale, error, refresh-in-flight and delete-in-flight states
+  are tested.
 
-### Slice 06 - Repository Source gRPC Endpoint And Error Mapping
+### Slice 06: Quality, Leakage And Documentation Closure
+
+Purpose: Run final verification, inspect diffs, and synchronize workflow/arc42
+documentation with the implemented result.
+
+Prerequisites: S01 through S05 completed.
 
 ```yaml
 slice_id: S06
 profile: FULL_PATH
-owner: senior-grpc-proto-specialist
+owner: senior_tester
 secondary_reviewers:
-  - senior-java-backend
-  - contract-governance-expert
-  - senior-tester
-  - observability-runtime-diagnostics
+  - senior_documentation_engineer
+  - senior_system_architect
 affected_files:
-  - services/repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/adapter/in/grpc/**
-  - services/repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/adapter/in/grpc/**
-  - contracts/grpc/repository-analysis.proto
+  - docs/workflow/execution-report.md
+  - docs/workflow/arc42-check-status.md
+  - docs/arc42/README.md
+  - docs/arc42/06-runtime-view.md
+  - docs/arc42/08-crosscutting-concepts.md
+  - docs/arc42/10-quality-requirements.md
+  - docs/arc42/11-risks-and-technical-debt.md
 affected_modules:
-  - services:repository-source-service
-affected_contracts:
-  - contracts/grpc/repository-analysis.proto
-dependencies:
-  - S05
-parallel_group: G06
-file_locks:
-  - services/repository-source-service/src/main/**
-  - services/repository-source-service/src/test/**
-  - contracts/grpc/**
-contract_locks:
-  - repository-source-owner-api
-architecture_locks:
-  - grpc-adapter-boundary
-quality_gates:
-  targeted:
-    - './gradlew :services:repository-source-service:test --tests "*RepositorySourceGrpcEndpointTest" --tests "*RepositorySourceGrpcEndpointMappingTest" --tests "*RepositorySourceContractTest" --dependency-verification strict --console=plain --stacktrace'
-    - 'git diff --check'
-  required:
-    - './gradlew :services:repository-source-service:test --dependency-verification strict --console=plain --stacktrace'
-documentation:
-  arc42: check-runtime-view
-  adr: check-ADR-0010-ADR-0018
-stop_conditions:
-  - idempotency conflict is not mapped deterministically
-  - validation, checkout and persistence errors are collapsed into raw internal errors
-  - diagnostics leak private paths, raw stdout, raw stderr, credentials or tokens
-  - generated protobuf code becomes a shared Java implementation dependency between services
-```
-
-Purpose: expose verified repository-source owner API behavior through gRPC or
-the approved owner API, including metadata, workspace create/get and branch
-refresh, with controlled status/error mapping.
-
-### Slice 07 - Query Report Public Workspace REST Facade
-
-```yaml
-slice_id: S07
-profile: FULL_PATH
-owner: senior-java-backend
-secondary_reviewers:
-  - contract-governance-expert
-  - senior-grpc-proto-specialist
-  - senior-security-sandbox-engineer
-  - senior-react-frontend
-  - senior-tester
-affected_files:
-  - services/query-report-api-service/src/main/java/de/burger/forensics/analytics/services/queryreportapi/**
-  - services/query-report-api-service/src/test/java/de/burger/forensics/analytics/services/queryreportapi/**
-  - contracts/openapi/gateway-api.yaml
-affected_modules:
-  - services:query-report-api-service
-affected_contracts:
-  - contracts/openapi/gateway-api.yaml
-  - repository-source-owner-api
-dependencies:
-  - S06
-parallel_group: G07
-file_locks:
-  - services/query-report-api-service/**
-  - contracts/openapi/**
-contract_locks:
-  - public-workspace-rest
-architecture_locks:
-  - public-facade-no-private-db
-quality_gates:
-  targeted:
-    - './gradlew :services:query-report-api-service:test --tests "*GatewayOpenApiContractTest" --tests "*QueryReportApiHttpAdapterTest" --dependency-verification strict --console=plain --stacktrace'
-    - 'git diff --check'
-  required:
-    - './gradlew :services:query-report-api-service:test --dependency-verification strict --console=plain --stacktrace'
-documentation:
-  arc42: update-public-api-runtime-if-needed
-  adr: check
-stop_conditions:
-  - query-report-api-service reads repository-source H2 files or workspace directories
-  - public DTOs expose private paths or raw Git output
-  - mutation routes do not require Idempotency-Key
-  - correlation IDs are dropped
-  - public REST behavior diverges from OpenAPI
-```
-
-Purpose: implement `POST /api/workspace-metadata`, `POST /api/workspaces`,
-`GET /api/workspaces/{workspaceId}` and branch refresh through the
-repository-source owner API only.
-
-### Slice 08 - Forensic UI Create Workspace Flow
-
-```yaml
-slice_id: S08
-profile: FULL_PATH
-owner: senior-react-frontend
-secondary_reviewers:
-  - senior-ux-designer
-  - contract-governance-expert
-  - senior-security-sandbox-engineer
-  - senior-tester
-affected_files:
-  - forensic-ui/src/**
-  - forensic-ui/package.json
-  - forensic-ui/package-lock.json
-  - forensic-ui/README.md
-affected_modules:
-  - forensic-ui
-affected_contracts:
-  - public-workspace-rest
-dependencies:
-  - S07
-parallel_group: G08
-file_locks:
-  - forensic-ui/**
-contract_locks:
-  - public-workspace-rest
-architecture_locks:
-  - frontend-public-api-only
-quality_gates:
-  targeted:
-    - 'cd forensic-ui && npm run test'
-    - 'cd forensic-ui && npm run build'
-    - 'git diff --check'
-  required:
-    - 'cd forensic-ui && npm ci'
-    - 'cd forensic-ui && npm run test'
-    - 'cd forensic-ui && npm run build'
-documentation:
-  arc42: check-frontend-context
-  adr: check
-stop_conditions:
-  - UI derives repository metadata locally and presents it as confirmed
-  - browser calls Git remotes, gRPC or internal services directly
-  - workspaceTitle is editable in MVP
-  - Save operation retries POST with a new semantic operation key by accident
-  - diagnostics display private paths, raw stdout, raw stderr, credentials or tokens
-```
-
-Purpose: add the Create Workspace page, metadata preview, read-only title,
-branch selection, save/progress/status, sanitized diagnostics and manual branch
-refresh UI using the verified public REST contract.
-
-### Slice 09 - Docker Local Volumes And Runtime Configuration
-
-```yaml
-slice_id: S09
-profile: FULL_PATH
-owner: senior-devops
-secondary_reviewers:
-  - senior-analysis-storage-architect
-  - senior-git-workspace-specialist
-  - senior-security-sandbox-engineer
-  - microservice-runtime-readiness-expert
-  - senior-tester
-affected_files:
-  - services/repository-source-service/Dockerfile
-  - services/repository-source-service/src/main/resources/application-docker.properties
-  - deployment/docker-compose/repository-to-btm.local.yml
-  - deployment/docker-compose/README.md
-  - services/repository-source-service/README.md
-  - docs/arc42/07-deployment-view.md
-affected_modules:
-  - services:repository-source-service
+  - docs
 affected_contracts: []
 dependencies:
+  - S01
+  - S02
+  - S03
+  - S04
   - S05
-  - S06
-parallel_group: G09
+parallel_group: G6
 file_locks:
-  - services/repository-source-service/Dockerfile
-  - services/repository-source-service/src/main/resources/**
-  - deployment/docker-compose/**
-  - services/repository-source-service/README.md
-  - docs/arc42/07-deployment-view.md
+  - docs/workflow
+  - docs/arc42
 contract_locks: []
 architecture_locks:
-  - service-owned-volumes
-  - docker-local-only
+  - documentation-matches-implemented-behavior
 quality_gates:
   targeted:
-    - './gradlew --no-daemon :services:repository-source-service:bootJar --dependency-verification strict --console=plain --stacktrace'
-    - 'docker compose -f deployment/docker-compose/repository-to-btm.local.yml config'
-    - 'git diff --check'
+    - cd forensic-ui && npm run test
+    - cd forensic-ui && npm run build
+    - ./gradlew :services:repository-source-service:test --dependency-verification strict --console=plain --stacktrace
+    - ./gradlew :services:query-report-api-service:test --dependency-verification strict --console=plain --stacktrace
   required:
-    - './gradlew :services:repository-source-service:test --dependency-verification strict --console=plain --stacktrace'
+    - ./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace
 documentation:
-  arc42: update-deployment-view
-  adr: check
+  arc42: docs/workflow/arc42-check-status.md
+  adr: []
 stop_conditions:
-  - repository-source private volumes are mounted into other services
-  - host ports collide with existing services
-  - Compose change claims full FA-MSA runtime readiness without executed evidence
-  - Dockerfile runs repository-source as root
-  - H2 data path is not owned by repository-source user
+  - Any quality gate fails and cannot be classified.
+  - Diff contains unrelated changes.
+  - Documentation describes planned behavior as implemented before verification.
+  - Public list/delete responses leak private data.
 ```
 
-Purpose: add `/var/lib/forensic-analytics/repository-source-data`, service
-configuration, Dockerfile ownership and Docker Compose volume model. Runtime
-build/up checks remain optional external evidence unless actually executed.
+Done criteria:
 
-### Slice 10 - Security, Leakage, Idempotency And Restart Integration Gate
-
-```yaml
-slice_id: S10
-profile: FULL_PATH
-owner: senior-tester
-secondary_reviewers:
-  - security-sandbox-specialist
-  - resilience-engineering
-  - senior-system-architect
-  - senior-java-backend
-  - senior-react-frontend
-  - senior-devops
-affected_files:
-  - services/repository-source-service/src/test/**
-  - services/query-report-api-service/src/test/**
-  - forensic-ui/src/**/*.test.*
-  - docs/workflow/execution-report.md
-affected_modules:
-  - services:repository-source-service
-  - services:query-report-api-service
-  - forensic-ui
-affected_contracts:
-  - public-workspace-rest
-  - repository-source-owner-api
-dependencies:
-  - S07
-  - S08
-  - S09
-parallel_group: G10
-file_locks:
-  - services/repository-source-service/src/test/**
-  - services/query-report-api-service/src/test/**
-  - forensic-ui/src/**
-  - docs/workflow/**
-contract_locks:
-  - public-workspace-rest
-  - repository-source-owner-api
-architecture_locks:
-  - evidence-integrity
-  - no-path-leakage
-quality_gates:
-  targeted:
-    - './gradlew :services:repository-source-service:test --dependency-verification strict --console=plain --stacktrace'
-    - './gradlew :services:query-report-api-service:test --dependency-verification strict --console=plain --stacktrace'
-    - 'cd forensic-ui && npm run test'
-    - 'git diff --check'
-  required:
-    - './gradlew test --dependency-verification strict --console=plain --stacktrace'
-documentation:
-  arc42: check-quality-requirements
-  adr: check
-stop_conditions:
-  - no deterministic H2 restart/reopen test exists
-  - idempotency conflict mutates state
-  - branch refresh cannot prove unchanged versus changed commits
-  - private paths or raw Git output appear in public DTO or UI tests
-  - test fixtures are presented as forensic evidence
-```
-
-Purpose: close the cross-service regression risks: durable idempotency, H2
-restart persistence, branch refresh determinism, no duplicate workspace/branch
-records, redaction and frontend behavior.
-
-### Slice 11 - Documentation, arc42 And ADR Closure
-
-```yaml
-slice_id: S11
-profile: FULL_PATH
-owner: senior-documentation-engineer
-secondary_reviewers:
-  - senior-system-architect
-  - adr-steward
-  - documentation-sync
-  - senior-devops
-  - senior-tester
-affected_files:
-  - docs/architecture/**
-  - docs/arc42/**
-  - docs/adr/**
-  - docs/contracts/**
-  - services/repository-source-service/README.md
-  - services/query-report-api-service/README.md
-  - forensic-ui/README.md
-  - docs/workflow/**
-affected_modules: []
-affected_contracts:
-  - public-workspace-rest
-  - repository-source-owner-api
-dependencies:
-  - S10
-parallel_group: G11
-file_locks:
-  - docs/**
-  - services/repository-source-service/README.md
-  - services/query-report-api-service/README.md
-  - forensic-ui/README.md
-contract_locks: []
-architecture_locks:
-  - documentation-traceability
-quality_gates:
-  targeted:
-    - 'python3 -m json.tool docs/workflow/context-pack.json >/dev/null'
-    - 'git diff --check'
-  required: []
-documentation:
-  arc42: update-required
-  adr: create-or-update-if-H2-decision-needs-ADR
-stop_conditions:
-  - documentation claims parser, Joern, BTM, replay, report, LLM or production database readiness
-  - Docker docs claim Swarm or Kubernetes readiness without verified manifests
-  - architecture docs describe H2 as canonical analytics persistence
-  - requirement traceability to FA-MVP-0001 is missing
-```
-
-Purpose: synchronize architecture and service documentation with actual
-implemented behavior and record limitations honestly.
-
-### Slice 12 - Final Quality Gate And Workflow Handoff
-
-```yaml
-slice_id: S12
-profile: FULL_PATH
-owner: quality-gate-orchestrator
-secondary_reviewers:
-  - senior-devops
-  - senior-tester
-  - senior-system-architect
-  - git_commit_reviewer
-affected_files:
-  - docs/workflow/execution-report.md
-affected_modules:
-  - services:repository-source-service
-  - services:query-report-api-service
-  - forensic-ui
-affected_contracts:
-  - public-workspace-rest
-  - repository-source-owner-api
-dependencies:
-  - S11
-parallel_group: G12
-file_locks:
-  - docs/workflow/**
-contract_locks:
-  - public-workspace-rest
-  - repository-source-owner-api
-architecture_locks:
-  - final-quality-gate
-quality_gates:
-  targeted:
-    - './gradlew test --dependency-verification strict --console=plain --stacktrace'
-    - 'cd forensic-ui && npm run test'
-    - 'cd forensic-ui && npm run build'
-    - 'git diff --check'
-  required:
-    - './gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace'
-documentation:
-  arc42: checked
-  adr: checked
-stop_conditions:
-  - minimum quality gate fails due to current slice
-  - full local quality gate fails without documented pre-existing blocker
-  - frontend test or build fails due to current slice
-  - strict dependency verification remains broken
-  - final diff contains unrelated changes
-```
-
-Purpose: run the repository quality gate, frontend gate and final diff review
-before commit or slice checkpoint push eligibility is considered.
+- Targeted frontend and backend checks pass.
+- Full local quality gate passes or a documented blocker stops execution.
+- `git diff --check` passes.
+- Execution report records slice results, commands and residual risk.
+- arc42 notes are synchronized with verified implementation only.
 
 ## Slice Dependency Graph
 
 ```text
-S00
-  -> S01
-    -> S02
-      -> S03
-        -> S04
-          -> S05
-            -> S06
-              -> S07
-                -> S08
-      S05 + S06 -> S09
-S07 + S08 + S09 -> S10
-S10 -> S11 -> S12
+S01 Contract And Semantics Closure
+  -> S02 Repository-Source List And Cleanup Lifecycle
+  -> S03 Query-Report Public Facade
+  -> S04 Frontend Workspace API Adapter
+  -> S05 Workspaces List UI And Actions
+  -> S06 Quality, Leakage And Documentation Closure
 ```
 
-Parallelization is limited because the public contract, repository-source owner
-API and H2 persistence shape are dependency anchors. After S07, frontend S08
-and Docker S09 may proceed in parallel only if their write scopes stay
-disjoint and contract DTOs are frozen.
+## Parallelization Opportunities
 
-## Role And Subagent Ownership Map
+The workflow is mostly sequential because list/delete contracts and delete
+semantics affect every later slice. After S01, read-only UI preparation and
+test planning may run in parallel, but write scopes must stay behind the
+verified contracts. No production-code slice may bypass S01.
 
-| Area | Owner | Required reviewers |
-|---|---|---|
-| Requirement gate | Senior Requirement Engineer | Senior System Architect, Senior Tester |
-| Architecture and service boundaries | Senior System Architect | Microservice Senior Expert, Data Ownership |
-| Public REST/OpenAPI | Contract Governance Expert | Senior Java Backend, Senior React Frontend, Senior Tester |
-| gRPC/protobuf owner API | Senior gRPC/Proto Specialist | Contract Governance, Senior Java Backend |
-| Repository-source domain/application | Senior Java Backend | Senior System Architect, Senior Git Workspace Specialist |
-| H2 persistence | Senior Analysis Storage Architect | Data Ownership, Senior Java Backend, Senior Security/Sandbox Engineer |
-| Workspace filesystem and Git safety | Senior Git Workspace Specialist | Senior Security/Sandbox Engineer, Resilience |
-| Query-report facade | Senior Java Backend | Contract Governance, Senior Security/Sandbox Engineer, Frontend impact |
-| Frontend flow | Senior React Frontend | Senior UX Designer, Contract Governance, Senior Tester |
-| Docker and local runtime | Senior DevOps | Storage, Senior Security/Sandbox Engineer, Runtime Readiness |
-| Quality gates | Senior Tester / Quality Gate Orchestrator | DevOps, System Architect, `git_commit_reviewer` for checkpoint review |
-| Documentation and arc42 | Senior Documentation Engineer | ADR Steward, System Architect |
+## Role Ownership Map
 
-Callable subagents are authorized by the user request. During `workflow execute`,
-subagents may be used for read-only review or bounded implementation slices
-with disjoint write scopes. Each subagent must verify the active workflow
-branch before modifying files and must not switch branches unless the workflow
-explicitly authorizes it.
+- Senior Requirement Engineer: requirement drift, accepted assumptions and
+  EPIC alignment.
+- Senior System Architect: contract-first sequencing, service ownership,
+  evidence retention and architecture stop conditions.
+- Senior Java Backend Developer: repository-source and query-report backend
+  slices.
+- Senior React Frontend Developer: frontend API adapter, routing and list UI.
+- Senior UX Designer: list information hierarchy and accessible action states.
+- Senior Tester: regression strategy, targeted gates, full quality gate and
+  no-leak verification.
+- Security reviewer or Senior Security Sandbox Engineer: remote/Git/path
+  leakage and cleanup safety review.
 
-Verifier identifiers used in slice metadata must resolve to existing project
-roles, skills or callable Codex agent definitions. `git_commit_reviewer` is
-verified by `.codex/agents/git_commit_reviewer.toml`.
+## Documentation Synchronization Points
+
+- S01 updates contract documentation if route/RPC names are introduced.
+- S02 updates repository-source README only if operator-visible lifecycle
+  semantics change.
+- S03 updates query-report API README only if public routes change.
+- S05 updates frontend README only if route usage changes.
+- S06 updates arc42 sections only for behavior verified by executed slices.
 
 ## Stop Conditions
 
-Stop workflow execution if:
+Stop workflow execution when any of these are true:
 
-- The active branch is not
-  `feature/workflow-repository-workspace-checkout-h2-persistence-20260524`.
-- A required file, class, method, route, proto field, table, Gradle task or
-  config key cannot be verified exactly.
-- Source, contracts and docs disagree in a behavior-relevant way.
-- Implementation would create a new `workspace-service`.
-- Implementation would add JavaParser, Joern, BTM, replay, report, LLM,
-  PostgreSQL, Neo4j, Kafka, RabbitMQ, Swarm or Kubernetes behavior.
-- Public routes are implemented before OpenAPI and owner API contracts are
-  approved.
-- H2/JDBC leaks into domain or application packages.
-- `query-report-api-service` reads repository-source private storage.
-- UI calls internal services, Git remotes or gRPC directly.
-- Any public DTO or UI state exposes private paths, raw stdout, raw stderr,
-  credentials, tokens or private network details.
-- Default branch or branch refresh behavior would require guessing missing
-  repository facts.
-- Strict dependency verification cannot be restored after adding H2.
-- Required quality commands cannot be verified from repository files.
+- The active branch is not `feature/workflow-workspaces-management-20260525`.
+- `workspace` is reinterpreted as platform workspace administration.
+- Delete semantics require hard-delete or evidence removal.
+- Selected branch cannot be represented from public branch DTO data.
+- Contract tests cannot verify new route/RPC names and field stability.
+- Query-report-api-service or forensic-ui would read repository-source H2 files,
+  private checkout paths, Git remotes, gRPC internals or raw output directly.
+- Public responses or UI renderings expose H2 paths, private checkout paths,
+  stdout/stderr, credentials, tokens or secrets.
+- Any quality command fails and the failure cannot be attributed safely.
+- Continuing would require guessing a method, field, route, task, contract,
+  schema, graph label or evidence semantics.
+
+## Uncertainty Escalation Rules
+
+Automatic clarification or correction loops are capped at `maxRetries = 3`.
+After the third unresolved attempt, stop and escalate to the Root Architect
+path with the attempted loop, unresolved blocker, affected files and reason why
+continuing would be unsafe.
 
 ## Commit And Push Plan
 
-Workflow creation itself does not commit or push unless explicitly requested.
-
-During later `workflow execute`, slice checkpoint commits and pushes are allowed
-only when the active workflow executor confirms the slice passed required
-quality gates and the workflow branch remains active. Slice checkpoint push is
-not `push auto`, does not create or merge a PR and must not run branch cleanup.
+Workflow creation itself does not commit or push unless the user explicitly
+requests it. During `workflow execute`, each completed slice may use the
+repository's slice checkpoint push process only when the active workflow
+execution rules allow it, after the slice quality gates pass and the diff is
+inspected.
 
 ## Definition Of Done
 
-FA-MVP-0001 is done when:
-
-- `repository-source-service` owns and persists repository checkout workspaces.
-- `Workspace` is a repository-level aggregate and `WorkspaceBranch` is a
-  branch-level aggregate.
-- `workspaceTitle` is derived from repository name, read-only and never used as
-  a path or security identifier.
-- Repository identity is normalized through `RepositoryKey`.
-- H2 persistence is configurable and service-local.
-- In-memory repositories remain available where tests or fallback require them.
-- Workspace and branch creation are idempotent.
-- Branch refresh is idempotent and records changed versus unchanged commit
-  state.
-- H2 state survives repository-source restart with the same Docker data volume.
-- Public REST exposes metadata preview, create/reuse workspace, get workspace
-  and branch refresh through sanitized DTOs.
-- `forensic-ui` can preview metadata, save a workspace, show progress/status
-  and refresh a branch through public REST only.
-- Docker-local volume ownership is documented and verified.
-- No local paths, raw Git output or secrets are exposed publicly.
-- Tests cover H2 persistence, idempotency, branch refresh, public DTO redaction
-  and frontend behavior.
-- Required quality gates pass or any pre-existing blocker is documented with
-  exact failing task and evidence.
+- `docs/workflow/workflow.md` is regenerated on the dedicated workflow branch.
+- Context pack files are regenerated.
+- Slices include metadata, dependencies, locks, quality gates and stop
+  conditions.
+- arc42 check status records the architecture sections reviewed for the
+  workflow.
+- Callable subagents or role reviews are recorded.
+- Workflow handoff is clear: implementation starts only after `workflow execute`.
 
 ## Handoff To Workflow Execute
 
-`workflow execute` must read this full workflow, load `docs/workflow/context-pack.md`
-and `docs/workflow/context-pack.json`, run S00 first, then execute slices in
-dependency order. Direct ad-hoc implementation is not allowed before the
-relevant role or subagent review for the slice.
+This workflow is ready for `workflow execute` under the accepted assumptions
+documented above. Before implementing S01, the executor must reread this file,
+verify the active branch, run S3D dependency and lock checks, and stop if the
+user contradicts the accepted assumptions.
+
+## arc42 Check Status
+
+See `docs/workflow/arc42-check-status.md`. The workflow creation check found
+no need to update implemented behavior claims in arc42 at creation time. S06
+must update arc42 after implementation verifies list/delete behavior.
