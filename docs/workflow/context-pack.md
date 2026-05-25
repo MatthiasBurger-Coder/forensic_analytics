@@ -4,28 +4,27 @@
 
 | Field | Value |
 |---|---|
-| Workflow version | `fa-mvp-0001-workspace-branch-selection-20260525-v1` |
+| Workflow version | `fa-mvp-0002-wildfly-wsl-workspace-20260525-v1` |
 | Process strand | `workflow create` completed; `workflow execute` pending |
-| Active branch | `feature/workflow-branch-selection-20260525` |
+| Active branch | `fix/workflow-wildfly-wsl-workspace-20260525` |
 | Execution profile | `FULL_PATH` |
-| Requirement ID | `FA-MVP-0001-EXT-02` |
+| Requirement ID | `FA-MVP-0002-OPS-01` |
 
 ## Affected Areas
 
-- `forensic-ui` Workspaces list.
-- Public workspace branch DTO consumption.
-- Branch refresh target selection.
-- Workflow and arc42 documentation.
+- `services/repository-source-service` bootstrap workspace-root behavior.
+- `services/query-report-api-service` HTTP lifecycle responsiveness.
+- Local WSL live runtime startup and proof.
+- Workflow and arc42 check documentation.
 
 ## Forbidden Areas
 
-- Remote Git branch discovery.
-- Browser Git, browser gRPC or direct internal service access.
-- New REST/gRPC methods.
-- Repository-source H2, filesystem, Git adapter, Docker, CI or deployment
-  changes.
-- Analysis, JavaParser, Joern, BTM, replay, report, graph, vector, LLM or
-  plugin behavior.
+- Partial clone or sparse checkout enablement.
+- Running WildFly or any checked-out repository build scripts.
+- OpenAPI, gRPC or protobuf contract changes.
+- Cross-service H2 or private workspace access.
+- JavaParser, Joern, BTM, replay, graph, report, vector or LLM execution.
+- Docker, Swarm, Kubernetes or production readiness claims.
 
 ## Required Roles
 
@@ -37,15 +36,17 @@
 
 ## Conditional Roles
 
-- Senior UX Designer for selector accessibility.
-- Senior Documentation Engineer for S04 documentation closure.
-- Contract governance reviewer only if S01 stops for contract-first recut.
+- Senior Git/Workspace Specialist
+- Senior Security/Sandbox Engineer
+- Senior Performance Engineer
+- Senior DevOps
+- Senior Documentation Engineer
 
 ## Quality Commands
 
 ```bash
-cd forensic-ui && npm run test -- src/pages/workspaces/WorkspaceListPage.test.tsx
-cd forensic-ui && npm run build
+./gradlew :services:repository-source-service:test --tests '*RepositorySourceServiceApplicationTest' --dependency-verification strict --console=plain --stacktrace
+./gradlew :services:query-report-api-service:test --tests '*QueryReportApiServiceApplicationTest' --dependency-verification strict --console=plain --stacktrace
 ./gradlew test --dependency-verification strict --console=plain --stacktrace
 ./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace
 ```
@@ -60,17 +61,22 @@ cd forensic-ui && npm run build
 | `.codex/workflow/workflow-execution-rules.md` | `6d2ea74943f8ff4187a371d6e263fcf7f179d7250868086f4ba294e6f5fa122a` |
 | `.agents/orchestrator/routing-rules.md` | `30cd2a044746ab97f798425dd8f8125a98c6ed50d2d70a1b0778dca353c325bf` |
 | `.agents/orchestrator/swarm-orchestrator.md` | `ae501a9e61ec0a9cf4acaad7fb7fd5d6167309b722370ed5d21d1991e49c09fc` |
-| `contracts/openapi/gateway-api.yaml` | `553e5a459389c4c0f08b9f40701b6a490c5c3e634881fc2b80dc20ad9f78127c` |
-| `contracts/grpc/repository-analysis.proto` | `9213e97743736dc808e5ee50e7a26849c7e01a3001f02e1606b9aba82ba79cc1` |
-| `forensic-ui/package.json` | `cdb23841e48ee73a4dbddac5e2fafb7f134f3be77631e5ece5931c58d884f57b` |
-| `docs/arc42/08-crosscutting-concepts.md` | `2cb180c0132d0f3148433cc6066623d18a3406baedcfda02acfc857d439ef41f` |
+| `.agents/skills/workflow-authoring/SKILL.md` | `d87950d6d9ca831a4201b660c6bef373cb85be829f21694a323dbb9b8544d801` |
+| `.agents/skills/three-amigos-requirement-gatekeeper/SKILL.md` | `95c04f47127f5149bb39a7e1b82b2690803cc765cad5d18274a82d415931e9ad` |
+| `.agents/skills/execution-profile-router/SKILL.md` | `40b7a5c9a2d8896b3e2f8c384300979a13d7d35986a5bd4bc4d3b5760a7d52b7` |
+| `.agents/skills/git-large-repository-specialist/SKILL.md` | `f77801e1c2217a9c9b1d216ad13c235c2507e431743b4e6d38da640b9c318399` |
+| `docs/epics/forensics-platform-runtime-replay-llm-analysis-v0.2.md` | `54ff246b4359e1eb92c7e80058db42faa079ff5ffd3db0d71170cfaa3dbb68fe` |
+| `services/repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/RepositorySourceServicePropertiesConfiguration.java` | `fc58c9ccb65d06e80683f07f16f4f0135346ac028708068e570aecb3199cc9c9` |
+| `services/repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/adapter/out/git/GitRepositoryCheckoutAdapter.java` | `be23b3ff6a0da1e85052b6a8f9f88dba51510cfd36ff9875f92ff1dc75cb8971` |
+| `services/query-report-api-service/src/main/java/de/burger/forensics/analytics/services/queryreportapi/bootstrap/QueryReportApiHttpServerLifecycle.java` | `2dd4b456216a90871ce89c0f5697da3b094925a69c145afdca6b15e04e2287d9` |
 | `docs/arc42/06-runtime-view.md` | `904f93d560d3f5ebf4466c675c6f7a55d1a5f75a3a3035c266a0f5d65580ca45` |
-| `docs/adr/ADR-0010-contract-first-rest-and-grpc.md` | `9d75a1b758095b6fc40fe013d7a8af8db85441de0b5ff0401b8cc23dcf71976f` |
+| `docs/arc42/07-deployment-view.md` | `7c9644cc3533e4b01b51e3fe3896d62d8affd096155af5cd9cf7b546bee03f93` |
 | `docs/adr/ADR-0016-branch-first-workflow-creation.md` | `13e8e922831c0a7ffe95ee8fae9247bf39b9f47ecf30dd9f685e9fe447fb95e2` |
 | `docs/adr/ADR-0023-h2-for-repository-source-mvp-persistence.md` | `57055ae1b371d5c229dd8d64450a23869dc89849808fa68bdff45901a5123a69` |
 
 ## Staleness Rules
 
-This context pack is stale when any recorded hash changes, when S01 changes
-branch semantics, when backend or contract work becomes necessary, or when the
-active branch is not `feature/workflow-branch-selection-20260525`.
+This context pack is stale when any recorded hash changes, when the active
+branch is not `fix/workflow-wildfly-wsl-workspace-20260525`, when implementation
+requires contract changes, or when the live runtime scope expands beyond the
+local MVP workspace stack.
