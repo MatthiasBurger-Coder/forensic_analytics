@@ -1,48 +1,46 @@
 # Slice Dependency Map
 
-## Linear Execution
+## Overview
+
+The workflow is intentionally linear because branch-selection state, rendering
+and regression coverage share the same frontend area.
 
 ```text
-S01 Contract And Semantics Closure
-  -> S02 Repository-Source List And Cleanup Lifecycle
-  -> S03 Repository-Source Owner gRPC Endpoint
-  -> S04 Query-Report Public Facade
-  -> S05 Frontend Workspace API Adapter
-  -> S06 Workspaces List UI And Actions
-  -> S07 Quality, Leakage And Documentation Closure
+S01 Branch Semantics And Contract Guard
+  -> S02 Workspace Branch Selector UI
+  -> S03 Frontend Regression Coverage
+  -> S04 Quality And Documentation Closure
 ```
 
-## Mermaid
+## Slice Table
 
-```mermaid
-flowchart TD
-    S01["S01 Contract And Semantics Closure"]
-    S02["S02 Repository-Source List And Cleanup Lifecycle"]
-    S03["S03 Repository-Source Owner gRPC Endpoint"]
-    S04["S04 Query-Report Public Facade"]
-    S05["S05 Frontend Workspace API Adapter"]
-    S06["S06 Workspaces List UI And Actions"]
-    S07["S07 Quality, Leakage And Documentation Closure"]
+| Slice | Owner | Depends On | Parallel Group | Write Scope |
+|---|---|---|---|---|
+| S01 | Senior Requirement Engineer | None | G01 | Read-only verification plus execution-report notes |
+| S02 | Senior React Frontend Developer | S01 | G02 | `WorkspaceListPage.tsx`, `styles.css` |
+| S03 | Senior Tester | S02 | G03 | `WorkspaceListPage.test.tsx`, optional API/mapper tests |
+| S04 | Senior Tester | S03 | G04 | workflow execution report and arc42 check status |
 
-    S01 --> S02
-    S02 --> S03
-    S03 --> S04
-    S04 --> S05
-    S05 --> S06
-    S06 --> S07
-```
+## Locks
 
-## Lock Summary
-
-| Slice | Primary Lock | Reason |
+| Lock | Owner | Reason |
 |---|---|---|
-| S01 | Contracts | REST/gRPC route and field semantics must be stable first. |
-| S02 | Repository-source state | Workspace list/delete lifecycle belongs to repository-source. |
-| S03 | Repository-source gRPC endpoint | Owner API methods must be implemented before query-report delegates to them. |
-| S04 | Query-report facade | Public API delegates through owner APIs only. |
-| S05 | Frontend API adapter | UI adapter depends on public DTO shape. |
-| S06 | Frontend routes/UI | List rendering depends on adapter behavior. |
-| S07 | Docs and gates | Final documentation must match implemented behavior. |
+| `public-workspace-branches-read-only` | S01/S03 | Branch options must come only from public DTO records. |
+| `frontend-public-rest-only` | S02 | The browser must not call Git, gRPC or internal services. |
+| `no-private-path-leakage` | S03 | Tests must prevent local paths, raw Git output and secrets from rendering. |
+| `documentation-matches-implemented-scope` | S04 | Docs must not claim remote branch discovery or persisted selected branch state. |
 
-No write-capable parallel slices are approved before S01 completes. Later
-read-only reviews may run in parallel when they do not change files.
+## Parallelization Decision
+
+No slices are parallelized. The feature is small, and splitting UI and tests
+across concurrent writers would create avoidable overlap in the Workspaces page
+and fixture setup.
+
+## Stop Paths
+
+Execution stops before implementation if S01 finds that:
+
+- current branches means remote Git branch discovery;
+- public DTOs do not contain both branch names and branch IDs;
+- a new REST/gRPC method is required;
+- branch options would have to be inferred from default branch or local state.
