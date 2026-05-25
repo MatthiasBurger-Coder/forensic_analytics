@@ -276,6 +276,31 @@ class RepositorySourceApplicationServiceTest {
     }
 
     @Test
+    void rejectsBlankResolvedDefaultBranchBeforeWorkspaceSideEffects() {
+        var idGenerator = new FixedRepositoryWorkspaceIdGenerator();
+        var workspacePort = new FakeWorkspacePort();
+        var workspaceService = workspaceService(
+            idGenerator,
+            workspacePort,
+            new SequencedCheckoutPort("b".repeat(40)),
+            new FakeMetadataPort("", true)
+        );
+
+        assertThrows(IllegalArgumentException.class, () -> workspaceService.createOrReuseRepositoryWorkspaceWithCheckout(
+            "checkout-key",
+            "schema-v1",
+            "correlation-1",
+            repository(),
+            new RepositoryWorkspaceBranchSelector("", ""),
+            policy(),
+            Map.of()
+        ));
+        assertEquals(0, idGenerator.workspaceIds);
+        assertEquals(0, idGenerator.branchIds);
+        assertEquals(0, workspacePort.branchCheckouts);
+    }
+
+    @Test
     void cleanupByWorkspaceIdMarksCleanedRetainsMetadataAndIsIdempotent() {
         var repository = new InMemoryRepositoryWorkspaceRepository();
         var idGenerator = new FixedRepositoryWorkspaceIdGenerator();

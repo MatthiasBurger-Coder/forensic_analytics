@@ -100,6 +100,8 @@ class RepositorySourceGrpcEndpointMappingTest {
             .status(new IllegalStateException("private /tmp/workspace")).getDescription());
         assertEquals("Repository workspace checkout failed", RepositorySourceGrpcEndpoint
             .status(new IllegalStateException("Repository workspace branch checkout failed at /tmp/private")).getDescription());
+        assertEquals("Repository workspace operation failed", RepositorySourceGrpcEndpoint
+            .status(new IllegalStateException("repository workspace has in-progress branch operations")).getDescription());
         assertEquals(Status.Code.INTERNAL, RepositorySourceGrpcEndpoint
             .status(new IllegalStateException("Failed to save repository workspace at /tmp/private")).getCode());
         assertEquals("Repository source persistence failed", RepositorySourceGrpcEndpoint

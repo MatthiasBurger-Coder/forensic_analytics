@@ -1,11 +1,13 @@
 package de.burger.forensics.analytics.services.repositorysource.adapter.in.grpc;
 
 import de.burger.forensics.analytics.repositoryanalysis.v1.AnalyzeSourceSnapshotWithJavaAstRequest;
-import de.burger.forensics.analytics.repositoryanalysis.v1.CreateRepositoryWorkspaceRequest;
+import de.burger.forensics.analytics.repositoryanalysis.v1.CleanupRepositoryWorkspaceByIdRequest;
 import de.burger.forensics.analytics.repositoryanalysis.v1.CleanupRepositoryWorkspaceRequest;
+import de.burger.forensics.analytics.repositoryanalysis.v1.CreateRepositoryWorkspaceRequest;
 import de.burger.forensics.analytics.repositoryanalysis.v1.GetRepositoryPreparationRequest;
 import de.burger.forensics.analytics.repositoryanalysis.v1.GetRepositoryWorkspaceRequest;
 import de.burger.forensics.analytics.repositoryanalysis.v1.BuildOutputProducer;
+import de.burger.forensics.analytics.repositoryanalysis.v1.ListRepositoryWorkspacesRequest;
 import de.burger.forensics.analytics.repositoryanalysis.v1.MetadataPreviewPolicy;
 import de.burger.forensics.analytics.repositoryanalysis.v1.PackageAvailability;
 import de.burger.forensics.analytics.repositoryanalysis.v1.PrepareRepositoryRequest;
@@ -35,9 +37,12 @@ import de.burger.forensics.analytics.services.repositorysource.domain.Repository
 import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.CheckoutStatus;
 import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.Diagnostic;
 import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.RepositoryIdentity;
+import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.RepositoryWorkspace;
+import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.RepositoryWorkspaceBranch;
 import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.SourceRoot;
 import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.WorkspaceBranchId;
 import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.WorkspaceId;
+import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.WorkspaceTitle;
 import io.grpc.ManagedChannel;
 import io.grpc.Server;
 import io.grpc.Status;
@@ -69,6 +74,7 @@ class RepositorySourceGrpcEndpointTest {
     private SequencedCheckoutPort checkoutPort;
     private FakeMetadataPort metadataPort;
     private FixedRepositoryWorkspaceIdGenerator idGenerator;
+    private InMemoryRepositoryWorkspaceRepository workspaceRepository;
 
     @BeforeEach
     void startServer() throws IOException {
@@ -82,6 +88,7 @@ class RepositorySourceGrpcEndpointTest {
         var serverName = InProcessServerBuilder.generateName();
         var repository = new InMemoryRepositoryPreparationRepository();
         var workspaceRepository = new InMemoryRepositoryWorkspaceRepository();
+        this.workspaceRepository = workspaceRepository;
         this.workspacePort = workspacePort;
         this.checkoutPort = checkoutPort;
         this.metadataPort = new FakeMetadataPort("main", true);
@@ -229,6 +236,102 @@ class RepositorySourceGrpcEndpointTest {
         assertEquals("BRANCH_UPDATED", updated.getStatus().getCode());
         assertEquals(RepositoryWorkspaceBranchStatus.REPOSITORY_WORKSPACE_BRANCH_STATUS_UPDATED, updated.getBranch().getStatus());
         assertEquals(3, checkoutPort.calls);
+    }
+
+    @Test
+    void listsRepositoryWorkspacesAndCleanupByIdThroughGrpcOwnerApi() {
+        var cleanedWorkspace = stub.createRepositoryWorkspace(createWorkspaceRequest("workspace-key-alpha")).getWorkspace();
+        var visibleWorkspace = stub.createRepositoryWorkspace(createWorkspaceRequest("workspace-key-beta")
+            .toBuilder()
+            .setRepository(RepositoryReference.newBuilder()
+                .setRemoteUrl("https://example.com/acme/other.git")
+                .setProvider("github"))
+            .build()).getWorkspace();
+
+        var cleaned = stub.cleanupRepositoryWorkspaceById(cleanupByIdRequest(
+            "cleanup-alpha",
+            cleanedWorkspace.getWorkspaceId(),
+            Map.of("tenant", "demo")
+        ));
+        var visible = stub.listRepositoryWorkspaces(listRequest(false));
+        var all = stub.listRepositoryWorkspaces(listRequest(true));
+
+        assertEquals(RepositoryWorkspaceStatus.REPOSITORY_WORKSPACE_STATUS_CLEANED, cleaned.getWorkspaceStatus());
+        assertEquals("CLEANED", cleaned.getStatus().getCode());
+        assertEquals("correlation-1", cleaned.getStatus().getCorrelationId());
+        assertEquals(List.of("WORKSPACE_CLEANED"), cleaned.getDiagnosticsList().stream()
+            .map(diagnostic -> diagnostic.getCode())
+            .toList());
+        assertEquals(0, cleaned.getSafeAttributesCount());
+        assertEquals("WORKSPACES_LISTED", visible.getStatus().getCode());
+        assertEquals(List.of(visibleWorkspace.getWorkspaceId()), visible.getWorkspacesList().stream()
+            .map(workspace -> workspace.getWorkspaceId())
+            .toList());
+        assertEquals(List.of(cleanedWorkspace.getWorkspaceId(), visibleWorkspace.getWorkspaceId()), all.getWorkspacesList().stream()
+            .map(workspace -> workspace.getWorkspaceId())
+            .toList());
+        assertEquals("demo", all.getWorkspaces(0).getWorkspaceTitle());
+        assertEquals("other", all.getWorkspaces(1).getWorkspaceTitle());
+        assertEquals("main", all.getWorkspaces(1).getBranches(0).getRepositoryBranch());
+        assertFalse(cleaned.getWorkspaceId().contains("/"));
+        assertFalse(cleaned.getWorkspaceId().contains("\\"));
+    }
+
+    @Test
+    void mapsListAndCleanupByIdErrorsToSanitizedGrpcStatuses() {
+        var workspace = stub.createRepositoryWorkspace(createWorkspaceRequest("workspace-key")).getWorkspace();
+
+        var invalidList = assertThrows(
+            StatusRuntimeException.class,
+            () -> stub.listRepositoryWorkspaces(ListRepositoryWorkspacesRequest.getDefaultInstance())
+        );
+        var missing = assertThrows(
+            StatusRuntimeException.class,
+            () -> stub.cleanupRepositoryWorkspaceById(cleanupByIdRequest(
+                "cleanup-missing",
+                "workspace-missing",
+                Map.of("tenant", "demo")
+            ))
+        );
+        stub.cleanupRepositoryWorkspaceById(cleanupByIdRequest(
+            "cleanup-conflict",
+            workspace.getWorkspaceId(),
+            Map.of("tenant", "demo")
+        ));
+        var conflict = assertThrows(
+            StatusRuntimeException.class,
+            () -> stub.cleanupRepositoryWorkspaceById(cleanupByIdRequest(
+                "cleanup-conflict",
+                workspace.getWorkspaceId(),
+                Map.of("tenant", "other")
+            ))
+        );
+        var unsafeAttribute = assertThrows(
+            StatusRuntimeException.class,
+            () -> stub.cleanupRepositoryWorkspaceById(cleanupByIdRequest(
+                "cleanup-unsafe",
+                workspace.getWorkspaceId(),
+                Map.of("note", "raw stderr at /tmp/private/workspace")
+            ))
+        );
+        saveInProgressWorkspace("workspace-in-progress");
+        var inProgress = assertThrows(
+            StatusRuntimeException.class,
+            () -> stub.cleanupRepositoryWorkspaceById(cleanupByIdRequest(
+                "cleanup-in-progress",
+                "workspace-in-progress",
+                Map.of("tenant", "demo")
+            ))
+        );
+
+        assertEquals(Status.Code.INVALID_ARGUMENT, invalidList.getStatus().getCode());
+        assertEquals("Invalid repository source request", invalidList.getStatus().getDescription());
+        assertEquals(Status.Code.NOT_FOUND, missing.getStatus().getCode());
+        assertEquals(Status.Code.ALREADY_EXISTS, conflict.getStatus().getCode());
+        assertEquals(Status.Code.INVALID_ARGUMENT, unsafeAttribute.getStatus().getCode());
+        assertEquals("Invalid repository source request", unsafeAttribute.getStatus().getDescription());
+        assertEquals(Status.Code.FAILED_PRECONDITION, inProgress.getStatus().getCode());
+        assertEquals("Repository workspace operation failed", inProgress.getStatus().getDescription());
     }
 
     @Test
@@ -550,6 +653,30 @@ class RepositorySourceGrpcEndpointTest {
             .build();
     }
 
+    private static ListRepositoryWorkspacesRequest listRequest(boolean includeCleaned) {
+        return ListRepositoryWorkspacesRequest.newBuilder()
+            .setRequestId("request-list")
+            .setSchemaVersion("schema-v1")
+            .setCorrelationId("correlation-1")
+            .setIncludeCleaned(includeCleaned)
+            .build();
+    }
+
+    private static CleanupRepositoryWorkspaceByIdRequest cleanupByIdRequest(
+        String idempotencyKey,
+        String workspaceId,
+        Map<String, String> attributes
+    ) {
+        return CleanupRepositoryWorkspaceByIdRequest.newBuilder()
+            .setRequestId("request-cleanup-by-id")
+            .setIdempotencyKey(idempotencyKey)
+            .setSchemaVersion("schema-v1")
+            .setCorrelationId("correlation-1")
+            .setWorkspaceId(workspaceId)
+            .putAllSafeAttributes(attributes)
+            .build();
+    }
+
     private static WorkspacePolicy workspacePolicy(long timeoutSeconds) {
         return WorkspacePolicy.newBuilder()
             .setEphemeral(true)
@@ -557,6 +684,45 @@ class RepositorySourceGrpcEndpointTest {
             .setTimeoutSeconds(timeoutSeconds)
             .setMaxWorkspaceBytes(100_000)
             .build();
+    }
+
+    private void saveInProgressWorkspace(String workspaceId) {
+        var id = new WorkspaceId(workspaceId);
+        var timestamp = Instant.parse("2026-05-16T10:15:30Z");
+        workspaceRepository.save(new RepositoryWorkspace(
+            id,
+            new WorkspaceTitle("in-progress"),
+            repositoryIdentity("progress"),
+            de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.RepositoryWorkspaceStatus.READY,
+            timestamp,
+            timestamp,
+            List.of(new RepositoryWorkspaceBranch(
+                new WorkspaceBranchId("workspace-branch-progress"),
+                id,
+                "main",
+                "",
+                "",
+                null,
+                de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.RepositoryWorkspaceBranchStatus.CHECKING_OUT,
+                List.of(),
+                null,
+                timestamp,
+                List.of(Diagnostic.info("REPOSITORY_WORKSPACE_BRANCH_CREATED", "Repository workspace branch was created"))
+            )),
+            List.of(Diagnostic.info("REPOSITORY_WORKSPACE_READY", "Repository workspace is ready")),
+            Map.of("tenant", "demo")
+        ));
+    }
+
+    private static RepositoryIdentity repositoryIdentity(String repositoryName) {
+        return RepositoryIdentity.from(
+            new de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.RepositoryReference(
+                "https://example.com/acme/" + repositoryName + ".git",
+                "github",
+                Map.of()
+            ),
+            "main"
+        );
     }
 
     private static final class FakeWorkspacePort implements RepositoryWorkspacePort {
