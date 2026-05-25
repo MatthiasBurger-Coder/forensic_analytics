@@ -9,6 +9,7 @@ import { ApplicationError } from "@/application/errors";
 import type {
   BranchRefreshResult,
   Workspace,
+  WorkspaceBranch,
   WorkspaceCleanupResult
 } from "@/domain/workspace";
 
@@ -33,7 +34,11 @@ describe("WorkspaceListPage", () => {
       .toBeInTheDocument();
     expect(screen.getByText("workspace-1")).toBeInTheDocument();
     expect(screen.getByText("wildfly")).toBeInTheDocument();
-    expect(screen.getByText("main")).toBeInTheDocument();
+    expect(
+      screen.getByRole("combobox", {
+        name: /select branch for workspace workspace-1/i
+      })
+    ).toHaveValue("workspace-branch-1");
     expect(screen.getByText("READY")).toBeInTheDocument();
     expect(screen.getByText("CHECKED_OUT")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /create workspace/i }))
@@ -96,6 +101,177 @@ describe("WorkspaceListPage", () => {
     await waitFor(() =>
       expect(services.workspaces.listWorkspaces).toHaveBeenCalledTimes(2)
     );
+  });
+
+  it("selects another public branch record and refreshes by its branch id", async () => {
+    const user = userEvent.setup();
+    const refresh = deferred<BranchRefreshResult>();
+    const services = servicesForWorkspaceList([
+      workspace({
+        branches: [
+          branch(),
+          branch({
+            workspaceBranchId: "workspace-branch-2",
+            repositoryBranch: "release/1.0",
+            status: "UP_TO_DATE",
+            resolvedCommit: "def5678",
+            sourceSnapshotId: "source-snapshot-2"
+          })
+        ]
+      })
+    ]);
+    vi.mocked(services.workspaces.refreshBranch).mockReturnValue(refresh.promise);
+
+    renderPage(services);
+
+    const branchSelect = await screen.findByRole("combobox", {
+      name: /select branch for workspace workspace-1/i
+    });
+    await user.selectOptions(branchSelect, "workspace-branch-2");
+    await user.click(
+      screen.getByRole("button", {
+        name: /update branch release\/1\.0 for workspace workspace-1/i
+      })
+    );
+
+    expect(services.workspaces.refreshBranch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        workspaceId: "workspace-1",
+        workspaceBranchId: "workspace-branch-2"
+      })
+    );
+
+    refresh.resolve(
+      refreshUnchanged({
+        workspaceBranchId: "workspace-branch-2",
+        repositoryBranch: "release/1.0",
+        resolvedCommit: "def5678",
+        sourceSnapshotId: "source-snapshot-2"
+      })
+    );
+
+    expect(
+      await screen.findByText("Branch release/1.0 is up to date.")
+    ).toBeInTheDocument();
+  });
+
+  it("keeps branch selection scoped to each workspace row", async () => {
+    const user = userEvent.setup();
+    const services = servicesForWorkspaceList([
+      workspace({
+        branches: [
+          branch(),
+          branch({
+            workspaceBranchId: "workspace-branch-2",
+            repositoryBranch: "release/1.0"
+          })
+        ]
+      }),
+      workspace({
+        workspaceId: "workspace-2",
+        workspaceTitle: "netty",
+        repository: {
+          ...workspace().repository,
+          repositoryKey: "github.com/netty/netty",
+          repositoryName: "netty"
+        },
+        branches: [
+          branch({
+            workspaceBranchId: "workspace-branch-3",
+            repositoryBranch: "develop"
+          }),
+          branch({
+            workspaceBranchId: "workspace-branch-4",
+            repositoryBranch: "hotfix"
+          })
+        ]
+      })
+    ]);
+
+    renderPage(services);
+
+    const firstWorkspaceSelect = await screen.findByRole("combobox", {
+      name: /select branch for workspace workspace-1/i
+    });
+    const secondWorkspaceSelect = screen.getByRole("combobox", {
+      name: /select branch for workspace workspace-2/i
+    });
+
+    await user.selectOptions(firstWorkspaceSelect, "workspace-branch-2");
+    await user.selectOptions(secondWorkspaceSelect, "workspace-branch-4");
+
+    expect(firstWorkspaceSelect).toHaveValue("workspace-branch-2");
+    expect(secondWorkspaceSelect).toHaveValue("workspace-branch-4");
+  });
+
+  it("falls back to the first public branch when a selected branch disappears", async () => {
+    const user = userEvent.setup();
+    const services = servicesForWorkspaceList([
+      [
+        workspace({
+          branches: [
+            branch(),
+            branch({
+              workspaceBranchId: "workspace-branch-2",
+              repositoryBranch: "release/1.0"
+            })
+          ]
+        })
+      ],
+      [workspace()]
+    ]);
+    vi.mocked(services.workspaces.refreshBranch).mockResolvedValueOnce(
+      refreshUnchanged({
+        workspaceBranchId: "workspace-branch-2",
+        repositoryBranch: "release/1.0"
+      })
+    );
+
+    renderPage(services);
+
+    const branchSelect = await screen.findByRole("combobox", {
+      name: /select branch for workspace workspace-1/i
+    });
+    await user.selectOptions(branchSelect, "workspace-branch-2");
+    await user.click(
+      screen.getByRole("button", {
+        name: /update branch release\/1\.0 for workspace workspace-1/i
+      })
+    );
+
+    await waitFor(() =>
+      expect(services.workspaces.listWorkspaces).toHaveBeenCalledTimes(2)
+    );
+    expect(
+      screen.getByRole("combobox", {
+        name: /select branch for workspace workspace-1/i
+      })
+    ).toHaveValue("workspace-branch-1");
+  });
+
+  it("shows no-branch workspaces as unavailable and disables branch refresh", async () => {
+    const services = servicesForWorkspaceList([
+      workspace({
+        workspaceId: "workspace-empty",
+        workspaceTitle: "empty",
+        branches: []
+      })
+    ]);
+
+    renderPage(services);
+
+    expect(await screen.findByText("workspace-empty")).toBeInTheDocument();
+    expect(screen.getByText("Unavailable")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("combobox", {
+        name: /select branch for workspace workspace-empty/i
+      })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", {
+        name: /update branch for workspace workspace-empty/i
+      })
+    ).toBeDisabled();
   });
 
   it("deletes a workspace, reloads the list and blocks duplicate submits", async () => {
@@ -248,33 +424,47 @@ const servicesForWorkspaceList = (
   };
 };
 
-const workspace = (): Workspace => ({
-  workspaceId: "workspace-1",
-  workspaceTitle: "wildfly",
-  repository: {
-    repositoryKey: "github.com/wildfly/wildfly",
-    repositoryUrl: "",
-    repositoryHost: "github.com",
-    repositoryOwner: "wildfly",
-    repositoryName: "wildfly",
-    defaultBranch: null
-  },
-  status: "READY",
-  branches: [
-    {
-      workspaceBranchId: "workspace-branch-1",
-      repositoryBranch: "main",
-      status: "CHECKED_OUT",
-      resolvedCommit: "abc1234",
-      sourceSnapshotId: "source-snapshot-1",
-      sourceRoots: ["src/main/java"],
-      diagnostics: []
+const workspace = (overrides: Partial<Workspace> = {}): Workspace => {
+  const base: Workspace = {
+    workspaceId: "workspace-1",
+    workspaceTitle: "wildfly",
+    repository: {
+      repositoryKey: "github.com/wildfly/wildfly",
+      repositoryUrl: "",
+      repositoryHost: "github.com",
+      repositoryOwner: "wildfly",
+      repositoryName: "wildfly",
+      defaultBranch: null
+    },
+    status: "READY",
+    branches: [branch()],
+    diagnostics: []
+  };
+
+  return {
+    ...base,
+    ...overrides,
+    repository: {
+      ...base.repository,
+      ...overrides.repository
     }
-  ],
-  diagnostics: []
+  };
+};
+
+const branch = (overrides: Partial<WorkspaceBranch> = {}): WorkspaceBranch => ({
+  workspaceBranchId: "workspace-branch-1",
+  repositoryBranch: "main",
+  status: "CHECKED_OUT",
+  resolvedCommit: "abc1234",
+  sourceSnapshotId: "source-snapshot-1",
+  sourceRoots: ["src/main/java"],
+  diagnostics: [],
+  ...overrides
 });
 
-const refreshUnchanged = (): BranchRefreshResult => ({
+const refreshUnchanged = (
+  overrides: Partial<BranchRefreshResult> = {}
+): BranchRefreshResult => ({
   workspaceBranchId: "workspace-branch-1",
   repositoryBranch: "main",
   status: "UP_TO_DATE",
@@ -282,7 +472,8 @@ const refreshUnchanged = (): BranchRefreshResult => ({
   previousCommit: "abc1234",
   resolvedCommit: "abc1234",
   sourceSnapshotId: "source-snapshot-1",
-  diagnostics: []
+  diagnostics: [],
+  ...overrides
 });
 
 const deferred = <T,>() => {

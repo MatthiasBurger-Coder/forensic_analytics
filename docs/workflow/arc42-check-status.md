@@ -7,7 +7,8 @@
 ## Status
 
 Checked during workflow creation on branch
-`feature/workflow-branch-selection-20260525`.
+`feature/workflow-branch-selection-20260525` and synchronized during workflow
+execution after the UI-only branch selector implementation.
 
 ## Checked Sections
 
@@ -21,11 +22,20 @@ Checked during workflow creation on branch
 | `10-quality-requirements.md` | Deterministic UI behavior, no-leak requirements and quality-gate expectations remain applicable. |
 | `11-risks-and-technical-debt.md` | Remote branch discovery and selected-branch persistence remain future-risk topics outside this workflow. |
 
+## Execution Result
+
+Workflow execution kept the accepted UI-only branch-record scope. The
+Workspaces list now lets the operator choose among public `workspace.branches[]`
+records for a selected workspace row and refreshes the selected
+`workspaceBranchId`. No OpenAPI, gRPC, repository-source persistence,
+query-report facade, remote Git discovery or selected-branch persistence
+behavior changed.
+
 ## Required Documentation Actions During Execution
 
-- Update this file if S01 changes the accepted branch-selection semantics.
-- Update `docs/arc42/README.md` during S04 if implementation behavior differs
-  from the workflow target.
+- Update this file if the accepted branch-selection semantics change later.
+- Update `docs/arc42/README.md` during S04 when implementation behavior differs
+  from the workflow target. This execution matched the target scope.
 - Create a new ADR only if execution introduces new contracts, persisted
   selected branch state or remote branch discovery.
 

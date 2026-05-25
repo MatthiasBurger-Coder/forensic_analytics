@@ -18,12 +18,6 @@ import {
   StaleNotice
 } from "@/widgets/StatePanels";
 
-interface WorkspaceRow {
-  workspace: Workspace;
-  branch: WorkspaceBranch | null;
-  rowId: string;
-}
-
 export const WorkspaceListPage = () => {
   const services = useApplicationServices();
   const workspaces = useWorkspaces();
@@ -35,10 +29,12 @@ export const WorkspaceListPage = () => {
   const [deletingWorkspaceId, setDeletingWorkspaceId] = useState<string | null>(
     null
   );
+  const [selectedBranchIds, setSelectedBranchIds] = useState<
+    Record<string, string>
+  >({});
   const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [actionError, setActionError] = useState<unknown>(null);
   const data = workspaces.data ?? [];
-  const rows = data.flatMap(workspaceRows);
   const actionBusy = refreshingBranchId !== null || deletingWorkspaceId !== null;
 
   const refreshBranch = async (workspace: Workspace, branch: WorkspaceBranch) => {
@@ -157,75 +153,123 @@ export const WorkspaceListPage = () => {
               </tr>
             </thead>
             <tbody>
-              {rows.map(({ workspace, branch, rowId }) => (
-                <tr key={rowId}>
-                  <td className="mono-cell">{workspace.workspaceId}</td>
-                  <td>
-                    <strong>{workspace.workspaceTitle || "Unavailable"}</strong>
-                  </td>
-                  <td>
-                    <div className="workspace-branch-cell">
-                      <span>{branch?.repositoryBranch ?? "Unavailable"}</span>
-                      {branch ? (
-                        <small>{branch.workspaceBranchId}</small>
-                      ) : null}
-                    </div>
-                  </td>
-                  <td>
-                    <div className="status-stack">
-                      <StatusBadge label={workspace.status} />
-                      {branch ? <StatusBadge label={branch.status} /> : null}
-                    </div>
-                  </td>
-                  <td className="truncate">
-                    {workspace.repository.repositoryKey || "Unavailable"}
-                  </td>
-                  <td>
-                    <div className="table-actions">
-                      <button
-                        aria-label={
-                          branch
-                            ? `Update branch ${branch.repositoryBranch} for workspace ${workspace.workspaceId}`
-                            : `Update branch for workspace ${workspace.workspaceId}`
-                        }
-                        className="icon-button"
-                        disabled={
-                          actionBusy || !branch || !canRefreshBranch(branch)
-                        }
-                        onClick={() => {
-                          if (branch) {
-                            void refreshBranch(workspace, branch);
+              {data.map((workspace) => {
+                const selectedBranch = selectedBranchFor(
+                  workspace,
+                  selectedBranchIds[workspace.workspaceId]
+                );
+
+                return (
+                  <tr key={workspace.workspaceId}>
+                    <td className="mono-cell">{workspace.workspaceId}</td>
+                    <td>
+                      <strong>{workspace.workspaceTitle || "Unavailable"}</strong>
+                    </td>
+                    <td>
+                      <div className="workspace-branch-cell">
+                        {selectedBranch ? (
+                          <>
+                            <select
+                              aria-label={`Select branch for workspace ${workspace.workspaceId}`}
+                              className="workspace-branch-select"
+                              onChange={(event) => {
+                                setSelectedBranchIds((current) => ({
+                                  ...current,
+                                  [workspace.workspaceId]: event.target.value
+                                }));
+                              }}
+                              value={selectedBranch.workspaceBranchId}
+                            >
+                              {workspace.branches.map((branch) => (
+                                <option
+                                  key={branch.workspaceBranchId}
+                                  value={branch.workspaceBranchId}
+                                >
+                                  {branch.repositoryBranch}
+                                </option>
+                              ))}
+                            </select>
+                            <div className="workspace-branch-meta">
+                              <small>
+                                Branch ID {selectedBranch.workspaceBranchId}
+                              </small>
+                              <small>
+                                Commit{" "}
+                                {selectedBranch.resolvedCommit ?? "Unavailable"}
+                              </small>
+                              <small>
+                                Snapshot{" "}
+                                {selectedBranch.sourceSnapshotId ??
+                                  "Unavailable"}
+                              </small>
+                            </div>
+                          </>
+                        ) : (
+                          <span className="muted-text">Unavailable</span>
+                        )}
+                      </div>
+                    </td>
+                    <td>
+                      <div className="status-stack">
+                        <StatusBadge label={workspace.status} />
+                        {selectedBranch ? (
+                          <StatusBadge label={selectedBranch.status} />
+                        ) : null}
+                      </div>
+                    </td>
+                    <td className="truncate">
+                      {workspace.repository.repositoryKey || "Unavailable"}
+                    </td>
+                    <td>
+                      <div className="table-actions">
+                        <button
+                          aria-label={
+                            selectedBranch
+                              ? `Update branch ${selectedBranch.repositoryBranch} for workspace ${workspace.workspaceId}`
+                              : `Update branch for workspace ${workspace.workspaceId}`
                           }
-                        }}
-                        title="Update branch"
-                        type="button"
-                      >
-                        <RefreshCcw
-                          size={16}
-                          aria-hidden="true"
-                          className={
-                            refreshingBranchId === branch?.workspaceBranchId
-                              ? "spin-icon"
-                              : undefined
+                          className="icon-button"
+                          disabled={
+                            actionBusy ||
+                            !selectedBranch ||
+                            !canRefreshBranch(selectedBranch)
                           }
-                        />
-                      </button>
-                      <button
-                        aria-label={`Delete workspace ${workspace.workspaceId}`}
-                        className="icon-button danger-action"
-                        disabled={actionBusy || workspace.status === "CLEANED"}
-                        onClick={() => {
-                          void deleteWorkspace(workspace);
-                        }}
-                        title="Delete workspace"
-                        type="button"
-                      >
-                        <Trash2 size={16} aria-hidden="true" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                          onClick={() => {
+                            if (selectedBranch) {
+                              void refreshBranch(workspace, selectedBranch);
+                            }
+                          }}
+                          title="Update branch"
+                          type="button"
+                        >
+                          <RefreshCcw
+                            size={16}
+                            aria-hidden="true"
+                            className={
+                              refreshingBranchId ===
+                              selectedBranch?.workspaceBranchId
+                                ? "spin-icon"
+                                : undefined
+                            }
+                          />
+                        </button>
+                        <button
+                          aria-label={`Delete workspace ${workspace.workspaceId}`}
+                          className="icon-button danger-action"
+                          disabled={actionBusy || workspace.status === "CLEANED"}
+                          onClick={() => {
+                            void deleteWorkspace(workspace);
+                          }}
+                          title="Delete workspace"
+                          type="button"
+                        >
+                          <Trash2 size={16} aria-hidden="true" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -234,20 +278,15 @@ export const WorkspaceListPage = () => {
   );
 };
 
-const workspaceRows = (workspace: Workspace): WorkspaceRow[] =>
-  workspace.branches.length > 0
-    ? workspace.branches.map((branch) => ({
-        workspace,
-        branch,
-        rowId: `${workspace.workspaceId}:${branch.workspaceBranchId}`
-      }))
-    : [
-        {
-          workspace,
-          branch: null,
-          rowId: `${workspace.workspaceId}:no-branch`
-        }
-      ];
+const selectedBranchFor = (
+  workspace: Workspace,
+  selectedBranchId: string | undefined
+): WorkspaceBranch | null =>
+  workspace.branches.find(
+    (branch) => branch.workspaceBranchId === selectedBranchId
+  ) ??
+  workspace.branches[0] ??
+  null;
 
 const StatusBadge = ({ label }: { label: string }) => (
   <span className={`status-badge status-${label.toLowerCase()}`}>

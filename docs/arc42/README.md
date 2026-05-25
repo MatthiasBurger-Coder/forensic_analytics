@@ -41,6 +41,11 @@ introduce remote Git branch discovery, selected-branch persistence, new REST or
 gRPC methods, repository-source persistence changes, platform workspace
 administration, or analysis-pipeline behavior.
 
+Workflow execution completed the guarded UI-only scope on the same branch. The
+Workspaces list now keeps one row per repository checkout workspace, uses a
+frontend-only selected branch intent derived from public `branches[]`, and
+refreshes by the selected opaque `workspaceBranchId`.
+
 Checked sections for this workflow:
 
 - Building Block View: checked for repository-source ownership, query-report

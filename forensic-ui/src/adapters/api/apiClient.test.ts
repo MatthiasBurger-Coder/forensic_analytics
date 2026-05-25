@@ -176,7 +176,10 @@ describe("API client resilience", () => {
     });
     expect((fetcher.mock.calls[0][1] as RequestInit).body).toBeUndefined();
     expect(workspaces[0].workspaceId).toBe("workspace-1");
-    expect(workspaces[0].branches[0].repositoryBranch).toBe("main");
+    expect(workspaces[0].branches.map((branch) => branch.workspaceBranchId))
+      .toEqual(["workspace-branch-1", "workspace-branch-2"]);
+    expect(workspaces[0].branches.map((branch) => branch.repositoryBranch))
+      .toEqual(["main", "release/1.0"]);
     expect(workspaces[0].repository.repositoryUrl).toBe("");
     expect(workspaces[0].repository.defaultBranch).toBeNull();
   });
@@ -651,6 +654,15 @@ const workspaceListResponse = () => ({
           resolvedCommit: "abc1234",
           sourceSnapshotId: "source-snapshot-1",
           sourceRoots: ["src/main/java"],
+          diagnostics: []
+        },
+        {
+          workspaceBranchId: "workspace-branch-2",
+          repositoryBranch: "release/1.0",
+          status: "UP_TO_DATE",
+          resolvedCommit: "def5678",
+          sourceSnapshotId: "source-snapshot-2",
+          sourceRoots: [],
           diagnostics: []
         }
       ],
