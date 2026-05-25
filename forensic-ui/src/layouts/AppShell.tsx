@@ -1,6 +1,6 @@
 import {
   Activity,
-  FolderPlus,
+  FolderOpen,
   RadioTower,
   Settings,
   ShieldCheck
@@ -10,8 +10,8 @@ import { NavLink, Outlet } from "react-router-dom";
 const navItems = [
   {
     to: "/workspaces",
-    label: "Create workspace",
-    icon: FolderPlus,
+    label: "Workspaces",
+    icon: FolderOpen,
     end: true
   },
   { to: "/backend-unavailable", label: "Backend", icon: RadioTower },

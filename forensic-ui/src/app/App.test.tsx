@@ -2,6 +2,7 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import type { ApplicationServices } from "@/application/createApplicationServices";
+import type { Workspace } from "@/domain/workspace";
 
 import { App } from "./App";
 
@@ -9,11 +10,10 @@ describe("App routing", () => {
   it.each([
     "/",
     "/workspaces",
-    "/workspaces/new",
     "/repository-analyses/new",
     "/diagnostics"
   ])(
-    "routes %s to the Create Workspace flow",
+    "routes %s to the Workspaces list",
     async (path) => {
       window.history.pushState({}, "", path);
 
@@ -21,17 +21,29 @@ describe("App routing", () => {
 
       expect(
         await screen.findByRole("heading", {
-          name: "Create repository workspace"
+          name: "Repository checkout workspaces"
         })
       ).toBeInTheDocument();
       expect(
-        screen.getByRole("link", { name: /create workspace/i })
+        screen.getByRole("link", { name: /^workspaces$/i })
       ).toBeInTheDocument();
       expect(
         screen.queryByRole("link", { name: /register session/i })
       ).not.toBeInTheDocument();
     }
   );
+
+  it("keeps the create flow on /workspaces/new", async () => {
+    window.history.pushState({}, "", "/workspaces/new");
+
+    render(<App services={services()} />);
+
+    expect(
+      await screen.findByRole("heading", {
+        name: "Create repository workspace"
+      })
+    ).toBeInTheDocument();
+  });
 });
 
 const services = (): ApplicationServices => ({
@@ -44,7 +56,7 @@ const services = (): ApplicationServices => ({
     previewMetadata: vi.fn(),
     createWorkspace: vi.fn(),
     refreshBranch: vi.fn(),
-    listWorkspaces: vi.fn(),
+    listWorkspaces: vi.fn().mockResolvedValue([workspace()]),
     deleteWorkspace: vi.fn(),
     getWorkspace: vi.fn(),
     waitForWorkspaceCheckout: vi.fn()
@@ -52,4 +64,30 @@ const services = (): ApplicationServices => ({
   diagnostics: {
     collectDiagnostics: vi.fn()
   }
+});
+
+const workspace = (): Workspace => ({
+  workspaceId: "workspace-1",
+  workspaceTitle: "wildfly",
+  repository: {
+    repositoryKey: "github.com/wildfly/wildfly",
+    repositoryUrl: "",
+    repositoryHost: "github.com",
+    repositoryOwner: "wildfly",
+    repositoryName: "wildfly",
+    defaultBranch: null
+  },
+  status: "READY",
+  branches: [
+    {
+      workspaceBranchId: "workspace-branch-1",
+      repositoryBranch: "main",
+      status: "CHECKED_OUT",
+      resolvedCommit: "abc1234",
+      sourceSnapshotId: "source-snapshot-1",
+      sourceRoots: ["src/main/java"],
+      diagnostics: []
+    }
+  ],
+  diagnostics: []
 });
