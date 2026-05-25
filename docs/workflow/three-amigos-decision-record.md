@@ -1,89 +1,102 @@
-# Three Amigos Decision Record: FA-MVP-0001
+# Three Amigos Decision Record
 
 ## Decision
 
 `PROCEED_WITH_ACCEPTED_ASSUMPTIONS`
 
-Confidence: 88 percent.
+Confidence: 84 percent.
+
+## Original Request
+
+The operator console should gain a `Workspaces` entry. The view should list
+already-created workspaces with `Workspace_ID`, workspace and selected branch.
+From that view, the operator can add a workspace, update/fetch the branch and
+delete a workspace.
 
 ## Normalized Requirement
 
-Build the first MVP repository checkout workspace flow by extending the
-existing `repository-source-service`, exposing sanitized public REST through
-`query-report-api-service` and adding a `forensic-ui` Create Workspace flow.
-Persist repository workspace, branch and idempotency state in service-local H2
-for the Docker-local MVP. Do not introduce a new `workspace-service` or any
-analysis pipeline behavior.
-
-## Five-Role Review
-
-| Role | Finding |
-|---|---|
-| Senior Requirement Engineer | The user request is detailed and acceptance-oriented, but `FA-MVP-0001` is not present under `docs/epics`. Workflow may proceed by treating the user-provided requirement as the source requirement and recording the checkout-workspace assumption. |
-| Senior System Architect | Repository checkout workspace ownership belongs to `repository-source-service`. Public REST belongs to `query-report-api-service`. H2 is service-local MVP persistence only. A new `workspace-service` is forbidden. |
-| Senior Java Backend Developer | Existing symbols verify `prepare`, `get`, `cleanup`, `RepositoryPreparationRepository`, `RepositoryWorkspacePort` and `RepositoryCheckoutPort`. `Workspace`, `WorkspaceBranch`, `RepositoryIdentity`, H2 and branch refresh are new and must be introduced behind ports. |
-| Senior React Frontend Developer | The UI has a suitable React/Vite boundary but no verified workspace create API. Frontend implementation must wait for contract-first public REST and must not infer metadata from URL strings. |
-| Senior Tester | Regression-first slices are required for H2 persistence, idempotency replay/conflict, branch refresh, path leakage, public REST and UI behavior. Strict dependency verification remains mandatory. |
-
-## Specialist Findings
-
-- Contract Governance: public `/workspaces` routes currently conflict with
-  OpenAPI tests that assert workspace fields are absent; S02 must replace that
-  absence with explicit contract coverage.
-- Data Ownership/Persistence: repository-source owns H2 tables and workspace
-  paths; no cross-service database access is allowed.
-- Security/Sandbox: repository input must remain HTTPS-only, no local/private
-  targets, no submodules and no build execution.
-- DevOps: H2 requires version catalog and verification metadata changes.
-  Docker must create and own `/var/lib/forensic-analytics/repository-source-data`.
-- Git Workspace: branch names must never become directory names and cleanup
-  must remain inside the configured root.
+Create a workflow for extending FA-MVP-0001 repository checkout workspaces with
+a management list and safe lifecycle actions. The implementation must be
+contract-first and must preserve repository-source data ownership and forensic
+provenance.
 
 ## Accepted Assumptions
 
-1. `Workspace` means repository-source checkout workspace state, not platform
-   membership, authorization, project lifecycle or tenant administration.
-2. H2 is an MVP adapter for durable repository-source state and is not the
-   canonical production analytics store.
-3. The user-provided FA-MVP-0001 requirement is the current source requirement
-   until an EPIC file is added or linked by a later documentation slice.
-4. Public API shape is not implemented yet and must be introduced contract-first.
-5. Docker-local volume support does not imply Swarm, Kubernetes or production
-   deployment readiness.
+- `Workspaces` means repository checkout workspaces, not platform workspace
+  membership or project administration.
+- `Workspace_ID` maps to existing public `workspaceId`.
+- `workspace` displays public `workspaceTitle`; repository key is a fallback
+  only when the public DTO lacks a title.
+- `Selected branch` displays `branch.repositoryBranch` from the public
+  `branches[]` DTO.
+- The list renders one row per workspace branch.
+- Delete means cleanup and mark `CLEANED` while retaining persisted metadata.
+- The default list hides cleaned workspaces.
+- Add workspace reuses the existing create workspace flow at `/workspaces/new`.
+- Update/fetch branch reuses existing branch refresh behavior when the branch
+  ID is present.
 
-## S01 Terminology And Ownership Resolution
+## Non-Goals
 
-S01 resolves the documentation blocker by splitting the unqualified workspace
-term into two explicitly separate concepts:
+- No broader platform workspace lifecycle.
+- No new `workspace-service`.
+- No hard deletion of repository-source H2 records.
+- No JavaParser, Joern, BTM, replay, graph, report, vector, LLM, plugin or
+  deployment expansion.
+- No browser Git, browser gRPC or direct internal service access.
 
-- Platform workspace: the deferred organizational, membership,
-  authorization, project lifecycle, asset, audit and retention boundary.
-- Repository checkout workspace: the FA-MVP-0001
-  `repository-source-service` aggregate for one normalized repository identity,
-  branch-level checkout state and source snapshot references.
+## Role Findings
 
-Only the repository checkout workspace is in scope for FA-MVP-0001. It is
-owned and written by `repository-source-service`; `query-report-api-service`
-may expose sanitized public REST DTOs through owner APIs only. H2 remains a
-repository-source Docker-local MVP adapter and does not resolve the broader
-platform relational database decision.
+### Senior Requirement Engineer
 
-## Blockers Resolved For Workflow Creation
+The requested feature extends FA-MVP-0001, whose current scope is repository
+checkout workspace behavior. The main requirement risks are delete semantics,
+multi-branch display semantics and route drift. These are addressed through the
+accepted assumptions and contract-first S01.
 
-- Branch isolation was established on
-  `feature/workflow-repository-workspace-checkout-h2-persistence-20260524`.
-- The previous `docs/workflow/**` content belonged to FA-MSA-001-LMR and was
-  regenerated for this workflow branch.
-- Callable subagents were available and used for read-only requirement,
-  architecture, DevOps, workflow, backend, frontend and test reviews.
+### Senior System Architect
 
-## Remaining Execution Stop Conditions
+Repository-source must remain the owner of checkout workspace state, H2 schema
+and private directories. Query-report-api-service remains a public facade only.
+The UI must call public REST only. Delete must be cleanup/mark-cleaned behavior
+unless a future requirement authorizes hard deletion with data ownership review.
 
-Workflow execution must stop if:
+### Senior Java Backend Developer
 
-- repository docs contradict the checkout-workspace interpretation;
-- contract-first public REST or owner API shape cannot be verified;
-- H2 schema/table names are unclear after data ownership review;
-- default branch resolution would require silently accepting missing branch and
-  commit without contract approval;
-- implementation would expose private paths or fabricate repository evidence.
+Verified backend support exists for metadata preview, create/get, checkout
+wait and branch refresh. Verified list/delete support does not exist. S01-S03
+therefore introduce contracts before backend implementation and facade routing.
+
+### Senior React Frontend Developer
+
+`WorkspaceListPage` exists but is not routed at `/workspaces`.
+`listWorkspaces` is a stub returning `[]`. `/workspaces/new` already maps to
+the create page. Frontend implementation must wait for real list/delete
+contracts before wiring the requested actions.
+
+### Senior Tester
+
+Quality commands are verified from `QUALITY.md`, Gradle build files and
+`forensic-ui/package.json`. No mutation, lint, Playwright or Cypress command is
+verified. Regression coverage must include backend contracts, no-leak behavior,
+frontend route changes, list rendering and async action states.
+
+## Dependency Summary
+
+S01 contracts block all implementation. S02 repository-source state behavior
+blocks S03 public facade. S03 blocks S04 frontend adapter. S04 blocks S05 list
+UI actions. S06 closes quality and documentation.
+
+## Open Questions
+
+- Whether pagination/filtering is required beyond the first MVP list.
+- Whether cleaned workspaces need an explicit "show cleaned" mode later.
+
+These are non-blocking for this workflow because the default list is
+deterministic and hides cleaned records.
+
+## Stop Conditions
+
+Stop if the user rejects an accepted assumption, if contracts cannot represent
+safe cleanup semantics, or if implementation requires guessing an existing
+symbol, task, route, field or evidence behavior.

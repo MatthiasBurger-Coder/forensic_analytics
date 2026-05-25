@@ -1,54 +1,44 @@
-# Slice Dependency Map: FA-MVP-0001
+# Slice Dependency Map
 
-## Dependency Graph
+## Linear Execution
 
 ```text
-S00 Workflow Execution Preflight And Context Freeze
-  -> S01 Requirement Terminology And Data Ownership Gate
-    -> S02 Contract-First Workspace API And Owner API
-      -> S03 Repository Source Workspace Domain And In-Memory Use Cases
-        -> S04 Repository Metadata Resolution And Branch Checkout Refresh
-          -> S05 H2 Dependency, Schema And Persistence Adapters
-            -> S06 Repository Source gRPC Endpoint And Error Mapping
-              -> S07 Query Report Public Workspace REST Facade
-                -> S08 Forensic UI Create Workspace Flow
-      S05 + S06 -> S09 Docker Local Volumes And Runtime Configuration
-S07 + S08 + S09 -> S10 Security, Leakage, Idempotency And Restart Integration Gate
-S10 -> S11 Documentation, arc42 And ADR Closure
-S11 -> S12 Final Quality Gate And Workflow Handoff
+S01 Contract And Semantics Closure
+  -> S02 Repository-Source List And Cleanup Lifecycle
+  -> S03 Query-Report Public Facade
+  -> S04 Frontend Workspace API Adapter
+  -> S05 Workspaces List UI And Actions
+  -> S06 Quality, Leakage And Documentation Closure
 ```
 
-## Parallelization Notes
+## Mermaid
 
-Most slices are intentionally sequential because the contract and owner API
-shape control backend, public REST and frontend work.
+```mermaid
+flowchart TD
+    S01["S01 Contract And Semantics Closure"]
+    S02["S02 Repository-Source List And Cleanup Lifecycle"]
+    S03["S03 Query-Report Public Facade"]
+    S04["S04 Frontend Workspace API Adapter"]
+    S05["S05 Workspaces List UI And Actions"]
+    S06["S06 Quality, Leakage And Documentation Closure"]
 
-Limited parallelization is allowed only after S07:
-
-- S08 frontend work and S09 Docker work may proceed in parallel if public DTOs
-  and repository-source configuration names are frozen.
-- S10 cannot start until S07, S08 and S09 have completed.
+    S01 --> S02
+    S02 --> S03
+    S03 --> S04
+    S04 --> S05
+    S05 --> S06
+```
 
 ## Lock Summary
 
-| Lock | Owning Slice |
-|---|---|
-| `docs/workflow/**` | S00, S10, S11, S12 |
-| `contracts/openapi/**` | S02, S07 |
-| `contracts/grpc/**` | S02, S06 |
-| `services/repository-source-service/**` | S03, S04, S05, S06, S09, S10 |
-| `services/query-report-api-service/**` | S07, S10 |
-| `forensic-ui/**` | S08, S10 |
-| `deployment/docker-compose/**` | S09 |
-| `docs/architecture/**`, `docs/arc42/**`, `docs/adr/**` | S01, S09, S11 |
-| `gradle/**` | S05 |
+| Slice | Primary Lock | Reason |
+|---|---|---|
+| S01 | Contracts | REST/gRPC route and field semantics must be stable first. |
+| S02 | Repository-source state | Workspace list/delete lifecycle belongs to repository-source. |
+| S03 | Query-report facade | Public API delegates through owner APIs only. |
+| S04 | Frontend API adapter | UI adapter depends on public DTO shape. |
+| S05 | Frontend routes/UI | List rendering depends on adapter behavior. |
+| S06 | Docs and gates | Final documentation must match implemented behavior. |
 
-## Dependency Stop Conditions
-
-Stop before implementation when:
-
-- a dependency slice is incomplete or failed;
-- file locks overlap without an explicit handoff;
-- contract locks are not frozen before dependent UI or REST work;
-- S3D detects cycles, missing metadata or unknown slice IDs during
-  `workflow execute`.
+No write-capable parallel slices are approved before S01 completes. Later
+read-only reviews may run in parallel when they do not change files.

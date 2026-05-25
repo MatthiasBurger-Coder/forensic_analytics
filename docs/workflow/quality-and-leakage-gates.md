@@ -1,10 +1,8 @@
-# Quality And Leakage Gates: FA-MVP-0001
+# Quality And Leakage Gates
 
-## Authority
+## Verified Commands
 
-`QUALITY.md` is the authoritative quality contract.
-
-Minimum repository command:
+Minimum repository gate:
 
 ```bash
 ./gradlew test --dependency-verification strict --console=plain --stacktrace
@@ -16,87 +14,53 @@ Full local quality gate:
 ./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace
 ```
 
-## Targeted Gates
-
-Repository Source:
+Targeted backend gates:
 
 ```bash
 ./gradlew :services:repository-source-service:test --dependency-verification strict --console=plain --stacktrace
-```
-
-Query Report API:
-
-```bash
 ./gradlew :services:query-report-api-service:test --dependency-verification strict --console=plain --stacktrace
 ```
 
-Frontend:
+Frontend gates:
 
 ```bash
-cd forensic-ui
-npm ci
-npm run test
-npm run build
+cd forensic-ui && npm ci
+cd forensic-ui && npm run test
+cd forensic-ui && npm run build
 ```
 
-Docker model:
+Diff gate:
 
 ```bash
-docker compose -f deployment/docker-compose/repository-to-btm.local.yml config
+git diff --check
 ```
 
-H2 dependency metadata repair, only when strict dependency verification reports
-missing H2 metadata:
+## No-Leak Assertions
 
-```bash
-./gradlew --write-verification-metadata sha256 :services:repository-source-service:test
-./gradlew :services:repository-source-service:test --dependency-verification strict --console=plain --stacktrace
-```
+Public list, delete and refresh responses must not contain:
 
-## Leakage Gates
+- H2 JDBC URLs or H2 file paths.
+- Repository-source private workspace paths.
+- Raw Git stdout or stderr.
+- Credentials, tokens, passwords, secrets or authorization headers.
+- Internal service hostnames or private network details.
+- Absolute source roots or local machine paths.
 
-Public REST, gRPC and UI tests must verify that none of the following leak into
-public responses:
+## Evidence Integrity Assertions
 
-- absolute filesystem paths;
-- `/var/lib/forensic-analytics/repository-workspaces`;
-- `/var/lib/forensic-analytics/repository-source-data`;
-- `repository-workspaces`;
-- raw stdout;
-- raw stderr;
-- credentials;
-- tokens;
-- passwords;
-- authorization headers;
-- private network details;
-- local repository paths.
+- Delete means cleanup/mark-cleaned, not unreviewed hard deletion.
+- Cleanup diagnostics must represent incomplete or failed cleanup explicitly.
+- Branch refresh may report only observed remote/checkout facts.
+- The UI must not infer selected branch when no public branch DTO exists.
+- Cleaned workspaces are hidden from default list only as a view policy; stored
+  metadata remains available to repository-source.
 
-## Evidence Integrity Gates
+## Quality Failure Routing
 
-Tests must verify:
-
-- `workspaceTitle` is derived from repository name and is read-only.
-- `workspaceTitle` is never used as a path or security key.
-- `WorkspaceId` and `WorkspaceBranchId` are opaque.
-- branch names are stored as data and never used directly as directories.
-- same idempotency key plus same fingerprint returns the same result.
-- same idempotency key plus different fingerprint returns a controlled conflict
-  without mutation.
-- branch refresh returns `UP_TO_DATE` when the commit is unchanged.
-- branch refresh returns `UPDATED` and creates a new source snapshot reference
-  when the commit changes.
-- missing or unresolved repository facts are represented as diagnostics, not
-  fabricated evidence.
-
-## Optional External Checks
-
-Docker image build and runtime checks are valuable but external:
-
-```bash
-./gradlew --no-daemon :services:repository-source-service:bootJar --dependency-verification strict --console=plain --stacktrace
-docker build -f services/repository-source-service/Dockerfile --build-arg SERVICE_JAR=services/repository-source-service/build/libs/repository-source-service-0.1.0-SNAPSHOT.jar -t forensic-analytics/repository-source-service:local .
-docker compose -f deployment/docker-compose/repository-to-btm.local.yml up -d
-```
-
-These checks may require Docker and network access. Do not claim they passed
-unless executed. Report skipped external checks explicitly.
+- Architecture violation: Senior System Architect and architecture skills.
+- Build failure: responsible owner plus Senior DevOps when Gradle or build
+  configuration is involved.
+- Test failure: Senior Tester and slice owner.
+- Contract failure: Senior System Architect, Senior Java Backend Developer and
+  contract governance.
+- Unknown failure: Root Architect escalation path after classification attempt.
