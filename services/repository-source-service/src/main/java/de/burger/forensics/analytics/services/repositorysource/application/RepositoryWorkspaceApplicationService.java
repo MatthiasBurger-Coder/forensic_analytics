@@ -28,6 +28,7 @@ import de.burger.forensics.analytics.services.repositorysource.domain.Repository
 import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.WorkspaceTitle;
 
 import java.time.Clock;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -43,9 +44,11 @@ public final class RepositoryWorkspaceApplicationService {
     private static final String OPERATION_CREATE_WORKSPACE_BRANCH = "CREATE_WORKSPACE_BRANCH";
     private static final String OPERATION_CHECKOUT_WORKSPACE_BRANCH = "CHECKOUT_WORKSPACE_BRANCH";
     private static final String OPERATION_REFRESH_WORKSPACE_BRANCH = "REFRESH_WORKSPACE_BRANCH";
+    private static final String OPERATION_CLEANUP_WORKSPACE_BY_ID = "CLEANUP_WORKSPACE_BY_ID";
     private static final String RESULT_WORKSPACE = "REPOSITORY_WORKSPACE";
     private static final String RESULT_WORKSPACE_BRANCH = "REPOSITORY_WORKSPACE_BRANCH";
     private static final String RESULT_BRANCH_REFRESH = "REPOSITORY_WORKSPACE_BRANCH_REFRESH";
+    private static final String RESULT_WORKSPACE_CLEANUP = "REPOSITORY_WORKSPACE_CLEANUP";
     private final RepositoryWorkspaceRepository repository;
     private final RepositoryWorkspaceIdGenerator idGenerator;
     private final RepositoryWorkspacePort workspacePort;
@@ -297,6 +300,66 @@ public final class RepositoryWorkspaceApplicationService {
     public synchronized RepositoryWorkspace getRepositoryWorkspace(WorkspaceId workspaceId) {
         return repository.findById(workspaceId)
             .orElseThrow(() -> new RepositoryWorkspaceNotFoundException("repository workspace was not found"));
+    }
+
+    public synchronized List<RepositoryWorkspace> listRepositoryWorkspaces(
+        String schemaVersion,
+        String correlationId,
+        boolean includeCleaned
+    ) {
+        requireText(schemaVersion, "schema version");
+        requireText(correlationId, "correlation id");
+        return repository.findAll(includeCleaned);
+    }
+
+    public synchronized CleanupRepositoryWorkspaceResult cleanupRepositoryWorkspaceById(
+        String idempotencyKey,
+        String schemaVersion,
+        String correlationId,
+        WorkspaceId workspaceId,
+        Map<String, String> attributes
+    ) {
+        var key = requireText(idempotencyKey, "idempotency key");
+        var safeAttributes = safeAttributes(attributes);
+        var fingerprint = String.join(
+            "|",
+            requireText(schemaVersion, "schema version"),
+            requireText(correlationId, "correlation id"),
+            Objects.requireNonNull(workspaceId, "workspace id must not be null").value(),
+            safeAttributes.toString()
+        );
+        return idempotency.replayOrExecute(
+            OPERATION_CLEANUP_WORKSPACE_BY_ID,
+            key,
+            fingerprint,
+            this::replayWorkspaceCleanup,
+            () -> {
+                var workspace = getRepositoryWorkspace(workspaceId);
+                if (workspace.status() == RepositoryWorkspaceStatus.CLEANED) {
+                    return new RepositorySourceIdempotency.CompletedResult<>(
+                        RESULT_WORKSPACE_CLEANUP,
+                        workspace.workspaceId().value(),
+                        RepositorySourceIdempotencyPayloads.cleanup(cleanupResult(workspace)),
+                        cleanupResult(workspace)
+                    );
+                }
+                requireNoInProgressBranches(workspace);
+                workspacePort.cleanup(workspaceId);
+                var cleaned = repository.updateWorkspaceStatus(
+                    workspaceId,
+                    RepositoryWorkspaceStatus.CLEANED,
+                    clock.instant(),
+                    cleanupWorkspaceDiagnostics(workspace)
+                );
+                var result = cleanupResult(cleaned);
+                return new RepositorySourceIdempotency.CompletedResult<>(
+                    RESULT_WORKSPACE_CLEANUP,
+                    cleaned.workspaceId().value(),
+                    RepositorySourceIdempotencyPayloads.cleanup(result),
+                    result
+                );
+            }
+        );
     }
 
     public synchronized RepositoryWorkspaceBranch markBranchCheckoutStarted(
@@ -589,6 +652,38 @@ public final class RepositoryWorkspaceApplicationService {
             || branch.status() == RepositoryWorkspaceBranchStatus.UPDATED;
     }
 
+    private void requireNoInProgressBranches(RepositoryWorkspace workspace) {
+        var hasInProgressBranch = workspace.branches().stream()
+            .anyMatch(branch -> branch.status() == RepositoryWorkspaceBranchStatus.CHECKING_OUT
+                || branch.status() == RepositoryWorkspaceBranchStatus.UPDATING
+                || activeCheckouts.contains(checkoutKey(workspace.workspaceId(), branch.workspaceBranchId())));
+        if (hasInProgressBranch) {
+            throw new IllegalStateException("repository workspace has in-progress branch operations");
+        }
+    }
+
+    private static CleanupRepositoryWorkspaceResult cleanupResult(RepositoryWorkspace workspace) {
+        return new CleanupRepositoryWorkspaceResult(
+            workspace.workspaceId(),
+            workspace.status(),
+            List.of(cleanupDiagnostic())
+        );
+    }
+
+    private static List<Diagnostic> cleanupWorkspaceDiagnostics(RepositoryWorkspace workspace) {
+        var cleanup = cleanupDiagnostic();
+        if (workspace.diagnostics().stream().anyMatch(diagnostic -> cleanup.code().equals(diagnostic.code()))) {
+            return workspace.diagnostics();
+        }
+        var diagnostics = new ArrayList<>(workspace.diagnostics());
+        diagnostics.add(cleanup);
+        return List.copyOf(diagnostics);
+    }
+
+    private static Diagnostic cleanupDiagnostic() {
+        return Diagnostic.info("WORKSPACE_CLEANED", "Repository workspace was cleaned");
+    }
+
     private static String checkoutKey(WorkspaceId workspaceId, WorkspaceBranchId workspaceBranchId) {
         return workspaceId.value() + "|" + workspaceBranchId.value();
     }
@@ -675,6 +770,16 @@ public final class RepositoryWorkspaceApplicationService {
         }
         return repository.findBranch(workspaceId, new WorkspaceBranchId(record.resultReference()))
             .orElseThrow(() -> new RepositoryWorkspaceNotFoundException("repository workspace branch was not found"));
+    }
+
+    private CleanupRepositoryWorkspaceResult replayWorkspaceCleanup(RepositorySourceIdempotencyRecord record) {
+        if (!RESULT_WORKSPACE_CLEANUP.equals(record.resultType())) {
+            throw new RepositoryWorkspaceNotFoundException("repository workspace cleanup idempotency result was not found");
+        }
+        if (!record.resultPayload().isBlank()) {
+            return RepositorySourceIdempotencyPayloads.cleanup(record.resultPayload());
+        }
+        return cleanupResult(getRepositoryWorkspace(new WorkspaceId(record.resultReference())));
     }
 
     private RefreshRepositoryWorkspaceBranchResult replayRefresh(

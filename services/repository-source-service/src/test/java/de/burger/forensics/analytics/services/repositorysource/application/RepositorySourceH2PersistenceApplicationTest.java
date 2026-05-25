@@ -26,6 +26,7 @@ import de.burger.forensics.analytics.services.repositorysource.domain.Repository
 import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.RepositoryKey;
 import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.RepositoryPreparation;
 import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.RepositoryReference;
+import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.RepositoryWorkspace;
 import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.RepositoryWorkspaceBranchSelector;
 import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.RepositoryWorkspaceBranchStatus;
 import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.RepositoryWorkspaceStatus;
@@ -246,6 +247,61 @@ class RepositorySourceH2PersistenceApplicationTest {
         assertEquals(workspace, replayed);
         assertEquals(0, replayWorkspacePort.branchCheckouts);
         assertEquals(0, replayCheckout.calls);
+    }
+
+    @Test
+    void workspaceListOrderingAndCleanedExclusionSurviveH2ShutdownAndReopen() throws Exception {
+        var firstWorkspacePort = new FakeWorkspacePort();
+        var firstService = workspaceService(
+            adapter(),
+            new SequentialRepositoryWorkspaceIdGenerator(),
+            firstWorkspacePort,
+            new SequencedCheckoutPort("b".repeat(40), "c".repeat(40))
+        );
+        var beta = firstService.createOrReuseRepositoryWorkspaceWithCheckout(
+            "checkout-beta",
+            "schema-v1",
+            "correlation-1",
+            repository("beta"),
+            new RepositoryWorkspaceBranchSelector("main", ""),
+            policy(),
+            Map.of("tenant", "demo")
+        );
+        var alpha = firstService.createOrReuseRepositoryWorkspaceWithCheckout(
+            "checkout-alpha",
+            "schema-v1",
+            "correlation-1",
+            repository("alpha"),
+            new RepositoryWorkspaceBranchSelector("main", ""),
+            policy(),
+            Map.of("tenant", "demo")
+        );
+        var cleaned = firstService.cleanupRepositoryWorkspaceById(
+            "cleanup-beta",
+            "schema-v1",
+            "correlation-1",
+            beta.workspaceId(),
+            Map.of("tenant", "demo")
+        );
+
+        shutdownH2Database();
+
+        var replayWorkspacePort = new FakeWorkspacePort();
+        var replayService = workspaceService(adapter(), replayWorkspacePort, new SequencedCheckoutPort("d".repeat(40)));
+        var visible = replayService.listRepositoryWorkspaces("schema-v1", "correlation-1", false);
+        var all = replayService.listRepositoryWorkspaces("schema-v1", "correlation-1", true);
+        var loadedCleaned = replayService.getRepositoryWorkspace(beta.workspaceId());
+
+        assertEquals(RepositoryWorkspaceStatus.CLEANED, cleaned.workspaceStatus());
+        assertEquals(List.of(alpha.workspaceId().value()), workspaceIds(visible));
+        assertEquals(List.of(beta.workspaceId().value(), alpha.workspaceId().value()), workspaceIds(all));
+        assertEquals(RepositoryWorkspaceStatus.CLEANED, loadedCleaned.status());
+        assertEquals(beta.workspaceTitle(), loadedCleaned.workspaceTitle());
+        assertEquals(beta.repository(), loadedCleaned.repository());
+        assertEquals(beta.branches().getFirst().workspaceBranchId(), loadedCleaned.branches().getFirst().workspaceBranchId());
+        assertEquals(beta.branches().getFirst().sourceSnapshotId(), loadedCleaned.branches().getFirst().sourceSnapshotId());
+        assertEquals(1, firstWorkspacePort.cleaned);
+        assertEquals(0, replayWorkspacePort.cleaned);
     }
 
     @Test
@@ -570,6 +626,16 @@ class RepositorySourceH2PersistenceApplicationTest {
         return new RepositoryReference("https://example.com/acme/demo.git", "github", Map.of());
     }
 
+    private static RepositoryReference repository(String repositoryName) {
+        return new RepositoryReference("https://example.com/acme/" + repositoryName + ".git", "github", Map.of());
+    }
+
+    private static List<String> workspaceIds(List<RepositoryWorkspace> workspaces) {
+        return workspaces.stream()
+            .map(workspace -> workspace.workspaceId().value())
+            .toList();
+    }
+
     private static RevisionSelector revision() {
         return new RevisionSelector("main", true, "", false);
     }
@@ -659,6 +725,7 @@ class RepositorySourceH2PersistenceApplicationTest {
     private static final class FakeWorkspacePort implements RepositoryWorkspacePort {
         private int prepared;
         private int branchCheckouts;
+        private int cleaned;
 
         @Override
         public PreparedWorkspace prepare(AnalysisRunId analysisRunId, WorkspacePolicy policy) {
@@ -678,6 +745,7 @@ class RepositorySourceH2PersistenceApplicationTest {
 
         @Override
         public void cleanup(WorkspaceId workspaceId) {
+            cleaned++;
         }
 
         @Override
@@ -741,6 +809,23 @@ class RepositorySourceH2PersistenceApplicationTest {
         @Override
         public WorkspaceBranchId newWorkspaceBranchId() {
             return new WorkspaceBranchId("workspace-branch-0001");
+        }
+    }
+
+    private static final class SequentialRepositoryWorkspaceIdGenerator implements RepositoryWorkspaceIdGenerator {
+        private int workspaceIds;
+        private int branchIds;
+
+        @Override
+        public WorkspaceId newWorkspaceId() {
+            workspaceIds++;
+            return new WorkspaceId("workspace-%04d".formatted(workspaceIds));
+        }
+
+        @Override
+        public WorkspaceBranchId newWorkspaceBranchId() {
+            branchIds++;
+            return new WorkspaceBranchId("workspace-branch-%04d".formatted(branchIds));
         }
     }
 }

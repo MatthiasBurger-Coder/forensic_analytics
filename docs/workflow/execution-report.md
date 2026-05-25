@@ -3,7 +3,8 @@
 ## Status
 
 Workflow execution is in progress. S01 contract and semantics closure is
-completed and ready for checkpoint commit.
+completed and pushed. S02 repository-source lifecycle behavior is completed
+and ready for checkpoint commit.
 
 ## Workflow
 
@@ -83,3 +84,52 @@ Notes:
   left unchanged.
 - Public contract text avoids private checkout paths, H2 details, raw command
   output and hard deletion claims.
+
+### S02 Repository-Source List And Cleanup Lifecycle
+
+Status: completed.
+
+Subagent and role reviews:
+
+- Senior Java Backend: ready for implementation in application, repository
+  port, in-memory adapter and H2 adapter.
+- Senior System Architect: confirmed repository-source ownership constraints
+  and flagged repository-source gRPC endpoint implementation as outside the
+  current S02 file locks.
+- Senior Tester: identified regression tests for deterministic list ordering,
+  cleaned-workspace exclusion, cleanup idempotency, in-progress rejection and
+  H2 reload behavior.
+- Senior Security Sandbox Engineer: confirmed cleanup must use
+  repository-source-owned filesystem ports and must not hard-delete H2
+  metadata.
+
+Changes:
+
+- Added deterministic `RepositoryWorkspaceRepository.findAll(...)` behavior
+  with default `CLEANED` exclusion.
+- Added status-only workspace cleanup persistence for H2 so branch metadata is
+  retained.
+- Added repository-source application lifecycle methods for listing workspaces
+  and safe cleanup by opaque workspace ID.
+- Added memory and H2 regression coverage for deterministic list behavior,
+  `CLEANED` exclusion, cleanup idempotency, branch metadata retention and
+  in-progress cleanup rejection.
+
+Verification:
+
+```bash
+git diff --check
+./gradlew :services:repository-source-service:test --tests 'de.burger.forensics.analytics.services.repositorysource.application.RepositorySourceApplicationServiceTest' --tests 'de.burger.forensics.analytics.services.repositorysource.application.RepositorySourceH2PersistenceApplicationTest' --dependency-verification strict --console=plain --stacktrace
+./gradlew :services:repository-source-service:test --dependency-verification strict --console=plain --stacktrace
+./gradlew test --dependency-verification strict --console=plain --stacktrace
+```
+
+Result: all commands passed.
+
+Notes:
+
+- Cleanup by workspace ID is separate from the existing analysis-run-scoped
+  cleanup use case.
+- S02 does not implement the new gRPC endpoint overrides because
+  `RepositorySourceGrpcEndpoint.java` is outside the S02 affected-file set and
+  file locks.

@@ -198,6 +198,36 @@ public final class H2RepositorySourcePersistenceAdapter implements
     }
 
     @Override
+    public List<RepositoryWorkspace> findAll(boolean includeCleaned) {
+        var query = includeCleaned
+            ? """
+                 SELECT * FROM workspace
+                 ORDER BY workspace_id
+                 """
+            : """
+                 SELECT * FROM workspace
+                 WHERE status <> ?
+                 ORDER BY workspace_id
+                 """;
+        try (var connection = connection();
+             var statement = connection.prepareStatement(query)) {
+            if (!includeCleaned) {
+                statement.setString(1, RepositoryWorkspaceStatus.CLEANED.name());
+            }
+            try (var resultSet = statement.executeQuery()) {
+                var workspaces = new java.util.ArrayList<RepositoryWorkspace>();
+                while (resultSet.next()) {
+                    var workspaceId = new WorkspaceId(resultSet.getString("workspace_id"));
+                    workspaces.add(workspace(resultSet, branches(connection, workspaceId)));
+                }
+                return List.copyOf(workspaces);
+            }
+        } catch (SQLException error) {
+            throw new IllegalStateException("Failed to list repository workspaces", error);
+        }
+    }
+
+    @Override
     public Optional<RepositoryWorkspace> findById(WorkspaceId workspaceId) {
         try (var connection = connection();
              var statement = connection.prepareStatement("""
@@ -249,6 +279,34 @@ public final class H2RepositorySourcePersistenceAdapter implements
             }
         } catch (SQLException error) {
             throw new IllegalStateException("Failed to load repository workspace branch", error);
+        }
+    }
+
+    @Override
+    public RepositoryWorkspace updateWorkspaceStatus(
+        WorkspaceId workspaceId,
+        RepositoryWorkspaceStatus status,
+        Instant updatedAt,
+        List<Diagnostic> diagnostics
+    ) {
+        try (var connection = connection();
+             var statement = connection.prepareStatement("""
+                 UPDATE workspace
+                 SET status = ?, diagnostics_json = ?, updated_at = ?
+                 WHERE workspace_id = ?
+                 """)) {
+            statement.setString(1, status.name());
+            statement.setString(2, diagnosticsJson(diagnostics));
+            statement.setString(3, updatedAt.toString());
+            statement.setString(4, workspaceId.value());
+            var updated = statement.executeUpdate();
+            if (updated == 0) {
+                throw new IllegalStateException("repository workspace was not found");
+            }
+            return findById(workspaceId)
+                .orElseThrow(() -> new IllegalStateException("repository workspace was not found"));
+        } catch (SQLException error) {
+            throw new IllegalStateException("Failed to update repository workspace status", error);
         }
     }
 
@@ -465,7 +523,7 @@ public final class H2RepositorySourcePersistenceAdapter implements
         try (var statement = connection.prepareStatement("""
             SELECT * FROM workspace_branch
             WHERE workspace_id = ?
-            ORDER BY repository_branch
+            ORDER BY repository_branch, workspace_branch_id
             """)) {
             statement.setString(1, workspaceId.value());
             try (var resultSet = statement.executeQuery()) {
