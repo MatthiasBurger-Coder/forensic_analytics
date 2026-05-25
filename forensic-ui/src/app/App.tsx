@@ -13,6 +13,7 @@ import { AnalysisJobDetailPage } from "@/pages/analysis-jobs/AnalysisJobDetailPa
 import { BackendUnavailablePage } from "@/pages/backend-unavailable/BackendUnavailablePage";
 import { SettingsPage } from "@/pages/settings/SettingsPage";
 import { CreateWorkspacePage } from "@/pages/workspaces/CreateWorkspacePage";
+import { WorkspaceListPage } from "@/pages/workspaces/WorkspaceListPage";
 
 export const App = ({ services }: { services: ApplicationServices }) => (
   <ApplicationServicesProvider services={services}>
@@ -25,7 +26,7 @@ export const App = ({ services }: { services: ApplicationServices }) => (
               path="workspaces"
               element={
                 <RouteBoundary>
-                  <CreateWorkspacePage />
+                  <WorkspaceListPage />
                 </RouteBoundary>
               }
             />

@@ -300,6 +300,16 @@ a:hover {
   color: #e7efeb;
 }
 
+.icon-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
+}
+
+.danger-action {
+  border-color: #613332;
+  color: #ffc6c0;
+}
+
 .table-wrap {
   width: 100%;
   overflow-x: auto;
@@ -328,6 +338,34 @@ th {
 
 td {
   color: #d9e2dd;
+}
+
+.mono-cell {
+  font-family: "Cascadia Mono", "SFMono-Regular", Consolas, monospace;
+  font-size: 0.88rem;
+  overflow-wrap: anywhere;
+}
+
+.workspace-branch-cell,
+.status-stack,
+.table-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.workspace-branch-cell,
+.status-stack {
+  flex-wrap: wrap;
+}
+
+.workspace-branch-cell small {
+  color: #94a09b;
+  font-size: 0.78rem;
+}
+
+.table-actions {
+  justify-content: flex-end;
 }
 
 .truncate {
@@ -373,6 +411,13 @@ td {
   background: #67d29f;
 }
 
+.status-ready span,
+.status-checked_out span,
+.status-up_to_date span,
+.status-updated span {
+  background: #67d29f;
+}
+
 .status-failed span,
 .status-canceled span {
   background: #ff8b7c;
@@ -386,8 +431,15 @@ td {
 .status-retryable span,
 .status-dispatchable span,
 .status-accepted span,
+.status-new span,
+.status-checking_out span,
+.status-updating span,
 .status-registered span {
   background: #e8c766;
+}
+
+.spin-icon {
+  animation: spin 900ms linear infinite;
 }
 
 .detail-grid {
