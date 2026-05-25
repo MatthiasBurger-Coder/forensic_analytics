@@ -6,6 +6,8 @@ import de.burger.forensics.analytics.repositoryanalysis.v1.AnalyzeSourceSnapshot
 import de.burger.forensics.analytics.repositoryanalysis.v1.BuildOutputPackageDescriptor;
 import de.burger.forensics.analytics.repositoryanalysis.v1.BuildOutputProducerCandidate;
 import de.burger.forensics.analytics.repositoryanalysis.v1.BuildOutputResolution;
+import de.burger.forensics.analytics.repositoryanalysis.v1.CleanupRepositoryWorkspaceByIdRequest;
+import de.burger.forensics.analytics.repositoryanalysis.v1.CleanupRepositoryWorkspaceByIdResponse;
 import de.burger.forensics.analytics.repositoryanalysis.v1.CleanupRepositoryWorkspaceRequest;
 import de.burger.forensics.analytics.repositoryanalysis.v1.CleanupRepositoryWorkspaceResponse;
 import de.burger.forensics.analytics.repositoryanalysis.v1.CreateRepositoryWorkspaceResponse;
@@ -13,6 +15,8 @@ import de.burger.forensics.analytics.repositoryanalysis.v1.CreateRepositoryWorks
 import de.burger.forensics.analytics.repositoryanalysis.v1.GetRepositoryPreparationRequest;
 import de.burger.forensics.analytics.repositoryanalysis.v1.GetRepositoryWorkspaceRequest;
 import de.burger.forensics.analytics.repositoryanalysis.v1.JavaAstHandoffResponse;
+import de.burger.forensics.analytics.repositoryanalysis.v1.ListRepositoryWorkspacesRequest;
+import de.burger.forensics.analytics.repositoryanalysis.v1.ListRepositoryWorkspacesResponse;
 import de.burger.forensics.analytics.repositoryanalysis.v1.MetadataPreviewPolicy;
 import de.burger.forensics.analytics.repositoryanalysis.v1.PrepareRepositoryRequest;
 import de.burger.forensics.analytics.repositoryanalysis.v1.PrepareRepositoryResponse;
@@ -145,6 +149,8 @@ class RepositorySourceContractTest {
         assertServiceMethod(service, "PreviewRepositoryWorkspaceMetadata");
         assertServiceMethod(service, "CreateRepositoryWorkspace");
         assertServiceMethod(service, "GetRepositoryWorkspace");
+        assertServiceMethod(service, "ListRepositoryWorkspaces");
+        assertServiceMethod(service, "CleanupRepositoryWorkspaceById");
         assertServiceMethod(service, "RefreshRepositoryWorkspaceBranch");
 
         assertFieldNumber(PreviewRepositoryWorkspaceMetadataRequest.getDescriptor(), "request_id", 1);
@@ -174,6 +180,26 @@ class RepositorySourceContractTest {
         assertFieldNumber(GetRepositoryWorkspaceRequest.getDescriptor(), "request_id", 1);
         assertFieldNumber(GetRepositoryWorkspaceRequest.getDescriptor(), "correlation_id", 2);
         assertFieldNumber(GetRepositoryWorkspaceRequest.getDescriptor(), "workspace_id", 3);
+
+        assertFieldNumber(ListRepositoryWorkspacesRequest.getDescriptor(), "request_id", 1);
+        assertFieldNumber(ListRepositoryWorkspacesRequest.getDescriptor(), "schema_version", 2);
+        assertFieldNumber(ListRepositoryWorkspacesRequest.getDescriptor(), "correlation_id", 3);
+        assertFieldNumber(ListRepositoryWorkspacesRequest.getDescriptor(), "include_cleaned", 4);
+        assertFieldNumber(ListRepositoryWorkspacesResponse.getDescriptor(), "workspaces", 1);
+        assertFieldNumber(ListRepositoryWorkspacesResponse.getDescriptor(), "status", 2);
+        assertFieldNumber(ListRepositoryWorkspacesResponse.getDescriptor(), "diagnostics", 3);
+
+        assertFieldNumber(CleanupRepositoryWorkspaceByIdRequest.getDescriptor(), "request_id", 1);
+        assertFieldNumber(CleanupRepositoryWorkspaceByIdRequest.getDescriptor(), "idempotency_key", 2);
+        assertFieldNumber(CleanupRepositoryWorkspaceByIdRequest.getDescriptor(), "schema_version", 3);
+        assertFieldNumber(CleanupRepositoryWorkspaceByIdRequest.getDescriptor(), "correlation_id", 4);
+        assertFieldNumber(CleanupRepositoryWorkspaceByIdRequest.getDescriptor(), "workspace_id", 5);
+        assertFieldNumber(CleanupRepositoryWorkspaceByIdRequest.getDescriptor(), "safe_attributes", 6);
+        assertFieldNumber(CleanupRepositoryWorkspaceByIdResponse.getDescriptor(), "workspace_id", 1);
+        assertFieldNumber(CleanupRepositoryWorkspaceByIdResponse.getDescriptor(), "workspace_status", 2);
+        assertFieldNumber(CleanupRepositoryWorkspaceByIdResponse.getDescriptor(), "status", 3);
+        assertFieldNumber(CleanupRepositoryWorkspaceByIdResponse.getDescriptor(), "diagnostics", 4);
+        assertFieldNumber(CleanupRepositoryWorkspaceByIdResponse.getDescriptor(), "safe_attributes", 5);
 
         assertFieldNumber(RefreshRepositoryWorkspaceBranchRequest.getDescriptor(), "request_id", 1);
         assertFieldNumber(RefreshRepositoryWorkspaceBranchRequest.getDescriptor(), "idempotency_key", 2);
@@ -260,6 +286,10 @@ class RepositorySourceContractTest {
         assertNoPrivateTransportLeakageFields(CreateRepositoryWorkspaceRequest.getDescriptor());
         assertNoPrivateTransportLeakageFields(CreateRepositoryWorkspaceResponse.getDescriptor());
         assertNoPrivateTransportLeakageFields(GetRepositoryWorkspaceRequest.getDescriptor());
+        assertNoPrivateTransportLeakageFields(ListRepositoryWorkspacesRequest.getDescriptor());
+        assertNoPrivateTransportLeakageFields(ListRepositoryWorkspacesResponse.getDescriptor());
+        assertNoPrivateTransportLeakageFields(CleanupRepositoryWorkspaceByIdRequest.getDescriptor());
+        assertNoPrivateTransportLeakageFields(CleanupRepositoryWorkspaceByIdResponse.getDescriptor());
         assertNoPrivateTransportLeakageFields(RefreshRepositoryWorkspaceBranchRequest.getDescriptor());
         assertNoPrivateTransportLeakageFields(RefreshRepositoryWorkspaceBranchResponse.getDescriptor());
         assertNoPrivateTransportLeakageFields(RepositoryIdentity.getDescriptor());
@@ -278,6 +308,9 @@ class RepositorySourceContractTest {
         assertTrue(contract.contains("same key plus different fingerprint is a conflict"));
         assertTrue(contract.contains("the same key plus a different fingerprint is a conflict"));
         assertTrue(contract.contains("private, loopback, link-local and special-use networks"));
+        assertTrue(contract.contains("public lists hide CLEANED workspaces"));
+        assertTrue(contract.contains("deterministic order"));
+        assertTrue(contract.contains("Cleanup retains metadata"));
     }
 
     private static void assertServiceMethod(
