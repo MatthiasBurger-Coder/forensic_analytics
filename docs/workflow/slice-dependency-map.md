@@ -1,46 +1,47 @@
 # Slice Dependency Map
 
-## Overview
+## Topological Order
 
-The workflow is intentionally linear because branch-selection state, rendering
-and regression coverage share the same frontend area.
+| Order | Slice | Owner | Depends On |
+|---|---|---|---|
+| 1 | S01 Verify Root Cause And Acceptance | Senior Git/Workspace Specialist | none |
+| 2 | S02 Use WSL-Native Default Workspace Root | Senior Java Backend Developer | S01 |
+| 2 | S03 Keep Query API Responsive During Long Checkout Work | Senior Java Backend Developer | S01 |
+| 3 | S04 Live Runtime Proof With WildFly | Senior DevOps | S02, S03 |
+| 4 | S05 Quality Gate And Handoff Closure | Senior Tester | S04 |
 
-```text
-S01 Branch Semantics And Contract Guard
-  -> S02 Workspace Branch Selector UI
-  -> S03 Frontend Regression Coverage
-  -> S04 Quality And Documentation Closure
-```
+## Parallel Groups
 
-## Slice Table
-
-| Slice | Owner | Depends On | Parallel Group | Write Scope |
-|---|---|---|---|---|
-| S01 | Senior Requirement Engineer | None | G01 | Read-only verification plus execution-report notes |
-| S02 | Senior React Frontend Developer | S01 | G02 | `WorkspaceListPage.tsx`, `styles.css` |
-| S03 | Senior Tester | S02 | G03 | `WorkspaceListPage.test.tsx`, optional API/mapper tests |
-| S04 | Senior Tester | S03 | G04 | workflow execution report and arc42 check status |
-
-## Locks
-
-| Lock | Owner | Reason |
+| Group | Slices | Rule |
 |---|---|---|
-| `public-workspace-branches-read-only` | S01/S03 | Branch options must come only from public DTO records. |
-| `frontend-public-rest-only` | S02 | The browser must not call Git, gRPC or internal services. |
-| `no-private-path-leakage` | S03 | Tests must prevent local paths, raw Git output and secrets from rendering. |
-| `documentation-matches-implemented-scope` | S04 | Docs must not claim remote branch discovery or persisted selected branch state. |
+| P1 | S01 | Verification only. |
+| P2 | S02, S03 | Disjoint service bootstrap files; no shared contract changes. |
+| P3 | S04 | Sequential integration proof. |
+| P4 | S05 | Sequential closure after proof. |
 
-## Parallelization Decision
+## Lock Summary
 
-No slices are parallelized. The feature is small, and splitting UI and tests
-across concurrent writers would create avoidable overlap in the Workspaces page
-and fixture setup.
+| Slice | File Locks | Architecture Locks |
+|---|---|---|
+| S01 | `docs/workflow/**` | repository-source workspace ownership; query-report public facade |
+| S02 | `services/repository-source-service/.../bootstrap/**` | domain/application stay environment independent |
+| S03 | `services/query-report-api-service/.../bootstrap/**` | query-report remains facade only |
+| S04 | `docs/workflow/execution-report.md` | public API proof only |
+| S05 | `docs/workflow/execution-report.md`, `docs/workflow/arc42-check-status.md` | quality gate authority |
 
-## Stop Paths
+## Mermaid
 
-Execution stops before implementation if S01 finds that:
+```mermaid
+flowchart TD
+  S01["S01 Verify Root Cause"]
+  S02["S02 WSL-Native Workspace Root"]
+  S03["S03 Query API Executor"]
+  S04["S04 Curl Proof And Live Start"]
+  S05["S05 Quality Closure"]
 
-- current branches means remote Git branch discovery;
-- public DTOs do not contain both branch names and branch IDs;
-- a new REST/gRPC method is required;
-- branch options would have to be inferred from default branch or local state.
+  S01 --> S02
+  S01 --> S03
+  S02 --> S04
+  S03 --> S04
+  S04 --> S05
+```
