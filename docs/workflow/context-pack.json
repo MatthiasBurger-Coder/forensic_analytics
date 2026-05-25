@@ -2,10 +2,11 @@
   "workflowVersion": "fa-mvp-0001-workspaces-management-extension-20260525-v1",
   "requirementId": "FA-MVP-0001-EXT-01",
   "branch": "feature/workflow-workspaces-management-20260525",
-  "processStrand": "workflow create completed; workflow execute pending",
+  "processStrand": "workflow execute in progress; refined after S02",
   "executionProfile": "FULL_PATH",
   "affectedAreas": [
     "repository-source-service",
+    "repository-source-service gRPC inbound adapter",
     "query-report-api-service",
     "contracts/openapi/gateway-api.yaml",
     "contracts/grpc/repository-analysis.proto",
@@ -34,6 +35,7 @@
     "senior_requirement_engineer",
     "senior_system_architect",
     "senior_java_backend",
+    "senior_grpc_proto_specialist",
     "senior_react_frontend",
     "senior_tester"
   ],
@@ -62,8 +64,8 @@
     ".agents/skills/workflow-authoring/SKILL.md": "d87950d6d9ca831a4201b660c6bef373cb85be829f21694a323dbb9b8544d801",
     ".agents/skills/execution-profile-router/SKILL.md": "40b7a5c9a2d8896b3e2f8c384300979a13d7d35986a5bd4bc4d3b5760a7d52b7",
     ".agents/skills/three-amigos-requirement-gatekeeper/SKILL.md": "95c04f47127f5149bb39a7e1b82b2690803cc765cad5d18274a82d415931e9ad",
-    "contracts/openapi/gateway-api.yaml": "2c2c0c2763e9a8f6a504dd2bcb3a1955513dc4f0c321cc905c7ca00b22338846",
-    "contracts/grpc/repository-analysis.proto": "e28a63411b0c62380b139312ef288fcfb68c2b231ebf5bf3c7fa9d0a2b6a02e6"
+    "contracts/openapi/gateway-api.yaml": "f9a2e3ce2e64c715664ec825334c910ee22345bc2b7df540657b79202d9cdda7",
+    "contracts/grpc/repository-analysis.proto": "9213e97743736dc808e5ee50e7a26849c7e01a3001f02e1606b9aba82ba79cc1"
   },
   "staleWhen": [
     "a governing hash changes",

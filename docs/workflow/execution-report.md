@@ -4,7 +4,8 @@
 
 Workflow execution is in progress. S01 contract and semantics closure is
 completed and pushed. S02 repository-source lifecycle behavior is completed
-and ready for checkpoint commit.
+and pushed. The workflow was refined after S02 to insert the missing
+repository-source owner gRPC endpoint slice before query-report facade work.
 
 ## Workflow
 
@@ -133,3 +134,39 @@ Notes:
 - S02 does not implement the new gRPC endpoint overrides because
   `RepositorySourceGrpcEndpoint.java` is outside the S02 affected-file set and
   file locks.
+
+### Refinement After S02
+
+Status: completed.
+
+Reason:
+
+- Current S03 could not safely proceed because the S01 gRPC contract added
+  `ListRepositoryWorkspaces` and `CleanupRepositoryWorkspaceById`, and S02
+  added application lifecycle behavior, but the repository-source gRPC inbound
+  endpoint still lacked overrides for those methods.
+
+Refinement confidence:
+
+- Senior Workflow Architect: 97%.
+- Senior System Architect: 95%.
+- Senior Tester: 94%.
+- Executor decision: continue because the blocker, source files and required
+  inserted slice are verified with at least 95% implementation confidence.
+
+Workflow changes:
+
+- Inserted new S03 `Repository-Source Owner gRPC Endpoint`.
+- Renumbered the old S03-S06 slices to S04-S07.
+- Expanded the query-report facade slice to include the outbound
+  `RepositorySourceWorkspaceGrpcClient` and related tests.
+- Updated the context pack hashes for the S01 contract files.
+
+Verification:
+
+```bash
+git status --short --branch
+```
+
+Result: active branch remained
+`feature/workflow-workspaces-management-20260525`.
