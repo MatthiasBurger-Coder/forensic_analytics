@@ -15,12 +15,18 @@ import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportA
 import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiRepositoryAnalysis.StatusRequest;
 import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiRepositoryAnalysis.SubmissionRequest;
 import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.BranchRefreshResponse;
+import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.CleanupWorkspaceRequest;
 import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.CreateWorkspaceRequest;
 import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.GetWorkspaceRequest;
+import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.ListWorkspacesRequest;
+import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.PublicRepositoryIdentity;
 import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.RefreshWorkspaceBranchRequest;
 import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.RepositoryIdentity;
 import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.WorkspaceBranchResponse;
+import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.WorkspaceCleanupResponse;
 import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.WorkspaceFacadeConfiguration;
+import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.WorkspaceListItemResponse;
+import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.WorkspaceListResponse;
 import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.WorkspaceMetadataRequest;
 import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.WorkspaceMetadataResponse;
 import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.WorkspacePolicy;
@@ -302,6 +308,14 @@ class QueryReportApiHttpAdapterTest {
                 "correlation-workspace-1",
                 "idem-workspace-metadata-1"
             );
+            var listed = response(
+                port,
+                "/api/workspaces",
+                "GET",
+                "",
+                "correlation-workspace-list",
+                null
+            );
             var created = response(
                 port,
                 "/api/workspaces",
@@ -334,6 +348,14 @@ class QueryReportApiHttpAdapterTest {
                 "correlation-workspace-4",
                 "idem-workspace-refresh-1"
             );
+            var cleaned = response(
+                port,
+                "/api/workspaces/workspace-0001",
+                "DELETE",
+                "",
+                "correlation-workspace-cleanup",
+                "idem-workspace-cleanup-1"
+            );
 
             assertEquals(200, metadata.code());
             assertEquals("correlation-workspace-1", metadata.correlationId());
@@ -341,6 +363,16 @@ class QueryReportApiHttpAdapterTest {
             assertTrue(metadata.body().contains("\"workspaceTitle\":\"demo\""));
             assertFalse(metadata.body().contains("\"workspaceId\""));
             assertSafePublicBody(metadata.body());
+
+            assertEquals(200, listed.code());
+            assertEquals("correlation-workspace-list", listed.correlationId());
+            assertTrue(listed.body().contains("\"items\":["));
+            assertTrue(listed.body().contains("\"workspaceId\":\"workspace-0001\""));
+            assertTrue(listed.body().contains("\"workspaceTitle\":\"demo\""));
+            assertTrue(listed.body().contains("\"repositoryBranch\":\"main\""));
+            assertFalse(listed.body().contains("\"repositoryUrl\""));
+            assertFalse(listed.body().contains("https://example.com/acme/demo.git"));
+            assertSafePublicBody(listed.body());
 
             assertEquals(200, created.code());
             assertEquals("correlation-workspace-2", created.correlationId());
@@ -353,6 +385,7 @@ class QueryReportApiHttpAdapterTest {
             assertEquals(200, loaded.code());
             assertEquals("correlation-workspace-3", loaded.correlationId());
             assertTrue(loaded.body().contains("\"workspaceId\":\"workspace-0001\""));
+            assertTrue(loaded.body().contains("\"repositoryUrl\":\"https://example.com/acme/demo.git\""));
             assertSafePublicBody(loaded.body());
 
             assertEquals(200, checkoutResult.code());
@@ -367,6 +400,17 @@ class QueryReportApiHttpAdapterTest {
             assertTrue(refreshed.body().contains("\"status\":\"UP_TO_DATE\""));
             assertTrue(refreshed.body().contains("\"changed\":false"));
             assertSafePublicBody(refreshed.body());
+
+            assertEquals(200, cleaned.code());
+            assertEquals("correlation-workspace-cleanup", cleaned.correlationId());
+            assertTrue(cleaned.body().contains("\"workspaceId\":\"workspace-0001\""));
+            assertTrue(cleaned.body().contains("\"status\":\"CLEANED\""));
+            assertFalse(cleaned.body().contains("\"repository\""));
+            assertFalse(cleaned.body().contains("\"branches\""));
+            assertFalse(cleaned.body().contains("\"sourceRoots\""));
+            assertFalse(cleaned.body().contains("\"repositoryUrl\""));
+            assertFalse(cleaned.body().contains("https://example.com/acme/demo.git"));
+            assertSafePublicBody(cleaned.body());
         } finally {
             server.stop(0);
         }
@@ -407,7 +451,28 @@ class QueryReportApiHttpAdapterTest {
 
             assertEquals(400, response(port, "/api/workspace-metadata", "POST", workspaceMetadataRequest(), null, "idem-1").code());
             assertEquals(400, response(port, "/api/workspace-metadata", "POST", workspaceMetadataRequest(), "correlation-1", null).code());
+            assertEquals(400, response(port, "/api/workspaces", "GET", "", null, null).code());
             assertEquals(400, response(port, "/api/workspaces", "POST", validWorkspaceRequest(), "correlation-1", null).code());
+            assertEquals(400, response(port, "/api/workspaces/workspace-0001", "DELETE", "", null, "idem-delete").code());
+            assertEquals(400, response(port, "/api/workspaces/workspace-0001", "DELETE", "", "correlation-1", null).code());
+            assertEquals(400, response(
+                port,
+                "/api/workspaces/workspace-0001",
+                "DELETE",
+                "",
+                "bad\"correlation",
+                "idem-delete"
+            ).code());
+            assertEquals(400, response(
+                port,
+                "/api/workspaces/workspace-0001",
+                "DELETE",
+                "",
+                "correlation-1",
+                "idem unsafe"
+            ).code());
+            assertEquals(405, response(port, "/api/status", "DELETE", "", "correlation-1", "idem-delete-status").code());
+            assertEquals(404, response(port, "/api/unknown", "DELETE", "", "correlation-1", "idem-delete-unknown").code());
             assertEquals(400, response(
                 port,
                 "/api/workspaces/workspace-0001/branches/workspace-branch-0001/refresh",
@@ -439,6 +504,30 @@ class QueryReportApiHttpAdapterTest {
                 "",
                 "correlation-1",
                 "idem-3"
+            ).code());
+            assertEquals(404, response(
+                port,
+                "/api/workspaces/",
+                "DELETE",
+                "",
+                "correlation-1",
+                "idem-delete-blank"
+            ).code());
+            assertEquals(404, response(
+                port,
+                "/api/workspaces/workspace-0001%5Cbranch",
+                "DELETE",
+                "",
+                "correlation-1",
+                "idem-delete-backslash"
+            ).code());
+            assertEquals(404, response(
+                port,
+                "/api/workspaces/workspace-0001/extra",
+                "DELETE",
+                "",
+                "correlation-1",
+                "idem-delete-extra"
             ).code());
 
             assertEquals(200, response(
@@ -488,6 +577,14 @@ class QueryReportApiHttpAdapterTest {
                 "correlation-2",
                 "idem-conflict-refresh"
             );
+            var cleanupConflict = response(
+                port,
+                "/api/workspaces/workspace-0001",
+                "DELETE",
+                "",
+                "correlation-3",
+                "idem-conflict-cleanup"
+            );
 
             assertEquals(409, createConflict.code());
             assertEquals("correlation-1", createConflict.correlationId());
@@ -495,8 +592,12 @@ class QueryReportApiHttpAdapterTest {
             assertEquals(409, refreshConflict.code());
             assertEquals("correlation-2", refreshConflict.correlationId());
             assertTrue(refreshConflict.body().contains("\"code\":\"IDEMPOTENCY_CONFLICT\""));
+            assertEquals(409, cleanupConflict.code());
+            assertEquals("correlation-3", cleanupConflict.correlationId());
+            assertTrue(cleanupConflict.body().contains("\"code\":\"IDEMPOTENCY_CONFLICT\""));
             assertSafePublicBody(createConflict.body());
             assertSafePublicBody(refreshConflict.body());
+            assertSafePublicBody(cleanupConflict.body());
         } finally {
             server.stop(0);
         }
@@ -556,6 +657,14 @@ class QueryReportApiHttpAdapterTest {
                 "correlation-leak-metadata",
                 "idem-leak-metadata"
             );
+            var listed = response(
+                port,
+                "/api/workspaces",
+                "GET",
+                "",
+                "correlation-leak-list",
+                null
+            );
             var loaded = response(
                 port,
                 "/api/workspaces/workspace-0001",
@@ -572,16 +681,30 @@ class QueryReportApiHttpAdapterTest {
                 "correlation-leak-refresh",
                 "idem-leak-refresh"
             );
+            var cleaned = response(
+                port,
+                "/api/workspaces/workspace-0001",
+                "DELETE",
+                "",
+                "correlation-leak-cleanup",
+                "idem-leak-cleanup"
+            );
 
             assertEquals(200, metadata.code());
+            assertEquals(200, listed.code());
             assertEquals(200, loaded.code());
             assertEquals(200, refreshed.code());
+            assertEquals(200, cleaned.code());
             assertTrue(metadata.body().contains("Diagnostic details redacted"));
+            assertTrue(listed.body().contains("Diagnostic details redacted"));
             assertTrue(loaded.body().contains("Diagnostic details redacted"));
             assertTrue(refreshed.body().contains("Diagnostic details redacted"));
+            assertTrue(cleaned.body().contains("Diagnostic details redacted"));
             assertSafePublicBody(metadata.body());
+            assertSafePublicBody(listed.body());
             assertSafePublicBody(loaded.body());
             assertSafePublicBody(refreshed.body());
+            assertSafePublicBody(cleaned.body());
         } finally {
             leaking.stop(0);
         }
@@ -653,6 +776,14 @@ class QueryReportApiHttpAdapterTest {
                 "correlation-failing-metadata",
                 "idem-failing-metadata"
             );
+            var listed = response(
+                port,
+                "/api/workspaces",
+                "GET",
+                "",
+                "correlation-failing-list",
+                null
+            );
             var loaded = response(
                 port,
                 "/api/workspaces/workspace-0001",
@@ -669,16 +800,30 @@ class QueryReportApiHttpAdapterTest {
                 "correlation-failing-refresh",
                 "idem-failing-refresh"
             );
+            var cleaned = response(
+                port,
+                "/api/workspaces/workspace-0001",
+                "DELETE",
+                "",
+                "correlation-failing-cleanup",
+                "idem-failing-cleanup"
+            );
 
             assertEquals(503, metadata.code());
+            assertEquals(503, listed.code());
             assertEquals(503, loaded.code());
             assertEquals(503, refreshed.code());
+            assertEquals(503, cleaned.code());
             assertTrue(metadata.body().contains("\"code\":\"BACKEND_UNAVAILABLE\""));
+            assertTrue(listed.body().contains("\"code\":\"BACKEND_UNAVAILABLE\""));
             assertTrue(loaded.body().contains("\"code\":\"BACKEND_UNAVAILABLE\""));
             assertTrue(refreshed.body().contains("\"code\":\"BACKEND_UNAVAILABLE\""));
+            assertTrue(cleaned.body().contains("\"code\":\"BACKEND_UNAVAILABLE\""));
             assertSafePublicBody(metadata.body());
+            assertSafePublicBody(listed.body());
             assertSafePublicBody(loaded.body());
             assertSafePublicBody(refreshed.body());
+            assertSafePublicBody(cleaned.body());
         } finally {
             failing.stop(0);
         }
@@ -886,6 +1031,35 @@ class QueryReportApiHttpAdapterTest {
         }
 
         @Override
+        public WorkspaceListResponse list(ListWorkspacesRequest request) {
+            return new WorkspaceListResponse(
+                List.of(new WorkspaceListItemResponse(
+                    "workspace-0001",
+                    "demo",
+                    new PublicRepositoryIdentity(
+                        "example.com/acme/demo",
+                        "example.com",
+                        "acme",
+                        "demo"
+                    ),
+                    workspace(List.of(Diagnostic.info("WORKSPACE_READY", "Workspace state loaded"))).branches(),
+                    "CHECKED_OUT",
+                    List.of(Diagnostic.info("WORKSPACE_LISTED", "Workspace listed"))
+                )),
+                List.of(Diagnostic.info("WORKSPACES_LISTED", "Repository workspaces listed"))
+            );
+        }
+
+        @Override
+        public WorkspaceCleanupResponse cleanup(CleanupWorkspaceRequest request) {
+            return new WorkspaceCleanupResponse(
+                "workspace-0001",
+                "CLEANED",
+                List.of(Diagnostic.info("WORKSPACE_CLEANED", "Repository workspace cleaned"))
+            );
+        }
+
+        @Override
         public BranchRefreshResponse refresh(RefreshWorkspaceBranchRequest request) {
             return new BranchRefreshResponse(
                 "workspace-branch-0001",
@@ -951,6 +1125,35 @@ class QueryReportApiHttpAdapterTest {
         }
 
         @Override
+        public WorkspaceListResponse list(ListWorkspacesRequest request) {
+            return new WorkspaceListResponse(
+                List.of(new WorkspaceListItemResponse(
+                    "workspace-0001",
+                    "demo",
+                    new PublicRepositoryIdentity(
+                        "example.com/acme/demo",
+                        "example.com",
+                        "acme",
+                        "demo"
+                    ),
+                    workspace(List.of(leakingDiagnostic())).branches(),
+                    "CHECKED_OUT",
+                    List.of(leakingDiagnostic())
+                )),
+                List.of(leakingDiagnostic())
+            );
+        }
+
+        @Override
+        public WorkspaceCleanupResponse cleanup(CleanupWorkspaceRequest request) {
+            return new WorkspaceCleanupResponse(
+                "workspace-0001",
+                "CLEANED",
+                List.of(leakingDiagnostic())
+            );
+        }
+
+        @Override
         public BranchRefreshResponse refresh(RefreshWorkspaceBranchRequest request) {
             return new BranchRefreshResponse(
                 "workspace-branch-0001",
@@ -999,6 +1202,11 @@ class QueryReportApiHttpAdapterTest {
             throw conflict();
         }
 
+        @Override
+        public WorkspaceCleanupResponse cleanup(CleanupWorkspaceRequest request) {
+            throw conflict();
+        }
+
         private static QueryReportApiIdempotencyConflictException conflict() {
             return new QueryReportApiIdempotencyConflictException("idempotency key was reused with different input");
         }
@@ -1017,6 +1225,16 @@ class QueryReportApiHttpAdapterTest {
 
         @Override
         public WorkspaceResponse get(GetWorkspaceRequest request) {
+            throw unavailable();
+        }
+
+        @Override
+        public WorkspaceListResponse list(ListWorkspacesRequest request) {
+            throw unavailable();
+        }
+
+        @Override
+        public WorkspaceCleanupResponse cleanup(CleanupWorkspaceRequest request) {
             throw unavailable();
         }
 

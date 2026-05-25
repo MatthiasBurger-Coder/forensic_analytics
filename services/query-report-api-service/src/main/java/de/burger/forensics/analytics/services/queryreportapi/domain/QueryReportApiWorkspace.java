@@ -93,6 +93,35 @@ public final class QueryReportApiWorkspace {
         }
     }
 
+    public record ListWorkspacesRequest(
+        String requestId,
+        String schemaVersion,
+        String correlationId,
+        boolean includeCleaned
+    ) {
+        public ListWorkspacesRequest {
+            requestId = requireText(requestId, "request id");
+            schemaVersion = requireText(schemaVersion, "schema version");
+            correlationId = requireText(correlationId, "correlation id");
+        }
+    }
+
+    public record CleanupWorkspaceRequest(
+        String requestId,
+        String idempotencyKey,
+        String schemaVersion,
+        String correlationId,
+        String workspaceId
+    ) {
+        public CleanupWorkspaceRequest {
+            requestId = requireText(requestId, "request id");
+            idempotencyKey = requireText(idempotencyKey, "idempotency key");
+            schemaVersion = requireText(schemaVersion, "schema version");
+            correlationId = requireText(correlationId, "correlation id");
+            workspaceId = requireOpaqueId(workspaceId, "workspace id", "workspace-");
+        }
+    }
+
     public record RefreshWorkspaceBranchRequest(
         String requestId,
         String idempotencyKey,
@@ -178,6 +207,48 @@ public final class QueryReportApiWorkspace {
         }
     }
 
+    public record PublicRepositoryIdentity(
+        String repositoryKey,
+        String repositoryHost,
+        String repositoryOwner,
+        String repositoryName
+    ) {
+        public PublicRepositoryIdentity {
+            repositoryKey = requireRepositoryKey(repositoryKey);
+            repositoryHost = requirePublicText(repositoryHost, "repository host");
+            repositoryOwner = optionalNullablePublicText(repositoryOwner, "repository owner");
+            repositoryName = requirePublicText(repositoryName, "repository name");
+        }
+    }
+
+    public record WorkspaceListResponse(
+        List<WorkspaceListItemResponse> items,
+        List<Diagnostic> diagnostics
+    ) {
+        public WorkspaceListResponse {
+            items = List.copyOf(Objects.requireNonNullElse(items, List.of()));
+            diagnostics = List.copyOf(Objects.requireNonNullElse(diagnostics, List.of()));
+        }
+    }
+
+    public record WorkspaceListItemResponse(
+        String workspaceId,
+        String workspaceTitle,
+        PublicRepositoryIdentity repository,
+        List<WorkspaceBranchResponse> branches,
+        String status,
+        List<Diagnostic> diagnostics
+    ) {
+        public WorkspaceListItemResponse {
+            workspaceId = requireOpaqueId(workspaceId, "workspace id", "workspace-");
+            workspaceTitle = requirePublicText(workspaceTitle, "workspace title");
+            Objects.requireNonNull(repository, "public repository identity must not be null");
+            branches = List.copyOf(Objects.requireNonNullElse(branches, List.of()));
+            status = workspaceStatus(status);
+            diagnostics = List.copyOf(Objects.requireNonNullElse(diagnostics, List.of()));
+        }
+    }
+
     public record WorkspaceResponse(
         String workspaceId,
         String workspaceTitle,
@@ -192,6 +263,18 @@ public final class QueryReportApiWorkspace {
             Objects.requireNonNull(repository, "repository identity must not be null");
             branches = List.copyOf(Objects.requireNonNullElse(branches, List.of()));
             status = workspaceStatus(status);
+            diagnostics = List.copyOf(Objects.requireNonNullElse(diagnostics, List.of()));
+        }
+    }
+
+    public record WorkspaceCleanupResponse(
+        String workspaceId,
+        String status,
+        List<Diagnostic> diagnostics
+    ) {
+        public WorkspaceCleanupResponse {
+            workspaceId = requireOpaqueId(workspaceId, "workspace id", "workspace-");
+            status = cleanupStatus(status);
             diagnostics = List.copyOf(Objects.requireNonNullElse(diagnostics, List.of()));
         }
     }
@@ -347,6 +430,14 @@ public final class QueryReportApiWorkspace {
             case "NEW", "CHECKING_OUT", "READY", "CHECKED_OUT", "CLEANED", "FAILED" -> value;
             default -> throw new IllegalArgumentException("workspace status is not public");
         };
+    }
+
+    private static String cleanupStatus(String status) {
+        var value = workspaceStatus(status);
+        if (!"CLEANED".equals(value)) {
+            throw new IllegalArgumentException("cleanup status must be CLEANED");
+        }
+        return value;
     }
 
     private static String branchStatus(String status) {

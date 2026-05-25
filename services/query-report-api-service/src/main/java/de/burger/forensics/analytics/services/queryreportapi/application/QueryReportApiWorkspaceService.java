@@ -2,10 +2,14 @@ package de.burger.forensics.analytics.services.queryreportapi.application;
 
 import de.burger.forensics.analytics.services.queryreportapi.application.port.RepositoryWorkspaceOwnerPort;
 import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.BranchRefreshResponse;
+import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.CleanupWorkspaceRequest;
 import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.CreateWorkspaceRequest;
 import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.GetWorkspaceRequest;
+import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.ListWorkspacesRequest;
 import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.RefreshWorkspaceBranchRequest;
+import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.WorkspaceCleanupResponse;
 import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.WorkspaceFacadeConfiguration;
+import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.WorkspaceListResponse;
 import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.WorkspaceMetadataRequest;
 import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.WorkspaceMetadataResponse;
 import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.WorkspacePolicy;
@@ -76,6 +80,30 @@ public final class QueryReportApiWorkspaceService {
 
     public WorkspaceResponse get(String requestId, String correlationId, String workspaceId) {
         return ownerPort.get(new GetWorkspaceRequest(requestId, correlationId, workspaceId));
+    }
+
+    public WorkspaceListResponse list(String requestId, String correlationId) {
+        return ownerPort.list(new ListWorkspacesRequest(
+            requestId,
+            configuration.schemaVersion(),
+            correlationId,
+            false
+        ));
+    }
+
+    public WorkspaceCleanupResponse cleanup(
+        String requestId,
+        String idempotencyKey,
+        String correlationId,
+        String workspaceId
+    ) {
+        return ownerPort.cleanup(new CleanupWorkspaceRequest(
+            requestId,
+            idempotencyKey,
+            configuration.schemaVersion(),
+            correlationId,
+            workspaceId
+        ));
     }
 
     public WorkspaceResponse waitForCheckout(String requestId, String correlationId, String workspaceId) {

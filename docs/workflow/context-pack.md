@@ -89,7 +89,7 @@ Targeted backend:
 | `.agents/skills/workflow-authoring/SKILL.md` | `d87950d6d9ca831a4201b660c6bef373cb85be829f21694a323dbb9b8544d801` |
 | `.agents/skills/execution-profile-router/SKILL.md` | `40b7a5c9a2d8896b3e2f8c384300979a13d7d35986a5bd4bc4d3b5760a7d52b7` |
 | `.agents/skills/three-amigos-requirement-gatekeeper/SKILL.md` | `95c04f47127f5149bb39a7e1b82b2690803cc765cad5d18274a82d415931e9ad` |
-| `contracts/openapi/gateway-api.yaml` | `f9a2e3ce2e64c715664ec825334c910ee22345bc2b7df540657b79202d9cdda7` |
+| `contracts/openapi/gateway-api.yaml` | `553e5a459389c4c0f08b9f40701b6a490c5c3e634881fc2b80dc20ad9f78127c` |
 | `contracts/grpc/repository-analysis.proto` | `9213e97743736dc808e5ee50e7a26849c7e01a3001f02e1606b9aba82ba79cc1` |
 
 The context pack is stale when any recorded hash changes, when the workflow

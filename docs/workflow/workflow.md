@@ -466,11 +466,13 @@ secondary_reviewers:
   - senior_tester
   - security_reviewer
 affected_files:
+  - contracts/openapi/gateway-api.yaml
   - services/query-report-api-service/src/main/java/de/burger/forensics/analytics/services/queryreportapi/application/port/RepositoryWorkspaceOwnerPort.java
   - services/query-report-api-service/src/main/java/de/burger/forensics/analytics/services/queryreportapi/application/QueryReportApiWorkspaceService.java
   - services/query-report-api-service/src/main/java/de/burger/forensics/analytics/services/queryreportapi/domain/QueryReportApiWorkspace.java
   - services/query-report-api-service/src/main/java/de/burger/forensics/analytics/services/queryreportapi/adapter/in/http/QueryReportApiHttpHandler.java
   - services/query-report-api-service/src/main/java/de/burger/forensics/analytics/services/queryreportapi/adapter/out/grpc/RepositorySourceWorkspaceGrpcClient.java
+  - services/query-report-api-service/src/test/java/de/burger/forensics/analytics/services/queryreportapi/adapter/in/http/GatewayOpenApiContractTest.java
   - services/query-report-api-service/src/test/java/de/burger/forensics/analytics/services/queryreportapi/adapter/in/http/QueryReportApiHttpAdapterTest.java
   - services/query-report-api-service/src/test/java/de/burger/forensics/analytics/services/queryreportapi/adapter/out/grpc/RepositorySourceWorkspaceGrpcClientTest.java
   - services/query-report-api-service/src/test/java/de/burger/forensics/analytics/services/queryreportapi/application/QueryReportApiWorkspaceServiceTest.java

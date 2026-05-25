@@ -2,11 +2,17 @@ package de.burger.forensics.analytics.services.queryreportapi.domain;
 
 import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.WorkspaceBranchResponse;
 import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.BranchRefreshResponse;
+import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.CleanupWorkspaceRequest;
 import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.CreateWorkspaceRequest;
 import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.GetWorkspaceRequest;
+import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.ListWorkspacesRequest;
+import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.PublicRepositoryIdentity;
 import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.RefreshWorkspaceBranchRequest;
 import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.RepositoryIdentity;
+import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.WorkspaceCleanupResponse;
 import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.WorkspaceFacadeConfiguration;
+import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.WorkspaceListItemResponse;
+import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.WorkspaceListResponse;
 import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.WorkspaceMetadataRequest;
 import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.WorkspaceMetadataResponse;
 import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.WorkspacePolicy;
@@ -135,6 +141,38 @@ class QueryReportApiWorkspaceTest {
     }
 
     @Test
+    void validatesWorkspaceListAndCleanupPublicDtos() {
+        var item = new WorkspaceListItemResponse(
+            "workspace-0001",
+            "demo",
+            publicRepository(),
+            List.of(branchWithSourceRoot("src/main/java")),
+            "checked_out",
+            null
+        );
+        var list = new WorkspaceListResponse(List.of(item), null);
+        var emptyList = new WorkspaceListResponse(null, null);
+        var cleanup = new WorkspaceCleanupResponse("workspace-0001", "cleaned", null);
+        var listRequest = new ListWorkspacesRequest("request-1", "query-report-workspace.v1", "correlation-1", false);
+        var cleanupRequest = new CleanupWorkspaceRequest(
+            "request-2",
+            "idem-1",
+            "query-report-workspace.v1",
+            "correlation-2",
+            "workspace-0001"
+        );
+
+        assertEquals("CHECKED_OUT", item.status());
+        assertEquals("example.com/acme/demo", item.repository().repositoryKey());
+        assertEquals(List.of(), list.diagnostics());
+        assertEquals(List.of(), emptyList.items());
+        assertEquals("CLEANED", cleanup.status());
+        assertEquals(false, listRequest.includeCleaned());
+        assertEquals("workspace-0001", cleanupRequest.workspaceId());
+        assertThrows(UnsupportedOperationException.class, () -> list.items().add(item));
+    }
+
+    @Test
     void rejectsUnsafeWorkspaceRequestPoliciesAndPublicResponseFields() {
         assertThrows(IllegalArgumentException.class, () -> new WorkspaceFacadeConfiguration("schema", 0, policy()));
         assertThrows(IllegalArgumentException.class, () -> new WorkspaceFacadeConfiguration("schema", 3_601, policy()));
@@ -226,6 +264,27 @@ class QueryReportApiWorkspaceTest {
             "bad",
             policy()
         ));
+        assertThrows(IllegalArgumentException.class, () -> new ListWorkspacesRequest(" ", "schema", "correlation-1", false));
+        assertThrows(IllegalArgumentException.class, () -> new CleanupWorkspaceRequest(
+            "request-1",
+            "idem-1",
+            "schema",
+            "correlation-1",
+            "bad"
+        ));
+        assertThrows(IllegalArgumentException.class, () -> new WorkspaceCleanupResponse(
+            "workspace-0001",
+            "READY",
+            List.of()
+        ));
+        assertThrows(IllegalArgumentException.class, () -> new WorkspaceListItemResponse(
+            "bad",
+            "demo",
+            publicRepository(),
+            List.of(),
+            "READY",
+            List.of()
+        ));
     }
 
     @Test
@@ -308,6 +367,20 @@ class QueryReportApiWorkspaceTest {
         assertThrows(IllegalArgumentException.class, () -> branchWithBranch("C:\\feature"));
         assertThrows(IllegalArgumentException.class, () -> branchWithBranch("feature\rnext"));
         assertThrows(IllegalArgumentException.class, () -> branchWithSourceRoot("C:/src/main/java"));
+        assertThrows(IllegalArgumentException.class, () -> new PublicRepositoryIdentity(
+            "example.com/acme/demo",
+            "/tmp/repository-source-data",
+            "acme",
+            "demo"
+        ));
+        assertThrows(IllegalArgumentException.class, () -> new WorkspaceListItemResponse(
+            "workspace-0001",
+            "https://example.com/acme/demo.git",
+            publicRepository(),
+            List.of(),
+            "READY",
+            List.of()
+        ));
     }
 
     private static WorkspaceMetadataRequest metadataRequest(String repositoryUrl) {
@@ -381,6 +454,15 @@ class QueryReportApiWorkspaceTest {
             "acme",
             "demo",
             "main"
+        );
+    }
+
+    private static PublicRepositoryIdentity publicRepository() {
+        return new PublicRepositoryIdentity(
+            "example.com/acme/demo",
+            "example.com",
+            "acme",
+            "demo"
         );
     }
 

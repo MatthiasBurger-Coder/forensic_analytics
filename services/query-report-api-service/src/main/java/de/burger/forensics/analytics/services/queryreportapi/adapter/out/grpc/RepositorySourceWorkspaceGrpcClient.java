@@ -1,7 +1,9 @@
 package de.burger.forensics.analytics.services.queryreportapi.adapter.out.grpc;
 
+import de.burger.forensics.analytics.repositoryanalysis.v1.CleanupRepositoryWorkspaceByIdRequest;
 import de.burger.forensics.analytics.repositoryanalysis.v1.CreateRepositoryWorkspaceRequest;
 import de.burger.forensics.analytics.repositoryanalysis.v1.GetRepositoryWorkspaceRequest;
+import de.burger.forensics.analytics.repositoryanalysis.v1.ListRepositoryWorkspacesRequest;
 import de.burger.forensics.analytics.repositoryanalysis.v1.MetadataPreviewPolicy;
 import de.burger.forensics.analytics.repositoryanalysis.v1.PreviewRepositoryWorkspaceMetadataRequest;
 import de.burger.forensics.analytics.repositoryanalysis.v1.RefreshRepositoryWorkspaceBranchRequest;
@@ -10,15 +12,22 @@ import de.burger.forensics.analytics.repositoryanalysis.v1.RepositoryReference;
 import de.burger.forensics.analytics.repositoryanalysis.v1.RepositoryWorkspace;
 import de.burger.forensics.analytics.repositoryanalysis.v1.RepositoryWorkspaceBranch;
 import de.burger.forensics.analytics.repositoryanalysis.v1.RepositoryWorkspaceBranchSelector;
+import de.burger.forensics.analytics.repositoryanalysis.v1.RepositoryWorkspaceStatus;
 import de.burger.forensics.analytics.services.queryreportapi.application.QueryReportApiIdempotencyConflictException;
 import de.burger.forensics.analytics.services.queryreportapi.application.QueryReportApiWorkspaceException;
 import de.burger.forensics.analytics.services.queryreportapi.application.port.RepositoryWorkspaceOwnerPort;
 import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiRepositoryAnalysis.Diagnostic;
 import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.BranchRefreshResponse;
+import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.CleanupWorkspaceRequest;
 import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.GetWorkspaceRequest;
+import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.ListWorkspacesRequest;
+import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.PublicRepositoryIdentity;
 import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.RefreshWorkspaceBranchRequest;
 import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.RepositoryIdentity;
 import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.WorkspaceBranchResponse;
+import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.WorkspaceCleanupResponse;
+import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.WorkspaceListItemResponse;
+import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.WorkspaceListResponse;
 import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.WorkspaceMetadataRequest;
 import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.WorkspaceMetadataResponse;
 import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.WorkspaceResponse;
@@ -116,6 +125,52 @@ public final class RepositorySourceWorkspaceGrpcClient implements RepositoryWork
     }
 
     @Override
+    public WorkspaceListResponse list(ListWorkspacesRequest request) {
+        try {
+            var response = stub.withDeadlineAfter(deadlineSeconds, TimeUnit.SECONDS)
+                .listRepositoryWorkspaces(ListRepositoryWorkspacesRequest.newBuilder()
+                    .setRequestId(request.requestId())
+                    .setSchemaVersion(request.schemaVersion())
+                    .setCorrelationId(request.correlationId())
+                    .setIncludeCleaned(request.includeCleaned())
+                    .build());
+            return new WorkspaceListResponse(
+                response.getWorkspacesList().stream()
+                    .map(RepositorySourceWorkspaceGrpcClient::workspaceListItem)
+                    .toList(),
+                diagnostics(response.getDiagnosticsList())
+            );
+        } catch (StatusRuntimeException error) {
+            throw map(error);
+        } catch (IllegalArgumentException | NullPointerException error) {
+            throw unsupportedStatus();
+        }
+    }
+
+    @Override
+    public WorkspaceCleanupResponse cleanup(CleanupWorkspaceRequest request) {
+        try {
+            var response = stub.withDeadlineAfter(deadlineSeconds, TimeUnit.SECONDS)
+                .cleanupRepositoryWorkspaceById(CleanupRepositoryWorkspaceByIdRequest.newBuilder()
+                    .setRequestId(request.requestId())
+                    .setIdempotencyKey(request.idempotencyKey())
+                    .setSchemaVersion(request.schemaVersion())
+                    .setCorrelationId(request.correlationId())
+                    .setWorkspaceId(request.workspaceId())
+                    .build());
+            return new WorkspaceCleanupResponse(
+                response.getWorkspaceId(),
+                workspaceStatus(response.getWorkspaceStatus()),
+                diagnostics(response.getDiagnosticsList())
+            );
+        } catch (StatusRuntimeException error) {
+            throw map(error);
+        } catch (IllegalArgumentException | NullPointerException error) {
+            throw unsupportedStatus();
+        }
+    }
+
+    @Override
     public BranchRefreshResponse refresh(RefreshWorkspaceBranchRequest request) {
         try {
             var response = stub.withDeadlineAfter(deadlineSeconds, TimeUnit.SECONDS)
@@ -176,6 +231,19 @@ public final class RepositorySourceWorkspaceGrpcClient implements RepositoryWork
         );
     }
 
+    private static WorkspaceListItemResponse workspaceListItem(RepositoryWorkspace workspace) {
+        return new WorkspaceListItemResponse(
+            workspace.getWorkspaceId(),
+            workspace.getWorkspaceTitle(),
+            publicRepositoryIdentity(workspace.getRepository()),
+            workspace.getBranchesList().stream()
+                .map(RepositorySourceWorkspaceGrpcClient::branch)
+                .toList(),
+            workspaceStatus(workspace),
+            diagnostics(workspace.getDiagnosticsList())
+        );
+    }
+
     private static RepositoryIdentity repositoryIdentity(
         de.burger.forensics.analytics.repositoryanalysis.v1.RepositoryIdentity repository
     ) {
@@ -186,6 +254,17 @@ public final class RepositorySourceWorkspaceGrpcClient implements RepositoryWork
             nullable(repository.getRepositoryOwner()),
             repository.getRepositoryName(),
             nullable(repository.getDefaultBranch())
+        );
+    }
+
+    private static PublicRepositoryIdentity publicRepositoryIdentity(
+        de.burger.forensics.analytics.repositoryanalysis.v1.RepositoryIdentity repository
+    ) {
+        return new PublicRepositoryIdentity(
+            repository.getRepositoryKey(),
+            repository.getRepositoryHost(),
+            nullable(repository.getRepositoryOwner()),
+            repository.getRepositoryName()
         );
     }
 
@@ -204,7 +283,11 @@ public final class RepositorySourceWorkspaceGrpcClient implements RepositoryWork
     }
 
     private static String workspaceStatus(RepositoryWorkspace workspace) {
-        return switch (workspace.getStatus()) {
+        return workspaceStatus(workspace.getStatus());
+    }
+
+    private static String workspaceStatus(RepositoryWorkspaceStatus status) {
+        return switch (status) {
             case REPOSITORY_WORKSPACE_STATUS_READY -> "READY";
             case REPOSITORY_WORKSPACE_STATUS_CHECKED_OUT -> "CHECKED_OUT";
             case REPOSITORY_WORKSPACE_STATUS_CLEANED -> "CLEANED";

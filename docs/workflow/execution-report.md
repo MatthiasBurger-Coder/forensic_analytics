@@ -6,7 +6,8 @@ Workflow execution is in progress. S01 contract and semantics closure is
 completed and pushed. S02 repository-source lifecycle behavior is completed
 and pushed. The workflow was refined after S02 to insert the missing
 repository-source owner gRPC endpoint slice before query-report facade work.
-S03 repository-source owner gRPC endpoint behavior is completed.
+S03 repository-source owner gRPC endpoint behavior is completed. S04
+query-report public facade behavior is completed.
 
 ## Workflow
 
@@ -232,3 +233,68 @@ Notes:
   `repositorysource.application` branch coverage at 79.17%. After the approved
   targeted test repair, the package report shows 80.00% branch coverage and
   the full gate passes.
+
+### S04 Query-Report Public Facade
+
+Status: completed.
+
+Subagent and role reviews:
+
+- Senior Java Backend: verified query-report had preview/create/get/refresh
+  only and identified the missing list/delete facade methods.
+- Senior System Architect: confirmed the allowed path remains HTTP adapter to
+  application service to port to repository-source gRPC adapter. It flagged
+  that the existing detail DTO contains `repositoryUrl` and must not be reused
+  for public list/delete responses.
+- Senior Tester: identified regression coverage for list/delete HTTP routes,
+  application delegation, domain DTO safety, gRPC mapping and OpenAPI schema
+  narrowing.
+- Security Reviewer: confirmed list/delete must not expose private paths, H2
+  paths, raw output, credentials, tokens or unsupported cleanup states.
+- Refinement review after the DTO blocker: the user explicitly approved the
+  narrow list/delete DTO path after refinement confidence remained below the
+  automatic 95% continuation threshold.
+
+Changes:
+
+- Added query-report list and cleanup application requests/responses and port
+  methods.
+- Added list and delete HTTP routes for `/api/workspaces` and
+  `/api/workspaces/{workspaceId}` with required correlation and idempotency
+  headers.
+- Added repository-source gRPC client calls for `ListRepositoryWorkspaces` and
+  `CleanupRepositoryWorkspaceById`.
+- Introduced list-specific public DTOs that omit `repositoryUrl`; existing
+  create/get/detail DTO behavior remains unchanged.
+- Narrowed the OpenAPI list schema so list items use
+  `PublicRepositoryIdentity` instead of the URL-bearing detail response.
+- Added regression tests for route validation, redaction, idempotency
+  conflicts, backend failures, unsupported cleanup states and OpenAPI schema
+  safety.
+
+Verification:
+
+```bash
+./gradlew :services:query-report-api-service:compileTestJava --dependency-verification strict --console=plain --stacktrace
+./gradlew :services:query-report-api-service:test --tests "*GatewayOpenApiContractTest" --tests "*QueryReportApiHttpAdapterTest" --tests "*QueryReportApiWorkspaceServiceTest" --tests "*QueryReportApiWorkspaceTest" --tests "*RepositorySourceWorkspaceGrpcClientTest" --tests "*QueryReportApiServiceApplicationTest" --tests "*QueryReportApiServiceArchitectureTest" --dependency-verification strict --console=plain --stacktrace
+./gradlew :services:query-report-api-service:test --dependency-verification strict --console=plain --stacktrace
+git diff --check
+./gradlew test --dependency-verification strict --console=plain --stacktrace
+./gradlew :services:query-report-api-service:test --tests "*QueryReportApiHttpAdapterTest" --dependency-verification strict --console=plain --stacktrace
+./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace
+```
+
+Result: all final commands passed.
+
+Notes:
+
+- `GET /api/workspaces` returns a sanitized list with `items` and diagnostics.
+  It does not include `repositoryUrl`; selected branches come from each
+  branch item.
+- `DELETE /api/workspaces/{workspaceId}` delegates cleanup by workspace ID and
+  returns only `workspaceId`, `status` and diagnostics.
+- Cleanup success is only represented as `CLEANED`; unsupported owner states
+  map to a controlled backend error instead of confirmed deletion.
+- First full quality-gate attempt failed at `checkPackageCoverage` with
+  `queryreportapi.adapter.in.http` branch coverage at 79.31%. After the
+  targeted route-validation repair, the full gate passed.
