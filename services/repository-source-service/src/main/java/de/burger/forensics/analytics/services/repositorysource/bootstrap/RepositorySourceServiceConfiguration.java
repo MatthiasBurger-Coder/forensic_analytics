@@ -25,6 +25,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import java.time.Clock;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 @Configuration(proxyBeanMethods = false)
 public class RepositorySourceServiceConfiguration {
@@ -89,6 +91,11 @@ public class RepositorySourceServiceConfiguration {
         return new UuidRepositoryWorkspaceIdGenerator();
     }
 
+    @Bean(destroyMethod = "shutdown")
+    public ExecutorService repositoryWorkspaceCheckoutExecutor() {
+        return Executors.newFixedThreadPool(2);
+    }
+
     @Bean
     public RepositorySourceApplicationService repositorySourceApplicationService(
         @Qualifier("repositoryPreparationRepository") RepositoryPreparationRepository repository,
@@ -114,7 +121,8 @@ public class RepositorySourceServiceConfiguration {
         RepositoryWorkspacePort workspacePort,
         RepositoryCheckoutPort checkoutPort,
         RepositoryMetadataPort metadataPort,
-        Clock repositorySourceClock
+        Clock repositorySourceClock,
+        ExecutorService repositoryWorkspaceCheckoutExecutor
     ) {
         return new RepositoryWorkspaceApplicationService(
             repository,
@@ -123,7 +131,8 @@ public class RepositorySourceServiceConfiguration {
             workspacePort,
             checkoutPort,
             metadataPort,
-            repositorySourceClock
+            repositorySourceClock,
+            repositoryWorkspaceCheckoutExecutor
         );
     }
 

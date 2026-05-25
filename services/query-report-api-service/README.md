@@ -22,6 +22,7 @@ Repository checkout workspace routes:
 - `POST /api/workspace-metadata`
 - `POST /api/workspaces`
 - `GET /api/workspaces/{workspaceId}`
+- `GET /api/workspaces/{workspaceId}/checkout-result`
 - `POST /api/workspaces/{workspaceId}/branches/{workspaceBranchId}/refresh`
 
 `POST /api/repository-analyses` requires `X-Correlation-Id` and

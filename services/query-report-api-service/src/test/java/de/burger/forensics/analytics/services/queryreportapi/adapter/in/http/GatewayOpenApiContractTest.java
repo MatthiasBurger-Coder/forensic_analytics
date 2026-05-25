@@ -81,6 +81,11 @@ class GatewayOpenApiContractTest {
         var workspaceGet = section(
             contract,
             "  /workspaces/{workspaceId}:",
+            "  /workspaces/{workspaceId}/checkout-result:"
+        );
+        var workspaceCheckoutResultGet = section(
+            contract,
+            "  /workspaces/{workspaceId}/checkout-result:",
             "  /workspaces/{workspaceId}/branches/{workspaceBranchId}/refresh:"
         );
         var refreshPost = section(
@@ -117,6 +122,14 @@ class GatewayOpenApiContractTest {
         assertContains(workspaceGet, "- $ref: '#/components/parameters/RequiredCorrelationId'");
         assertContains(workspaceGet, "- $ref: '#/components/parameters/WorkspaceId'");
         assertContains(workspaceGet, "$ref: '#/components/schemas/RepositoryCheckoutWorkspaceResponse'");
+
+        assertContains(workspaceCheckoutResultGet, "operationId: waitForRepositoryWorkspaceCheckoutResult");
+        assertContains(workspaceCheckoutResultGet, "x-implementation-status: current-verified");
+        assertContains(workspaceCheckoutResultGet, "single client request");
+        assertContains(workspaceCheckoutResultGet, "CHECKED_OUT or FAILED");
+        assertContains(workspaceCheckoutResultGet, "- $ref: '#/components/parameters/RequiredCorrelationId'");
+        assertContains(workspaceCheckoutResultGet, "- $ref: '#/components/parameters/WorkspaceId'");
+        assertContains(workspaceCheckoutResultGet, "$ref: '#/components/schemas/RepositoryCheckoutWorkspaceResponse'");
 
         assertContains(refreshPost, "operationId: refreshRepositoryWorkspaceBranch");
         assertContains(refreshPost, "x-implementation-status: current-verified");

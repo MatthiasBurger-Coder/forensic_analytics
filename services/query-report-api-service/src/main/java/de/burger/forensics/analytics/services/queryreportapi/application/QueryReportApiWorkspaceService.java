@@ -16,6 +16,8 @@ import java.util.Map;
 import java.util.Objects;
 
 public final class QueryReportApiWorkspaceService {
+    private static final int CHECKOUT_WAIT_ATTEMPTS = 1_800;
+    private static final long CHECKOUT_WAIT_INTERVAL_MILLIS = 1_000;
     private final RepositoryWorkspaceOwnerPort ownerPort;
     private final WorkspaceFacadeConfiguration configuration;
     private final Map<String, IdempotentMetadataPreview> metadataPreviews = new HashMap<>();
@@ -76,6 +78,16 @@ public final class QueryReportApiWorkspaceService {
         return ownerPort.get(new GetWorkspaceRequest(requestId, correlationId, workspaceId));
     }
 
+    public WorkspaceResponse waitForCheckout(String requestId, String correlationId, String workspaceId) {
+        var request = new GetWorkspaceRequest(requestId, correlationId, workspaceId);
+        var workspace = ownerPort.get(request);
+        for (int attempt = 0; attempt < CHECKOUT_WAIT_ATTEMPTS && hasPendingCheckout(workspace); attempt += 1) {
+            pauseCheckoutWait();
+            workspace = ownerPort.get(request);
+        }
+        return workspace;
+    }
+
     public BranchRefreshResponse refresh(
         String requestId,
         String idempotencyKey,
@@ -100,6 +112,25 @@ public final class QueryReportApiWorkspaceService {
                 throw new QueryReportApiIdempotencyConflictException("idempotency key was reused with different input");
             }
             return response;
+        }
+    }
+
+    private static boolean hasPendingCheckout(WorkspaceResponse workspace) {
+        return workspace.branches().stream()
+            .anyMatch(branch -> "CHECKING_OUT".equals(branch.status()));
+    }
+
+    private static void pauseCheckoutWait() {
+        try {
+            Thread.sleep(CHECKOUT_WAIT_INTERVAL_MILLIS);
+        } catch (InterruptedException error) {
+            Thread.currentThread().interrupt();
+            throw new QueryReportApiWorkspaceException(
+                503,
+                "BACKEND_UNAVAILABLE",
+                true,
+                "Repository workspace checkout status wait was interrupted"
+            );
         }
     }
 }

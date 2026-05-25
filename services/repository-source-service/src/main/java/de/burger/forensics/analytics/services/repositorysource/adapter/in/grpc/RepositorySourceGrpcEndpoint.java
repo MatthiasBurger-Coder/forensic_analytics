@@ -188,7 +188,7 @@ public final class RepositorySourceGrpcEndpoint extends RepositoryAnalysisServic
             );
             responseObserver.onNext(CreateRepositoryWorkspaceResponse.newBuilder()
                 .setWorkspace(repositoryWorkspace(workspace))
-                .setStatus(status("WORKSPACE_READY", "Repository workspace ready", request.getCorrelationId()))
+                .setStatus(status("WORKSPACE_ACCEPTED", "Repository workspace checkout accepted", request.getCorrelationId()))
                 .build());
             responseObserver.onCompleted();
         } catch (RuntimeException error) {

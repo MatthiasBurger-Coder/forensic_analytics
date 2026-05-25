@@ -254,7 +254,7 @@ public final class RepositorySourceDomain {
                 sourceRoots,
                 lastCheckedAt,
                 Objects.requireNonNull(timestamp, "last updated at must not be null"),
-                diagnostics
+                List.of(Diagnostic.info("REPOSITORY_CHECKOUT_STARTED", "Repository checkout started"))
             );
         }
 

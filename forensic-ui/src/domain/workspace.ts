@@ -95,6 +95,11 @@ export interface GetWorkspaceCommand {
   correlationId: string;
 }
 
+export interface WaitForWorkspaceCheckoutCommand {
+  workspaceId: string;
+  correlationId: string;
+}
+
 export interface RefreshWorkspaceBranchCommand {
   workspaceId: string;
   workspaceBranchId: string;

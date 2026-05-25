@@ -69,6 +69,10 @@ public final class QueryReportApiHttpHandler implements HttpHandler {
             case "/api/status" -> write(exchange, 200, gson.toJson(statusService.currentStatus()));
             default -> {
                 if (path.startsWith("/api/workspaces/")) {
+                    if (isWorkspaceCheckoutResultRoute(path)) {
+                        handleWorkspaceCheckoutResultGet(exchange, path);
+                        return;
+                    }
                     handleWorkspaceGet(exchange, path);
                     return;
                 }
@@ -89,6 +93,24 @@ public final class QueryReportApiHttpHandler implements HttpHandler {
             correlationId = requiredMutationHeader(exchange, "X-Correlation-Id");
             var workspace = workspaceService.get(
                 generatedRequestId("workspace-get", correlationId, workspaceId),
+                correlationId,
+                workspaceId
+            );
+            write(exchange, 200, gson.toJson(workspace), correlationId);
+        } catch (QueryReportApiWorkspaceException error) {
+            writeError(exchange, error.statusCode(), error.errorCode(), error.retryable(), error.getMessage(), correlationId);
+        } catch (IllegalArgumentException | NullPointerException error) {
+            writeError(exchange, 400, "VALIDATION_ERROR", false, "Invalid repository workspace request", correlationId);
+        }
+    }
+
+    private void handleWorkspaceCheckoutResultGet(HttpExchange exchange, String path) throws IOException {
+        var correlationId = "";
+        try {
+            correlationId = requiredMutationHeader(exchange, "X-Correlation-Id");
+            var workspaceId = workspaceCheckoutResultWorkspaceId(path);
+            var workspace = workspaceService.waitForCheckout(
+                generatedRequestId("workspace-checkout-result", correlationId, workspaceId),
                 correlationId,
                 workspaceId
             );
@@ -321,6 +343,23 @@ public final class QueryReportApiHttpHandler implements HttpHandler {
 
     private static boolean isWorkspaceRefreshRoute(String path) {
         return path.startsWith("/api/workspaces/") && path.endsWith("/refresh") && path.contains("/branches/");
+    }
+
+    private static boolean isWorkspaceCheckoutResultRoute(String path) {
+        return path.startsWith("/api/workspaces/") && path.endsWith("/checkout-result");
+    }
+
+    private static String workspaceCheckoutResultWorkspaceId(String path) {
+        var prefix = "/api/workspaces/";
+        var suffix = "/checkout-result";
+        if (!path.startsWith(prefix) || !path.endsWith(suffix)) {
+            throw new IllegalArgumentException("workspace checkout result route is invalid");
+        }
+        var workspaceId = path.substring(prefix.length(), path.length() - suffix.length());
+        if (workspaceId.isBlank() || workspaceId.contains("/") || workspaceId.contains("\\")) {
+            throw new IllegalArgumentException("workspace checkout result route is invalid");
+        }
+        return workspaceId;
     }
 
     private static WorkspaceRefreshRoute workspaceRefreshRoute(String path) {

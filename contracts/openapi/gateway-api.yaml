@@ -106,6 +106,28 @@ paths:
                 $ref: '#/components/schemas/RepositoryCheckoutWorkspaceResponse'
         default:
           $ref: '#/components/responses/Error'
+  /workspaces/{workspaceId}/checkout-result:
+    get:
+      tags: [Workspaces]
+      summary: Wait until repository checkout succeeds or fails.
+      operationId: waitForRepositoryWorkspaceCheckoutResult
+      description: The query-report API keeps a single client request open and returns the current workspace when the selected branch reaches a terminal CHECKED_OUT or FAILED state.
+      x-implementation-status: current-verified
+      parameters:
+        - $ref: '#/components/parameters/RequiredCorrelationId'
+        - $ref: '#/components/parameters/WorkspaceId'
+      responses:
+        '200':
+          description: Repository checkout workspace state after checkout completion or failure.
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RepositoryCheckoutWorkspaceResponse'
+        default:
+          $ref: '#/components/responses/Error'
   /workspaces/{workspaceId}/branches/{workspaceBranchId}/refresh:
     post:
       tags: [Workspaces]

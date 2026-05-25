@@ -79,9 +79,11 @@ class QueryReportApiWorkspaceServiceTest {
             "workspace-0001",
             "workspace-branch-0001"
         );
+        var checkoutResult = service.waitForCheckout("request-checkout-result", "correlation-4", "workspace-0001");
 
         assertEquals("workspace-0001", created.workspaceId());
         assertEquals("workspace-0001", loaded.workspaceId());
+        assertEquals("workspace-0001", checkoutResult.workspaceId());
         assertEquals("UP_TO_DATE", refreshed.status());
         assertEquals("query-report-workspace.v1", owner.lastCreateRequest.schemaVersion());
         assertEquals("query-report-workspace.v1", owner.lastRefreshRequest.schemaVersion());

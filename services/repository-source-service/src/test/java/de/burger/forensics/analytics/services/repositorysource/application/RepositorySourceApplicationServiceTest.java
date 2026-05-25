@@ -38,6 +38,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executor;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -302,6 +303,7 @@ class RepositorySourceApplicationServiceTest {
         assertEquals("workspace-branch-0001", branch.workspaceBranchId().value());
         assertEquals("feature/workspace-ui", branch.repositoryBranch());
         assertEquals(RepositoryWorkspaceBranchStatus.CHECKING_OUT, started.status());
+        assertEquals("REPOSITORY_CHECKOUT_STARTED", started.diagnostics().getFirst().code());
         assertEquals(RepositoryWorkspaceBranchStatus.CHECKED_OUT, checkedOut.status());
         assertEquals("c".repeat(40), checkedOut.resolvedCommit());
         assertEquals(1, idGenerator.branchIds);
@@ -479,7 +481,7 @@ class RepositorySourceApplicationServiceTest {
             new FakeMetadataPort("main", true)
         );
 
-        assertThrows(IllegalStateException.class, () -> workspaceService.createOrReuseRepositoryWorkspaceWithCheckout(
+        var workspace = workspaceService.createOrReuseRepositoryWorkspaceWithCheckout(
             "checkout-key",
             "schema-v1",
             "correlation-1",
@@ -487,11 +489,111 @@ class RepositorySourceApplicationServiceTest {
             new RepositoryWorkspaceBranchSelector("main", ""),
             policy(),
             Map.of()
-        ));
+        );
 
-        var failed = workspaceService.getRepositoryWorkspace(new WorkspaceId("workspace-0001")).branches().getFirst();
+        var failed = workspace.branches().getFirst();
         assertEquals(RepositoryWorkspaceBranchStatus.FAILED, failed.status());
         assertEquals(1, workspacePort.cleaned);
+    }
+
+    @Test
+    void retriesFailedWorkspaceBranchCheckoutForNewSemanticOperation() {
+        var idGenerator = new FixedRepositoryWorkspaceIdGenerator();
+        var workspacePort = new FakeWorkspacePort();
+        var calls = new int[1];
+        var workspaceService = workspaceService(
+            idGenerator,
+            workspacePort,
+            (workspace, repository, revision, policy) -> {
+                calls[0]++;
+                if (calls[0] == 1) {
+                    throw new IllegalStateException("checkout failed");
+                }
+                return checkoutResult("main", "", CheckoutStatus.CHECKED_OUT, "b".repeat(40));
+            },
+            new FakeMetadataPort("main", true)
+        );
+
+        var failed = workspaceService.createOrReuseRepositoryWorkspaceWithCheckout(
+            "checkout-key",
+            "schema-v1",
+            "correlation-1",
+            repository(),
+            new RepositoryWorkspaceBranchSelector("main", ""),
+            policy(),
+            Map.of()
+        );
+        var retried = workspaceService.createOrReuseRepositoryWorkspaceWithCheckout(
+            "checkout-key-retry",
+            "schema-v1",
+            "correlation-1",
+            repository(),
+            new RepositoryWorkspaceBranchSelector("main", ""),
+            policy(),
+            Map.of()
+        );
+
+        assertEquals(RepositoryWorkspaceBranchStatus.FAILED, failed.branches().getFirst().status());
+        assertEquals(RepositoryWorkspaceBranchStatus.CHECKED_OUT, retried.branches().getFirst().status());
+        assertEquals("b".repeat(40), retried.branches().getFirst().resolvedCommit());
+        assertEquals(1, idGenerator.workspaceIds);
+        assertEquals(1, idGenerator.branchIds);
+        assertEquals(2, workspacePort.branchCheckouts);
+        assertEquals(1, workspacePort.cleaned);
+        assertEquals(2, calls[0]);
+    }
+
+    @Test
+    void returnsWorkspaceBeforeScheduledCheckoutCompletesAndUpdatesBranchLater() {
+        var repository = new InMemoryRepositoryWorkspaceRepository();
+        var idGenerator = new FixedRepositoryWorkspaceIdGenerator();
+        var workspacePort = new FakeWorkspacePort();
+        var checkoutPort = new SequencedCheckoutPort("b".repeat(40));
+        var executor = new CapturingExecutor();
+        var workspaceService = new RepositoryWorkspaceApplicationService(
+            repository,
+            idGenerator,
+            new InMemoryRepositorySourceIdempotencyRepository(),
+            workspacePort,
+            checkoutPort,
+            new FakeMetadataPort("main", true),
+            CLOCK,
+            executor
+        );
+
+        var workspace = workspaceService.createOrReuseRepositoryWorkspaceWithCheckout(
+            "checkout-key",
+            "schema-v1",
+            "correlation-1",
+            repository(),
+            new RepositoryWorkspaceBranchSelector("main", ""),
+            policy(),
+            Map.of()
+        );
+        var replayedBeforeCheckout = workspaceService.createOrReuseRepositoryWorkspaceWithCheckout(
+            "checkout-key",
+            "schema-v1",
+            "correlation-1",
+            repository(),
+            new RepositoryWorkspaceBranchSelector("main", ""),
+            policy(),
+            Map.of()
+        );
+
+        assertEquals(RepositoryWorkspaceBranchStatus.CHECKING_OUT, workspace.branches().getFirst().status());
+        assertEquals(RepositoryWorkspaceBranchStatus.CHECKING_OUT, replayedBeforeCheckout.branches().getFirst().status());
+        assertEquals("REPOSITORY_CHECKOUT_STARTED", workspace.branches().getFirst().diagnostics().getFirst().code());
+        assertEquals(1, executor.tasks.size());
+        assertEquals(0, workspacePort.branchCheckouts);
+        assertEquals(0, checkoutPort.calls);
+
+        executor.runNext();
+
+        var checkedOut = workspaceService.getRepositoryWorkspace(workspace.workspaceId()).branches().getFirst();
+        assertEquals(RepositoryWorkspaceBranchStatus.CHECKED_OUT, checkedOut.status());
+        assertEquals("b".repeat(40), checkedOut.resolvedCommit());
+        assertEquals(1, workspacePort.branchCheckouts);
+        assertEquals(1, checkoutPort.calls);
     }
 
     @Test
@@ -1000,6 +1102,19 @@ class RepositorySourceApplicationServiceTest {
                 false,
                 List.of(new SourceRoot("src/main/java", "java"))
             );
+        }
+    }
+
+    private static final class CapturingExecutor implements Executor {
+        private final List<Runnable> tasks = new ArrayList<>();
+
+        @Override
+        public void execute(Runnable command) {
+            tasks.add(command);
+        }
+
+        private void runNext() {
+            tasks.removeFirst().run();
         }
     }
 

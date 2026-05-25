@@ -1,6 +1,5 @@
 import {
   Activity,
-  FilePlus2,
   FolderPlus,
   RadioTower,
   Settings,
@@ -13,12 +12,6 @@ const navItems = [
     to: "/workspaces",
     label: "Create workspace",
     icon: FolderPlus,
-    end: true
-  },
-  {
-    to: "/repository-analyses/new",
-    label: "Register session",
-    icon: FilePlus2,
     end: true
   },
   { to: "/backend-unavailable", label: "Backend", icon: RadioTower },

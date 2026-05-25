@@ -11,7 +11,6 @@ import { ErrorBoundary, RouteBoundary } from "@/app/ErrorBoundary";
 import { AppShell } from "@/layouts/AppShell";
 import { AnalysisJobDetailPage } from "@/pages/analysis-jobs/AnalysisJobDetailPage";
 import { BackendUnavailablePage } from "@/pages/backend-unavailable/BackendUnavailablePage";
-import { CreateRepositoryAnalysisPage } from "@/pages/repository-analysis/CreateRepositoryAnalysisPage";
 import { SettingsPage } from "@/pages/settings/SettingsPage";
 import { CreateWorkspacePage } from "@/pages/workspaces/CreateWorkspacePage";
 
@@ -40,11 +39,7 @@ export const App = ({ services }: { services: ApplicationServices }) => (
             />
             <Route
               path="repository-analyses/new"
-              element={
-                <RouteBoundary>
-                  <CreateRepositoryAnalysisPage />
-                </RouteBoundary>
-              }
+              element={<Navigate to="/workspaces" replace />}
             />
             <Route
               path="analysis-jobs/:analysisRunId"
@@ -56,7 +51,7 @@ export const App = ({ services }: { services: ApplicationServices }) => (
             />
             <Route
               path="diagnostics"
-              element={<Navigate to="/repository-analyses/new" replace />}
+              element={<Navigate to="/workspaces" replace />}
             />
             <Route
               path="backend-unavailable"

@@ -196,7 +196,7 @@ class RepositorySourceGrpcEndpointTest {
             .setWorkspaceId(workspace.getWorkspaceId())
             .build());
 
-        assertEquals("WORKSPACE_READY", created.getStatus().getCode());
+        assertEquals("WORKSPACE_ACCEPTED", created.getStatus().getCode());
         assertEquals(workspace.getWorkspaceId(), replayed.getWorkspace().getWorkspaceId());
         assertEquals("workspace-0001", workspace.getWorkspaceId());
         assertEquals("demo", workspace.getWorkspaceTitle());

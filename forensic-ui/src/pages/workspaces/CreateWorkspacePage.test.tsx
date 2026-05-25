@@ -39,6 +39,7 @@ describe("CreateWorkspacePage", () => {
       .calls[0] as [PreviewWorkspaceMetadataCommand, AbortSignal | undefined];
     expect(command.repositoryUrl).toBe(WILDFLY_REPOSITORY_URL);
     expect(command.idempotencyKey).toMatch(/^ui-workspace-metadata-/);
+    expect(screen.queryByText("Checkout limits")).not.toBeInTheDocument();
   });
 
   it("leaves branch blank when the public preview has no default branch", async () => {
@@ -69,6 +70,14 @@ describe("CreateWorkspacePage", () => {
     const [command] = vi.mocked(services.workspaces.createWorkspace).mock
       .calls[0] as [CreateWorkspaceCommand];
     expect(command.selectedBranch).toBeNull();
+    expect(command.workspacePolicy).toEqual({
+      ephemeral: false,
+      allowShallowClone: true,
+      allowPartialClone: false,
+      allowSparseCheckout: false,
+      timeoutSeconds: 300,
+      maxWorkspaceBytes: 1073741824
+    });
   });
 
   it("clears stale branch input when the repository URL changes", async () => {
@@ -211,6 +220,39 @@ describe("CreateWorkspacePage", () => {
     await screen.findByRole("heading", { name: "Workspace ready" });
   });
 
+  it("waits for workspace checkout result while checkout is running", async () => {
+    const user = userEvent.setup();
+    const services = servicesForWorkspaceFlow();
+    const checkoutResult = deferred<Workspace>();
+    vi.mocked(services.workspaces.createWorkspace).mockResolvedValueOnce(
+      checkingOutWorkspace()
+    );
+    vi.mocked(services.workspaces.waitForWorkspaceCheckout).mockReturnValueOnce(
+      checkoutResult.promise
+    );
+
+    renderPage(services);
+
+    await user.type(screen.getByLabelText("Repository URL"), WILDFLY_REPOSITORY_URL);
+    await user.click(screen.getByRole("button", { name: /preview/i }));
+    await screen.findByDisplayValue("wildfly");
+    await user.click(screen.getByRole("button", { name: /^save$/i }));
+
+    await screen.findByRole("heading", { name: "Checking out repository..." });
+    expect(screen.getByRole("button", { name: /update branch/i })).toBeDisabled();
+
+    checkoutResult.resolve(workspace());
+
+    await screen.findByRole("heading", { name: "Workspace ready" });
+    expect(services.workspaces.waitForWorkspaceCheckout).toHaveBeenCalledWith(
+      expect.objectContaining({
+        workspaceId: "workspace-1",
+        correlationId: expect.stringMatching(/^ui-workspace-status-correlation-/)
+      }),
+      expect.any(AbortSignal)
+    );
+  });
+
   it("refreshes a checked-out branch and displays the public refresh result", async () => {
     const user = userEvent.setup();
     const services = servicesForWorkspaceFlow();
@@ -328,7 +370,8 @@ const servicesForWorkspaceFlow = (): ApplicationServices => ({
     createWorkspace: vi.fn().mockResolvedValue(workspace()),
     refreshBranch: vi.fn().mockResolvedValue(refreshUnchanged()),
     listWorkspaces: vi.fn(),
-    getWorkspace: vi.fn()
+    getWorkspace: vi.fn(),
+    waitForWorkspaceCheckout: vi.fn().mockResolvedValue(workspace())
   },
   diagnostics: {
     collectDiagnostics: vi.fn()
@@ -359,6 +402,19 @@ const workspace = (): Workspace => ({
     }
   ],
   diagnostics: []
+});
+
+const checkingOutWorkspace = (): Workspace => ({
+  ...workspace(),
+  branches: [
+    {
+      ...workspace().branches[0],
+      status: "CHECKING_OUT",
+      resolvedCommit: null,
+      sourceSnapshotId: null,
+      sourceRoots: []
+    }
+  ]
 });
 
 const refreshUnchanged = (): BranchRefreshResult => ({

@@ -4,6 +4,7 @@ import type {
   GetWorkspaceCommand,
   PreviewWorkspaceMetadataCommand,
   RefreshWorkspaceBranchCommand,
+  WaitForWorkspaceCheckoutCommand,
   Workspace,
   WorkspaceMetadata
 } from "@/domain/workspace";
@@ -24,6 +25,10 @@ export interface WorkspacePort {
   listWorkspaces(signal?: AbortSignal): Promise<Workspace[]>;
   getWorkspace(
     command: GetWorkspaceCommand | string,
+    signal?: AbortSignal
+  ): Promise<Workspace>;
+  waitForWorkspaceCheckout(
+    command: WaitForWorkspaceCheckoutCommand,
     signal?: AbortSignal
   ): Promise<Workspace>;
 }

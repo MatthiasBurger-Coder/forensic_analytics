@@ -109,7 +109,8 @@ const servicesWithJobs = (
       createWorkspace: vi.fn(),
       refreshBranch: vi.fn(),
       listWorkspaces: vi.fn(),
-      getWorkspace: vi.fn()
+      getWorkspace: vi.fn(),
+      waitForWorkspaceCheckout: vi.fn()
     },
     diagnostics: {
       collectDiagnostics: vi.fn()

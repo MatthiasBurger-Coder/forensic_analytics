@@ -31,6 +31,9 @@ import java.time.Clock;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executor;
 
 import static de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.requireText;
 import static de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.safeAttributes;
@@ -50,6 +53,8 @@ public final class RepositoryWorkspaceApplicationService {
     private final RepositoryMetadataPort metadataPort;
     private final Clock clock;
     private final RepositorySourceIdempotency idempotency;
+    private final Executor checkoutExecutor;
+    private final Set<String> activeCheckouts = ConcurrentHashMap.newKeySet();
 
     public RepositoryWorkspaceApplicationService(
         RepositoryWorkspaceRepository repository,
@@ -60,12 +65,35 @@ public final class RepositoryWorkspaceApplicationService {
         RepositoryMetadataPort metadataPort,
         Clock clock
     ) {
+        this(
+            repository,
+            idGenerator,
+            idempotencyRepository,
+            workspacePort,
+            checkoutPort,
+            metadataPort,
+            clock,
+            Runnable::run
+        );
+    }
+
+    public RepositoryWorkspaceApplicationService(
+        RepositoryWorkspaceRepository repository,
+        RepositoryWorkspaceIdGenerator idGenerator,
+        RepositorySourceIdempotencyRepository idempotencyRepository,
+        RepositoryWorkspacePort workspacePort,
+        RepositoryCheckoutPort checkoutPort,
+        RepositoryMetadataPort metadataPort,
+        Clock clock,
+        Executor checkoutExecutor
+    ) {
         this.repository = Objects.requireNonNull(repository, "repository must not be null");
         this.idGenerator = Objects.requireNonNull(idGenerator, "id generator must not be null");
         this.workspacePort = Objects.requireNonNull(workspacePort, "workspace port must not be null");
         this.checkoutPort = Objects.requireNonNull(checkoutPort, "checkout port must not be null");
         this.metadataPort = Objects.requireNonNull(metadataPort, "metadata port must not be null");
         this.clock = Objects.requireNonNull(clock, "clock must not be null");
+        this.checkoutExecutor = Objects.requireNonNull(checkoutExecutor, "checkout executor must not be null");
         this.idempotency = new RepositorySourceIdempotency(idempotencyRepository, clock);
     }
 
@@ -180,19 +208,25 @@ public final class RepositoryWorkspaceApplicationService {
             () -> {
                 var workspace = repository.findByRepositoryKey(metadata.repository().repositoryKey())
                     .orElseGet(() -> createWorkspace(metadata.repository(), safeAttributes));
-                var branch = workspace.branches().stream()
+                var existingBranch = workspace.branches().stream()
                     .filter(existing -> existing.repositoryBranch().equals(resolvedSelector.requireBranch()))
                     .findFirst()
-                    .map(existing -> sameRequestedCommitOrThrow(existing, resolvedSelector))
-                    .orElseGet(() -> createBranch(workspace, resolvedSelector));
+                    .map(existing -> sameRequestedCommitOrThrow(existing, resolvedSelector));
+                var branch = existingBranch.orElseGet(() -> createBranch(workspace, resolvedSelector));
                 if (!hasCompletedCheckout(branch)) {
-                    checkoutWorkspaceBranch(workspace, branch, repositoryReference, resolvedSelector, workspacePolicy);
+                    scheduleWorkspaceBranchCheckout(
+                        workspace.workspaceId(),
+                        branch.workspaceBranchId(),
+                        repositoryReference,
+                        resolvedSelector,
+                        workspacePolicy
+                    );
                 }
                 var result = getRepositoryWorkspace(workspace.workspaceId());
                 return new RepositorySourceIdempotency.CompletedResult<>(
                     RESULT_WORKSPACE,
                     result.workspaceId().value(),
-                    RepositorySourceIdempotencyPayloads.workspace(result),
+                    "",
                     result
                 );
             }
@@ -376,6 +410,67 @@ public final class RepositoryWorkspaceApplicationService {
         return saveBranch(getRepositoryWorkspace(workspace.workspaceId()), checkedOut);
     }
 
+    private void scheduleWorkspaceBranchCheckout(
+        WorkspaceId workspaceId,
+        WorkspaceBranchId workspaceBranchId,
+        RepositoryReference repositoryReference,
+        RepositoryWorkspaceBranchSelector branchSelector,
+        WorkspacePolicy workspacePolicy
+    ) {
+        var checkoutKey = checkoutKey(workspaceId, workspaceBranchId);
+        if (!activeCheckouts.add(checkoutKey)) {
+            return;
+        }
+        try {
+            markBranchCheckoutStarted(workspaceId, workspaceBranchId);
+            checkoutExecutor.execute(() -> {
+                try {
+                    runScheduledCheckout(workspaceId, workspaceBranchId, repositoryReference, branchSelector, workspacePolicy);
+                } finally {
+                    activeCheckouts.remove(checkoutKey);
+                }
+            });
+        } catch (RuntimeException error) {
+            activeCheckouts.remove(checkoutKey);
+            markBranchCheckoutFailed(
+                workspaceId,
+                workspaceBranchId,
+                List.of(Diagnostic.error("REPOSITORY_CHECKOUT_FAILED", "Repository checkout failed"))
+            );
+        }
+    }
+
+    private void runScheduledCheckout(
+        WorkspaceId workspaceId,
+        WorkspaceBranchId workspaceBranchId,
+        RepositoryReference repositoryReference,
+        RepositoryWorkspaceBranchSelector branchSelector,
+        WorkspacePolicy workspacePolicy
+    ) {
+        var branch = markBranchCheckoutStarted(workspaceId, workspaceBranchId);
+        PreparedWorkspace preparedWorkspace = null;
+        try {
+            preparedWorkspace = workspacePort.prepareBranchCheckout(workspaceId, workspaceBranchId, workspacePolicy);
+            var checkout = checkoutPort.checkout(preparedWorkspace, repositoryReference, revision(branchSelector), workspacePolicy);
+            requireMatchingCheckout(branch, checkout);
+            var sourceSnapshotId = RepositorySourceSnapshotFactory.sourceSnapshotId(
+                repositoryReference,
+                revision(branchSelector),
+                checkout
+            );
+            markBranchCheckoutCompleted(workspaceId, workspaceBranchId, checkout, sourceSnapshotId, checkout.diagnostics());
+        } catch (RuntimeException error) {
+            if (preparedWorkspace != null) {
+                workspacePort.cleanupBranchCheckout(workspaceId, workspaceBranchId);
+            }
+            markBranchCheckoutFailed(
+                workspaceId,
+                workspaceBranchId,
+                List.of(Diagnostic.error("REPOSITORY_CHECKOUT_FAILED", "Repository checkout failed"))
+            );
+        }
+    }
+
     private CheckoutResult checkoutForBranch(
         RepositoryWorkspace workspace,
         RepositoryWorkspaceBranch branch,
@@ -492,6 +587,10 @@ public final class RepositoryWorkspaceApplicationService {
         return branch.status() == RepositoryWorkspaceBranchStatus.CHECKED_OUT
             || branch.status() == RepositoryWorkspaceBranchStatus.UP_TO_DATE
             || branch.status() == RepositoryWorkspaceBranchStatus.UPDATED;
+    }
+
+    private static String checkoutKey(WorkspaceId workspaceId, WorkspaceBranchId workspaceBranchId) {
+        return workspaceId.value() + "|" + workspaceBranchId.value();
     }
 
     private static RepositoryWorkspaceBranchSelector resolvedBranchSelector(

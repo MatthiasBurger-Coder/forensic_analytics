@@ -318,6 +318,14 @@ class QueryReportApiHttpAdapterTest {
                 "correlation-workspace-3",
                 null
             );
+            var checkoutResult = response(
+                port,
+                "/api/workspaces/workspace-0001/checkout-result",
+                "GET",
+                "",
+                "correlation-workspace-5",
+                null
+            );
             var refreshed = response(
                 port,
                 "/api/workspaces/workspace-0001/branches/workspace-branch-0001/refresh",
@@ -346,6 +354,12 @@ class QueryReportApiHttpAdapterTest {
             assertEquals("correlation-workspace-3", loaded.correlationId());
             assertTrue(loaded.body().contains("\"workspaceId\":\"workspace-0001\""));
             assertSafePublicBody(loaded.body());
+
+            assertEquals(200, checkoutResult.code());
+            assertEquals("correlation-workspace-5", checkoutResult.correlationId());
+            assertTrue(checkoutResult.body().contains("\"workspaceId\":\"workspace-0001\""));
+            assertTrue(checkoutResult.body().contains("\"status\":\"CHECKED_OUT\""));
+            assertSafePublicBody(checkoutResult.body());
 
             assertEquals(200, refreshed.code());
             assertEquals("correlation-workspace-4", refreshed.correlationId());

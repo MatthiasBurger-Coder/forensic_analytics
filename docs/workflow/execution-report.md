@@ -3,7 +3,8 @@
 ## Status
 
 Workflow execution is in progress. S00, S01, S02, S03, S04, S05, S06, S07, S08,
-S09, S10, S11 and S12 are complete pending checkpoint finalization. Product implementation has started in
+S09, S10, S11 and S12 are complete. A post-S12 live sandbox repair is complete
+pending checkpoint finalization. Product implementation has started in
 repository-source-service with the workspace domain model, in-memory and H2
 repositories, metadata resolution, checkout preparation, durable idempotency
 and branch refresh behavior, plus the repository-source gRPC owner API,
@@ -12,7 +13,9 @@ by later Docker/runtime and integration slices. S11 synchronized architecture,
 ADR, contract and service documentation for that implemented scope. S12 ran the
 final quality gate, frontend gate and a live browser sandbox against the built
 backend services, then repaired the quality and runtime defects found during
-that verification.
+that verification. The post-S12 repair removed the legacy Register Session UI
+entry, moved checkout completion to a direct result wait route, and verified
+the flow against `https://github.com/wildfly/wildfly.git`.
 
 `workflow execute` must run S00 first and then update this report after every
 slice with:
@@ -58,7 +61,8 @@ execution and contract-first sequencing.
 | S09 | Completed | Docker-local repository-source service volumes and runtime configuration completed. |
 | S10 | Completed | Security, leakage, idempotency, H2 restart and refresh regression gate completed. |
 | S11 | Completed | Documentation, arc42, ADR, contract and service README closure completed. |
-| S12 | Completed | Final quality gate, frontend gate, live UI/backend sandbox and S12 quality-failure scope repair completed; checkpoint finalizer pending. |
+| S12 | Completed | Final quality gate, frontend gate, live UI/backend sandbox and S12 quality-failure scope repair completed. |
+| Post-S12 repair | Completed | Checkout result wait route, async checkout retry cleanup, legacy Register Session UI removal and WildFly live verification completed; checkpoint finalizer pending. |
 
 ## Slice S00 - Workflow Execution Preflight And Context Freeze
 
@@ -1522,3 +1526,144 @@ Checkpoint:
   `d0ad32b26b363d50f7e07a83bf0abffae2e4976e`.
 - Push result: pushed to
   `origin/feature/workflow-repository-workspace-checkout-h2-persistence-20260524`.
+
+## Post-S12 Live Sandbox Repair - Checkout Result Wait And UI Cleanup
+
+Status: Completed, checkpoint finalizer pending.
+
+Owner and reviewers:
+
+- Workflow Executor
+- Senior React Frontend
+- Senior Java Backend
+- Resilience Engineering
+- Security Sandbox Specialist
+- Git Commit Reviewer assigned before staging
+
+Repair scope:
+
+- The live manual sandbox showed that the browser request timeout was too short
+  for repository checkout and that the old Register Session flow still exposed a
+  second, confusing workspace registration surface.
+- `repository-source-service` now accepts create/reuse checkout requests
+  quickly, marks the branch `CHECKING_OUT`, runs checkout on a bounded backend
+  executor, and persists the final `CHECKED_OUT` or `FAILED` branch status.
+- A new query-report REST wait route,
+  `GET /api/workspaces/{workspaceId}/checkout-result`, waits server-side for a
+  terminal branch state so the GUI does not need client polling loops.
+- Failed branch checkout can be retried by a new semantic operation without
+  duplicating the workspace or branch; the retry first clears stale failure
+  diagnostics by writing a `REPOSITORY_CHECKOUT_STARTED` diagnostic.
+- The legacy Register Session navigation entry and page route were removed from
+  the active UI. Old `/repository-analyses/new` and `/diagnostics` URLs now
+  route to the Create Workspace flow.
+- Policy controls for timeout, byte limit and shallow clone were removed from
+  the GUI. Shallow clone remains the hidden default. The hidden UI checkout
+  timeout default is `300` seconds; backend timeout and byte quota remain
+  service-side guardrails.
+
+Changed files:
+
+- `contracts/openapi/gateway-api.yaml`
+- `docs/workflow/execution-report.md`
+- `forensic-ui/src/adapters/api/apiClient.ts`
+- `forensic-ui/src/adapters/api/config.ts`
+- `forensic-ui/src/adapters/api/config.test.ts`
+- `forensic-ui/src/adapters/api/httpClient.ts`
+- `forensic-ui/src/app/App.tsx`
+- `forensic-ui/src/app/App.test.tsx`
+- `forensic-ui/src/application/hooks/useAnalysisJob.test.tsx`
+- `forensic-ui/src/application/ports/workspacePort.ts`
+- `forensic-ui/src/domain/workspace.ts`
+- `forensic-ui/src/layouts/AppShell.tsx`
+- `forensic-ui/src/pages/repository-analysis/CreateRepositoryAnalysisPage.tsx`
+- `forensic-ui/src/pages/repository-analysis/CreateRepositoryAnalysisPage.test.tsx`
+- `forensic-ui/src/pages/workspaces/CreateWorkspacePage.tsx`
+- `forensic-ui/src/pages/workspaces/CreateWorkspacePage.test.tsx`
+- `services/query-report-api-service/README.md`
+- `services/query-report-api-service/src/main/java/de/burger/forensics/analytics/services/queryreportapi/adapter/in/http/QueryReportApiHttpHandler.java`
+- `services/query-report-api-service/src/main/java/de/burger/forensics/analytics/services/queryreportapi/application/QueryReportApiWorkspaceService.java`
+- `services/query-report-api-service/src/test/java/de/burger/forensics/analytics/services/queryreportapi/adapter/in/http/GatewayOpenApiContractTest.java`
+- `services/query-report-api-service/src/test/java/de/burger/forensics/analytics/services/queryreportapi/adapter/in/http/QueryReportApiHttpAdapterTest.java`
+- `services/query-report-api-service/src/test/java/de/burger/forensics/analytics/services/queryreportapi/application/QueryReportApiWorkspaceServiceTest.java`
+- `services/repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/adapter/in/grpc/RepositorySourceGrpcEndpoint.java`
+- `services/repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/application/RepositoryWorkspaceApplicationService.java`
+- `services/repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/RepositorySourceServiceConfiguration.java`
+- `services/repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/domain/RepositorySourceDomain.java`
+- `services/repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/adapter/in/grpc/RepositorySourceGrpcEndpointTest.java`
+- `services/repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/application/RepositorySourceApplicationServiceTest.java`
+
+Commands executed:
+
+```bash
+git diff --check
+./gradlew :services:repository-source-service:test --tests de.burger.forensics.analytics.services.repositorysource.application.RepositorySourceApplicationServiceTest --dependency-verification strict --console=plain --stacktrace
+./gradlew :services:repository-source-service:test --tests de.burger.forensics.analytics.services.repositorysource.application.RepositorySourceApplicationServiceTest --tests de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomainTest --dependency-verification strict --console=plain --stacktrace
+./gradlew :services:repository-source-service:test --dependency-verification strict --console=plain --stacktrace
+./gradlew :services:query-report-api-service:test --dependency-verification strict --console=plain --stacktrace
+./gradlew :services:repository-source-service:bootJar :services:query-report-api-service:bootJar --dependency-verification strict --console=plain --stacktrace
+cd forensic-ui && npm run test
+cd forensic-ui && npm run build
+./gradlew test --dependency-verification strict --console=plain --stacktrace
+```
+
+Live sandbox evidence:
+
+- Sandbox URL: `http://127.0.0.1:5173/workspaces`.
+- Repository-source service:
+  `127.0.0.1:19090` gRPC and `127.0.0.1:18083` health.
+- Query-report API: `127.0.0.1:18080`.
+- Repository-source workspace root for WSL live checkout:
+  `/tmp/fa-manual-sandbox/repository-workspaces`.
+- Public HTTPS fixture repository:
+  `https://github.com/wildfly/wildfly.git`.
+- Metadata preview returned repository key `github.com/wildfly/wildfly`,
+  repository name `wildfly`, workspace title `wildfly` and default branch
+  `main`.
+- Initial save returned branch status `CHECKING_OUT` with diagnostic
+  `REPOSITORY_CHECKOUT_STARTED`.
+- Checkout result route returned branch status `CHECKED_OUT`, resolved commit
+  `b74a3360398f114a153d3a4e4d935072a31f74a7`, source snapshot id
+  `source-snapshot-cb15a46f7ff140d578df0cc46d931688` and WildFly Java source
+  roots.
+- A direct WSL probe showed WildFly checkout succeeds quickly on a Linux
+  filesystem and can exceed the backend timeout under the Windows-mounted
+  `/mnt/d/.../build/...` workspace path. Manual WSL runs therefore use a Linux
+  filesystem workspace root; Docker volumes provide that property naturally.
+- Playwright live clicktest against WildFly passed. It verified no Register
+  Session nav link, no visible policy controls, read-only workspace title,
+  metadata preview, save, `CHECKED_OUT` UI state, idempotency/correlation
+  headers, hidden `timeoutSeconds=300`, shallow clone default and no local path
+  leakage in rendered UI text. Screenshot:
+  `/tmp/fa-ui-live-clicktest/wildfly-workspace-ready.png`.
+
+Result:
+
+- PASS for backend service tests.
+- PASS for query-report service tests.
+- PASS for frontend tests and build.
+- PASS for root Gradle minimum quality gate.
+- PASS for live WildFly backend checkout and Playwright UI clicktest.
+
+Limitations and carry-forward notes:
+
+- The wait route is intentionally server-side waiting over the owner API, not a
+  browser polling loop or websocket/SSE callback. It preserves the approved REST
+  surface while avoiding visible browser request timeouts.
+- Backend Git command timeout and workspace byte quota remain required
+  guardrails for hung external processes and disk exhaustion; they are no longer
+  shown as operator controls in the MVP GUI.
+- Manual WSL runs should place repository workspace checkout data on a Linux
+  filesystem such as `/tmp` or the Docker-owned volume path, not under the
+  Windows-mounted repository worktree.
+
+CP_RECORD:
+
+- workflowVersion: `fa-mvp-0001-repository-workspace-checkout-h2-persistence-20260524-v1`
+- sliceId: `POST_S12_REPAIR`
+- sliceTitle: `Checkout Result Wait And UI Cleanup`
+- responsibleAgent: `workflow-executor`
+- qualityGateResult: `PASS`
+- rollbackReference: `revert the post-S12 repair checkpoint commit after CP_COMMIT; before commit, restore the listed post-S12 repair files from HEAD`
+- arc42Updated: `not updated; behavior is recorded as S12 live repair evidence`
+- adrUpdated: `not updated; no ADR change required for this REST wait-route repair`

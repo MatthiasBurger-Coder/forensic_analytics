@@ -153,6 +153,21 @@ export const createApiClient = (
       );
 
       return mapWorkspaceDto(response);
+    },
+    async waitForWorkspaceCheckout(command, signal) {
+      validateGetWorkspaceCommand(command);
+      const response = await http.requestJson<WorkspaceDto>(
+        `/workspaces/${encodeURIComponent(command.workspaceId)}/checkout-result`,
+        {
+          headers: {
+            "X-Correlation-Id": command.correlationId
+          },
+          signal,
+          timeoutMs: null
+        }
+      );
+
+      return mapWorkspaceDto(response);
     }
   };
 

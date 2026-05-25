@@ -1,7 +1,7 @@
 import {
   FormEvent,
   type MutableRefObject,
-  useMemo,
+  useEffect,
   useRef,
   useState
 } from "react";
@@ -24,8 +24,16 @@ import type {
 } from "@/domain/workspace";
 import { DiagnosticList } from "@/widgets/DiagnosticList";
 
-const DEFAULT_TIMEOUT_SECONDS = 60;
+const DEFAULT_TIMEOUT_SECONDS = 300;
 const DEFAULT_MAX_WORKSPACE_BYTES = 1_073_741_824;
+const DEFAULT_WORKSPACE_POLICY: WorkspacePolicy = {
+  ephemeral: false,
+  allowShallowClone: true,
+  allowPartialClone: false,
+  allowSparseCheckout: false,
+  timeoutSeconds: DEFAULT_TIMEOUT_SECONDS,
+  maxWorkspaceBytes: DEFAULT_MAX_WORKSPACE_BYTES
+};
 
 type OperationName = "metadata" | "save" | "refresh";
 
@@ -34,6 +42,7 @@ type Phase =
   | "reading-metadata"
   | "ready-to-save"
   | "saving"
+  | "checking-out"
   | "workspace-ready"
   | "workspace-failed"
   | "refreshing"
@@ -49,11 +58,6 @@ export const CreateWorkspacePage = () => {
   const services = useApplicationServices();
   const [repositoryUrl, setRepositoryUrl] = useState("");
   const [selectedBranch, setSelectedBranch] = useState("");
-  const [allowShallowClone, setAllowShallowClone] = useState(true);
-  const [timeoutSeconds, setTimeoutSeconds] = useState(DEFAULT_TIMEOUT_SECONDS);
-  const [maxWorkspaceBytes, setMaxWorkspaceBytes] = useState(
-    DEFAULT_MAX_WORKSPACE_BYTES
-  );
   const [metadata, setMetadata] = useState<WorkspaceMetadata | null>(null);
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
   const [refreshResult, setRefreshResult] = useState<BranchRefreshResult | null>(
@@ -70,17 +74,7 @@ export const CreateWorkspacePage = () => {
   const saveInFlight = useRef<Promise<Workspace> | null>(null);
   const refreshInFlight = useRef<Promise<BranchRefreshResult> | null>(null);
 
-  const workspacePolicy = useMemo<WorkspacePolicy>(
-    () => ({
-      ephemeral: false,
-      allowShallowClone,
-      allowPartialClone: false,
-      allowSparseCheckout: false,
-      timeoutSeconds,
-      maxWorkspaceBytes
-    }),
-    [allowShallowClone, maxWorkspaceBytes, timeoutSeconds]
-  );
+  const workspacePolicy = DEFAULT_WORKSPACE_POLICY;
   const primaryBranch = workspace?.branches[0] ?? null;
   const diagnostics = [
     ...(metadata?.diagnostics ?? []),
@@ -88,6 +82,51 @@ export const CreateWorkspacePage = () => {
     ...(primaryBranch?.diagnostics ?? []),
     ...(refreshResult?.diagnostics ?? [])
   ];
+  const checkoutStatusFingerprint =
+    workspace?.branches
+      .map((branch) => `${branch.workspaceBranchId}:${branch.status}`)
+      .join("|") ?? "";
+  const workspaceId = workspace?.workspaceId ?? null;
+
+  useEffect(() => {
+    if (!workspace || !hasPendingCheckout(workspace)) {
+      return;
+    }
+
+    let cancelled = false;
+    const controller = new AbortController();
+
+    const waitForCheckout = async () => {
+      try {
+        const result = await services.workspaces.waitForWorkspaceCheckout(
+          {
+            workspaceId: workspace.workspaceId,
+            correlationId: createPublicId("ui-workspace-status-correlation")
+          },
+          controller.signal
+        );
+        if (cancelled) {
+          return;
+        }
+
+        setWorkspace(result);
+        setPhase(phaseForWorkspace(result));
+      } catch (caught) {
+        if (!cancelled) {
+          setError(caught);
+          setPhase("workspace-failed");
+        }
+      }
+    };
+
+    setPhase("checking-out");
+    void waitForCheckout();
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, [checkoutStatusFingerprint, services.workspaces, workspaceId]);
 
   const previewMetadata = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -203,7 +242,7 @@ export const CreateWorkspacePage = () => {
         setSelectedBranch(
           result.branches[0]?.repositoryBranch ?? branch ?? selectedBranch
         );
-        setPhase(hasFailed(result) ? "workspace-failed" : "workspace-ready");
+        setPhase(phaseForWorkspace(result));
         return result;
       })
       .catch((caught) => {
@@ -367,49 +406,6 @@ export const CreateWorkspacePage = () => {
             </button>
           </div>
         </form>
-
-        <section className="panel form-section">
-          <div className="panel-header">
-            <div>
-              <span className="eyebrow">Policy</span>
-              <h2>Checkout limits</h2>
-            </div>
-          </div>
-          <div className="form-row two">
-            <label>
-              Timeout seconds
-              <input
-                min={1}
-                type="number"
-                value={timeoutSeconds}
-                onChange={(event) =>
-                  setTimeoutSeconds(Number(event.target.value))
-                }
-              />
-            </label>
-            <label>
-              Workspace byte limit
-              <input
-                min={1}
-                type="number"
-                value={maxWorkspaceBytes}
-                onChange={(event) =>
-                  setMaxWorkspaceBytes(Number(event.target.value))
-                }
-              />
-            </label>
-          </div>
-          <div className="toggle-grid">
-            <label>
-              <input
-                checked={allowShallowClone}
-                onChange={(event) => setAllowShallowClone(event.target.checked)}
-                type="checkbox"
-              />
-              Shallow clone
-            </label>
-          </div>
-        </section>
       </div>
 
       <section className="panel form-section" aria-live="polite">
@@ -418,7 +414,9 @@ export const CreateWorkspacePage = () => {
             <span className="eyebrow">Progress</span>
             <h2>{phaseLabel}</h2>
           </div>
-          {busyOperation ? <div className="spinner" aria-hidden="true" /> : null}
+          {busyOperation || phase === "checking-out" ? (
+            <div className="spinner" aria-hidden="true" />
+          ) : null}
         </div>
         <ol className="progress-list">
           {observedProgressLabels(phase, phaseLabel).map((label) => (
@@ -560,7 +558,7 @@ const BranchPanel = ({
     ) : null}
     <button
       className="button secondary"
-      disabled={refreshing}
+      disabled={refreshing || !canRefreshBranch(branch)}
       onClick={onRefresh}
       type="button"
     >
@@ -578,6 +576,8 @@ const labelForPhase = (phase: Phase): string => {
       return "Ready to save";
     case "saving":
       return "Saving workspace...";
+    case "checking-out":
+      return "Checking out repository...";
     case "workspace-ready":
       return "Workspace ready";
     case "workspace-failed":
@@ -602,6 +602,7 @@ const observedProgressLabels = (phase: Phase, currentLabel: string): string[] =>
 
   if (
     phase === "saving" ||
+    phase === "checking-out" ||
     phase === "workspace-ready" ||
     phase === "workspace-failed" ||
     phase === "refreshing" ||
@@ -609,6 +610,17 @@ const observedProgressLabels = (phase: Phase, currentLabel: string): string[] =>
     phase === "branch-updated"
   ) {
     labels.push("Saving workspace...");
+  }
+
+  if (
+    phase === "checking-out" ||
+    phase === "workspace-ready" ||
+    phase === "workspace-failed" ||
+    phase === "refreshing" ||
+    phase === "branch-up-to-date" ||
+    phase === "branch-updated"
+  ) {
+    labels.push("Checking out repository...");
   }
 
   if (phase === "workspace-ready") {
@@ -682,6 +694,24 @@ const applyBranchRefresh = (
 const hasFailed = (workspace: Workspace): boolean =>
   workspace.status === "FAILED" ||
   workspace.branches.some((branch) => branch.status === "FAILED");
+
+const hasPendingCheckout = (workspace: Workspace): boolean =>
+  workspace.branches.some((branch) => branch.status === "CHECKING_OUT");
+
+const phaseForWorkspace = (workspace: Workspace): Phase => {
+  if (hasFailed(workspace)) {
+    return "workspace-failed";
+  }
+  if (hasPendingCheckout(workspace)) {
+    return "checking-out";
+  }
+  return "workspace-ready";
+};
+
+const canRefreshBranch = (branch: WorkspaceBranch): boolean =>
+  branch.status === "CHECKED_OUT" ||
+  branch.status === "UP_TO_DATE" ||
+  branch.status === "UPDATED";
 
 const validateRepositoryUrl = (repositoryUrl: string): ApplicationError | null =>
   repositoryUrl

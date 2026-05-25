@@ -6,7 +6,13 @@ import type { ApplicationServices } from "@/application/createApplicationService
 import { App } from "./App";
 
 describe("App routing", () => {
-  it.each(["/", "/workspaces", "/workspaces/new"])(
+  it.each([
+    "/",
+    "/workspaces",
+    "/workspaces/new",
+    "/repository-analyses/new",
+    "/diagnostics"
+  ])(
     "routes %s to the Create Workspace flow",
     async (path) => {
       window.history.pushState({}, "", path);
@@ -21,6 +27,9 @@ describe("App routing", () => {
       expect(
         screen.getByRole("link", { name: /create workspace/i })
       ).toBeInTheDocument();
+      expect(
+        screen.queryByRole("link", { name: /register session/i })
+      ).not.toBeInTheDocument();
     }
   );
 });
@@ -36,7 +45,8 @@ const services = (): ApplicationServices => ({
     createWorkspace: vi.fn(),
     refreshBranch: vi.fn(),
     listWorkspaces: vi.fn(),
-    getWorkspace: vi.fn()
+    getWorkspace: vi.fn(),
+    waitForWorkspaceCheckout: vi.fn()
   },
   diagnostics: {
     collectDiagnostics: vi.fn()
