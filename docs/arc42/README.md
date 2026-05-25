@@ -32,6 +32,30 @@ The EPIC remains the product and requirement baseline. The arc42 documentation t
 
 ## Governance Check Status
 
+The Workspace Branch Selection workflow was created on branch
+`feature/workflow-branch-selection-20260525`. The workflow stays inside the
+FA-MVP-0001 repository checkout workspace scope and plans a guarded
+frontend-first change: after a workspace is selected, branch choices may be
+selected from that workspace's public `branches[]` records. It does not
+introduce remote Git branch discovery, selected-branch persistence, new REST or
+gRPC methods, repository-source persistence changes, platform workspace
+administration, or analysis-pipeline behavior.
+
+Checked sections for this workflow:
+
+- Building Block View: checked for repository-source ownership, query-report
+  public facade boundaries and forensic-ui UI-state ownership.
+- Runtime View: checked for `/workspaces` list and branch refresh behavior
+  using existing public branch records.
+- Crosscutting Concepts: checked for Repository Checkout Workspace versus
+  Platform Workspace separation and branch names as data values.
+- Architecture Decisions: checked against ADR-0010, ADR-0016 and ADR-0023; no
+  new ADR is expected for UI-only branch-record selection.
+- Quality Requirements: checked for deterministic branch selection, no-leak
+  behavior and frontend regression expectations.
+- Risks and Technical Debt: checked for remote branch discovery and selected
+  branch persistence as future-risk topics outside this workflow.
+
 The Workspaces Management View workflow was created on branch
 `feature/workflow-workspaces-management-20260525`. The workflow stays inside
 the FA-MVP-0001 repository checkout workspace scope and plans contract-first

@@ -1,8 +1,10 @@
 # Quality And Leakage Gates
 
-## Verified Commands
+## Quality Authority
 
-Minimum repository gate:
+`QUALITY.md` is authoritative for repository quality gates.
+
+Minimum repository command:
 
 ```bash
 ./gradlew test --dependency-verification strict --console=plain --stacktrace
@@ -14,53 +16,54 @@ Full local quality gate:
 ./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace
 ```
 
-Targeted backend gates:
+Verified frontend commands:
 
 ```bash
-./gradlew :services:repository-source-service:test --dependency-verification strict --console=plain --stacktrace
-./gradlew :services:query-report-api-service:test --dependency-verification strict --console=plain --stacktrace
-```
-
-Frontend gates:
-
-```bash
-cd forensic-ui && npm ci
-cd forensic-ui && npm run test
+cd forensic-ui && npm run test -- src/pages/workspaces/WorkspaceListPage.test.tsx
+cd forensic-ui && npm run test -- src/pages/workspaces/WorkspaceListPage.test.tsx src/adapters/api/mappers.test.ts src/adapters/api/apiClient.test.ts
 cd forensic-ui && npm run build
 ```
 
-Diff gate:
+## Slice Gates
 
-```bash
-git diff --check
-```
+| Slice | Targeted Checks | Required Checks |
+|---|---|---|
+| S01 | Read-only contract and DTO verification | None |
+| S02 | `cd forensic-ui && npm run test -- src/pages/workspaces/WorkspaceListPage.test.tsx` | `cd forensic-ui && npm run build` |
+| S03 | Workspace list and optional mapper/API Vitest commands | `cd forensic-ui && npm run build` |
+| S04 | Frontend targeted checks | `./gradlew test --dependency-verification strict --console=plain --stacktrace` |
 
-## No-Leak Assertions
+The full local quality gate is required before commit readiness or publication.
 
-Public list, delete and refresh responses must not contain:
+## Leakage Rules
 
-- H2 JDBC URLs or H2 file paths.
-- Repository-source private workspace paths.
-- Raw Git stdout or stderr.
-- Credentials, tokens, passwords, secrets or authorization headers.
-- Internal service hostnames or private network details.
-- Absolute source roots or local machine paths.
+The implementation and tests must verify that UI branch selection does not
+render or derive options from:
 
-## Evidence Integrity Assertions
+- private checkout paths;
+- H2 paths or JDBC URLs;
+- raw Git stdout or stderr;
+- credentials, tokens, secrets or authorization headers;
+- browser Git state;
+- `defaultBranch` when the branch is absent from the selected workspace's
+  public `branches[]`;
+- local row index or branch text without the opaque `workspaceBranchId`.
 
-- Delete means cleanup/mark-cleaned, not unreviewed hard deletion.
-- Cleanup diagnostics must represent incomplete or failed cleanup explicitly.
-- Branch refresh may report only observed remote/checkout facts.
-- The UI must not infer selected branch when no public branch DTO exists.
-- Cleaned workspaces are hidden from default list only as a view policy; stored
-  metadata remains available to repository-source.
+## Evidence Integrity Rules
 
-## Quality Failure Routing
+- Branch names are data values only.
+- Selected branch is operator intent, not confirmed execution evidence.
+- Confirmed branch state comes only from repository-source public branch
+  records, including status, resolved commit and source snapshot.
+- Stale branch options must remain tied to the existing stale/error UI state.
+- Missing branch records must be shown as unavailable, not guessed.
 
-- Architecture violation: Senior System Architect and architecture skills.
-- Build failure: responsible owner plus Senior DevOps when Gradle or build
-  configuration is involved.
-- Test failure: Senior Tester and slice owner.
-- Contract failure: Senior System Architect, Senior Java Backend Developer and
-  contract governance.
-- Unknown failure: Root Architect escalation path after classification attempt.
+## STOP Conditions
+
+Stop and report if:
+
+- the verified quality command cannot be run from WSL;
+- npm scripts or Gradle tasks differ from the documented names;
+- tests need branch options not present in public fixtures;
+- implementation needs a backend route or contract not in this workflow;
+- a quality failure cannot be classified as related or unrelated.
