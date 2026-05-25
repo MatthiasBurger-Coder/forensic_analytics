@@ -9,7 +9,7 @@
 | Title | Repository Workspace Checkout MVP with H2 Persistence and Docker Volumes |
 | Workflow branch | `feature/workflow-repository-workspace-checkout-h2-persistence-20260524` |
 | Creation status | Created by `workflow create`; implementation requires `workflow execute`. |
-| Process strand | `workflow create` now; later `workflow execute` for slices. |
+| Process strand | `workflow execute`; workflow creation completed under `workflow create`. |
 | Execution profile | `FULL_PATH` |
 | Primary owner | `repository-source-service` |
 | Public API owner | `query-report-api-service` |
@@ -86,7 +86,8 @@ Read-only workflow creation verification found:
 - WSL is available and repository commands must use the WSL-mounted worktree.
 - Dedicated workflow branch is active:
   `feature/workflow-repository-workspace-checkout-h2-persistence-20260524`.
-- The branch is based on `origin/main` and tracks `origin/main`.
+- The branch is based on `origin/main` and tracks
+  `origin/feature/workflow-repository-workspace-checkout-h2-persistence-20260524`.
 - Working tree was clean before workflow regeneration.
 - The previous `docs/workflow/**` files described `FA-MSA-001-LMR`; they are
   regenerated for this new workflow branch by the workflow-authoring rule.
@@ -382,7 +383,7 @@ secondary_reviewers:
   - senior-java-backend
   - senior-react-frontend
   - senior-tester
-  - security-reviewer
+  - senior-security-sandbox-engineer
 affected_files:
   - contracts/openapi/gateway-api.yaml
   - contracts/openapi/README.md
@@ -544,13 +545,17 @@ secondary_reviewers:
   - data-ownership-persistence-steward
   - senior-java-backend
   - senior-devops
-  - security-reviewer
+  - senior-security-sandbox-engineer
   - senior-tester
 affected_files:
   - gradle/libs.versions.toml
   - gradle/verification-metadata.xml
   - services/repository-source-service/build.gradle.kts
+  - services/repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/application/RepositorySourceApplicationService.java
+  - services/repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/application/RepositoryWorkspaceApplicationService.java
+  - services/repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/application/port/**
   - services/repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/adapter/out/h2/**
+  - services/repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/adapter/out/memory/**
   - services/repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/**
   - services/repository-source-service/src/main/resources/application.properties
   - services/repository-source-service/src/main/resources/application-docker.properties
@@ -586,6 +591,15 @@ stop_conditions:
   - repository-source H2 files are read by another service
   - strict dependency verification cannot be restored
 ```
+
+Scope repair note: S05 may add the application-level durable idempotency port
+and adapt repository-source application services to consult persisted
+idempotency records before checkout, cleanup or refresh side effects. This
+repair is required because the S04 implementation still keeps idempotency
+replay state in private in-memory maps. S05 may also extend the existing
+`adapter/out/memory/**` fallback with an in-memory implementation of the new
+idempotency port so property-based `memory|h2` adapter selection remains
+testable.
 
 Purpose: add the H2 dependency, service-local schema initializer, configurable
 adapter selection, H2-backed preparation/workspace/branch/idempotency
@@ -651,7 +665,7 @@ owner: senior-java-backend
 secondary_reviewers:
   - contract-governance-expert
   - senior-grpc-proto-specialist
-  - security-reviewer
+  - senior-security-sandbox-engineer
   - senior-react-frontend
   - senior-tester
 affected_files:
@@ -703,7 +717,7 @@ owner: senior-react-frontend
 secondary_reviewers:
   - senior-ux-designer
   - contract-governance-expert
-  - security-reviewer
+  - senior-security-sandbox-engineer
   - senior-tester
 affected_files:
   - forensic-ui/src/**
@@ -756,7 +770,7 @@ owner: senior-devops
 secondary_reviewers:
   - senior-analysis-storage-architect
   - senior-git-workspace-specialist
-  - security-reviewer
+  - senior-security-sandbox-engineer
   - microservice-runtime-readiness-expert
   - senior-tester
 affected_files:
@@ -933,7 +947,7 @@ secondary_reviewers:
   - senior-devops
   - senior-tester
   - senior-system-architect
-  - git-commit-reviewer
+  - git_commit_reviewer
 affected_files:
   - docs/workflow/execution-report.md
 affected_modules:
@@ -1006,12 +1020,12 @@ disjoint and contract DTOs are frozen.
 | Public REST/OpenAPI | Contract Governance Expert | Senior Java Backend, Senior React Frontend, Senior Tester |
 | gRPC/protobuf owner API | Senior gRPC/Proto Specialist | Contract Governance, Senior Java Backend |
 | Repository-source domain/application | Senior Java Backend | Senior System Architect, Senior Git Workspace Specialist |
-| H2 persistence | Senior Analysis Storage Architect | Data Ownership, Senior Java Backend, Security |
-| Workspace filesystem and Git safety | Senior Git Workspace Specialist | Security Sandbox, Resilience |
-| Query-report facade | Senior Java Backend | Contract Governance, Security, Frontend impact |
+| H2 persistence | Senior Analysis Storage Architect | Data Ownership, Senior Java Backend, Senior Security/Sandbox Engineer |
+| Workspace filesystem and Git safety | Senior Git Workspace Specialist | Senior Security/Sandbox Engineer, Resilience |
+| Query-report facade | Senior Java Backend | Contract Governance, Senior Security/Sandbox Engineer, Frontend impact |
 | Frontend flow | Senior React Frontend | Senior UX Designer, Contract Governance, Senior Tester |
-| Docker and local runtime | Senior DevOps | Storage, Security, Runtime Readiness |
-| Quality gates | Senior Tester / Quality Gate Orchestrator | DevOps, System Architect |
+| Docker and local runtime | Senior DevOps | Storage, Senior Security/Sandbox Engineer, Runtime Readiness |
+| Quality gates | Senior Tester / Quality Gate Orchestrator | DevOps, System Architect, `git_commit_reviewer` for checkpoint review |
 | Documentation and arc42 | Senior Documentation Engineer | ADR Steward, System Architect |
 
 Callable subagents are authorized by the user request. During `workflow execute`,
@@ -1019,6 +1033,10 @@ subagents may be used for read-only review or bounded implementation slices
 with disjoint write scopes. Each subagent must verify the active workflow
 branch before modifying files and must not switch branches unless the workflow
 explicitly authorizes it.
+
+Verifier identifiers used in slice metadata must resolve to existing project
+roles, skills or callable Codex agent definitions. `git_commit_reviewer` is
+verified by `.codex/agents/git_commit_reviewer.toml`.
 
 ## Stop Conditions
 

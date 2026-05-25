@@ -6,6 +6,12 @@ FA-MSA-001 Slice 04 data-ownership and persistence split baseline with S11
 legacy persistence ownership clarification and S18 public API ownership exit
 evidence.
 
+FA-MVP-0001 adds a narrower repository checkout workspace concept. In this
+document, "repository checkout workspace" means repository-source checkout
+state only. It is separate from the broader platform workspace lifecycle,
+membership, project, asset, audit and retention concepts that remain explicit
+ownership gaps below.
+
 This document assigns target ownership for FA-MSA-001 persistent data areas.
 ADR-0022 and S05 retire the former `forensic-analytics-persistence` source
 tree, but they do not by themselves assign durable service storage, schemas,
@@ -38,8 +44,8 @@ Forbidden:
 
 | Data Area | Target Owner / One Writer | Non-Owner Access Path | Status |
 |---|---|---|---|
-| Repository workspaces | `repository-source-service` | Source snapshot IDs, artifact references and owner APIs | Target owner clear |
-| Source snapshots | `repository-source-service` owns workspace state, source package bytes, source snapshot descriptors and accepted source metadata | AST, Joern, orchestrator and query/report consumers receive source snapshot IDs, artifact references and diagnostics through owner APIs or file contracts | S04 owner assigned |
+| Repository checkout workspaces | `repository-source-service` owns checkout workspace aggregate state, repository identity, branch state, workspace directories and durable idempotency for repository-source operations | Source snapshot IDs, artifact references, sanitized diagnostics and owner APIs | FA-MVP-0001 owner clear |
+| Source snapshots | `repository-source-service` owns repository checkout workspace state, source package bytes, source snapshot descriptors, source snapshot references and accepted source metadata | AST, Joern, orchestrator and query/report consumers receive source snapshot IDs, artifact references and diagnostics through owner APIs or file contracts | S04 owner assigned |
 | Raw ingestion payload intake | `ingestion-service` owns raw payload intake, intake diagnostics and raw runtime or analysis payload byte custody until an explicit handoff transfers custody | Handoff contracts, owner APIs or accepted/rejected intake events | S04 owner assigned |
 | Upload session state | `ingestion-service` | Query/report or orchestrator reads through owner API after contracts exist | S04 owner assigned |
 | JavaParser AST/source-fact worker output | `java-parser-analysis-service` owns canonical static Java source facts it produces, source-fact artifact bytes and producer-local artifact metadata | Orchestrator and query/report consumers read through service-owned retrieval APIs, artifact contracts or events | S04 owner assigned |
@@ -54,12 +60,12 @@ Forbidden:
 | CLI state | `cli-client` | Local only | No forensic evidence ownership |
 | Observability data | `observability-stack` for operational configuration and dashboards | Logs/metrics/traces through operational tools | Diagnostics only, not forensic evidence |
 | Test data | `testbed` | Test-only | Non-production only |
-| Workspace lifecycle state | Historical workspace/application predecessor path; no mandatory FA-MSA-001 target service owns this state yet | No active legacy API remains after S05; later requirements must create an owner or explicitly deprecate the feature | S11 ownership gap remains explicit |
-| Workspace membership state | Historical workspace/application predecessor path; no mandatory FA-MSA-001 target service owns this state yet | No active legacy API remains after S05; later requirements must create an owner or explicitly deprecate the feature | S11 ownership gap remains explicit |
+| Platform workspace lifecycle state | Historical workspace/application predecessor path; no mandatory FA-MSA-001 target service owns this state yet. This is not FA-MVP-0001 repository checkout workspace state. | No active legacy API remains after S05; later requirements must create an owner or explicitly deprecate the feature | S11 ownership gap remains explicit |
+| Platform workspace membership state | Historical workspace/application predecessor path; no mandatory FA-MSA-001 target service owns this state yet. This is not FA-MVP-0001 repository checkout workspace state. | No active legacy API remains after S05; later requirements must create an owner or explicitly deprecate the feature | S11 ownership gap remains explicit |
 | Project lifecycle state | Historical workspace/application predecessor path; no mandatory FA-MSA-001 target service owns this state yet | No active legacy API remains after S05; later requirements must create an owner or explicitly deprecate the feature | S11 ownership gap remains explicit |
 | Project membership state | Historical workspace/application predecessor path; no mandatory FA-MSA-001 target service owns this state yet | No active legacy API remains after S05; later requirements must create an owner or explicitly deprecate the feature | S11 ownership gap remains explicit |
-| Workspace and project assets | Historical asset/application predecessor path; generated report package ownership remains with `query-report-api-service` only for mandatory query/report scope | Public report package APIs after owner-specific report contracts exist; workspace/project asset owner remains undecided | S11 ownership gap remains explicit for workspace/project assets; report package owner assigned |
-| Workspace audit events | Historical audit/application predecessor path; no mandatory FA-MSA-001 target service owns audit-grade workspace events yet | Later requirements must create an audit owner or explicitly deprecate the feature | S11 ownership gap remains explicit; durable audit ordering not claimed |
+| Platform workspace and project assets | Historical asset/application predecessor path; generated report package ownership remains with `query-report-api-service` only for mandatory query/report scope | Public report package APIs after owner-specific report contracts exist; workspace/project asset owner remains undecided | S11 ownership gap remains explicit for workspace/project assets; report package owner assigned |
+| Platform workspace audit events | Historical audit/application predecessor path; no mandatory FA-MSA-001 target service owns audit-grade workspace events yet | Later requirements must create an audit owner or explicitly deprecate the feature | S11 ownership gap remains explicit; durable audit ordering not claimed |
 | Retention policy metadata | Historical workspace/application predecessor path; no mandatory FA-MSA-001 target service owns this state yet | Later requirements must create a workspace administration owner or explicitly deprecate the feature | S11 ownership gap remains explicit |
 | Project storage path resolution | Historical storage adapter predecessor path for workspace/project storage; producer services own their own artifact/object paths | Target services expose owner-issued artifact references or owner APIs, never private paths | S11 ownership gap remains explicit for legacy storage resolver behavior |
 
@@ -111,6 +117,12 @@ the repository-to-BTM submission/status path. This closes only the executable
 public API contract-test ownership gap for that target path. It does not assign
 legacy workspace/project administration, membership, asset, audit, retention
 or project-storage persistence to a target service.
+
+FA-MVP-0001 H2 persistence is a Docker-local MVP adapter for
+`repository-source-service` repository checkout workspace, branch and
+idempotency state only. It is service-local one-writer storage, not shared
+cross-service persistence, not canonical analytics persistence and not a
+production relational database selection for the broader platform.
 
 ## Artifact Byte Custody Rules
 

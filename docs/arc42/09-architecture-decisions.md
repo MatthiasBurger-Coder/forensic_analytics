@@ -28,12 +28,26 @@
 | ADR-0020 | Agent Governance Process Strands | Accepted | Defines `skills-agents`, `workflow create`, `workflow execute`, slice checkpoint push, `push` and `push auto` publication separation |
 | ADR-0021 | Governance Flowchart V2 | Accepted | Adds S3 STOP paths, Typed Error Router, S3D orchestration, rollback, one-slice-one-commit traceability and two-level flowcharts |
 | ADR-0022 | Retire legacy modular-monolith source trees | Accepted | Closes final source-tree retirement after S05 verified service-only Gradle topology and no active legacy build/source dependencies |
+| ADR-0023 | Use H2 only for repository-source MVP persistence | Accepted | Records H2 as a repository-source-owned Docker-local MVP adapter only and keeps the production database decision open |
 
-## 9.2 Open Decisions
+## 9.2 FA-MVP-0001 ADR Review
+
+S11 reviewed the repository checkout workspace MVP against the active ADR set.
+ADR-0023 records the H2 adapter scope because the workflow introduced durable
+service-local persistence for repository-source MVP state. ADR-0023 does not
+select a production relational database, does not create shared analytics
+persistence and does not close OD-001.
+
+The architecture consequence is: `repository-source-service` owns repository
+checkout workspace, branch, source snapshot and idempotency state;
+`query-report-api-service` exposes sanitized public workspace REST DTOs
+through owner APIs; no new `workspace-service` is introduced.
+
+## 9.3 Open Decisions
 
 | ID | Open Decision | Notes |
 |---|---|---|
-| OD-001 | Initial relational database | Not selected in EPIC v0.2 |
+| OD-001 | Initial relational database | Not selected in EPIC v0.2. FA-MVP-0001 H2 is repository-source Docker-local MVP persistence only and does not close this production database decision. |
 | OD-002 | Initial Graph DB | Not selected in EPIC v0.2 |
 | OD-003 | Initial Vector DB | Not selected in EPIC v0.2 |
 | OD-004 | Runtime ingestion mode | JSONL likely for MVP, HTTP collector later |

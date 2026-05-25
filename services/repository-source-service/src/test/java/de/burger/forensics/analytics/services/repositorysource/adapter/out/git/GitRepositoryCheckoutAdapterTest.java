@@ -115,10 +115,21 @@ class GitRepositoryCheckoutAdapterTest {
         );
 
         assertFalse(fullBranch.shallowClone());
-        assertTrue(fullBranchRunner.commands.stream().anyMatch(command -> command.arguments().equals(List.of("checkout", "--quiet", "main"))));
+        assertTrue(fullBranchRunner.commands.stream().anyMatch(command -> command.arguments().equals(List.of(
+            "checkout",
+            "--quiet",
+            "--no-recurse-submodules",
+            "main"
+        ))));
         assertFalse(commitOnly.shallowClone());
         assertTrue(commitRunner.commands.stream().noneMatch(command -> command.arguments().contains("merge-base")));
-        assertTrue(commitRunner.commands.stream().anyMatch(command -> command.arguments().equals(List.of("checkout", "--quiet", "--detach", "abcdef1"))));
+        assertTrue(commitRunner.commands.stream().anyMatch(command -> command.arguments().equals(List.of(
+            "checkout",
+            "--quiet",
+            "--no-recurse-submodules",
+            "--detach",
+            "abcdef1"
+        ))));
     }
 
     @Test
@@ -153,6 +164,7 @@ class GitRepositoryCheckoutAdapterTest {
     @Test
     void gitHomeIsAlwaysOwnedByPreparedWorkspace() {
         var repositoryPath = workspaceRoot.resolve("repository");
+        var checkoutPath = workspaceRoot.resolve("checkout");
 
         assertEquals(
             workspaceRoot.resolve(".repository-source-git-home").toAbsolutePath().normalize(),
@@ -162,6 +174,40 @@ class GitRepositoryCheckoutAdapterTest {
             workspaceRoot.resolve(".repository-source-git-home").toAbsolutePath().normalize(),
             SafeGitCommandRunner.isolatedGitHome(repositoryPath)
         );
+        assertEquals(
+            workspaceRoot.resolve(".repository-source-git-home").toAbsolutePath().normalize(),
+            SafeGitCommandRunner.isolatedGitHome(checkoutPath)
+        );
+    }
+
+    @Test
+    void refreshesExistingCheckoutWithoutCloningAgain() throws Exception {
+        var runner = new FakeRunner();
+        var adapter = checkoutAdapter(runner);
+        var workspace = workspaceRoot.resolve("existing");
+        Files.createDirectories(workspace.resolve("checkout/.git"));
+        Files.createDirectories(workspace.resolve("checkout/src/main/java"));
+
+        var checkout = adapter.checkout(
+            new PreparedWorkspace(new WorkspaceId("workspace-existing"), workspace),
+            REPOSITORY,
+            new RevisionSelector("main", true, "", false),
+            POLICY
+        );
+
+        assertEquals(CheckoutStatus.CHECKED_OUT, checkout.status());
+        assertTrue(runner.commands.stream().noneMatch(command -> command.arguments().contains("clone")));
+        assertTrue(runner.commands.stream().anyMatch(command -> command.arguments().contains("fetch")));
+        assertTrue(runner.commands.stream().anyMatch(command -> command.arguments().contains(REPOSITORY.remoteUrl())));
+        assertTrue(runner.commands.stream().noneMatch(command -> command.arguments().stream().anyMatch("origin"::equals)));
+        assertTrue(runner.commands.stream().anyMatch(command -> command.arguments().contains("--no-recurse-submodules")));
+        assertTrue(runner.commands.stream().anyMatch(command -> command.arguments().contains("+refs/heads/main:refs/remotes/origin/main")));
+        assertTrue(runner.commands.stream().anyMatch(command -> command.arguments().equals(List.of(
+            "checkout",
+            "--quiet",
+            "--no-recurse-submodules",
+            "refs/remotes/origin/main"
+        ))));
     }
 
     @Test

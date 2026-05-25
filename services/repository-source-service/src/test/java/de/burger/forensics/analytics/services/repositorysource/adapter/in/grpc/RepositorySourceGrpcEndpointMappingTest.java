@@ -2,10 +2,12 @@ package de.burger.forensics.analytics.services.repositorysource.adapter.in.grpc;
 
 import de.burger.forensics.analytics.repositoryanalysis.v1.CheckoutStatus;
 import de.burger.forensics.analytics.repositoryanalysis.v1.DiagnosticSeverity;
+import de.burger.forensics.analytics.repositoryanalysis.v1.RepositoryWorkspaceBranchStatus;
 import de.burger.forensics.analytics.repositoryanalysis.v1.RepositoryWorkspaceStatus;
 import de.burger.forensics.analytics.repositoryanalysis.v1.SourceSnapshotCompleteness;
 import de.burger.forensics.analytics.services.repositorysource.application.IdempotencyConflictException;
 import de.burger.forensics.analytics.services.repositorysource.application.RepositoryPreparationNotFoundException;
+import de.burger.forensics.analytics.services.repositorysource.application.RepositoryWorkspaceNotFoundException;
 import io.grpc.Status;
 import org.junit.jupiter.api.Test;
 
@@ -40,6 +42,25 @@ class RepositorySourceGrpcEndpointMappingTest {
             de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.RepositoryWorkspaceStatus.FAILED
         ));
 
+        assertEquals(RepositoryWorkspaceBranchStatus.REPOSITORY_WORKSPACE_BRANCH_STATUS_CHECKING_OUT, RepositorySourceGrpcEndpoint.branchStatus(
+            de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.RepositoryWorkspaceBranchStatus.CHECKING_OUT
+        ));
+        assertEquals(RepositoryWorkspaceBranchStatus.REPOSITORY_WORKSPACE_BRANCH_STATUS_CHECKED_OUT, RepositorySourceGrpcEndpoint.branchStatus(
+            de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.RepositoryWorkspaceBranchStatus.CHECKED_OUT
+        ));
+        assertEquals(RepositoryWorkspaceBranchStatus.REPOSITORY_WORKSPACE_BRANCH_STATUS_UP_TO_DATE, RepositorySourceGrpcEndpoint.branchStatus(
+            de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.RepositoryWorkspaceBranchStatus.UP_TO_DATE
+        ));
+        assertEquals(RepositoryWorkspaceBranchStatus.REPOSITORY_WORKSPACE_BRANCH_STATUS_UPDATING, RepositorySourceGrpcEndpoint.branchStatus(
+            de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.RepositoryWorkspaceBranchStatus.UPDATING
+        ));
+        assertEquals(RepositoryWorkspaceBranchStatus.REPOSITORY_WORKSPACE_BRANCH_STATUS_UPDATED, RepositorySourceGrpcEndpoint.branchStatus(
+            de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.RepositoryWorkspaceBranchStatus.UPDATED
+        ));
+        assertEquals(RepositoryWorkspaceBranchStatus.REPOSITORY_WORKSPACE_BRANCH_STATUS_FAILED, RepositorySourceGrpcEndpoint.branchStatus(
+            de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.RepositoryWorkspaceBranchStatus.FAILED
+        ));
+
         assertEquals(SourceSnapshotCompleteness.SOURCE_SNAPSHOT_COMPLETENESS_COMPLETE, RepositorySourceGrpcEndpoint.completeness(
             de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.SourceSnapshotCompleteness.COMPLETE
         ));
@@ -65,6 +86,8 @@ class RepositorySourceGrpcEndpointMappingTest {
     void mapsApplicationExceptionsToGrpcStatuses() {
         assertEquals(Status.Code.NOT_FOUND, RepositorySourceGrpcEndpoint
             .status(new RepositoryPreparationNotFoundException("missing")).getCode());
+        assertEquals(Status.Code.NOT_FOUND, RepositorySourceGrpcEndpoint
+            .status(new RepositoryWorkspaceNotFoundException("missing workspace")).getCode());
         assertEquals(Status.Code.ALREADY_EXISTS, RepositorySourceGrpcEndpoint
             .status(new IdempotencyConflictException("conflict")).getCode());
         assertEquals(Status.Code.INVALID_ARGUMENT, RepositorySourceGrpcEndpoint
@@ -73,6 +96,14 @@ class RepositorySourceGrpcEndpointMappingTest {
             .status(new IllegalArgumentException("private /tmp/input")).getDescription());
         assertEquals(Status.Code.FAILED_PRECONDITION, RepositorySourceGrpcEndpoint
             .status(new IllegalStateException("private /tmp/workspace")).getCode());
+        assertEquals("Repository preparation failed", RepositorySourceGrpcEndpoint
+            .status(new IllegalStateException("private /tmp/workspace")).getDescription());
+        assertEquals("Repository workspace checkout failed", RepositorySourceGrpcEndpoint
+            .status(new IllegalStateException("Repository workspace branch checkout failed at /tmp/private")).getDescription());
+        assertEquals(Status.Code.INTERNAL, RepositorySourceGrpcEndpoint
+            .status(new IllegalStateException("Failed to save repository workspace at /tmp/private")).getCode());
+        assertEquals("Repository source persistence failed", RepositorySourceGrpcEndpoint
+            .status(new IllegalStateException("Failed to save repository workspace at /tmp/private")).getDescription());
         assertEquals(Status.Code.INTERNAL, RepositorySourceGrpcEndpoint
             .status(new RuntimeException("private /tmp/internal")).getCode());
         assertEquals("Repository source service failed", RepositorySourceGrpcEndpoint

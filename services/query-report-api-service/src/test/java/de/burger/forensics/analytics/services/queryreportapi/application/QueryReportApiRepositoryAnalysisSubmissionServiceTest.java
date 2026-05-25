@@ -96,18 +96,32 @@ class QueryReportApiRepositoryAnalysisSubmissionServiceTest {
         assertEquals("repository-to-btm", status.workflow());
         assertEquals("AVAILABLE", status.sourceSnapshotStatus());
         assertThrows(IllegalArgumentException.class, () -> new StatusRequest("request-status", "correlation-1", "/tmp/run"));
+        assertThrows(IllegalArgumentException.class, () -> new StatusRequest("request-status", "correlation-1", "analysis-token-run"));
     }
 
     @Test
     void validatesRepositoryBoundariesAndWorkspacePolicyBeforeCallingPort() {
         var unsafeRemotes = List.of(
             "https://localhost/acme/demo.git",
+            "https://localhost./acme/demo.git",
             "https://demo.localhost/acme/demo.git",
+            "https://example.invalid./acme/demo.git",
+            "https://example/acme/demo.git",
             "https://10.0.0.1/acme/demo.git",
             "https://192.168.0.1/acme/demo.git",
             "https://172.16.0.1/acme/demo.git",
             "https://169.254.169.254/acme/demo.git",
+            "https://192.31.196.1/acme/demo.git",
+            "https://192.52.193.1/acme/demo.git",
+            "https://192.175.48.1/acme/demo.git",
             "https://[::1]/acme/demo.git",
+            "https://[0000:0000:0000:0000:0000:0000:0000:0001]/acme/demo.git",
+            "https://[0064:ff9b::1]/acme/demo.git",
+            "https://[64:ff9b:1::1]/acme/demo.git",
+            "https://[100:0:0:1::1]/acme/demo.git",
+            "https://[2001:0db8::1]/acme/demo.git",
+            "https://[3fff::1]/acme/demo.git",
+            "https://[5f00::1]/acme/demo.git",
             "https://[fc00::1]/acme/demo.git",
             "https://[fe80::1]/acme/demo.git"
         );
@@ -161,6 +175,17 @@ class QueryReportApiRepositoryAnalysisSubmissionServiceTest {
         assertEquals("SAFE_CODE:1", new Diagnostic("warning", "safe_code:1", "message").code());
         assertEquals("line one  line two", new Diagnostic("INFO", "SAFE_CODE", "line one\r\nline two").message());
         assertThrows(IllegalArgumentException.class, () -> new Diagnostic("INFO", "SAFE_CODE", " "));
+        assertEquals(null, new RepositoryToBtmStatus(
+            "analysis-run-1",
+            " ",
+            null,
+            "",
+            "AVAILABLE",
+            "ACCEPTED",
+            null,
+            " ",
+            null
+        ).branch());
     }
 
     @Test
@@ -189,15 +214,77 @@ class QueryReportApiRepositoryAnalysisSubmissionServiceTest {
 
         List.of(
             "C:\\Users\\demo\\repo",
+            "jdbc:h2:file:./build/repository-source-data/repository-source",
             "raw stdout from worker",
             "raw stderr from worker",
             "/var/lib/forensic-analytics/workspaces/workspace-1",
+            "/var/lib/forensic-analytics/repository-source-data/repository-source",
             "repository-workspaces/workspace-1",
+            "repository-source-data/repository-source",
             "https://example.com/private.git",
-            "https://example.com/private/repository"
+            "https://example.com/private/repository",
+            "git clone https://example.com/private.git"
         ).forEach(message ->
             assertEquals("Diagnostic details redacted", new Diagnostic("WARNING", "SAFE_CODE", message).message())
         );
+        List.of(
+            "jdbc:h2",
+            "/tmp/code",
+            "authorization",
+            "credential",
+            "password",
+            "secret",
+            "token"
+        ).forEach(code ->
+            assertEquals("DIAGNOSTIC_REDACTED", new Diagnostic("WARNING", code, "safe message").code())
+        );
+    }
+
+    @Test
+    void rejectsRepositoryAnalysisRequestEdgeCasesBeforeOwnerPortCalls() {
+        assertThrows(IllegalArgumentException.class, () -> new SubmissionRequest(
+            null,
+            "idem-2",
+            "gateway.v1",
+            "correlation-1",
+            List.of("BTM_RULES"),
+            "https://example.com/repo.git",
+            "github",
+            "main",
+            "",
+            "",
+            buildContext(),
+            policy()
+        ));
+        assertThrows(IllegalArgumentException.class, () -> new SubmissionRequest(
+            "request-1",
+            "idem-2",
+            "gateway.v1",
+            "correlation-1",
+            null,
+            "https://example.com/repo.git",
+            "github",
+            "main",
+            "",
+            "",
+            buildContext(),
+            policy()
+        ));
+        assertThrows(IllegalArgumentException.class, () -> requestWithProvider("C:\\Users\\demo"));
+        assertThrows(IllegalArgumentException.class, () -> new BuildContext(
+            "gradle",
+            "build-1",
+            "demo",
+            List.of(":app"),
+            Map.of("tenant", "credential-value")
+        ));
+        assertThrows(IllegalArgumentException.class, () -> new BuildContext(
+            "gradle",
+            "build-1",
+            "demo",
+            List.of(":app"),
+            Map.of("tenant", "C:\\Users\\demo")
+        ));
     }
 
     private static SubmissionRequest request(String idempotencyKey, String repositoryUrl, String branch, String commit) {

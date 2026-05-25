@@ -54,12 +54,19 @@ Owns:
 
 - repository access;
 - branch and commit resolution;
+- repository checkout workspace aggregate state;
+- repository checkout branch state;
 - checkout, clone and fetch;
 - workspace leases and cleanup;
+- service-local durable idempotency for repository-source operations;
 - source package byte custody;
 - source snapshot descriptors;
+- source snapshot references;
 - accepted source snapshot metadata;
-- checkout diagnostics.
+- checkout diagnostics;
+- Docker-local MVP H2 persistence for repository checkout workspace,
+  branch and idempotency state after FA-MVP-0001 persistence slices verify
+  the adapter.
 
 Non-scope:
 
@@ -68,6 +75,8 @@ Non-scope:
 - BTM generation;
 - report generation;
 - incident analysis;
+- platform workspace lifecycle, membership, project, asset, audit or
+  retention administration;
 - canonical evidence persistence outside repository source metadata.
 
 Inbound communication:
@@ -99,18 +108,27 @@ Repository Source service implementation state:
 - local gRPC port `9092` and health port `8083`;
 - Docker profile workspace root
   `/var/lib/forensic-analytics/repository-workspaces`;
+- Docker profile H2 data root
+  `/var/lib/forensic-analytics/repository-source-data`;
+- service-local H2 file adapter for repository checkout workspace, branch and
+  idempotency state in the Docker-local MVP;
 - transitional use of the predecessor `repository-analysis.proto` filename and
   wire service name as an external contract only.
 
 `services/repository-analysis-service` remains predecessor and rollback
-evidence. The repository-source service implementation slice did not route
-production callers to the new service and did not claim Docker Compose, Docker
-Swarm or Kubernetes readiness for the target landscape.
+evidence. The repository-source service implementation slice did not route all
+production callers to the new service. FA-MVP-0001 routes the public workspace
+MVP through `query-report-api-service` and service-owned repository-source
+APIs, but Docker Swarm and Kubernetes readiness remain future work.
 
 Stop conditions:
 
 - another service accesses repository workspace internals directly;
 - workspace paths are used as hidden coupling;
+- H2 files, private checkout directories or raw Git output are consumed by
+  another service;
+- repository checkout workspace state is reinterpreted as platform workspace
+  membership or project administration;
 - checkout executes repository hooks, build scripts or repository-supplied
   tools without an approved sandbox decision;
 - source snapshot identity is guessed.
@@ -400,6 +418,8 @@ Owns:
 
 - REST/OpenAPI facade;
 - client-facing status and error translation;
+- sanitized public workspace REST DTOs after FA-MVP-0001 contract slices
+  approve them;
 - report/query response assembly from owner APIs;
 - public read models and cache state;
 - generated report package state;
@@ -411,7 +431,9 @@ Non-scope:
 - analysis execution;
 - repository checkout;
 - JavaParser or Joern processing;
-- private persistence access;
+- private persistence access, including repository-source H2 files;
+- private repository-source checkout directories or workspace paths;
+- raw Git stdout or stderr handling;
 - canonical repository, ingestion, static analysis, semantic analysis or
   orchestration facts;
 - artifact bytes outside generated report or LLM-ready packages;
@@ -438,13 +460,17 @@ S08 implementation state:
 - registered Gradle project `services:query-report-api-service`;
 - service-local package `de.burger.forensics.analytics.services.queryreportapi`;
 - service-local domain, application port, inbound HTTP adapter, outbound
-  Analysis Orchestrator gRPC adapter, bootstrap, configuration, tests,
-  README and Dockerfile;
+  Analysis Orchestrator gRPC adapter, outbound Repository Source gRPC adapter,
+  bootstrap, configuration, tests, README and Dockerfile;
 - current verified routes `GET /health`, `GET /api/health`, `GET /api/status`,
   `POST /api/repository-analyses` and
   `GET /api/repository-analyses/{analysisRunId}`;
+- current FA-MVP-0001 workspace routes `POST /api/workspace-metadata`,
+  `POST /api/workspaces`, `GET /api/workspaces/{workspaceId}` and
+  `POST /api/workspaces/{workspaceId}/branches/{workspaceBranchId}/refresh`;
 - unchanged `contracts/openapi/gateway-api.yaml` wire/schema shape;
-- service-local generated `analysis-job.proto` transport classes.
+- service-local generated `analysis-job.proto` and `repository-analysis.proto`
+  transport classes.
 
 The S08 outbound gRPC adapter calls the S07 `analysis-orchestrator-service`
 `StartRepositoryToBtm` and `GetRepositoryToBtmStatus` RPCs. The public facade
@@ -455,12 +481,20 @@ completed analysis parity: no repository checkout, worker dispatch, Joern run,
 BTM generation, report assembly or artifact byte custody is claimed by
 `query-report-api-service`.
 
+The FA-MVP-0001 workspace adapter calls `repository-source-service` for
+metadata preview, idempotent workspace create/reuse, get and branch refresh.
+It maps owner responses to sanitized public DTOs with opaque workspace and
+branch IDs only. It does not own Git checkout, repository identity,
+repository-source H2 files, private checkout directories, source package bytes
+or raw Git diagnostics.
+
 Stop conditions:
 
 - public responses leak private paths, secrets, raw diagnostics or unverified
   hypotheses as evidence;
 - API code performs analysis execution or direct worker orchestration;
-- API code reads private service databases.
+- API code reads private service databases, repository-source H2 files or
+  private repository checkout workspaces.
 
 ## `cli-client`
 

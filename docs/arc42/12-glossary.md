@@ -3,10 +3,11 @@
 | Term | Definition |
 |---|---|
 | Forensics Platform | Central analysis platform for static facts, runtime events, replay and LLM diagnosis |
-| Workspace | Top-level organizational and access boundary for workspace-enabled forensic analysis features |
-| Project | Analysis scope that belongs to exactly one workspace |
-| Workspace Role | Role assigned to a user inside one workspace, used for workspace-level permissions |
-| Workspace Membership | Link between a user, workspace and workspace role |
+| Platform Workspace | Top-level organizational and access boundary for workspace-enabled forensic analysis features |
+| Repository Checkout Workspace | Repository-source-owned checkout aggregate for one normalized repository identity in FA-MVP-0001; not a membership, authorization, project lifecycle, asset, audit or retention boundary |
+| Project | Analysis scope that belongs to exactly one platform workspace |
+| Workspace Role | Role assigned to a user inside one platform workspace, used for workspace-level permissions |
+| Workspace Membership | Link between a user, platform workspace and workspace role |
 | Project Membership | Assignment allowing a workspace member to access one specific project |
 | Asset Scope | Domain boundary that distinguishes shared workspace assets from project-scoped assets |
 | Shared Asset | Asset owned by a workspace without a project id |

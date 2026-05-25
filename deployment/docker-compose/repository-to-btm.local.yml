@@ -46,8 +46,20 @@ services:
     ports:
       - "127.0.0.1:18083:8083"
       - "127.0.0.1:19092:9092"
+
+  repository-source-service:
+    image: forensic-analytics/repository-source-service:local
+    build:
+      context: ../..
+      dockerfile: services/repository-source-service/Dockerfile
+      args:
+        SERVICE_JAR: services/repository-source-service/build/libs/repository-source-service-0.1.0-SNAPSHOT.jar
+    ports:
+      - "127.0.0.1:18087:8083"
+      - "127.0.0.1:19097:9092"
     volumes:
-      - repository-workspaces:/var/lib/forensic-analytics/repository-workspaces
+      - repository-source-workspaces:/var/lib/forensic-analytics/repository-workspaces
+      - repository-source-data:/var/lib/forensic-analytics/repository-source-data
 
   java-ast-analysis-service:
     image: forensic-analytics/java-ast-analysis-service:local
@@ -90,7 +102,8 @@ services:
       - btm-artifacts:/var/lib/forensic-analytics/btm-artifacts
 
 volumes:
-  repository-workspaces:
+  repository-source-workspaces:
+  repository-source-data:
   java-ast-artifacts:
   joern-cpg-workspaces:
   joern-cpg-artifacts:

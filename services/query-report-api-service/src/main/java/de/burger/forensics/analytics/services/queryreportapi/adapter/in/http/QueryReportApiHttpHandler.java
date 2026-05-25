@@ -8,6 +8,8 @@ import de.burger.forensics.analytics.services.queryreportapi.application.QueryRe
 import de.burger.forensics.analytics.services.queryreportapi.application.QueryReportApiRepositoryAnalysisException;
 import de.burger.forensics.analytics.services.queryreportapi.application.QueryReportApiRepositoryAnalysisSubmissionService;
 import de.burger.forensics.analytics.services.queryreportapi.application.QueryReportApiStatusService;
+import de.burger.forensics.analytics.services.queryreportapi.application.QueryReportApiWorkspaceException;
+import de.burger.forensics.analytics.services.queryreportapi.application.QueryReportApiWorkspaceService;
 import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiRepositoryAnalysis.BuildContext;
 import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiRepositoryAnalysis.StatusRequest;
 import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiRepositoryAnalysis.SubmissionRequest;
@@ -17,6 +19,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.regex.Pattern;
 
 public final class QueryReportApiHttpHandler implements HttpHandler {
@@ -28,14 +31,17 @@ public final class QueryReportApiHttpHandler implements HttpHandler {
 
     private final QueryReportApiStatusService statusService;
     private final QueryReportApiRepositoryAnalysisSubmissionService repositoryAnalysisSubmissionService;
+    private final QueryReportApiWorkspaceService workspaceService;
     private final Gson gson;
 
     public QueryReportApiHttpHandler(
         QueryReportApiStatusService statusService,
-        QueryReportApiRepositoryAnalysisSubmissionService repositoryAnalysisSubmissionService
+        QueryReportApiRepositoryAnalysisSubmissionService repositoryAnalysisSubmissionService,
+        QueryReportApiWorkspaceService workspaceService
     ) {
         this.statusService = statusService;
         this.repositoryAnalysisSubmissionService = repositoryAnalysisSubmissionService;
+        this.workspaceService = workspaceService;
         this.gson = new Gson();
     }
 
@@ -61,7 +67,58 @@ public final class QueryReportApiHttpHandler implements HttpHandler {
         switch (path) {
             case "/health", "/api/health" -> write(exchange, 200, HEALTH);
             case "/api/status" -> write(exchange, 200, gson.toJson(statusService.currentStatus()));
-            default -> handleRepositoryAnalysisStatusGet(exchange, path);
+            default -> {
+                if (path.startsWith("/api/workspaces/")) {
+                    if (isWorkspaceCheckoutResultRoute(path)) {
+                        handleWorkspaceCheckoutResultGet(exchange, path);
+                        return;
+                    }
+                    handleWorkspaceGet(exchange, path);
+                    return;
+                }
+                handleRepositoryAnalysisStatusGet(exchange, path);
+            }
+        }
+    }
+
+    private void handleWorkspaceGet(HttpExchange exchange, String path) throws IOException {
+        var prefix = "/api/workspaces/";
+        var workspaceId = path.substring(prefix.length());
+        if (workspaceId.isBlank() || workspaceId.contains("/") || workspaceId.contains("\\")) {
+            write(exchange, 404, NOT_FOUND);
+            return;
+        }
+        var correlationId = "";
+        try {
+            correlationId = requiredMutationHeader(exchange, "X-Correlation-Id");
+            var workspace = workspaceService.get(
+                generatedRequestId("workspace-get", correlationId, workspaceId),
+                correlationId,
+                workspaceId
+            );
+            write(exchange, 200, gson.toJson(workspace), correlationId);
+        } catch (QueryReportApiWorkspaceException error) {
+            writeError(exchange, error.statusCode(), error.errorCode(), error.retryable(), error.getMessage(), correlationId);
+        } catch (IllegalArgumentException | NullPointerException error) {
+            writeError(exchange, 400, "VALIDATION_ERROR", false, "Invalid repository workspace request", correlationId);
+        }
+    }
+
+    private void handleWorkspaceCheckoutResultGet(HttpExchange exchange, String path) throws IOException {
+        var correlationId = "";
+        try {
+            correlationId = requiredMutationHeader(exchange, "X-Correlation-Id");
+            var workspaceId = workspaceCheckoutResultWorkspaceId(path);
+            var workspace = workspaceService.waitForCheckout(
+                generatedRequestId("workspace-checkout-result", correlationId, workspaceId),
+                correlationId,
+                workspaceId
+            );
+            write(exchange, 200, gson.toJson(workspace), correlationId);
+        } catch (QueryReportApiWorkspaceException error) {
+            writeError(exchange, error.statusCode(), error.errorCode(), error.retryable(), error.getMessage(), correlationId);
+        } catch (IllegalArgumentException | NullPointerException error) {
+            writeError(exchange, 400, "VALIDATION_ERROR", false, "Invalid repository workspace request", correlationId);
         }
     }
 
@@ -94,10 +151,99 @@ public final class QueryReportApiHttpHandler implements HttpHandler {
 
     private void handlePost(HttpExchange exchange) throws IOException {
         var path = exchange.getRequestURI().getPath();
-        if (!"/api/repository-analyses".equals(path)) {
-            write(exchange, isKnownGetRoute(path) ? 405 : 404, isKnownGetRoute(path) ? METHOD_NOT_ALLOWED : NOT_FOUND);
-            return;
+        switch (path) {
+            case "/api/workspace-metadata" -> {
+                handleWorkspaceMetadataPost(exchange);
+                return;
+            }
+            case "/api/workspaces" -> {
+                handleWorkspacePost(exchange);
+                return;
+            }
+            case "/api/repository-analyses" -> {
+                handleRepositoryAnalysisPost(exchange);
+                return;
+            }
+            default -> {
+                if (isWorkspaceRefreshRoute(path)) {
+                    handleWorkspaceBranchRefreshPost(exchange, path);
+                    return;
+                }
+                write(exchange, isKnownGetRoute(path) ? 405 : 404, isKnownGetRoute(path) ? METHOD_NOT_ALLOWED : NOT_FOUND);
+            }
         }
+    }
+
+    private void handleWorkspaceMetadataPost(HttpExchange exchange) throws IOException {
+        var correlationId = "";
+        try {
+            correlationId = requiredMutationHeader(exchange, "X-Correlation-Id");
+            var idempotencyKey = requiredMutationHeader(exchange, "Idempotency-Key");
+            var payload = workspaceMetadataPayload(readRequestBody(exchange));
+            var metadata = workspaceService.previewMetadata(
+                generatedRequestId("workspace-metadata", correlationId, payload.repositoryUrl),
+                idempotencyKey,
+                correlationId,
+                payload.repositoryUrl
+            );
+            write(exchange, 200, gson.toJson(metadata), correlationId);
+        } catch (QueryReportApiIdempotencyConflictException error) {
+            writeError(exchange, 409, "IDEMPOTENCY_CONFLICT", false, "The idempotency key was already used with different input.", correlationId);
+        } catch (QueryReportApiWorkspaceException error) {
+            writeError(exchange, error.statusCode(), error.errorCode(), error.retryable(), error.getMessage(), correlationId);
+        } catch (IllegalArgumentException | NullPointerException | JsonSyntaxException error) {
+            writeError(exchange, 400, "VALIDATION_ERROR", false, "Invalid repository workspace request", correlationId);
+        }
+    }
+
+    private void handleWorkspacePost(HttpExchange exchange) throws IOException {
+        var correlationId = "";
+        try {
+            correlationId = requiredMutationHeader(exchange, "X-Correlation-Id");
+            var idempotencyKey = requiredMutationHeader(exchange, "Idempotency-Key");
+            var payload = workspacePayload(readRequestBody(exchange));
+            var workspace = workspaceService.create(
+                generatedRequestId("workspace-create", correlationId, payload.repositoryUrl + "|" + payload.selectedBranch),
+                idempotencyKey,
+                correlationId,
+                payload.repositoryUrl,
+                payload.selectedBranch,
+                payload.workspacePolicy.toWorkspaceDomain()
+            );
+            write(exchange, 200, gson.toJson(workspace), correlationId);
+        } catch (QueryReportApiIdempotencyConflictException error) {
+            writeError(exchange, 409, "IDEMPOTENCY_CONFLICT", false, "The idempotency key was already used with different input.", correlationId);
+        } catch (QueryReportApiWorkspaceException error) {
+            writeError(exchange, error.statusCode(), error.errorCode(), error.retryable(), error.getMessage(), correlationId);
+        } catch (IllegalArgumentException | NullPointerException | JsonSyntaxException error) {
+            writeError(exchange, 400, "VALIDATION_ERROR", false, "Invalid repository workspace request", correlationId);
+        }
+    }
+
+    private void handleWorkspaceBranchRefreshPost(HttpExchange exchange, String path) throws IOException {
+        var correlationId = "";
+        try {
+            correlationId = requiredMutationHeader(exchange, "X-Correlation-Id");
+            var idempotencyKey = requiredMutationHeader(exchange, "Idempotency-Key");
+            var route = workspaceRefreshRoute(path);
+            var refresh = workspaceService.refresh(
+                generatedRequestId("workspace-refresh", correlationId, route.workspaceId() + "|" + route.workspaceBranchId()),
+                idempotencyKey,
+                correlationId,
+                route.workspaceId(),
+                route.workspaceBranchId()
+            );
+            write(exchange, 200, gson.toJson(refresh), correlationId);
+        } catch (QueryReportApiIdempotencyConflictException error) {
+            writeError(exchange, 409, "IDEMPOTENCY_CONFLICT", false, "The idempotency key was already used with different input.", correlationId);
+        } catch (QueryReportApiWorkspaceException error) {
+            writeError(exchange, error.statusCode(), error.errorCode(), error.retryable(), error.getMessage(), correlationId);
+        } catch (IllegalArgumentException | NullPointerException error) {
+            writeError(exchange, 400, "VALIDATION_ERROR", false, "Invalid repository workspace request", correlationId);
+        }
+    }
+
+    private void handleRepositoryAnalysisPost(HttpExchange exchange) throws IOException {
         var correlationId = "";
         try {
             correlationId = requiredMutationHeader(exchange, "X-Correlation-Id");
@@ -117,11 +263,23 @@ public final class QueryReportApiHttpHandler implements HttpHandler {
     }
 
     private static boolean isKnownGetRoute(String path) {
-        return "/health".equals(path) || "/api/health".equals(path) || "/api/status".equals(path);
+        return "/health".equals(path)
+            || "/api/health".equals(path)
+            || "/api/status".equals(path)
+            || "/api/workspace-metadata".equals(path)
+            || path.startsWith("/api/workspaces/");
     }
 
     private StartRepositoryAnalysisPayload payload(String requestBody) {
         return gson.fromJson(requestBody, StartRepositoryAnalysisPayload.class);
+    }
+
+    private WorkspaceMetadataPayload workspaceMetadataPayload(String requestBody) {
+        return gson.fromJson(requestBody, WorkspaceMetadataPayload.class);
+    }
+
+    private WorkspacePayload workspacePayload(String requestBody) {
+        return gson.fromJson(requestBody, WorkspacePayload.class);
     }
 
     private static String readRequestBody(HttpExchange exchange) throws IOException {
@@ -159,9 +317,12 @@ public final class QueryReportApiHttpHandler implements HttpHandler {
         String correlationId
     ) throws IOException {
         var safeCorrelationId = correlationId == null || correlationId.isBlank() ? "unknown" : correlationId;
-        write(exchange, statusCode, """
-            {"code":"%s","message":"%s","retryable":%s,"correlationId":"%s","diagnostics":[]}
-            """.formatted(code, message, retryable, safeCorrelationId).trim(), safeCorrelationId);
+        write(
+            exchange,
+            statusCode,
+            new Gson().toJson(new ErrorEnvelope(code, message, retryable, safeCorrelationId, List.of())),
+            safeCorrelationId
+        );
     }
 
     private static String firstHeader(HttpExchange exchange, String name) {
@@ -178,6 +339,75 @@ public final class QueryReportApiHttpHandler implements HttpHandler {
             throw new IllegalArgumentException(name + " contains unsupported characters");
         }
         return safeValue;
+    }
+
+    private static boolean isWorkspaceRefreshRoute(String path) {
+        return path.startsWith("/api/workspaces/") && path.endsWith("/refresh") && path.contains("/branches/");
+    }
+
+    private static boolean isWorkspaceCheckoutResultRoute(String path) {
+        return path.startsWith("/api/workspaces/") && path.endsWith("/checkout-result");
+    }
+
+    private static String workspaceCheckoutResultWorkspaceId(String path) {
+        var prefix = "/api/workspaces/";
+        var suffix = "/checkout-result";
+        if (!path.startsWith(prefix) || !path.endsWith(suffix)) {
+            throw new IllegalArgumentException("workspace checkout result route is invalid");
+        }
+        var workspaceId = path.substring(prefix.length(), path.length() - suffix.length());
+        if (workspaceId.isBlank() || workspaceId.contains("/") || workspaceId.contains("\\")) {
+            throw new IllegalArgumentException("workspace checkout result route is invalid");
+        }
+        return workspaceId;
+    }
+
+    private static WorkspaceRefreshRoute workspaceRefreshRoute(String path) {
+        var prefix = "/api/workspaces/";
+        var branchSeparator = "/branches/";
+        var refreshSuffix = "/refresh";
+        if (!path.startsWith(prefix) || !path.endsWith(refreshSuffix)) {
+            throw new IllegalArgumentException("workspace refresh route is invalid");
+        }
+        var branchSeparatorIndex = path.indexOf(branchSeparator, prefix.length());
+        if (branchSeparatorIndex < 0) {
+            throw new IllegalArgumentException("workspace refresh route is invalid");
+        }
+        var workspaceId = path.substring(prefix.length(), branchSeparatorIndex);
+        var branchStart = branchSeparatorIndex + branchSeparator.length();
+        var branchEnd = path.length() - refreshSuffix.length();
+        var workspaceBranchId = path.substring(branchStart, branchEnd);
+        if (workspaceId.isBlank() || workspaceBranchId.isBlank()
+            || workspaceId.contains("/") || workspaceBranchId.contains("/")) {
+            throw new IllegalArgumentException("workspace refresh route is invalid");
+        }
+        return new WorkspaceRefreshRoute(workspaceId, workspaceBranchId);
+    }
+
+    private static String generatedRequestId(String prefix, String correlationId, String discriminator) {
+        return prefix + "-" + Integer.toUnsignedString(Objects.hash(correlationId, discriminator), 16);
+    }
+
+    private record WorkspaceRefreshRoute(String workspaceId, String workspaceBranchId) {
+    }
+
+    private record ErrorEnvelope(
+        String code,
+        String message,
+        boolean retryable,
+        String correlationId,
+        List<Object> diagnostics
+    ) {
+    }
+
+    private static final class WorkspaceMetadataPayload {
+        private String repositoryUrl;
+    }
+
+    private static final class WorkspacePayload {
+        private String repositoryUrl;
+        private String selectedBranch;
+        private WorkspacePolicyPayload workspacePolicy;
     }
 
     private static final class StartRepositoryAnalysisPayload {
@@ -232,6 +462,17 @@ public final class QueryReportApiHttpHandler implements HttpHandler {
 
         private WorkspacePolicy toDomain() {
             return new WorkspacePolicy(
+                required(ephemeral, "ephemeral"),
+                required(allowShallowClone, "allow shallow clone"),
+                required(allowPartialClone, "allow partial clone"),
+                required(allowSparseCheckout, "allow sparse checkout"),
+                required(timeoutSeconds, "timeout seconds"),
+                required(maxWorkspaceBytes, "max workspace bytes")
+            );
+        }
+
+        private de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.WorkspacePolicy toWorkspaceDomain() {
+            return new de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.WorkspacePolicy(
                 required(ephemeral, "ephemeral"),
                 required(allowShallowClone, "allow shallow clone"),
                 required(allowPartialClone, "allow partial clone"),

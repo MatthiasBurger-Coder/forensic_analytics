@@ -2,7 +2,13 @@
 
 ## 4.1 Strategy Overview
 
-The Forensics Platform separates producer-side triggers from central server-side analysis. Build plugins provide repository, branch, commit, build and runtime-launch context. The central platform checks out repositories, runs analysis, normalizes evidence, persists facts, correlates runtime data and produces generated artifacts such as BTM files.
+The Forensics Platform separates producer-side triggers from central
+server-side analysis. Build plugins provide repository, branch, commit, build
+and runtime-launch context. The central platform checks out repositories,
+runs analysis, normalizes evidence, persists facts, correlates runtime data and
+produces generated artifacts such as BTM files as the broader target strategy.
+FA-MVP-0001 implements only the repository checkout workspace foundation of
+that strategy.
 
 ## 4.2 Core Strategy
 
@@ -18,9 +24,9 @@ The Forensics Platform separates producer-side triggers from central server-side
 10. Provide curated evidence packages to the LLM.
 11. Keep repair automation gated by tests, quality gates and review.
 
-## 4.3 MVP Strategy
+## 4.3 Broader MVP Strategy
 
-The MVP focuses on read-only analysis:
+The broader product MVP focuses on read-only analysis:
 
 - Static fact import
 - Canonical model persistence
@@ -31,6 +37,14 @@ The MVP focuses on read-only analysis:
 - CorrelationID-based replay
 - Simple graph projection
 - LLM root-cause explanation without code modification
+
+FA-MVP-0001 is the first foundation slice for that broader strategy. It
+implements repository metadata preview, idempotent repository checkout
+workspace and branch creation, repository-source H2 MVP persistence, branch
+refresh, sanitized public REST DTOs and a Create Workspace UI flow. It does
+not implement JavaParser execution, Joern execution, BTM generation, replay,
+reports, graph projections, vector storage, LLM context generation or
+production database selection.
 
 ## 4.4 Non-MVP Scope
 

@@ -1,4 +1,5 @@
 import type { DiagnosticMessage } from "@/domain/diagnostic";
+import { sanitizeDiagnosticText } from "@/shared/safeText";
 
 export const DiagnosticList = ({
   diagnostics
@@ -16,8 +17,10 @@ export const DiagnosticList = ({
           <span>{diagnostic.code ?? "NO_CODE"}</span>
           <span>{diagnostic.observedAt ?? "No timestamp"}</span>
         </header>
-        <pre>{diagnostic.message}</pre>
-        {diagnostic.source ? <footer>{diagnostic.source}</footer> : null}
+        <pre>{sanitizeDiagnosticText(diagnostic.message)}</pre>
+        {diagnostic.source ? (
+          <footer>{sanitizeDiagnosticText(diagnostic.source)}</footer>
+        ) : null}
       </article>
     ))}
   </div>

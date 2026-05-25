@@ -1,6 +1,6 @@
 import {
   Activity,
-  FilePlus2,
+  FolderPlus,
   RadioTower,
   Settings,
   ShieldCheck
@@ -9,9 +9,9 @@ import { NavLink, Outlet } from "react-router-dom";
 
 const navItems = [
   {
-    to: "/repository-analyses/new",
-    label: "Register session",
-    icon: FilePlus2,
+    to: "/workspaces",
+    label: "Create workspace",
+    icon: FolderPlus,
     end: true
   },
   { to: "/backend-unavailable", label: "Backend", icon: RadioTower },

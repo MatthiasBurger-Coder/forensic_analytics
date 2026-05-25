@@ -3,6 +3,8 @@ import type { DiagnosticMessage } from "@/domain/diagnostic";
 export type FailureCategory =
   | "VALIDATION_ERROR"
   | "NOT_FOUND"
+  | "CONFLICT"
+  | "IDEMPOTENCY_CONFLICT"
   | "BACKEND_UNAVAILABLE"
   | "TIMEOUT"
   | "RETRY_EXHAUSTED"

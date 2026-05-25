@@ -15,26 +15,21 @@ class RepositoryAnalysisRealRepositoryEndToEndTest {
     void realRepositoryFixtureBehaviorIsRetainedOnlyAsLegacyRollbackEvidence() throws IOException {
         var testbedReadme = read("services/testbed/README.md");
         var monolithIsolation = read("docs/architecture/monolith-runtime-isolation.md");
-        var workflow = read("docs/workflow/workflow.md");
 
         assertContainsAll(
             testbedReadme,
-            "S03",
+            "S03 confirms",
             "real repository fixture",
             "legacy rollback evidence",
-            "target services do not accept local or file repository input"
+            "target services do not accept local or file repository input",
+            "Replacement evidence is split across"
         );
         assertContainsAll(
             monolithIsolation,
             "AnalyzeRepository",
             "local or file repository checkout",
-            "legacy rollback evidence"
-        );
-        assertContainsAll(
-            workflow,
-            "Slice 03 - Service Regression Coverage Confirmation",
-            "service-local tests and explicit deprecation notes",
-            "a legacy module-local test is the only known coverage for behavior still claimed as supported"
+            "legacy rollback evidence",
+            "Target coverage is split across"
         );
     }
 

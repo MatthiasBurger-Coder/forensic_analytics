@@ -19,16 +19,28 @@ import java.util.regex.Pattern;
 public final class RepositorySourceDomain {
     private static final long MAX_TIMEOUT_SECONDS = 3_600;
     private static final long MAX_WORKSPACE_BYTES = 107_374_182_400L;
+    private static final int MAX_OPAQUE_ID_LENGTH = 128;
+    private static final int MAX_PUBLIC_LABEL_LENGTH = 255;
+    private static final int MAX_REPOSITORY_KEY_LENGTH = 512;
     private static final Pattern SHA_256 = Pattern.compile("[a-fA-F0-9]{64}");
     private static final Pattern COMMIT = Pattern.compile("[a-fA-F0-9]{7,64}");
+    private static final Pattern OPAQUE_ID = Pattern.compile("[A-Za-z0-9_-]+");
+    private static final Pattern REPOSITORY_KEY_PART = Pattern.compile("[a-z0-9][a-z0-9._-]*");
     private static final Pattern PRIVATE_IPV4 = Pattern.compile(
-        "^(0\\.|127\\.|10\\.|192\\.168\\.|172\\.(1[6-9]|2[0-9]|3[0-1])\\.|169\\.254\\.)"
+        "^(0\\.|127\\.|10\\.|192\\.168\\.|172\\.(1[6-9]|2[0-9]|3[0-1])\\.|169\\.254\\.|"
+            + "100\\.(6[4-9]|[7-9][0-9]|1[01][0-9]|12[0-7])\\.|192\\.0\\.(0|2)\\.|"
+            + "192\\.88\\.99\\.|198\\.(1[89]|51\\.100)\\.|203\\.0\\.113\\.|"
+            + "(22[4-9]|23[0-9]|24[0-9]|25[0-5])\\.)"
     );
     private static final Set<String> SENSITIVE_TOKENS = Set.of(
         "authorization",
         "credential",
+        "h2",
+        "jdbc",
         "password",
         "secret",
+        "stderr",
+        "stdout",
         "token"
     );
 
@@ -66,9 +78,236 @@ public final class RepositorySourceDomain {
     public record WorkspaceId(String value) {
         public WorkspaceId {
             value = requireText(value, "workspace id");
-            if (looksLikePath(value)) {
-                throw new IllegalArgumentException("workspace id must be opaque");
+            requireOpaqueId(value, "workspace id", "workspace-");
+        }
+    }
+
+    public record WorkspaceBranchId(String value) {
+        public WorkspaceBranchId {
+            value = requireText(value, "workspace branch id");
+            requireOpaqueId(value, "workspace branch id", "workspace-branch-");
+        }
+    }
+
+    public record WorkspaceTitle(String value) {
+        public WorkspaceTitle {
+            value = requirePublicLabel(value, "workspace title");
+        }
+
+        public static WorkspaceTitle fromRepositoryName(String repositoryName) {
+            return new WorkspaceTitle(repositoryName);
+        }
+    }
+
+    public record RepositoryKey(String value) {
+        public RepositoryKey {
+            value = requireText(value, "repository key").toLowerCase(Locale.ROOT);
+            if (value.length() > MAX_REPOSITORY_KEY_LENGTH || value.contains("://")
+                || value.contains("@") || value.contains("?") || value.contains("#")
+                || value.contains("\\") || value.chars().anyMatch(Character::isISOControl)
+                || hasUnsafeSegments(value, false) || value.chars().filter(character -> character == '/').count() != 2
+                || Arrays.stream(value.split("/")).anyMatch(part -> !REPOSITORY_KEY_PART.matcher(part).matches())) {
+                throw new IllegalArgumentException("repository key must use normalized host/owner/repository form");
             }
+        }
+
+        public static RepositoryKey of(String repositoryHost, String repositoryOwner, String repositoryName) {
+            return new RepositoryKey(String.join(
+                "/",
+                normalizedRepositoryPart(repositoryHost, "repository host"),
+                normalizedRepositoryPart(repositoryOwner, "repository owner"),
+                normalizedRepositoryPart(stripGitSuffix(repositoryName), "repository name")
+            ));
+        }
+    }
+
+    public record RepositoryIdentity(
+        RepositoryKey repositoryKey,
+        String repositoryUrl,
+        String repositoryHost,
+        String repositoryOwner,
+        String repositoryName,
+        String defaultBranch
+    ) {
+        public RepositoryIdentity {
+            Objects.requireNonNull(repositoryKey, "repository key must not be null");
+            repositoryUrl = requireCleanHttpsRemote(repositoryUrl);
+            var uri = URI.create(repositoryUrl);
+            repositoryHost = normalizedRepositoryPart(repositoryHost, "repository host");
+            var actualHost = normalizedRepositoryPart(requireText(uri.getHost(), "repository remote host"), "repository host");
+            if (!repositoryHost.equals(actualHost)) {
+                throw new IllegalArgumentException("repository host must match repository url host");
+            }
+            repositoryOwner = normalizedRepositoryPart(repositoryOwner, "repository owner");
+            repositoryName = normalizedRepositoryPart(stripGitSuffix(repositoryName), "repository name");
+            var pathIdentity = repositoryPathIdentity(uri);
+            if (!repositoryOwner.equals(pathIdentity.owner()) || !repositoryName.equals(pathIdentity.repositoryName())) {
+                throw new IllegalArgumentException("repository identity must match repository url path");
+            }
+            if (!repositoryKey.equals(RepositoryKey.of(repositoryHost, repositoryOwner, repositoryName))) {
+                throw new IllegalArgumentException("repository key must match repository identity");
+            }
+            defaultBranch = optionalRef(defaultBranch, "default branch");
+        }
+
+        public static RepositoryIdentity from(RepositoryReference repository, String defaultBranch) {
+            var uri = URI.create(repository.remoteUrl());
+            var pathIdentity = repositoryPathIdentity(uri);
+            var host = normalizedHost(uri.getHost());
+            return new RepositoryIdentity(
+                RepositoryKey.of(host, pathIdentity.owner(), pathIdentity.repositoryName()),
+                repository.remoteUrl(),
+                host,
+                pathIdentity.owner(),
+                pathIdentity.repositoryName(),
+                defaultBranch
+            );
+        }
+    }
+
+    public record RepositoryWorkspace(
+        WorkspaceId workspaceId,
+        WorkspaceTitle workspaceTitle,
+        RepositoryIdentity repository,
+        RepositoryWorkspaceStatus status,
+        Instant createdAt,
+        Instant updatedAt,
+        List<RepositoryWorkspaceBranch> branches,
+        List<Diagnostic> diagnostics,
+        Map<String, String> safeAttributes
+    ) {
+        public RepositoryWorkspace {
+            Objects.requireNonNull(workspaceId, "workspace id must not be null");
+            Objects.requireNonNull(workspaceTitle, "workspace title must not be null");
+            Objects.requireNonNull(repository, "repository must not be null");
+            status = Objects.requireNonNullElse(status, RepositoryWorkspaceStatus.READY);
+            Objects.requireNonNull(createdAt, "created at must not be null");
+            Objects.requireNonNull(updatedAt, "updated at must not be null");
+            branches = List.copyOf(Objects.requireNonNullElse(branches, List.of()));
+            diagnostics = List.copyOf(Objects.requireNonNullElse(diagnostics, List.of()));
+            safeAttributes = RepositorySourceDomain.safeAttributes(safeAttributes);
+            requireWorkspaceBranchesMatch(workspaceId, branches);
+        }
+
+        public RepositoryWorkspace withBranch(RepositoryWorkspaceBranch branch, Instant timestamp) {
+            Objects.requireNonNull(branch, "workspace branch must not be null");
+            if (!workspaceId.equals(branch.workspaceId())) {
+                throw new IllegalArgumentException("workspace branch must belong to workspace");
+            }
+            var updatedBranches = new LinkedHashMap<WorkspaceBranchId, RepositoryWorkspaceBranch>();
+            branches.forEach(existing -> updatedBranches.put(existing.workspaceBranchId(), existing));
+            updatedBranches.put(branch.workspaceBranchId(), branch);
+            return new RepositoryWorkspace(
+                workspaceId,
+                workspaceTitle,
+                repository,
+                status,
+                createdAt,
+                Objects.requireNonNull(timestamp, "updated at must not be null"),
+                List.copyOf(updatedBranches.values()),
+                diagnostics,
+                safeAttributes
+            );
+        }
+    }
+
+    public record RepositoryWorkspaceBranch(
+        WorkspaceBranchId workspaceBranchId,
+        WorkspaceId workspaceId,
+        String repositoryBranch,
+        String requestedCommit,
+        String resolvedCommit,
+        SourceSnapshotId sourceSnapshotId,
+        RepositoryWorkspaceBranchStatus status,
+        List<SourceRoot> sourceRoots,
+        Instant lastCheckedAt,
+        Instant lastUpdatedAt,
+        List<Diagnostic> diagnostics
+    ) {
+        public RepositoryWorkspaceBranch {
+            Objects.requireNonNull(workspaceBranchId, "workspace branch id must not be null");
+            Objects.requireNonNull(workspaceId, "workspace id must not be null");
+            repositoryBranch = requireRepositoryBranch(repositoryBranch);
+            requestedCommit = optionalCommit(requestedCommit);
+            resolvedCommit = optionalCommit(resolvedCommit);
+            status = Objects.requireNonNull(status, "branch status must not be null");
+            sourceRoots = List.copyOf(Objects.requireNonNullElse(sourceRoots, List.of()));
+            Objects.requireNonNull(lastUpdatedAt, "last updated at must not be null");
+            diagnostics = List.copyOf(Objects.requireNonNullElse(diagnostics, List.of()));
+            if ((status == RepositoryWorkspaceBranchStatus.CHECKED_OUT
+                || status == RepositoryWorkspaceBranchStatus.UP_TO_DATE
+                || status == RepositoryWorkspaceBranchStatus.UPDATED)
+                && (sourceSnapshotId == null || resolvedCommit.isBlank() || sourceRoots.isEmpty() || lastCheckedAt == null)) {
+                throw new IllegalArgumentException("checked-out branch state requires snapshot, commit, source roots and checked timestamp");
+            }
+        }
+
+        public RepositoryWorkspaceBranch checkingOut(Instant timestamp) {
+            return new RepositoryWorkspaceBranch(
+                workspaceBranchId,
+                workspaceId,
+                repositoryBranch,
+                requestedCommit,
+                resolvedCommit,
+                sourceSnapshotId,
+                RepositoryWorkspaceBranchStatus.CHECKING_OUT,
+                sourceRoots,
+                lastCheckedAt,
+                Objects.requireNonNull(timestamp, "last updated at must not be null"),
+                List.of(Diagnostic.info("REPOSITORY_CHECKOUT_STARTED", "Repository checkout started"))
+            );
+        }
+
+        public RepositoryWorkspaceBranch checkedOut(
+            String newResolvedCommit,
+            SourceSnapshotId newSourceSnapshotId,
+            List<SourceRoot> newSourceRoots,
+            Instant timestamp,
+            List<Diagnostic> newDiagnostics
+        ) {
+            return new RepositoryWorkspaceBranch(
+                workspaceBranchId,
+                workspaceId,
+                repositoryBranch,
+                requestedCommit,
+                newResolvedCommit,
+                Objects.requireNonNull(newSourceSnapshotId, "source snapshot id must not be null"),
+                RepositoryWorkspaceBranchStatus.CHECKED_OUT,
+                List.copyOf(Objects.requireNonNull(newSourceRoots, "source roots must not be null")),
+                Objects.requireNonNull(timestamp, "last checked at must not be null"),
+                timestamp,
+                List.copyOf(Objects.requireNonNullElse(newDiagnostics, List.of()))
+            );
+        }
+
+        public RepositoryWorkspaceBranch failed(Instant timestamp, List<Diagnostic> newDiagnostics) {
+            return new RepositoryWorkspaceBranch(
+                workspaceBranchId,
+                workspaceId,
+                repositoryBranch,
+                requestedCommit,
+                resolvedCommit,
+                sourceSnapshotId,
+                RepositoryWorkspaceBranchStatus.FAILED,
+                sourceRoots,
+                lastCheckedAt,
+                Objects.requireNonNull(timestamp, "last updated at must not be null"),
+                List.copyOf(Objects.requireNonNullElse(newDiagnostics, List.of()))
+            );
+        }
+    }
+
+    public record RepositoryWorkspaceBranchSelector(String branch, String commit) {
+        public RepositoryWorkspaceBranchSelector {
+            branch = optionalRef(branch, "repository branch");
+            commit = optionalCommit(commit);
+        }
+
+        public String requireBranch() {
+            if (branch.isBlank()) {
+                throw new IllegalArgumentException("repository branch is required until metadata resolution is available");
+            }
+            return branch;
         }
     }
 
@@ -270,6 +509,9 @@ public final class RepositorySourceDomain {
         public Diagnostic {
             code = requireText(code, "diagnostic code");
             message = requireText(message, "diagnostic message");
+            if (containsPrivatePublicText(code) || containsPrivatePublicText(message)) {
+                throw new IllegalArgumentException("diagnostics must not expose sensitive or private values");
+            }
             severity = Objects.requireNonNullElse(severity, DiagnosticSeverity.INFO);
         }
 
@@ -399,6 +641,15 @@ public final class RepositorySourceDomain {
         FAILED
     }
 
+    public enum RepositoryWorkspaceBranchStatus {
+        CHECKING_OUT,
+        CHECKED_OUT,
+        UP_TO_DATE,
+        UPDATING,
+        UPDATED,
+        FAILED
+    }
+
     public enum SourceSnapshotCompleteness {
         COMPLETE,
         INCOMPLETE,
@@ -447,12 +698,28 @@ public final class RepositorySourceDomain {
         return value.trim();
     }
 
+    private static void requireOpaqueId(String value, String name, String prefix) {
+        if (value.length() > MAX_OPAQUE_ID_LENGTH || value.length() == prefix.length() || !value.startsWith(prefix)
+            || !OPAQUE_ID.matcher(value).matches() || looksLikePath(value)) {
+            throw new IllegalArgumentException(name + " must be opaque");
+        }
+    }
+
+    private static String requirePublicLabel(String value, String name) {
+        var label = requireText(value, name);
+        if (label.length() > MAX_PUBLIC_LABEL_LENGTH || looksLikePath(label) || containsSensitiveToken(label)
+            || label.contains("://") || label.chars().anyMatch(Character::isISOControl)) {
+            throw new IllegalArgumentException(name + " must be a safe public label");
+        }
+        return label;
+    }
+
     public static Map<String, String> safeAttributes(Map<String, String> attributes) {
         var sorted = new TreeMap<String, String>();
         Objects.requireNonNullElse(attributes, Map.<String, String>of()).forEach((key, value) -> {
             var safeKey = requireText(key, "safe attribute key");
             var safeValue = requireText(value, "safe attribute value");
-            if (containsSensitiveToken(safeKey) || containsSensitiveToken(safeValue) || looksLikePath(safeValue)) {
+            if (containsPrivatePublicText(safeKey) || containsPrivatePublicText(safeValue)) {
                 throw new IllegalArgumentException("safe attributes must not contain sensitive or private values");
             }
             sorted.put(safeKey, safeValue);
@@ -483,7 +750,9 @@ public final class RepositorySourceDomain {
             throw new IllegalArgumentException("repository remote url must not contain userinfo, query or fragment");
         }
         var host = normalizedHost(requireText(uri.getHost(), "repository remote host"));
-        if ("localhost".equals(host) || host.endsWith(".localhost") || PRIVATE_IPV4.matcher(host).find()
+        if ("localhost".equals(host) || host.endsWith(".localhost") || host.endsWith(".local")
+            || host.endsWith(".test") || host.endsWith(".invalid") || host.endsWith(".example")
+            || PRIVATE_IPV4.matcher(host).find()
             || "169.254.169.254".equals(host) || isPrivateIpv6(host)) {
             throw new IllegalArgumentException("repository remote url must not target local or private hosts");
         }
@@ -509,7 +778,68 @@ public final class RepositorySourceDomain {
             || host.startsWith("0:0:0:0:0:ffff:")
             || host.startsWith("fc")
             || host.startsWith("fd")
-            || host.startsWith("fe80:"));
+            || host.startsWith("fe80:")
+            || host.startsWith("ff")
+            || host.startsWith("2001:db8:"));
+    }
+
+    private static String requireRepositoryBranch(String branch) {
+        var repositoryBranch = optionalRef(branch, "repository branch");
+        if (repositoryBranch.isBlank()) {
+            throw new IllegalArgumentException("repository branch must not be blank");
+        }
+        return repositoryBranch;
+    }
+
+    private static String normalizedRepositoryPart(String value, String name) {
+        var part = requireText(value, name).toLowerCase(Locale.ROOT);
+        if (!REPOSITORY_KEY_PART.matcher(part).matches()
+            || part.contains("/") || part.contains("\\") || part.contains(":") || part.contains("@")
+            || part.contains("?") || part.contains("#") || part.chars().anyMatch(Character::isISOControl)
+            || hasUnsafeSegments(part, false)) {
+            throw new IllegalArgumentException(name + " must be normalized");
+        }
+        return part;
+    }
+
+    private static String stripGitSuffix(String value) {
+        var name = requireText(value, "repository name");
+        return name.endsWith(".git") ? name.substring(0, name.length() - 4) : name;
+    }
+
+    private static RepositoryPathIdentity repositoryPathIdentity(URI uri) {
+        var segments = Arrays.stream(Objects.requireNonNullElse(uri.getPath(), "").split("/"))
+            .filter(segment -> !segment.isBlank())
+            .toList();
+        if (segments.size() < 2) {
+            throw new IllegalArgumentException("repository url must contain owner and repository name");
+        }
+        return new RepositoryPathIdentity(
+            normalizedRepositoryPart(segments.get(segments.size() - 2), "repository owner"),
+            normalizedRepositoryPart(stripGitSuffix(segments.get(segments.size() - 1)), "repository name")
+        );
+    }
+
+    private record RepositoryPathIdentity(String owner, String repositoryName) {
+    }
+
+    private static void requireWorkspaceBranchesMatch(
+        WorkspaceId workspaceId,
+        List<RepositoryWorkspaceBranch> branches
+    ) {
+        var branchIds = new java.util.HashSet<WorkspaceBranchId>();
+        var branchNames = new java.util.HashSet<String>();
+        branches.forEach(branch -> {
+            if (!workspaceId.equals(branch.workspaceId())) {
+                throw new IllegalArgumentException("workspace branch must belong to workspace");
+            }
+            if (!branchIds.add(branch.workspaceBranchId())) {
+                throw new IllegalArgumentException("workspace branch id must be unique");
+            }
+            if (!branchNames.add(branch.repositoryBranch())) {
+                throw new IllegalArgumentException("repository branch must be unique inside workspace");
+            }
+        });
     }
 
     private static String optionalText(String value, String name) {
@@ -607,6 +937,14 @@ public final class RepositorySourceDomain {
     private static boolean containsSensitiveToken(String value) {
         var lower = value.toLowerCase(Locale.ROOT);
         return SENSITIVE_TOKENS.stream().anyMatch(lower::contains);
+    }
+
+    private static boolean containsPrivatePublicText(String value) {
+        var lower = value.toLowerCase(Locale.ROOT);
+        return containsSensitiveToken(value)
+            || looksLikePath(value)
+            || lower.contains("://")
+            || lower.contains("git clone");
     }
 
     private static boolean looksLikePath(String value) {

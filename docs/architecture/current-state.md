@@ -43,8 +43,8 @@ the current state.
 | Boot runtime | Historical `forensic-analytics-boot-app` predecessor; source tree retired by S05 | No active monolith Boot runtime source tree remains |
 | Bootstrap runtime | Historical `forensic-analytics-bootstrap` predecessor; source tree retired by S05 | No active combined gRPC/REST bootstrap source tree remains |
 | gRPC contracts | `contracts/grpc/**` plus service-local generated code | External contract documentation and service-local consumption only |
-| REST API | `contracts/openapi/**`, `services/query-report-api-service` | Public API facade evidence, not the deleted monolith REST adapter |
-| Persistence | Service-local in-memory stores where implemented; no shared Java persistence module | Durable production persistence remains future work |
+| REST API | `contracts/openapi/**`, `services/query-report-api-service` | Public API facade evidence for repository-analysis submission/status and FA-MVP-0001 workspace routes, not the deleted monolith REST adapter |
+| Persistence | Service-local stores where implemented; `repository-source-service` uses service-local H2 file persistence for FA-MVP-0001 repository checkout workspace, branch and idempotency state; no shared Java persistence module | Durable production analytics persistence remains future work |
 | Docker | `docker/boot-app`, `docker/joern`, `forensic-ui/Dockerfile` | Existing container material, not a service ecosystem |
 | Service roots | `services/` | Sixteen registered service projects; graph-replay/report-generation remain planned roots and the build-artifact worker has no root yet |
 | External contracts root | `contracts/` | Present with gRPC, OpenAPI and event contract documentation |
@@ -77,13 +77,13 @@ Verified modules from `settings.gradle.kts`:
 
 | Capability | Verified Current Evidence | Migration Note |
 |---|---|---|
-| Repository checkout and workspace preparation | `services/repository-source-service` | Target source/workspace ownership evidence |
+| Repository checkout and workspace preparation | `services/repository-source-service` with FA-MVP-0001 H2 repository checkout workspace state | Target source/workspace ownership evidence; H2 is Docker-local MVP persistence only |
 | Java AST analysis | `services/java-parser-analysis-service` | Target JavaParser source-fact evidence |
 | Joern / CPG semantic analysis | `services/joern-analysis-service`, `docker/joern/**` | Target service plus optional Joern Docker infrastructure evidence |
 | BTM / rule generation | `services:btm-generation-service`, `contracts/grpc/btm-generation.proto`, arc42 notes | Registered service evidence and provisional contract only; production readiness remains unverified |
 | gRPC ingestion | `contracts/grpc/**`, `services/ingestion-service` | Target intake service consumes external contracts with service-local generated code |
-| REST API | `contracts/openapi/**`, `services/query-report-api-service` | Public API facade evidence |
-| Persistence | Service-local in-memory stores where implemented | Durable database ownership remains unverified |
+| REST API | `contracts/openapi/**`, `services/query-report-api-service` | Public API facade evidence for repository-analysis submission/status and FA-MVP-0001 workspace routes |
+| Persistence | Service-local stores where implemented, including repository-source H2 for repository checkout workspace state | Durable production database ownership remains unverified |
 | Boot runtime | Historical Boot predecessor source tree retired by S05 | No active monolith Boot source tree remains |
 | Manual server runtime | Historical Bootstrap predecessor source tree retired by S05 | No active combined runtime source tree remains |
 | CLI | `services/cli-client` | Public API client boundary; local predecessor CLI source tree retired by S05 |
@@ -141,12 +141,14 @@ Missing target material:
 - Kubernetes manifests, Helm charts and validation commands
 - CI workflow files under `.github/workflows`
 
-Docker Compose model validation is verified for Joern tooling only. The local
-repository-to-BTM Compose path is documented as transitional environment
-evidence, but Slice 15 did not execute or record Compose model validation,
-image-build, startup or health-check commands for that path. There is no
-verified production-wide compose landscape, Swarm stack, Kubernetes manifest
-set or complete service-by-service container readiness evidence.
+Docker Compose model validation is verified for Joern tooling and the
+Docker-local repository-to-BTM descriptor. Slice S09 verified
+`deployment/docker-compose/repository-to-btm.local.yml` with
+`docker compose ... config` and added repository-source private workspace and
+H2 data volumes. That is Docker-local MVP configuration evidence only; image
+builds, startup, health-check smoke tests, production-wide Compose, Swarm
+stacks, Kubernetes manifests and complete service-by-service container
+readiness remain unverified.
 
 ## Microservice Readiness Baseline
 
@@ -160,7 +162,7 @@ The current repository has limited platform-level runtime evidence:
 
 The current repository does not have verified per-service:
 
-- service-private databases;
+- service-private production databases;
 - production-wide Docker Compose service landscape;
 - Docker Swarm stack files, Kubernetes manifests or Helm charts.
 
@@ -171,7 +173,8 @@ intentionally have no Dockerfile in the current repository state.
 Graph-replay and report-generation remain README-only planned roots. The
 build-artifact worker is a planned target with no service root yet. Health
 check and production runtime readiness evidence remains incomplete outside
-service-specific README evidence and the Joern Compose model validation.
+service-specific README evidence, Joern Compose model validation and the S09
+Docker-local repository-to-BTM Compose model validation.
 
 Future slices must treat README-only service roots as planned targets. Registered
 service projects still need explicit start, healthcheck, orchestration and

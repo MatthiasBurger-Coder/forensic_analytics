@@ -1,15 +1,30 @@
 package de.burger.forensics.analytics.services.queryreportapi.adapter.in.http;
 
 import com.sun.net.httpserver.HttpServer;
+import de.burger.forensics.analytics.services.queryreportapi.application.QueryReportApiIdempotencyConflictException;
 import de.burger.forensics.analytics.services.queryreportapi.application.QueryReportApiRepositoryAnalysisException;
 import de.burger.forensics.analytics.services.queryreportapi.application.QueryReportApiRepositoryAnalysisSubmissionService;
 import de.burger.forensics.analytics.services.queryreportapi.application.QueryReportApiStatusService;
+import de.burger.forensics.analytics.services.queryreportapi.application.QueryReportApiWorkspaceException;
+import de.burger.forensics.analytics.services.queryreportapi.application.QueryReportApiWorkspaceService;
 import de.burger.forensics.analytics.services.queryreportapi.application.port.RepositoryAnalysisOwnerPort;
+import de.burger.forensics.analytics.services.queryreportapi.application.port.RepositoryWorkspaceOwnerPort;
 import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiRepositoryAnalysis.Diagnostic;
 import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiRepositoryAnalysis.RepositoryToBtmSubmission;
 import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiRepositoryAnalysis.RepositoryToBtmStatus;
 import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiRepositoryAnalysis.StatusRequest;
 import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiRepositoryAnalysis.SubmissionRequest;
+import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.BranchRefreshResponse;
+import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.CreateWorkspaceRequest;
+import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.GetWorkspaceRequest;
+import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.RefreshWorkspaceBranchRequest;
+import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.RepositoryIdentity;
+import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.WorkspaceBranchResponse;
+import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.WorkspaceFacadeConfiguration;
+import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.WorkspaceMetadataRequest;
+import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.WorkspaceMetadataResponse;
+import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.WorkspacePolicy;
+import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.WorkspaceResponse;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -187,6 +202,8 @@ class QueryReportApiHttpAdapterTest {
             var port = server.getAddress().getPort();
 
             assertEquals(405, response(port, "/api/status", "PUT").code());
+            assertEquals(405, response(port, "/health", "POST", "", null, null).code());
+            assertEquals(405, response(port, "/api/workspaces/workspace-0001", "POST", "", "correlation-1", "idem-known-get").code());
             assertEquals(404, response(port, "/api/unknown", "POST", "{}", "correlation-1", "idem-404").code());
             assertEquals(400, response(
                 port,
@@ -253,20 +270,441 @@ class QueryReportApiHttpAdapterTest {
             assertEquals("correlation-1", response.correlationId());
             assertTrue(response.body().contains("\"retryable\":true"));
             assertFalse(response.body().contains("/tmp"));
+            var status = response(
+                failing.getAddress().getPort(),
+                "/api/repository-analyses/analysis-run-1",
+                "GET",
+                "",
+                "correlation-status-fails",
+                null
+            );
+
+            assertEquals(503, status.code());
+            assertEquals("correlation-status-fails", status.correlationId());
+            assertTrue(status.body().contains("\"retryable\":true"));
+            assertFalse(status.body().contains("/tmp"));
+        } finally {
+            failing.stop(0);
+        }
+    }
+
+    @Test
+    void exposesRepositoryWorkspaceFacadeRoutes() throws Exception {
+        var server = server();
+        try {
+            var port = server.getAddress().getPort();
+
+            var metadata = response(
+                port,
+                "/api/workspace-metadata",
+                "POST",
+                workspaceMetadataRequest(),
+                "correlation-workspace-1",
+                "idem-workspace-metadata-1"
+            );
+            var created = response(
+                port,
+                "/api/workspaces",
+                "POST",
+                validWorkspaceRequest(),
+                "correlation-workspace-2",
+                "idem-workspace-create-1"
+            );
+            var loaded = response(
+                port,
+                "/api/workspaces/workspace-0001",
+                "GET",
+                "",
+                "correlation-workspace-3",
+                null
+            );
+            var checkoutResult = response(
+                port,
+                "/api/workspaces/workspace-0001/checkout-result",
+                "GET",
+                "",
+                "correlation-workspace-5",
+                null
+            );
+            var refreshed = response(
+                port,
+                "/api/workspaces/workspace-0001/branches/workspace-branch-0001/refresh",
+                "POST",
+                "",
+                "correlation-workspace-4",
+                "idem-workspace-refresh-1"
+            );
+
+            assertEquals(200, metadata.code());
+            assertEquals("correlation-workspace-1", metadata.correlationId());
+            assertTrue(metadata.body().contains("\"repositoryKey\":\"example.com/acme/demo\""));
+            assertTrue(metadata.body().contains("\"workspaceTitle\":\"demo\""));
+            assertFalse(metadata.body().contains("\"workspaceId\""));
+            assertSafePublicBody(metadata.body());
+
+            assertEquals(200, created.code());
+            assertEquals("correlation-workspace-2", created.correlationId());
+            assertTrue(created.body().contains("\"workspaceId\":\"workspace-0001\""));
+            assertTrue(created.body().contains("\"workspaceTitle\":\"demo\""));
+            assertTrue(created.body().contains("\"status\":\"CHECKED_OUT\""));
+            assertTrue(created.body().contains("\"sourceRoots\":[\"src/main/java\"]"));
+            assertSafePublicBody(created.body());
+
+            assertEquals(200, loaded.code());
+            assertEquals("correlation-workspace-3", loaded.correlationId());
+            assertTrue(loaded.body().contains("\"workspaceId\":\"workspace-0001\""));
+            assertSafePublicBody(loaded.body());
+
+            assertEquals(200, checkoutResult.code());
+            assertEquals("correlation-workspace-5", checkoutResult.correlationId());
+            assertTrue(checkoutResult.body().contains("\"workspaceId\":\"workspace-0001\""));
+            assertTrue(checkoutResult.body().contains("\"status\":\"CHECKED_OUT\""));
+            assertSafePublicBody(checkoutResult.body());
+
+            assertEquals(200, refreshed.code());
+            assertEquals("correlation-workspace-4", refreshed.correlationId());
+            assertTrue(refreshed.body().contains("\"workspaceBranchId\":\"workspace-branch-0001\""));
+            assertTrue(refreshed.body().contains("\"status\":\"UP_TO_DATE\""));
+            assertTrue(refreshed.body().contains("\"changed\":false"));
+            assertSafePublicBody(refreshed.body());
+        } finally {
+            server.stop(0);
+        }
+    }
+
+    @Test
+    void exposesUpdatedRepositoryWorkspaceBranchRefreshThroughPublicDto() throws Exception {
+        var server = server(new FakePreparationPort(), new UpdatedWorkspacePort());
+        try {
+            var refreshed = response(
+                server.getAddress().getPort(),
+                "/api/workspaces/workspace-0001/branches/workspace-branch-0001/refresh",
+                "POST",
+                "",
+                "correlation-workspace-refresh-updated",
+                "idem-workspace-refresh-updated"
+            );
+
+            assertEquals(200, refreshed.code());
+            assertEquals("correlation-workspace-refresh-updated", refreshed.correlationId());
+            assertTrue(refreshed.body().contains("\"workspaceBranchId\":\"workspace-branch-0001\""));
+            assertTrue(refreshed.body().contains("\"status\":\"UPDATED\""));
+            assertTrue(refreshed.body().contains("\"changed\":true"));
+            assertTrue(refreshed.body().contains("\"previousCommit\":\"abcdef1\""));
+            assertTrue(refreshed.body().contains("\"resolvedCommit\":\"fedcba2\""));
+            assertTrue(refreshed.body().contains("\"sourceSnapshotId\":\"source-snapshot-0002\""));
+            assertSafePublicBody(refreshed.body());
+        } finally {
+            server.stop(0);
+        }
+    }
+
+    @Test
+    void rejectsWorkspaceMissingHeadersUnsafeRemotesAndConflictingPreviewIdempotency() throws Exception {
+        var server = server();
+        try {
+            var port = server.getAddress().getPort();
+
+            assertEquals(400, response(port, "/api/workspace-metadata", "POST", workspaceMetadataRequest(), null, "idem-1").code());
+            assertEquals(400, response(port, "/api/workspace-metadata", "POST", workspaceMetadataRequest(), "correlation-1", null).code());
+            assertEquals(400, response(port, "/api/workspaces", "POST", validWorkspaceRequest(), "correlation-1", null).code());
+            assertEquals(400, response(
+                port,
+                "/api/workspaces/workspace-0001/branches/workspace-branch-0001/refresh",
+                "POST",
+                "",
+                "correlation-1",
+                null
+            ).code());
+            assertEquals(400, response(
+                port,
+                "/api/workspaces",
+                "POST",
+                validWorkspaceRequest().replace("https://example.com/acme/demo.git", "https://127.0.0.1/acme/demo.git"),
+                "correlation-1",
+                "idem-2"
+            ).code());
+            assertEquals(400, response(
+                port,
+                "/api/workspaces",
+                "POST",
+                validWorkspaceRequest().replace("\"selectedBranch\": \"main\"", "\"selectedBranch\": \"\""),
+                "correlation-1",
+                "idem-blank-branch"
+            ).code());
+            assertEquals(400, response(
+                port,
+                "/api/workspaces/workspace-0001/branches/bad/refresh",
+                "POST",
+                "",
+                "correlation-1",
+                "idem-3"
+            ).code());
+
+            assertEquals(200, response(
+                port,
+                "/api/workspace-metadata",
+                "POST",
+                workspaceMetadataRequest(),
+                "correlation-1",
+                "idem-preview-conflict"
+            ).code());
+            var conflict = response(
+                port,
+                "/api/workspace-metadata",
+                "POST",
+                workspaceMetadataRequest().replace("https://example.com/acme/demo.git", "https://example.com/acme/other.git"),
+                "correlation-1",
+                "idem-preview-conflict"
+            );
+
+            assertEquals(409, conflict.code());
+            assertTrue(conflict.body().contains("\"code\":\"IDEMPOTENCY_CONFLICT\""));
+            assertTrue(conflict.body().contains("The idempotency key was already used with different input."));
+            assertSafePublicBody(conflict.body());
+        } finally {
+            server.stop(0);
+        }
+    }
+
+    @Test
+    void mapsOwnerIdempotencyConflictForCreateAndRefresh() throws Exception {
+        var server = server(new FakePreparationPort(), new ConflictingWorkspacePort());
+        try {
+            var port = server.getAddress().getPort();
+            var createConflict = response(
+                port,
+                "/api/workspaces",
+                "POST",
+                validWorkspaceRequest(),
+                "correlation-1",
+                "idem-conflict-create"
+            );
+            var refreshConflict = response(
+                port,
+                "/api/workspaces/workspace-0001/branches/workspace-branch-0001/refresh",
+                "POST",
+                "",
+                "correlation-2",
+                "idem-conflict-refresh"
+            );
+
+            assertEquals(409, createConflict.code());
+            assertEquals("correlation-1", createConflict.correlationId());
+            assertTrue(createConflict.body().contains("\"code\":\"IDEMPOTENCY_CONFLICT\""));
+            assertEquals(409, refreshConflict.code());
+            assertEquals("correlation-2", refreshConflict.correlationId());
+            assertTrue(refreshConflict.body().contains("\"code\":\"IDEMPOTENCY_CONFLICT\""));
+            assertSafePublicBody(createConflict.body());
+            assertSafePublicBody(refreshConflict.body());
+        } finally {
+            server.stop(0);
+        }
+    }
+
+    @Test
+    void redactsWorkspaceDiagnosticsAndMapsBackendFailures() throws Exception {
+        var leaking = server(new FakePreparationPort(), new LeakingWorkspacePort());
+        try {
+            var response = response(
+                leaking.getAddress().getPort(),
+                "/api/workspaces",
+                "POST",
+                validWorkspaceRequest(),
+                "correlation-1",
+                "idem-workspace-leak"
+            );
+
+            assertEquals(200, response.code());
+            assertTrue(response.body().contains("Diagnostic details redacted"));
+            assertSafePublicBody(response.body());
+        } finally {
+            leaking.stop(0);
+        }
+
+        var failing = server(new FakePreparationPort(), new FailingWorkspacePort());
+        try {
+            var response = response(
+                failing.getAddress().getPort(),
+                "/api/workspaces",
+                "POST",
+                validWorkspaceRequest(),
+                "correlation-1",
+                "idem-workspace-backend"
+            );
+
+            assertEquals(503, response.code());
+            assertEquals("correlation-1", response.correlationId());
+            assertTrue(response.body().contains("\"code\":\"BACKEND_UNAVAILABLE\""));
+            assertTrue(response.body().contains("\"retryable\":true"));
+            assertSafePublicBody(response.body());
+        } finally {
+            failing.stop(0);
+        }
+    }
+
+    @Test
+    void redactsWorkspaceDiagnosticsFromMetadataGetAndRefreshResponses() throws Exception {
+        var leaking = server(new FakePreparationPort(), new LeakingWorkspacePort());
+        try {
+            var port = leaking.getAddress().getPort();
+            var metadata = response(
+                port,
+                "/api/workspace-metadata",
+                "POST",
+                workspaceMetadataRequest(),
+                "correlation-leak-metadata",
+                "idem-leak-metadata"
+            );
+            var loaded = response(
+                port,
+                "/api/workspaces/workspace-0001",
+                "GET",
+                "",
+                "correlation-leak-get",
+                null
+            );
+            var refreshed = response(
+                port,
+                "/api/workspaces/workspace-0001/branches/workspace-branch-0001/refresh",
+                "POST",
+                "",
+                "correlation-leak-refresh",
+                "idem-leak-refresh"
+            );
+
+            assertEquals(200, metadata.code());
+            assertEquals(200, loaded.code());
+            assertEquals(200, refreshed.code());
+            assertTrue(metadata.body().contains("Diagnostic details redacted"));
+            assertTrue(loaded.body().contains("Diagnostic details redacted"));
+            assertTrue(refreshed.body().contains("Diagnostic details redacted"));
+            assertSafePublicBody(metadata.body());
+            assertSafePublicBody(loaded.body());
+            assertSafePublicBody(refreshed.body());
+        } finally {
+            leaking.stop(0);
+        }
+    }
+
+    @Test
+    void mapsWorkspaceRouteValidationAndBackendFailures() throws Exception {
+        var server = server();
+        try {
+            var port = server.getAddress().getPort();
+
+            assertEquals(404, response(port, "/api/workspaces/", "GET", "", "correlation-1", null).code());
+            assertEquals(404, response(port, "/api/workspaces/workspace-0001%5Cbranch", "GET", "", "correlation-1", null).code());
+            assertEquals(404, response(port, "/api/repository-analyses/", "GET", "", "correlation-1", null).code());
+            assertEquals(404, response(port, "/api/repository-analyses/analysis-run-1/extra", "GET", "", "correlation-1", null).code());
+            assertEquals(404, response(port, "/api/workspaces/workspace-0001/branches/workspace-branch-0001", "GET", "", "correlation-1", null).code());
+            assertEquals(400, response(
+                port,
+                "/api/workspaces//branches/workspace-branch-0001/refresh",
+                "POST",
+                "",
+                "correlation-1",
+                "idem-invalid-refresh-workspace-route"
+            ).code());
+            assertEquals(400, response(
+                port,
+                "/api/workspaces/workspace-0001/branches//refresh",
+                "POST",
+                "",
+                "correlation-1",
+                "idem-invalid-refresh-route"
+            ).code());
+            assertEquals(400, response(
+                port,
+                "/api/workspaces/workspace-0001/branches/workspace-branch-0001/extra/refresh",
+                "POST",
+                "",
+                "correlation-1",
+                "idem-invalid-refresh-branch-route"
+            ).code());
+            assertEquals(400, response(
+                port,
+                "/api/workspace-metadata",
+                "POST",
+                "x".repeat(64 * 1024 + 1),
+                "correlation-1",
+                "idem-too-large-workspace"
+            ).code());
+            assertEquals(400, response(
+                port,
+                "/api/workspaces",
+                "POST",
+                validWorkspaceRequest().replace("\"ephemeral\": false,", ""),
+                "correlation-1",
+                "idem-missing-workspace-boolean"
+            ).code());
+        } finally {
+            server.stop(0);
+        }
+
+        var failing = server(new FakePreparationPort(), new FailingWorkspacePort());
+        try {
+            var port = failing.getAddress().getPort();
+            var metadata = response(
+                port,
+                "/api/workspace-metadata",
+                "POST",
+                workspaceMetadataRequest(),
+                "correlation-failing-metadata",
+                "idem-failing-metadata"
+            );
+            var loaded = response(
+                port,
+                "/api/workspaces/workspace-0001",
+                "GET",
+                "",
+                "correlation-failing-get",
+                null
+            );
+            var refreshed = response(
+                port,
+                "/api/workspaces/workspace-0001/branches/workspace-branch-0001/refresh",
+                "POST",
+                "",
+                "correlation-failing-refresh",
+                "idem-failing-refresh"
+            );
+
+            assertEquals(503, metadata.code());
+            assertEquals(503, loaded.code());
+            assertEquals(503, refreshed.code());
+            assertTrue(metadata.body().contains("\"code\":\"BACKEND_UNAVAILABLE\""));
+            assertTrue(loaded.body().contains("\"code\":\"BACKEND_UNAVAILABLE\""));
+            assertTrue(refreshed.body().contains("\"code\":\"BACKEND_UNAVAILABLE\""));
+            assertSafePublicBody(metadata.body());
+            assertSafePublicBody(loaded.body());
+            assertSafePublicBody(refreshed.body());
         } finally {
             failing.stop(0);
         }
     }
 
     private static HttpServer server() throws IOException {
-        return server(new FakePreparationPort());
+        return server(new FakePreparationPort(), new FakeWorkspacePort());
     }
 
     private static HttpServer server(RepositoryAnalysisOwnerPort port) throws IOException {
+        return server(port, new FakeWorkspacePort());
+    }
+
+    private static HttpServer server(RepositoryAnalysisOwnerPort port, RepositoryWorkspaceOwnerPort workspacePort) throws IOException {
         var server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
         server.createContext("/", new QueryReportApiHttpHandler(
             new QueryReportApiStatusService(),
-            new QueryReportApiRepositoryAnalysisSubmissionService(port)
+            new QueryReportApiRepositoryAnalysisSubmissionService(port),
+            new QueryReportApiWorkspaceService(
+                workspacePort,
+                new WorkspaceFacadeConfiguration(
+                    "query-report-workspace.v1",
+                    60,
+                    new WorkspacePolicy(false, true, false, false, 60, 1_073_741_824L)
+                )
+            )
         ));
         server.start();
         return server;
@@ -335,6 +773,46 @@ class QueryReportApiHttpAdapterTest {
             """;
     }
 
+    private static String workspaceMetadataRequest() {
+        return """
+            {
+              "repositoryUrl": "https://example.com/acme/demo.git"
+            }
+            """;
+    }
+
+    private static String validWorkspaceRequest() {
+        return """
+            {
+              "repositoryUrl": "https://example.com/acme/demo.git",
+              "selectedBranch": "main",
+              "workspacePolicy": {
+                "ephemeral": false,
+                "allowShallowClone": true,
+                "allowPartialClone": false,
+                "allowSparseCheckout": false,
+                "timeoutSeconds": 60,
+                "maxWorkspaceBytes": 1073741824
+              }
+            }
+            """;
+    }
+
+    private static void assertSafePublicBody(String body) {
+        assertFalse(body.contains("/tmp"), body);
+        assertFalse(body.contains("/var/lib/forensic-analytics"), body);
+        assertFalse(body.contains("repository-workspaces"), body);
+        assertFalse(body.contains("repository-source-data"), body);
+        assertFalse(body.contains("raw stdout"), body);
+        assertFalse(body.contains("raw stderr"), body);
+        assertFalse(body.contains("stdout"), body);
+        assertFalse(body.contains("stderr"), body);
+        assertFalse(body.contains("jdbc:"), body);
+        assertFalse(body.toLowerCase(java.util.Locale.ROOT).contains("h2"), body);
+        assertFalse(body.contains("token="), body);
+        assertFalse(body.contains("credential"), body);
+    }
+
     private static String valueOf(String json, String name) {
         var marker = "\"" + name + "\":\"";
         var start = json.indexOf(marker);
@@ -379,6 +857,180 @@ class QueryReportApiHttpAdapterTest {
                 "repository-to-btm",
                 null,
                 List.of(Diagnostic.info("ORCHESTRATION_STATUS", "Analysis Orchestrator status loaded"))
+            );
+        }
+    }
+
+    private static class FakeWorkspacePort implements RepositoryWorkspaceOwnerPort {
+        @Override
+        public WorkspaceMetadataResponse previewMetadata(WorkspaceMetadataRequest request) {
+            return new WorkspaceMetadataResponse(
+                "example.com/acme/demo",
+                "example.com",
+                "acme",
+                "demo",
+                "demo",
+                "main",
+                List.of(Diagnostic.info("METADATA_READY", "Repository metadata loaded"))
+            );
+        }
+
+        @Override
+        public WorkspaceResponse create(CreateWorkspaceRequest request) {
+            return workspace(List.of(Diagnostic.info("CHECKOUT_READY", "Workspace checkout completed")));
+        }
+
+        @Override
+        public WorkspaceResponse get(GetWorkspaceRequest request) {
+            return workspace(List.of(Diagnostic.info("WORKSPACE_READY", "Workspace state loaded")));
+        }
+
+        @Override
+        public BranchRefreshResponse refresh(RefreshWorkspaceBranchRequest request) {
+            return new BranchRefreshResponse(
+                "workspace-branch-0001",
+                "main",
+                "UP_TO_DATE",
+                false,
+                null,
+                "abcdef1",
+                "source-snapshot-0001",
+                List.of(Diagnostic.info("BRANCH_UP_TO_DATE", "Branch is already up to date"))
+            );
+        }
+
+        protected WorkspaceResponse workspace(List<Diagnostic> diagnostics) {
+            return new WorkspaceResponse(
+                "workspace-0001",
+                "demo",
+                new RepositoryIdentity(
+                    "example.com/acme/demo",
+                    "https://example.com/acme/demo.git",
+                    "example.com",
+                    "acme",
+                    "demo",
+                    "main"
+                ),
+                List.of(new WorkspaceBranchResponse(
+                    "workspace-branch-0001",
+                    "main",
+                    "CHECKED_OUT",
+                    "abcdef1",
+                    "source-snapshot-0001",
+                    List.of("src/main/java"),
+                    diagnostics
+                )),
+                "CHECKED_OUT",
+                diagnostics
+            );
+        }
+    }
+
+    private static final class LeakingWorkspacePort extends FakeWorkspacePort {
+        @Override
+        public WorkspaceMetadataResponse previewMetadata(WorkspaceMetadataRequest request) {
+            return new WorkspaceMetadataResponse(
+                "example.com/acme/demo",
+                "example.com",
+                "acme",
+                "demo",
+                "demo",
+                "main",
+                List.of(leakingDiagnostic())
+            );
+        }
+
+        @Override
+        public WorkspaceResponse create(CreateWorkspaceRequest request) {
+            return workspace(List.of(leakingDiagnostic()));
+        }
+
+        @Override
+        public WorkspaceResponse get(GetWorkspaceRequest request) {
+            return workspace(List.of(leakingDiagnostic()));
+        }
+
+        @Override
+        public BranchRefreshResponse refresh(RefreshWorkspaceBranchRequest request) {
+            return new BranchRefreshResponse(
+                "workspace-branch-0001",
+                "main",
+                "UP_TO_DATE",
+                false,
+                null,
+                "abcdef1",
+                "source-snapshot-0001",
+                List.of(leakingDiagnostic())
+            );
+        }
+
+        private static Diagnostic leakingDiagnostic() {
+            return Diagnostic.info(
+                "PATH_LEAK",
+                "raw stderr stdout jdbc:h2:file:/var/lib/forensic-analytics/repository-source-data/repository-source from git clone https://user:token@example.com/acme/private.git in /var/lib/forensic-analytics/repository-workspaces/workspace-1"
+            );
+        }
+    }
+
+    private static final class UpdatedWorkspacePort extends FakeWorkspacePort {
+        @Override
+        public BranchRefreshResponse refresh(RefreshWorkspaceBranchRequest request) {
+            return new BranchRefreshResponse(
+                "workspace-branch-0001",
+                "main",
+                "UPDATED",
+                true,
+                "abcdef1",
+                "fedcba2",
+                "source-snapshot-0002",
+                List.of(Diagnostic.info("BRANCH_UPDATED", "Branch checkout updated"))
+            );
+        }
+    }
+
+    private static final class ConflictingWorkspacePort extends FakeWorkspacePort {
+        @Override
+        public WorkspaceResponse create(CreateWorkspaceRequest request) {
+            throw conflict();
+        }
+
+        @Override
+        public BranchRefreshResponse refresh(RefreshWorkspaceBranchRequest request) {
+            throw conflict();
+        }
+
+        private static QueryReportApiIdempotencyConflictException conflict() {
+            return new QueryReportApiIdempotencyConflictException("idempotency key was reused with different input");
+        }
+    }
+
+    private static final class FailingWorkspacePort implements RepositoryWorkspaceOwnerPort {
+        @Override
+        public WorkspaceMetadataResponse previewMetadata(WorkspaceMetadataRequest request) {
+            throw unavailable();
+        }
+
+        @Override
+        public WorkspaceResponse create(CreateWorkspaceRequest request) {
+            throw unavailable();
+        }
+
+        @Override
+        public WorkspaceResponse get(GetWorkspaceRequest request) {
+            throw unavailable();
+        }
+
+        @Override
+        public BranchRefreshResponse refresh(RefreshWorkspaceBranchRequest request) {
+            throw unavailable();
+        }
+
+        private static QueryReportApiWorkspaceException unavailable() {
+            return new QueryReportApiWorkspaceException(
+                503,
+                "BACKEND_UNAVAILABLE",
+                true,
+                "Repository Source service is unavailable"
             );
         }
     }

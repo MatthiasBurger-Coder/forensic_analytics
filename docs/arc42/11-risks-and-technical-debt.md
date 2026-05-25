@@ -19,6 +19,9 @@
 | flowchart becomes unreviewable | Large diagrams can hide dead nodes, missing paths and wrong backward jumps | Maintain Level 1 overview and Level 2 subgraphs in `docs/governance/workflow/` and audit them through `flowchart-integrity-auditor` |
 | governance role remains bootstrap-only | Root Architect is mapped but lacks a dedicated role artifact | Keep bootstrap owners documented and create dedicated artifacts only through a future governance slice |
 | legacy source-tree rollback is misunderstood | Retired `forensic-analytics-*` source trees might be treated as current rollback/runtime units | Use ADR-0022 and the S05 checkpoint as the rollback boundary; restore by reverting the checkpoint commit only when verified dependency evidence requires it |
+| FA-MVP-0001 requirement source is separated from `docs/epics` | A later reader may miss that the user-provided requirement is the accepted source for this workflow | Keep the Three Amigos decision record and execution report linked to FA-MVP-0001 and add a dedicated EPIC artifact only through a later requirement-governance slice |
+| H2 MVP persistence is mistaken for canonical analytics persistence | Operators or later slices might treat repository-source H2 files as the production database or cross-service evidence store | ADR-0023 and FA-MVP-0001 docs define H2 as repository-source Docker-local MVP persistence only; OD-001 remains open |
+| Docker-local Compose config is mistaken for runtime readiness | A valid Compose model might be read as proof of image startup, health checks, Swarm or Kubernetes readiness | S09 records Compose model validation only; later deployment slices must verify image builds, startup, health probes, cleanup, Swarm stacks or Kubernetes manifests before claiming readiness |
 
 ## 11.1 Technical Debt Candidates
 

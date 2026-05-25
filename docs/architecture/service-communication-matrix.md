@@ -56,7 +56,9 @@ S09 work, while status and report command mappings remain later CLI work.
 | Producer | Consumer | Protocol | Contract Authority | Purpose | Notes |
 |---|---|---|---|---|---|
 | UI, CLI or external client | `query-report-api-service` | REST/OpenAPI | `contracts/openapi/gateway-api.yaml` transitional public OpenAPI file | Submit analysis requests; status and report reads are public API capabilities but CLI commands require later explicit mappings | Public responses must redact private paths, secrets and internal diagnostics |
+| UI or external client | `query-report-api-service` | REST/OpenAPI | `contracts/openapi/gateway-api.yaml` transitional public OpenAPI file | Preview repository metadata, create or reuse repository checkout workspaces, read workspace state and refresh repository branches for FA-MVP-0001 | Public DTOs may expose opaque repository checkout workspace IDs and branch IDs only; they must not expose repository-source H2 paths, checkout paths or raw Git output |
 | `query-report-api-service` | `analysis-orchestrator-service` | REST/gRPC/event | `contracts/grpc/analysis-job.proto` and `contracts/events/analysis-events.md` | Start or observe analysis workflows | API service remains facade-only |
+| `query-report-api-service` | `repository-source-service` | gRPC | `contracts/grpc/repository-analysis.proto` transitional owner API | Resolve repository metadata, create or reuse repository checkout workspaces, read workspace state and refresh branches | API service remains facade-only and must not read repository-source private databases or workspace volumes |
 | producer, scanner or runtime collector | `ingestion-service` | gRPC/REST/message | `contracts/grpc/forensic-ingestion.proto` and `contracts/events/analysis-events.md` | Upload analysis or runtime data | Preserve provenance, schema version and correlation |
 | `ingestion-service` | `analysis-orchestrator-service` | gRPC/event/file | `contracts/grpc/forensic-ingestion.proto`, `contracts/events/analysis-events.md` or a later explicit handoff file contract | Notify accepted or rejected intake and make raw payload references available for workflow coordination | `ingestion-service` owns raw intake/session state and raw payload byte custody until an explicit handoff transfers custody |
 | `analysis-orchestrator-service` | `repository-source-service` | gRPC/REST/file | `contracts/grpc/repository-analysis.proto` transitional repository-source contract | Prepare repository source snapshots | Workspaces remain private to repository source service |
@@ -78,6 +80,14 @@ routes call the S07 `analysis-orchestrator-service` `StartRepositoryToBtm` and
 execution parity: the orchestrator returns pending/status-only readiness, and
 the public facade maps that to `ACCEPTED` with incomplete diagnostics and
 `BTM_DELIVERY_NOT_READY`.
+
+FA-MVP-0001 workspace note: the implemented public workspace REST routes in
+`services/query-report-api-service` call `repository-source-service` owner APIs
+through service-local generated `repository-analysis.proto` classes. This
+proves only the repository checkout workspace MVP path: metadata preview,
+idempotent create/reuse, get and branch refresh with sanitized public DTOs.
+It does not prove JavaParser, Joern, BTM generation, replay, report assembly,
+LLM context generation or production database readiness.
 
 ## Transitional Contract Evidence
 

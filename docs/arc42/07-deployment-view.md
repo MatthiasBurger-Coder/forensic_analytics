@@ -1,6 +1,6 @@
 # 7. Deployment View
 
-## 7.1 MVP Deployment View
+## 7.1 Long-Term Platform Deployment Reference
 
 ```text
 Developer Machine / CI Environment
@@ -17,6 +17,27 @@ Developer Machine / CI Environment
     ├── Simple Graph Projection
     └── LLM Diagnosis Adapter
 ```
+
+This view is the broader platform deployment direction from the EPIC baseline.
+It is not the verified FA-MVP-0001 runtime.
+
+### 7.1.1 Current FA-MVP-0001 Docker-Local View
+
+```text
+forensic-ui
+  -> query-report-api-service
+    -> repository-source-service
+       -> repository-source-workspaces volume
+       -> repository-source-data H2 volume
+```
+
+FA-MVP-0001 verifies Docker-local configuration for the repository-source
+workspace checkout foundation. `repository-source-service` owns the checkout
+volume and H2 data volume. No other service mounts or reads those private
+paths directly.
+
+This current MVP view does not claim JavaParser, Joern, BTM generation, replay,
+report, LLM, production database, Docker Swarm or Kubernetes readiness.
 
 ## 7.2 Later Deployment View
 
@@ -145,7 +166,9 @@ deployment evidence. The service owns:
 - a service-local health HTTP endpoint on port `8083`;
 - a service-local gRPC endpoint on port `9092`;
 - the Docker profile workspace root
-  `/var/lib/forensic-analytics/repository-workspaces`.
+  `/var/lib/forensic-analytics/repository-workspaces`;
+- the Docker profile H2 data root
+  `/var/lib/forensic-analytics/repository-source-data`.
 
 The service can be packaged independently with:
 
@@ -159,10 +182,20 @@ It can be started locally with:
 ./gradlew :services:repository-source-service:bootRun --dependency-verification strict --console=plain --stacktrace
 ```
 
-The service Dockerfile is service-owned, but S05 does not add Docker Compose,
-Docker Swarm or Kubernetes deployment descriptors for the target landscape.
-Those readiness claims require later repository tooling and validation
-commands.
+Slice S09 adds Docker-local Compose evidence for the repository-source
+workspace checkout MVP. `deployment/docker-compose/repository-to-btm.local.yml`
+mounts `repository-source-workspaces` only into `repository-source-service` at
+`/var/lib/forensic-analytics/repository-workspaces` and
+`repository-source-data` only into `repository-source-service` at
+`/var/lib/forensic-analytics/repository-source-data`. Other services do not
+mount those repository-source private volumes and must use owner APIs instead
+of reading checkout or H2 paths directly.
+
+The S09 Compose descriptor publishes repository-source local health on
+`127.0.0.1:18087` and gRPC on `127.0.0.1:19097` to avoid collisions with the
+transitional `repository-analysis-service`. This is Docker-local MVP evidence
+only. Docker Swarm, Kubernetes and full runtime-readiness claims still require
+separate repository tooling and validation commands.
 
 Slice S06 adds `services/ingestion-service` as target-service deployment
 evidence. The service owns:
@@ -356,28 +389,32 @@ closure and S07 owns final release-readiness evidence.
 ## 7.7 Local Repository-to-BTM Transitional Landscape
 
 The repository currently contains a local Docker Compose descriptor for the
-implemented transitional repository-to-BTM path:
+implemented transitional repository-to-BTM path and the FA-MVP-0001
+repository-source owner service:
 
 ```text
 deployment/docker-compose/repository-to-btm.local.yml
 ```
 
-The descriptor covers only the current transitional service path:
+The descriptor covers the current transitional local landscape:
 
 ```text
 forensic-gateway-service
 analysis-store-service
 repository-analysis-service
+repository-source-service
 java-ast-analysis-service
 joern-cpg-analysis-service
 btm-generation-service
 ```
 
 It uses service-owned Dockerfiles, Docker profile configuration, service-local
-health checks and named volumes for repository workspaces plus generated Java
-AST, Joern and BTM artifacts. Gateway is the only public HTTP facade in this
-local landscape. Analysis Store remains the repository-to-BTM orchestration
-owner and calls worker owner APIs over gRPC.
+health checks and named volumes for repository-source checkout and H2 state
+plus generated Java AST, Joern and BTM artifacts. Gateway remains the public
+HTTP facade for the transitional repository-to-BTM path. Analysis Store remains
+the repository-to-BTM orchestration owner and calls worker owner APIs over
+gRPC. Repository-source owns its private workspace and H2 volumes and exposes
+that state only through owner APIs.
 
 The local descriptor does not introduce external databases, Graph DB, Vector
 DB, brokers, Jenkins, Artifactory or live credentials. Docker Swarm and
@@ -386,10 +423,10 @@ readiness/liveness probes, resource policies and validation commands are added
 by a later slice.
 
 The local descriptor commands are documented in
-`deployment/docker-compose/README.md`. The active workflow has not executed or
-recorded Compose model validation, image-build, startup or health-check
-commands for this
-descriptor.
+`deployment/docker-compose/README.md`. FA-MVP-0001 S09 executed and recorded
+Compose model validation for this descriptor. Image-build, startup and
+health-check commands remain optional runtime evidence and must be recorded
+separately when executed.
 
 The descriptor is current evidence only. It is not a readiness claim for the
 FA-MSA-001 target landscape until the target services exist and are verified by

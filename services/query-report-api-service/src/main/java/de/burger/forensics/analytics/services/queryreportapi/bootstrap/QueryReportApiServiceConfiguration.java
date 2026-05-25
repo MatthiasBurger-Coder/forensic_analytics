@@ -2,9 +2,14 @@ package de.burger.forensics.analytics.services.queryreportapi.bootstrap;
 
 import de.burger.forensics.analytics.services.queryreportapi.adapter.in.http.QueryReportApiHttpHandler;
 import de.burger.forensics.analytics.services.queryreportapi.adapter.out.grpc.AnalysisOrchestratorRepositoryToBtmGrpcClient;
+import de.burger.forensics.analytics.services.queryreportapi.adapter.out.grpc.RepositorySourceWorkspaceGrpcClient;
 import de.burger.forensics.analytics.services.queryreportapi.application.QueryReportApiRepositoryAnalysisSubmissionService;
 import de.burger.forensics.analytics.services.queryreportapi.application.QueryReportApiStatusService;
+import de.burger.forensics.analytics.services.queryreportapi.application.QueryReportApiWorkspaceService;
 import de.burger.forensics.analytics.services.queryreportapi.application.port.RepositoryAnalysisOwnerPort;
+import de.burger.forensics.analytics.services.queryreportapi.application.port.RepositoryWorkspaceOwnerPort;
+import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.WorkspaceFacadeConfiguration;
+import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.WorkspacePolicy;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -22,6 +27,29 @@ public class QueryReportApiServiceConfiguration {
         return new QueryReportApiRepositoryAnalysisSubmissionService(repositoryAnalysisOwnerPort);
     }
 
+    @Bean
+    public QueryReportApiWorkspaceService queryReportApiWorkspaceService(
+        RepositoryWorkspaceOwnerPort repositoryWorkspaceOwnerPort,
+        QueryReportApiServiceProperties properties
+    ) {
+        var workspace = properties.workspaceFacade();
+        return new QueryReportApiWorkspaceService(
+            repositoryWorkspaceOwnerPort,
+            new WorkspaceFacadeConfiguration(
+                workspace.schemaVersion(),
+                workspace.metadataTimeoutSeconds(),
+                new WorkspacePolicy(
+                    workspace.refreshEphemeral(),
+                    workspace.refreshAllowShallowClone(),
+                    workspace.refreshAllowPartialClone(),
+                    workspace.refreshAllowSparseCheckout(),
+                    workspace.refreshTimeoutSeconds(),
+                    workspace.refreshMaxWorkspaceBytes()
+                )
+            )
+        );
+    }
+
     @Bean(destroyMethod = "close")
     public RepositoryAnalysisOwnerPort repositoryAnalysisOwnerPort(
         QueryReportApiServiceProperties properties
@@ -30,12 +58,25 @@ public class QueryReportApiServiceConfiguration {
         return new AnalysisOrchestratorRepositoryToBtmGrpcClient(grpc.host(), grpc.port(), grpc.deadlineSeconds());
     }
 
+    @Bean(destroyMethod = "close")
+    public RepositoryWorkspaceOwnerPort repositoryWorkspaceOwnerPort(
+        QueryReportApiServiceProperties properties
+    ) {
+        var grpc = properties.repositorySource().grpc();
+        return new RepositorySourceWorkspaceGrpcClient(grpc.host(), grpc.port(), grpc.deadlineSeconds());
+    }
+
     @Bean
     public QueryReportApiHttpHandler queryReportApiHttpHandler(
         QueryReportApiStatusService queryReportApiStatusService,
-        QueryReportApiRepositoryAnalysisSubmissionService repositoryAnalysisSubmissionService
+        QueryReportApiRepositoryAnalysisSubmissionService repositoryAnalysisSubmissionService,
+        QueryReportApiWorkspaceService queryReportApiWorkspaceService
     ) {
-        return new QueryReportApiHttpHandler(queryReportApiStatusService, repositoryAnalysisSubmissionService);
+        return new QueryReportApiHttpHandler(
+            queryReportApiStatusService,
+            repositoryAnalysisSubmissionService,
+            queryReportApiWorkspaceService
+        );
     }
 
     @Bean

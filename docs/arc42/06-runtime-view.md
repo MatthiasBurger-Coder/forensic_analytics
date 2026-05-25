@@ -155,13 +155,52 @@ databases. `analysis-orchestrator-service` coordinates state, retry and
 failure handling only; it must not absorb repository, JavaParser, Joern,
 reporting or persistence internals.
 
-S08 implementation evidence exposes the current verified public
+The current query-report implementation evidence also exposes verified public
 repository-analysis submission/status routes in `query-report-api-service`.
-Those routes call S07 target `analysis-orchestrator-service`, which accepts
+Those routes call the target `analysis-orchestrator-service`, which accepts
 repository-to-BTM requests and returns pending status only. The facade maps the
 pending state to public `ACCEPTED`, `BTM_DELIVERY_NOT_READY` and incomplete
 diagnostics without claiming source snapshot availability, worker execution or
 generated BTM bytes.
+
+FA-MVP-0001 also verifies the repository checkout workspace owner API path:
+`query-report-api-service` maps public workspace REST requests to
+`repository-source-service` gRPC owner requests and maps owner responses back
+to sanitized public DTOs. It does not read repository-source H2 files,
+checkout directories or raw Git output.
+
+FA-MVP-0001 S08 verifies the frontend repository checkout workspace creation
+flow against the public query-report REST facade:
+
+```text
+forensic-ui Create Workspace page
+  -> POST /api/workspace-metadata
+  -> render API-derived repository metadata and read-only workspaceTitle
+  -> POST /api/workspaces with X-Correlation-Id and Idempotency-Key
+  -> render public workspace, branch, source snapshot and source root state
+  -> POST /api/workspaces/{workspaceId}/branches/{workspaceBranchId}/refresh
+  -> render UP_TO_DATE or UPDATED branch refresh status
+```
+
+The browser does not call Git remotes, repository-source-service, gRPC,
+WebSocket, SSE, gRPC-Web, internal service hosts, private workspaces,
+repository-source H2 data or repository-source filesystem paths. Repository
+identity, workspace title and default branch are displayed only after public
+REST responses; the UI does not derive confirmed repository metadata from the
+typed repository URL. If no default branch is returned, the selected branch
+remains blank and backend resolution remains responsible for fallback
+behavior.
+
+The S08 UI keeps idempotency keys stable for retries of the same semantic save
+or refresh operation and creates a new key only after the semantic fingerprint
+changes. Metadata preview, save, refresh and diagnostics responses are rendered
+through sanitized DTO mapping and rendering paths that redact local paths,
+repository-source storage names, raw stdout/stderr, JDBC/H2 URLs, credential
+URLs and secret-like assignments.
+
+This is a Docker-local MVP UI/runtime interaction only. It does not claim
+JavaParser, Joern, BTM generation, replay, reporting, LLM context, Neo4j,
+Kafka, vector storage or Kubernetes runtime behavior.
 
 The repository analysis delivery path must be verified as:
 

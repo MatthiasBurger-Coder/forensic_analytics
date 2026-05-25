@@ -1,6 +1,6 @@
 # Forensic UI
 
-Standalone React, TypeScript and Vite operator UI for the Forensic Analytics Gateway REST API.
+Standalone React, TypeScript and Vite operator UI for the Forensic Analytics query-report REST API.
 
 ## Local Development
 
@@ -43,8 +43,8 @@ The nginx image serves the static Vite build with SPA fallback. It returns a JSO
 
 ## Current Scope
 
-The UI starts repository-to-BTM sessions through Gateway `/api/repository-analyses`, including the required `X-Correlation-Id` and `Idempotency-Key` headers. It does not call internal worker services, gRPC, WebSocket, SSE or gRPC-Web from the browser.
+The UI creates repository checkout workspaces through the verified public routes `/api/workspace-metadata`, `/api/workspaces`, `/api/workspaces/{workspaceId}` and `/api/workspaces/{workspaceId}/branches/{workspaceBranchId}/refresh`. Metadata is rendered only from the public preview response, `workspaceTitle` is read-only, and workspace save/branch refresh operations send `X-Correlation-Id` and `Idempotency-Key`.
 
-Dashboard, workspace and aggregate diagnostics views stay isolated until the
-Gateway exposes verified public list/query routes. The active frontend path
-uses only the verified Gateway submission and status endpoints.
+The UI still starts repository-to-BTM sessions through `/api/repository-analyses`, including the required `X-Correlation-Id` and `Idempotency-Key` headers. It does not call internal worker services, repository-source-service, Git remotes, gRPC, WebSocket, SSE or gRPC-Web from the browser.
+
+Dashboard and aggregate diagnostics views stay isolated until query-report-api-service exposes verified public list/query routes.

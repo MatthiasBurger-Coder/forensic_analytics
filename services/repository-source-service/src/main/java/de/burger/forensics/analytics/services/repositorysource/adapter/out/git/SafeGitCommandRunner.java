@@ -46,6 +46,8 @@ public final class SafeGitCommandRunner implements GitCommandRunner {
             arguments.add("filter.lfs.smudge=");
             arguments.add("-c");
             arguments.add("filter.lfs.clean=");
+            arguments.add("-c");
+            arguments.add("submodule.recurse=false");
             arguments.addAll(command.arguments());
             var builder = new ProcessBuilder(arguments)
                 .directory(command.workingDirectory().toFile())
@@ -89,7 +91,7 @@ public final class SafeGitCommandRunner implements GitCommandRunner {
         var absoluteWorkingDirectory = workingDirectory.toAbsolutePath().normalize();
         var workspaceRoot = absoluteWorkingDirectory;
         var directoryName = absoluteWorkingDirectory.getFileName();
-        if (directoryName != null && "repository".equals(directoryName.toString())) {
+        if (directoryName != null && ("repository".equals(directoryName.toString()) || "checkout".equals(directoryName.toString()))) {
             workspaceRoot = absoluteWorkingDirectory.getParent();
         }
         if (workspaceRoot == null) {

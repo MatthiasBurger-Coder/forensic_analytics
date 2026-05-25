@@ -9,10 +9,26 @@ import type {
   RepositoryAnalysisSummary
 } from "@/domain/repositoryAnalysis";
 import type { DiagnosticMessage, DiagnosticSeverity } from "@/domain/diagnostic";
-import type { Workspace } from "@/domain/workspace";
+import type {
+  BranchRefreshResult,
+  RepositoryIdentity,
+  Workspace,
+  WorkspaceBranch,
+  WorkspaceBranchStatus,
+  WorkspaceMetadata,
+  WorkspaceStatus
+} from "@/domain/workspace";
 import { sanitizeDiagnosticText } from "@/shared/safeText";
 
-import type { DiagnosticDto, RepositoryAnalysisDto, WorkspaceDto } from "./dtos";
+import type {
+  BranchRefreshResponseDto,
+  DiagnosticDto,
+  RepositoryAnalysisDto,
+  RepositoryIdentityDto,
+  WorkspaceBranchDto,
+  WorkspaceDto,
+  WorkspaceMetadataResponseDto
+} from "./dtos";
 
 const STATUS_MAPPING: Record<string, AnalysisLifecycle> = {
   COMPLETED: "SUCCESS",
@@ -108,19 +124,15 @@ export const mapRepositoryAnalysisListDto = (
 };
 
 export const mapWorkspaceDto = (dto: WorkspaceDto): Workspace => {
-  const analyses = repositoryAnalysisArray(dto.repositoryAnalyses);
-  const first = analyses[0];
-
   return {
     workspaceId: textOrEmpty(dto.workspaceId),
-    name: textOrNull(dto.name),
-    status: textOrNull(dto.status),
-    repositoryUrl: first?.repositoryUrl ?? null,
-    branch: first?.branch ?? null,
-    createdAt: textOrNull(dto.createdAt),
-    updatedAt: textOrNull(dto.updatedAt),
-    diagnostics: analyses.flatMap((analysis) => analysis.diagnostics),
-    repositoryAnalyses: analyses.map(toSummary)
+    workspaceTitle: textOrEmpty(dto.workspaceTitle),
+    repository: mapRepositoryIdentityDto(
+      isRecord(dto.repository) ? (dto.repository as RepositoryIdentityDto) : {}
+    ),
+    branches: workspaceBranchArray(dto.branches),
+    status: workspaceStatus(dto.status),
+    diagnostics: diagnostics(dto.diagnostics)
   };
 };
 
@@ -136,37 +148,30 @@ export const mapWorkspaceListDto = (value: unknown): Workspace[] => {
     .map((item) => mapWorkspaceDto(item as WorkspaceDto));
 };
 
-export const mapWorkspaceViewsFromAnalyses = (
-  analyses: RepositoryAnalysis[]
-): Workspace[] => {
-  const grouped = new Map<string, RepositoryAnalysisSummary[]>();
+export const mapWorkspaceMetadataDto = (
+  dto: WorkspaceMetadataResponseDto
+): WorkspaceMetadata => ({
+  repositoryKey: textOrEmpty(dto.repositoryKey),
+  repositoryHost: textOrEmpty(dto.repositoryHost),
+  repositoryOwner: textOrNull(dto.repositoryOwner),
+  repositoryName: textOrEmpty(dto.repositoryName),
+  workspaceTitle: textOrEmpty(dto.workspaceTitle),
+  defaultBranch: textOrNull(dto.defaultBranch),
+  diagnostics: diagnostics(dto.diagnostics)
+});
 
-  analyses.forEach((analysis) => {
-    if (analysis.workspaceId === null) {
-      return;
-    }
-
-    const current = grouped.get(analysis.workspaceId) ?? [];
-    current.push(toSummary(analysis));
-    grouped.set(analysis.workspaceId, current);
-  });
-
-  return Array.from(grouped.entries()).map(([workspaceId, summaries]) => {
-    const first = summaries[0];
-
-    return {
-      workspaceId,
-      name: null,
-      status: null,
-      repositoryUrl: first?.repositoryUrl ?? null,
-      branch: first?.branch ?? null,
-      createdAt: null,
-      updatedAt: null,
-      diagnostics: summaries.flatMap((summary) => summary.diagnostics),
-      repositoryAnalyses: summaries
-    };
-  });
-};
+export const mapBranchRefreshDto = (
+  dto: BranchRefreshResponseDto
+): BranchRefreshResult => ({
+  workspaceBranchId: textOrEmpty(dto.workspaceBranchId),
+  repositoryBranch: textOrEmpty(dto.repositoryBranch),
+  status: branchStatus(dto.status),
+  changed: dto.changed === true,
+  previousCommit: textOrNull(dto.previousCommit),
+  resolvedCommit: textOrNull(dto.resolvedCommit),
+  sourceSnapshotId: textOrNull(dto.sourceSnapshotId),
+  diagnostics: diagnostics(dto.diagnostics)
+});
 
 export const mapDiagnosticDto = (
   dto: DiagnosticDto,
@@ -176,29 +181,8 @@ export const mapDiagnosticDto = (
   severity: severity(dto.severity),
   code: textOrNull(dto.code),
   message: sanitizeDiagnosticText(dto.message),
-  source: textOrNull(dto.source),
+  source: sanitizedOptionalText(dto.source),
   observedAt: textOrNull(dto.observedAt) ?? textOrNull(dto.timestamp)
-});
-
-const toSummary = (analysis: RepositoryAnalysis): RepositoryAnalysisSummary => ({
-  analysisRunId: analysis.analysisRunId,
-  workspaceId: analysis.workspaceId,
-  repositoryUrl: analysis.repositoryUrl,
-  branch: analysis.branch,
-  commit: analysis.commit,
-  resolvedCommit: analysis.resolvedCommit,
-  checkoutStatus: analysis.checkoutStatus,
-  sourceSnapshotStatus: analysis.sourceSnapshotStatus,
-  workflow: analysis.workflow,
-  statusUrl: analysis.statusUrl,
-  jobsUrl: analysis.jobsUrl,
-  btmDeliveryStatus: analysis.btmDeliveryStatus,
-  btmDeliveryService: analysis.btmDeliveryService,
-  correlationId: analysis.correlationId,
-  status: analysis.status,
-  createdAt: analysis.createdAt,
-  startedAt: analysis.startedAt,
-  diagnostics: analysis.diagnostics
 });
 
 const diagnostics = (value: unknown): DiagnosticMessage[] =>
@@ -210,12 +194,33 @@ const diagnostics = (value: unknown): DiagnosticMessage[] =>
       )
     : [];
 
-const repositoryAnalysisArray = (value: unknown): RepositoryAnalysis[] =>
+const mapRepositoryIdentityDto = (
+  dto: RepositoryIdentityDto
+): RepositoryIdentity => ({
+  repositoryKey: textOrEmpty(dto.repositoryKey),
+  repositoryUrl: textOrEmpty(dto.repositoryUrl),
+  repositoryHost: textOrEmpty(dto.repositoryHost),
+  repositoryOwner: textOrNull(dto.repositoryOwner),
+  repositoryName: textOrEmpty(dto.repositoryName),
+  defaultBranch: textOrNull(dto.defaultBranch)
+});
+
+const workspaceBranchArray = (value: unknown): WorkspaceBranch[] =>
   Array.isArray(value)
     ? value
         .filter(isRecord)
-        .map((item) => mapRepositoryAnalysisDto(item as RepositoryAnalysisDto))
+        .map((item) => mapWorkspaceBranchDto(item as WorkspaceBranchDto))
     : [];
+
+const mapWorkspaceBranchDto = (dto: WorkspaceBranchDto): WorkspaceBranch => ({
+  workspaceBranchId: textOrEmpty(dto.workspaceBranchId),
+  repositoryBranch: textOrEmpty(dto.repositoryBranch),
+  status: branchStatus(dto.status),
+  resolvedCommit: textOrNull(dto.resolvedCommit),
+  sourceSnapshotId: textOrNull(dto.sourceSnapshotId),
+  sourceRoots: stringArray(dto.sourceRoots).map(sanitizeDiagnosticText),
+  diagnostics: diagnostics(dto.diagnostics)
+});
 
 const severity = (value: unknown): DiagnosticSeverity => {
   const normalized = textOrNull(value)?.toUpperCase();
@@ -240,6 +245,46 @@ const textOrEmpty = (value: unknown): string => textOrNull(value) ?? "";
 
 const textOrNull = (value: unknown): string | null =>
   typeof value === "string" && value.trim() ? value.trim() : null;
+
+const sanitizedOptionalText = (value: unknown): string | null => {
+  const text = textOrNull(value);
+
+  return text === null ? null : sanitizeDiagnosticText(text);
+};
+
+const workspaceStatus = (value: unknown): WorkspaceStatus => {
+  const normalized = textOrNull(value)?.toUpperCase();
+
+  if (
+    normalized === "NEW" ||
+    normalized === "CHECKING_OUT" ||
+    normalized === "READY" ||
+    normalized === "CHECKED_OUT" ||
+    normalized === "CLEANED" ||
+    normalized === "FAILED"
+  ) {
+    return normalized;
+  }
+
+  return "UNKNOWN";
+};
+
+const branchStatus = (value: unknown): WorkspaceBranchStatus => {
+  const normalized = textOrNull(value)?.toUpperCase();
+
+  if (
+    normalized === "CHECKING_OUT" ||
+    normalized === "CHECKED_OUT" ||
+    normalized === "UP_TO_DATE" ||
+    normalized === "UPDATING" ||
+    normalized === "UPDATED" ||
+    normalized === "FAILED"
+  ) {
+    return normalized;
+  }
+
+  return "UNKNOWN";
+};
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);

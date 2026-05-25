@@ -45,6 +45,7 @@ class QueryReportApiServiceArchitectureTest {
             .dependOnClassesThat()
             .resideInAnyPackage(
                 "de.burger.forensics.analytics.services.repositoryanalysis..",
+                "de.burger.forensics.analytics.services.repositorysource..",
                 "de.burger.forensics.analytics.services.analysisstore..",
                 "de.burger.forensics.analytics.services.analysisorchestrator..",
                 "de.burger.forensics.analytics.services.btmgeneration..",
@@ -75,6 +76,37 @@ class QueryReportApiServiceArchitectureTest {
                 "de.burger.forensics.analytics.rest..",
                 "de.burger.forensics.analytics.testbed.."
             );
+
+    @ArchTest
+    static final ArchRule query_report_api_does_not_depend_on_repository_source_storage =
+        noClasses()
+            .that()
+            .resideInAPackage("de.burger.forensics.analytics.services.queryreportapi..")
+            .should()
+            .dependOnClassesThat()
+            .resideInAnyPackage(
+                "java.sql..",
+                "javax.sql..",
+                "org.h2.."
+            );
+
+    @ArchTest
+    static final ArchRule query_report_api_main_code_does_not_read_private_workspace_files =
+        noClasses()
+            .that()
+            .resideInAPackage("de.burger.forensics.analytics.services.queryreportapi..")
+            .should()
+            .dependOnClassesThat()
+            .resideInAnyPackage("java.nio.file..");
+
+    @ArchTest
+    static final ArchRule query_report_api_main_code_does_not_use_file_handles =
+        noClasses()
+            .that()
+            .resideInAPackage("de.burger.forensics.analytics.services.queryreportapi..")
+            .should()
+            .dependOnClassesThat()
+            .haveFullyQualifiedName("java.io.File");
 
     @ArchTest
     static final ArchRule spring_dependencies_stay_inside_service_bootstrap =

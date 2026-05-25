@@ -11,8 +11,8 @@ import { ErrorBoundary, RouteBoundary } from "@/app/ErrorBoundary";
 import { AppShell } from "@/layouts/AppShell";
 import { AnalysisJobDetailPage } from "@/pages/analysis-jobs/AnalysisJobDetailPage";
 import { BackendUnavailablePage } from "@/pages/backend-unavailable/BackendUnavailablePage";
-import { CreateRepositoryAnalysisPage } from "@/pages/repository-analysis/CreateRepositoryAnalysisPage";
 import { SettingsPage } from "@/pages/settings/SettingsPage";
+import { CreateWorkspacePage } from "@/pages/workspaces/CreateWorkspacePage";
 
 export const App = ({ services }: { services: ApplicationServices }) => (
   <ApplicationServicesProvider services={services}>
@@ -20,21 +20,26 @@ export const App = ({ services }: { services: ApplicationServices }) => (
       <BrowserRouter>
         <Routes>
           <Route element={<AppShell />}>
-            <Route
-              index
-              element={<Navigate to="/repository-analyses/new" replace />}
-            />
+            <Route index element={<Navigate to="/workspaces" replace />} />
             <Route
               path="workspaces"
-              element={<Navigate to="/repository-analyses/new" replace />}
+              element={
+                <RouteBoundary>
+                  <CreateWorkspacePage />
+                </RouteBoundary>
+              }
+            />
+            <Route
+              path="workspaces/new"
+              element={
+                <RouteBoundary>
+                  <CreateWorkspacePage />
+                </RouteBoundary>
+              }
             />
             <Route
               path="repository-analyses/new"
-              element={
-                <RouteBoundary>
-                  <CreateRepositoryAnalysisPage />
-                </RouteBoundary>
-              }
+              element={<Navigate to="/workspaces" replace />}
             />
             <Route
               path="analysis-jobs/:analysisRunId"
@@ -46,7 +51,7 @@ export const App = ({ services }: { services: ApplicationServices }) => (
             />
             <Route
               path="diagnostics"
-              element={<Navigate to="/repository-analyses/new" replace />}
+              element={<Navigate to="/workspaces" replace />}
             />
             <Route
               path="backend-unavailable"

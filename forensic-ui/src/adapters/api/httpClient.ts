@@ -19,6 +19,7 @@ interface RequestOptions {
   body?: unknown;
   headers?: Record<string, string>;
   signal?: AbortSignal;
+  timeoutMs?: number | null;
 }
 
 export class HttpClient {
@@ -90,7 +91,10 @@ export class HttpClient {
     method: "GET" | "POST",
     options: RequestOptions
   ): Promise<T> {
-    const timeout = composeAbortSignal(options.signal, this.timeoutMs);
+    const timeout = composeAbortSignal(
+      options.signal,
+      options.timeoutMs === undefined ? this.timeoutMs : options.timeoutMs
+    );
 
     try {
       const response = await this.fetcher(this.url(path), {
@@ -217,7 +221,7 @@ export const sleep: Delay = (milliseconds, signal) =>
 
 const composeAbortSignal = (
   externalSignal: AbortSignal | undefined,
-  timeoutMs: number
+  timeoutMs: number | null
 ): {
   signal: AbortSignal;
   timedOut: () => boolean;
@@ -226,10 +230,13 @@ const composeAbortSignal = (
   const controller = new AbortController();
   let timedOut = false;
 
-  const timeoutId = window.setTimeout(() => {
-    timedOut = true;
-    controller.abort(new DOMException("Request timeout", "TimeoutError"));
-  }, timeoutMs);
+  const timeoutId =
+    timeoutMs === null
+      ? null
+      : window.setTimeout(() => {
+          timedOut = true;
+          controller.abort(new DOMException("Request timeout", "TimeoutError"));
+        }, timeoutMs);
 
   const abortFromExternal = () => {
     controller.abort(
@@ -243,7 +250,9 @@ const composeAbortSignal = (
     signal: controller.signal,
     timedOut: () => timedOut,
     dispose: () => {
-      window.clearTimeout(timeoutId);
+      if (timeoutId !== null) {
+        window.clearTimeout(timeoutId);
+      }
       externalSignal?.removeEventListener("abort", abortFromExternal);
     }
   };
@@ -268,6 +277,8 @@ const categoryFromEnvelope = (
   if (
     code === "VALIDATION_ERROR" ||
     code === "NOT_FOUND" ||
+    code === "CONFLICT" ||
+    code === "IDEMPOTENCY_CONFLICT" ||
     code === "BACKEND_UNAVAILABLE" ||
     code === "TIMEOUT" ||
     code === "RETRY_EXHAUSTED" ||
@@ -286,6 +297,10 @@ const categoryFromStatus = (status: number): FailureCategory => {
 
   if (status === 404) {
     return "NOT_FOUND";
+  }
+
+  if (status === 409) {
+    return "CONFLICT";
   }
 
   if (status === 408) {
@@ -310,6 +325,10 @@ const messageForCategory = (category: FailureCategory): string => {
       return "The request was rejected by backend validation.";
     case "NOT_FOUND":
       return "The requested analysis resource was not found.";
+    case "CONFLICT":
+      return "The request conflicts with existing backend state.";
+    case "IDEMPOTENCY_CONFLICT":
+      return "The idempotency key was already used with different input.";
     case "BACKEND_UNAVAILABLE":
       return "The backend is unavailable.";
     case "TIMEOUT":

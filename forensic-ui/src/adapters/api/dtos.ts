@@ -44,15 +44,74 @@ export interface RepositoryAnalysisListDto {
   items?: unknown;
 }
 
+export interface WorkspacePolicyDto {
+  ephemeral?: unknown;
+  allowShallowClone?: unknown;
+  allowPartialClone?: unknown;
+  allowSparseCheckout?: unknown;
+  timeoutSeconds?: unknown;
+  maxWorkspaceBytes?: unknown;
+}
+
+export interface WorkspaceMetadataRequestDto {
+  repositoryUrl: string;
+}
+
+export interface WorkspaceMetadataResponseDto {
+  repositoryKey?: unknown;
+  repositoryHost?: unknown;
+  repositoryOwner?: unknown;
+  repositoryName?: unknown;
+  workspaceTitle?: unknown;
+  defaultBranch?: unknown;
+  diagnostics?: unknown;
+}
+
+export interface CreateWorkspaceRequestDto {
+  repositoryUrl: string;
+  selectedBranch: string | null;
+  workspacePolicy: WorkspacePolicyDto;
+}
+
+export interface RepositoryIdentityDto {
+  repositoryKey?: unknown;
+  repositoryUrl?: unknown;
+  repositoryHost?: unknown;
+  repositoryOwner?: unknown;
+  repositoryName?: unknown;
+  defaultBranch?: unknown;
+}
+
+export interface WorkspaceBranchDto {
+  workspaceBranchId?: unknown;
+  repositoryBranch?: unknown;
+  status?: unknown;
+  resolvedCommit?: unknown;
+  sourceSnapshotId?: unknown;
+  sourceRoots?: unknown;
+  diagnostics?: unknown;
+}
+
 export interface WorkspaceDto {
   workspaceId?: unknown;
-  name?: unknown;
+  workspaceTitle?: unknown;
+  repository?: unknown;
+  branches?: unknown;
   status?: unknown;
-  createdAt?: unknown;
-  updatedAt?: unknown;
-  repositoryAnalyses?: unknown;
+  diagnostics?: unknown;
 }
 
 export interface WorkspaceListDto {
   items?: unknown;
+}
+
+export interface BranchRefreshResponseDto {
+  workspaceBranchId?: unknown;
+  repositoryBranch?: unknown;
+  status?: unknown;
+  changed?: unknown;
+  previousCommit?: unknown;
+  resolvedCommit?: unknown;
+  sourceSnapshotId?: unknown;
+  diagnostics?: unknown;
 }

@@ -57,6 +57,11 @@ Quality
 | Slice checkpoint push is requested | The push targets only `origin/<workflow-branch>` and does not create or merge a PR |
 | `push auto` is requested | `S1_PUSH_ELIGIBILITY_GUARD` proves the change belongs to `skills-agents` and no product implementation files changed |
 | Governance diagram is changed | Level 1 and Level 2 diagrams are checked for dead nodes, missing paths, unbounded loops, missing STOP paths, circular references, missing terminals, wrong backward jumps and missing escalation paths |
+| Repository checkout workspace is created | `repository-source-service` persists repository identity, workspace, branch and source snapshot state through its service-local H2 MVP adapter |
+| repository-source-service restarts with the same H2 data volume | Previously created repository checkout workspace and branch state can be loaded without creating duplicate workspace or branch records |
+| Same idempotency key is reused with different workspace input | The request is rejected as an idempotency conflict and persisted workspace or branch state is not mutated |
+| Public workspace metadata, get or refresh response includes unsafe downstream diagnostics | `query-report-api-service` returns sanitized diagnostics without local paths, H2 paths, raw stdout, raw stderr, credentials or tokens |
+| Branch refresh sees the same or changed remote commit | Public responses distinguish `UP_TO_DATE` from `UPDATED` without duplicating the workspace branch |
 
 ## 10.3 Agent Governance Quality Scenarios
 
