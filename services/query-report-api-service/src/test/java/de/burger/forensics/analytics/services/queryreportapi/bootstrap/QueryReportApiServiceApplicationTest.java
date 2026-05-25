@@ -13,12 +13,18 @@ import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportA
 import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiRepositoryAnalysis.StatusRequest;
 import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiRepositoryAnalysis.SubmissionRequest;
 import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.BranchRefreshResponse;
+import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.CleanupWorkspaceRequest;
 import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.CreateWorkspaceRequest;
 import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.GetWorkspaceRequest;
+import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.ListWorkspacesRequest;
+import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.PublicRepositoryIdentity;
 import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.RefreshWorkspaceBranchRequest;
 import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.RepositoryIdentity;
 import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.WorkspaceBranchResponse;
+import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.WorkspaceCleanupResponse;
 import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.WorkspaceFacadeConfiguration;
+import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.WorkspaceListItemResponse;
+import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.WorkspaceListResponse;
 import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.WorkspaceMetadataRequest;
 import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.WorkspaceMetadataResponse;
 import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.WorkspacePolicy;
@@ -307,6 +313,35 @@ class QueryReportApiServiceApplicationTest {
         @Override
         public WorkspaceResponse get(GetWorkspaceRequest request) {
             return workspace();
+        }
+
+        @Override
+        public WorkspaceListResponse list(ListWorkspacesRequest request) {
+            return new WorkspaceListResponse(
+                List.of(new WorkspaceListItemResponse(
+                    "workspace-0001",
+                    "demo",
+                    new PublicRepositoryIdentity(
+                        "example.com/acme/demo",
+                        "example.com",
+                        "acme",
+                        "demo"
+                    ),
+                    workspace().branches(),
+                    "CHECKED_OUT",
+                    List.of(Diagnostic.info("OK", "loaded"))
+                )),
+                List.of(Diagnostic.info("OK", "loaded"))
+            );
+        }
+
+        @Override
+        public WorkspaceCleanupResponse cleanup(CleanupWorkspaceRequest request) {
+            return new WorkspaceCleanupResponse(
+                "workspace-0001",
+                "CLEANED",
+                List.of(Diagnostic.info("OK", "cleaned"))
+            );
         }
 
         @Override

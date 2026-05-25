@@ -32,7 +32,12 @@ They must not become shared Java DTO or domain modules.
 monolith-local checkout adapter. The networked service contract permits only
 clean HTTPS repository URLs, keeps mutable workspace paths private to the
 service and hands off source snapshots through opaque IDs, relative source
-roots, artifact references, completeness and diagnostics.
+roots, artifact references, completeness and diagnostics. FA-MVP-0001
+workspaces-management S01 adds additive owner API contracts for listing
+repository checkout workspaces and cleaning a workspace by opaque workspace ID.
+The list contract hides `CLEANED` workspaces by default, and cleanup retains
+metadata while reporting `CLEANED` status instead of removing repository-source
+records.
 
 Repository-analysis artifact references must be opaque artifact keys or
 source-snapshot-relative paths. Absolute paths, `file:` URIs, workspace roots

@@ -17,7 +17,12 @@ not implementation evidence until later service slices implement and test them.
 
 FA-MVP-0001 adds current-verified repository checkout workspace routes under
 the `Workspaces` tag for metadata preview, create/reuse, get and branch
-refresh. These routes belong to `query-report-api-service` as a sanitized
+refresh. S01 of the workspaces-management workflow extends the planned public
+contract with `GET /workspaces` and `DELETE /workspaces/{workspaceId}`.
+The list route returns sanitized workspace metadata in deterministic order and
+hides `CLEANED` workspaces by default. The delete route is safe cleanup: it
+marks the workspace `CLEANED` and retains repository-source metadata for
+auditability. These routes belong to `query-report-api-service` as a sanitized
 public facade only. The repository checkout workspace, branch state, source
 snapshot references, private checkout paths and H2 persistence remain owned by
 `repository-source-service`. Reports, replay, LLM and broader query/list

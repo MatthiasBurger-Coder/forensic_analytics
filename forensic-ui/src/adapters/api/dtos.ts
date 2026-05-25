@@ -82,6 +82,13 @@ export interface RepositoryIdentityDto {
   defaultBranch?: unknown;
 }
 
+export interface PublicRepositoryIdentityDto {
+  repositoryKey?: unknown;
+  repositoryHost?: unknown;
+  repositoryOwner?: unknown;
+  repositoryName?: unknown;
+}
+
 export interface WorkspaceBranchDto {
   workspaceBranchId?: unknown;
   repositoryBranch?: unknown;
@@ -101,8 +108,24 @@ export interface WorkspaceDto {
   diagnostics?: unknown;
 }
 
+export interface WorkspaceListItemDto {
+  workspaceId?: unknown;
+  workspaceTitle?: unknown;
+  repository?: unknown;
+  branches?: unknown;
+  status?: unknown;
+  diagnostics?: unknown;
+}
+
 export interface WorkspaceListDto {
   items?: unknown;
+  diagnostics?: unknown;
+}
+
+export interface WorkspaceCleanupResponseDto {
+  workspaceId?: unknown;
+  status?: unknown;
+  diagnostics?: unknown;
 }
 
 export interface BranchRefreshResponseDto {

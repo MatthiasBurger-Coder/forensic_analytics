@@ -385,10 +385,10 @@ Done criteria:
 - Tests cover list ordering, cleaned-workspace exclusion, cleanup idempotency,
   in-progress rejection or explicit handling, and persistence reload behavior.
 
-### Slice 03: Query-Report Public Facade
+### Slice 03: Repository-Source Owner gRPC Endpoint
 
-Purpose: Expose sanitized public list and delete routes through query-report
-API without reading repository-source storage directly.
+Purpose: Expose the S01 repository-source owner API methods through the
+repository-source gRPC inbound adapter before query-report delegates to them.
 
 Prerequisites: S01 and S02 completed.
 
@@ -398,14 +398,85 @@ profile: FULL_PATH
 owner: senior_java_backend
 secondary_reviewers:
   - senior_system_architect
+  - senior_grpc_proto_specialist
+  - senior_tester
+  - senior_security_sandbox_engineer
+affected_files:
+  - services/repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/adapter/in/grpc/RepositorySourceGrpcEndpoint.java
+  - services/repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/adapter/in/grpc/RepositorySourceGrpcEndpointTest.java
+  - services/repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/adapter/in/grpc/RepositorySourceGrpcEndpointMappingTest.java
+affected_modules:
+  - services:repository-source-service
+affected_contracts:
+  - repository-source-owner-api
+dependencies:
+  - S01
+  - S02
+parallel_group: G3
+file_locks:
+  - services/repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/adapter/in/grpc
+  - services/repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/adapter/in/grpc
+contract_locks:
+  - repository-source-owner-api
+architecture_locks:
+  - repository-source-owner-api
+  - repository-source-owns-h2
+  - inbound-grpc-delegates-to-application
+quality_gates:
+  targeted:
+    - ./gradlew :services:repository-source-service:test --tests "*RepositorySourceGrpcEndpointTest" --dependency-verification strict --console=plain --stacktrace
+    - ./gradlew :services:repository-source-service:test --tests "*RepositorySourceContractTest" --dependency-verification strict --console=plain --stacktrace
+    - ./gradlew :services:repository-source-service:test --dependency-verification strict --console=plain --stacktrace
+  required:
+    - ./gradlew test --dependency-verification strict --console=plain --stacktrace
+documentation:
+  arc42: docs/workflow/arc42-check-status.md
+  adr: docs/adr/ADR-0010-contract-first-rest-and-grpc.md
+stop_conditions:
+  - Endpoint implementation would reuse analysis-run-scoped cleanup for workspace delete.
+  - List or cleanup-by-id returns generated UNIMPLEMENTED behavior.
+  - Endpoint responses expose private paths, H2 details, raw output, credentials or tokens.
+  - Missing, invalid, conflict or in-progress cleanup states cannot be mapped explicitly.
+```
+
+Done criteria:
+
+- `ListRepositoryWorkspaces` delegates to
+  `RepositoryWorkspaceApplicationService.listRepositoryWorkspaces`.
+- `CleanupRepositoryWorkspaceById` delegates to
+  `RepositoryWorkspaceApplicationService.cleanupRepositoryWorkspaceById`, not
+  legacy analysis-run-scoped cleanup.
+- Endpoint tests prove default list excludes `CLEANED`, `include_cleaned`
+  includes it, cleanup returns safe status/diagnostics, and error mapping is
+  controlled.
+
+### Slice 04: Query-Report Public Facade
+
+Purpose: Expose sanitized public list and delete routes through query-report
+API without reading repository-source storage directly.
+
+Prerequisites: S01, S02 and S03 completed.
+
+```yaml
+slice_id: S04
+profile: FULL_PATH
+owner: senior_java_backend
+secondary_reviewers:
+  - senior_system_architect
   - senior_tester
   - security_reviewer
 affected_files:
+  - contracts/openapi/gateway-api.yaml
   - services/query-report-api-service/src/main/java/de/burger/forensics/analytics/services/queryreportapi/application/port/RepositoryWorkspaceOwnerPort.java
   - services/query-report-api-service/src/main/java/de/burger/forensics/analytics/services/queryreportapi/application/QueryReportApiWorkspaceService.java
   - services/query-report-api-service/src/main/java/de/burger/forensics/analytics/services/queryreportapi/domain/QueryReportApiWorkspace.java
   - services/query-report-api-service/src/main/java/de/burger/forensics/analytics/services/queryreportapi/adapter/in/http/QueryReportApiHttpHandler.java
+  - services/query-report-api-service/src/main/java/de/burger/forensics/analytics/services/queryreportapi/adapter/out/grpc/RepositorySourceWorkspaceGrpcClient.java
+  - services/query-report-api-service/src/test/java/de/burger/forensics/analytics/services/queryreportapi/adapter/in/http/GatewayOpenApiContractTest.java
   - services/query-report-api-service/src/test/java/de/burger/forensics/analytics/services/queryreportapi/adapter/in/http/QueryReportApiHttpAdapterTest.java
+  - services/query-report-api-service/src/test/java/de/burger/forensics/analytics/services/queryreportapi/adapter/out/grpc/RepositorySourceWorkspaceGrpcClientTest.java
+  - services/query-report-api-service/src/test/java/de/burger/forensics/analytics/services/queryreportapi/application/QueryReportApiWorkspaceServiceTest.java
+  - services/query-report-api-service/src/test/java/de/burger/forensics/analytics/services/queryreportapi/bootstrap/QueryReportApiServiceApplicationTest.java
   - services/query-report-api-service/src/test/java/de/burger/forensics/analytics/services/queryreportapi/domain/QueryReportApiWorkspaceTest.java
 affected_modules:
   - services:query-report-api-service
@@ -415,7 +486,8 @@ affected_contracts:
 dependencies:
   - S01
   - S02
-parallel_group: G3
+  - S03
+parallel_group: G4
 file_locks:
   - services/query-report-api-service/src/main/java/de/burger/forensics/analytics/services/queryreportapi
   - services/query-report-api-service/src/test/java/de/burger/forensics/analytics/services/queryreportapi
@@ -445,37 +517,46 @@ Done criteria:
 - Tests cover route validation, correlation/idempotency headers, redaction and
   backend failure mapping.
 
-### Slice 04: Frontend Workspace API Adapter
+### Slice 05: Frontend Workspace API Adapter
 
 Purpose: Replace placeholder workspace list behavior with public REST list
 integration and add delete command support behind verified contracts.
 
-Prerequisites: S03 completed and public REST DTO shape verified.
+Prerequisites: S04 completed and public REST DTO shape verified.
 
 ```yaml
-slice_id: S04
+slice_id: S05
 profile: NORMAL_PATH
 owner: senior_react_frontend
 secondary_reviewers:
   - senior_tester
   - security_reviewer
 affected_files:
+  - forensic-ui/src/domain/workspace.ts
   - forensic-ui/src/application/ports/workspacePort.ts
+  - forensic-ui/src/adapters/api/httpClient.ts
   - forensic-ui/src/adapters/api/apiClient.ts
   - forensic-ui/src/adapters/api/dtos.ts
   - forensic-ui/src/adapters/api/mappers.ts
   - forensic-ui/src/adapters/api/apiClient.test.ts
   - forensic-ui/src/adapters/api/mappers.test.ts
+  - forensic-ui/src/app/App.test.tsx
+  - forensic-ui/src/pages/workspaces/CreateWorkspacePage.test.tsx
+  - forensic-ui/src/application/hooks/useAnalysisJob.test.tsx
 affected_modules:
   - forensic-ui
 affected_contracts:
   - public-workspaces-rest
 dependencies:
-  - S03
-parallel_group: G4
+  - S04
+parallel_group: G5
 file_locks:
+  - forensic-ui/src/domain/workspace.ts
   - forensic-ui/src/application/ports/workspacePort.ts
   - forensic-ui/src/adapters/api
+  - forensic-ui/src/app/App.test.tsx
+  - forensic-ui/src/pages/workspaces/CreateWorkspacePage.test.tsx
+  - forensic-ui/src/application/hooks/useAnalysisJob.test.tsx
 contract_locks:
   - public-workspaces-rest
 architecture_locks:
@@ -503,15 +584,15 @@ Done criteria:
   contract is verified.
 - API tests prove list/delete paths, headers, mapping and safe diagnostics.
 
-### Slice 05: Workspaces List UI And Actions
+### Slice 06: Workspaces List UI And Actions
 
 Purpose: Activate the Workspaces navigation/list experience and wire add,
 refresh and delete actions.
 
-Prerequisites: S04 completed.
+Prerequisites: S05 completed.
 
 ```yaml
-slice_id: S05
+slice_id: S06
 profile: NORMAL_PATH
 owner: senior_react_frontend
 secondary_reviewers:
@@ -530,8 +611,8 @@ affected_modules:
 affected_contracts:
   - public-workspaces-rest
 dependencies:
-  - S04
-parallel_group: G5
+  - S05
+parallel_group: G6
 file_locks:
   - forensic-ui/src/app
   - forensic-ui/src/layouts
@@ -568,15 +649,15 @@ Done criteria:
 - Loading, empty, stale, error, refresh-in-flight and delete-in-flight states
   are tested.
 
-### Slice 06: Quality, Leakage And Documentation Closure
+### Slice 07: Quality, Leakage And Documentation Closure
 
 Purpose: Run final verification, inspect diffs, and synchronize workflow/arc42
 documentation with the implemented result.
 
-Prerequisites: S01 through S05 completed.
+Prerequisites: S01 through S06 completed.
 
 ```yaml
-slice_id: S06
+slice_id: S07
 profile: FULL_PATH
 owner: senior_tester
 secondary_reviewers:
@@ -599,7 +680,8 @@ dependencies:
   - S03
   - S04
   - S05
-parallel_group: G6
+  - S06
+parallel_group: G7
 file_locks:
   - docs/workflow
   - docs/arc42
@@ -637,10 +719,11 @@ Done criteria:
 ```text
 S01 Contract And Semantics Closure
   -> S02 Repository-Source List And Cleanup Lifecycle
-  -> S03 Query-Report Public Facade
-  -> S04 Frontend Workspace API Adapter
-  -> S05 Workspaces List UI And Actions
-  -> S06 Quality, Leakage And Documentation Closure
+  -> S03 Repository-Source Owner gRPC Endpoint
+  -> S04 Query-Report Public Facade
+  -> S05 Frontend Workspace API Adapter
+  -> S06 Workspaces List UI And Actions
+  -> S07 Quality, Leakage And Documentation Closure
 ```
 
 ## Parallelization Opportunities
@@ -670,9 +753,11 @@ verified contracts. No production-code slice may bypass S01.
 - S01 updates contract documentation if route/RPC names are introduced.
 - S02 updates repository-source README only if operator-visible lifecycle
   semantics change.
-- S03 updates query-report API README only if public routes change.
-- S05 updates frontend README only if route usage changes.
-- S06 updates arc42 sections only for behavior verified by executed slices.
+- S03 updates repository-source adapter documentation only if owner API
+  behavior changes beyond the contract.
+- S04 updates query-report API README only if public routes change.
+- S06 updates frontend README only if route usage changes.
+- S07 updates arc42 sections only for behavior verified by executed slices.
 
 ## Stop Conditions
 
@@ -719,13 +804,14 @@ inspected.
 
 ## Handoff To Workflow Execute
 
-This workflow is ready for `workflow execute` under the accepted assumptions
-documented above. Before implementing S01, the executor must reread this file,
-verify the active branch, run S3D dependency and lock checks, and stop if the
-user contradicts the accepted assumptions.
+This workflow is under `workflow execute` and was refined after S02 because the
+repository-source owner gRPC endpoint slice was missing. Before each remaining
+slice, the executor must reread this file, verify the active branch, run S3D
+dependency and lock checks, and stop if the user contradicts the accepted
+assumptions.
 
 ## arc42 Check Status
 
 See `docs/workflow/arc42-check-status.md`. The workflow creation check found
-no need to update implemented behavior claims in arc42 at creation time. S06
+no need to update implemented behavior claims in arc42 at creation time. S07
 must update arc42 after implementation verifies list/delete behavior.

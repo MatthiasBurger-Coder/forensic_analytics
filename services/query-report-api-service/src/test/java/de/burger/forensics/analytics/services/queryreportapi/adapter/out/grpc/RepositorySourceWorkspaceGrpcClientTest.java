@@ -1,8 +1,14 @@
 package de.burger.forensics.analytics.services.queryreportapi.adapter.out.grpc;
 
+import de.burger.forensics.analytics.repositoryanalysis.v1.CleanupRepositoryWorkspaceByIdRequest;
+import de.burger.forensics.analytics.repositoryanalysis.v1.CleanupRepositoryWorkspaceByIdResponse;
 import de.burger.forensics.analytics.repositoryanalysis.v1.CreateRepositoryWorkspaceRequest;
 import de.burger.forensics.analytics.repositoryanalysis.v1.CreateRepositoryWorkspaceResponse;
+import de.burger.forensics.analytics.repositoryanalysis.v1.Diagnostic;
+import de.burger.forensics.analytics.repositoryanalysis.v1.DiagnosticSeverity;
 import de.burger.forensics.analytics.repositoryanalysis.v1.GetRepositoryWorkspaceRequest;
+import de.burger.forensics.analytics.repositoryanalysis.v1.ListRepositoryWorkspacesRequest;
+import de.burger.forensics.analytics.repositoryanalysis.v1.ListRepositoryWorkspacesResponse;
 import de.burger.forensics.analytics.repositoryanalysis.v1.MetadataPreviewPolicy;
 import de.burger.forensics.analytics.repositoryanalysis.v1.PreviewRepositoryWorkspaceMetadataRequest;
 import de.burger.forensics.analytics.repositoryanalysis.v1.PreviewRepositoryWorkspaceMetadataResponse;
@@ -16,7 +22,9 @@ import de.burger.forensics.analytics.repositoryanalysis.v1.RepositoryWorkspaceBr
 import de.burger.forensics.analytics.repositoryanalysis.v1.RepositoryWorkspaceStatus;
 import de.burger.forensics.analytics.services.queryreportapi.application.QueryReportApiIdempotencyConflictException;
 import de.burger.forensics.analytics.services.queryreportapi.application.QueryReportApiWorkspaceException;
+import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.CleanupWorkspaceRequest;
 import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.GetWorkspaceRequest;
+import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.ListWorkspacesRequest;
 import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.RefreshWorkspaceBranchRequest;
 import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.WorkspaceMetadataRequest;
 import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.WorkspacePolicy;
@@ -40,12 +48,17 @@ class RepositorySourceWorkspaceGrpcClientTest {
             var metadata = client.previewMetadata(metadataRequest());
             var created = client.create(createRequest());
             var loaded = client.get(getRequest());
+            var listed = client.list(listRequest());
             var refreshed = client.refresh(refreshRequest());
+            var cleaned = client.cleanup(cleanupRequest());
 
             assertEquals("demo", metadata.workspaceTitle());
             assertEquals("workspace-0001", created.workspaceId());
             assertEquals("workspace-0001", loaded.workspaceId());
+            assertEquals("workspace-0001", listed.items().get(0).workspaceId());
+            assertEquals("example.com", listed.items().get(0).repository().repositoryHost());
             assertEquals("workspace-branch-0001", refreshed.workspaceBranchId());
+            assertEquals("CLEANED", cleaned.status());
             assertEquals("request-metadata", service.metadataRequest.getRequestId());
             assertEquals("query-report-workspace.v1", service.metadataRequest.getSchemaVersion());
             assertEquals("correlation-1", service.metadataRequest.getCorrelationId());
@@ -55,8 +68,17 @@ class RepositorySourceWorkspaceGrpcClientTest {
             assertEquals("main", service.createRequest.getBranchSelector().getBranch());
             assertEquals(1_073_741_824L, service.createRequest.getWorkspacePolicy().getMaxWorkspaceBytes());
             assertEquals("workspace-0001", service.getRequest.getWorkspaceId());
+            assertEquals("request-list", service.listRequest.getRequestId());
+            assertEquals("query-report-workspace.v1", service.listRequest.getSchemaVersion());
+            assertEquals("correlation-1", service.listRequest.getCorrelationId());
+            assertEquals(false, service.listRequest.getIncludeCleaned());
             assertEquals("idem-refresh", service.refreshRequest.getIdempotencyKey());
             assertEquals("workspace-branch-0001", service.refreshRequest.getWorkspaceBranchId());
+            assertEquals("request-cleanup", service.cleanupRequest.getRequestId());
+            assertEquals("idem-cleanup", service.cleanupRequest.getIdempotencyKey());
+            assertEquals("query-report-workspace.v1", service.cleanupRequest.getSchemaVersion());
+            assertEquals("correlation-1", service.cleanupRequest.getCorrelationId());
+            assertEquals("workspace-0001", service.cleanupRequest.getWorkspaceId());
         });
     }
 
@@ -81,6 +103,19 @@ class RepositorySourceWorkspaceGrpcClientTest {
                 }
             });
         }
+    }
+
+    @Test
+    void mapsRepositorySourceListAndCleanupErrorsToPublicWorkspaceErrors() throws Exception {
+        withClient(new FailingListAndCleanupService(Status.UNAVAILABLE), client -> {
+            var listError = assertThrows(QueryReportApiWorkspaceException.class, () -> client.list(listRequest()));
+            var cleanupError = assertThrows(QueryReportApiWorkspaceException.class, () -> client.cleanup(cleanupRequest()));
+
+            assertEquals(503, listError.statusCode());
+            assertEquals("BACKEND_UNAVAILABLE", listError.errorCode());
+            assertEquals(503, cleanupError.statusCode());
+            assertEquals("BACKEND_UNAVAILABLE", cleanupError.errorCode());
+        });
     }
 
     @Test
@@ -117,6 +152,29 @@ class RepositorySourceWorkspaceGrpcClientTest {
             }
         }, client -> {
             var error = assertThrows(QueryReportApiWorkspaceException.class, () -> client.create(createRequest()));
+
+            assertEquals(502, error.statusCode());
+            assertEquals("BACKEND_UNAVAILABLE", error.errorCode());
+            assertEquals("Repository Source returned unsupported workspace state", error.getMessage());
+        });
+    }
+
+    @Test
+    void rejectsUnsupportedCleanupStatusWithoutFabricatingDeletion() throws Exception {
+        withClient(new RepositoryAnalysisServiceGrpc.RepositoryAnalysisServiceImplBase() {
+            @Override
+            public void cleanupRepositoryWorkspaceById(
+                CleanupRepositoryWorkspaceByIdRequest request,
+                StreamObserver<CleanupRepositoryWorkspaceByIdResponse> responseObserver
+            ) {
+                responseObserver.onNext(CleanupRepositoryWorkspaceByIdResponse.newBuilder()
+                    .setWorkspaceId("workspace-0001")
+                    .setWorkspaceStatus(RepositoryWorkspaceStatus.REPOSITORY_WORKSPACE_STATUS_READY)
+                    .build());
+                responseObserver.onCompleted();
+            }
+        }, client -> {
+            var error = assertThrows(QueryReportApiWorkspaceException.class, () -> client.cleanup(cleanupRequest()));
 
             assertEquals(502, error.statusCode());
             assertEquals("BACKEND_UNAVAILABLE", error.errorCode());
@@ -203,6 +261,25 @@ class RepositorySourceWorkspaceGrpcClientTest {
         );
     }
 
+    private static ListWorkspacesRequest listRequest() {
+        return new ListWorkspacesRequest(
+            "request-list",
+            "query-report-workspace.v1",
+            "correlation-1",
+            false
+        );
+    }
+
+    private static CleanupWorkspaceRequest cleanupRequest() {
+        return new CleanupWorkspaceRequest(
+            "request-cleanup",
+            "idem-cleanup",
+            "query-report-workspace.v1",
+            "correlation-1",
+            "workspace-0001"
+        );
+    }
+
     private static RefreshWorkspaceBranchRequest refreshRequest() {
         return new RefreshWorkspaceBranchRequest(
             "request-refresh",
@@ -244,7 +321,9 @@ class RepositorySourceWorkspaceGrpcClientTest {
         private PreviewRepositoryWorkspaceMetadataRequest metadataRequest;
         private CreateRepositoryWorkspaceRequest createRequest;
         private GetRepositoryWorkspaceRequest getRequest;
+        private ListRepositoryWorkspacesRequest listRequest;
         private RefreshRepositoryWorkspaceBranchRequest refreshRequest;
+        private CleanupRepositoryWorkspaceByIdRequest cleanupRequest;
 
         @Override
         public void previewRepositoryWorkspaceMetadata(
@@ -287,6 +366,25 @@ class RepositorySourceWorkspaceGrpcClientTest {
         }
 
         @Override
+        public void listRepositoryWorkspaces(
+            ListRepositoryWorkspacesRequest request,
+            StreamObserver<ListRepositoryWorkspacesResponse> responseObserver
+        ) {
+            listRequest = request;
+            responseObserver.onNext(ListRepositoryWorkspacesResponse.newBuilder()
+                .addWorkspaces(workspace(RepositoryWorkspaceStatus.REPOSITORY_WORKSPACE_STATUS_CHECKED_OUT)
+                    .toBuilder()
+                    .addBranches(branch(RepositoryWorkspaceBranchStatus.REPOSITORY_WORKSPACE_BRANCH_STATUS_CHECKED_OUT))
+                    .build())
+                .addDiagnostics(Diagnostic.newBuilder()
+                    .setSeverity(DiagnosticSeverity.DIAGNOSTIC_SEVERITY_INFO)
+                    .setCode("WORKSPACES_LISTED")
+                    .setMessage("Repository workspaces listed"))
+                .build());
+            responseObserver.onCompleted();
+        }
+
+        @Override
         public void refreshRepositoryWorkspaceBranch(
             RefreshRepositoryWorkspaceBranchRequest request,
             StreamObserver<RefreshRepositoryWorkspaceBranchResponse> responseObserver
@@ -295,6 +393,23 @@ class RepositorySourceWorkspaceGrpcClientTest {
             responseObserver.onNext(RefreshRepositoryWorkspaceBranchResponse.newBuilder()
                 .setBranch(branch(RepositoryWorkspaceBranchStatus.REPOSITORY_WORKSPACE_BRANCH_STATUS_UP_TO_DATE))
                 .setChanged(false)
+                .build());
+            responseObserver.onCompleted();
+        }
+
+        @Override
+        public void cleanupRepositoryWorkspaceById(
+            CleanupRepositoryWorkspaceByIdRequest request,
+            StreamObserver<CleanupRepositoryWorkspaceByIdResponse> responseObserver
+        ) {
+            cleanupRequest = request;
+            responseObserver.onNext(CleanupRepositoryWorkspaceByIdResponse.newBuilder()
+                .setWorkspaceId("workspace-0001")
+                .setWorkspaceStatus(RepositoryWorkspaceStatus.REPOSITORY_WORKSPACE_STATUS_CLEANED)
+                .addDiagnostics(Diagnostic.newBuilder()
+                    .setSeverity(DiagnosticSeverity.DIAGNOSTIC_SEVERITY_INFO)
+                    .setCode("WORKSPACE_CLEANED")
+                    .setMessage("Repository workspace cleaned"))
                 .build());
             responseObserver.onCompleted();
         }
@@ -311,6 +426,30 @@ class RepositorySourceWorkspaceGrpcClientTest {
         public void createRepositoryWorkspace(
             CreateRepositoryWorkspaceRequest request,
             StreamObserver<CreateRepositoryWorkspaceResponse> responseObserver
+        ) {
+            responseObserver.onError(status.asRuntimeException());
+        }
+    }
+
+    private static final class FailingListAndCleanupService extends RepositoryAnalysisServiceGrpc.RepositoryAnalysisServiceImplBase {
+        private final Status status;
+
+        private FailingListAndCleanupService(Status status) {
+            this.status = status;
+        }
+
+        @Override
+        public void listRepositoryWorkspaces(
+            ListRepositoryWorkspacesRequest request,
+            StreamObserver<ListRepositoryWorkspacesResponse> responseObserver
+        ) {
+            responseObserver.onError(status.asRuntimeException());
+        }
+
+        @Override
+        public void cleanupRepositoryWorkspaceById(
+            CleanupRepositoryWorkspaceByIdRequest request,
+            StreamObserver<CleanupRepositoryWorkspaceByIdResponse> responseObserver
         ) {
             responseObserver.onError(status.asRuntimeException());
         }

@@ -6,13 +6,14 @@
 |---|---|
 | Workflow version | `fa-mvp-0001-workspaces-management-extension-20260525-v1` |
 | Workflow branch | `feature/workflow-workspaces-management-20260525` |
-| Process strand | `workflow create` completed; `workflow execute` pending |
+| Process strand | `workflow execute` in progress; refined after S02 |
 | Execution profile | `FULL_PATH` |
 | Requirement ID | `FA-MVP-0001-EXT-01` |
 
 ## Affected Areas
 
-- `repository-source-service` workspace application, ports and H2/memory adapters.
+- `repository-source-service` workspace application, ports, H2/memory adapters
+  and gRPC inbound adapter.
 - `query-report-api-service` public workspace facade.
 - `contracts/openapi/gateway-api.yaml`.
 - `contracts/grpc/repository-analysis.proto`.
@@ -35,6 +36,7 @@
 - Senior Requirement Engineer.
 - Senior System Architect.
 - Senior Java Backend Developer.
+- Senior gRPC/Protobuf Specialist.
 - Senior React Frontend Developer.
 - Senior Tester.
 
@@ -43,7 +45,7 @@
 - Senior UX Designer for list/action experience.
 - Security reviewer or Senior Security Sandbox Engineer for path, remote and
   secret leakage risks.
-- Senior Documentation Engineer for S06 documentation closure.
+- Senior Documentation Engineer for S07 documentation closure.
 
 ## Quality Commands
 
@@ -87,8 +89,16 @@ Targeted backend:
 | `.agents/skills/workflow-authoring/SKILL.md` | `d87950d6d9ca831a4201b660c6bef373cb85be829f21694a323dbb9b8544d801` |
 | `.agents/skills/execution-profile-router/SKILL.md` | `40b7a5c9a2d8896b3e2f8c384300979a13d7d35986a5bd4bc4d3b5760a7d52b7` |
 | `.agents/skills/three-amigos-requirement-gatekeeper/SKILL.md` | `95c04f47127f5149bb39a7e1b82b2690803cc765cad5d18274a82d415931e9ad` |
-| `contracts/openapi/gateway-api.yaml` | `2c2c0c2763e9a8f6a504dd2bcb3a1955513dc4f0c321cc905c7ca00b22338846` |
-| `contracts/grpc/repository-analysis.proto` | `e28a63411b0c62380b139312ef288fcfb68c2b231ebf5bf3c7fa9d0a2b6a02e6` |
+| `contracts/openapi/gateway-api.yaml` | `553e5a459389c4c0f08b9f40701b6a490c5c3e634881fc2b80dc20ad9f78127c` |
+| `contracts/grpc/repository-analysis.proto` | `9213e97743736dc808e5ee50e7a26849c7e01a3001f02e1606b9aba82ba79cc1` |
 
 The context pack is stale when any recorded hash changes, when the workflow
 branch changes, or when contract/data ownership conflicts are found.
+
+## Refinement Notes
+
+During `workflow execute`, S03 was refined after S02 because the
+repository-source gRPC endpoint did not yet expose the S01 list and
+cleanup-by-id owner API methods. The refined workflow inserts a
+repository-source owner gRPC endpoint slice before the query-report public
+facade slice and renumbers the remaining slices.

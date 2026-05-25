@@ -8,6 +8,8 @@ import de.burger.forensics.analytics.repositoryanalysis.v1.BuildOutputProducerSt
 import de.burger.forensics.analytics.repositoryanalysis.v1.BuildOutputResolution;
 import de.burger.forensics.analytics.repositoryanalysis.v1.CheckoutResult;
 import de.burger.forensics.analytics.repositoryanalysis.v1.CheckoutStatus;
+import de.burger.forensics.analytics.repositoryanalysis.v1.CleanupRepositoryWorkspaceByIdRequest;
+import de.burger.forensics.analytics.repositoryanalysis.v1.CleanupRepositoryWorkspaceByIdResponse;
 import de.burger.forensics.analytics.repositoryanalysis.v1.CleanupRepositoryWorkspaceRequest;
 import de.burger.forensics.analytics.repositoryanalysis.v1.CleanupRepositoryWorkspaceResponse;
 import de.burger.forensics.analytics.repositoryanalysis.v1.CreateRepositoryWorkspaceRequest;
@@ -16,6 +18,8 @@ import de.burger.forensics.analytics.repositoryanalysis.v1.Diagnostic;
 import de.burger.forensics.analytics.repositoryanalysis.v1.DiagnosticSeverity;
 import de.burger.forensics.analytics.repositoryanalysis.v1.GetRepositoryPreparationRequest;
 import de.burger.forensics.analytics.repositoryanalysis.v1.GetRepositoryWorkspaceRequest;
+import de.burger.forensics.analytics.repositoryanalysis.v1.ListRepositoryWorkspacesRequest;
+import de.burger.forensics.analytics.repositoryanalysis.v1.ListRepositoryWorkspacesResponse;
 import de.burger.forensics.analytics.repositoryanalysis.v1.MetadataPreviewPolicy;
 import de.burger.forensics.analytics.repositoryanalysis.v1.OperationStatus;
 import de.burger.forensics.analytics.repositoryanalysis.v1.PackageAvailability;
@@ -207,6 +211,54 @@ public final class RepositorySourceGrpcEndpoint extends RepositoryAnalysisServic
             responseObserver.onNext(repositoryWorkspace(workspaceApplicationService.getRepositoryWorkspace(
                 new WorkspaceId(request.getWorkspaceId())
             )));
+            responseObserver.onCompleted();
+        } catch (RuntimeException error) {
+            responseObserver.onError(status(error).asRuntimeException());
+        }
+    }
+
+    @Override
+    public void listRepositoryWorkspaces(
+        ListRepositoryWorkspacesRequest request,
+        StreamObserver<ListRepositoryWorkspacesResponse> responseObserver
+    ) {
+        try {
+            requireText(request.getRequestId(), "request id");
+            var workspaces = workspaceApplicationService.listRepositoryWorkspaces(
+                request.getSchemaVersion(),
+                request.getCorrelationId(),
+                request.getIncludeCleaned()
+            );
+            var builder = ListRepositoryWorkspacesResponse.newBuilder()
+                .setStatus(status("WORKSPACES_LISTED", "Repository workspaces listed", request.getCorrelationId()));
+            workspaces.forEach(workspace -> builder.addWorkspaces(repositoryWorkspace(workspace)));
+            responseObserver.onNext(builder.build());
+            responseObserver.onCompleted();
+        } catch (RuntimeException error) {
+            responseObserver.onError(status(error).asRuntimeException());
+        }
+    }
+
+    @Override
+    public void cleanupRepositoryWorkspaceById(
+        CleanupRepositoryWorkspaceByIdRequest request,
+        StreamObserver<CleanupRepositoryWorkspaceByIdResponse> responseObserver
+    ) {
+        try {
+            requireText(request.getRequestId(), "request id");
+            var result = workspaceApplicationService.cleanupRepositoryWorkspaceById(
+                request.getIdempotencyKey(),
+                request.getSchemaVersion(),
+                request.getCorrelationId(),
+                new WorkspaceId(request.getWorkspaceId()),
+                request.getSafeAttributesMap()
+            );
+            var builder = CleanupRepositoryWorkspaceByIdResponse.newBuilder()
+                .setWorkspaceId(result.workspaceId().value())
+                .setWorkspaceStatus(workspaceStatus(result.workspaceStatus()))
+                .setStatus(status("CLEANED", "Repository workspace cleaned", request.getCorrelationId()));
+            result.diagnostics().forEach(diagnostic -> builder.addDiagnostics(diagnostic(diagnostic)));
+            responseObserver.onNext(builder.build());
             responseObserver.onCompleted();
         } catch (RuntimeException error) {
             responseObserver.onError(status(error).asRuntimeException());

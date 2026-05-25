@@ -9,6 +9,7 @@ import type {
 } from "@/domain/repositoryAnalysis";
 import type {
   CreateWorkspaceCommand,
+  DeleteWorkspaceCommand,
   GetWorkspaceCommand,
   PreviewWorkspaceMetadataCommand,
   RefreshWorkspaceBranchCommand
@@ -18,7 +19,9 @@ import { resolveApiConfig, type ApiConfig } from "./config";
 import type {
   BranchRefreshResponseDto,
   RepositoryAnalysisDto,
+  WorkspaceCleanupResponseDto,
   WorkspaceDto,
+  WorkspaceListDto,
   WorkspaceMetadataResponseDto
 } from "./dtos";
 import { HttpClient, type Delay, type Fetcher } from "./httpClient";
@@ -27,7 +30,9 @@ import {
   mapBranchRefreshDto,
   mapRepositoryAnalysisDto,
   mapRepositoryAnalysisListDto,
+  mapWorkspaceCleanupDto,
   mapWorkspaceDto,
+  mapWorkspaceListDto,
   mapWorkspaceMetadataDto
 } from "./mappers";
 
@@ -132,9 +137,27 @@ export const createApiClient = (
       return mapBranchRefreshDto(response);
     },
     async listWorkspaces(signal) {
-      void signal;
+      const response = await http.requestJson<WorkspaceListDto>("/workspaces", {
+        headers: {
+          "X-Correlation-Id": createGatewayMetadata("workspace-list").correlationId
+        },
+        signal
+      });
 
-      return [];
+      return mapWorkspaceListDto(response);
+    },
+    async deleteWorkspace(command, signal) {
+      validateDeleteWorkspaceCommand(command);
+      const response = await http.requestJson<WorkspaceCleanupResponseDto>(
+        `/workspaces/${encodeURIComponent(command.workspaceId)}`,
+        {
+          method: "DELETE",
+          headers: mutationHeaders(command),
+          signal
+        }
+      );
+
+      return mapWorkspaceCleanupDto(response);
     },
     async getWorkspace(command, signal) {
       const request =
@@ -311,6 +334,29 @@ const validateRefreshWorkspaceBranchCommand = (
     ],
     "refreshing a repository workspace branch"
   );
+};
+
+const validateDeleteWorkspaceCommand = (
+  command: DeleteWorkspaceCommand
+): void => {
+  validateRequiredText(
+    [
+      ["workspaceId", command.workspaceId],
+      ["correlationId", command.correlationId],
+      ["idempotencyKey", command.idempotencyKey]
+    ],
+    "deleting a repository workspace"
+  );
+  validateWorkspaceRouteId(command.workspaceId, "workspaceId");
+};
+
+const validateWorkspaceRouteId = (value: string, fieldName: string): void => {
+  if (!/^workspace-[A-Za-z0-9_-]+$/.test(value)) {
+    throw new ApplicationError(
+      "VALIDATION_ERROR",
+      `${fieldName} must be an opaque workspace identifier before deleting a repository workspace.`
+    );
+  }
 };
 
 const validateRequiredText = (

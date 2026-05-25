@@ -56,6 +56,10 @@ public final class QueryReportApiHttpHandler implements HttpHandler {
                 handlePost(exchange);
                 return;
             }
+            if ("DELETE".equals(exchange.getRequestMethod())) {
+                handleDelete(exchange);
+                return;
+            }
             write(exchange, 405, METHOD_NOT_ALLOWED);
         } finally {
             exchange.close();
@@ -67,6 +71,7 @@ public final class QueryReportApiHttpHandler implements HttpHandler {
         switch (path) {
             case "/health", "/api/health" -> write(exchange, 200, HEALTH);
             case "/api/status" -> write(exchange, 200, gson.toJson(statusService.currentStatus()));
+            case "/api/workspaces" -> handleWorkspaceListGet(exchange);
             default -> {
                 if (path.startsWith("/api/workspaces/")) {
                     if (isWorkspaceCheckoutResultRoute(path)) {
@@ -78,6 +83,22 @@ public final class QueryReportApiHttpHandler implements HttpHandler {
                 }
                 handleRepositoryAnalysisStatusGet(exchange, path);
             }
+        }
+    }
+
+    private void handleWorkspaceListGet(HttpExchange exchange) throws IOException {
+        var correlationId = "";
+        try {
+            correlationId = requiredMutationHeader(exchange, "X-Correlation-Id");
+            var workspaces = workspaceService.list(
+                generatedRequestId("workspace-list", correlationId, "visible"),
+                correlationId
+            );
+            write(exchange, 200, gson.toJson(workspaces), correlationId);
+        } catch (QueryReportApiWorkspaceException error) {
+            writeError(exchange, error.statusCode(), error.errorCode(), error.retryable(), error.getMessage(), correlationId);
+        } catch (IllegalArgumentException | NullPointerException error) {
+            writeError(exchange, 400, "VALIDATION_ERROR", false, "Invalid repository workspace request", correlationId);
         }
     }
 
@@ -146,6 +167,42 @@ public final class QueryReportApiHttpHandler implements HttpHandler {
             writeError(exchange, error.statusCode(), error.errorCode(), error.retryable(), error.getMessage(), correlationId);
         } catch (IllegalArgumentException | NullPointerException error) {
             writeError(exchange, 400, "VALIDATION_ERROR", false, "Invalid repository analysis status request", correlationId);
+        }
+    }
+
+    private void handleDelete(HttpExchange exchange) throws IOException {
+        var path = exchange.getRequestURI().getPath();
+        if (path.startsWith("/api/workspaces/")) {
+            handleWorkspaceDelete(exchange, path);
+            return;
+        }
+        write(exchange, isKnownGetRoute(path) ? 405 : 404, isKnownGetRoute(path) ? METHOD_NOT_ALLOWED : NOT_FOUND);
+    }
+
+    private void handleWorkspaceDelete(HttpExchange exchange, String path) throws IOException {
+        var prefix = "/api/workspaces/";
+        var workspaceId = path.substring(prefix.length());
+        if (workspaceId.isBlank() || workspaceId.contains("/") || workspaceId.contains("\\")) {
+            write(exchange, 404, NOT_FOUND);
+            return;
+        }
+        var correlationId = "";
+        try {
+            correlationId = requiredMutationHeader(exchange, "X-Correlation-Id");
+            var idempotencyKey = requiredMutationHeader(exchange, "Idempotency-Key");
+            var cleanup = workspaceService.cleanup(
+                generatedRequestId("workspace-cleanup", correlationId, workspaceId),
+                idempotencyKey,
+                correlationId,
+                workspaceId
+            );
+            write(exchange, 200, gson.toJson(cleanup), correlationId);
+        } catch (QueryReportApiIdempotencyConflictException error) {
+            writeError(exchange, 409, "IDEMPOTENCY_CONFLICT", false, "The idempotency key was already used with different input.", correlationId);
+        } catch (QueryReportApiWorkspaceException error) {
+            writeError(exchange, error.statusCode(), error.errorCode(), error.retryable(), error.getMessage(), correlationId);
+        } catch (IllegalArgumentException | NullPointerException error) {
+            writeError(exchange, 400, "VALIDATION_ERROR", false, "Invalid repository workspace request", correlationId);
         }
     }
 
@@ -267,6 +324,7 @@ public final class QueryReportApiHttpHandler implements HttpHandler {
             || "/api/health".equals(path)
             || "/api/status".equals(path)
             || "/api/workspace-metadata".equals(path)
+            || "/api/workspaces".equals(path)
             || path.startsWith("/api/workspaces/");
     }
 

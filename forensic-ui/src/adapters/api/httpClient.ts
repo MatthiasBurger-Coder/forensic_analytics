@@ -15,7 +15,7 @@ export interface HttpClientOptions extends ApiConfig {
 }
 
 interface RequestOptions {
-  method?: "GET" | "POST";
+  method?: "GET" | "POST" | "DELETE";
   body?: unknown;
   headers?: Record<string, string>;
   signal?: AbortSignal;
@@ -88,7 +88,7 @@ export class HttpClient {
 
   private async performRequest<T>(
     path: string,
-    method: "GET" | "POST",
+    method: "GET" | "POST" | "DELETE",
     options: RequestOptions
   ): Promise<T> {
     const timeout = composeAbortSignal(
@@ -316,8 +316,11 @@ const categoryFromStatus = (status: number): FailureCategory => {
 
 const safeEnvelopeMessage = (envelope: ErrorEnvelopeDto | null): string | null =>
   typeof envelope?.message === "string"
-    ? sanitizeDiagnosticText(envelope.message)
+    ? sanitizePublicBackendText(envelope.message)
     : null;
+
+const sanitizePublicBackendText = (value: unknown): string =>
+  sanitizeDiagnosticText(value).replace(/\bhttps?:\/\/[^\s<>"']+/gi, "[url-redacted]");
 
 const messageForCategory = (category: FailureCategory): string => {
   switch (category) {

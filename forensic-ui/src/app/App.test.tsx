@@ -45,6 +45,7 @@ const services = (): ApplicationServices => ({
     createWorkspace: vi.fn(),
     refreshBranch: vi.fn(),
     listWorkspaces: vi.fn(),
+    deleteWorkspace: vi.fn(),
     getWorkspace: vi.fn(),
     waitForWorkspaceCheckout: vi.fn()
   },

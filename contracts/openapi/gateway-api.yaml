@@ -56,6 +56,26 @@ paths:
         default:
           $ref: '#/components/responses/Error'
   /workspaces:
+    get:
+      tags: [Workspaces]
+      summary: List repository checkout workspaces.
+      operationId: listRepositoryWorkspaces
+      description: The query-report API delegates listing to repository-source-service and returns sanitized repository checkout workspace metadata only. Default responses exclude CLEANED workspaces and use deterministic ordering by workspaceId. Selected branch values come from branches[].repositoryBranch and are not inferred from local checkout state.
+      x-implementation-status: current-verified
+      parameters:
+        - $ref: '#/components/parameters/RequiredCorrelationId'
+      responses:
+        '200':
+          description: Sanitized repository checkout workspace list.
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RepositoryCheckoutWorkspaceListResponse'
+        default:
+          $ref: '#/components/responses/Error'
     post:
       tags: [Workspaces]
       summary: Create or reuse a repository checkout workspace and branch.
@@ -104,6 +124,30 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RepositoryCheckoutWorkspaceResponse'
+        default:
+          $ref: '#/components/responses/Error'
+    delete:
+      tags: [Workspaces]
+      summary: Cleanup and hide a repository checkout workspace.
+      operationId: cleanupRepositoryWorkspace
+      description: The query-report API delegates safe cleanup to repository-source-service through the repository-source owner gRPC API. Cleanup retains repository-source metadata, marks the workspace CLEANED on success and lets default list responses hide the cleaned workspace.
+      x-implementation-status: current-verified
+      parameters:
+        - $ref: '#/components/parameters/MutationCorrelationId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/WorkspaceId'
+      responses:
+        '200':
+          description: Repository checkout workspace cleanup status with retained metadata provenance.
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RepositoryCheckoutWorkspaceCleanupResponse'
+        '409':
+          $ref: '#/components/responses/IdempotencyConflict'
         default:
           $ref: '#/components/responses/Error'
   /workspaces/{workspaceId}/checkout-result:
@@ -591,6 +635,25 @@ components:
           pattern: '.*\S.*'
         defaultBranch:
           type: [string, 'null']
+    PublicRepositoryIdentity:
+      type: object
+      description: Sanitized repository identity for list responses. Repository URLs, remotes, timestamps and safe attributes are intentionally omitted.
+      required:
+        - repositoryKey
+        - repositoryHost
+        - repositoryName
+      properties:
+        repositoryKey:
+          type: string
+          pattern: '^[^:/?#@\s]+/[^/?#@\s]+/[^/?#@\s]+$'
+        repositoryHost:
+          type: string
+          pattern: '^[^/?#@\s]+$'
+        repositoryOwner:
+          type: [string, 'null']
+        repositoryName:
+          type: string
+          pattern: '.*\S.*'
     RepositoryCheckoutWorkspaceResponse:
       type: object
       required:
@@ -613,6 +676,64 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/RepositoryCheckoutWorkspaceBranchResponse'
+        status:
+          $ref: '#/components/schemas/RepositoryCheckoutWorkspaceStatus'
+        diagnostics:
+          type: array
+          items:
+            $ref: '#/components/schemas/PublicDiagnostic'
+    RepositoryCheckoutWorkspaceListResponse:
+      type: object
+      required:
+        - items
+        - diagnostics
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/RepositoryCheckoutWorkspaceListItemResponse'
+        diagnostics:
+          type: array
+          items:
+            $ref: '#/components/schemas/PublicDiagnostic'
+    RepositoryCheckoutWorkspaceListItemResponse:
+      type: object
+      required:
+        - workspaceId
+        - workspaceTitle
+        - repository
+        - branches
+        - status
+        - diagnostics
+      properties:
+        workspaceId:
+          type: string
+          pattern: '^(?!.*[\\/])workspace-[A-Za-z0-9_-]+$'
+        workspaceTitle:
+          type: string
+          pattern: '^(?!(?i:.*(?:file:|https?://|/tmp|/mnt/|/home/|/users/|/var/lib/forensic-analytics|token|password|secret|credential|authorization))).*\S.*$'
+        repository:
+          $ref: '#/components/schemas/PublicRepositoryIdentity'
+        branches:
+          type: array
+          items:
+            $ref: '#/components/schemas/RepositoryCheckoutWorkspaceBranchResponse'
+        status:
+          $ref: '#/components/schemas/RepositoryCheckoutWorkspaceStatus'
+        diagnostics:
+          type: array
+          items:
+            $ref: '#/components/schemas/PublicDiagnostic'
+    RepositoryCheckoutWorkspaceCleanupResponse:
+      type: object
+      required:
+        - workspaceId
+        - status
+        - diagnostics
+      properties:
+        workspaceId:
+          type: string
+          pattern: '^(?!.*[\\/])workspace-[A-Za-z0-9_-]+$'
         status:
           $ref: '#/components/schemas/RepositoryCheckoutWorkspaceStatus'
         diagnostics:

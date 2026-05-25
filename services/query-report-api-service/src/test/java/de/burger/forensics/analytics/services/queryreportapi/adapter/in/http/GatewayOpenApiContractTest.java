@@ -77,12 +77,16 @@ class GatewayOpenApiContractTest {
     void workspaceRoutesArePlannedRepositoryCheckoutContracts() throws IOException {
         var contract = Files.readString(findGatewayContract());
         var metadataPost = section(contract, "  /workspace-metadata:", "  /workspaces:");
-        var workspacePost = section(contract, "  /workspaces:\n    post:", "  /workspaces/{workspaceId}:");
-        var workspaceGet = section(
+        var workspacesRoot = section(contract, "  /workspaces:", "  /workspaces/{workspaceId}:");
+        var workspaceListGet = section(workspacesRoot, "    get:", "    post:");
+        var workspacePost = workspacesRoot;
+        var workspaceById = section(
             contract,
             "  /workspaces/{workspaceId}:",
             "  /workspaces/{workspaceId}/checkout-result:"
         );
+        var workspaceGet = section(workspaceById, "    get:", "    delete:");
+        var workspaceDelete = workspaceById;
         var workspaceCheckoutResultGet = section(
             contract,
             "  /workspaces/{workspaceId}/checkout-result:",
@@ -92,6 +96,31 @@ class GatewayOpenApiContractTest {
             contract,
             "  /workspaces/{workspaceId}/branches/{workspaceBranchId}/refresh:",
             "  /repository-analyses:"
+        );
+        var publicRepositoryIdentity = section(
+            contract,
+            "    PublicRepositoryIdentity:",
+            "    RepositoryCheckoutWorkspaceResponse:"
+        );
+        var workspaceDetailSchema = section(
+            contract,
+            "    RepositoryCheckoutWorkspaceResponse:",
+            "    RepositoryCheckoutWorkspaceListResponse:"
+        );
+        var workspaceListSchema = section(
+            contract,
+            "    RepositoryCheckoutWorkspaceListResponse:",
+            "    RepositoryCheckoutWorkspaceListItemResponse:"
+        );
+        var workspaceListItemSchema = section(
+            contract,
+            "    RepositoryCheckoutWorkspaceListItemResponse:",
+            "    RepositoryCheckoutWorkspaceCleanupResponse:"
+        );
+        var workspaceCleanupSchema = section(
+            contract,
+            "    RepositoryCheckoutWorkspaceCleanupResponse:",
+            "    RepositoryCheckoutWorkspaceBranchResponse:"
         );
 
         assertContains(contract, "- name: Workspaces");
@@ -105,6 +134,14 @@ class GatewayOpenApiContractTest {
         assertContains(metadataPost, "$ref: '#/components/schemas/WorkspaceMetadataResponse'");
         assertContains(metadataPost, "'409':");
         assertContains(metadataPost, "$ref: '#/components/responses/IdempotencyConflict'");
+
+        assertContains(workspaceListGet, "operationId: listRepositoryWorkspaces");
+        assertContains(workspaceListGet, "x-implementation-status: current-verified");
+        assertContains(workspaceListGet, "Default responses exclude CLEANED workspaces");
+        assertContains(workspaceListGet, "deterministic ordering by workspaceId");
+        assertContains(workspaceListGet, "branches[].repositoryBranch");
+        assertContains(workspaceListGet, "- $ref: '#/components/parameters/RequiredCorrelationId'");
+        assertContains(workspaceListGet, "$ref: '#/components/schemas/RepositoryCheckoutWorkspaceListResponse'");
 
         assertContains(workspacePost, "operationId: createRepositoryWorkspace");
         assertContains(workspacePost, "x-implementation-status: current-verified");
@@ -122,6 +159,19 @@ class GatewayOpenApiContractTest {
         assertContains(workspaceGet, "- $ref: '#/components/parameters/RequiredCorrelationId'");
         assertContains(workspaceGet, "- $ref: '#/components/parameters/WorkspaceId'");
         assertContains(workspaceGet, "$ref: '#/components/schemas/RepositoryCheckoutWorkspaceResponse'");
+
+        assertContains(workspaceDelete, "operationId: cleanupRepositoryWorkspace");
+        assertContains(workspaceDelete, "x-implementation-status: current-verified");
+        assertContains(workspaceDelete, "safe cleanup");
+        assertContains(workspaceDelete, "retains repository-source metadata");
+        assertContains(workspaceDelete, "marks the workspace CLEANED");
+        assertContains(workspaceDelete, "default list responses hide the cleaned workspace");
+        assertContains(workspaceDelete, "- $ref: '#/components/parameters/MutationCorrelationId'");
+        assertContains(workspaceDelete, "- $ref: '#/components/parameters/IdempotencyKey'");
+        assertContains(workspaceDelete, "- $ref: '#/components/parameters/WorkspaceId'");
+        assertContains(workspaceDelete, "$ref: '#/components/schemas/RepositoryCheckoutWorkspaceCleanupResponse'");
+        assertContains(workspaceDelete, "'409':");
+        assertContains(workspaceDelete, "$ref: '#/components/responses/IdempotencyConflict'");
 
         assertContains(workspaceCheckoutResultGet, "operationId: waitForRepositoryWorkspaceCheckoutResult");
         assertContains(workspaceCheckoutResultGet, "x-implementation-status: current-verified");
@@ -147,9 +197,26 @@ class GatewayOpenApiContractTest {
         assertContains(contract, "    WorkspaceMetadataResponse:");
         assertContains(contract, "    CreateWorkspaceRequest:");
         assertContains(contract, "    RepositoryIdentity:");
+        assertContains(contract, "    PublicRepositoryIdentity:");
         assertContains(contract, "    RepositoryCheckoutWorkspaceResponse:");
+        assertContains(contract, "    RepositoryCheckoutWorkspaceListResponse:");
+        assertContains(contract, "    RepositoryCheckoutWorkspaceListItemResponse:");
+        assertContains(contract, "    RepositoryCheckoutWorkspaceCleanupResponse:");
         assertContains(contract, "    RepositoryCheckoutWorkspaceBranchResponse:");
         assertContains(contract, "    RepositoryCheckoutBranchRefreshResponse:");
+        assertContains(workspaceDetailSchema, "$ref: '#/components/schemas/RepositoryIdentity'");
+        assertContains(workspaceListSchema, "$ref: '#/components/schemas/RepositoryCheckoutWorkspaceListItemResponse'");
+        assertNotContains(workspaceListSchema, "$ref: '#/components/schemas/RepositoryCheckoutWorkspaceResponse'");
+        assertContains(workspaceListItemSchema, "$ref: '#/components/schemas/PublicRepositoryIdentity'");
+        assertNotContains(workspaceListItemSchema, "$ref: '#/components/schemas/RepositoryIdentity'");
+        assertNotContains(publicRepositoryIdentity, "repositoryUrl:");
+        assertNotContains(publicRepositoryIdentity, "defaultBranch:");
+        assertContains(workspaceCleanupSchema, "workspaceId:");
+        assertContains(workspaceCleanupSchema, "status:");
+        assertContains(workspaceCleanupSchema, "diagnostics:");
+        assertNotContains(workspaceCleanupSchema, "repository:");
+        assertNotContains(workspaceCleanupSchema, "branches:");
+        assertNotContains(workspaceCleanupSchema, "sourceRoots:");
         assertContains(contract, "    RepositoryCheckoutWorkspaceStatus:");
         assertContains(contract, "    RepositoryCheckoutBranchStatus:");
         assertContains(contract, "workspaceId:");
@@ -161,8 +228,8 @@ class GatewayOpenApiContractTest {
         assertContains(contract, "UPDATED");
         assertContains(contract, "The idempotency key was already used with different input.");
         assertContains(contract, "DNS resolution must reject every A/AAAA result");
-        assertEquals(5, countOccurrences(contract, "- $ref: '#/components/parameters/IdempotencyKey'"));
-        assertEquals(5, countOccurrences(contract, "$ref: '#/components/responses/IdempotencyConflict'"));
+        assertEquals(6, countOccurrences(contract, "- $ref: '#/components/parameters/IdempotencyKey'"));
+        assertEquals(6, countOccurrences(contract, "$ref: '#/components/responses/IdempotencyConflict'"));
         assertNotContains(contract, "workspaceName:");
         assertNotContains(contract, "resolvedRemoteUrl:");
         assertNotContains(contract, "rawStdout");

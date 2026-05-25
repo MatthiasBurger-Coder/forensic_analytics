@@ -41,6 +41,12 @@ service RepositoryAnalysisService {
   rpc GetRepositoryWorkspace(GetRepositoryWorkspaceRequest)
       returns (RepositoryWorkspace);
 
+  rpc ListRepositoryWorkspaces(ListRepositoryWorkspacesRequest)
+      returns (ListRepositoryWorkspacesResponse);
+
+  rpc CleanupRepositoryWorkspaceById(CleanupRepositoryWorkspaceByIdRequest)
+      returns (CleanupRepositoryWorkspaceByIdResponse);
+
   rpc RefreshRepositoryWorkspaceBranch(RefreshRepositoryWorkspaceBranchRequest)
       returns (RefreshRepositoryWorkspaceBranchResponse);
 }
@@ -203,6 +209,50 @@ message GetRepositoryWorkspaceRequest {
   string correlation_id = 2;
   // Required, opaque and non-path.
   string workspace_id = 3;
+}
+
+message ListRepositoryWorkspacesRequest {
+  // Required, non-blank.
+  string request_id = 1;
+  // Required, non-blank.
+  string schema_version = 2;
+  // Required, non-blank.
+  string correlation_id = 3;
+  // Optional. Defaults to false so public lists hide CLEANED workspaces.
+  bool include_cleaned = 4;
+}
+
+message ListRepositoryWorkspacesResponse {
+  // Sanitized repository checkout workspaces. Implementations must return a
+  // deterministic order and must not expose checkout or storage paths.
+  repeated RepositoryWorkspace workspaces = 1;
+  OperationStatus status = 2;
+  repeated Diagnostic diagnostics = 3;
+}
+
+message CleanupRepositoryWorkspaceByIdRequest {
+  // Required, non-blank.
+  string request_id = 1;
+  // Required, non-blank. Cleanup by workspace ID is idempotent for the same
+  // workspace fingerprint; the same key plus a different fingerprint is a conflict.
+  string idempotency_key = 2;
+  // Required, non-blank.
+  string schema_version = 3;
+  // Required, non-blank.
+  string correlation_id = 4;
+  // Required, opaque and non-path. Cleanup retains metadata and marks the
+  // workspace CLEANED instead of removing repository-source records.
+  string workspace_id = 5;
+  map<string, string> safe_attributes = 6;
+}
+
+message CleanupRepositoryWorkspaceByIdResponse {
+  string workspace_id = 1;
+  // CLEANED on successful safe cleanup.
+  RepositoryWorkspaceStatus workspace_status = 2;
+  OperationStatus status = 3;
+  repeated Diagnostic diagnostics = 4;
+  map<string, string> safe_attributes = 5;
 }
 
 message RefreshRepositoryWorkspaceBranchRequest {
