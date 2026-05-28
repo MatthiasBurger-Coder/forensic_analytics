@@ -16,7 +16,7 @@ updated architecture tests.
 
 The active microservices ecosystem workflow requires independent Spring Boot
 applications for future backend services. Slice 04 creates the first service at
-`services/forensic-ingestion-service`.
+`forensic-ingestion-service`.
 
 ## Decision
 

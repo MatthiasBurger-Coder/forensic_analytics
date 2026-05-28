@@ -5,13 +5,13 @@
 Targeted repository-source check:
 
 ```bash
-./gradlew :services:repository-source-service:test --tests '*RepositorySourceServiceApplicationTest' --dependency-verification strict --console=plain --stacktrace
+./gradlew :repository-source-service:test --tests '*RepositorySourceServiceApplicationTest' --dependency-verification strict --console=plain --stacktrace
 ```
 
 Targeted query-report check:
 
 ```bash
-./gradlew :services:query-report-api-service:test --tests '*QueryReportApiServiceApplicationTest' --dependency-verification strict --console=plain --stacktrace
+./gradlew :query-report-api-service:test --tests '*QueryReportApiServiceApplicationTest' --dependency-verification strict --console=plain --stacktrace
 ```
 
 Minimum repository gate:

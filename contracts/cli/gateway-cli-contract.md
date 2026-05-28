@@ -154,7 +154,7 @@ service-local DTOs, service-local mappers, internal exceptions, generated
 gRPC/protobuf transport classes or shared Java DTO modules. S09 uses HTTP JSON
 against the public OpenAPI contract. Generated OpenAPI client code is not part
 of S09; if introduced later, it must be generated service-locally inside
-`services/cli-client` from `contracts/openapi/gateway-api.yaml`.
+`cli-client` from `contracts/openapi/gateway-api.yaml`.
 
 ## Contract Tests
 
@@ -163,7 +163,7 @@ Required contract tests:
 - `GatewayOpenApiContractTest` verifies the transitional public API route,
   schema, idempotency and
   redaction contract markers.
-- `CliClient*Test` verifies that `services/cli-client` uses HTTP JSON public API
+- `CliClient*Test` verifies that `cli-client` uses HTTP JSON public API
   access instead of in-process analysis, parser, Joern or persistence behavior.
 - Historical predecessor `ForensicAnalyticsCliTest` evidence verified that
   `gateway-submit` used a Gateway client instead of the in-process

@@ -34,13 +34,13 @@ implementation code or service-shared runtime classes.
 
 S02 ran these checks successfully:
 
-- `./gradlew :services:repository-source-service:test --dependency-verification strict --console=plain --stacktrace`
-- `./gradlew :services:ingestion-service:test --dependency-verification strict --console=plain --stacktrace`
-- `./gradlew :services:java-parser-analysis-service:test --dependency-verification strict --console=plain --stacktrace`
-- `./gradlew :services:joern-analysis-service:test --dependency-verification strict --console=plain --stacktrace`
-- `./gradlew :services:analysis-orchestrator-service:test --dependency-verification strict --console=plain --stacktrace`
-- `./gradlew :services:query-report-api-service:test --dependency-verification strict --console=plain --stacktrace`
-- `./gradlew :services:cli-client:test --dependency-verification strict --console=plain --stacktrace`
+- `./gradlew :repository-source-service:test --dependency-verification strict --console=plain --stacktrace`
+- `./gradlew :ingestion-service:test --dependency-verification strict --console=plain --stacktrace`
+- `./gradlew :java-parser-analysis-service:test --dependency-verification strict --console=plain --stacktrace`
+- `./gradlew :joern-analysis-service:test --dependency-verification strict --console=plain --stacktrace`
+- `./gradlew :analysis-orchestrator-service:test --dependency-verification strict --console=plain --stacktrace`
+- `./gradlew :query-report-api-service:test --dependency-verification strict --console=plain --stacktrace`
+- `./gradlew :cli-client:test --dependency-verification strict --console=plain --stacktrace`
 - `./gradlew test --dependency-verification strict --console=plain --stacktrace`
 - `git diff --check`
 
@@ -73,7 +73,7 @@ S09 work, while status and report command mappings remain later CLI work.
 | `testbed` | productive services | Compose, REST, gRPC or test contracts | test environment docs | Integration and end-to-end tests | No production service may depend on testbed code |
 
 S08 transitional note: the implemented
-`services/query-report-api-service` repository-analysis submission/status
+`query-report-api-service` repository-analysis submission/status
 routes call the S07 `analysis-orchestrator-service` `StartRepositoryToBtm` and
 `GetRepositoryToBtmStatus` RPCs through service-local generated
 `analysis-job.proto` classes. This does not claim full repository-to-BTM
@@ -82,7 +82,7 @@ the public facade maps that to `ACCEPTED` with incomplete diagnostics and
 `BTM_DELIVERY_NOT_READY`.
 
 FA-MVP-0001 workspace note: the implemented public workspace REST routes in
-`services/query-report-api-service` call `repository-source-service` owner APIs
+`query-report-api-service` call `repository-source-service` owner APIs
 through service-local generated `repository-analysis.proto` classes. This
 proves only the repository checkout workspace MVP path: metadata preview,
 idempotent create/reuse, get and branch refresh with sanitized public DTOs.

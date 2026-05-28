@@ -25,10 +25,10 @@ git rev-parse --show-toplevel
 git branch --show-current
 git status --short --branch
 git rev-parse HEAD
-git ls-files "forensic-analytics-*/build.gradle.kts" "services/*/build.gradle.kts" settings.gradle.kts | sort
+git ls-files "forensic-analytics-*/build.gradle.kts" "*-service/build.gradle.kts" "cli-client/build.gradle.kts" "observability-stack/build.gradle.kts" "testbed/build.gradle.kts" settings.gradle.kts | sort
 git ls-files "*build.gradle.kts" | xargs rg -n "project\\(\\\":forensic-analytics-"
-git ls-files "services/*/build.gradle.kts" | xargs -r rg -n "project\\(" || true
-rg -n -P "^import\\s+de\\.burger\\.forensics\\.analytics\\.(application|domain|adapter|persistence|rest|cli|engine|logging|observability|bootstrap|ingestion\\.request|ingestion\\.grpc)\\b" services -S -g "*.java" || true
+git ls-files "*-service/build.gradle.kts" "cli-client/build.gradle.kts" "observability-stack/build.gradle.kts" "testbed/build.gradle.kts" | xargs -r rg -n "project\\(" || true
+rg -n -P "^import\\s+de\\.burger\\.forensics\\.analytics\\.(application|domain|adapter|persistence|rest|cli|engine|logging|observability|bootstrap|ingestion\\.request|ingestion\\.grpc)\\b" *-service/src/main cli-client/src/main observability-stack/src/main testbed/src/main -S -g "*.java" || true
 rg -n "RunRepositoryAnalysisUseCase|RunRepositoryAnalysisCommand|DefaultRepositoryAnalysisIngestionUseCase|RepositoryAnalysisIngestionUseCase" forensic-analytics-cli forensic-analytics-rest forensic-analytics-bootstrap forensic-analytics-boot-app forensic-analytics-engine forensic-analytics-ingestion-request forensic-analytics-testbed -S -g "*.java"
 git diff --check
 ```
@@ -65,7 +65,7 @@ Verified project dependencies included:
 ## Transitional Service Build Evidence
 
 S02 found no direct `project(...)` dependencies inside
-`services/*/build.gradle.kts`. It also found no `project(":services:...")`
+top-level service build files. It also found no `project(":<service>")`
 dependencies in the tracked Gradle build files. The existing service slices
 therefore do not directly include another service as a Gradle project.
 
@@ -76,7 +76,7 @@ domain, utility, repository, fixture or internal error-model modules. S03 must
 still review every service contract and generated-code boundary before product
 migration uses it.
 
-S02 also found no production imports from `services/**` into the legacy
+S02 also found no production imports from top-level service roots (`*-service/**`, `cli-client/**`, `observability-stack/**`, `testbed/**`) into the legacy
 monolith packages covered by the scan. Remaining matches in service roots are
 generated contract packages, service-local packages or architecture-test
 forbidden-package strings.
@@ -149,7 +149,7 @@ operational contracts without shared runtime code.
 `forensic-analytics-testbed` directly test-depended on most backend modules and
 contained in-process mini end-to-end and architecture tests. Those tests were
 historical monolith evidence. Current testbed evidence lives under
-`services:testbed` and still does not by itself prove networked service
+`testbed` and still does not by itself prove networked service
 boundaries.
 
 Contract and architecture tests exist for implemented service slices, but
@@ -224,7 +224,7 @@ quality gate.
 ## S14 Retirement-Readiness Update
 
 S14 repeats the caller-free question after S05 through S13 and still resolves
-to `NO_REMOVAL_SAFE`. The new `services:testbed` root preserves the legacy
+to `NO_REMOVAL_SAFE`. The new `testbed` root preserves the legacy
 regression surface in a service-root location, which is useful parity evidence
 without depending on retained monolith modules in the verified service-only
 Gradle model.
@@ -237,18 +237,18 @@ ADR evidence, and S07 owns final release readiness.
 Superseded S14 evidence was non-empty at the time:
 
 - all 16 listed legacy modules were still registered in `settings.gradle.kts`;
-- `services:testbed` still had test-scoped legacy module dependencies;
+- `testbed` still had test-scoped legacy module dependencies;
 - non-zero production imports into retained `application`, `domain`,
   `persistence`, `logging`, `observability`, `rest`, `bootstrap`, `boot` or
   `engine` packages;
 - non-zero test imports into those retained packages;
 - focused S14 service production scans found no legacy imports in
-  `services/**/src/main`, while service test scans still found legacy imports
-  in `services/testbed/src/test` at that historical point.
+  top-level service `src/main` trees, while service test scans still found legacy imports
+  in `testbed/src/test` at that historical point.
 
 Those findings blocked direct module retirement at S14. Current
 final-retirement verification supersedes the counts: `./gradlew projects`
-lists only `services:*`, active non-legacy build files have no legacy project
+lists only top-level service projects, active non-legacy build files have no legacy project
 references, active non-legacy Java sources have no legacy monolith imports, and
 S05 removed the retired source trees.
 
@@ -270,10 +270,10 @@ git diff --check
 Superseded S01 evidence was non-empty at the time:
 
 - direct legacy Gradle project dependency references across legacy module build
-  files and `services/testbed`;
+  files and `testbed`;
 - production Java imports into retained legacy packages;
 - test Java imports into retained legacy packages;
-- `forensic-analytics-testbed` and `services:testbed` each test-depended on
+- `forensic-analytics-testbed` and `testbed` each test-depended on
   retained legacy modules.
 
 S01 therefore recorded `NO_DELETION_SAFE`. No listed legacy module was removed

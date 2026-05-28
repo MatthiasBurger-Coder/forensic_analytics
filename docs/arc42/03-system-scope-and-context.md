@@ -83,5 +83,5 @@ Plugin
 The former `forensic-analytics-ingestion-grpc` source tree was retired by
 ADR-0022 and S05 of the final legacy source-tree retirement workflow. Current
 gRPC ingestion implementation evidence is service-local under
-`services/ingestion-service`. Ingestion does not own persistence, Joern
+`ingestion-service`. Ingestion does not own persistence, Joern
 integration, replay logic, LLM logic, BTM generation or plugin internals.

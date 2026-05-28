@@ -11,7 +11,7 @@ claiming contract readiness.
 
 The executable OpenAPI ownership gate for the public repository-to-BTM
 submission/status contract belongs to the surviving target service.
-`services:query-report-api-service` now owns a
+`query-report-api-service` now owns a
 service-local `GatewayOpenApiContractTest` for
 `contracts/openapi/gateway-api.yaml`.
 
@@ -36,8 +36,8 @@ owner API clients or persistence adapters. Required verification was:
 
 ```bash
 git diff --check
-./gradlew :services:query-report-api-service:test --tests '*GatewayOpenApiContractTest' --dependency-verification strict --console=plain --stacktrace
-./gradlew :services:repository-source-service:test --tests '*RepositorySourceContractTest' --dependency-verification strict --console=plain --stacktrace
+./gradlew :query-report-api-service:test --tests '*GatewayOpenApiContractTest' --dependency-verification strict --console=plain --stacktrace
+./gradlew :repository-source-service:test --tests '*RepositorySourceContractTest' --dependency-verification strict --console=plain --stacktrace
 ```
 
 FA-MVP-0001 S07 implemented the public workspace facade and repository-source
@@ -52,8 +52,8 @@ Slice 18 must verify the target service and client ownership gates before
 claiming public API ownership exit:
 
 ```bash
-./gradlew :services:query-report-api-service:test --tests '*GatewayOpenApiContractTest' --dependency-verification strict --console=plain --stacktrace
-./gradlew :services:cli-client:test --tests '*HttpRepositoryAnalysisSubmissionClientTest' --dependency-verification strict --console=plain --stacktrace
+./gradlew :query-report-api-service:test --tests '*GatewayOpenApiContractTest' --dependency-verification strict --console=plain --stacktrace
+./gradlew :cli-client:test --tests '*HttpRepositoryAnalysisSubmissionClientTest' --dependency-verification strict --console=plain --stacktrace
 ```
 
 The Slice 02 OpenAPI verification command is service-local. Historical

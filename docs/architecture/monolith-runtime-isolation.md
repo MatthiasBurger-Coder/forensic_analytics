@@ -53,13 +53,13 @@ context under ADR-0022:
 
 | Path | Historical role | Post-S05 decision |
 |---|---|---|
-| `forensic-analytics-cli` | Local in-process command adapter for analysis and engine-request import | Source tree retired by S05; `services:cli-client` is the active client boundary |
+| `forensic-analytics-cli` | Local in-process command adapter for analysis and engine-request import | Source tree retired by S05; `cli-client` is the active client boundary |
 | `forensic-analytics-rest` | Predecessor JDK HTTP adapter used by Boot and bootstrap paths | Source tree retired by S05; public API contract-test ownership exists in `query-report-api-service` |
 | `forensic-analytics-bootstrap` | Predecessor combined gRPC and REST runtime assembly | Source tree retired by S05; no active combined monolith runtime source remains |
 | `forensic-analytics-boot-app` | Predecessor Spring Boot wrapper for monolith adapters | Source tree retired by S05; no active monolith Boot runtime source remains |
 | `forensic-analytics-engine` | In-process facade around application repository analysis use cases | Source tree retired by S05; `analysis-orchestrator-service` owns the active target orchestration boundary |
 | `forensic-analytics-ingestion-request` | JSON engine-request importer used by CLI | Source tree retired by S05; future import behavior requires service-owned contracts |
-| `forensic-analytics-testbed` | In-process integration and architecture verification | Source tree retired by S05; active non-production evidence is under `services:testbed` |
+| `forensic-analytics-testbed` | In-process integration and architecture verification | Source tree retired by S05; active non-production evidence is under `testbed` |
 
 These historical paths must not be described as implemented microservices or
 as current runtime rollback units. Their behavior can be restored only by an

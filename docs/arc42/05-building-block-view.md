@@ -68,7 +68,7 @@ Gradle and Maven plugins must not become the central platform. They trigger serv
 
 ## 5.5 gRPC Ingestion Boundary
 
-`services/ingestion-service` is the current service-local gRPC ingestion
+`ingestion-service` is the current service-local gRPC ingestion
 boundary. It may generate transport classes inside its own build, but those
 classes must not become shared Java DTO or domain modules. The retired
 `forensic-analytics-ingestion-grpc` source tree remains historical predecessor
@@ -84,12 +84,12 @@ Proto DTO
 
 ## 5.6 Service-Local Diagnostics And Observability Stack
 
-`services/observability-stack` is the current deployment-oriented
+`observability-stack` is the current deployment-oriented
 observability boundary. Service-local diagnostics may exist inside each owning
 service, but the retired `forensic-analytics-observability` source tree is not
 an active shared Java module.
 
-Current diagnostics are service-local, and `services/observability-stack`
+Current diagnostics are service-local, and `observability-stack`
 contains deployment/configuration material only. The retired
 `forensic-analytics-observability` and `forensic-analytics-logging` source
 trees must not be reintroduced as shared Java runtime dependencies. Domain and
@@ -123,7 +123,7 @@ inside service-local packages and that productive service build files do not
 depend on the retired central `forensic-analytics-domain` or
 `forensic-analytics-application` modules. S05 removed those central source
 trees; S06/S07 close architecture and quality evidence. The non-production
-`services:testbed` regression evidence is not productive service coupling.
+`testbed` regression evidence is not productive service coupling.
 
 ## 5.8 Historical Logging Decision
 
@@ -143,7 +143,7 @@ Earlier logging and Spring boundary work moved productive-service checks into th
 service-local architecture tests for `analysis-orchestrator-service`,
 `repository-source-service`, `ingestion-service`,
 `java-parser-analysis-service`, `joern-analysis-service`,
-`query-report-api-service` and `cli-client`. `services:testbed` no longer owns
+`query-report-api-service` and `cli-client`. `testbed` no longer owns
 the broad logging or Spring building-block architecture rules; it remains a
 non-production integration boundary with retained hardening evidence.
 
@@ -178,18 +178,18 @@ testbed
 Mandatory FA-MSA-001 service roots:
 
 ```text
-services/repository-source-service
-services/ingestion-service
-services/java-parser-analysis-service
-services/joern-analysis-service
-services/analysis-orchestrator-service
-services/query-report-api-service
-services/cli-client
-services/observability-stack
-services/testbed
+repository-source-service
+ingestion-service
+java-parser-analysis-service
+joern-analysis-service
+analysis-orchestrator-service
+query-report-api-service
+cli-client
+observability-stack
+testbed
 ```
 
-S09 adds `services/cli-client` as a public API client boundary with a
+S09 adds `cli-client` as a public API client boundary with a
 service-local Gradle project, CLI bootstrap, HTTP/OpenAPI adapter and tests. It
 is not a backend service and must not own forensic evidence, analysis execution,
 parser behavior, Joern control or persistence. The predecessor
@@ -205,7 +205,7 @@ gRPC/protobuf, approved message contracts or documented file contracts. Shared
 Java implementation modules between independently deployable services are
 forbidden.
 
-Slice S05 adds `services/repository-source-service` as the first target-service
+Slice S05 adds `repository-source-service` as the first target-service
 implementation evidence for FA-MSA-001. It is registered as its own Gradle
 project and owns service-local domain, application ports, inbound gRPC adapter,
 outbound Git/workspace adapters, bootstrap, configuration, tests, README and
@@ -226,11 +226,11 @@ MVP persistence adapter for checkout workspace, branch, repository preparation
 and idempotency records. It is not canonical analytics persistence and does
 not close the production database decision.
 
-`services/repository-analysis-service` remains historical predecessor
+`repository-analysis-service` remains historical predecessor
 evidence and rollback input. It is not a compatibility alias for
 `repository-source-service` and is not removed by S05.
 
-Slice S06 adds `services/ingestion-service` as target-service implementation
+Slice S06 adds `ingestion-service` as target-service implementation
 evidence for the FA-MSA-001 ingestion boundary. It is registered as its own
 Gradle project and owns service-local domain, application ports, inbound gRPC
 adapter, file-based engine request adapter, in-memory session store,
@@ -238,13 +238,13 @@ bootstrap, configuration, tests, README and Dockerfile. The predecessor
 `forensic-ingestion.proto` wire shape remains unchanged and generated
 transport classes stay inside the service build.
 
-`services/forensic-ingestion-service` remains a live predecessor service root.
+`forensic-ingestion-service` remains a live predecessor service root.
 The `forensic-analytics-ingestion-grpc` and
 `forensic-analytics-ingestion-request` source trees were retired by S05 and are
 historical provenance only. They are not compatibility aliases for
 `ingestion-service`.
 
-Slice S07 adds `services/java-parser-analysis-service` as target-service
+Slice S07 adds `java-parser-analysis-service` as target-service
 implementation evidence for the FA-MSA-001 JavaParser analysis boundary. It is
 registered as its own Gradle project and owns service-local domain,
 application ports, inbound gRPC adapter, outbound JavaParser adapter,
@@ -252,12 +252,12 @@ filesystem artifact adapter, bootstrap, configuration, tests, README and
 Dockerfile. The predecessor `java-ast-analysis.proto` wire shape remains
 unchanged and generated transport classes stay inside the service build.
 
-`services/java-ast-analysis-service` remains a live predecessor service root.
+`java-ast-analysis-service` remains a live predecessor service root.
 The `forensic-analytics-adapter-javaparser` source tree was retired by S05 and
 is historical provenance only. It is not a compatibility alias for
 `java-parser-analysis-service`.
 
-Slice S06 adds `services/joern-analysis-service` as target-service
+Slice S06 adds `joern-analysis-service` as target-service
 implementation evidence for the FA-MSA-001 Joern semantic analysis boundary.
 It is registered as its own Gradle project and owns service-local domain,
 application ports, inbound gRPC adapter, outbound filesystem, Joern runtime
@@ -267,12 +267,12 @@ service-local generated code and now includes the service-owned
 `GetSemanticArtifactBytes` retrieval RPC so artifact bytes are not exposed
 through an Analysis Store byte alias.
 
-`services/joern-cpg-analysis-service` remains a live predecessor service root.
+`joern-cpg-analysis-service` remains a live predecessor service root.
 The `forensic-analytics-adapter-joern-docker` source tree was retired by S05
 and is historical provenance only. It is not a compatibility alias for
 `joern-analysis-service`.
 
-Slice S07 adds `services/analysis-orchestrator-service` as target-service
+Slice S07 adds `analysis-orchestrator-service` as target-service
 implementation evidence for the FA-MSA-001 orchestration boundary. It is
 registered as its own Gradle project and owns service-local domain,
 application ports, inbound gRPC adapter, in-memory orchestration repository,
@@ -282,7 +282,7 @@ service-local generated transport input and maps it to service-owned job
 lifecycle, lease, retry, failure, dead-letter, correlation,
 job-to-artifact-reference and repository-to-BTM status models.
 
-`services/analysis-store-service` remains a live predecessor service root.
+`analysis-store-service` remains a live predecessor service root.
 The `forensic-analytics-engine` source tree and orchestration portions of the
 retired `forensic-analytics-application` source tree are historical provenance
 only. They are not compatibility aliases for `analysis-orchestrator-service`.
@@ -304,7 +304,7 @@ workspace REST DTOs and must call the repository-source owner API. It must not
 own Git checkout behavior, repository-source H2 files, private workspace paths,
 raw Git output, source package bytes or repository-source domain state.
 
-Slice S08 adds `services/query-report-api-service` as target-service
+Slice S08 adds `query-report-api-service` as target-service
 implementation evidence for the FA-MSA-001 public API facade boundary. It is
 registered as its own Gradle project and owns service-local domain,
 application port, inbound HTTP adapter, outbound Analysis Orchestrator gRPC
@@ -313,7 +313,7 @@ keeps the transitional `gateway-api.yaml` filename and `analysis-job.proto`
 transport input as external contract evidence only; generated transport
 classes remain inside the service build.
 
-`services/forensic-gateway-service` remains a live predecessor service root.
+`forensic-gateway-service` remains a live predecessor service root.
 The `forensic-analytics-rest` source tree was retired by S05 and is historical
 provenance only. It is not a compatibility alias for
 `query-report-api-service`.

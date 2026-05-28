@@ -23,7 +23,7 @@ Microservice governance is documented in [architecture/microservice-governance.m
 ## Current Implementation Baseline
 
 The active Gradle build is service-root based. Current backend and operational
-boundaries live under `services:*`; see [../services/README.md](../services/README.md)
+boundaries live as top-level service projects; see [architecture/service-roots.md](architecture/service-roots.md)
 for the verified service directory map and the difference between transitional
 service slices, target service evidence and optional later services.
 

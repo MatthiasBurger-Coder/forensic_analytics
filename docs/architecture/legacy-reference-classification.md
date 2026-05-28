@@ -14,7 +14,7 @@ S06 closes architecture, arc42 and ADR evidence before S07 release readiness.
 S01 verified repository state on branch
 `architecture/workflow-legacy-module-retirement-20260522`:
 
-- `settings.gradle.kts` includes only `services:*` projects.
+- `settings.gradle.kts` includes only top-level service projects projects.
 - Before S05, `git ls-files "forensic-analytics-*" | wc -l` returned `450`
   tracked legacy source-tree files.
 - After S05 checkpoint `d8d9dab`, `git ls-files "forensic-analytics-*"`
