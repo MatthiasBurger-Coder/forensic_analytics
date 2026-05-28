@@ -1,41 +1,47 @@
 # Execution Report
 
-## Workflow Creation
+## Current Status
 
-| Field | Value |
-|---|---|
-| Created on | 2026-05-25 |
-| Branch | `fix/workflow-wildfly-wsl-workspace-20260525` |
-| Command strand | `workflow create` |
-| Status | Workflow created; implementation pending `workflow execute`. |
+Workflow creation completed on branch:
 
-## Read-Only Verification Summary
+```text
+feature/workflow-docker-compose-deployment-20260528
+```
 
-- Repository root verified as `/mnt/d/Projects/forensic_analytics`.
-- Working tree was clean before workflow branch creation.
-- Dedicated workflow branch was created and verified before regenerating
-  workflow artifacts.
-- Existing workflow artifacts described a previous workspace branch selector
-  workflow and were regenerated.
-- `QUALITY.md` verified the minimum and full local quality gates.
-- Repository-source default workspace root currently resolves to
-  `build/repository-source-workspaces`.
-- Query-report HTTP lifecycle currently starts an HTTP server without an
-  explicit executor.
-- The Git checkout adapter already uses shallow branch clone options for the
-  WildFly branch-only request.
+No implementation slice has been executed yet. No Docker Compose descriptor,
+Dockerfile, deployment runbook, service runtime, image build, container
+startup, health check, or GUI smoke result should be treated as completed from
+this workflow-create step.
 
-## Implementation Results
+## Workflow Execute Checklist
 
-Pending `workflow execute`.
+For each slice, record:
 
-## Verification Results
+- slice ID;
+- owner and reviewers used;
+- files changed;
+- commands executed;
+- command results;
+- Docker availability;
+- `.dockerignore` build-context verification when image builds are claimed;
+- Compose config result;
+- image build result, if executed;
+- runtime startup and health checks, if executed;
+- GUI smoke result, if applicable;
+- skipped checks and reasons;
+- blockers;
+- diff inspection result.
 
-Pending `workflow execute`.
+## Final Report Requirements
 
-## Live System Result
+The final workflow-execute report must distinguish:
 
-Pending `workflow execute`.
-
-The executor must start the local MVP stack only after targeted tests and the
-WildFly API proof pass.
+- verified local Docker Compose model evidence;
+- verified image build evidence;
+- verified running container evidence;
+- GUI manual interaction evidence;
+- same-origin `/api/health` evidence through the GUI origin;
+- defects discovered during deployment;
+- planned or blocked roots;
+- checks skipped because Docker, network access, external images, or runtime
+  prerequisites were unavailable.

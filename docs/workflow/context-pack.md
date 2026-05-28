@@ -1,30 +1,38 @@
 # Workflow Context Pack
 
-## Active Workflow
+## Workflow
 
-| Field | Value |
-|---|---|
-| Workflow version | `fa-mvp-0002-wildfly-wsl-workspace-20260525-v1` |
-| Process strand | `workflow create` completed; `workflow execute` pending |
-| Active branch | `fix/workflow-wildfly-wsl-workspace-20260525` |
-| Execution profile | `FULL_PATH` |
-| Requirement ID | `FA-MVP-0002-OPS-01` |
+- Workflow version: `fa-deploy-0001-docker-compose-services-20260528-v1`
+- Branch: `feature/workflow-docker-compose-deployment-20260528`
+- Process strand: `workflow create`
+- Execution profile: `FULL_PATH`
+- Docker network: `forensic_analytics`
 
 ## Affected Areas
 
-- `repository-source-service` bootstrap workspace-root behavior.
-- `query-report-api-service` HTTP lifecycle responsiveness.
-- Local WSL live runtime startup and proof.
-- Workflow and arc42 check documentation.
+- Docker Compose local deployment
+- Docker build context and `.dockerignore`
+- Service-owned Dockerfiles and runtime configuration
+- GUI deployment through `forensic-ui`
+- Public API routing through `query-report-api-service`
+- Target and transitional service boundary documentation
+- Deployment runbook and arc42 deployment view
+
+## Guardrails
+
+- Build-context guard: `.dockerignore` must allow service boot jars copied by
+  root-context Dockerfiles.
+- GUI API guard: `forensic-ui` must not keep the hardcoded `/api` 502 response
+  when claiming deployed GUI/API integration.
 
 ## Forbidden Areas
 
-- Partial clone or sparse checkout enablement.
-- Running WildFly or any checked-out repository build scripts.
-- OpenAPI, gRPC or protobuf contract changes.
-- Cross-service H2 or private workspace access.
-- JavaParser, Joern, BTM, replay, graph, report, vector or LLM execution.
-- Docker, Swarm, Kubernetes or production readiness claims.
+- Production readiness claims without executed evidence
+- Docker Swarm or Kubernetes manifests
+- Shared Java implementation modules
+- Cross-service private database or filesystem access
+- Fabricated runtime, graph, replay, report, or observability evidence
+- LLM provider integration
 
 ## Required Roles
 
@@ -33,23 +41,18 @@
 - Senior Java Backend Developer
 - Senior React Frontend Developer
 - Senior Tester
+- Senior DevOps Engineer
+- Senior Workflow Architect
+- Senior Documentation Engineer
 
 ## Conditional Roles
 
-- Senior Git/Workspace Specialist
-- Senior Security/Sandbox Engineer
-- Senior Performance Engineer
-- Senior DevOps
-- Senior Documentation Engineer
-
-## Quality Commands
-
-```bash
-./gradlew :repository-source-service:test --tests '*RepositorySourceServiceApplicationTest' --dependency-verification strict --console=plain --stacktrace
-./gradlew :query-report-api-service:test --tests '*QueryReportApiServiceApplicationTest' --dependency-verification strict --console=plain --stacktrace
-./gradlew test --dependency-verification strict --console=plain --stacktrace
-./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace
-```
+- Senior Joern CPG Specialist
+- Source Analysis Reviewer
+- Replay Graph LLM Reviewer
+- Senior Analysis Storage Architect
+- Ingestion Handoff Reviewer
+- Observability Runtime Diagnostics
 
 ## Governing File Hashes
 
@@ -62,21 +65,19 @@
 | `.agents/orchestrator/routing-rules.md` | `30cd2a044746ab97f798425dd8f8125a98c6ed50d2d70a1b0778dca353c325bf` |
 | `.agents/orchestrator/swarm-orchestrator.md` | `ae501a9e61ec0a9cf4acaad7fb7fd5d6167309b722370ed5d21d1991e49c09fc` |
 | `.agents/skills/workflow-authoring/SKILL.md` | `d87950d6d9ca831a4201b660c6bef373cb85be829f21694a323dbb9b8544d801` |
+| `.agents/skills/workflow-slice/SKILL.md` | `f58db9f89a32d6312c767d3d954aaf374a7bbe12c25915c0101489c990a54976` |
+| `.agents/skills/devops-docker/SKILL.md` | `1f1677209469a9d6b47e0bdfd45b427b0ebcb40bb4c8d94d07bb9d8a36dab6c1` |
 | `.agents/skills/three-amigos-requirement-gatekeeper/SKILL.md` | `95c04f47127f5149bb39a7e1b82b2690803cc765cad5d18274a82d415931e9ad` |
-| `.agents/skills/execution-profile-router/SKILL.md` | `40b7a5c9a2d8896b3e2f8c384300979a13d7d35986a5bd4bc4d3b5760a7d52b7` |
-| `.agents/skills/git-large-repository-specialist/SKILL.md` | `f77801e1c2217a9c9b1d216ad13c235c2507e431743b4e6d38da640b9c318399` |
-| `docs/epics/forensics-platform-runtime-replay-llm-analysis-v0.2.md` | `54ff246b4359e1eb92c7e80058db42faa079ff5ffd3db0d71170cfaa3dbb68fe` |
-| `repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/RepositorySourceServicePropertiesConfiguration.java` | `fc58c9ccb65d06e80683f07f16f4f0135346ac028708068e570aecb3199cc9c9` |
-| `repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/adapter/out/git/GitRepositoryCheckoutAdapter.java` | `be23b3ff6a0da1e85052b6a8f9f88dba51510cfd36ff9875f92ff1dc75cb8971` |
-| `query-report-api-service/src/main/java/de/burger/forensics/analytics/services/queryreportapi/bootstrap/QueryReportApiHttpServerLifecycle.java` | `2dd4b456216a90871ce89c0f5697da3b094925a69c145afdca6b15e04e2287d9` |
-| `docs/arc42/06-runtime-view.md` | `904f93d560d3f5ebf4466c675c6f7a55d1a5f75a3a3035c266a0f5d65580ca45` |
-| `docs/arc42/07-deployment-view.md` | `7c9644cc3533e4b01b51e3fe3896d62d8affd096155af5cd9cf7b546bee03f93` |
-| `docs/adr/ADR-0016-branch-first-workflow-creation.md` | `13e8e922831c0a7ffe95ee8fae9247bf39b9f47ecf30dd9f685e9fe447fb95e2` |
-| `docs/adr/ADR-0023-h2-for-repository-source-mvp-persistence.md` | `57055ae1b371d5c229dd8d64450a23869dc89849808fa68bdff45901a5123a69` |
+| `docs/adr/ADR-0017-target-microservices-service-landscape.md` | `1c6be5f82ea08e38d669d335c3594eeb8fc4484d119e70c4eb8a443c47437b4b` |
+| `docs/arc42/07-deployment-view.md` | `1ab5073866a2d46ee3e6b722efe09d63cd28ad8c75e549e6ca9e33e2a3960fb3` |
+| `docs/architecture/service-roots.md` | `cafab5de927f426c859ca99387ec09b222a65c9bb9cc35279a5ef40477acc2b7` |
+| `docs/architecture/service-communication-matrix.md` | `246084bdc487d190bd5658210ce476e930ee116d345b627d44d138812963f37b` |
+| `docs/architecture/data-ownership.md` | `3e46f719cc7859c4f81e4317fd8d25c1fc0c20fb8bc70a55707cedd66be8ddb8` |
+| `settings.gradle.kts` | `b588d616561e9dd902961ec9f53b15f519ec1f0f6f189cba60e5396691840fcb` |
 
 ## Staleness Rules
 
-This context pack is stale when any recorded hash changes, when the active
-branch is not `fix/workflow-wildfly-wsl-workspace-20260525`, when implementation
-requires contract changes, or when the live runtime scope expands beyond the
-local MVP workspace stack.
+This context pack is stale when any governing hash changes, when
+`docs/workflow/workflow.md` is regenerated, or when `workflow execute` discovers
+an architecture, quality, service-boundary, or deployment blocker not recorded
+in the workflow.
