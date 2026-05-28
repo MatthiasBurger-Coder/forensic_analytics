@@ -2,7 +2,7 @@
 
 This directory is retained only as a retirement marker for the former
 monolith Boot container documentation. The current Gradle model contains
-service roots under `services:*`, and service-local Dockerfiles live with
+top-level service roots, and service-local Dockerfiles live with
 their owning service directories.
 
 Do not use this directory as an executable container target. Add or update

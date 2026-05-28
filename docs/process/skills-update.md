@@ -84,7 +84,7 @@ blocking and must never be marked ready by cached evidence.
 ## Forbidden Files
 
 - `src/**`
-- `services/**`
+- top-level service roots (`*-service/**`, `cli-client/**`, `observability-stack/**`, `testbed/**`)
 - `contracts/**`
 - `docker/**`
 - `build.gradle*`

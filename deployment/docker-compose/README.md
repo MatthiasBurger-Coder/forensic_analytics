@@ -30,7 +30,7 @@ No other service in this descriptor mounts those repository-source private
 volumes. The H2 state and checkout bytes survive container restart while the
 named volumes exist. `docker compose down -v` removes them.
 
-`services:testbed` may use this descriptor as local test environment evidence.
+`testbed` may use this descriptor as local test environment evidence.
 The descriptor remains a transitional repository-to-BTM Compose landscape and
 does not become a production deployment claim for the FA-MSA-001 target
 services or the FA-MVP-0001 repository workspace flow. Runtime startup,
@@ -42,7 +42,7 @@ commands are executed.
 Build service jars first:
 
 ```bash
-./gradlew --no-daemon --max-workers=1 :services:forensic-gateway-service:bootJar :services:analysis-store-service:bootJar :services:repository-analysis-service:bootJar :services:repository-source-service:bootJar :services:java-ast-analysis-service:bootJar :services:joern-cpg-analysis-service:bootJar :services:btm-generation-service:bootJar --dependency-verification strict --console=plain --stacktrace
+./gradlew --no-daemon --max-workers=1 :forensic-gateway-service:bootJar :analysis-store-service:bootJar :repository-analysis-service:bootJar :repository-source-service:bootJar :java-ast-analysis-service:bootJar :joern-cpg-analysis-service:bootJar :btm-generation-service:bootJar --dependency-verification strict --console=plain --stacktrace
 ```
 
 Validate the Compose model:

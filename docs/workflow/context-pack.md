@@ -12,8 +12,8 @@
 
 ## Affected Areas
 
-- `services/repository-source-service` bootstrap workspace-root behavior.
-- `services/query-report-api-service` HTTP lifecycle responsiveness.
+- `repository-source-service` bootstrap workspace-root behavior.
+- `query-report-api-service` HTTP lifecycle responsiveness.
 - Local WSL live runtime startup and proof.
 - Workflow and arc42 check documentation.
 
@@ -45,8 +45,8 @@
 ## Quality Commands
 
 ```bash
-./gradlew :services:repository-source-service:test --tests '*RepositorySourceServiceApplicationTest' --dependency-verification strict --console=plain --stacktrace
-./gradlew :services:query-report-api-service:test --tests '*QueryReportApiServiceApplicationTest' --dependency-verification strict --console=plain --stacktrace
+./gradlew :repository-source-service:test --tests '*RepositorySourceServiceApplicationTest' --dependency-verification strict --console=plain --stacktrace
+./gradlew :query-report-api-service:test --tests '*QueryReportApiServiceApplicationTest' --dependency-verification strict --console=plain --stacktrace
 ./gradlew test --dependency-verification strict --console=plain --stacktrace
 ./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace
 ```
@@ -66,9 +66,9 @@
 | `.agents/skills/execution-profile-router/SKILL.md` | `40b7a5c9a2d8896b3e2f8c384300979a13d7d35986a5bd4bc4d3b5760a7d52b7` |
 | `.agents/skills/git-large-repository-specialist/SKILL.md` | `f77801e1c2217a9c9b1d216ad13c235c2507e431743b4e6d38da640b9c318399` |
 | `docs/epics/forensics-platform-runtime-replay-llm-analysis-v0.2.md` | `54ff246b4359e1eb92c7e80058db42faa079ff5ffd3db0d71170cfaa3dbb68fe` |
-| `services/repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/RepositorySourceServicePropertiesConfiguration.java` | `fc58c9ccb65d06e80683f07f16f4f0135346ac028708068e570aecb3199cc9c9` |
-| `services/repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/adapter/out/git/GitRepositoryCheckoutAdapter.java` | `be23b3ff6a0da1e85052b6a8f9f88dba51510cfd36ff9875f92ff1dc75cb8971` |
-| `services/query-report-api-service/src/main/java/de/burger/forensics/analytics/services/queryreportapi/bootstrap/QueryReportApiHttpServerLifecycle.java` | `2dd4b456216a90871ce89c0f5697da3b094925a69c145afdca6b15e04e2287d9` |
+| `repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/RepositorySourceServicePropertiesConfiguration.java` | `fc58c9ccb65d06e80683f07f16f4f0135346ac028708068e570aecb3199cc9c9` |
+| `repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/adapter/out/git/GitRepositoryCheckoutAdapter.java` | `be23b3ff6a0da1e85052b6a8f9f88dba51510cfd36ff9875f92ff1dc75cb8971` |
+| `query-report-api-service/src/main/java/de/burger/forensics/analytics/services/queryreportapi/bootstrap/QueryReportApiHttpServerLifecycle.java` | `2dd4b456216a90871ce89c0f5697da3b094925a69c145afdca6b15e04e2287d9` |
 | `docs/arc42/06-runtime-view.md` | `904f93d560d3f5ebf4466c675c6f7a55d1a5f75a3a3035c266a0f5d65580ca45` |
 | `docs/arc42/07-deployment-view.md` | `7c9644cc3533e4b01b51e3fe3896d62d8affd096155af5cd9cf7b546bee03f93` |
 | `docs/adr/ADR-0016-branch-first-workflow-creation.md` | `13e8e922831c0a7ffe95ee8fae9247bf39b9f47ecf30dd9f685e9fe447fb95e2` |

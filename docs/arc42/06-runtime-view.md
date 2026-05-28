@@ -111,7 +111,7 @@ Slice S06 verifies a local ingestion runtime boundary:
 ```text
 producer / scanner / runtime collector
   -> ForensicIngestionService gRPC request or stream
-  -> services/ingestion-service inbound adapter
+  -> ingestion-service inbound adapter
   -> service-local ingestion application service
   -> service-local raw intake session state
   -> accepted raw payload handoff port
@@ -137,7 +137,7 @@ Slice S05 verifies a local JavaParser runtime boundary:
 ```text
 repository-source-service source snapshot contract
   -> JavaAstAnalysisService.AnalyzeSourceSnapshot
-  -> services/java-parser-analysis-service inbound adapter
+  -> java-parser-analysis-service inbound adapter
   -> service-local JavaParser analysis application service
   -> service-local JavaParser outbound adapter
   -> service-local source-fact artifact writer
@@ -244,7 +244,7 @@ Slice S05 verifies a local repository-source runtime boundary:
 
 ```text
 RepositoryAnalysisService gRPC request
-  -> services/repository-source-service inbound adapter
+  -> repository-source-service inbound adapter
   -> service-local repository source application service
   -> service-local Git checkout and workspace adapters
   -> opaque workspace ID and source snapshot descriptor
@@ -272,7 +272,7 @@ Slice S06 verifies a local Joern analysis runtime boundary:
 
 ```text
 JoernCpgAnalysisService gRPC request
-  -> services/joern-analysis-service inbound adapter
+  -> joern-analysis-service inbound adapter
   -> service-local Joern analysis application service
   -> service-local Joern-owned workspace materialization
   -> service-local Joern runtime and semantic artifact adapters
@@ -290,7 +290,7 @@ Slice S07 verifies a local orchestration runtime boundary:
 
 ```text
 AnalysisJobService gRPC request
-  -> services/analysis-orchestrator-service inbound adapter
+  -> analysis-orchestrator-service inbound adapter
   -> service-local analysis job application service
   -> service-local orchestration repository
   -> lifecycle/status/lease/retry/failure/dead-letter state

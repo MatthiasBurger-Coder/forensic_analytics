@@ -24,8 +24,8 @@
 | Slice | File Locks | Architecture Locks |
 |---|---|---|
 | S01 | `docs/workflow/**` | repository-source workspace ownership; query-report public facade |
-| S02 | `services/repository-source-service/.../bootstrap/**` | domain/application stay environment independent |
-| S03 | `services/query-report-api-service/.../bootstrap/**` | query-report remains facade only |
+| S02 | `repository-source-service/.../bootstrap/**` | domain/application stay environment independent |
+| S03 | `query-report-api-service/.../bootstrap/**` | query-report remains facade only |
 | S04 | `docs/workflow/execution-report.md` | public API proof only |
 | S05 | `docs/workflow/execution-report.md`, `docs/workflow/arc42-check-status.md` | quality gate authority |
 

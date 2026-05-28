@@ -19,16 +19,16 @@ Caller evidence was gathered with:
 git rev-parse --show-toplevel
 git branch --show-current
 git status --short --branch
-git ls-files "forensic-analytics-*/build.gradle.kts" "services/*/build.gradle.kts" settings.gradle.kts | sort
+git ls-files "forensic-analytics-*/build.gradle.kts" "*-service/build.gradle.kts" "cli-client/build.gradle.kts" "observability-stack/build.gradle.kts" "testbed/build.gradle.kts" settings.gradle.kts | sort
 git ls-files "*build.gradle.kts" | xargs rg -n "project\\(\\\":forensic-analytics-"
-git ls-files "services/*/build.gradle.kts" | xargs -r rg -n "project\\(" || true
-rg -n -P "^import\\s+de\\.burger\\.forensics\\.analytics\\.(application|domain|adapter|persistence|rest|cli|engine|logging|observability|bootstrap|ingestion\\.request|ingestion\\.grpc)\\b" services -S -g "*.java" || true
+git ls-files "*-service/build.gradle.kts" "cli-client/build.gradle.kts" "observability-stack/build.gradle.kts" "testbed/build.gradle.kts" | xargs -r rg -n "project\\(" || true
+rg -n -P "^import\\s+de\\.burger\\.forensics\\.analytics\\.(application|domain|adapter|persistence|rest|cli|engine|logging|observability|bootstrap|ingestion\\.request|ingestion\\.grpc)\\b" *-service/src/main cli-client/src/main observability-stack/src/main testbed/src/main -S -g "*.java" || true
 rg -n "RunRepositoryAnalysisUseCase|RunRepositoryAnalysisCommand|DefaultRepositoryAnalysisIngestionUseCase|RepositoryAnalysisIngestionUseCase" forensic-analytics-cli forensic-analytics-rest forensic-analytics-bootstrap forensic-analytics-boot-app forensic-analytics-engine forensic-analytics-ingestion-request forensic-analytics-testbed -S -g "*.java"
 ```
 
 The searches found active production or test callers in the legacy modules.
 No path in this inventory is caller-free. The service Gradle scan found no
-direct `project(...)` dependencies inside `services/*/build.gradle.kts`.
+direct `project(...)` dependencies inside top-level service build files.
 
 ## Caller Inventory
 
@@ -116,7 +116,7 @@ Three Amigos findings:
 - Backend: CLI, REST, Bootstrap, Boot, Engine, Ingestion Request, Persistence,
   Application and Domain paths provided verified behavior or ports used by
   current tests and runtime wiring.
-- Test: `forensic-analytics-testbed` and `services:testbed` intentionally keep
+- Test: `forensic-analytics-testbed` and `testbed` intentionally keep
   regression coverage over legacy in-process behavior. Removing old modules
   before stronger service or networked E2E evidence exists would delete the
   only verified coverage for several behaviors.
@@ -130,14 +130,14 @@ S14 repair verification found active coupling evidence:
 git ls-files "*build.gradle.kts" | xargs rg -n "forensic-analytics-(domain|application|persistence|logging|bootstrap|boot-app|engine|rest|observability)" | wc -l
 # 58
 
-rg -n -P "^import\\s+de\\.burger\\.forensics\\.analytics\\.(application|domain|persistence|logging|observability|rest|bootstrap|boot|engine)\\b" services/*/src/main forensic-analytics-*/src/main -g "*.java" | wc -l
+rg -n -P "^import\\s+de\\.burger\\.forensics\\.analytics\\.(application|domain|persistence|logging|observability|rest|bootstrap|boot|engine)\\b" *-service/src/main cli-client/src/main observability-stack/src/main testbed/src/main forensic-analytics-*/src/main -g "*.java" | wc -l
 # historical non-zero count; superseded by final-retirement verification
 
-rg -n -P "^import\\s+de\\.burger\\.forensics\\.analytics\\.(application|domain|persistence|logging|observability|rest|bootstrap|boot|engine)\\b" services/*/src/test forensic-analytics-*/src/test -g "*.java" | wc -l
+rg -n -P "^import\\s+de\\.burger\\.forensics\\.analytics\\.(application|domain|persistence|logging|observability|rest|bootstrap|boot|engine)\\b" *-service/src/test cli-client/src/test observability-stack/src/test testbed/src/test forensic-analytics-*/src/test -g "*.java" | wc -l
 # historical non-zero count; superseded by final-retirement verification
 ```
 
-`services:testbed` previously had test dependencies on retained legacy modules.
+`testbed` previously had test dependencies on retained legacy modules.
 That historical parity evidence is superseded by the current service-root
 testbed build, which has no legacy project dependency.
 

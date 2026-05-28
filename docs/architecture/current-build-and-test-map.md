@@ -30,42 +30,43 @@ JaCoCo XML and HTML reports.
 
 Verified from `settings.gradle.kts` after ADR-0022 and S05:
 
-- `services:btm-generation-service`
-- `services:joern-cpg-analysis-service`
-- `services:joern-analysis-service`
-- `services:analysis-orchestrator-service`
-- `services:java-parser-analysis-service`
-- `services:java-ast-analysis-service`
-- `services:repository-source-service`
-- `services:repository-analysis-service`
-- `services:analysis-store-service`
-- `services:ingestion-service`
-- `services:forensic-ingestion-service`
-- `services:query-report-api-service`
-- `services:cli-client`
-- `services:observability-stack`
-- `services:testbed`
-- `services:forensic-gateway-service`
+- `btm-generation-service`
+- `joern-cpg-analysis-service`
+- `joern-analysis-service`
+- `analysis-orchestrator-service`
+- `java-parser-analysis-service`
+- `java-ast-analysis-service`
+- `repository-source-service`
+- `repository-analysis-service`
+- `analysis-store-service`
+- `ingestion-service`
+- `forensic-ingestion-service`
+- `query-report-api-service`
+- `cli-client`
+- `observability-stack`
+- `testbed`
+- `forensic-gateway-service`
 
-Sixteen service-specific Gradle projects under `services/**` are registered.
+Eighteen service-specific Gradle projects under top-level service roots
+(`*-service/**`, `cli-client/**`, `observability-stack/**`, `testbed/**`) are registered.
 No `forensic-analytics-*` Gradle project remains in the active model.
-`services:repository-source-service`, `services:ingestion-service` and
-`services:java-parser-analysis-service`, `services:joern-analysis-service` and
-`services:analysis-orchestrator-service` and
-`services:query-report-api-service` are FA-MSA-001 target-name backend service
-projects introduced by this workflow. `services:cli-client` is a registered
+`repository-source-service`, `ingestion-service` and
+`java-parser-analysis-service`, `joern-analysis-service` and
+`analysis-orchestrator-service` and
+`query-report-api-service` are FA-MSA-001 target-name backend service
+projects introduced by this workflow. `cli-client` is a registered
 FA-MSA-001 public API client boundary, not a productive backend service.
-`services:observability-stack` is a registered deployment-oriented
+`observability-stack` is a registered deployment-oriented
 observability boundary, not a productive backend service and not a shared Java
 runtime module.
-`services:testbed` is a registered non-production integration and system-test
+`testbed` is a registered non-production integration and system-test
 boundary. It is not a productive backend service and must not be used as a
 shared runtime dependency by production services.
-`services:repository-analysis-service`, `services:forensic-ingestion-service`,
-`services:java-ast-analysis-service` and `services:joern-cpg-analysis-service`
+`repository-analysis-service`, `forensic-ingestion-service`,
+`java-ast-analysis-service` and `joern-cpg-analysis-service`
 remain predecessor services and rollback inputs, not compatibility aliases.
-Graph-replay and report-generation remain README-only planned service roots and
-are explicitly deferred from repository-to-BTM acceptance by Slice 16. The
+Graph-replay and report-generation remain planned service roots with placeholder
+build scripts and are explicitly deferred from repository-to-BTM acceptance by Slice 16. The
 build-artifact worker is planned by workflow v2 and retained by workflow v3; it
 has no service root yet.
 
@@ -114,7 +115,7 @@ The active test suite covers registered service projects and service-local
 contract, architecture and regression scenarios. Former monolith module tests
 are historical pre-retirement evidence after S05.
 
-`services:testbed` includes the deterministic local real repository E2E
+`testbed` includes the deterministic local real repository E2E
 fixture under `src/test/resources/repository-e2e/`. The corresponding
 service-root testbed coverage materializes that fixture as a local Git
 repository, pins a commit, and verifies the retained regression surface without
@@ -126,7 +127,7 @@ default unless
 `FORENSIC_ANALYTICS_WILDFLY_HARDENING=true` and an explicit WildFly branch or
 commit is provided. The runbook is `docs/testing/wildfly-hardening.md`.
 
-Slice 13 verifies the same testbed coverage under `services:testbed` in package
+Slice 13 verifies the same testbed coverage under `testbed` in package
 `de.burger.forensics.analytics.services.testbed`, including the default-skipped
 WildFly hardening scenario. The predecessor `forensic-analytics-testbed` source
 tree is historical quality evidence; the repository root quality gate is
@@ -177,12 +178,12 @@ Existing Docker material:
 - `docker/joern/docker-compose.joern.yml`
 - `docker/joern/scripts/**`
 - `forensic-ui/Dockerfile`
-- `services/repository-source-service/Dockerfile`
-- `services/ingestion-service/Dockerfile`
-- `services/java-parser-analysis-service/Dockerfile`
-- `services/joern-analysis-service/Dockerfile`
-- `services/analysis-orchestrator-service/Dockerfile`
-- `services/query-report-api-service/Dockerfile`
+- `repository-source-service/Dockerfile`
+- `ingestion-service/Dockerfile`
+- `java-parser-analysis-service/Dockerfile`
+- `joern-analysis-service/Dockerfile`
+- `analysis-orchestrator-service/Dockerfile`
+- `query-report-api-service/Dockerfile`
 - `deployment/docker-compose/repository-to-btm.local.yml`
 
 The DevOps review verified Joern Compose configuration with:
@@ -195,7 +196,7 @@ No Boot jar build, Boot Docker image build, frontend image build, Swarm command
 or Kubernetes command was executed as part of Slice 00.
 
 Earlier FA-MSA-001 service-slice evidence adds a service-local Dockerfile for
-`services/repository-source-service`. This is target-service container
+`repository-source-service`. This is target-service container
 packaging evidence only; Compose, Swarm and Kubernetes readiness for the
 FA-MSA-001 target landscape remains future work until descriptors and
 validation commands exist. FA-MVP-0001 S09 adds Docker-local Compose model
@@ -204,19 +205,19 @@ not claim image startup, health-check smoke testing, Swarm or Kubernetes
 readiness.
 
 Earlier FA-MSA-001 service-slice evidence adds a service-local Dockerfile for
-`services/ingestion-service`.
+`ingestion-service`.
 This is target-service container packaging evidence only; Compose, Swarm and
 Kubernetes readiness for the FA-MSA-001 target landscape remains future work
 until descriptors and validation commands exist.
 
 Earlier FA-MSA-001 service-slice evidence adds a service-local Dockerfile for
-`services/java-parser-analysis-service`. This is target-service container
+`java-parser-analysis-service`. This is target-service container
 packaging evidence only; Compose, Swarm and Kubernetes readiness for the
 FA-MSA-001 target landscape remains future work until descriptors and
 validation commands exist.
 
 Earlier FA-MSA-001 service-slice evidence adds a service-local Dockerfile for
-`services/joern-analysis-service`.
+`joern-analysis-service`.
 This is target-service container packaging evidence only; Compose, Swarm and
 Kubernetes readiness for the FA-MSA-001 target landscape remains future work
 until descriptors and validation commands exist. The service uses local gRPC
@@ -227,7 +228,7 @@ testing is optional external verification because it may pull the
 digest-pinned Joern base image or create local container state.
 
 Earlier FA-MSA-001 service-slice evidence keeps a service-local Dockerfile for
-`services/analysis-orchestrator-service`. This is target-service container
+`analysis-orchestrator-service`. This is target-service container
 packaging evidence only; Compose, Swarm and Kubernetes readiness for the
 FA-MSA-001 target landscape remains future work until descriptors and
 validation commands exist. The service uses local gRPC port `9098` and health
@@ -236,7 +237,7 @@ service ports. S07 does not claim Docker image build readiness; Docker
 build-context verification remains later deployment work.
 
 Earlier FA-MSA-001 service-slice evidence keeps a service-local Dockerfile for
-`services/query-report-api-service`. This is target-service container packaging
+`query-report-api-service`. This is target-service container packaging
 evidence only; Compose, Swarm and Kubernetes readiness for the FA-MSA-001
 target landscape remains future work until descriptors and validation commands
 exist. The service uses local HTTP port `8080`, points at
@@ -246,7 +247,7 @@ readiness and the FA-MVP-0001 workspace routes backed by repository-source
 owner APIs. S08/S11 do not claim Docker image build readiness; Docker
 build-context verification remains later deployment work.
 
-Slice 13 adds `services:testbed` without a Dockerfile or runtime service
+Slice 13 adds `testbed` without a Dockerfile or runtime service
 descriptor. It may use verified local deployment descriptors as test
 environment evidence, but S13 does not add Compose, Swarm or Kubernetes
 readiness.
@@ -259,8 +260,8 @@ final-retirement workflow supersede that evidence with S04 documentation
 cleanup, S05 deletion, S06 architecture closure and S07 release readiness.
 
 Earlier Slice 15 relocated broad logging and Spring architecture checks from the
-legacy-dependent `services:testbed` classpath into service-local architecture
-tests for the productive target services. `services:testbed` keeps only the
+legacy-dependent `testbed` classpath into service-local architecture
+tests for the productive target services. `testbed` keeps only the
 default-skipped WildFly hardening scenario as historical targeted evidence.
 That work does not verify Docker image builds, Docker Compose startup, service
 health probes, Docker Swarm or Kubernetes commands for the FA-MSA-001 target
@@ -280,7 +281,7 @@ Missing deployment material:
 - `deployment/docker-swarm/stack.yml`
 - `deployment/kubernetes/**`
 - Helm or chart roots
-- service-local Dockerfiles for README-only planned services
+- service-local Dockerfiles for planned services without runtime implementation
 - verified service healthcheck definitions
 
 ## Slice 00 Verification Rule
@@ -299,14 +300,15 @@ deployment behavior, run the minimum `QUALITY.md` command before continuing:
 ```
 
 Service-specific test commands exist for the registered service projects under
-`services/**`. Graph-replay and report-generation still have no service-local
-Gradle test task because they remain README-only planned service roots and are
-deferred from repository-to-BTM acceptance. The build-artifact worker has no
-Gradle task until a later slice creates the service root.
+top-level service roots (`*-service/**`, `cli-client/**`, `observability-stack/**`, `testbed/**`).
+Graph-replay and report-generation have placeholder build scripts but no
+implementation tests because they remain planned service roots and are deferred
+from repository-to-BTM acceptance. The build-artifact worker has no Gradle task
+until a later slice creates the service root.
 
 Earlier Slice 18 did not remove any `forensic-analytics-*` source tree. That
 prior evidence is superseded by the final-retirement workflow: the verified
-Gradle project model is service-only under `services:*`, S05 removed the legacy
+Gradle project model is service-only as top-level service projects, S05 removed the legacy
 source trees, and S06/S07 close architecture and release-readiness evidence.
 
 ## Historical E2E/WildFly/CLI Workflow Verification
@@ -335,7 +337,7 @@ active S07 release-readiness slice:
 
 - CI workflow evidence is absent.
 - Service-specific test tasks exist only for registered service projects under
-  `services/**`.
+  top-level service roots (`*-service/**`, `cli-client/**`, `observability-stack/**`, `testbed/**`).
 - Contract tests exist for implemented service contracts, but coverage is not
   complete for every planned service interaction.
 - Frontend coverage and end-to-end test gates are not configured.

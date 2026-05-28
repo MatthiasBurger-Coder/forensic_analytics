@@ -31,7 +31,7 @@ Allowed files:
 Forbidden files:
 
 - `src/**`
-- `services/**`
+- top-level service roots (`*-service/**`, `cli-client/**`, `observability-stack/**`, `testbed/**`)
 - `contracts/**`
 - `docker/**`
 - `build.gradle*`

@@ -4,10 +4,11 @@
 
 Build strategy for service roots.
 
-Sixteen service build files are now registered in the root Gradle build.
-Graph-replay and report-generation remain README-only planned roots, and the
-build-artifact worker remains a planned target without a service root until its
-service build file is created and registered.
+Eighteen service build files are now registered in the root Gradle build.
+Graph-replay and report-generation remain planned roots with placeholder build
+scripts and no implementation, and the build-artifact worker remains a planned
+target without a service root until its service build file is created and
+registered.
 
 ## Decision
 
@@ -82,7 +83,7 @@ library between services.
 Commands such as:
 
 ```bash
-./gradlew :services:forensic-ingestion-service:test
+./gradlew :forensic-ingestion-service:test
 ```
 
 are executable for registered service projects. Planned README-only service

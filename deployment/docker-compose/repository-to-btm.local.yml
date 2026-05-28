@@ -5,9 +5,9 @@ services:
     image: forensic-analytics/forensic-gateway-service:local
     build:
       context: ../..
-      dockerfile: services/forensic-gateway-service/Dockerfile
+      dockerfile: forensic-gateway-service/Dockerfile
       args:
-        SERVICE_JAR: services/forensic-gateway-service/build/libs/forensic-gateway-service-0.1.0-SNAPSHOT.jar
+        SERVICE_JAR: forensic-gateway-service/build/libs/forensic-gateway-service-0.1.0-SNAPSHOT.jar
     depends_on:
       analysis-store-service:
         condition: service_healthy
@@ -26,9 +26,9 @@ services:
     image: forensic-analytics/analysis-store-service:local
     build:
       context: ../..
-      dockerfile: services/analysis-store-service/Dockerfile
+      dockerfile: analysis-store-service/Dockerfile
       args:
-        SERVICE_JAR: services/analysis-store-service/build/libs/analysis-store-service-0.1.0-SNAPSHOT.jar
+        SERVICE_JAR: analysis-store-service/build/libs/analysis-store-service-0.1.0-SNAPSHOT.jar
     ports:
       - "127.0.0.1:18082:8082"
       - "127.0.0.1:19091:9091"
@@ -37,9 +37,9 @@ services:
     image: forensic-analytics/repository-analysis-service:local
     build:
       context: ../..
-      dockerfile: services/repository-analysis-service/Dockerfile
+      dockerfile: repository-analysis-service/Dockerfile
       args:
-        SERVICE_JAR: services/repository-analysis-service/build/libs/repository-analysis-service-0.1.0-SNAPSHOT.jar
+        SERVICE_JAR: repository-analysis-service/build/libs/repository-analysis-service-0.1.0-SNAPSHOT.jar
     depends_on:
       java-ast-analysis-service:
         condition: service_healthy
@@ -51,9 +51,9 @@ services:
     image: forensic-analytics/repository-source-service:local
     build:
       context: ../..
-      dockerfile: services/repository-source-service/Dockerfile
+      dockerfile: repository-source-service/Dockerfile
       args:
-        SERVICE_JAR: services/repository-source-service/build/libs/repository-source-service-0.1.0-SNAPSHOT.jar
+        SERVICE_JAR: repository-source-service/build/libs/repository-source-service-0.1.0-SNAPSHOT.jar
     ports:
       - "127.0.0.1:18087:8083"
       - "127.0.0.1:19097:9092"
@@ -65,9 +65,9 @@ services:
     image: forensic-analytics/java-ast-analysis-service:local
     build:
       context: ../..
-      dockerfile: services/java-ast-analysis-service/Dockerfile
+      dockerfile: java-ast-analysis-service/Dockerfile
       args:
-        SERVICE_JAR: services/java-ast-analysis-service/build/libs/java-ast-analysis-service-0.1.0-SNAPSHOT.jar
+        SERVICE_JAR: java-ast-analysis-service/build/libs/java-ast-analysis-service-0.1.0-SNAPSHOT.jar
     ports:
       - "127.0.0.1:18084:8084"
       - "127.0.0.1:19093:9093"
@@ -78,9 +78,9 @@ services:
     image: forensic-analytics/joern-cpg-analysis-service:local
     build:
       context: ../..
-      dockerfile: services/joern-cpg-analysis-service/Dockerfile
+      dockerfile: joern-cpg-analysis-service/Dockerfile
       args:
-        SERVICE_JAR: services/joern-cpg-analysis-service/build/libs/joern-cpg-analysis-service-0.1.0-SNAPSHOT.jar
+        SERVICE_JAR: joern-cpg-analysis-service/build/libs/joern-cpg-analysis-service-0.1.0-SNAPSHOT.jar
     ports:
       - "127.0.0.1:18085:8085"
       - "127.0.0.1:19094:9094"
@@ -92,9 +92,9 @@ services:
     image: forensic-analytics/btm-generation-service:local
     build:
       context: ../..
-      dockerfile: services/btm-generation-service/Dockerfile
+      dockerfile: btm-generation-service/Dockerfile
       args:
-        SERVICE_JAR: services/btm-generation-service/build/libs/btm-generation-service-0.1.0-SNAPSHOT.jar
+        SERVICE_JAR: btm-generation-service/build/libs/btm-generation-service-0.1.0-SNAPSHOT.jar
     ports:
       - "127.0.0.1:18086:8086"
       - "127.0.0.1:19095:9095"

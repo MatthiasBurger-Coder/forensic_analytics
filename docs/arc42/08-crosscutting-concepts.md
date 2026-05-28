@@ -157,7 +157,7 @@ for logs, metrics, tracing and dashboards. Productive services may have
 service-local diagnostics, but they must not depend on a shared Java
 observability module.
 
-S10 verifies `services/observability-stack` and
+S10 verifies `observability-stack` and
 `deployment/observability/service-diagnostics-policy.yaml` as target
 observability-stack evidence. The stack is deployment-oriented policy material,
 not a productive backend service and not a shared Java runtime dependency.
@@ -194,7 +194,7 @@ The accepted Boot boundary preserves ADR-0005. Spring-specific method logging, M
 Earlier service-local architecture tests verify this boundary. Productive
 services may depend on Spring only from their `bootstrap..` packages, while
 `cli-client` must not depend on Spring at all. The former broad
-`services:testbed` Spring and logging checks are retired from the
+`testbed` Spring and logging checks are retired from the
 legacy-dependent testbed classpath after those service-local replacements are
 present and passing.
 

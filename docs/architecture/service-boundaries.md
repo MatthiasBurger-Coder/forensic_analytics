@@ -7,7 +7,7 @@ repository-source, ingestion, JavaParser, Joern, orchestrator, query/report,
 CLI client, observability and testbed implementation evidence through Slice 13.
 S14 is a no-deletion readiness reconciliation gate after the S14 deletion stop.
 
-These are target boundaries. Current `services/**` directories are
+These are target boundaries. Current top-level service roots (`*-service/**`, `cli-client/**`, `observability-stack/**`, `testbed/**`) directories are
 implementation evidence and migration inputs. Historical
 `forensic-analytics-*` names are predecessor evidence after ADR-0022/S05
 source-tree retirement. They must not be described as the completed FA-MSA-001
@@ -92,14 +92,14 @@ Outbound communication:
 
 Current and predecessor evidence:
 
-- `services/repository-source-service`;
+- `repository-source-service`;
 - predecessor `forensic-analytics-adapter-repository-source` history;
-- `services/repository-analysis-service`;
+- `repository-analysis-service`;
 - `contracts/grpc/repository-analysis.proto`.
 
 Repository Source service implementation state:
 
-- registered Gradle project `services:repository-source-service`;
+- registered Gradle project `repository-source-service`;
 - service-local package
   `de.burger.forensics.analytics.services.repositorysource`;
 - service-local domain, application ports, inbound gRPC adapter, outbound
@@ -115,7 +115,7 @@ Repository Source service implementation state:
 - transitional use of the predecessor `repository-analysis.proto` filename and
   wire service name as an external contract only.
 
-`services/repository-analysis-service` remains predecessor and rollback
+`repository-analysis-service` remains predecessor and rollback
 evidence. The repository-source service implementation slice did not route all
 production callers to the new service. FA-MVP-0001 routes the public workspace
 MVP through `query-report-api-service` and service-owned repository-source
@@ -171,15 +171,15 @@ Outbound communication:
 
 Current and predecessor evidence:
 
-- `services/ingestion-service`;
+- `ingestion-service`;
 - predecessor `forensic-analytics-ingestion-grpc` history;
 - predecessor `forensic-analytics-ingestion-request` history;
-- `services/forensic-ingestion-service`;
+- `forensic-ingestion-service`;
 - `contracts/grpc/forensic-ingestion.proto`.
 
 Ingestion service implementation state:
 
-- registered Gradle project `services:ingestion-service`;
+- registered Gradle project `ingestion-service`;
 - service-local package `de.burger.forensics.analytics.services.ingestion`;
 - service-local domain, application ports, inbound gRPC adapter, inbound engine
   request file adapter, in-memory session adapter, bootstrap, configuration,
@@ -188,7 +188,7 @@ Ingestion service implementation state:
 - unchanged `contracts/grpc/forensic-ingestion.proto` wire shape and generated
   transport classes kept service-local.
 
-`services/forensic-ingestion-service` remains predecessor and rollback
+`forensic-ingestion-service` remains predecessor and rollback
 evidence. `forensic-analytics-ingestion-grpc` and
 `forensic-analytics-ingestion-request` are retired historical predecessor
 source trees after S05. S06 does not route production callers to the new
@@ -236,15 +236,15 @@ Outbound communication:
 
 Current and predecessor evidence:
 
-- `services/java-parser-analysis-service`;
+- `java-parser-analysis-service`;
 - predecessor `forensic-analytics-adapter-javaparser` history;
-- `services/java-ast-analysis-service`;
+- `java-ast-analysis-service`;
 - `contracts/grpc/java-ast-analysis.proto`;
 - `contracts/grpc/java-ast-source-facts-v1.schema.json`.
 
 Earlier FA-MSA-001 service-slice implementation evidence:
 
-- registered Gradle project `services:java-parser-analysis-service`;
+- registered Gradle project `java-parser-analysis-service`;
 - service-local package `de.burger.forensics.analytics.services.javaparseranalysis`;
 - service-local domain, application ports, inbound gRPC adapter, outbound
   JavaParser adapter, filesystem artifact adapter, bootstrap, configuration,
@@ -256,7 +256,7 @@ Earlier FA-MSA-001 service-slice implementation evidence:
   service reports `SYMBOL_RESOLUTION_NOT_CONFIGURED` as completeness-affecting
   until real symbol solving exists.
 
-`services/java-ast-analysis-service` remains predecessor and rollback evidence.
+`java-ast-analysis-service` remains predecessor and rollback evidence.
 `forensic-analytics-adapter-javaparser` is a retired historical predecessor
 source tree after S05 source-tree removal. S06 architecture closure does not route production callers to the new service
 and does not claim Docker Compose, Docker Swarm or Kubernetes readiness for the
@@ -303,15 +303,15 @@ Outbound communication:
 
 Current and predecessor evidence:
 
-- `services/joern-analysis-service`;
+- `joern-analysis-service`;
 - predecessor `forensic-analytics-adapter-joern-docker` history;
-- `services/joern-cpg-analysis-service`;
+- `joern-cpg-analysis-service`;
 - `contracts/grpc/joern-cpg-analysis.proto`;
 - `docker/joern/**`.
 
 Earlier FA-MSA-001 service-slice implementation evidence:
 
-- registered Gradle project `services:joern-analysis-service`;
+- registered Gradle project `joern-analysis-service`;
 - service-local package `de.burger.forensics.analytics.services.joernanalysis`;
 - service-local domain, application ports, inbound gRPC adapter, outbound
   filesystem, Joern runtime and artifact-registry adapters, bootstrap,
@@ -328,7 +328,7 @@ Earlier FA-MSA-001 service-slice implementation evidence:
   claim Docker Compose, Docker Swarm or Kubernetes deployment readiness for the
   target landscape.
 
-`services/joern-cpg-analysis-service` remains predecessor and rollback
+`joern-cpg-analysis-service` remains predecessor and rollback
 evidence. `forensic-analytics-adapter-joern-docker` is a retired historical
 predecessor source tree after S05. S06 does not route production callers to the
 new service.
@@ -380,7 +380,7 @@ Outbound communication:
 
 S07 implementation state:
 
-- registered Gradle project `services:analysis-orchestrator-service`;
+- registered Gradle project `analysis-orchestrator-service`;
 - service-local package
   `de.burger.forensics.analytics.services.analysisorchestrator`;
 - service-local domain, application service, inbound gRPC adapter,
@@ -396,10 +396,10 @@ S07 implementation state:
 
 Current and predecessor evidence:
 
-- `services/analysis-orchestrator-service`;
+- `analysis-orchestrator-service`;
 - predecessor `forensic-analytics-engine` history;
 - predecessor orchestration portions of `forensic-analytics-application`;
-- orchestration/status portions of `services/analysis-store-service`.
+- orchestration/status portions of `analysis-store-service`.
 
 Stop conditions:
 
@@ -450,14 +450,14 @@ Outbound communication:
 
 Current and predecessor evidence:
 
-- `services/query-report-api-service`;
+- `query-report-api-service`;
 - predecessor `forensic-analytics-rest` history;
-- public API portions of `services/forensic-gateway-service`;
+- public API portions of `forensic-gateway-service`;
 - `contracts/openapi/gateway-api.yaml`.
 
 S08 implementation state:
 
-- registered Gradle project `services:query-report-api-service`;
+- registered Gradle project `query-report-api-service`;
 - service-local package `de.burger.forensics.analytics.services.queryreportapi`;
 - service-local domain, application port, inbound HTTP adapter, outbound
   Analysis Orchestrator gRPC adapter, outbound Repository Source gRPC adapter,
@@ -517,13 +517,13 @@ Non-scope:
 
 Current and predecessor evidence:
 
-- `services/cli-client`;
+- `cli-client`;
 - predecessor `forensic-analytics-cli` history;
 - `contracts/cli/gateway-cli-contract.md`.
 
 S09 scope:
 
-- create `services/cli-client` as the target public HTTP/OpenAPI client;
+- create `cli-client` as the target public HTTP/OpenAPI client;
 - keep compatibility command vocabulary `gateway-submit`, `--gateway` and
   `gateway.v1` unless a later contract decision introduces aliases;
 - keep legacy `forensic-analytics-cli analyze` and `ingest-request` only as
@@ -531,15 +531,15 @@ S09 scope:
 
 S09 implementation evidence:
 
-- registered Gradle project `services:cli-client`;
-- `services/cli-client/build.gradle.kts` without `project(...)` dependencies;
+- registered Gradle project `cli-client`;
+- `cli-client/build.gradle.kts` without `project(...)` dependencies;
 - service-local CLI bootstrap, public API application port and HTTP JSON adapter;
-- architecture, CLI runner and HTTP adapter tests under `services/cli-client`.
+- architecture, CLI runner and HTTP adapter tests under `cli-client`.
 
 Stop conditions:
 
-- target `services/cli-client` imports service implementation classes;
-- target `services/cli-client` depends on shared monolith domain/application
+- target `cli-client` imports service implementation classes;
+- target `cli-client` depends on shared monolith domain/application
   modules after migration;
 - legacy local commands are removed without parity or explicit deprecation
   tests.
@@ -568,19 +568,19 @@ Current and predecessor evidence:
 
 - predecessor `forensic-analytics-observability` history;
 - predecessor `forensic-analytics-logging` history;
-- `services/observability-stack`;
+- `observability-stack`;
 - `deployment/observability/service-diagnostics-policy.yaml`;
 - deployment documentation.
 
 S10 replacement-readiness evidence:
 
-- registered Gradle project `services:observability-stack`;
-- `services/observability-stack/README.md`;
+- registered Gradle project `observability-stack`;
+- `observability-stack/README.md`;
 - `deployment/observability/service-diagnostics-policy.yaml`;
 - policy test coverage for allowed diagnostics, redaction, missing values,
   diagnostic exposure and diagnostics-not-evidence rules;
-- no `project(...)` dependencies in `services/observability-stack/build.gradle.kts`;
-- no Java source under `services/observability-stack`.
+- no `project(...)` dependencies in `observability-stack/build.gradle.kts`;
+- no Java source under `observability-stack`.
 
 Stop conditions:
 
@@ -608,20 +608,20 @@ Non-scope:
 
 Current and predecessor evidence:
 
-- `services/testbed`;
+- `testbed`;
 - predecessor `forensic-analytics-testbed` history;
 - `deployment/docker-compose/repository-to-btm.local.yml`;
 - service-local tests under current service slices.
 
 Current service-root testbed evidence:
 
-- registered Gradle project `services:testbed`;
+- registered Gradle project `testbed`;
 - service-local test package
   `de.burger.forensics.analytics.services.testbed`;
 - deterministic repository E2E fixtures under
-  `services/testbed/src/test/resources/repository-e2e/`;
-- no production Java source under `services/testbed/src/main`;
-- `services/testbed/README.md` documents the boundary as non-production
+  `testbed/src/test/resources/repository-e2e/`;
+- no production Java source under `testbed/src/main`;
+- `testbed/README.md` documents the boundary as non-production
   integration and system-test infrastructure;
 - the predecessor testbed source tree is retired historical evidence after
   S05.

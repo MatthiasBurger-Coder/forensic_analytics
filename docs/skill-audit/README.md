@@ -45,7 +45,7 @@ is now an active workflow documentation package.
 - Java 25 is documented in `AGENTS.md`, `QUALITY.md` and `build.gradle.kts`.
 - Gradle 9.4.0 is documented in `QUALITY.md` and verified in `gradle/wrapper/gradle-wrapper.properties`.
 - JUnit 6 is documented in `AGENTS.md`, `QUALITY.md` and `gradle/libs.versions.toml`.
-- The original audit baseline included legacy `forensic-analytics-*` modules. The verified Gradle project model is service-only under `services:*`; ADR-0022 and S05 retired the legacy source trees, which now remain historical predecessor evidence only.
+- The original audit baseline included legacy `forensic-analytics-*` modules. The verified Gradle project model is service-only as top-level service projects; ADR-0022 and S05 retired the legacy source trees, which now remain historical predecessor evidence only.
 - Existing gRPC ingestion code is an inbound adapter and maps Protobuf DTOs into application commands.
 
 ## Audit Result

@@ -110,7 +110,7 @@ blind `git reset --hard`.
 - `gradle/**`
 - `proto/**`
 - `contracts/**`
-- `services/**`
+- top-level service roots (`*-service/**`, `cli-client/**`, `observability-stack/**`, `testbed/**`)
 
 ## S1_PUSH_ELIGIBILITY_GUARD Checks
 

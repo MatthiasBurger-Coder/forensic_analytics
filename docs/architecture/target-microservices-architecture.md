@@ -50,12 +50,12 @@ FA-MSA-001 target names.
 The current platform has:
 
 - one Gradle multi-project build;
-- service-only Java project registration under `services:*`;
+- service-only Java project registration as top-level service projects;
 - retired historical `forensic-analytics-*` predecessor source trees after
   ADR-0022/S05;
 - service-local REST/gRPC/API evidence where implemented;
 - service-local in-memory persistence where implemented;
-- partial service slice directories under `services/**`;
+- partial service slice directories under top-level service roots (`*-service/**`, `cli-client/**`, `observability-stack/**`, `testbed/**`);
 - Docker material for some current surfaces;
 - no verified Docker Swarm or Kubernetes manifests for the target landscape.
 
@@ -129,16 +129,15 @@ details.
 Mandatory target shape:
 
 ```text
-services/
-  repository-source-service/
-  ingestion-service/
-  java-parser-analysis-service/
-  joern-analysis-service/
-  analysis-orchestrator-service/
-  query-report-api-service/
-  cli-client/
-  observability-stack/
-  testbed/
+repository-source-service/
+ingestion-service/
+java-parser-analysis-service/
+joern-analysis-service/
+analysis-orchestrator-service/
+query-report-api-service/
+cli-client/
+observability-stack/
+testbed/
 contracts/
   grpc/
   openapi/
@@ -170,11 +169,11 @@ slice explicitly introduces them.
 
 | Current evidence | FA-MSA-001 target |
 |---|---|
-| `services/repository-source-service` plus predecessors `forensic-analytics-adapter-repository-source`, `services/repository-analysis-service` | `repository-source-service` |
-| `services/ingestion-service` plus predecessors `forensic-analytics-ingestion-grpc`, `forensic-analytics-ingestion-request`, `services/forensic-ingestion-service` | `ingestion-service` |
-| `services/java-parser-analysis-service` plus predecessors `forensic-analytics-adapter-javaparser`, `services/java-ast-analysis-service` | `java-parser-analysis-service` |
-| `services/joern-analysis-service` plus predecessors `forensic-analytics-adapter-joern-docker`, `services/joern-cpg-analysis-service` | `joern-analysis-service` |
-| `services/analysis-orchestrator-service` plus predecessors `forensic-analytics-engine`, orchestration portions of historical application code and applicable `analysis-store-service` coordination state | `analysis-orchestrator-service` for job lifecycle, worker leases, retries, failures, dead-letter state, correlation references and job-to-artifact references |
+| `repository-source-service` plus predecessors `forensic-analytics-adapter-repository-source`, `repository-analysis-service` | `repository-source-service` |
+| `ingestion-service` plus predecessors `forensic-analytics-ingestion-grpc`, `forensic-analytics-ingestion-request`, `forensic-ingestion-service` | `ingestion-service` |
+| `java-parser-analysis-service` plus predecessors `forensic-analytics-adapter-javaparser`, `java-ast-analysis-service` | `java-parser-analysis-service` |
+| `joern-analysis-service` plus predecessors `forensic-analytics-adapter-joern-docker`, `joern-cpg-analysis-service` | `joern-analysis-service` |
+| `analysis-orchestrator-service` plus predecessors `forensic-analytics-engine`, orchestration portions of historical application code and applicable `analysis-store-service` coordination state | `analysis-orchestrator-service` for job lifecycle, worker leases, retries, failures, dead-letter state, correlation references and job-to-artifact references |
 | Predecessor `forensic-analytics-rest`, public API portions of `forensic-gateway-service` and report/query API behavior | `query-report-api-service` |
 | Predecessor `forensic-analytics-cli` | `cli-client` |
 | Predecessors `forensic-analytics-observability`, `forensic-analytics-logging`, deployment observability docs | `observability-stack` |

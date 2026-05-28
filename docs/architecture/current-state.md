@@ -8,7 +8,8 @@ This document began as the Slice 00 baseline for the microservices ecosystem
 conversion workflow. ADR-0022 and workflow slice S05 supersede that baseline
 for the Java implementation tree: the former `forensic-analytics-*` source
 trees were removed in checkpoint `d8d9dab`, and the active Gradle Java model is
-service-only under `services:*`. Historical module names in this document are
+service-only as top-level service projects. Historical module names in this
+document are
 pre-retirement predecessor evidence, not active source roots or runtime units.
 
 ## Verification Sources
@@ -23,7 +24,7 @@ Verified from:
 - `docs/architecture/microservice-governance.md`
 - `docs/arc42/**`
 - `docs/adr/**`
-- service source and test trees under `services/**`
+- service source and test trees under top-level service roots (`*-service/**`, `cli-client/**`, `observability-stack/**`, `testbed/**`)
 - external contracts under `contracts/**`
 - ADR-0022 final source-tree retirement decision
 - `docker/**`
@@ -43,10 +44,10 @@ the current state.
 | Boot runtime | Historical `forensic-analytics-boot-app` predecessor; source tree retired by S05 | No active monolith Boot runtime source tree remains |
 | Bootstrap runtime | Historical `forensic-analytics-bootstrap` predecessor; source tree retired by S05 | No active combined gRPC/REST bootstrap source tree remains |
 | gRPC contracts | `contracts/grpc/**` plus service-local generated code | External contract documentation and service-local consumption only |
-| REST API | `contracts/openapi/**`, `services/query-report-api-service` | Public API facade evidence for repository-analysis submission/status and FA-MVP-0001 workspace routes, not the deleted monolith REST adapter |
+| REST API | `contracts/openapi/**`, `query-report-api-service` | Public API facade evidence for repository-analysis submission/status and FA-MVP-0001 workspace routes, not the deleted monolith REST adapter |
 | Persistence | Service-local stores where implemented; `repository-source-service` uses service-local H2 file persistence for FA-MVP-0001 repository checkout workspace, branch and idempotency state; no shared Java persistence module | Durable production analytics persistence remains future work |
 | Docker | `docker/boot-app`, `docker/joern`, `forensic-ui/Dockerfile` | Existing container material, not a service ecosystem |
-| Service roots | `services/` | Sixteen registered service projects; graph-replay/report-generation remain planned roots and the build-artifact worker has no root yet |
+| Service roots | top-level `*-service/`, `cli-client/`, `observability-stack/`, `testbed/` | Eighteen registered service-root projects; graph-replay/report-generation remain planned roots and the build-artifact worker has no root yet |
 | External contracts root | `contracts/` | Present with gRPC, OpenAPI and event contract documentation |
 | Deployment roots | `deployment/**` planning roots | Compose transition descriptor and Swarm/Kubernetes README roots exist; production stack files, manifests, charts and validation commands are not verified |
 
@@ -56,44 +57,44 @@ Verified modules from `settings.gradle.kts`:
 
 | Module | Current Responsibility |
 |---|---|
-| `services:analysis-orchestrator-service` | Repository-to-BTM request acceptance and process-local status/readiness state |
-| `services:analysis-store-service` | Transitional job and artifact metadata service evidence |
-| `services:btm-generation-service` | Registered BTM generation service evidence |
-| `services:cli-client` | Public API client boundary |
-| `services:forensic-gateway-service` | Predecessor public gateway service evidence |
-| `services:forensic-ingestion-service` | Predecessor ingestion service evidence |
-| `services:ingestion-service` | Target raw intake and validation service |
-| `services:java-ast-analysis-service` | Predecessor Java AST service evidence |
-| `services:java-parser-analysis-service` | Target JavaParser source-fact service |
-| `services:joern-analysis-service` | Target Joern semantic-analysis service |
-| `services:joern-cpg-analysis-service` | Predecessor Joern CPG service evidence |
-| `services:observability-stack` | Operational observability boundary, not shared Java runtime code |
-| `services:query-report-api-service` | Public query/report API facade |
-| `services:repository-analysis-service` | Predecessor repository-analysis service evidence |
-| `services:repository-source-service` | Target repository source and workspace preparation service |
-| `services:testbed` | Non-production integration and system-test boundary |
+| `analysis-orchestrator-service` | Repository-to-BTM request acceptance and process-local status/readiness state |
+| `analysis-store-service` | Transitional job and artifact metadata service evidence |
+| `btm-generation-service` | Registered BTM generation service evidence |
+| `cli-client` | Public API client boundary |
+| `forensic-gateway-service` | Predecessor public gateway service evidence |
+| `forensic-ingestion-service` | Predecessor ingestion service evidence |
+| `ingestion-service` | Target raw intake and validation service |
+| `java-ast-analysis-service` | Predecessor Java AST service evidence |
+| `java-parser-analysis-service` | Target JavaParser source-fact service |
+| `joern-analysis-service` | Target Joern semantic-analysis service |
+| `joern-cpg-analysis-service` | Predecessor Joern CPG service evidence |
+| `observability-stack` | Operational observability boundary, not shared Java runtime code |
+| `query-report-api-service` | Public query/report API facade |
+| `repository-analysis-service` | Predecessor repository-analysis service evidence |
+| `repository-source-service` | Target repository source and workspace preparation service |
+| `testbed` | Non-production integration and system-test boundary |
 
 ## Current Capability Map
 
 | Capability | Verified Current Evidence | Migration Note |
 |---|---|---|
-| Repository checkout and workspace preparation | `services/repository-source-service` with FA-MVP-0001 H2 repository checkout workspace state | Target source/workspace ownership evidence; H2 is Docker-local MVP persistence only |
-| Java AST analysis | `services/java-parser-analysis-service` | Target JavaParser source-fact evidence |
-| Joern / CPG semantic analysis | `services/joern-analysis-service`, `docker/joern/**` | Target service plus optional Joern Docker infrastructure evidence |
-| BTM / rule generation | `services:btm-generation-service`, `contracts/grpc/btm-generation.proto`, arc42 notes | Registered service evidence and provisional contract only; production readiness remains unverified |
-| gRPC ingestion | `contracts/grpc/**`, `services/ingestion-service` | Target intake service consumes external contracts with service-local generated code |
-| REST API | `contracts/openapi/**`, `services/query-report-api-service` | Public API facade evidence for repository-analysis submission/status and FA-MVP-0001 workspace routes |
+| Repository checkout and workspace preparation | `repository-source-service` with FA-MVP-0001 H2 repository checkout workspace state | Target source/workspace ownership evidence; H2 is Docker-local MVP persistence only |
+| Java AST analysis | `java-parser-analysis-service` | Target JavaParser source-fact evidence |
+| Joern / CPG semantic analysis | `joern-analysis-service`, `docker/joern/**` | Target service plus optional Joern Docker infrastructure evidence |
+| BTM / rule generation | `btm-generation-service`, `contracts/grpc/btm-generation.proto`, arc42 notes | Registered service evidence and provisional contract only; production readiness remains unverified |
+| gRPC ingestion | `contracts/grpc/**`, `ingestion-service` | Target intake service consumes external contracts with service-local generated code |
+| REST API | `contracts/openapi/**`, `query-report-api-service` | Public API facade evidence for repository-analysis submission/status and FA-MVP-0001 workspace routes |
 | Persistence | Service-local stores where implemented, including repository-source H2 for repository checkout workspace state | Durable production database ownership remains unverified |
 | Boot runtime | Historical Boot predecessor source tree retired by S05 | No active monolith Boot source tree remains |
 | Manual server runtime | Historical Bootstrap predecessor source tree retired by S05 | No active combined runtime source tree remains |
-| CLI | `services/cli-client` | Public API client boundary; local predecessor CLI source tree retired by S05 |
+| CLI | `cli-client` | Public API client boundary; local predecessor CLI source tree retired by S05 |
 | Frontend | `forensic-ui` | Existing Vite/React frontend outside planned `frontend/frontend-web-app` root |
-| Observability and logging | `services/observability-stack`, service-local diagnostics | No shared Java logging/observability module remains in the active build |
+| Observability and logging | `observability-stack`, service-local diagnostics | No shared Java logging/observability module remains in the active build |
 | Graph, replay, report and LLM target concepts | arc42 docs, ADRs and partial domain/application model evidence | Not verified as standalone runtime capabilities or services |
 
 ## Current Runtime Composition
 
-The active Java runtime evidence is service-local under `services:*`. S05
+The active Java runtime evidence is service-local in top-level service roots. S05
 removed the former Boot, Bootstrap, REST, CLI, engine, ingestion-request and
 testbed source trees. Their behavior remains historical predecessor evidence in
 documentation and git history only. ADR-0022 defines rollback as reverting the
@@ -166,11 +167,13 @@ The current repository does not have verified per-service:
 - production-wide Docker Compose service landscape;
 - Docker Swarm stack files, Kubernetes manifests or Helm charts.
 
-Sixteen registered service projects have service-local READMEs and test trees.
+Eighteen registered service projects have service-local READMEs, and sixteen
+have implementation/test trees.
 Thirteen registered service projects have service-local Dockerfiles;
-`services/cli-client`, `services/observability-stack` and `services:testbed`
+`cli-client`, `observability-stack` and `testbed`
 intentionally have no Dockerfile in the current repository state.
-Graph-replay and report-generation remain README-only planned roots. The
+Graph-replay and report-generation remain planned roots with placeholder build
+scripts and no implementation. The
 build-artifact worker is a planned target with no service root yet. Health
 check and production runtime readiness evidence remains incomplete outside
 service-specific README evidence, Joern Compose model validation and the S09

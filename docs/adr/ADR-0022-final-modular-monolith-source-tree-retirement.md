@@ -50,7 +50,7 @@ S05 verification recorded:
 ## Decision
 
 Retire the listed legacy modular-monolith source trees as implementation
-source. The active Java build is now service-root based under `services:*`.
+source. The active Java build is now service-root based at the repository root.
 
 This decision closes the ADR-0017 condition that the central
 `forensic-analytics-*` source trees remained tracked migration inputs. It does
@@ -77,7 +77,7 @@ build, test or deployment rollback units.
 - Documentation may keep legacy module names only as dated historical evidence,
   predecessor provenance, contract compatibility vocabulary or ADR history.
 - Architecture and workflow documents must describe the current build as
-  service-only under `services:*`.
+  service-only as top-level service projects.
 - No public contract shape, endpoint, RPC, event, runtime behavior, Docker image
   readiness, healthcheck readiness, Swarm readiness, Kubernetes readiness,
   durable persistence, graph/replay capability, report-generation capability or

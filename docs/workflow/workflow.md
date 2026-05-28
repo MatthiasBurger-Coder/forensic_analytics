@@ -198,14 +198,14 @@ the UI cannot use the verified API after the backend/runtime fix.
 Targeted checks before broader gates:
 
 ```bash
-./gradlew :services:repository-source-service:test --tests '*RepositorySourceServiceApplicationTest' --dependency-verification strict --console=plain --stacktrace
-./gradlew :services:query-report-api-service:test --tests '*QueryReportApiServiceApplicationTest' --dependency-verification strict --console=plain --stacktrace
+./gradlew :repository-source-service:test --tests '*RepositorySourceServiceApplicationTest' --dependency-verification strict --console=plain --stacktrace
+./gradlew :query-report-api-service:test --tests '*QueryReportApiServiceApplicationTest' --dependency-verification strict --console=plain --stacktrace
 ```
 
 If query-report HTTP handler behavior is tested separately:
 
 ```bash
-./gradlew :services:query-report-api-service:test --tests '*QueryReportApiHttpAdapterTest' --dependency-verification strict --console=plain --stacktrace
+./gradlew :query-report-api-service:test --tests '*QueryReportApiHttpAdapterTest' --dependency-verification strict --console=plain --stacktrace
 ```
 
 Minimum repository quality gate:
@@ -253,11 +253,11 @@ secondary_reviewers:
   - Senior Tester
 affected_files:
   - docs/workflow/workflow.md
-  - services/repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/RepositorySourceServicePropertiesConfiguration.java
-  - services/query-report-api-service/src/main/java/de/burger/forensics/analytics/services/queryreportapi/bootstrap/QueryReportApiHttpServerLifecycle.java
+  - repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/RepositorySourceServicePropertiesConfiguration.java
+  - query-report-api-service/src/main/java/de/burger/forensics/analytics/services/queryreportapi/bootstrap/QueryReportApiHttpServerLifecycle.java
 affected_modules:
-  - services:repository-source-service
-  - services:query-report-api-service
+  - repository-source-service
+  - query-report-api-service
 affected_contracts: []
 dependencies: []
 parallel_group: P1
@@ -302,25 +302,25 @@ secondary_reviewers:
   - Senior Security/Sandbox Engineer
   - Senior Tester
 affected_files:
-  - services/repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/RepositorySourceServicePropertiesConfiguration.java
-  - services/repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/RepositorySourceServiceProperties.java
-  - services/repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/RepositorySourceServiceApplicationTest.java
+  - repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/RepositorySourceServicePropertiesConfiguration.java
+  - repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/RepositorySourceServiceProperties.java
+  - repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/RepositorySourceServiceApplicationTest.java
 affected_modules:
-  - services:repository-source-service
+  - repository-source-service
 affected_contracts: []
 dependencies:
   - S01
 parallel_group: P2
 file_locks:
-  - services/repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/**
-  - services/repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/**
+  - repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/**
+  - repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/**
 contract_locks: []
 architecture_locks:
   - bootstrap configuration may depend on environment
   - domain and application remain environment independent
 quality_gates:
   targeted:
-    - ./gradlew :services:repository-source-service:test --tests '*RepositorySourceServiceApplicationTest' --dependency-verification strict --console=plain --stacktrace
+    - ./gradlew :repository-source-service:test --tests '*RepositorySourceServiceApplicationTest' --dependency-verification strict --console=plain --stacktrace
   required:
     - ./gradlew test --dependency-verification strict --console=plain --stacktrace
 documentation:
@@ -356,24 +356,24 @@ secondary_reviewers:
   - Senior Performance Engineer
   - Senior Tester
 affected_files:
-  - services/query-report-api-service/src/main/java/de/burger/forensics/analytics/services/queryreportapi/bootstrap/QueryReportApiHttpServerLifecycle.java
-  - services/query-report-api-service/src/test/java/de/burger/forensics/analytics/services/queryreportapi/bootstrap/QueryReportApiServiceApplicationTest.java
+  - query-report-api-service/src/main/java/de/burger/forensics/analytics/services/queryreportapi/bootstrap/QueryReportApiHttpServerLifecycle.java
+  - query-report-api-service/src/test/java/de/burger/forensics/analytics/services/queryreportapi/bootstrap/QueryReportApiServiceApplicationTest.java
 affected_modules:
-  - services:query-report-api-service
+  - query-report-api-service
 affected_contracts: []
 dependencies:
   - S01
 parallel_group: P2
 file_locks:
-  - services/query-report-api-service/src/main/java/de/burger/forensics/analytics/services/queryreportapi/bootstrap/**
-  - services/query-report-api-service/src/test/java/de/burger/forensics/analytics/services/queryreportapi/bootstrap/**
+  - query-report-api-service/src/main/java/de/burger/forensics/analytics/services/queryreportapi/bootstrap/**
+  - query-report-api-service/src/test/java/de/burger/forensics/analytics/services/queryreportapi/bootstrap/**
 contract_locks: []
 architecture_locks:
   - query-report remains facade only
   - HTTP lifecycle remains bootstrap/inbound infrastructure
 quality_gates:
   targeted:
-    - ./gradlew :services:query-report-api-service:test --tests '*QueryReportApiServiceApplicationTest' --dependency-verification strict --console=plain --stacktrace
+    - ./gradlew :query-report-api-service:test --tests '*QueryReportApiServiceApplicationTest' --dependency-verification strict --console=plain --stacktrace
   required:
     - ./gradlew test --dependency-verification strict --console=plain --stacktrace
 documentation:
@@ -411,8 +411,8 @@ secondary_reviewers:
 affected_files:
   - docs/workflow/execution-report.md
 affected_modules:
-  - services:repository-source-service
-  - services:query-report-api-service
+  - repository-source-service
+  - query-report-api-service
   - forensic-ui
 affected_contracts: []
 dependencies:
@@ -427,8 +427,8 @@ architecture_locks:
   - public API proof only through query-report
 quality_gates:
   targeted:
-    - ./gradlew :services:repository-source-service:bootJar --dependency-verification strict --console=plain --stacktrace
-    - ./gradlew :services:query-report-api-service:bootJar --dependency-verification strict --console=plain --stacktrace
+    - ./gradlew :repository-source-service:bootJar --dependency-verification strict --console=plain --stacktrace
+    - ./gradlew :query-report-api-service:bootJar --dependency-verification strict --console=plain --stacktrace
     - cd forensic-ui && npm run build
     - curl public API proof commands from this workflow
   required:
@@ -470,8 +470,8 @@ affected_files:
   - docs/workflow/execution-report.md
   - docs/workflow/arc42-check-status.md
 affected_modules:
-  - services:repository-source-service
-  - services:query-report-api-service
+  - repository-source-service
+  - query-report-api-service
   - forensic-ui
 affected_contracts: []
 dependencies:
