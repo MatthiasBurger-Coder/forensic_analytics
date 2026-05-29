@@ -2,55 +2,80 @@
 
 ## Requirement Summary
 
-Fix the observed local WSL WildFly checkout problem, prove the fix with public
-API `curl` calls, and start the local MVP system for manual trial after the
-proof succeeds.
+Create a workflow for local Docker Compose deployment coverage across the
+requested service roots. Every named root receives at least one implementation
+slice. The deployment must use a Docker network named `forensic_analytics` and
+must include a deployment description that lets an operator start the stack,
+open the GUI, and collect possible runtime or integration errors.
 
 ## Five-Role Review
 
 | Role | Finding |
 |---|---|
-| Senior Requirement Engineer | The requirement is specific enough for workflow execution. It is a local runtime bug fix, not a new product analysis capability. |
-| Senior System Architect | The fix must preserve repository-source ownership of checkout paths and query-report's public facade boundary. No contract change is required unless execution proves otherwise. |
-| Senior Java Backend Developer | Two bounded backend changes are planned: repository-source bootstrap workspace-root defaulting and query-report HTTP lifecycle executor behavior. |
-| Senior React Frontend Developer | No frontend production code is planned. Frontend involvement is limited to building/serving existing UI assets for the final manual trial. |
-| Senior Tester | Regression tests must be deterministic and not depend on real WSL or real GitHub. The WildFly checkout is an integration proof, not a unit-test dependency. |
+| Senior Requirement Engineer | The goal, named roots, required network, slice requirement, and GUI outcome are explicit. The only accepted assumption is that `forensic_analytics` is the repository stack/network name, not a Gradle service module. |
+| Senior System Architect | FULL_PATH is required because deployment, service boundaries, target-vs-transitional roots, and runtime readiness are affected. Planned roots must not be represented as runnable services without implementation evidence. |
+| Senior Java Backend Developer | Most Java application roots already have Dockerfiles and service-local configuration. `cli-client` is an application without Dockerfile. `graph-replay-service` and `report-generation-service` are Gradle `base` roots with no runtime implementation. |
+| Senior React Frontend Developer | The GUI goal requires `forensic-ui` integration even though it was not in the user's service list. The UI must call `query-report-api-service` public REST routes only, preferably through a verified same-origin nginx `/api` proxy. |
+| Senior Tester | Slice checks must combine module tests, `bootJar` or `build`, `.dockerignore` build-context verification, Compose config validation, `git diff --check`, the minimum repository quality gate, and final full local quality gate. Runtime smoke checks must be reported as executed, skipped, or blocked. |
 
-## EPIC Alignment
+## Requirement Classification
 
-EPIC v0.2 is the relevant requirement source. The workflow aligns with it
-because it changes local runtime preparation and API availability only. It does
-not redefine canonical analysis semantics, source facts, runtime observations,
-replay truth, graph projections, reports or LLM evidence packages.
+- Functional requirement: per-service Docker Compose descriptors and local
+  deployment runbook.
+- Non-functional requirement: deterministic local deployment, explicit
+  network, reproducible validation commands, clear startup/cleanup behavior.
+- Architecture constraint: preserve service ownership and target-vs-
+  transitional distinctions.
+- UX requirement: local GUI must be available for manual interaction.
+- Observability requirement: collect logs and health status without treating
+  logs as forensic evidence.
+- Quality-gate requirement: use `QUALITY.md` commands and Compose validation.
 
-## Architecture And Evidence Validation
+## Accepted Assumptions
 
-- WildFly checkout output is operational proof, not forensic analysis evidence.
-- The API proof must use public DTOs only.
-- Missing or slow checkout evidence must remain explicit and must not be
-  converted into a successful checkout.
-- The workflow must not execute checked-out repository code.
+- `forensic_analytics` is the root deployment/network boundary, because no
+  Gradle subproject named `forensic_analytics` exists and the repository path
+  itself is `/mnt/d/Projects/forensic_analytics`.
+- `forensic-ui` is included because the user goal depends on GUI interaction.
+- Compose descriptors are local Docker evidence only, not production, Docker
+  Swarm, or Kubernetes readiness.
+- Planned roots may receive a readiness slice and documented non-runnable
+  status rather than fabricated runtime.
+- Browser GUI deployment should use same-origin `/api` proxying unless a later
+  slice verifies a different browser-safe path.
 
-## Quality And Verification Validation
+## Non-Goals
 
-- Targeted service tests are required before live proof.
-- The repository minimum quality gate is required after implementation.
-- Full local quality gate is required for commit readiness.
-- Curl proof must record exact endpoints, status, workspace ID, branch status,
-  resolved commit and live workspace root.
+- No service extraction.
+- No missing graph, replay, report, or observability runtime implementation.
+- No shared Java implementation modules.
+- No cross-service private database or filesystem access.
+- No Kubernetes, Docker Swarm, brokers, external databases, Graph DB, Vector
+  DB, or live LLM providers.
 
-## Dependency Summary
+## Risks
 
-S01 precedes all implementation. S02 and S03 can run in parallel. S04 depends
-on both S02 and S03. S05 depends on S04.
+- Several internal ports overlap and need unique host mappings.
+- Joern image builds may require external image pulls.
+- The UI bakes `VITE_API_BASE_URL` during build.
+- Current `forensic-ui/nginx.conf` returns 502 for `/api`.
+- Root `.dockerignore` may block target-service Dockerfiles from copying boot
+  jars unless it is updated.
+- Some service roots are transitional or planned, so full-stack deployment may
+  expose existing gaps rather than complete behavior.
 
 ## Open Questions
 
-None blocking for workflow execution. The executor must choose unused local
-ports at runtime and record them.
+- Operator-preferred host ports were not specified. The workflow requires
+  deterministic defaults and documentation of any change.
 
-## Final Decision
+## Blocking Questions
 
-`READY_FOR_WORKFLOW`
+None for workflow creation. Later implementation must stop when a Compose
+descriptor would require guessed runtime behavior.
 
-Confidence: 92 percent.
+## Decision
+
+`PROCEED_WITH_ACCEPTED_ASSUMPTIONS`
+
+Confidence: 86 percent.

@@ -1,61 +1,108 @@
 # Quality And Leakage Gates
 
-## Required Quality Commands
+## Authority
 
-Targeted repository-source check:
+`QUALITY.md` is the authoritative quality contract.
 
-```bash
-./gradlew :repository-source-service:test --tests '*RepositorySourceServiceApplicationTest' --dependency-verification strict --console=plain --stacktrace
-```
-
-Targeted query-report check:
-
-```bash
-./gradlew :query-report-api-service:test --tests '*QueryReportApiServiceApplicationTest' --dependency-verification strict --console=plain --stacktrace
-```
-
-Minimum repository gate:
+Minimum repository command:
 
 ```bash
 ./gradlew test --dependency-verification strict --console=plain --stacktrace
 ```
 
-Full local gate before commit readiness:
+Full local quality gate:
 
 ```bash
 ./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace
 ```
 
-## Live Proof Gate
+## Slice-Level Checks
 
-The live proof must use only public query-report REST endpoints. It must record:
+For Java application services with Dockerfiles:
 
-- query-report health response;
-- workspace create response;
-- workspace checkout-result response;
-- workspace list response;
-- workspace ID;
-- branch status;
-- resolved commit;
-- repository-source workspace root;
-- UI URL.
+```bash
+./gradlew :<module>:test --dependency-verification strict --console=plain --stacktrace
+./gradlew :<module>:bootJar --dependency-verification strict --console=plain --stacktrace
+docker compose -f deployment/docker-compose/services/<module>.compose.yml config
+git diff --check
+```
 
-## Leakage Gate
+Before claiming Docker image-build readiness for root-context service
+Dockerfiles, verify that `.dockerignore` re-includes the affected service boot
+jar path:
 
-The execution report must not expose:
+```bash
+git diff -- .dockerignore
+./gradlew --no-daemon --max-workers=1 :<module>:bootJar --dependency-verification strict --console=plain --stacktrace
+docker build -f <module>/Dockerfile --build-arg SERVICE_JAR=<module>/build/libs/<module>-0.1.0-SNAPSHOT.jar -t forensic-analytics/<module>:local .
+```
 
-- credentials or tokens;
-- raw Git stdout/stderr containing sensitive data;
-- private H2 JDBC URLs except sanitized service-owned configuration summaries;
-- local checkout file listings beyond the root locality evidence;
-- source contents from WildFly.
+For `cli-client`:
 
-## Failure Reporting
+```bash
+./gradlew :cli-client:test --dependency-verification strict --console=plain --stacktrace
+./gradlew :cli-client:build --dependency-verification strict --console=plain --stacktrace
+docker compose -f deployment/docker-compose/services/cli-client.compose.yml config
+git diff --check
+```
 
-If a command fails, report:
+For planned or non-production roots:
 
-- command executed;
-- failure summary;
-- failing task or endpoint;
-- whether the failure appears caused by the current change;
-- remaining blocker.
+```bash
+./gradlew :<module>:tasks --dependency-verification strict --console=plain --stacktrace
+docker compose -f deployment/docker-compose/services/<module>.compose.yml config
+git diff --check
+```
+
+For the UI:
+
+```bash
+cd forensic-ui && npm ci
+cd forensic-ui && npm run test
+cd forensic-ui && npm run build
+docker compose -f deployment/docker-compose/services/forensic-ui.compose.yml config
+git diff --check
+```
+
+## Runtime Smoke Checks
+
+When Docker is available and image builds succeed:
+
+```bash
+docker compose -f deployment/docker-compose/forensic-analytics.local.yml build
+docker compose -f deployment/docker-compose/forensic-analytics.local.yml up -d
+docker compose -f deployment/docker-compose/forensic-analytics.local.yml ps
+curl -fsS http://127.0.0.1:<query-report-host-port>/api/health
+curl -fsS http://127.0.0.1:<ui-host-port>/
+docker compose -f deployment/docker-compose/forensic-analytics.local.yml logs --no-color --tail=200
+docker compose -f deployment/docker-compose/forensic-analytics.local.yml down
+```
+
+The execution report must record the exact host ports used.
+
+## Leakage Gates
+
+Stop a slice if:
+
+- repository-source private workspace or H2 volumes are mounted into non-owner
+  services;
+- UI or public API responses expose private paths, stack traces, credentials,
+  tokens, raw Git output, or internal worker diagnostics;
+- `forensic-ui` still returns the hardcoded nginx `502 BACKEND_UNAVAILABLE` for
+  `/api` while the deployment claims GUI/API integration;
+- browser access depends on unverified CORS behavior instead of a verified
+  same-origin proxy or an explicitly tested browser-safe route;
+- `.dockerignore` excludes a service boot jar needed by a Dockerfile while the
+  slice claims image-build readiness;
+- static analysis, Joern, graph, replay, report, or generated LLM output is
+  described as observed runtime evidence;
+- planned roots are represented as running services without verified runtime;
+- logs or traces are treated as canonical forensic evidence;
+- Docker runtime checks are skipped but the docs claim they passed.
+
+## Optional Checks
+
+Docker image builds, Compose startup, and Joern image pulls are external
+runtime checks. They should be run when available. If skipped because Docker,
+network access, or external images are unavailable, the result must be reported
+without claiming runtime readiness.

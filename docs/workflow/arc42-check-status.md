@@ -1,24 +1,36 @@
 # arc42 Check Status
 
-## Checked Documents
+## Checked Sections
 
-| Document | Status | Finding |
-|---|---|---|
-| `docs/arc42/06-runtime-view.md` | Checked | Confirms query-report is a public facade and repository-source owns checkout workspace behavior. |
-| `docs/arc42/07-deployment-view.md` | Checked | Confirms Docker-local MVP ownership of repository-source workspace and H2 volumes. Local WSL live runtime remains a local verification scope. |
-| `docs/arc42/11-risks-and-technical-debt.md` | Checked | Existing risks cover runtime/deployment confusion and quality gate drift; this workflow must not claim production readiness. |
-| `docs/adr/ADR-0016-branch-first-workflow-creation.md` | Checked | Branch-first workflow creation rule followed. |
-| `docs/adr/ADR-0023-h2-for-repository-source-mvp-persistence.md` | Checked | H2 remains repository-source service-local MVP persistence only. |
+- `docs/arc42/07-deployment-view.md`
+- `docs/architecture/service-roots.md`
+- `docs/architecture/service-communication-matrix.md`
+- `docs/architecture/data-ownership.md`
+- `docs/adr/ADR-0017-target-microservices-service-landscape.md`
 
-## Update Decision
+## Result
 
-No arc42 source document update is required during `workflow create`.
+arc42 deployment guidance already distinguishes:
 
-During `workflow execute`, update arc42 only if implementation changes verified
-runtime or deployment semantics beyond local WSL defaults and query-report HTTP
-executor behavior.
+- target services;
+- transitional current-state service roots;
+- optional planned roots;
+- non-production infrastructure;
+- Docker-local evidence versus production readiness.
 
-## Production Readiness Guard
+This workflow does not update arc42 during workflow creation because no new
+runtime deployment evidence exists yet. S21 and S22 must update
+`docs/arc42/07-deployment-view.md` after implementation only with verified
+Compose descriptors, validation commands, startup checks, skipped checks, and
+remaining limitations.
 
-The final report may say the local MVP stack was started for manual trial. It
-must not claim Docker, Swarm, Kubernetes or production readiness.
+## Required Execution Update
+
+When `workflow execute` completes the deployment slices, update arc42 with:
+
+- the root stack path;
+- the `forensic_analytics` Docker network;
+- the verified service descriptor paths;
+- the GUI entry point;
+- exact commands that passed;
+- explicit non-readiness notes for planned or skipped roots.
