@@ -135,6 +135,12 @@ before the root network file. This command validates the model; runtime startup
 may still reveal service-level integration gaps and should be recorded as
 runtime evidence only after it is executed.
 
+The documented commands can be run through the local helper script:
+
+```bash
+bash deployment/docker-compose/setup.sh full
+```
+
 ```bash
 docker compose \
   -f deployment/docker-compose/services/repository-source-service.compose.yml \

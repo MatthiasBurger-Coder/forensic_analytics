@@ -143,6 +143,12 @@ commands are executed.
 
 ## Local Verification
 
+The documented `repository-to-btm` setup can be run through the helper script:
+
+```bash
+bash deployment/docker-compose/setup.sh repository-to-btm
+```
+
 Build service jars first:
 
 ```bash
