@@ -149,6 +149,10 @@ The documented `repository-to-btm` setup can be run through the helper script:
 bash deployment/docker-compose/setup.sh repository-to-btm
 ```
 
+The helper stops the known local Compose projects before startup without
+removing named volumes. This keeps repeated deploys from failing on reused host
+ports such as `127.0.0.1:18080`.
+
 Build service jars first:
 
 ```bash

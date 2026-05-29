@@ -17,7 +17,8 @@ Modes:
   gui-smoke          Build documented GUI smoke inputs, start query-report-api-service and forensic-ui.
 
 The script wraps the documented local Docker Compose runbook commands. Docker remains optional
-for the repository quality gate.
+for the repository quality gate. Before startup it stops known local Compose projects without
+removing named volumes, so repeated deploys can rebind their documented host ports.
 USAGE
 }
 
@@ -82,6 +83,12 @@ ensure_network() {
   fi
 }
 
+stop_known_local_stacks() {
+  run compose_repository_to_btm down --remove-orphans
+  run compose_full -p forensic-analytics-local down --remove-orphans
+  run compose_gui_smoke down --remove-orphans
+}
+
 build_repository_to_btm_jars() {
   run ./gradlew --no-daemon --max-workers=1 \
     :forensic-gateway-service:bootJar \
@@ -119,6 +126,7 @@ build_ui() {
 }
 
 repository_to_btm() {
+  stop_known_local_stacks
   build_repository_to_btm_jars
   run compose_repository_to_btm config
   run compose_repository_to_btm build
@@ -136,6 +144,7 @@ repository_to_btm() {
 
 full() {
   ensure_network
+  stop_known_local_stacks
   build_full_jars
   build_ui
   run compose_full config
@@ -149,6 +158,7 @@ full() {
 
 gui_smoke() {
   ensure_network
+  stop_known_local_stacks
   run ./gradlew --no-daemon --max-workers=1 \
     :query-report-api-service:bootJar \
     --dependency-verification strict --console=plain --stacktrace

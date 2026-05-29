@@ -141,6 +141,10 @@ The documented commands can be run through the local helper script:
 bash deployment/docker-compose/setup.sh full
 ```
 
+The helper first stops the known local Compose projects without removing named
+volumes. This avoids stale containers holding host ports such as
+`127.0.0.1:18080` during repeated local deploys.
+
 ```bash
 docker compose \
   -f deployment/docker-compose/services/repository-source-service.compose.yml \
