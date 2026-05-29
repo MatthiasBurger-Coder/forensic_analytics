@@ -1,0 +1,17 @@
+services:
+  forensic-ui:
+    image: forensic-analytics/forensic-ui:local
+    build:
+      context: ../../../forensic-ui
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: /api
+    ports:
+      - "127.0.0.1:18000:80"
+    networks:
+      - forensic_analytics
+
+networks:
+  forensic_analytics:
+    name: forensic_analytics
+    external: true

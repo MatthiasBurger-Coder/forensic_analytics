@@ -34,12 +34,18 @@ No lint script is configured in this slice.
 ## Docker
 
 ```bash
-docker build -t forensic-ui:local ./forensic-ui
+docker build --build-arg VITE_API_BASE_URL=/api -t forensic-ui:local ./forensic-ui
 ```
 
-The nginx image serves the static Vite build with SPA fallback. It returns a JSON `502 BACKEND_UNAVAILABLE` response for `/api` because this repository has no root compose service name for the REST backend.
+The nginx image serves the static Vite build with SPA fallback. In the local
+Compose deployment it proxies same-origin `/api` requests to
+`query-report-api-service:8080` on the `forensic_analytics` Docker network.
 
 `VITE_API_BASE_URL` is compiled into the Vite bundle. Passing a different value to `docker run -e` does not reconfigure an already built image.
+
+The Compose descriptor `deployment/docker-compose/services/forensic-ui.compose.yml`
+builds the UI with `VITE_API_BASE_URL=/api` and publishes it on
+`http://127.0.0.1:18000/`.
 
 ## Current Scope
 

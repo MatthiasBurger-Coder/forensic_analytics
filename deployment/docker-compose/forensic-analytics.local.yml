@@ -1,0 +1,8 @@
+name: forensic-analytics
+
+services: {}
+
+networks:
+  forensic_analytics:
+    name: forensic_analytics
+    external: true

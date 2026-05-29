@@ -10,27 +10,31 @@
 
 ## Result
 
-arc42 deployment guidance already distinguishes:
+`docs/arc42/07-deployment-view.md` was synchronized with the executed local
+Docker Compose workflow. The update records:
 
-- target services;
-- transitional current-state service roots;
-- optional planned roots;
-- non-production infrastructure;
-- Docker-local evidence versus production readiness.
+- root stack path `deployment/docker-compose/forensic-analytics.local.yml`;
+- external Docker network `forensic_analytics`;
+- generated service-specific Compose fragments;
+- GUI entry point `http://127.0.0.1:18000/`;
+- same-origin `/api` proxy from nginx to `query-report-api-service:8080`;
+- executed `/api/health` smoke result;
+- non-readiness notes for planned roots and skipped full-stack runtime checks.
 
-This workflow does not update arc42 during workflow creation because no new
-runtime deployment evidence exists yet. S21 and S22 must update
-`docs/arc42/07-deployment-view.md` after implementation only with verified
-Compose descriptors, validation commands, startup checks, skipped checks, and
-remaining limitations.
+The architecture notes still distinguish:
 
-## Required Execution Update
+- target services from transitional services;
+- tool and non-production descriptors from productive backend services;
+- operational diagnostics from forensic evidence;
+- local Docker Compose evidence from production, Swarm or Kubernetes readiness.
 
-When `workflow execute` completes the deployment slices, update arc42 with:
+## Remaining Limits
 
-- the root stack path;
-- the `forensic_analytics` Docker network;
-- the verified service descriptor paths;
-- the GUI entry point;
-- exact commands that passed;
-- explicit non-readiness notes for planned or skipped roots.
+No arc42 section claims:
+
+- production readiness;
+- Docker Swarm or Kubernetes readiness;
+- full-stack startup success for every service;
+- Joern runtime smoke success;
+- graph replay or report-generation runtime availability;
+- generated reports, graph projections or LLM output as verified evidence.

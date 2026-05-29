@@ -1,0 +1,24 @@
+services:
+  graph-replay-service:
+    image: eclipse-temurin:25-jre@sha256:04262e8782d6b034ee5d7c1c5d4e8938fcf2063a76b4bfcd84e5d994d09c27bc
+    profiles:
+      - planned
+    command:
+      - sh
+      - -c
+      - "test -r /etc/forensic-analytics/graph-replay-service/README.md && grep -q 'Planned service root' /etc/forensic-analytics/graph-replay-service/README.md"
+    configs:
+      - source: graph_replay_readme
+        target: /etc/forensic-analytics/graph-replay-service/README.md
+    restart: "no"
+    networks:
+      - forensic_analytics
+
+configs:
+  graph_replay_readme:
+    file: ../../../graph-replay-service/README.md
+
+networks:
+  forensic_analytics:
+    name: forensic_analytics
+    external: true

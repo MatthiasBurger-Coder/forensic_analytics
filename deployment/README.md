@@ -4,18 +4,33 @@
 
 Deployment root for the target microservices ecosystem.
 
-`docker-compose/repository-to-btm.local.yml` is the first verified local
-runtime descriptor for the repository-to-BTM path. It covers only:
+`docker-compose/forensic-analytics.local.yml` is the root local Compose entry
+point for the deployment workflow. It owns the shared external Docker network
+named `forensic_analytics` and is combined with service-specific Compose
+fragments as those fragments are implemented and verified.
+
+Create the network before validating or running the combined stack:
+
+```bash
+docker network create forensic_analytics
+```
+
+`docker-compose/repository-to-btm.local.yml` remains the first verified
+transitional runtime descriptor for the repository-to-BTM path. It covers:
 
 - `forensic-gateway-service`
 - `analysis-store-service`
 - `repository-analysis-service`
+- `repository-source-service`
 - `java-ast-analysis-service`
 - `joern-cpg-analysis-service`
 - `btm-generation-service`
 
-The descriptor assumes the service `bootJar` tasks have already produced the
-jar files copied by the service Dockerfiles.
+All local Compose descriptors assume the relevant service `bootJar` tasks have
+already produced the jar files copied by the service Dockerfiles. A descriptor
+does not by itself prove image-build, container-startup, health-check, or GUI
+interaction readiness; record those results only after executing the matching
+commands.
 
 Docker Swarm and Kubernetes remain planning roots. No Swarm or Kubernetes
 runtime readiness is claimed until stack files or manifests, health/readiness

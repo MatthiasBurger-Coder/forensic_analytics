@@ -48,5 +48,9 @@ Gradle task in the current service-only build.
 
 The testbed may reference verified local deployment descriptors such as
 `deployment/docker-compose/repository-to-btm.local.yml` for integration
-environment evidence. It does not add a Dockerfile, Docker Compose service,
-Docker Swarm stack or Kubernetes manifest in this slice.
+environment evidence.
+
+`deployment/docker-compose/services/testbed.compose.yml` is a non-production,
+profile-gated Compose descriptor for integration environment checks. It does
+not add a Dockerfile, productive backend service, Docker Swarm stack or
+Kubernetes manifest in this slice.

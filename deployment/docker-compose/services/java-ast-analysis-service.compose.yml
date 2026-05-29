@@ -1,0 +1,23 @@
+services:
+  java-ast-analysis-service:
+    image: forensic-analytics/java-ast-analysis-service:local
+    build:
+      context: ../../..
+      dockerfile: java-ast-analysis-service/Dockerfile
+      args:
+        SERVICE_JAR: java-ast-analysis-service/build/libs/java-ast-analysis-service-0.1.0-SNAPSHOT.jar
+    ports:
+      - "127.0.0.1:18084:8084"
+      - "127.0.0.1:19093:9093"
+    volumes:
+      - java-ast-analysis-artifacts:/var/lib/forensic-analytics/java-ast-artifacts
+    networks:
+      - forensic_analytics
+
+volumes:
+  java-ast-analysis-artifacts:
+
+networks:
+  forensic_analytics:
+    name: forensic_analytics
+    external: true

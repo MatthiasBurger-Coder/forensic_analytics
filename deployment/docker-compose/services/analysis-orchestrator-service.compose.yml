@@ -1,0 +1,18 @@
+services:
+  analysis-orchestrator-service:
+    image: forensic-analytics/analysis-orchestrator-service:local
+    build:
+      context: ../../..
+      dockerfile: analysis-orchestrator-service/Dockerfile
+      args:
+        SERVICE_JAR: analysis-orchestrator-service/build/libs/analysis-orchestrator-service-0.1.0-SNAPSHOT.jar
+    ports:
+      - "127.0.0.1:18091:8089"
+      - "127.0.0.1:19101:9098"
+    networks:
+      - forensic_analytics
+
+networks:
+  forensic_analytics:
+    name: forensic_analytics
+    external: true

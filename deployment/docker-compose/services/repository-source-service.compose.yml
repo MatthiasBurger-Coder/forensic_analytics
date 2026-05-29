@@ -1,0 +1,25 @@
+services:
+  repository-source-service:
+    image: forensic-analytics/repository-source-service:local
+    build:
+      context: ../../..
+      dockerfile: repository-source-service/Dockerfile
+      args:
+        SERVICE_JAR: repository-source-service/build/libs/repository-source-service-0.1.0-SNAPSHOT.jar
+    ports:
+      - "127.0.0.1:18087:8083"
+      - "127.0.0.1:19097:9092"
+    volumes:
+      - repository-source-workspaces:/var/lib/forensic-analytics/repository-workspaces
+      - repository-source-data:/var/lib/forensic-analytics/repository-source-data
+    networks:
+      - forensic_analytics
+
+volumes:
+  repository-source-workspaces:
+  repository-source-data:
+
+networks:
+  forensic_analytics:
+    name: forensic_analytics
+    external: true

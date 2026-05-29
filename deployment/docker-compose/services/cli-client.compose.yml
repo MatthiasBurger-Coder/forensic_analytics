@@ -1,0 +1,20 @@
+services:
+  cli-client:
+    image: forensic-analytics/cli-client:local
+    build:
+      context: ../../..
+      dockerfile: cli-client/Dockerfile
+      args:
+        CLI_DISTRIBUTION: cli-client/build/install/cli-client
+    profiles:
+      - tools
+    command:
+      - --help
+    restart: "no"
+    networks:
+      - forensic_analytics
+
+networks:
+  forensic_analytics:
+    name: forensic_analytics
+    external: true

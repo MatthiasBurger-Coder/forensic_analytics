@@ -354,7 +354,6 @@ secondary_reviewers:
   - senior_tester
 affected_files:
   - deployment/docker-compose/services/repository-source-service.compose.yml
-  - deployment/docker-compose/README.md
 affected_modules:
   - repository-source-service
 affected_contracts:
@@ -403,7 +402,6 @@ secondary_reviewers:
   - senior_tester
 affected_files:
   - deployment/docker-compose/services/ingestion-service.compose.yml
-  - deployment/docker-compose/README.md
 affected_modules:
   - ingestion-service
 affected_contracts:
@@ -453,7 +451,6 @@ secondary_reviewers:
   - senior_tester
 affected_files:
   - deployment/docker-compose/services/java-parser-analysis-service.compose.yml
-  - deployment/docker-compose/README.md
 affected_modules:
   - java-parser-analysis-service
 affected_contracts:
@@ -503,7 +500,6 @@ secondary_reviewers:
   - senior_tester
 affected_files:
   - deployment/docker-compose/services/joern-analysis-service.compose.yml
-  - deployment/docker-compose/README.md
 affected_modules:
   - joern-analysis-service
 affected_contracts:
@@ -553,7 +549,6 @@ secondary_reviewers:
   - senior_tester
 affected_files:
   - deployment/docker-compose/services/analysis-orchestrator-service.compose.yml
-  - deployment/docker-compose/README.md
 affected_modules:
   - analysis-orchestrator-service
 affected_contracts:
@@ -606,7 +601,6 @@ secondary_reviewers:
   - senior_tester
 affected_files:
   - deployment/docker-compose/services/query-report-api-service.compose.yml
-  - deployment/docker-compose/README.md
 affected_modules:
   - query-report-api-service
 affected_contracts:
@@ -656,9 +650,9 @@ secondary_reviewers:
   - senior_java_backend
   - senior_tester
 affected_files:
+  - .dockerignore
   - deployment/docker-compose/services/cli-client.compose.yml
   - cli-client/Dockerfile
-  - deployment/docker-compose/README.md
 affected_modules:
   - cli-client
 affected_contracts:
@@ -668,6 +662,7 @@ dependencies:
   - S07_QUERY_REPORT_API_SERVICE_COMPOSE
 parallel_group: P4
 file_locks:
+  - .dockerignore
   - deployment/docker-compose/services/cli-client.compose.yml
   - cli-client/Dockerfile
 contract_locks:
@@ -677,8 +672,9 @@ architecture_locks:
 quality_gates:
   targeted:
     - ./gradlew :cli-client:test --dependency-verification strict --console=plain --stacktrace
+    - ./gradlew :cli-client:installDist --dependency-verification strict --console=plain --stacktrace
     - ./gradlew :cli-client:build --dependency-verification strict --console=plain --stacktrace
-    - docker compose -f deployment/docker-compose/services/cli-client.compose.yml config
+    - docker compose --profile tools -f deployment/docker-compose/services/cli-client.compose.yml config
   required:
     - ./gradlew test --dependency-verification strict --console=plain --stacktrace
 documentation:
@@ -710,7 +706,6 @@ secondary_reviewers:
 affected_files:
   - deployment/docker-compose/services/observability-stack.compose.yml
   - deployment/observability/service-diagnostics-policy.yaml
-  - deployment/docker-compose/README.md
 affected_modules:
   - observability-stack
 affected_contracts: []
@@ -719,13 +714,14 @@ dependencies:
 parallel_group: P4
 file_locks:
   - deployment/docker-compose/services/observability-stack.compose.yml
+  - deployment/observability/service-diagnostics-policy.yaml
 contract_locks: []
 architecture_locks:
   - observability-is-diagnostics-only
 quality_gates:
   targeted:
     - ./gradlew :observability-stack:test --dependency-verification strict --console=plain --stacktrace
-    - docker compose -f deployment/docker-compose/services/observability-stack.compose.yml config
+    - docker compose --profile diagnostics -f deployment/docker-compose/services/observability-stack.compose.yml config
   required:
     - ./gradlew test --dependency-verification strict --console=plain --stacktrace
 documentation:
@@ -756,7 +752,6 @@ secondary_reviewers:
 affected_files:
   - deployment/docker-compose/services/testbed.compose.yml
   - testbed/README.md
-  - deployment/docker-compose/README.md
 affected_modules:
   - testbed
 affected_contracts: []
@@ -772,7 +767,7 @@ architecture_locks:
 quality_gates:
   targeted:
     - ./gradlew :testbed:test --dependency-verification strict --console=plain --stacktrace
-    - docker compose -f deployment/docker-compose/services/testbed.compose.yml config
+    - docker compose --profile testbed -f deployment/docker-compose/services/testbed.compose.yml config
   required:
     - ./gradlew test --dependency-verification strict --console=plain --stacktrace
 documentation:
@@ -803,7 +798,6 @@ secondary_reviewers:
   - senior_tester
 affected_files:
   - deployment/docker-compose/services/forensic-ingestion-service.compose.yml
-  - deployment/docker-compose/README.md
 affected_modules:
   - forensic-ingestion-service
 affected_contracts:
@@ -852,14 +846,13 @@ secondary_reviewers:
   - senior_tester
 affected_files:
   - deployment/docker-compose/services/forensic-gateway-service.compose.yml
-  - deployment/docker-compose/README.md
 affected_modules:
   - forensic-gateway-service
 affected_contracts:
   - contracts/openapi/gateway-api.yaml
 dependencies:
   - S13_ANALYSIS_STORE_SERVICE_COMPOSE
-parallel_group: P6
+parallel_group: P7
 file_locks:
   - deployment/docker-compose/services/forensic-gateway-service.compose.yml
 contract_locks:
@@ -885,6 +878,7 @@ Done criteria:
 
 - The descriptor preserves gateway as transitional repository-to-BTM facade.
 - Host-port conflicts with `query-report-api-service` are avoided.
+- Standalone Compose validation is not broken by undefined dependencies.
 
 ### Slice 13 - Analysis Store Service Compose
 
@@ -901,7 +895,6 @@ secondary_reviewers:
   - senior_tester
 affected_files:
   - deployment/docker-compose/services/analysis-store-service.compose.yml
-  - deployment/docker-compose/README.md
 affected_modules:
   - analysis-store-service
 affected_contracts:
@@ -911,7 +904,7 @@ dependencies:
   - S15_JAVA_AST_ANALYSIS_SERVICE_COMPOSE
   - S16_JOERN_CPG_ANALYSIS_SERVICE_COMPOSE
   - S17_BTM_GENERATION_SERVICE_COMPOSE
-parallel_group: P5
+parallel_group: P6
 file_locks:
   - deployment/docker-compose/services/analysis-store-service.compose.yml
 contract_locks:
@@ -936,7 +929,8 @@ stop_conditions:
 Done criteria:
 
 - The descriptor preserves transitional status and owner API boundaries.
-- Dependencies are health-based where available.
+- Standalone Compose validation is not broken by undefined dependencies;
+  Dockerfile health checks remain available when fragments are combined.
 
 ### Slice 14 - Repository Analysis Service Compose
 
@@ -953,7 +947,6 @@ secondary_reviewers:
   - senior_tester
 affected_files:
   - deployment/docker-compose/services/repository-analysis-service.compose.yml
-  - deployment/docker-compose/README.md
 affected_modules:
   - repository-analysis-service
 affected_contracts:
@@ -1001,7 +994,6 @@ secondary_reviewers:
   - senior_tester
 affected_files:
   - deployment/docker-compose/services/java-ast-analysis-service.compose.yml
-  - deployment/docker-compose/README.md
 affected_modules:
   - java-ast-analysis-service
 affected_contracts:
@@ -1050,7 +1042,6 @@ secondary_reviewers:
   - senior_tester
 affected_files:
   - deployment/docker-compose/services/joern-cpg-analysis-service.compose.yml
-  - deployment/docker-compose/README.md
 affected_modules:
   - joern-cpg-analysis-service
 affected_contracts:
@@ -1097,7 +1088,6 @@ secondary_reviewers:
   - senior_tester
 affected_files:
   - deployment/docker-compose/services/btm-generation-service.compose.yml
-  - deployment/docker-compose/README.md
 affected_modules:
   - btm-generation-service
 affected_contracts:
@@ -1147,7 +1137,6 @@ secondary_reviewers:
 affected_files:
   - graph-replay-service/README.md
   - deployment/docker-compose/services/graph-replay-service.compose.yml
-  - deployment/docker-compose/README.md
 affected_modules:
   - graph-replay-service
 affected_contracts: []
@@ -1163,7 +1152,7 @@ architecture_locks:
 quality_gates:
   targeted:
     - ./gradlew :graph-replay-service:tasks --dependency-verification strict --console=plain --stacktrace
-    - docker compose -f deployment/docker-compose/services/graph-replay-service.compose.yml config
+    - docker compose --profile planned -f deployment/docker-compose/services/graph-replay-service.compose.yml config
   required:
     - ./gradlew test --dependency-verification strict --console=plain --stacktrace
 documentation:
@@ -1196,7 +1185,6 @@ secondary_reviewers:
 affected_files:
   - report-generation-service/README.md
   - deployment/docker-compose/services/report-generation-service.compose.yml
-  - deployment/docker-compose/README.md
 affected_modules:
   - report-generation-service
 affected_contracts: []
@@ -1212,7 +1200,7 @@ architecture_locks:
 quality_gates:
   targeted:
     - ./gradlew :report-generation-service:tasks --dependency-verification strict --console=plain --stacktrace
-    - docker compose -f deployment/docker-compose/services/report-generation-service.compose.yml config
+    - docker compose --profile planned -f deployment/docker-compose/services/report-generation-service.compose.yml config
   required:
     - ./gradlew test --dependency-verification strict --console=plain --stacktrace
 documentation:
@@ -1245,7 +1233,6 @@ affected_files:
   - forensic-ui/Dockerfile
   - forensic-ui/nginx.conf
   - forensic-ui/README.md
-  - deployment/docker-compose/README.md
 affected_modules:
   - forensic-ui
 affected_contracts:
@@ -1255,6 +1242,8 @@ dependencies:
 parallel_group: P7
 file_locks:
   - deployment/docker-compose/services/forensic-ui.compose.yml
+  - forensic-ui/Dockerfile
+  - forensic-ui/nginx.conf
   - forensic-ui/README.md
 contract_locks:
   - public-query-report-api
@@ -1381,6 +1370,8 @@ parallel_group: P9
 file_locks:
   - docs/workflow/execution-report.md
   - docs/workflow/arc42-check-status.md
+  - deployment/docker-compose/README.md
+  - docs/deployment/forensic-analytics-docker-compose.md
 contract_locks: []
 architecture_locks:
   - final-quality-gate
@@ -1417,6 +1408,8 @@ See `docs/workflow/slice-dependency-map.md` for the graph and parallel groups.
   transitional service fragments.
 - S08, S09, S10, S18, and S19 can run in parallel after S01 if their
   non-runtime or tool-profile status remains explicit.
+- S12 waits for S13 because the transitional gateway must not start before
+  the transitional analysis store descriptor exists.
 - S20 waits for S07 because the GUI must target the public API.
 - S21 waits for all service fragments so the runbook documents the actual
   generated files.
@@ -1435,8 +1428,8 @@ must say so and must not claim runtime readiness.
 
 ## Documentation Synchronization Points
 
-- Update `deployment/docker-compose/README.md` whenever a service descriptor
-  or root stack command changes.
+- Update `deployment/docker-compose/README.md` only in S01, S21, or S22 so
+  shared Compose documentation changes remain serialized.
 - Update `docs/deployment/forensic-analytics-docker-compose.md` in S21.
 - Update `docs/arc42/07-deployment-view.md` only with verified deployment
   evidence and planned-vs-implemented wording.

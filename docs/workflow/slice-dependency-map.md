@@ -85,8 +85,8 @@ flowchart TD
 | P3 | S07 | Waits for repository-source and orchestrator fragments. |
 | P4 | S08, S09, S10, S18, S19 | Tool, observability, testbed, and planned-root slices with disjoint files. |
 | P5 | S11, S14, S15, S16, S17 | Transitional worker fragments with disjoint files. |
-| P6 | S12, S13 | Transitional gateway/store path after worker fragments. |
-| P7 | S20 | Waits for public API fragment. |
+| P6 | S13 | Transitional analysis store after worker fragments. |
+| P7 | S12, S20 | Transitional gateway waits for S13; UI waits for the public API fragment. |
 | P8 | S21 | Waits for all service/root/UI slices. |
 | P9 | S22 | Final verification only. |
 

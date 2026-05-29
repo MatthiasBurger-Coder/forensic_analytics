@@ -20,3 +20,12 @@ Before implementation, a future slice must define report contracts, evidence
 package inputs, Graph Replay dependency behavior, deterministic rendering
 rules, generated-output labeling, redaction policy and tests proving reports do
 not overwrite or relabel evidence.
+
+## Deployment Readiness
+
+`deployment/docker-compose/services/report-generation-service.compose.yml` is a
+profile-gated deployment marker for the planned service root. It verifies local
+deployment documentation references without starting a runnable report
+generation service. It does not define a Dockerfile, publish ports, claim a
+health endpoint, generate report data or label hypotheses or generated output
+as verified forensic evidence.

@@ -440,3 +440,34 @@ limited to service-local build and packaging evidence plus the repository
 quality gate; it must not claim Docker image-build, Docker Compose startup,
 Docker Swarm or Kubernetes runtime readiness for the target landscape unless
 those commands are explicitly executed and recorded.
+
+## 7.8 Local Docker Compose Fragment Landscape
+
+The Docker Compose deployment workflow adds service-specific local fragments
+under `deployment/docker-compose/services/` and a root network descriptor at
+`deployment/docker-compose/forensic-analytics.local.yml`. The root descriptor
+uses the external Docker network `forensic_analytics`.
+
+Runnable service fragments exist for repository-source, ingestion, JavaParser,
+Joern analysis, analysis orchestration, query/report API, forensic ingestion,
+forensic gateway, analysis store, repository analysis, Java AST, Joern CPG,
+BTM generation and the React UI. Each runnable Java service fragment uses its
+service-owned Dockerfile and does not share Java implementation modules with
+other services.
+
+`cli-client`, `observability-stack` and `testbed` are profile-gated local
+support descriptors. They are not productive backend services. Graph Replay
+and Report Generation remain planned roots; their Compose fragments are
+profile-gated markers only and do not claim runnable service implementations,
+health endpoints, graph data, replay data or report output.
+
+The React UI fragment publishes `http://127.0.0.1:18000/` and uses same-origin
+`/api` calls. nginx proxies those calls to `query-report-api-service:8080`
+inside the Docker network. The workflow executed a local smoke check for
+`http://127.0.0.1:18000/api/health` and received `{"status":"UP"}` on
+May 28, 2026.
+
+The runbook for build, config validation, startup, logs, GUI smoke and cleanup
+is `docs/deployment/forensic-analytics-docker-compose.md`. Full-stack startup
+and health checks for every container remain separate runtime evidence and are
+not claimed unless those commands are executed and recorded.

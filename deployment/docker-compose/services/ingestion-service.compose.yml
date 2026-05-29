@@ -1,0 +1,18 @@
+services:
+  ingestion-service:
+    image: forensic-analytics/ingestion-service:local
+    build:
+      context: ../../..
+      dockerfile: ingestion-service/Dockerfile
+      args:
+        SERVICE_JAR: ingestion-service/build/libs/ingestion-service-0.1.0-SNAPSHOT.jar
+    ports:
+      - "127.0.0.1:18081:8081"
+      - "127.0.0.1:19090:9090"
+    networks:
+      - forensic_analytics
+
+networks:
+  forensic_analytics:
+    name: forensic_analytics
+    external: true
