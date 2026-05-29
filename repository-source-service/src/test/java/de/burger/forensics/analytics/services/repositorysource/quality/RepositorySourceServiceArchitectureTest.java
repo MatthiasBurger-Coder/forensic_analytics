@@ -29,6 +29,8 @@ class RepositorySourceServiceArchitectureTest {
                 "java.sql..",
                 "javax.sql..",
                 "org.h2..",
+                "org.postgresql..",
+                "liquibase..",
                 "de.burger.forensics.analytics.repositoryanalysis.v1..",
                 "de.burger.forensics.analytics.javaastanalysis.v1..",
                 "de.burger.forensics.analytics.analysisjob.v1.."
@@ -65,6 +67,39 @@ class RepositorySourceServiceArchitectureTest {
             .should()
             .dependOnClassesThat()
             .resideInAnyPackage("org.springframework..");
+
+    @ArchTest
+    static final ArchRule postgres_adapter_stays_inside_outbound_adapter_or_bootstrap =
+        noClasses()
+            .that()
+            .resideOutsideOfPackage("de.burger.forensics.analytics.services.repositorysource.adapter.out.postgres..")
+            .and()
+            .resideOutsideOfPackage("de.burger.forensics.analytics.services.repositorysource.bootstrap..")
+            .should()
+            .dependOnClassesThat()
+            .resideInAnyPackage("de.burger.forensics.analytics.services.repositorysource.adapter.out.postgres..");
+
+    @ArchTest
+    static final ArchRule jdbc_dependencies_stay_inside_outbound_adapters_or_bootstrap =
+        noClasses()
+            .that()
+            .resideOutsideOfPackage("de.burger.forensics.analytics.services.repositorysource.adapter.out..")
+            .and()
+            .resideOutsideOfPackage("de.burger.forensics.analytics.services.repositorysource.bootstrap..")
+            .should()
+            .dependOnClassesThat()
+            .resideInAnyPackage("java.sql..", "javax.sql..");
+
+    @ArchTest
+    static final ArchRule postgresql_and_liquibase_dependencies_stay_inside_postgres_adapter_or_bootstrap =
+        noClasses()
+            .that()
+            .resideOutsideOfPackage("de.burger.forensics.analytics.services.repositorysource.adapter.out.postgres..")
+            .and()
+            .resideOutsideOfPackage("de.burger.forensics.analytics.services.repositorysource.bootstrap..")
+            .should()
+            .dependOnClassesThat()
+            .resideInAnyPackage("org.postgresql..", "liquibase..");
 
     @ArchTest
     static final ArchRule domain_does_not_depend_on_application_adapters_or_bootstrap =
