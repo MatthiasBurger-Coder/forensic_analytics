@@ -142,12 +142,15 @@ bash deployment/docker-compose/setup.sh full
 ```
 
 The helper refuses to stop a running Forensic Analytics Docker instance by
-default. This protects local persistence state, including the PostgreSQL
-development database and service-owned named volumes. When an intentional local
-restart is needed, set `ALLOW_FORENSIC_ANALYTICS_RESTART=1`; the helper still
-stops known local Compose projects without removing named volumes. This avoids
-stale containers holding host ports such as `127.0.0.1:18080` during repeated
-local deploys while preserving persisted state.
+default for modes that preserve local state. This protects local persistence
+state, including service-owned named volumes. When an intentional local restart
+is needed for those modes, set `ALLOW_FORENSIC_ANALYTICS_RESTART=1`; the helper
+still stops known local Compose projects without removing named volumes.
+Alternatively, `bash deployment/docker-compose/setup.sh docker` re-deploys the
+full local Docker stack without removing named volumes. The `full` mode is
+different: `bash deployment/docker-compose/setup.sh full` is an explicit local
+reset and removes named volumes before starting `forensic-analytics-local`, so
+it starts with empty local persistence state.
 
 ```bash
 docker compose \

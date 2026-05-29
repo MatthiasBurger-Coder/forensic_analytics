@@ -9,18 +9,23 @@ MODE="${1:-repository-to-btm}"
 usage() {
   cat <<'USAGE'
 Usage:
-  bash deployment/docker-compose/setup.sh [repository-to-btm|full|gui-smoke]
+  bash deployment/docker-compose/setup.sh [repository-to-btm|docker|full|gui-smoke]
 
 Modes:
   repository-to-btm  Build jars and images, start repository-to-btm.local.yml, run documented health checks.
-  full               Build documented full local stack inputs and images, start forensic-analytics-local.
+  docker             Re-deploy the full local Docker stack without removing named volumes.
+  full               Reset local persistence, build documented full stack inputs and images, start forensic-analytics-local.
   gui-smoke          Build documented GUI smoke inputs, start query-report-api-service and forensic-ui.
 
 The script wraps the documented local Docker Compose runbook commands. Docker remains optional
 for the repository quality gate. Before startup it checks for running Forensic Analytics
-containers and refuses to stop them unless ALLOW_FORENSIC_ANALYTICS_RESTART=1 is set.
-When the restart override is set, it stops known local Compose projects without removing
-named volumes, so repeated deploys can rebind their documented host ports.
+containers and refuses to stop them unless ALLOW_FORENSIC_ANALYTICS_RESTART=1 is set,
+except for docker and full modes. The docker mode is an explicit re-deploy without
+data loss: it stops known local Compose projects without removing named volumes. The
+full mode is an explicit local reset: it stops known local Compose projects and removes
+named volumes before starting forensic-analytics-local. When the restart override is set
+for other modes, it stops known local Compose projects without removing named volumes,
+so repeated deploys can rebind their documented host ports.
 USAGE
 }
 
@@ -135,9 +140,24 @@ guard_protected_forensic_analytics_instance() {
 stop_known_local_stacks() {
   guard_protected_forensic_analytics_instance
 
+  stop_known_local_stacks_preserving_state
+}
+
+stop_known_local_stacks_preserving_state() {
+  ensure_docker_available
+
   run compose_repository_to_btm down --remove-orphans
   run compose_full -p forensic-analytics-local down --remove-orphans
   run compose_gui_smoke down --remove-orphans
+}
+
+reset_known_local_stacks() {
+  ensure_docker_available
+
+  printf 'WARNING: full mode resets known local Forensic Analytics Compose projects and removes named volumes.\n' >&2
+  run compose_repository_to_btm down -v --remove-orphans
+  run compose_full -p forensic-analytics-local down -v --remove-orphans
+  run compose_gui_smoke down -v --remove-orphans
 }
 
 build_repository_to_btm_jars() {
@@ -195,7 +215,21 @@ repository_to_btm() {
 
 full() {
   ensure_network
-  stop_known_local_stacks
+  reset_known_local_stacks
+  build_full_jars
+  build_ui
+  run compose_full config
+  run compose_full build
+  run compose_full -p forensic-analytics-local up -d
+  run compose_full -p forensic-analytics-local ps
+
+  wait_for_url http://127.0.0.1:18080/api/health
+  wait_for_url http://127.0.0.1:18000/api/health
+}
+
+docker_redeploy() {
+  ensure_network
+  stop_known_local_stacks_preserving_state
   build_full_jars
   build_ui
   run compose_full config
@@ -227,6 +261,9 @@ cd "${REPO_ROOT}"
 case "${MODE}" in
   repository-to-btm)
     repository_to_btm
+    ;;
+  docker)
+    docker_redeploy
     ;;
   full)
     full
