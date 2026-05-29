@@ -1,0 +1,25 @@
+services:
+  joern-analysis-service:
+    image: forensic-analytics/joern-analysis-service:local
+    build:
+      context: ../../..
+      dockerfile: joern-analysis-service/Dockerfile
+      args:
+        SERVICE_JAR: joern-analysis-service/build/libs/joern-analysis-service-0.1.0-SNAPSHOT.jar
+    ports:
+      - "127.0.0.1:18089:8087"
+      - "127.0.0.1:19099:9096"
+    volumes:
+      - joern-analysis-workspaces:/var/lib/forensic-analytics/joern-analysis-workspaces
+      - joern-analysis-artifacts:/var/lib/forensic-analytics/joern-analysis-artifacts
+    networks:
+      - forensic_analytics
+
+volumes:
+  joern-analysis-workspaces:
+  joern-analysis-artifacts:
+
+networks:
+  forensic_analytics:
+    name: forensic_analytics
+    external: true

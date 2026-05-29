@@ -1,0 +1,23 @@
+services:
+  btm-generation-service:
+    image: forensic-analytics/btm-generation-service:local
+    build:
+      context: ../../..
+      dockerfile: btm-generation-service/Dockerfile
+      args:
+        SERVICE_JAR: btm-generation-service/build/libs/btm-generation-service-0.1.0-SNAPSHOT.jar
+    ports:
+      - "127.0.0.1:18086:8086"
+      - "127.0.0.1:19095:9095"
+    volumes:
+      - btm-generation-artifacts:/var/lib/forensic-analytics/btm-artifacts
+    networks:
+      - forensic_analytics
+
+volumes:
+  btm-generation-artifacts:
+
+networks:
+  forensic_analytics:
+    name: forensic_analytics
+    external: true

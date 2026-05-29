@@ -1,0 +1,28 @@
+services:
+  testbed:
+    image: eclipse-temurin:25-jre@sha256:04262e8782d6b034ee5d7c1c5d4e8938fcf2063a76b4bfcd84e5d994d09c27bc
+    profiles:
+      - testbed
+    command:
+      - sh
+      - -c
+      - "test -r /etc/forensic-analytics/testbed/README.md && test -r /etc/forensic-analytics/docker-compose/forensic-analytics.local.yml"
+    configs:
+      - source: testbed_readme
+        target: /etc/forensic-analytics/testbed/README.md
+      - source: root_compose_descriptor
+        target: /etc/forensic-analytics/docker-compose/forensic-analytics.local.yml
+    restart: "no"
+    networks:
+      - forensic_analytics
+
+configs:
+  testbed_readme:
+    file: ../../../testbed/README.md
+  root_compose_descriptor:
+    file: ../forensic-analytics.local.yml
+
+networks:
+  forensic_analytics:
+    name: forensic_analytics
+    external: true

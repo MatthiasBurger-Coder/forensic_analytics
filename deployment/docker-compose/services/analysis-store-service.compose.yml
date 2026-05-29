@@ -1,0 +1,18 @@
+services:
+  analysis-store-service:
+    image: forensic-analytics/analysis-store-service:local
+    build:
+      context: ../../..
+      dockerfile: analysis-store-service/Dockerfile
+      args:
+        SERVICE_JAR: analysis-store-service/build/libs/analysis-store-service-0.1.0-SNAPSHOT.jar
+    ports:
+      - "127.0.0.1:18082:8082"
+      - "127.0.0.1:19091:9091"
+    networks:
+      - forensic_analytics
+
+networks:
+  forensic_analytics:
+    name: forensic_analytics
+    external: true

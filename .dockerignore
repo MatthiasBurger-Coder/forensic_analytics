@@ -5,6 +5,21 @@
 
 **/.gradle
 **/build/**
+!repository-source-service/build/
+!repository-source-service/build/libs/
+!repository-source-service/build/libs/*.jar
+!ingestion-service/build/
+!ingestion-service/build/libs/
+!ingestion-service/build/libs/*.jar
+!java-parser-analysis-service/build/
+!java-parser-analysis-service/build/libs/
+!java-parser-analysis-service/build/libs/*.jar
+!analysis-orchestrator-service/build/
+!analysis-orchestrator-service/build/libs/
+!analysis-orchestrator-service/build/libs/*.jar
+!query-report-api-service/build/
+!query-report-api-service/build/libs/
+!query-report-api-service/build/libs/*.jar
 !forensic-ingestion-service/build/
 !forensic-ingestion-service/build/libs/
 !forensic-ingestion-service/build/libs/*.jar
@@ -29,6 +44,10 @@
 !btm-generation-service/build/
 !btm-generation-service/build/libs/
 !btm-generation-service/build/libs/*.jar
+!cli-client/build/
+!cli-client/build/install/
+!cli-client/build/install/cli-client/
+!cli-client/build/install/cli-client/**
 
 **/node_modules
 **/dist

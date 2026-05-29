@@ -1,0 +1,23 @@
+services:
+  java-parser-analysis-service:
+    image: forensic-analytics/java-parser-analysis-service:local
+    build:
+      context: ../../..
+      dockerfile: java-parser-analysis-service/Dockerfile
+      args:
+        SERVICE_JAR: java-parser-analysis-service/build/libs/java-parser-analysis-service-0.1.0-SNAPSHOT.jar
+    ports:
+      - "127.0.0.1:18088:8085"
+      - "127.0.0.1:19098:9094"
+    volumes:
+      - java-parser-analysis-artifacts:/var/lib/forensic-analytics/java-parser-analysis-artifacts
+    networks:
+      - forensic_analytics
+
+volumes:
+  java-parser-analysis-artifacts:
+
+networks:
+  forensic_analytics:
+    name: forensic_analytics
+    external: true

@@ -1,0 +1,24 @@
+services:
+  observability-stack:
+    image: eclipse-temurin:25-jre@sha256:04262e8782d6b034ee5d7c1c5d4e8938fcf2063a76b4bfcd84e5d994d09c27bc
+    profiles:
+      - diagnostics
+    command:
+      - sh
+      - -c
+      - "test -r /etc/forensic-analytics/service-diagnostics-policy.yaml && grep -q '^evidenceClassification: operational-diagnostics-only$' /etc/forensic-analytics/service-diagnostics-policy.yaml"
+    configs:
+      - source: service_diagnostics_policy
+        target: /etc/forensic-analytics/service-diagnostics-policy.yaml
+    restart: "no"
+    networks:
+      - forensic_analytics
+
+configs:
+  service_diagnostics_policy:
+    file: ../../observability/service-diagnostics-policy.yaml
+
+networks:
+  forensic_analytics:
+    name: forensic_analytics
+    external: true

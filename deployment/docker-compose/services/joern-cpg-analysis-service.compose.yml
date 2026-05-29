@@ -1,0 +1,25 @@
+services:
+  joern-cpg-analysis-service:
+    image: forensic-analytics/joern-cpg-analysis-service:local
+    build:
+      context: ../../..
+      dockerfile: joern-cpg-analysis-service/Dockerfile
+      args:
+        SERVICE_JAR: joern-cpg-analysis-service/build/libs/joern-cpg-analysis-service-0.1.0-SNAPSHOT.jar
+    ports:
+      - "127.0.0.1:18085:8085"
+      - "127.0.0.1:19094:9094"
+    volumes:
+      - joern-cpg-analysis-workspaces:/var/lib/forensic-analytics/joern-cpg-workspaces
+      - joern-cpg-analysis-artifacts:/var/lib/forensic-analytics/joern-cpg-artifacts
+    networks:
+      - forensic_analytics
+
+volumes:
+  joern-cpg-analysis-workspaces:
+  joern-cpg-analysis-artifacts:
+
+networks:
+  forensic_analytics:
+    name: forensic_analytics
+    external: true
