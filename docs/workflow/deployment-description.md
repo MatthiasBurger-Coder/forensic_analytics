@@ -1,106 +1,41 @@
-# Deployment Description Draft
+# Deployment Description
 
-## Purpose
+## Current Verified State
 
-This workflow-local deployment description defines the target operator flow for
-the later implementation slices. It is not runtime evidence until
-`workflow execute` creates the files and records command results.
+`repository-source-service` currently stores repository checkout workspace
+metadata in an H2 file under its private data volume and stores checkout bytes
+under the separate `repository-source-workspaces` Docker volume.
 
-## Target File Layout
+`docker/postgres/docker-compose.yml` defines `forensic-postgres` with a
+PostgreSQL database named through `POSTGRES_DB`.
 
-```text
-deployment/docker-compose/
-  forensic-analytics.local.yml
-  README.md
-  services/
-    analysis-orchestrator-service.compose.yml
-    analysis-store-service.compose.yml
-    btm-generation-service.compose.yml
-    cli-client.compose.yml
-    forensic-gateway-service.compose.yml
-    forensic-ingestion-service.compose.yml
-    forensic-ui.compose.yml
-    graph-replay-service.compose.yml
-    ingestion-service.compose.yml
-    java-ast-analysis-service.compose.yml
-    java-parser-analysis-service.compose.yml
-    joern-analysis-service.compose.yml
-    joern-cpg-analysis-service.compose.yml
-    observability-stack.compose.yml
-    query-report-api-service.compose.yml
-    report-generation-service.compose.yml
-    repository-analysis-service.compose.yml
-    repository-source-service.compose.yml
-    testbed.compose.yml
-
-docs/deployment/
-  forensic-analytics-docker-compose.md
-```
-
-## Network
-
-All Compose descriptors must use:
-
-```yaml
-networks:
-  forensic_analytics:
-    name: forensic_analytics
-```
-
-Service entries must attach to that network. The root stack or the first
-service descriptor may create the network. The name must stay stable across
-Compose project names.
-
-If service descriptors are run independently, use an explicit external shared
-network strategy:
-
-```bash
-docker network inspect forensic_analytics >/dev/null 2>&1 || docker network create forensic_analytics
-```
-
-The runbook must state whether the root stack creates the network or expects
-the external network to exist.
-
-## GUI API Routing
-
-The GUI must reach `query-report-api-service` through a verified browser-safe
-path. Preferred local deployment behavior is:
+## Target Local Runtime
 
 ```text
-browser -> forensic-ui nginx -> /api proxy -> query-report-api-service:8080
+forensic-postgres
+  -> PostgreSQL database forensic_analytics
+     -> Liquibase-created repository_source schema
+
+repository-source-service
+  -> JDBC connection to forensic-postgres
+  -> repository-source-workspaces volume for checkout bytes
 ```
 
-The existing `forensic-ui/nginx.conf` returns `502 BACKEND_UNAVAILABLE` for
-`/api`, so a later implementation slice must replace that behavior or provide a
-verified alternative before claiming GUI deployment success.
+## Required Deployment Changes
 
-## Operator Flow
+- Attach `forensic-postgres` and repository-source runtime to a shared local
+  network or include both in the same Compose model.
+- Configure repository-source Docker profile with PostgreSQL connection
+  properties.
+- Keep `repository-source-workspaces` mounted only into
+  `repository-source-service`.
+- Remove the active `repository-source-data` H2 runtime volume after the
+  PostgreSQL cutover unless it is retained only as explicit migration input.
+- Document that `docker compose down -v` removes local PostgreSQL and checkout
+  volumes.
 
-1. Build service artifacts with the Gradle tasks named in the runbook.
-2. Build frontend assets with `npm ci`, `npm run test`, and `npm run build`.
-3. Verify `.dockerignore` includes every service boot jar needed by
-   root-context Dockerfiles.
-4. Validate each service Compose fragment with `docker compose ... config`.
-5. Validate the combined root stack.
-6. Build images.
-7. Start the root stack.
-8. Check service health through host ports.
-9. Open the GUI.
-10. Verify same-origin `/api/health` through the GUI origin.
-11. Exercise a public workflow through the GUI.
-12. Collect logs and command results.
-13. Tear down the stack.
+## Not Claimed
 
-## Runtime Evidence Rules
-
-The deployment runbook must distinguish:
-
-- Compose model validation;
-- image build evidence;
-- container startup evidence;
-- health probe evidence;
-- GUI/browser manual evidence;
-- discovered runtime defects;
-- skipped checks and reasons.
-
-Do not convert skipped or failed runtime checks into readiness claims.
+This workflow does not claim Docker Swarm, Kubernetes, production secrets
+management, database backup/restore or live runtime readiness until the
+corresponding commands are executed and recorded.

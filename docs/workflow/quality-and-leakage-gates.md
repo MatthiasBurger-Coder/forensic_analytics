@@ -1,10 +1,8 @@
-# Quality And Leakage Gates
+# Quality and Leakage Gates
 
-## Authority
+## Authoritative Commands
 
-`QUALITY.md` is the authoritative quality contract.
-
-Minimum repository command:
+Minimum quality command:
 
 ```bash
 ./gradlew test --dependency-verification strict --console=plain --stacktrace
@@ -16,93 +14,50 @@ Full local quality gate:
 ./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace
 ```
 
-## Slice-Level Checks
-
-For Java application services with Dockerfiles:
+Diff check:
 
 ```bash
-./gradlew :<module>:test --dependency-verification strict --console=plain --stacktrace
-./gradlew :<module>:bootJar --dependency-verification strict --console=plain --stacktrace
-docker compose -f deployment/docker-compose/services/<module>.compose.yml config
 git diff --check
 ```
 
-Before claiming Docker image-build readiness for root-context service
-Dockerfiles, verify that `.dockerignore` re-includes the affected service boot
-jar path:
+## Slice-Specific Checks
 
-```bash
-git diff -- .dockerignore
-./gradlew --no-daemon --max-workers=1 :<module>:bootJar --dependency-verification strict --console=plain --stacktrace
-docker build -f <module>/Dockerfile --build-arg SERVICE_JAR=<module>/build/libs/<module>-0.1.0-SNAPSHOT.jar -t forensic-analytics/<module>:local .
-```
-
-For `cli-client`:
-
-```bash
-./gradlew :cli-client:test --dependency-verification strict --console=plain --stacktrace
-./gradlew :cli-client:build --dependency-verification strict --console=plain --stacktrace
-docker compose -f deployment/docker-compose/services/cli-client.compose.yml config
-git diff --check
-```
-
-For planned or non-production roots:
-
-```bash
-./gradlew :<module>:tasks --dependency-verification strict --console=plain --stacktrace
-docker compose -f deployment/docker-compose/services/<module>.compose.yml config
-git diff --check
-```
-
-For the UI:
-
-```bash
-cd forensic-ui && npm ci
-cd forensic-ui && npm run test
-cd forensic-ui && npm run build
-docker compose -f deployment/docker-compose/services/forensic-ui.compose.yml config
-git diff --check
-```
-
-## Runtime Smoke Checks
-
-When Docker is available and image builds succeed:
-
-```bash
-docker compose -f deployment/docker-compose/forensic-analytics.local.yml build
-docker compose -f deployment/docker-compose/forensic-analytics.local.yml up -d
-docker compose -f deployment/docker-compose/forensic-analytics.local.yml ps
-curl -fsS http://127.0.0.1:<query-report-host-port>/api/health
-curl -fsS http://127.0.0.1:<ui-host-port>/
-docker compose -f deployment/docker-compose/forensic-analytics.local.yml logs --no-color --tail=200
-docker compose -f deployment/docker-compose/forensic-analytics.local.yml down
-```
-
-The execution report must record the exact host ports used.
+| Slice | Required Checks |
+|---|---|
+| S01 | `git diff --check` |
+| S02 | `./gradlew :repository-source-service:test --dependency-verification strict --console=plain --stacktrace`; minimum repository test gate |
+| S03 | `./gradlew :repository-source-service:test --dependency-verification strict --console=plain --stacktrace`; minimum repository test gate |
+| S04 | `./gradlew :repository-source-service:test --dependency-verification strict --console=plain --stacktrace`; minimum repository test gate |
+| S05 | `./gradlew :repository-source-service:test --dependency-verification strict --console=plain --stacktrace`; minimum repository test gate |
+| S06 | Docker Compose `config` checks for PostgreSQL and repository-source descriptors; `git diff --check` |
+| S07 | `./gradlew :repository-source-service:test --dependency-verification strict --console=plain --stacktrace`; minimum repository test gate |
+| S08 | targeted repository-source test, Compose `config` checks, minimum gate, full local gate, `git diff --check` |
 
 ## Leakage Gates
 
-Stop a slice if:
+Execution must stop if any slice:
 
-- repository-source private workspace or H2 volumes are mounted into non-owner
-  services;
-- UI or public API responses expose private paths, stack traces, credentials,
-  tokens, raw Git output, or internal worker diagnostics;
-- `forensic-ui` still returns the hardcoded nginx `502 BACKEND_UNAVAILABLE` for
-  `/api` while the deployment claims GUI/API integration;
-- browser access depends on unverified CORS behavior instead of a verified
-  same-origin proxy or an explicitly tested browser-safe route;
-- `.dockerignore` excludes a service boot jar needed by a Dockerfile while the
-  slice claims image-build readiness;
-- static analysis, Joern, graph, replay, report, or generated LLM output is
-  described as observed runtime evidence;
-- planned roots are represented as running services without verified runtime;
-- logs or traces are treated as canonical forensic evidence;
-- Docker runtime checks are skipped but the docs claim they passed.
+- exposes PostgreSQL credentials in committed files, public responses, logs or
+  diagnostics;
+- exposes private repository checkout paths;
+- exposes H2 file paths as public contract data;
+- logs raw Git stdout, stderr, repository credentials or local source content;
+- allows a non-owner service to mount `repository-source-workspaces` or query
+  repository-source PostgreSQL tables directly;
+- stores checkout bytes or source package bytes in PostgreSQL;
+- represents database connectivity failure as successful workspace state.
 
-## Optional Checks
+## Optional Runtime Evidence
 
-Docker image builds, Compose startup, and Joern image pulls are external
-runtime checks. They should be run when available. If skipped because Docker,
-network access, or external images are unavailable, the result must be reported
-without claiming runtime readiness.
+Live Docker checks are useful but optional unless the executing slice records
+Docker availability and elects to run them:
+
+```bash
+docker compose --env-file docker/postgres/.env -f docker/postgres/docker-compose.yml up -d
+docker compose -f deployment/docker-compose/repository-to-btm.local.yml build repository-source-service
+docker compose -f deployment/docker-compose/repository-to-btm.local.yml up -d repository-source-service
+curl -fsS http://127.0.0.1:18087/health
+```
+
+Do not claim runtime health unless these commands, or a documented equivalent,
+were actually executed.

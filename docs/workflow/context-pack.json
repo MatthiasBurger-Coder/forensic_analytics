@@ -1,95 +1,74 @@
 {
-  "workflowVersion": "fa-deploy-0001-docker-compose-services-20260528-v1",
-  "branch": "feature/workflow-docker-compose-deployment-20260528",
-  "processStrand": "workflow create",
-  "executionProfile": "FULL_PATH",
-  "dockerNetwork": "forensic_analytics",
+  "workflow": {
+    "name": "Move Repository Workspace Metadata to PostgreSQL",
+    "version": "2026-05-29",
+    "branch": "feature/workflow-workspace-postgres-20260529",
+    "processStrand": "workflow create",
+    "executionProfile": "FULL_PATH"
+  },
   "affectedAreas": [
-    "docker-compose",
-    "docker-build-context",
-    "local-deployment",
-    "service-runtime-readiness",
-    "forensic-ui",
-    "query-report-api-service",
-    "deployment-documentation"
+    "repository-source-service",
+    "repository-source persistence ports",
+    "repository-source outbound persistence adapters",
+    "repository-source bootstrap configuration",
+    "Liquibase changelog resources",
+    "Docker Compose forensic-postgres integration",
+    "ADR and arc42 storage documentation"
   ],
   "forbiddenAreas": [
-    "production-readiness-claim-without-evidence",
-    "docker-swarm",
-    "kubernetes",
-    "shared-java-implementation-modules",
-    "cross-service-private-storage-access",
-    "fabricated-runtime-evidence"
+    "platform workspace membership",
+    "project administration",
+    "asset administration",
+    "audit and retention implementation",
+    "public contract changes without contract governance",
+    "cross-service database access",
+    "checkout byte storage in PostgreSQL",
+    "hidden H2 runtime fallback"
   ],
-  "guards": {
-    "buildContext": ".dockerignore must include service boot jars for Dockerfiles using the repository root context",
-    "guiApiRouting": "forensic-ui must use verified same-origin /api proxying or another explicitly tested browser-safe route"
-  },
   "requiredRoles": [
-    "senior_requirement_engineer",
-    "senior_system_architect",
-    "senior_java_backend",
-    "senior_react_frontend",
-    "senior_tester",
-    "senior_devops",
-    "senior_workflow_architect",
-    "senior_documentation_engineer"
+    "Senior Requirement Engineer",
+    "Senior System Architect",
+    "Senior Java Backend Developer",
+    "Senior React Frontend Developer",
+    "Senior Tester"
   ],
   "conditionalRoles": [
-    "senior_joern_cpg_specialist",
-    "source_analysis_reviewer",
-    "replay_graph_llm_reviewer",
-    "senior_analysis_storage_architect",
-    "ingestion_handoff_reviewer",
-    "observability_runtime_diagnostics"
+    "Data Ownership And Persistence Steward",
+    "Senior Analysis Storage Architect",
+    "Senior DevOps Engineer",
+    "Security And Threat Modeling",
+    "Observability And Runtime Diagnostics",
+    "ADR Steward",
+    "Quality Gate Orchestrator"
   ],
   "qualityCommands": {
     "minimum": "./gradlew test --dependency-verification strict --console=plain --stacktrace",
     "full": "./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace",
-    "composeConfigPattern": "docker compose -f <compose-file> config",
-    "diffCheck": "git diff --check"
+    "diff": "git diff --check"
   },
-  "governingFiles": [
-    {
-      "path": "AGENTS.md",
-      "sha256": "318d6bb0c2b54d3ff42827692f0c8afa9c7a8846356a57eb8d4e98947c435c7a"
-    },
-    {
-      "path": "QUALITY.md",
-      "sha256": "9df68c96dbdd9bf36e139cfdb2cc91c341a5c08c928f03d8fe24392281fcb848"
-    },
-    {
-      "path": ".codex/AGENTS.md",
-      "sha256": "d43bc1ea9ca10deb8a6553c7c21208e8020d751f674a8cb824959b666bd01aec"
-    },
-    {
-      "path": ".codex/workflow/workflow-execution-rules.md",
-      "sha256": "6d2ea74943f8ff4187a371d6e263fcf7f179d7250868086f4ba294e6f5fa122a"
-    },
-    {
-      "path": ".agents/orchestrator/routing-rules.md",
-      "sha256": "30cd2a044746ab97f798425dd8f8125a98c6ed50d2d70a1b0778dca353c325bf"
-    },
-    {
-      "path": ".agents/orchestrator/swarm-orchestrator.md",
-      "sha256": "ae501a9e61ec0a9cf4acaad7fb7fd5d6167309b722370ed5d21d1991e49c09fc"
-    },
-    {
-      "path": "docs/adr/ADR-0017-target-microservices-service-landscape.md",
-      "sha256": "1c6be5f82ea08e38d669d335c3594eeb8fc4484d119e70c4eb8a443c47437b4b"
-    },
-    {
-      "path": "docs/arc42/07-deployment-view.md",
-      "sha256": "1ab5073866a2d46ee3e6b722efe09d63cd28ad8c75e549e6ca9e33e2a3960fb3"
-    },
-    {
-      "path": "settings.gradle.kts",
-      "sha256": "b588d616561e9dd902961ec9f53b15f519ec1f0f6f189cba60e5396691840fcb"
-    }
-  ],
+  "governingHashes": {
+    "AGENTS.md": "318d6bb0c2b54d3ff42827692f0c8afa9c7a8846356a57eb8d4e98947c435c7a",
+    "QUALITY.md": "9df68c96dbdd9bf36e139cfdb2cc91c341a5c08c928f03d8fe24392281fcb848",
+    ".agents/orchestrator/routing-rules.md": "30cd2a044746ab97f798425dd8f8125a98c6ed50d2d70a1b0778dca353c325bf",
+    ".agents/orchestrator/swarm-orchestrator.md": "ae501a9e61ec0a9cf4acaad7fb7fd5d6167309b722370ed5d21d1991e49c09fc",
+    ".agents/skills/workflow-authoring/SKILL.md": "d87950d6d9ca831a4201b660c6bef373cb85be829f21694a323dbb9b8544d801",
+    ".agents/skills/three-amigos-requirement-gatekeeper/SKILL.md": "95c04f47127f5149bb39a7e1b82b2690803cc765cad5d18274a82d415931e9ad",
+    ".agents/skills/execution-profile-router/SKILL.md": "40b7a5c9a2d8896b3e2f8c384300979a13d7d35986a5bd4bc4d3b5760a7d52b7",
+    "docs/epics/forensics-platform-runtime-replay-llm-analysis-v0.2.md": "54ff246b4359e1eb92c7e80058db42faa079ff5ffd3db0d71170cfaa3dbb68fe",
+    "docs/adr/ADR-0013-data-ownership-per-service.md": "4114bd8f39a60539bba18bcc32de481aff5a91cec34d556ca1149747b04879ab",
+    "docs/adr/ADR-0023-h2-for-repository-source-mvp-persistence.md": "57055ae1b371d5c229dd8d64450a23869dc89849808fa68bdff45901a5123a69",
+    "docs/arc42/05-building-block-view.md": "6a6d027e0a5722fca72e4148cc53d052508259be6430c52b6b1b2edacc8148ef",
+    "docs/arc42/07-deployment-view.md": "85d944e7cb0a574284c59db35885d273d2a5959f64737440facc2d40eebcd026",
+    "docs/arc42/08-crosscutting-concepts.md": "7b27cf1afdd1438ba7b8ad680d3137e590a59a76358493520d2feab73d172452",
+    "docs/arc42/09-architecture-decisions.md": "90c63b43a7c3a94f92cfaa82004729437abd08b04283e3a2014e01dbf2792532",
+    "docs/architecture/data-ownership.md": "3e46f719cc7859c4f81e4317fd8d25c1fc0c20fb8bc70a55707cedd66be8ddb8",
+    "docs/architecture/service-boundaries.md": "5b64534514fdea4cec2e8e6953252cd416b51fe515a56c630ec32ba992070f9f"
+  },
   "staleWhen": [
-    "a governing hash changes",
-    "docs/workflow/workflow.md is regenerated",
-    "workflow execute discovers an unrecorded blocker"
+    "a recorded hash changes",
+    "the active branch changes",
+    "repository-source ownership changes",
+    "PostgreSQL runtime material changes",
+    "the user requires H2 data migration"
   ]
 }
