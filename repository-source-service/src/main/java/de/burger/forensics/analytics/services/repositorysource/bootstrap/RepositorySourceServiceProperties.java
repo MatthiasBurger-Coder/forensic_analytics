@@ -36,10 +36,11 @@ public record RepositorySourceServiceProperties(
         }
     }
 
-    public record Persistence(String type, H2 h2) {
+    public record Persistence(String type, H2 h2, Postgres postgres) {
         public Persistence {
             type = requirePersistenceType(type);
             Objects.requireNonNull(h2, "h2 persistence must not be null");
+            Objects.requireNonNull(postgres, "postgres persistence must not be null");
         }
 
         public boolean useH2() {
@@ -52,6 +53,16 @@ public record RepositorySourceServiceProperties(
             jdbcUrl = requireSafeH2JdbcUrl(jdbcUrl);
             username = username == null ? "" : username;
             password = password == null ? "" : password;
+        }
+    }
+
+    public record Postgres(String jdbcUrl, String username, String password, String schema, String changeLog) {
+        public Postgres {
+            jdbcUrl = requirePostgresJdbcUrl(jdbcUrl);
+            username = requireText(username, "PostgreSQL username");
+            password = password == null ? "" : password;
+            schema = requireSqlIdentifier(schema, "PostgreSQL schema");
+            changeLog = requireRepositorySourceChangeLog(changeLog);
         }
     }
 
@@ -78,6 +89,13 @@ public record RepositorySourceServiceProperties(
         return normalized;
     }
 
+    private static String requireText(String text, String name) {
+        if (text == null || text.isBlank()) {
+            throw new IllegalArgumentException(name + " must not be blank");
+        }
+        return text.trim();
+    }
+
     private static String requireSafeH2JdbcUrl(String jdbcUrl) {
         if (jdbcUrl == null || jdbcUrl.isBlank()) {
             throw new IllegalArgumentException("H2 JDBC URL must not be blank");
@@ -102,6 +120,37 @@ public record RepositorySourceServiceProperties(
                     throw new IllegalArgumentException("H2 JDBC URL contains an unsafe option");
                 }
             }
+        }
+        return trimmed;
+    }
+
+    private static String requirePostgresJdbcUrl(String jdbcUrl) {
+        if (jdbcUrl == null || jdbcUrl.isBlank()) {
+            throw new IllegalArgumentException("PostgreSQL JDBC URL must not be blank");
+        }
+        var trimmed = jdbcUrl.trim();
+        var lower = trimmed.toLowerCase(java.util.Locale.ROOT);
+        if (!lower.startsWith("jdbc:postgresql://")) {
+            throw new IllegalArgumentException("PostgreSQL JDBC URL must use the PostgreSQL driver");
+        }
+        if (lower.contains("password=") || lower.contains("user=")) {
+            throw new IllegalArgumentException("PostgreSQL JDBC URL must not contain credentials");
+        }
+        return trimmed;
+    }
+
+    private static String requireSqlIdentifier(String value, String name) {
+        var trimmed = requireText(value, name);
+        if (!trimmed.matches("[A-Za-z_][A-Za-z0-9_]*")) {
+            throw new IllegalArgumentException(name + " must be a simple SQL identifier");
+        }
+        return trimmed;
+    }
+
+    private static String requireRepositorySourceChangeLog(String changeLog) {
+        var trimmed = requireText(changeLog, "PostgreSQL Liquibase changelog");
+        if (!trimmed.startsWith("classpath:db/changelog/")) {
+            throw new IllegalArgumentException("PostgreSQL Liquibase changelog must be a repository-source classpath changelog");
         }
         return trimmed;
     }

@@ -3,6 +3,7 @@ package de.burger.forensics.analytics.services.repositorysource.bootstrap;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.builder.SpringApplicationBuilder;
+import org.springframework.mock.env.MockEnvironment;
 
 import java.net.URI;
 import java.nio.file.Path;
@@ -146,7 +147,8 @@ class RepositorySourceServiceApplicationTest {
         assertThrows(IllegalArgumentException.class, () -> new RepositorySourceServiceProperties.Health(true, "127.0.0.1", 65_536));
         assertThrows(IllegalArgumentException.class, () -> new RepositorySourceServiceProperties.Health(true, null, 0));
         assertThrows(NullPointerException.class, () -> new RepositorySourceServiceProperties.Workspace(null));
-        assertThrows(IllegalArgumentException.class, () -> new RepositorySourceServiceProperties.Persistence("postgres", h2()));
+        assertThrows(IllegalArgumentException.class, () -> new RepositorySourceServiceProperties.Persistence("postgres", h2(), postgres()));
+        assertThrows(NullPointerException.class, () -> new RepositorySourceServiceProperties.Persistence("memory", h2(), null));
         assertThrows(IllegalArgumentException.class, () -> new RepositorySourceServiceProperties.H2(" ", "sa", ""));
         assertThrows(IllegalArgumentException.class, () -> new RepositorySourceServiceProperties.H2(
             "jdbc:h2:tcp://127.0.0.1/~/repository-source",
@@ -162,6 +164,41 @@ class RepositorySourceServiceApplicationTest {
             "jdbc:h2:file:build/repository-source-data/repository-source;INIT=RUNSCRIPT FROM 'classpath:init.sql'",
             "sa",
             ""
+        ));
+        assertThrows(IllegalArgumentException.class, () -> new RepositorySourceServiceProperties.Postgres(
+            "jdbc:h2:file:./build/repository-source-data/repository-source",
+            "forensic",
+            "",
+            "repository_source",
+            "classpath:db/changelog/repository-source-workspace.postgresql.yaml"
+        ));
+        assertThrows(IllegalArgumentException.class, () -> new RepositorySourceServiceProperties.Postgres(
+            "jdbc:postgresql://127.0.0.1:5432/forensic_analytics?password=secret",
+            "forensic",
+            "",
+            "repository_source",
+            "classpath:db/changelog/repository-source-workspace.postgresql.yaml"
+        ));
+        assertThrows(IllegalArgumentException.class, () -> new RepositorySourceServiceProperties.Postgres(
+            "jdbc:postgresql://127.0.0.1:5432/forensic_analytics",
+            " ",
+            "",
+            "repository_source",
+            "classpath:db/changelog/repository-source-workspace.postgresql.yaml"
+        ));
+        assertThrows(IllegalArgumentException.class, () -> new RepositorySourceServiceProperties.Postgres(
+            "jdbc:postgresql://127.0.0.1:5432/forensic_analytics",
+            "forensic",
+            "",
+            "repository-source",
+            "classpath:db/changelog/repository-source-workspace.postgresql.yaml"
+        ));
+        assertThrows(IllegalArgumentException.class, () -> new RepositorySourceServiceProperties.Postgres(
+            "jdbc:postgresql://127.0.0.1:5432/forensic_analytics",
+            "forensic",
+            "",
+            "repository_source",
+            "file:db/changelog/repository-source-workspace.postgresql.yaml"
         ));
 
         var properties = new RepositorySourceServiceProperties(
@@ -192,7 +229,7 @@ class RepositorySourceServiceApplicationTest {
             new RepositorySourceServiceProperties.Grpc(false, "127.0.0.1", 0),
             new RepositorySourceServiceProperties.Health(false, "127.0.0.1", 0),
             new RepositorySourceServiceProperties.Workspace(Path.of("build/test-workspaces")),
-            new RepositorySourceServiceProperties.Persistence("H2", h2)
+            new RepositorySourceServiceProperties.Persistence("H2", h2, postgres())
         );
 
         var components = new RepositorySourceServiceConfiguration().repositorySourcePersistenceComponents(properties);
@@ -216,6 +253,49 @@ class RepositorySourceServiceApplicationTest {
         ));
     }
 
+    @Test
+    void bindsTypedPostgreSQLConfigurationWithoutConnectingToDatabase() {
+        var environment = new MockEnvironment()
+            .withProperty("forensics.repository-source.service.persistence.type", "memory")
+            .withProperty(
+                "forensics.repository-source.service.persistence.postgres.jdbc-url",
+                " jdbc:postgresql://127.0.0.1:5432/forensic_analytics "
+            )
+            .withProperty("forensics.repository-source.service.persistence.postgres.username", " forensic ")
+            .withProperty("forensics.repository-source.service.persistence.postgres.password", "")
+            .withProperty("forensics.repository-source.service.persistence.postgres.schema", " repository_source ")
+            .withProperty(
+                "forensics.repository-source.service.persistence.postgres.change-log",
+                " classpath:db/changelog/repository-source-workspace.postgresql.yaml "
+            );
+
+        var properties = new RepositorySourceServicePropertiesConfiguration()
+            .repositorySourceServiceProperties(environment);
+
+        assertFalse(properties.persistence().useH2());
+        assertEquals("jdbc:postgresql://127.0.0.1:5432/forensic_analytics", properties.persistence().postgres().jdbcUrl());
+        assertEquals("forensic", properties.persistence().postgres().username());
+        assertEquals("", properties.persistence().postgres().password());
+        assertEquals("repository_source", properties.persistence().postgres().schema());
+        assertEquals(
+            "classpath:db/changelog/repository-source-workspace.postgresql.yaml",
+            properties.persistence().postgres().changeLog()
+        );
+    }
+
+    @Test
+    void rejectsUnsafeTypedPostgreSQLConfigurationBeforeRuntimeUse() {
+        var environment = new MockEnvironment()
+            .withProperty("forensics.repository-source.service.persistence.type", "memory")
+            .withProperty(
+                "forensics.repository-source.service.persistence.postgres.jdbc-url",
+                "jdbc:postgresql://127.0.0.1:5432/forensic_analytics?user=forensic"
+            );
+
+        assertThrows(IllegalArgumentException.class, () -> new RepositorySourceServicePropertiesConfiguration()
+            .repositorySourceServiceProperties(environment));
+    }
+
     private static int healthResponseCode(int port) throws Exception {
         var connection = URI.create("http://127.0.0.1:" + port + "/health").toURL().openConnection();
         return ((java.net.HttpURLConnection) connection).getResponseCode();
@@ -226,7 +306,7 @@ class RepositorySourceServiceApplicationTest {
     }
 
     private static RepositorySourceServiceProperties.Persistence memoryPersistence() {
-        return new RepositorySourceServiceProperties.Persistence("memory", h2());
+        return new RepositorySourceServiceProperties.Persistence("memory", h2(), postgres());
     }
 
     private static RepositorySourceServiceProperties.H2 h2() {
@@ -234,6 +314,16 @@ class RepositorySourceServiceApplicationTest {
             "jdbc:h2:file:./build/repository-source-test-data/repository-source",
             "sa",
             ""
+        );
+    }
+
+    private static RepositorySourceServiceProperties.Postgres postgres() {
+        return new RepositorySourceServiceProperties.Postgres(
+            "jdbc:postgresql://127.0.0.1:5432/forensic_analytics_test",
+            "forensic_test",
+            "",
+            "repository_source",
+            "classpath:db/changelog/repository-source-workspace.postgresql.yaml"
         );
     }
 

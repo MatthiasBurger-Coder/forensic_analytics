@@ -38,6 +38,21 @@ public class RepositorySourceServicePropertiesConfiguration {
                     ),
                     text(environment, "forensics.repository-source.service.persistence.h2.username", "sa"),
                     text(environment, "forensics.repository-source.service.persistence.h2.password", "")
+                ),
+                new RepositorySourceServiceProperties.Postgres(
+                    text(
+                        environment,
+                        "forensics.repository-source.service.persistence.postgres.jdbc-url",
+                        "jdbc:postgresql://127.0.0.1:5432/forensic_analytics"
+                    ),
+                    text(environment, "forensics.repository-source.service.persistence.postgres.username", "forensic"),
+                    text(environment, "forensics.repository-source.service.persistence.postgres.password", ""),
+                    text(environment, "forensics.repository-source.service.persistence.postgres.schema", "repository_source"),
+                    text(
+                        environment,
+                        "forensics.repository-source.service.persistence.postgres.change-log",
+                        "classpath:db/changelog/repository-source-workspace.postgresql.yaml"
+                    )
                 )
             )
         );
