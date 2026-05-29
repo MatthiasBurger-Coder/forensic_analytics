@@ -141,9 +141,13 @@ The documented commands can be run through the local helper script:
 bash deployment/docker-compose/setup.sh full
 ```
 
-The helper first stops the known local Compose projects without removing named
-volumes. This avoids stale containers holding host ports such as
-`127.0.0.1:18080` during repeated local deploys.
+The helper refuses to stop a running Forensic Analytics Docker instance by
+default. This protects local persistence state, including the PostgreSQL
+development database and service-owned named volumes. When an intentional local
+restart is needed, set `ALLOW_FORENSIC_ANALYTICS_RESTART=1`; the helper still
+stops known local Compose projects without removing named volumes. This avoids
+stale containers holding host ports such as `127.0.0.1:18080` during repeated
+local deploys while preserving persisted state.
 
 ```bash
 docker compose \

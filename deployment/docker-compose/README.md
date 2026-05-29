@@ -149,9 +149,13 @@ The documented `repository-to-btm` setup can be run through the helper script:
 bash deployment/docker-compose/setup.sh repository-to-btm
 ```
 
-The helper stops the known local Compose projects before startup without
-removing named volumes. This keeps repeated deploys from failing on reused host
-ports such as `127.0.0.1:18080`.
+The helper refuses to stop a running Forensic Analytics Docker instance by
+default. This protects local persistence state, including the PostgreSQL
+development database and service-owned named volumes. When an intentional local
+restart is needed, set `ALLOW_FORENSIC_ANALYTICS_RESTART=1`; the helper still
+stops known local Compose projects without removing named volumes. This keeps
+repeated deploys from failing on reused host ports such as `127.0.0.1:18080`
+while preserving persisted state.
 
 Build service jars first:
 
