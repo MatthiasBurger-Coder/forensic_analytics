@@ -7,6 +7,7 @@
 - Branch: `feature/workflow-workspace-postgres-20260529`
 - Process strand: `workflow create`
 - Execution profile: `FULL_PATH`
+- Last S3_DOC refresh: 2026-05-29 after S01-S04 checkpoint commits.
 
 ## Affected Areas
 
@@ -68,12 +69,15 @@ Docker Compose model checks are required for slices that change Compose files.
 | `docs/epics/forensics-platform-runtime-replay-llm-analysis-v0.2.md` | `54ff246b4359e1eb92c7e80058db42faa079ff5ffd3db0d71170cfaa3dbb68fe` |
 | `docs/adr/ADR-0013-data-ownership-per-service.md` | `4114bd8f39a60539bba18bcc32de481aff5a91cec34d556ca1149747b04879ab` |
 | `docs/adr/ADR-0023-h2-for-repository-source-mvp-persistence.md` | `57055ae1b371d5c229dd8d64450a23869dc89849808fa68bdff45901a5123a69` |
-| `docs/arc42/05-building-block-view.md` | `6a6d027e0a5722fca72e4148cc53d052508259be6430c52b6b1b2edacc8148ef` |
-| `docs/arc42/07-deployment-view.md` | `85d944e7cb0a574284c59db35885d273d2a5959f64737440facc2d40eebcd026` |
-| `docs/arc42/08-crosscutting-concepts.md` | `7b27cf1afdd1438ba7b8ad680d3137e590a59a76358493520d2feab73d172452` |
-| `docs/arc42/09-architecture-decisions.md` | `90c63b43a7c3a94f92cfaa82004729437abd08b04283e3a2014e01dbf2792532` |
-| `docs/architecture/data-ownership.md` | `3e46f719cc7859c4f81e4317fd8d25c1fc0c20fb8bc70a55707cedd66be8ddb8` |
-| `docs/architecture/service-boundaries.md` | `5b64534514fdea4cec2e8e6953252cd416b51fe515a56c630ec32ba992070f9f` |
+| `docs/adr/ADR-0024-postgres-for-repository-source-workspace-metadata.md` | `bd155271d13945677d998468a7c41df4f98e71ebb7e9913d2c7d08f931f4b472` |
+| `docs/adr/README.md` | `503922dddde2a9d02012688a5783fd9989aa2323069e9d279a2bd0af1cddfa96` |
+| `docs/arc42/05-building-block-view.md` | `071b8421c21ea751fcae2e5a7c2960d508f92725e46c86136d614079ae5a9240` |
+| `docs/arc42/07-deployment-view.md` | `f2bc92bbf81a792251cc930c259eab1f0c19e24fddce101c54f036c76d8fd73d` |
+| `docs/arc42/08-crosscutting-concepts.md` | `46508163e70ca3f07c13130092f60e2455b7729020ee73bf6ddf8cb1f82b4453` |
+| `docs/arc42/09-architecture-decisions.md` | `39d58d23d422d65dce220509ff20fcfa9fe346dea335cce96f72aaeb0b0e85ae` |
+| `docs/arc42/11-risks-and-technical-debt.md` | `365debb9b63f0d7ff1f14a562faf686ff2dcdbcb3b26b7530b007519a782c7a7` |
+| `docs/architecture/data-ownership.md` | `3c814b69375b3ff70df736926e18a5688b42744f44f88fe55347376243b1078e` |
+| `docs/architecture/service-boundaries.md` | `d27af63c11a48de4c7498b677f434545c30facbde1c908647e75a5bad5db7db7` |
 
 The context pack is stale when any recorded hash changes before workflow
 execution.
