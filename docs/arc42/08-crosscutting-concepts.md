@@ -67,15 +67,18 @@ must never be used as filesystem paths, authorization keys or security
 decisions. Repository branch names are data values and must not become
 directory names.
 
-Repository checkout directories and Docker-local H2 files are private
-repository-source storage. Other services may consume only owner-issued source
-snapshot IDs, artifact references, sanitized diagnostics and public or owner
-API responses. Public REST DTOs must not expose private paths, H2 paths, raw
-Git stdout or stderr, credentials, tokens or private network details.
+Repository checkout directories, repository-source PostgreSQL tables and
+historical Docker-local H2 files are private repository-source storage. Other
+services may consume only owner-issued source snapshot IDs, artifact
+references, sanitized diagnostics and public or owner API responses. Public
+REST DTOs must not expose private paths, database URLs, table names, H2 paths,
+raw Git stdout or stderr, credentials, tokens or private network details.
 
-H2 in FA-MVP-0001 is an MVP-local repository-source persistence adapter only.
+ADR-0024 selects PostgreSQL only for repository-source workspace metadata.
 It is not shared service storage, not canonical analytics persistence and not a
-production database decision for the broader platform.
+production database decision for the broader platform. H2 in FA-MVP-0001
+remains historical MVP evidence until the H2 retirement slice removes active
+runtime fallback or documents explicit migration handling.
 
 ## 8.4 Runtime Data Sensitivity
 

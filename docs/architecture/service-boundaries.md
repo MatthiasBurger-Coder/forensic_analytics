@@ -56,6 +56,7 @@ Owns:
 - branch and commit resolution;
 - repository checkout workspace aggregate state;
 - repository checkout branch state;
+- repository-source PostgreSQL metadata schema after ADR-0024 execution;
 - checkout, clone and fetch;
 - workspace leases and cleanup;
 - service-local durable idempotency for repository-source operations;
@@ -64,9 +65,9 @@ Owns:
 - source snapshot references;
 - accepted source snapshot metadata;
 - checkout diagnostics;
-- Docker-local MVP H2 persistence for repository checkout workspace,
-  branch and idempotency state after FA-MVP-0001 persistence slices verify
-  the adapter.
+- historical Docker-local MVP H2 persistence evidence for repository checkout
+  workspace, branch and idempotency state until the H2 retirement slice removes
+  active runtime fallback or records explicit migration handling.
 
 Non-scope:
 
@@ -109,9 +110,11 @@ Repository Source service implementation state:
 - Docker profile workspace root
   `/var/lib/forensic-analytics/repository-workspaces`;
 - Docker profile H2 data root
-  `/var/lib/forensic-analytics/repository-source-data`;
-- service-local H2 file adapter for repository checkout workspace, branch and
-  idempotency state in the Docker-local MVP;
+  `/var/lib/forensic-analytics/repository-source-data` for the historical
+  Docker-local MVP adapter;
+- planned service-owned PostgreSQL metadata store for repository checkout
+  workspace, branch, repository preparation and idempotency records after
+  ADR-0024 execution;
 - transitional use of the predecessor `repository-analysis.proto` filename and
   wire service name as an external contract only.
 
@@ -125,8 +128,8 @@ Stop conditions:
 
 - another service accesses repository workspace internals directly;
 - workspace paths are used as hidden coupling;
-- H2 files, private checkout directories or raw Git output are consumed by
-  another service;
+- repository-source PostgreSQL tables, H2 files, private checkout directories
+  or raw Git output are consumed by another service;
 - repository checkout workspace state is reinterpreted as platform workspace
   membership or project administration;
 - checkout executes repository hooks, build scripts or repository-supplied
@@ -431,7 +434,8 @@ Non-scope:
 - analysis execution;
 - repository checkout;
 - JavaParser or Joern processing;
-- private persistence access, including repository-source H2 files;
+- private persistence access, including repository-source PostgreSQL tables or
+  H2 files;
 - private repository-source checkout directories or workspace paths;
 - raw Git stdout or stderr handling;
 - canonical repository, ingestion, static analysis, semantic analysis or
@@ -485,16 +489,17 @@ The FA-MVP-0001 workspace adapter calls `repository-source-service` for
 metadata preview, idempotent workspace create/reuse, get and branch refresh.
 It maps owner responses to sanitized public DTOs with opaque workspace and
 branch IDs only. It does not own Git checkout, repository identity,
-repository-source H2 files, private checkout directories, source package bytes
-or raw Git diagnostics.
+repository-source PostgreSQL tables, historical H2 files, private checkout
+directories, source package bytes or raw Git diagnostics.
 
 Stop conditions:
 
 - public responses leak private paths, secrets, raw diagnostics or unverified
   hypotheses as evidence;
 - API code performs analysis execution or direct worker orchestration;
-- API code reads private service databases, repository-source H2 files or
-  private repository checkout workspaces.
+- API code reads private service databases, repository-source PostgreSQL
+  tables, repository-source H2 files or private repository checkout
+  workspaces.
 
 ## `cli-client`
 

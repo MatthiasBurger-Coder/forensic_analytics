@@ -44,7 +44,7 @@ Forbidden:
 
 | Data Area | Target Owner / One Writer | Non-Owner Access Path | Status |
 |---|---|---|---|
-| Repository checkout workspaces | `repository-source-service` owns checkout workspace aggregate state, repository identity, branch state, workspace directories and durable idempotency for repository-source operations | Source snapshot IDs, artifact references, sanitized diagnostics and owner APIs | FA-MVP-0001 owner clear |
+| Repository checkout workspaces | `repository-source-service` owns checkout workspace aggregate state, repository identity, branch state, PostgreSQL metadata schema, workspace directories and durable idempotency for repository-source operations | Source snapshot IDs, artifact references, sanitized diagnostics and owner APIs | ADR-0024 owner clear |
 | Source snapshots | `repository-source-service` owns repository checkout workspace state, source package bytes, source snapshot descriptors, source snapshot references and accepted source metadata | AST, Joern, orchestrator and query/report consumers receive source snapshot IDs, artifact references and diagnostics through owner APIs or file contracts | S04 owner assigned |
 | Raw ingestion payload intake | `ingestion-service` owns raw payload intake, intake diagnostics and raw runtime or analysis payload byte custody until an explicit handoff transfers custody | Handoff contracts, owner APIs or accepted/rejected intake events | S04 owner assigned |
 | Upload session state | `ingestion-service` | Query/report or orchestrator reads through owner API after contracts exist | S04 owner assigned |
@@ -118,11 +118,17 @@ public API contract-test ownership gap for that target path. It does not assign
 legacy workspace/project administration, membership, asset, audit, retention
 or project-storage persistence to a target service.
 
-FA-MVP-0001 H2 persistence is a Docker-local MVP adapter for
-`repository-source-service` repository checkout workspace, branch and
-idempotency state only. It is service-local one-writer storage, not shared
+ADR-0024 moves repository-source workspace metadata from the Docker-local H2
+MVP adapter to service-owned PostgreSQL. The selected PostgreSQL scope is
+limited to repository checkout workspace, branch, repository preparation and
+idempotency records. It is service-local one-writer storage, not shared
 cross-service persistence, not canonical analytics persistence and not a
 production relational database selection for the broader platform.
+
+Repository checkout bytes and source package bytes remain outside PostgreSQL in
+repository-source-owned storage. Existing H2 files remain historical MVP
+evidence until the H2 retirement slice removes active runtime fallback or
+records an explicit migration policy.
 
 ## Artifact Byte Custody Rules
 
