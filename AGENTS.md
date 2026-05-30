@@ -76,7 +76,8 @@ Agent Workflow Orchestrator
 |
 +-- Senior System Architect
 |   +-- Skill Registry & Conflict Auditor
-|   +-- Three Amigos Requirement Gatekeeper
+|   +-- Senior Requirement Engineer
+|       +-- Three Amigos Requirement Gatekeeper
 |   +-- Contract-First API Steward
 |   +-- Data Ownership & Persistence Steward
 |   +-- Security & Threat Modeling
@@ -93,7 +94,7 @@ Agent Workflow Orchestrator
 
 The Workflow Executor executes approved slices. It must not be the sole authority for requirement, architecture, security, data ownership, quality, ADR, or release decisions.
 
-The Senior System Architect owns architecture governance and may block architecture-sensitive workflows. The Three Amigos Requirement Gatekeeper is the intake gate for new or changed requirements. The Skill Registry & Conflict Auditor is the governance control for skill overlap, conflicting ownership, and incompatible workflow rules.
+The Senior System Architect owns architecture governance and may block architecture-sensitive workflows. The Senior Requirement Engineer owns requirement integrity, EPIC consistency, traceability, scope control and requirement-drift escalation. The Three Amigos Requirement Gatekeeper remains the intake gate for new or changed requirements and must include the Senior Requirement Engineer perspective. The Skill Registry & Conflict Auditor is the governance control for skill overlap, conflicting ownership, and incompatible workflow rules.
 
 ## Mandatory Process Strands
 
@@ -104,6 +105,28 @@ Repository agent work is organized into exactly three process strands:
 3. `workflow execute`
 
 The strands must not be mixed.
+
+## Strand-Safe Local Blocker Resolution
+
+Before stopping or escalating, the active process strand must classify the blocker and attempt bounded local resolution when the blocker is inside the active strand authority.
+
+The active strand must not automatically switch into another strand.
+
+```text
+skills update
+  may repair skill, role, routing, registry and process-governance blockers
+  must not implement product behavior
+
+workflow create
+  may repair requirement, workflow-structure, slice-metadata, role-assignment and checked arc42 blockers
+  must not execute implementation slices
+
+workflow execute
+  may repair current-slice build, test, documentation, CP_RECORD and quality blockers
+  must not change approved workflow scope or create new slices
+```
+
+Cross-strand blockers must stop and report the owning strand, recommended command and concrete reason. Local automatic blocker resolution is capped at `maxRetries = 3` and must rerun the relevant validation before continuing.
 
 Shared governance roles such as Senior System Architect, Documentation Governance, Skill Registry Maintainer, Organigramm Maintainer, Process Governance Maintainer and `S1_PUSH_ELIGIBILITY_GUARD` execute inside the active strand and must apply that strand's file scope, quality gate, and documentation duty.
 

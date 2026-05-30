@@ -168,6 +168,33 @@ checkpoint commits or `QUALITY.md` commands.
 
 Never implement a workflow slice directly before the relevant subagent or role has reviewed the slice.
 
+## Strand-Safe Local Blocker Resolution
+
+Before escalating a blocker, the Workflow Executor must classify the blocker and determine whether the owning strand is the active `workflow execute` strand.
+
+Allowed local resolution is limited to the active workflow, current slice, verified locks and current quality-gate context.
+
+```text
+Allowed:
+- current-slice build fix
+- current-slice test fix
+- current-slice documentation evidence fix
+- current-slice quality-gate fix
+- execution report or CP_RECORD fix
+
+Forbidden:
+- workflow scope expansion
+- new slice creation
+- requirement change
+- architecture target change
+- file edits outside slice locks
+- automatic switch to workflow create or skills update
+```
+
+If the blocker belongs to `workflow create` or `skills update`, stop with `CROSS_STRAND_BLOCKER`, report the owning strand and recommend the next command. Do not switch strands automatically.
+
+Local resolution attempts are capped at `maxRetries = 3` and must rerun the failed validation before continuing.
+
 The `workflow execute` command authorizes the configured subagent workflow for that workflow only. Keep unrelated tasks under the normal repository subagent authorization rules.
 
 ## Required Default Roles

@@ -1,6 +1,6 @@
 ---
 name: execution-profile-router
-description: Classifies workflow create and workflow execute requests as FAST_PATH, NORMAL_PATH, or FULL_PATH before specialist role routing, while preserving mandatory AGENTS.md, QUALITY.md, ADR, STOP-rule, and quality-gate authority.
+description: Classifies workflow create and workflow execute requests as FAST_PATH, GOVERNANCE_FAST_PATH, NORMAL_PATH, or FULL_PATH before specialist role routing, while preserving mandatory AGENTS.md, QUALITY.md, ADR, STOP-rule, and quality-gate authority.
 ---
 
 # Skill: Execution Profile Router
@@ -8,7 +8,7 @@ description: Classifies workflow create and workflow execute requests as FAST_PA
 ## Mission
 
 Classify every `workflow create` and `workflow execute` request before
-specialist role assignment so low-risk governance work does not automatically
+specialist role assignment so low-risk and governance-only work does not automatically
 run the full review depth while high-risk work still receives full governance.
 
 This skill chooses review depth. It does not approve implementation, bypass
@@ -45,6 +45,47 @@ Examples:
 - workflow documentation update that does not change slice dependencies,
   locks, gates, or process authority.
 
+### GOVERNANCE_FAST_PATH
+
+Use for governance-only changes with verified file scope and no product, runtime, contract, persistence, quality-rule, branch-rule or publication-rule impact.
+
+Examples:
+
+- adding or repairing role links;
+- adding or repairing skill links;
+- updating routing references;
+- refreshing skill registry metadata;
+- adding governance-only arc42 or ADR notes;
+- repairing process documentation without changing process authority.
+
+Allowed file scope:
+
+```text
+AGENTS.md
+.agents/**
+.codex/**
+docs/agents/**
+docs/process/**
+docs/governance/**
+docs/skill-audit/**
+docs/workflow/** governance-only
+docs/arc42/** governance-only
+docs/adr/** governance-only
+```
+
+Required checks:
+
+```text
+path existence check
+frontmatter parse check
+routing reference check
+registry consistency check
+markdown/json syntax check
+git diff --check
+```
+
+Use `FULL_PATH` instead when ownership, authority, quality impact, branch impact, publication impact or product impact is unclear.
+
 ### FULL_PATH
 
 Use when the request changes, creates, or might affect governance authority,
@@ -78,9 +119,10 @@ Examples:
 Return:
 
 ```text
-executionProfile=<FAST_PATH|NORMAL_PATH|FULL_PATH>
+executionProfile=<FAST_PATH|GOVERNANCE_FAST_PATH|NORMAL_PATH|FULL_PATH>
 reason=<short evidence-based reason>
 requiredFullReviews=<roles or skills>
+roleReviewBudget=<maximum full reviews for the selected profile>
 allowedImpactChecks=<roles that may answer N/A impact only>
 requiredQualityChecks=<commands or not-applicable reason from QUALITY.md/workflow>
 stopConditions=<profile-specific blockers>
@@ -98,6 +140,8 @@ stopConditions=<profile-specific blockers>
 - Consult Skill Registry Conflict Auditor when `.agents/**`, `.codex/**`,
   `docs/agents/**`, `docs/skill-audit/**`, or routing rules change.
 
+- Use `GOVERNANCE_FAST_PATH` only when the owning governance role and changed file set are verified.
+
 ## Forbidden
 
 - Do not mark required Five-Role Three Amigos participation as optional.
@@ -111,6 +155,8 @@ stopConditions=<profile-specific blockers>
 - Do not classify product source, tests, build logic, contracts, runtime,
   persistence, deployment, branch, publication, or quality-rule changes as
   `FAST_PATH`.
+
+- Do not classify governance authority, routing, registry or role ownership changes as `FAST_PATH`; use `GOVERNANCE_FAST_PATH` or `FULL_PATH`.
 
 ## STOP Rules
 

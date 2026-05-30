@@ -101,6 +101,44 @@ When blocking questions remain:
 
 Non-blocking uncertainty may be documented as an assumption only when it does not affect architecture boundaries, testability, data ownership, service boundaries, APIs, contracts, runtime behavior or scope.
 
+## Local Create Blocker Resolution
+
+`workflow create` must first attempt to resolve blockers that are inside workflow-create authority before escalation.
+
+Allowed local fixes:
+
+```text
+refine scope
+refine non-goals
+refine acceptance criteria
+separate assumptions
+repair workflow structure
+repair slice metadata
+repair role assignment
+repair workflow handoff
+update checked arc42 governance notes
+update ADR references when they document workflow governance consequences
+update context pack metadata
+```
+
+Forbidden local fixes:
+
+```text
+product implementation
+backend code
+frontend code
+runtime or Docker changes
+contract implementation
+persistence implementation
+quality gate weakening
+slice execution
+checkpoint commits
+```
+
+Local fixes are capped at `maxRetries = 3`. After each local fix, rerun the failed validation before continuing.
+
+If the blocker belongs to another strand, stop with `CROSS_STRAND_BLOCKER` and report the owning strand and recommended next command. `workflow create` must not automatically switch to `workflow execute` or `skills update`.
+
 ## Execution Profile Routing
 
 After the Three Amigos gate and before specialist role depth is selected,
@@ -114,7 +152,8 @@ Profiles decide review depth:
 - `NORMAL_PATH`: isolated changes with verified owner, disjoint locks and no
   architecture, contract, persistence, runtime, deployment or quality-policy
   impact.
-- `FULL_PATH`: workflow governance, skills, roles, routing, branch rules,
+- `GOVERNANCE_FAST_PATH`: governance-only changes with verified scope and no product, runtime, contract, quality, branch or publication impact.
+- `FULL_PATH`: workflow governance authority changes, skills, roles, routing, branch rules,
   quality rules, architecture-sensitive work or unclear impact.
 
 The profile may reduce unaffected roles to N/A impact checks. It must not

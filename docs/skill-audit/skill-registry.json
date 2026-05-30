@@ -3,8 +3,8 @@
   "registryId": "skill-registry-v1",
   "repository": "forensic_analytics",
   "workflowVersion": "governance-performance-20260521-v1",
-  "lastVerified": "2026-05-21",
-  "status": "CONDITIONAL_REUSE_ALLOWED",
+  "lastVerified": "2026-05-30",
+  "status": "MANUAL_REVIEW_REQUIRED",
   "sourceOfTruth": [
     "AGENTS.md",
     "QUALITY.md",
@@ -18,7 +18,7 @@
   ],
   "inventoryCounts": {
     "projectSkills": 75,
-    "projectRoles": 17,
+    "projectRoles": 18,
     "reusableCodexSkills": 6,
     "callableCodexAgents": 34
   },
@@ -45,28 +45,32 @@
     "registryIsSourceOfTruth": false
   },
   "sourceHashes": {
-    "AGENTS.md": "318d6bb0c2b54d3ff42827692f0c8afa9c7a8846356a57eb8d4e98947c435c7a",
+    "AGENTS.md": "a1bd05f38d8602a5c67dcfbf3628c811a4c0de33004fdf553afadf4b5c614f5d",
     "QUALITY.md": "9df68c96dbdd9bf36e139cfdb2cc91c341a5c08c928f03d8fe24392281fcb848",
     ".agents/skills/skill-registry-conflict-auditor/SKILL.md": "d6f2b361236bc7ec6bf371d07b74350cdf5424ce3f9a2f5a432f0a5d2399faa3",
-    ".agents/skills/execution-profile-router/SKILL.md": "40b7a5c9a2d8896b3e2f8c384300979a13d7d35986a5bd4bc4d3b5760a7d52b7",
+    ".agents/skills/execution-profile-router/SKILL.md": "dfd2fc367bb9ab856e9482d3088690795ee1805b7c84ad462281b2350ca2f62b",
     ".agents/skills/quality-impact-classifier/SKILL.md": "8eb85b0a24d5798e15d9e1ba826fc8d6d64074060f2f8650258c0e1cd353dbab",
     ".agents/skills/s3d-execution-orchestrator/SKILL.md": "4dd73b432d96177fa9e162ac87b0a5652db9ce6f1598741a1e6ccc5e1bd6cb8e",
-    ".agents/skills/workflow-executor/SKILL.md": "bd03febb154db36562d812779bc180d1b65ce1394ba09ecdb61a30c3460dfe44",
+    ".agents/skills/workflow-executor/SKILL.md": "5f34fb5585dc2d266e2d24cc6278130b4273f2082b77905caee5f5c3cfd66888",
     ".agents/skills/flowchart-integrity-auditor/SKILL.md": "3f655f6a27c33f04dfc6ea4ba2aeadd2d36b17ee908eb8ca11c68c6d2bc39dc2",
     ".agents/skills/process-performance-profiler/SKILL.md": "62c7efb050dbf142e664978efaa9d2c7b74fcd79a0baf3d9cf518ac7ce6aa842",
     ".codex/AGENTS.md": "d43bc1ea9ca10deb8a6553c7c21208e8020d751f674a8cb824959b666bd01aec",
     ".codex/skills/workflow-executor/SKILL.md": "e1c13cf8f13a271d875b11d6d23702358e90650a03958127ba84fc9297267166",
     ".codex/workflow/workflow-execution-rules.md": "6d2ea74943f8ff4187a371d6e263fcf7f179d7250868086f4ba294e6f5fa122a",
     ".agents/orchestrator/routing-rules.md": "30cd2a044746ab97f798425dd8f8125a98c6ed50d2d70a1b0778dca353c325bf",
-    ".agents/orchestrator/swarm-orchestrator.md": "ae501a9e61ec0a9cf4acaad7fb7fd5d6167309b722370ed5d21d1991e49c09fc",
-    "docs/agents/skill-registry.md": "962d867eebfb99a0be56b1363f7e31c74e64e6a2ea27ee9541f0ba71a2dc4bf6",
+    ".agents/orchestrator/swarm-orchestrator.md": "402117e9b9f05b77505e25c861f86f8fddd0113735af2378f9b5052ba8e4d463",
+    "docs/agents/skill-registry.md": "a2f0860d99c0a94877aac4c75580ae6fb4eb7f28c14de676497b1408fb542961",
     "docs/process/skills-update.md": "627db53915479fcf4d3d77475fd158784d40d18db2d59f513b8399465168797b",
-    "docs/process/workflow-execute.md": "cb2a3691e3efffb8451e1ef58e1eded847285d0112733c9d4dec0a6ab09c1de9",
+    "docs/process/workflow-execute.md": "4e07e3a90095147ed26d1b5d1a14b1e8b07c28eb88826b95131fd1806cd24feb",
     "docs/workflow/workflow.md": "4874a0e64468f6673f795a9e946733c58ad3fb2119630788202f98671f72ca88",
     "docs/workflow/execution-report.md": "d736052be5c97827b9dfea073012c8476295ee3ac1ad7d8d43cb086e343b4452",
     "docs/skill-audit/README.md": "cd50e21b3497bde2fa3514dcca85534a0043bfb869541c5d949c15e716395919",
-    "docs/skill-audit/skill-registry.md": "11a9ccbc97d4d35aeb9c16d800158ace0968e0de550a050efd37bd70d1c4fb75",
-    "docs/skill-audit/skill-inventory.md": "fb99f69639591f8572ba9c22b113c53eacf3f67b92084d8dcc4c857adb21fba8"
+    "docs/skill-audit/skill-registry.md": "27aa82eebdc6bec11af28558fa951243535257bb8b6b0fd0f37dc431fc5bcc7a",
+    "docs/skill-audit/skill-inventory.md": "2eca34a5644610eeef8c5ae18e64191b3be1e2408eb05c2cdceffc4bdf678401",
+    ".agents/roles/senior-requirement-engineer/SKILL.md": "9c6aeacf81de8d2ebc36230fd6a0e695722efa7de4c78887537b84f9fbdf054f",
+    ".agents/skills/engineering-governance/SKILL.md": "23682db68243e359f1e8f18f5388e11134c216f8c76b92573e4c15eb5213ed43",
+    "docs/process/workflow-create.md": "4760e3d75f6a675d323c5f6153920b7536e0d8df24ef3b2d692a75fcbbd2a869",
+    "docs/arc42/08-crosscutting-concepts.md": "592de8c684aca0defd582b69a6eb6026c886bbab195b0e1e2f90cb73690c018a"
   },
   "skills": [
     {
@@ -96,7 +100,7 @@
       "path": ".agents/skills/execution-profile-router/SKILL.md",
       "owner": "senior-system-architect",
       "strand": "workflow create, workflow execute",
-      "scope": "execution profile classification",
+      "scope": "FAST_PATH, GOVERNANCE_FAST_PATH, NORMAL_PATH and FULL_PATH profile classification",
       "status": "ACTIVE"
     },
     {
@@ -175,6 +179,16 @@
         "docs/agents/**"
       ],
       "status": "ACTIVE"
+    },
+    {
+      "name": "senior-requirement-engineer",
+      "path": ".agents/roles/senior-requirement-engineer/SKILL.md",
+      "ownerOf": [
+        "requirement-engineering",
+        "three-amigos-requirement-gatekeeper",
+        "workflow-authoring"
+      ],
+      "status": "ACTIVE"
     }
   ],
   "knownConflicts": [
@@ -188,6 +202,34 @@
         ".codex/skills/workflow-executor/SKILL.md"
       ],
       "decision": "For Forensic Analytics workflow execution, .agents/skills/workflow-executor/SKILL.md is the active project-specific executor and .codex/skills/workflow-executor/SKILL.md is the reusable base protocol.",
+      "mustNotMarkReady": false
+    },
+    {
+      "id": "senior-requirement-engineer-directory-role-path",
+      "status": "RESOLVED_BY_ROUTING_RULE",
+      "blocking": false,
+      "manualReviewRequired": true,
+      "paths": [
+        ".agents/roles/senior-requirement-engineer/SKILL.md",
+        ".agents/orchestrator/routing-rules.md"
+      ],
+      "decision": "Senior Requirement Engineer is a project role stored in a directory-style SKILL.md path and routed explicitly by routing-rules.md. Persistent registry reuse remains manual until full hash audit is refreshed.",
+      "mustNotMarkReady": false
+    },
+    {
+      "id": "strand-safe-local-blocker-resolution",
+      "status": "GOVERNANCE_CHANGE_REQUIRES_MANUAL_REVIEW",
+      "blocking": false,
+      "manualReviewRequired": true,
+      "paths": [
+        "AGENTS.md",
+        ".agents/orchestrator/swarm-orchestrator.md",
+        ".agents/skills/execution-profile-router/SKILL.md",
+        ".agents/skills/workflow-executor/SKILL.md",
+        "docs/process/workflow-create.md",
+        "docs/process/workflow-execute.md"
+      ],
+      "decision": "Active strands may perform bounded local blocker resolution only inside their own authority. Cross-strand blockers stop and report the owning strand. GOVERNANCE_FAST_PATH handles governance-only changes with verified non-product impact.",
       "mustNotMarkReady": false
     }
   ]
