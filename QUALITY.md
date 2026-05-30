@@ -131,7 +131,7 @@ Changes to evidence classes, evidence IDs, provenance metadata, timestamps, sour
 - every finding can be traced back to concrete evidence
 - evidence identity is stable and deterministic
 - evidence provenance is preserved during transformations
-- original source information is not overwritten by derived analysis
+- derived analysis does not overwrite the original source information
 - missing evidence is represented explicitly, not silently invented
 - serialized evidence can be read back without semantic loss when serialization is part of the change
 
@@ -241,20 +241,20 @@ PUML, Graphviz, Mermaid, or similar formats are optional output adapters. They m
 Changes that prepare or execute microservice migration must verify that:
 
 - service boundaries are documented from business responsibility, not technical module names
-- no shared Java implementation, domain, DTO, service, repository, utility, test-fixture or internal error-model modules are introduced between services
+- no shared Java implementation, domain, DTO, service, repository, utility, test-fixture, or internal error-model modules are introduced between services
 - service communication is contract-first through REST/OpenAPI, gRPC/protobuf or approved message contracts
-- contract impact, data ownership impact, test impact, risk level and forbidden changes are explicit before implementation
-- runtime independence claims are backed by build, start, test, configuration, observability, healthcheck and container-readiness evidence
-- Docker, Docker Swarm and Kubernetes commands are documented only after repository tooling or manifests are verified
-- rollback, feature-toggle or strangler strategy is documented for behavior-changing service extraction
+- contract impact, data ownership impact, test impact, risk level, and forbidden changes are explicit before implementation
+- runtime independence claims are backed by build, start, test, configuration, observability, health check, and container-readiness evidence
+- Docker, Docker Swarm, and Kubernetes commands are documented only after repository tooling or manifests are verified
+- rollback, feature-toggle, or strangler strategy is documented for behavior-changing service extraction
 
-Documentation-only governance slices must still run `git diff --check` and the slice-specific diff inspection. Production code, Gradle, plugin, adapter or runtime changes must use the applicable `QUALITY.md` commands, starting with the minimum command:
+Documentation-only governance slices must still run `git diff --check` and the slice-specific diff inspection. Production code, Gradle, plugin, adapter, or runtime changes must use the applicable `QUALITY.md` commands, starting with the minimum command:
 
 ```bash
 ./gradlew test --dependency-verification strict --console=plain --stacktrace
 ```
 
-Do not replace strict dependency verification with ad hoc checks. Do not require `validatePlugins` unless Gradle plugin metadata, task inputs, task outputs or plugin implementation classes changed.
+Do not replace strict dependency verification with ad hoc checks. Do not require `validatePlugins` unless Gradle plugin metadata, task inputs, task outputs, or plugin implementation classes changed.
 
 ---
 
@@ -395,7 +395,7 @@ A failing package coverage report is a blocking quality-gate failure.
 
 Do not lower thresholds to make the gate pass.
 
-Do not exclude production code from coverage unless the task explicitly requires it and the exclusion is justified.
+Do not exclude production code from coverage unless the task explicitly requires it, and the exclusion is justified.
 
 ---
 
@@ -590,7 +590,7 @@ Do not commit generated build output unless explicitly required.
 
 Do not commit `.gradle`, `build`, IDE workspace files, temporary logs, local databases, trace dumps, or generated reports unless they are intentionally part of the requested change.
 
-A commit must clearly document:
+A commit must be clearly documented:
 
 - what changed
 - why it changed
