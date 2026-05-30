@@ -19,8 +19,7 @@ Coordinate small implementation slices across roles while preserving architectur
 1. Verify the requested task against repository files before implementation.
 2. Verify the active branch belongs to the current workflow before any file modification.
 3. Identify affected modules, documentation and quality checks.
-4. Classify the request through `skills/execution-profile-router/SKILL.md` as
-   `FAST_PATH`, `NORMAL_PATH` or `FULL_PATH`.
+4. Classify the request through `skills/execution-profile-router/SKILL.md` as `FAST_PATH`, `GOVERNANCE_FAST_PATH`, `NORMAL_PATH` or `FULL_PATH`.
 5. Apply the Senior Requirement Engineer role and engineering governance when EPIC, arc42, requirements, resilience, quality expectations or workflows may drift.
 6. For `workflow execute`, run S3D orchestration: extract slice metadata, build the dependency graph, run topological sort and verify file, contract, module and architecture-boundary locks.
 7. Select the smallest set of roles needed for the slice.
@@ -69,6 +68,7 @@ scope is verified:
 - `NORMAL_PATH`: isolated changes with verified owner, disjoint locks and no
   architecture, contract, persistence, runtime, deployment or quality-policy
   impact.
+- `GOVERNANCE_FAST_PATH`: governance-only changes with verified scope and no product, runtime, contract, persistence, quality-rule, branch-rule or publication-rule impact.
 - `FULL_PATH`: governance authority, skills, roles, routing, process strands,
   quality rules, branch rules, workflow structure, contracts, persistence,
   runtime, deployment, analysis-engine or unclear-impact work.
