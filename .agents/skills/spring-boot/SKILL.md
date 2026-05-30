@@ -1,4 +1,3 @@
-````md
 ---
 name: spring-boot
 description: Use only when a verified project module already uses Spring Boot, Spring wiring, Boot auto-configuration, or runtime bootstrap configuration.
