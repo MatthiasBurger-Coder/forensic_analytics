@@ -9,7 +9,7 @@ description: Use for microservice architecture planning, reviews, and implementa
 
 Act as a Senior Microservice Architect and Senior Backend Engineer.
 
-Evaluate, plan and implement microservice structures with focus on:
+Evaluate, plan, and implement microservice structures with a focus on:
 
 - service autonomy
 - independent deployability
@@ -40,7 +40,7 @@ Allow only external contracts:
 - REST through OpenAPI
 - gRPC through `.proto`
 - messaging through RabbitMQ and message contracts
-- deployment contracts through Docker, Docker Swarm and Kubernetes
+- deployment contracts through Docker, Docker Swarm, and Kubernetes
 
 Contracts may be centrally documented, but they must not become a shared Java implementation module for services.
 
@@ -55,7 +55,7 @@ Every microservice must own:
 - its own Dockerfile
 - its own health checks
 - its own README
-- its own REST, gRPC or messaging adapters
+- its own REST, gRPC, or messaging adapters
 - its own domain model inside the service boundary
 
 ### Deployment Rule
@@ -67,6 +67,13 @@ Every microservice must be independently deployable:
 - as a Docker Swarm service
 - as a Kubernetes Deployment
 
+## Required Skills
+
+## Required Skills
+
+- `.agents/skills/spring-boot/SKILL.md` for Spring Boot service bootstrap, runtime wiring, actuator, configuration, observability, health checks, and service startup decisions.
+- `.agents/skills/spring-core/SKILL.md` only for verified non-Boot Spring wiring, bean configuration, dependency injection, or infrastructure bootstrap decisions.
+
 ## Review Tasks
 
 For every architecture change, verify:
@@ -77,11 +84,11 @@ For every architecture change, verify:
 4. Can the service start independently?
 5. Does the service have its own Dockerfile?
 6. Can the service run under Docker Swarm and Kubernetes?
-7. Does communication use only REST, gRPC or RabbitMQ?
+7. Does communication use only REST, gRPC, or RabbitMQ?
 8. Are contracts separated from implementation code?
 
 ## Decision Rule
 
 Reject or correct changes that violate service autonomy.
 
-Stop and report when a service boundary, contract, deployment target, module dependency or ownership rule cannot be verified from repository files.
+Stop and report when a service boundary, contract, deployment target, module dependency, or ownership rule cannot be verified from repository files.

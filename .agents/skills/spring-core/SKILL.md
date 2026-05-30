@@ -7,7 +7,7 @@ description: Use only when a verified project module already uses Spring wiring 
 
 ## Purpose
 
-Guide Spring usage if a verified module uses Spring for wiring or runtime bootstrapping.
+Guide to Spring usage if a verified module uses Spring for wiring or runtime bootstrapping.
 
 ## Practices
 
@@ -15,7 +15,7 @@ Guide Spring usage if a verified module uses Spring for wiring or runtime bootst
 - Keep Spring annotations out of domain and application packages.
 - Put configuration and bean wiring in adapter, bootstrap or infrastructure packages.
 - Apply `.agents/skills/resilience-engineering/SKILL.md` for service timeouts, health checks, readiness/liveness, retries, circuit breakers, graceful degradation and diagnostics decisions.
-- Keep tests independent from a full application context unless integration behavior requires it.
+- Keep tests independent of a full application context unless integration behavior requires it.
 
 ## Verification
 

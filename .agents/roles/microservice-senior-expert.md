@@ -8,6 +8,7 @@ Own microservice architecture boundaries, service autonomy, independent deployme
 
 - `../skills/microservice-senior-expert/SKILL.md`
 - `../skills/spring-core/SKILL.md`
+- `../skills/spring-boot/SKILL.md`
 - `../skills/devops-docker/SKILL.md`
 - `../skills/devops-kubernetes/SKILL.md`
 - `../skills/grpc-ingestion/SKILL.md`

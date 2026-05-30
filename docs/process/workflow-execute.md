@@ -243,6 +243,7 @@ Required roles and skills when backend work is in scope:
 - Microservice Senior Expert
 - `architecture-hexagonal`
 - `spring-core` when Spring wiring is affected
+- `spring-boot` when Spring boot wiring is affected
 - `testing-junit6`
 - Senior DevOps with `devops-docker` when container readiness is affected
 
