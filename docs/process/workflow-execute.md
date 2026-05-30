@@ -68,6 +68,39 @@ Explicitly declared governance, metadata and documentation-only slices may route
 through `S3_DOC` only when the active workflow declares that scope. Otherwise
 they are unclassified and must escalate.
 
+## Local Execute Blocker Resolution
+
+`workflow execute` must first attempt to resolve blockers that are inside the checked active workflow, current slice scope and verified slice locks before escalation.
+
+Allowed local fixes:
+
+```text
+current-slice build failure
+current-slice test failure
+current-slice documentation evidence gap
+current-slice quality-gate issue
+execution report field
+CP_RECORD field
+slice-local arc42 or ADR note declared by the workflow
+```
+
+Forbidden local fixes:
+
+```text
+workflow scope expansion
+new slice creation
+slice dependency redesign
+approved requirement changes
+architecture target picture changes
+file edits outside slice locks
+automatic switch to workflow create
+automatic switch to skills update
+```
+
+Local fixes are capped at `maxRetries = 3`. After each fix, rerun the failed validation or quality command before continuing.
+
+If workflow refinement is required, stop with `CROSS_STRAND_BLOCKER` and recommend `workflow create`. `workflow execute` must not rewrite the active workflow, add slices or expand scope automatically.
+
 ## Execution Profile Routing
 
 After `S3_SCOPE` and before specialist routing, classify the active slice
@@ -79,7 +112,8 @@ The profile controls review depth only:
   explicitly declares documentation-only scope.
 - `NORMAL_PATH` may use focused role review when owner, locks and quality
   impact are verified.
-- `FULL_PATH` is mandatory for governance authority, skills, roles, routing,
+- `GOVERNANCE_FAST_PATH` may be used for governance-only slices declared by the active workflow when no product, runtime, contract, quality-rule, branch-rule or publication-rule impact exists.
+- `FULL_PATH` is mandatory for governance authority changes, skills, roles, routing,
   branch rules, quality rules, contracts, runtime, deployment or unclear
   impact.
 
@@ -223,8 +257,8 @@ The router categories are:
 Automatic fix attempts are capped at `maxRetries = 3`. Retry exhaustion,
 `UNKNOWN_FAILURE`, missing ownership or unclear classification stops execution
 and escalates to the Root Architect. Targeted fix slices remain inside
-`workflow execute`; the router must not jump back to `workflow create` or expand
-the workflow scope automatically.
+`workflow execute`; the router must not jump back to `workflow create`, `skills update` or expand
+the workflow scope automatically. Cross-strand blockers must report the owning strand and recommended command.
 
 ## Execution Strands
 

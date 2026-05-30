@@ -37,6 +37,27 @@ Coordinate small implementation slices across roles while preserving architectur
 
 The strands must not be mixed. Slice checkpoint push is not `push auto`, and `push auto` belongs only to `skills-agents`.
 
+## Strand-Safe Blocker Handling
+
+The active process strand must first attempt local blocker resolution when the blocker belongs to the active strand authority.
+
+Rules:
+
+```text
+skills update
+  resolves only skill, role, routing, registry and process-governance blockers
+
+workflow create
+  resolves only requirement, workflow structure, slice metadata, handoff and checked arc42 blockers
+
+workflow execute
+  resolves only active-workflow and current-slice blockers
+```
+
+The Swarm Orchestrator must not switch strands automatically. A blocker owned by another strand is reported as `CROSS_STRAND_BLOCKER` with the owning strand and recommended next command.
+
+Local resolution attempts are capped at `maxRetries = 3` and must rerun the failed validation before continuing.
+
 ## Execution Profile Routing
 
 Execution profiles reduce unnecessary full-review work only when the affected

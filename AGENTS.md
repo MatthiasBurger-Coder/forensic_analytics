@@ -106,6 +106,28 @@ Repository agent work is organized into exactly three process strands:
 
 The strands must not be mixed.
 
+## Strand-Safe Local Blocker Resolution
+
+Before stopping or escalating, the active process strand must classify the blocker and attempt bounded local resolution when the blocker is inside the active strand authority.
+
+The active strand must not automatically switch into another strand.
+
+```text
+skills update
+  may repair skill, role, routing, registry and process-governance blockers
+  must not implement product behavior
+
+workflow create
+  may repair requirement, workflow-structure, slice-metadata, role-assignment and checked arc42 blockers
+  must not execute implementation slices
+
+workflow execute
+  may repair current-slice build, test, documentation, CP_RECORD and quality blockers
+  must not change approved workflow scope or create new slices
+```
+
+Cross-strand blockers must stop and report the owning strand, recommended command and concrete reason. Local automatic blocker resolution is capped at `maxRetries = 3` and must rerun the relevant validation before continuing.
+
 Shared governance roles such as Senior System Architect, Documentation Governance, Skill Registry Maintainer, Organigramm Maintainer, Process Governance Maintainer and `S1_PUSH_ELIGIBILITY_GUARD` execute inside the active strand and must apply that strand's file scope, quality gate, and documentation duty.
 
 `push auto` is owned by the `skills-agents` publication guard. It may also

@@ -59,7 +59,9 @@ decision is explicit.
 | Quality authority | `QUALITY.md` | Senior Tester / Quality Gate Orchestrator | required quality commands | hash must match |
 | Project workflow executor | `.agents/skills/workflow-executor/SKILL.md` | Workflow Executor | active Forensic Analytics execution protocol | hash must match |
 | Reusable workflow executor | `.codex/skills/workflow-executor/SKILL.md` | Reusable Codex workflow base | portable base protocol | conflict status must be checked |
-| Execution profile router | `.agents/skills/execution-profile-router/SKILL.md` | Senior System Architect / Workflow Executor | `FAST_PATH`, `NORMAL_PATH`, `FULL_PATH` routing | hash must match |
+| Execution profile router | `.agents/skills/execution-profile-router/SKILL.md` | Senior System Architect / Workflow Executor | `FAST_PATH`, `GOVERNANCE_FAST_PATH`, `NORMAL_PATH`, `FULL_PATH` routing | hash must match |
+
+| Local blocker resolution | `AGENTS.md`, `docs/process/workflow-create.md`, `docs/process/workflow-execute.md`, `.agents/orchestrator/swarm-orchestrator.md` | Active strand owner / Root Architect escalation | bounded local blocker resolution without automatic strand switching | hash must match |
 | Quality impact classifier | `.agents/skills/quality-impact-classifier/SKILL.md` | Senior Tester / Quality Gate Orchestrator | quality command impact decision | hash must match |
 | S3D execution orchestrator | `.agents/skills/s3d-execution-orchestrator/SKILL.md` | Senior Execution Orchestrator | dependency graph, topological groups and locks | hash must match |
 | Flowchart integrity auditor | `.agents/skills/flowchart-integrity-auditor/SKILL.md` | Senior Documentation Engineer / Senior System Architect | governance diagram integrity audit | hash must match |

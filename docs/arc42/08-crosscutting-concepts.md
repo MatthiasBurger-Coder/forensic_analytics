@@ -283,3 +283,24 @@ Vision
 -> Documentation
 
 The Senior Requirement Engineer validates EPIC consistency, traceability, scope, non-goals, service ownership, architecture synchronization and requirement drift before workflow authoring or implementation.
+
+## 8.14 Strand-Safe Governance Performance
+
+Governance workflows use strand-safe local blocker resolution to reduce unnecessary escalation without weakening evidence integrity, architecture governance or quality gates.
+
+The active strand may repair only blockers inside its own authority:
+
+```text
+skills update
+-> skill, role, routing, registry and process-governance blockers
+
+workflow create
+-> requirement, workflow structure, slice metadata, role assignment and checked arc42 blockers
+
+workflow execute
+-> active workflow and current-slice build, test, documentation, quality and CP_RECORD blockers
+```
+
+No strand may automatically switch into another strand. Cross-strand blockers stop and report the owning strand and recommended next command.
+
+Governance-only changes may use `GOVERNANCE_FAST_PATH` when product, runtime, contract, persistence, quality, branch and publication impacts are ruled out. Unclear impact remains `FULL_PATH`.
