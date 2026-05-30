@@ -76,7 +76,8 @@ Agent Workflow Orchestrator
 |
 +-- Senior System Architect
 |   +-- Skill Registry & Conflict Auditor
-|   +-- Three Amigos Requirement Gatekeeper
+|   +-- Senior Requirement Engineer
+|       +-- Three Amigos Requirement Gatekeeper
 |   +-- Contract-First API Steward
 |   +-- Data Ownership & Persistence Steward
 |   +-- Security & Threat Modeling
@@ -93,7 +94,7 @@ Agent Workflow Orchestrator
 
 The Workflow Executor executes approved slices. It must not be the sole authority for requirement, architecture, security, data ownership, quality, ADR, or release decisions.
 
-The Senior System Architect owns architecture governance and may block architecture-sensitive workflows. The Three Amigos Requirement Gatekeeper is the intake gate for new or changed requirements. The Skill Registry & Conflict Auditor is the governance control for skill overlap, conflicting ownership, and incompatible workflow rules.
+The Senior System Architect owns architecture governance and may block architecture-sensitive workflows. The Senior Requirement Engineer owns requirement integrity, EPIC consistency, traceability, scope control and requirement-drift escalation. The Three Amigos Requirement Gatekeeper remains the intake gate for new or changed requirements and must include the Senior Requirement Engineer perspective. The Skill Registry & Conflict Auditor is the governance control for skill overlap, conflicting ownership, and incompatible workflow rules.
 
 ## Mandatory Process Strands
 

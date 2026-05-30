@@ -33,6 +33,7 @@ Inspect the relevant subset of:
 Use these skills for focused work:
 
 - `workflow-authoring` for full workflow lifecycle and slice plans
+- `.agents/roles/senior-requirement-engineer/SKILL.md` for requirement authority, traceability, scope control and EPIC synchronization
 - `requirement-engineering` for EPIC and requirement drift
 - `arc42-architecture-governance` for architecture documentation synchronization
 - `documentation-sync` for documentation consistency
@@ -78,6 +79,12 @@ Require:
 - no hidden compatibility governance
 
 ## Validation Checklists
+
+### Requirement Governance
+
+- Senior Requirement Engineer role applied for requirement-sensitive changes.
+- Requirement baseline, scope, non-goals and traceability checked.
+- Requirement drift is classified before workflow authoring or implementation.
 
 ### EPIC Consistency
 

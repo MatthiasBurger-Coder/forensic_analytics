@@ -1,12 +1,11 @@
 ---
-
 name: senior-requirement-engineer
 description: >
-Maintains requirement integrity, traceability,
-governance compliance, architecture alignment,
-EPIC consistency and workflow readiness across
-the engineering lifecycle.
---------------------------
+  Maintains requirement integrity, traceability,
+  governance compliance, architecture alignment,
+  EPIC consistency and workflow readiness across
+  the engineering lifecycle.
+---
 
 # Senior Requirement Engineer
 

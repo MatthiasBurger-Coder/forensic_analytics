@@ -14,8 +14,8 @@ behavior and quality commands.
 |---|---|
 | Registry version | `skill-registry-v1` |
 | Workflow version | `governance-performance-20260521-v1` |
-| Last verified | `2026-05-21` |
-| Reuse status | `CONDITIONAL_REUSE_ALLOWED` |
+| Last verified | `2026-05-30` |
+| Reuse status | `MANUAL_REVIEW_REQUIRED` |
 | Registry scope | Governance-routing-critical matrix with counts for full repositories of skills, roles and callable agent definitions |
 
 ## Inventory Counts
@@ -23,7 +23,7 @@ behavior and quality commands.
 | Asset set | Count | Source path |
 |---|---:|---|
 | Project skills | 75 | `.agents/skills/*/SKILL.md` |
-| Project roles | 17 | `.agents/roles/*.md` |
+| Project roles | 18 | `.agents/roles/*.md` and `.agents/roles/*/SKILL.md` |
 | Reusable Codex skills | 6 | `.codex/skills/*/SKILL.md` |
 | Callable Codex agents | 34 | `.codex/agents/*.toml` |
 
@@ -55,6 +55,7 @@ decision is explicit.
 | Entry | Path | Owner | Scope | Cache rule |
 |---|---|---|---|---|
 | Root agent governance | `AGENTS.md` | Senior System Architect | mandatory repository behavior | hash must match |
+| Senior Requirement Engineer | `.agents/roles/senior-requirement-engineer/SKILL.md` | Senior Requirement Engineer | requirement integrity, traceability, scope control and EPIC synchronization | hash must match |
 | Quality authority | `QUALITY.md` | Senior Tester / Quality Gate Orchestrator | required quality commands | hash must match |
 | Project workflow executor | `.agents/skills/workflow-executor/SKILL.md` | Workflow Executor | active Forensic Analytics execution protocol | hash must match |
 | Reusable workflow executor | `.codex/skills/workflow-executor/SKILL.md` | Reusable Codex workflow base | portable base protocol | conflict status must be checked |
@@ -76,6 +77,7 @@ decision is explicit.
 | Conflict | Status | Decision |
 |---|---|---|
 | Duplicate front-matter name `workflow-executor` in `.agents/skills/workflow-executor/SKILL.md` and `.codex/skills/workflow-executor/SKILL.md` | `RESOLVED_BY_S09` | Front-matter names remain unchanged. `.agents/skills/workflow-executor/SKILL.md` is the active Forensic Analytics executor and `.codex/skills/workflow-executor/SKILL.md` is the reusable base protocol. |
+| Senior Requirement Engineer role uses directory-style role path | `RESOLVED_BY_ROUTING_RULE` | `.agents/orchestrator/routing-rules.md` routes requirement governance to `.agents/roles/senior-requirement-engineer/SKILL.md`. The role inventory must include both `.agents/roles/*.md` and `.agents/roles/*/SKILL.md`. |
 
 Any route that depends on executor identity must use the project-specific
 executor during Forensic Analytics `workflow execute` and may read the `.codex`

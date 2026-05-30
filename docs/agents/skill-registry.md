@@ -53,6 +53,7 @@ Must not change:
 | Entry | Strand | Owner | Responsibility |
 |---|---|---|---|
 | Senior System Architect | all strands | Senior System Architect | architecture and governance authority |
+| Senior Requirement Engineer | `workflow create`, `workflow execute` | Senior Requirement Engineer | requirement integrity, EPIC consistency, traceability, scope control and requirement-drift escalation |
 | `DOCROOT` | all strands | Senior Documentation Engineer | global docs consistency for process docs, role model, organigramm, arc42 structure, governance rules, workflow conventions and hard boundaries |
 | `S1_DOC` | `skills-agents` | Senior Documentation Engineer | update concrete skills, agents, roles, prompts, routing, organigramm, skill registry and process docs |
 | `S2_DOC` | `workflow create` | Senior Documentation Engineer | update concrete requirement-gate, workflow authoring, workflow handoff and arc42-impact docs |
@@ -91,6 +92,7 @@ Must not change:
 | Conflict Locking | Senior Execution Orchestrator, S3D, Workflow Executor, Senior Swarm Orchestrator coordination | VERIFIED |
 | Rollback Governance | Release and Branch Governance, Git Commit Preparation, Senior DevOps | VERIFIED |
 | Documentation Governance | Senior Documentation Engineer, Documentation Sync, `DOCROOT` | VERIFIED |
+| Requirement Governance | Senior Requirement Engineer, Requirement Engineering, Three Amigos Requirement Gatekeeper | VERIFIED |
 | Quality Gate Classification | Senior Tester, Quality Gate Orchestrator, Quality Gate skill, `skills/quality-impact-classifier/SKILL.md` | VERIFIED |
 | Execution Profile Routing | `skills/execution-profile-router/SKILL.md`, routing rules, Swarm Orchestrator | VERIFIED |
 | Flowchart Integrity Audit | `skills/flowchart-integrity-auditor/SKILL.md`, Senior Documentation Engineer, Senior System Architect escalation | VERIFIED |

@@ -21,7 +21,7 @@ Coordinate small implementation slices across roles while preserving architectur
 3. Identify affected modules, documentation and quality checks.
 4. Classify the request through `skills/execution-profile-router/SKILL.md` as
    `FAST_PATH`, `NORMAL_PATH` or `FULL_PATH`.
-5. Apply engineering governance when EPIC, arc42, requirements, resilience, quality expectations or workflows may drift.
+5. Apply the Senior Requirement Engineer role and engineering governance when EPIC, arc42, requirements, resilience, quality expectations or workflows may drift.
 6. For `workflow execute`, run S3D orchestration: extract slice metadata, build the dependency graph, run topological sort and verify file, contract, module and architecture-boundary locks.
 7. Select the smallest set of roles needed for the slice.
 8. Assign non-overlapping file ownership when multiple workers are explicitly requested.
@@ -32,7 +32,7 @@ Coordinate small implementation slices across roles while preserving architectur
 ## Process Strand Routing
 
 - Exact `skills update` activates the `skills-agents` strand and routes to Skill Registry Conflict Auditor, Senior Documentation Engineer, Organigramm Maintainer and Process Governance Maintainer.
-- Exact `workflow create` activates the `workflow create` strand and routes through requirement clarification, five-role Three Amigos review, branch governance, workflow authoring and arc42 validation.
+- Exact `workflow create` activates the `workflow create` strand and routes through Senior Requirement Engineer review, requirement clarification, five-role Three Amigos review, branch governance, workflow authoring and arc42 validation.
 - Exact `workflow execute` activates the `workflow execute` strand and routes through the workflow executor, slice role reviews, quality gates and slice checkpoint push.
 
 The strands must not be mixed. Slice checkpoint push is not `push auto`, and `push auto` belongs only to `skills-agents`.
