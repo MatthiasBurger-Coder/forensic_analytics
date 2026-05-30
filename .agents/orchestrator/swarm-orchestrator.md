@@ -19,9 +19,8 @@ Coordinate small implementation slices across roles while preserving architectur
 1. Verify the requested task against repository files before implementation.
 2. Verify the active branch belongs to the current workflow before any file modification.
 3. Identify affected modules, documentation and quality checks.
-4. Classify the request through `skills/execution-profile-router/SKILL.md` as
-   `FAST_PATH`, `NORMAL_PATH` or `FULL_PATH`.
-5. Apply engineering governance when EPIC, arc42, requirements, resilience, quality expectations or workflows may drift.
+4. Classify the request through `skills/execution-profile-router/SKILL.md` as `FAST_PATH`, `GOVERNANCE_FAST_PATH`, `NORMAL_PATH` or `FULL_PATH`.
+5. Apply the Senior Requirement Engineer role and engineering governance when EPIC, arc42, requirements, resilience, quality expectations or workflows may drift.
 6. For `workflow execute`, run S3D orchestration: extract slice metadata, build the dependency graph, run topological sort and verify file, contract, module and architecture-boundary locks.
 7. Select the smallest set of roles needed for the slice.
 8. Assign non-overlapping file ownership when multiple workers are explicitly requested.
@@ -32,10 +31,31 @@ Coordinate small implementation slices across roles while preserving architectur
 ## Process Strand Routing
 
 - Exact `skills update` activates the `skills-agents` strand and routes to Skill Registry Conflict Auditor, Senior Documentation Engineer, Organigramm Maintainer and Process Governance Maintainer.
-- Exact `workflow create` activates the `workflow create` strand and routes through requirement clarification, five-role Three Amigos review, branch governance, workflow authoring and arc42 validation.
+- Exact `workflow create` activates the `workflow create` strand and routes through Senior Requirement Engineer review, requirement clarification, five-role Three Amigos review, branch governance, workflow authoring and arc42 validation.
 - Exact `workflow execute` activates the `workflow execute` strand and routes through the workflow executor, slice role reviews, quality gates and slice checkpoint push.
 
 The strands must not be mixed. Slice checkpoint push is not `push auto`, and `push auto` belongs only to `skills-agents`.
+
+## Strand-Safe Blocker Handling
+
+The active process strand must first attempt local blocker resolution when the blocker belongs to the active strand authority.
+
+Rules:
+
+```text
+skills update
+  resolves only skill, role, routing, registry and process-governance blockers
+
+workflow create
+  resolves only requirement, workflow structure, slice metadata, handoff and checked arc42 blockers
+
+workflow execute
+  resolves only active-workflow and current-slice blockers
+```
+
+The Swarm Orchestrator must not switch strands automatically. A blocker owned by another strand is reported as `CROSS_STRAND_BLOCKER` with the owning strand and recommended next command.
+
+Local resolution attempts are capped at `maxRetries = 3` and must rerun the failed validation before continuing.
 
 ## Execution Profile Routing
 
@@ -48,6 +68,7 @@ scope is verified:
 - `NORMAL_PATH`: isolated changes with verified owner, disjoint locks and no
   architecture, contract, persistence, runtime, deployment or quality-policy
   impact.
+- `GOVERNANCE_FAST_PATH`: governance-only changes with verified scope and no product, runtime, contract, persistence, quality-rule, branch-rule or publication-rule impact.
 - `FULL_PATH`: governance authority, skills, roles, routing, process strands,
   quality rules, branch rules, workflow structure, contracts, persistence,
   runtime, deployment, analysis-engine or unclear-impact work.

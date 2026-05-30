@@ -53,6 +53,7 @@ Must not change:
 | Entry | Strand | Owner | Responsibility |
 |---|---|---|---|
 | Senior System Architect | all strands | Senior System Architect | architecture and governance authority |
+| Senior Requirement Engineer | `workflow create`, `workflow execute` | Senior Requirement Engineer | requirement integrity, EPIC consistency, traceability, scope control and requirement-drift escalation |
 | `DOCROOT` | all strands | Senior Documentation Engineer | global docs consistency for process docs, role model, organigramm, arc42 structure, governance rules, workflow conventions and hard boundaries |
 | `S1_DOC` | `skills-agents` | Senior Documentation Engineer | update concrete skills, agents, roles, prompts, routing, organigramm, skill registry and process docs |
 | `S2_DOC` | `workflow create` | Senior Documentation Engineer | update concrete requirement-gate, workflow authoring, workflow handoff and arc42-impact docs |
@@ -73,6 +74,9 @@ Must not change:
 | Execution Report Maintainer | `workflow execute` | Workflow Executor | record workflow version, slice ID, responsible agent, changed files, quality gates, commit SHA, rollback reference, documentation update status, push result and blockers |
 | Commit Traceability Maintainer | `workflow execute` | Senior Documentation Engineer / Workflow Executor | keep `CP_RECORD` fields, one-slice-one-commit evidence and workflow history synchronized |
 | Execution Profile Router | `workflow create`, `workflow execute` | Senior System Architect / Workflow Executor | classify requests as `FAST_PATH`, `NORMAL_PATH` or `FULL_PATH` before specialist routing without weakening mandatory gates |
+
+| Governance Fast Path | `skills-agents`, `workflow create`, `workflow execute` | Execution Profile Router / Skill Registry Conflict Auditor | classify governance-only changes as `GOVERNANCE_FAST_PATH` when product, runtime, contract, quality, branch and publication impact are ruled out |
+| Local Blocker Resolution | all strands | Active strand owner / Root Architect escalation | attempt bounded local blocker resolution before escalation without switching process strands |
 | Quality Impact Classifier | `workflow execute` | Senior Tester / Quality Gate Orchestrator | classify changed files as `DOC_ONLY`, `GOVERNANCE_METADATA`, `PRODUCT_BUILD_AFFECTING` or `UNKNOWN` before quality command selection |
 | Machine-Readable Slice Metadata | `workflow create`, `workflow execute` | Senior Workflow Architect / Workflow Executor / S3D | require concrete YAML slice metadata for dependency graph, lock and quality-gate validation |
 | Persistent Registry Reuse | all strands | Skill Registry Conflict Auditor | allow registry-cache reuse only when hashes match and no governing files changed |
@@ -91,8 +95,9 @@ Must not change:
 | Conflict Locking | Senior Execution Orchestrator, S3D, Workflow Executor, Senior Swarm Orchestrator coordination | VERIFIED |
 | Rollback Governance | Release and Branch Governance, Git Commit Preparation, Senior DevOps | VERIFIED |
 | Documentation Governance | Senior Documentation Engineer, Documentation Sync, `DOCROOT` | VERIFIED |
+| Requirement Governance | Senior Requirement Engineer, Requirement Engineering, Three Amigos Requirement Gatekeeper | VERIFIED |
 | Quality Gate Classification | Senior Tester, Quality Gate Orchestrator, Quality Gate skill, `skills/quality-impact-classifier/SKILL.md` | VERIFIED |
-| Execution Profile Routing | `skills/execution-profile-router/SKILL.md`, routing rules, Swarm Orchestrator | VERIFIED |
+| Execution Profile Routing | `skills/execution-profile-router/SKILL.md`, routing rules, Swarm Orchestrator, `GOVERNANCE_FAST_PATH` | VERIFIED |
 | Flowchart Integrity Audit | `skills/flowchart-integrity-auditor/SKILL.md`, Senior Documentation Engineer, Senior System Architect escalation | VERIFIED |
 | Persistent Skill Registry Matrix | `docs/skill-audit/skill-registry.md`, `docs/skill-audit/skill-registry.json`, `skill-registry-conflict-auditor` | VERIFIED |
 | Branch Strategy Matrix | `docs/process/branch-governance.md`, `AGENTS.md`, `git-branch-strategy`, `release-branch-governance`, `git-commit-preparation` | VERIFIED |

@@ -76,7 +76,8 @@ Agent Workflow Orchestrator
 |
 +-- Senior System Architect
 |   +-- Skill Registry & Conflict Auditor
-|   +-- Three Amigos Requirement Gatekeeper
+|   +-- Senior Requirement Engineer
+|       +-- Three Amigos Requirement Gatekeeper
 |   +-- Contract-First API Steward
 |   +-- Data Ownership & Persistence Steward
 |   +-- Security & Threat Modeling
@@ -91,9 +92,9 @@ Agent Workflow Orchestrator
 +-- Senior Tester
 ```
 
-The Workflow Executor executes approved slices. It must not be the sole authority for requirement, architecture, security, data ownership, quality, ADR or release decisions.
+The Workflow Executor executes approved slices. It must not be the sole authority for requirement, architecture, security, data ownership, quality, ADR, or release decisions.
 
-The Senior System Architect owns architecture governance and may block architecture-sensitive workflows. The Three Amigos Requirement Gatekeeper is the intake gate for new or changed requirements. The Skill Registry & Conflict Auditor is the governance control for skill overlap, conflicting ownership and incompatible workflow rules.
+The Senior System Architect owns architecture governance and may block architecture-sensitive workflows. The Senior Requirement Engineer owns requirement integrity, EPIC consistency, traceability, scope control and requirement-drift escalation. The Three Amigos Requirement Gatekeeper remains the intake gate for new or changed requirements and must include the Senior Requirement Engineer perspective. The Skill Registry & Conflict Auditor is the governance control for skill overlap, conflicting ownership, and incompatible workflow rules.
 
 ## Mandatory Process Strands
 
@@ -105,7 +106,29 @@ Repository agent work is organized into exactly three process strands:
 
 The strands must not be mixed.
 
-Shared governance roles such as Senior System Architect, Documentation Governance, Skill Registry Maintainer, Organigramm Maintainer, Process Governance Maintainer and `S1_PUSH_ELIGIBILITY_GUARD` execute inside the active strand and must apply that strand's file scope, quality gate and documentation duty.
+## Strand-Safe Local Blocker Resolution
+
+Before stopping or escalating, the active process strand must classify the blocker and attempt bounded local resolution when the blocker is inside the active strand authority.
+
+The active strand must not automatically switch into another strand.
+
+```text
+skills update
+  may repair skill, role, routing, registry and process-governance blockers
+  must not implement product behavior
+
+workflow create
+  may repair requirement, workflow-structure, slice-metadata, role-assignment and checked arc42 blockers
+  must not execute implementation slices
+
+workflow execute
+  may repair current-slice build, test, documentation, CP_RECORD and quality blockers
+  must not change approved workflow scope or create new slices
+```
+
+Cross-strand blockers must stop and report the owning strand, recommended command and concrete reason. Local automatic blocker resolution is capped at `maxRetries = 3` and must rerun the relevant validation before continuing.
+
+Shared governance roles such as Senior System Architect, Documentation Governance, Skill Registry Maintainer, Organigramm Maintainer, Process Governance Maintainer and `S1_PUSH_ELIGIBILITY_GUARD` execute inside the active strand and must apply that strand's file scope, quality gate, and documentation duty.
 
 `push auto` is owned by the `skills-agents` publication guard. It may also
 publish governance-only workflow documentation under `docs/workflow/**` when the
@@ -116,13 +139,13 @@ implementation changes.
 
 ## Bounded Governance Feedback Loops
 
-Every automatic governance feedback, correction or clarification loop is capped at:
+Every automatic governance feedback, correction, or clarification loop is capped at:
 
 ```text
 maxRetries = 3
 ```
 
-After the third failed or unresolved attempt, the process must STOP and escalate to the Root Architect. The escalation must report the attempted loop, the unresolved blocker, the files or decisions involved and the reason why continuing automatically would be unsafe.
+After the third failed or unresolved attempt, the process must STOP and escalate to the Root Architect. The escalation must report the attempted loop, the unresolved blocker, the files or decisions involved, and the reason why continuing automatically would be unsafe.
 
 The current `skills-agents` flow is linear and stops on review failures. If a future skills-agents correction loop is explicitly authorized, it is also capped by `maxRetries = 3` and then escalates.
 
@@ -136,7 +159,7 @@ skills update
 
 Codex must activate the `skills-agents` process strand.
 
-This command is used for creating, updating, refactoring, auditing or reconnecting skills, agents, roles, prompts, Codex agent definitions, routing rules, organigramm, skill registry and related process documentation.
+This command is used for creating, updating, refactoring, auditing, or reconnecting skills, agents, roles, prompts, Codex agent definitions, routing rules, organigramm, skill registry, and related process documentation.
 
 `skills update` must not implement product backend, frontend, Docker/runtime, contracts, persistence, analysis engine, Joern, JavaParser, BTM generator or analytics behavior.
 
@@ -175,7 +198,7 @@ Publication modes are separate:
 3. `push auto`:
    - is owned by the `skills-agents` publication guard;
    - may include governance-only `docs/workflow/**` documentation;
-   - may create, verify and merge a PR only after guard checks pass;
+   - may create, verify, and merge a PR only after guard checks pass;
    - must never publish backend, frontend, Docker/runtime or analytics implementation changes.
 
 ## Mandatory Workflow Creation Command
@@ -197,7 +220,7 @@ The required order is:
 3. Stop if the current branch is detached, unclear, or if unrelated or unclear uncommitted changes exist.
 4. Generate a dedicated workflow branch name unless the current branch is already a matching branch for this workflow.
 5. Check local and remote branch-name collisions, choosing the next clear unique suffix when needed.
-6. Create and checkout the workflow branch, or verify the existing matching workflow branch.
+6. Create and check out the workflow branch, or verify the existing matching workflow branch.
 7. Verify the active branch with `git branch --show-current`.
 8. Create or regenerate workflow artifacts only after the branch exists and is active.
 9. Continue with workflow slices, subagent routing, quality gates, commits, and optional push only inside the verified workflow branch.
@@ -554,9 +577,9 @@ Allowed integration mechanisms are:
 
 Contracts may be centrally documented, but they must not be used as shared Java implementation modules or as a substitute for service-owned domain models.
 
-Each service must be independently buildable, runnable, testable, configurable, observable, health-checkable, containerized and deployable. Each microservice must own its Spring Boot application, configuration, ports, tests, Dockerfile, health checks, README, adapters and internal domain model.
+Each service must be independently buildable, runnable, testable, configurable, observable, health-checkable, containerized, and deployable. Each microservice must own its Spring Boot application, configuration, ports, tests, Dockerfile, health checks, README, adapters, and internal domain model.
 
-This rule does not authorize speculative migration of existing modules. The current modular-monolith modules must not be described as implemented microservices. Service extraction must be performed through dedicated, verified slices with explicit service boundary, contract impact, data ownership, test impact, rollback or strangler strategy, quality-gate commands and forbidden changes.
+This rule does not authorize speculative migration of existing modules. The current modular-monolith modules must not be described as implemented microservices. Service extraction must be performed through dedicated, verified slices with explicit service boundary, contract impact, data ownership, test impact, rollback or strangler strategy, quality-gate commands, and forbidden changes.
 
 ### Package Responsibility Map
 
