@@ -6,7 +6,11 @@ import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.mock.env.MockEnvironment;
 
 import java.net.URI;
+import java.net.HttpURLConnection;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -94,7 +98,7 @@ class RepositorySourceServiceApplicationTest {
             memoryPersistence()
         );
         var grpc = new GrpcServerLifecycle(properties, null);
-        var health = new HealthHttpServerLifecycle(properties, grpc);
+        var health = new HealthHttpServerLifecycle(properties, grpc, RepositorySourceStorageReadiness.ready());
 
         grpc.start();
         health.start();
@@ -147,7 +151,7 @@ class RepositorySourceServiceApplicationTest {
         assertThrows(IllegalArgumentException.class, () -> new RepositorySourceServiceProperties.Health(true, "127.0.0.1", 65_536));
         assertThrows(IllegalArgumentException.class, () -> new RepositorySourceServiceProperties.Health(true, null, 0));
         assertThrows(NullPointerException.class, () -> new RepositorySourceServiceProperties.Workspace(null));
-        assertThrows(IllegalArgumentException.class, () -> new RepositorySourceServiceProperties.Persistence("postgres", h2(), postgres()));
+        assertThrows(IllegalArgumentException.class, () -> new RepositorySourceServiceProperties.Persistence("oracle", h2(), postgres()));
         assertThrows(NullPointerException.class, () -> new RepositorySourceServiceProperties.Persistence("memory", h2(), null));
         assertThrows(IllegalArgumentException.class, () -> new RepositorySourceServiceProperties.H2(" ", "sa", ""));
         assertThrows(IllegalArgumentException.class, () -> new RepositorySourceServiceProperties.H2(
@@ -208,7 +212,7 @@ class RepositorySourceServiceApplicationTest {
             memoryPersistence()
         );
         var grpc = new GrpcServerLifecycle(properties, null);
-        var health = new HealthHttpServerLifecycle(properties, grpc);
+        var health = new HealthHttpServerLifecycle(properties, grpc, RepositorySourceStorageReadiness.ready());
 
         try {
             health.start();
@@ -254,9 +258,96 @@ class RepositorySourceServiceApplicationTest {
     }
 
     @Test
+    void selectsPostgreSQLPersistenceAfterRunningLiquibaseMigration() {
+        var events = new ArrayList<String>();
+        var configuration = new RepositorySourceServiceConfiguration(
+            postgres -> events.add("migrate"),
+            postgres -> {
+                events.add("components");
+                return memoryComponents();
+            }
+        );
+        var properties = new RepositorySourceServiceProperties(
+            new RepositorySourceServiceProperties.Grpc(false, "127.0.0.1", 0),
+            new RepositorySourceServiceProperties.Health(false, "127.0.0.1", 0),
+            new RepositorySourceServiceProperties.Workspace(Path.of("build/test-workspaces")),
+            new RepositorySourceServiceProperties.Persistence("Postgres", h2(), postgres())
+        );
+
+        var components = configuration.repositorySourcePersistenceComponents(properties);
+
+        assertTrue(properties.persistence().usePostgres());
+        assertFalse(properties.persistence().useH2());
+        assertEquals(List.of("migrate", "components"), events);
+        assertNotNull(components.preparationRepository());
+        assertNotNull(components.workspaceRepository());
+        assertNotNull(components.idempotencyRepository());
+        assertTrue(components.storageReadiness().isReady());
+    }
+
+    @Test
+    void sanitizesPostgreSQLMigrationFailureBeforeExposingBootstrapError() {
+        var leakedDetails = "jdbc:postgresql://db:5432/forensic_analytics?password=secret repository_source.workspace "
+            + "/var/lib/forensic-analytics/repository-workspaces";
+        var configuration = new RepositorySourceServiceConfiguration(
+            postgres -> {
+                throw new IllegalStateException(leakedDetails);
+            },
+            postgres -> {
+                throw new AssertionError("components must not be created after migration failure");
+            }
+        );
+        var properties = new RepositorySourceServiceProperties(
+            new RepositorySourceServiceProperties.Grpc(false, "127.0.0.1", 0),
+            new RepositorySourceServiceProperties.Health(false, "127.0.0.1", 0),
+            new RepositorySourceServiceProperties.Workspace(Path.of("build/test-workspaces")),
+            new RepositorySourceServiceProperties.Persistence("postgres", h2(), postgres())
+        );
+
+        var error = assertThrows(
+            IllegalStateException.class,
+            () -> configuration.repositorySourcePersistenceComponents(properties)
+        );
+
+        assertEquals("Repository-source PostgreSQL storage is not ready", error.getMessage());
+        assertDoesNotExposeStorageDetails(error.getMessage());
+    }
+
+    @Test
+    void reportsStorageReadinessDownWithoutLeakingFailureDetails() throws Exception {
+        var leakedDetails = "jdbc:postgresql://db:5432/forensic_analytics?password=secret repository_source.workspace "
+            + "/var/lib/forensic-analytics/repository-workspaces";
+        var properties = new RepositorySourceServiceProperties(
+            new RepositorySourceServiceProperties.Grpc(false, "127.0.0.1", 0),
+            new RepositorySourceServiceProperties.Health(true, "127.0.0.1", 0),
+            new RepositorySourceServiceProperties.Workspace(Path.of("build/test-workspaces")),
+            memoryPersistence()
+        );
+        var grpc = new GrpcServerLifecycle(properties, null);
+        var health = new HealthHttpServerLifecycle(
+            properties,
+            grpc,
+            () -> {
+                throw new IllegalStateException(leakedDetails);
+            }
+        );
+
+        try {
+            health.start();
+            var response = healthResponse(health.port());
+
+            assertEquals(503, response.statusCode());
+            assertEquals("{\"status\":\"DOWN\"}", response.body());
+            assertDoesNotExposeStorageDetails(response.body());
+        } finally {
+            health.stop();
+        }
+    }
+
+    @Test
     void bindsTypedPostgreSQLConfigurationWithoutConnectingToDatabase() {
         var environment = new MockEnvironment()
-            .withProperty("forensics.repository-source.service.persistence.type", "memory")
+            .withProperty("forensics.repository-source.service.persistence.type", "postgres")
             .withProperty(
                 "forensics.repository-source.service.persistence.postgres.jdbc-url",
                 " jdbc:postgresql://127.0.0.1:5432/forensic_analytics "
@@ -273,6 +364,7 @@ class RepositorySourceServiceApplicationTest {
             .repositorySourceServiceProperties(environment);
 
         assertFalse(properties.persistence().useH2());
+        assertTrue(properties.persistence().usePostgres());
         assertEquals("jdbc:postgresql://127.0.0.1:5432/forensic_analytics", properties.persistence().postgres().jdbcUrl());
         assertEquals("forensic", properties.persistence().postgres().username());
         assertEquals("", properties.persistence().postgres().password());
@@ -297,8 +389,24 @@ class RepositorySourceServiceApplicationTest {
     }
 
     private static int healthResponseCode(int port) throws Exception {
-        var connection = URI.create("http://127.0.0.1:" + port + "/health").toURL().openConnection();
-        return ((java.net.HttpURLConnection) connection).getResponseCode();
+        return healthResponse(port).statusCode();
+    }
+
+    private static HealthResponse healthResponse(int port) throws Exception {
+        var connection = (HttpURLConnection) URI.create("http://127.0.0.1:" + port + "/health").toURL().openConnection();
+        var statusCode = connection.getResponseCode();
+        var responseBody = statusCode < 400 ? connection.getInputStream() : connection.getErrorStream();
+        var body = responseBody == null ? "" : new String(responseBody.readAllBytes(), StandardCharsets.UTF_8);
+        return new HealthResponse(statusCode, body);
+    }
+
+    private static void assertDoesNotExposeStorageDetails(String text) {
+        assertFalse(text.contains("jdbc:postgresql"));
+        assertFalse(text.contains("password"));
+        assertFalse(text.contains("secret"));
+        assertFalse(text.contains("repository_source"));
+        assertFalse(text.contains("workspace"));
+        assertFalse(text.contains("/var/lib"));
     }
 
     private static void assertDoesNotThrowH2Path(String jdbcUrl) {
@@ -307,6 +415,17 @@ class RepositorySourceServiceApplicationTest {
 
     private static RepositorySourceServiceProperties.Persistence memoryPersistence() {
         return new RepositorySourceServiceProperties.Persistence("memory", h2(), postgres());
+    }
+
+    private static RepositorySourceServiceConfiguration.RepositorySourcePersistenceComponents memoryComponents() {
+        var configuration = new RepositorySourceServiceConfiguration();
+        var properties = new RepositorySourceServiceProperties(
+            new RepositorySourceServiceProperties.Grpc(false, "127.0.0.1", 0),
+            new RepositorySourceServiceProperties.Health(false, "127.0.0.1", 0),
+            new RepositorySourceServiceProperties.Workspace(Path.of("build/test-workspaces")),
+            memoryPersistence()
+        );
+        return configuration.repositorySourcePersistenceComponents(properties);
     }
 
     private static RepositorySourceServiceProperties.H2 h2() {
@@ -325,6 +444,9 @@ class RepositorySourceServiceApplicationTest {
             "repository_source",
             "classpath:db/changelog/repository-source-workspace.postgresql.yaml"
         );
+    }
+
+    private record HealthResponse(int statusCode, String body) {
     }
 
 }

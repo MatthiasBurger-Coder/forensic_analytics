@@ -11,6 +11,7 @@ import de.burger.forensics.analytics.services.repositorysource.adapter.out.id.Uu
 import de.burger.forensics.analytics.services.repositorysource.adapter.out.memory.InMemoryRepositoryPreparationRepository;
 import de.burger.forensics.analytics.services.repositorysource.adapter.out.memory.InMemoryRepositorySourceIdempotencyRepository;
 import de.burger.forensics.analytics.services.repositorysource.adapter.out.memory.InMemoryRepositoryWorkspaceRepository;
+import de.burger.forensics.analytics.services.repositorysource.adapter.out.postgres.PostgresRepositorySourcePersistenceAdapter;
 import de.burger.forensics.analytics.services.repositorysource.application.RepositorySourceApplicationService;
 import de.burger.forensics.analytics.services.repositorysource.application.RepositoryWorkspaceApplicationService;
 import de.burger.forensics.analytics.services.repositorysource.application.port.RepositoryCheckoutPort;
@@ -30,6 +31,24 @@ import java.util.concurrent.Executors;
 
 @Configuration(proxyBeanMethods = false)
 public class RepositorySourceServiceConfiguration {
+    private final PostgresMigrationRunner postgresMigrationRunner;
+    private final PostgresPersistenceComponentsFactory postgresPersistenceComponentsFactory;
+
+    public RepositorySourceServiceConfiguration() {
+        this(
+            postgres -> new RepositorySourcePostgresLiquibaseMigration(postgres).migrate(),
+            RepositorySourceServiceConfiguration::postgresPersistenceComponents
+        );
+    }
+
+    RepositorySourceServiceConfiguration(
+        PostgresMigrationRunner postgresMigrationRunner,
+        PostgresPersistenceComponentsFactory postgresPersistenceComponentsFactory
+    ) {
+        this.postgresMigrationRunner = postgresMigrationRunner;
+        this.postgresPersistenceComponentsFactory = postgresPersistenceComponentsFactory;
+    }
+
     @Bean
     public Clock repositorySourceClock() {
         return Clock.systemUTC();
@@ -46,6 +65,9 @@ public class RepositorySourceServiceConfiguration {
                 properties.persistence().h2().password()
             );
             return new RepositorySourcePersistenceComponents(adapter, adapter, adapter);
+        }
+        if (properties.persistence().usePostgres()) {
+            return migratedPostgresPersistenceComponents(properties.persistence().postgres());
         }
         return new RepositorySourcePersistenceComponents(
             new InMemoryRepositoryPreparationRepository(),
@@ -155,15 +177,57 @@ public class RepositorySourceServiceConfiguration {
     @Bean
     public HealthHttpServerLifecycle healthHttpServerLifecycle(
         RepositorySourceServiceProperties properties,
-        GrpcServerLifecycle grpcServerLifecycle
+        GrpcServerLifecycle grpcServerLifecycle,
+        RepositorySourcePersistenceComponents persistenceComponents
     ) {
-        return new HealthHttpServerLifecycle(properties, grpcServerLifecycle);
+        return new HealthHttpServerLifecycle(properties, grpcServerLifecycle, persistenceComponents.storageReadiness());
+    }
+
+    private RepositorySourcePersistenceComponents migratedPostgresPersistenceComponents(
+        RepositorySourceServiceProperties.Postgres postgres
+    ) {
+        try {
+            postgresMigrationRunner.migrate(postgres);
+            return postgresPersistenceComponentsFactory.create(postgres);
+        } catch (RuntimeException error) {
+            throw new IllegalStateException("Repository-source PostgreSQL storage is not ready");
+        }
+    }
+
+    private static RepositorySourcePersistenceComponents postgresPersistenceComponents(
+        RepositorySourceServiceProperties.Postgres postgres
+    ) {
+        var adapter = new PostgresRepositorySourcePersistenceAdapter(
+            postgres.jdbcUrl(),
+            postgres.username(),
+            postgres.password(),
+            postgres.schema()
+        );
+        return new RepositorySourcePersistenceComponents(adapter, adapter, adapter);
     }
 
     public record RepositorySourcePersistenceComponents(
         RepositoryPreparationRepository preparationRepository,
         RepositoryWorkspaceRepository workspaceRepository,
-        RepositorySourceIdempotencyRepository idempotencyRepository
+        RepositorySourceIdempotencyRepository idempotencyRepository,
+        RepositorySourceStorageReadiness storageReadiness
     ) {
+        public RepositorySourcePersistenceComponents(
+            RepositoryPreparationRepository preparationRepository,
+            RepositoryWorkspaceRepository workspaceRepository,
+            RepositorySourceIdempotencyRepository idempotencyRepository
+        ) {
+            this(preparationRepository, workspaceRepository, idempotencyRepository, RepositorySourceStorageReadiness.ready());
+        }
+    }
+
+    @FunctionalInterface
+    interface PostgresMigrationRunner {
+        void migrate(RepositorySourceServiceProperties.Postgres postgres);
+    }
+
+    @FunctionalInterface
+    interface PostgresPersistenceComponentsFactory {
+        RepositorySourcePersistenceComponents create(RepositorySourceServiceProperties.Postgres postgres);
     }
 }

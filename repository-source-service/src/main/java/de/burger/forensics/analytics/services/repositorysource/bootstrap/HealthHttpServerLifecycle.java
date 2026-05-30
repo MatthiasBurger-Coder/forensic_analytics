@@ -14,15 +14,18 @@ public final class HealthHttpServerLifecycle implements SmartLifecycle {
 
     private final RepositorySourceServiceProperties properties;
     private final GrpcServerLifecycle grpcServerLifecycle;
+    private final RepositorySourceStorageReadiness storageReadiness;
     private HttpServer server;
     private boolean running;
 
     public HealthHttpServerLifecycle(
         RepositorySourceServiceProperties properties,
-        GrpcServerLifecycle grpcServerLifecycle
+        GrpcServerLifecycle grpcServerLifecycle,
+        RepositorySourceStorageReadiness storageReadiness
     ) {
         this.properties = properties;
         this.grpcServerLifecycle = grpcServerLifecycle;
+        this.storageReadiness = storageReadiness;
     }
 
     @Override
@@ -63,7 +66,7 @@ public final class HealthHttpServerLifecycle implements SmartLifecycle {
     }
 
     private void health(HttpExchange exchange) throws IOException {
-        var healthy = !properties.grpc().enabled() || grpcServerLifecycle.isRunning();
+        var healthy = (!properties.grpc().enabled() || grpcServerLifecycle.isRunning()) && storageReady();
         var body = healthy ? UP : DOWN;
         exchange.getResponseHeaders().set("Content-Type", "application/json; charset=utf-8");
         exchange.sendResponseHeaders(healthy ? 200 : 503, body.length);
@@ -71,6 +74,14 @@ public final class HealthHttpServerLifecycle implements SmartLifecycle {
             output.write(body);
         } finally {
             exchange.close();
+        }
+    }
+
+    private boolean storageReady() {
+        try {
+            return storageReadiness.isReady();
+        } catch (RuntimeException error) {
+            return false;
         }
     }
 }

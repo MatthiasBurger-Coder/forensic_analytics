@@ -46,6 +46,10 @@ public record RepositorySourceServiceProperties(
         public boolean useH2() {
             return "h2".equals(type);
         }
+
+        public boolean usePostgres() {
+            return "postgres".equals(type);
+        }
     }
 
     public record H2(String jdbcUrl, String username, String password) {
@@ -83,8 +87,8 @@ public record RepositorySourceServiceProperties(
             throw new IllegalArgumentException("persistence type must not be blank");
         }
         var normalized = type.trim().toLowerCase(java.util.Locale.ROOT);
-        if (!"memory".equals(normalized) && !"h2".equals(normalized)) {
-            throw new IllegalArgumentException("persistence type must be memory or h2");
+        if (!"memory".equals(normalized) && !"h2".equals(normalized) && !"postgres".equals(normalized)) {
+            throw new IllegalArgumentException("persistence type must be memory, h2 or postgres");
         }
         return normalized;
     }
