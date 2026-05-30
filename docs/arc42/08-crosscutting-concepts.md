@@ -265,3 +265,21 @@ The model prevents:
 - broad speculative changes
 - accidental `push auto` on product implementation
 - loss of work after local machine failures
+
+## 8.13 Requirement Governance
+
+Requirement-sensitive changes are governed by the Senior Requirement Engineer role.
+
+The requirement lifecycle is:
+
+Vision
+-> EPIC
+-> Capability
+-> Requirement
+-> Workflow
+-> Slice
+-> Implementation
+-> Test
+-> Documentation
+
+The Senior Requirement Engineer validates EPIC consistency, traceability, scope, non-goals, service ownership, architecture synchronization and requirement drift before workflow authoring or implementation.
