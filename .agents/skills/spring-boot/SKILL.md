@@ -78,7 +78,7 @@ application
 
 domain
  └─ business model
-````
+```
 
 ### Forbidden
 
