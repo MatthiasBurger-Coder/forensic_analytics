@@ -23,7 +23,7 @@
 
 ## Implementation Status
 
-Workflow execution has started. Checkpoint commits S01 through S04 are present
+Workflow execution has started. Checkpoint commits S01 through S05 are present
 on `feature/workflow-workspace-postgres-20260529` and have been pushed to
 `origin`.
 
@@ -33,23 +33,31 @@ on `feature/workflow-workspace-postgres-20260529` and have been pushed to
 | S02 | `31cade1` | Repository-source PostgreSQL/Liquibase Gradle dependencies, dependency verification metadata and typed configuration |
 | S03 | `8dafe44` | Repository-source PostgreSQL Liquibase changelog and offline changelog regression test |
 | S04 | `d32a314` | Repository-source PostgreSQL outbound persistence adapter, application persistence regression test and architecture rules |
+| S05 | `b4571bb` | Repository-source PostgreSQL bootstrap selection, Liquibase execution and storage readiness health wiring |
 
-S3D preflight before S05 detected stale workflow evidence because this report
-still contained the workflow-creation status and the context pack still
-recorded pre-S01 architecture-document hashes. This S3_DOC refresh updates only
-workflow evidence and context-pack hashes. It does not implement S05 product
-code.
+S3D preflight before S06 detected stale workflow evidence because this report
+still recorded S05 as the next candidate even though commit `b4571bb` already
+implemented the S05 bootstrap, Liquibase and health wiring scope. The same
+preflight found stale context-pack hashes after the `main` merge at `75ea941`.
+This S3_DOC refresh updates only workflow evidence and context-pack hashes. It
+does not implement S06 product or deployment changes.
 
 ## Current Execution Position
 
-- Last completed implementation slice: S04.
-- Next candidate slice after this S3_DOC refresh: S05 - Bootstrap, Liquibase
-  Execution and Health Wiring.
-- S05 technical pre-review status: backend and tester reviews found no STOP
-  blocker, but S05 must still rerun S3D after this documentation refresh before
-  any product file modification.
+- Last completed implementation slice: S05.
+- Next candidate slice after this S3_DOC refresh: S06 - Docker Compose and
+  Local PostgreSQL Runtime.
+- S06 technical pre-review status: Senior DevOps subagent review found no STOP
+  blocker after evidence repair, and identified the required Compose network,
+  PostgreSQL runtime configuration and documentation checks.
 
-## Commands Not Run
+## S05 Verification Evidence
 
-No Gradle or Docker quality commands were run during workflow creation because
-only workflow documentation was regenerated.
+- `git diff --check` passed before this S3_DOC repair.
+- `./gradlew :repository-source-service:test --dependency-verification strict --console=plain --stacktrace`
+  passed on 2026-05-31 with 11 actionable tasks.
+- `./gradlew test --dependency-verification strict --console=plain --stacktrace`
+  passed on 2026-05-31 with 155 actionable tasks.
+
+Docker Compose checks were not part of S05. They remain required for S06 and
+must be rerun after S06 deployment descriptor changes.
