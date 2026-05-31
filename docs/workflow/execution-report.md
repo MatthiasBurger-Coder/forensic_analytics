@@ -23,7 +23,7 @@
 
 ## Implementation Status
 
-Workflow execution has started. Checkpoint commits S01 through S06 are present
+Workflow execution has started. Checkpoint commits S01 through S09 are present
 on `feature/workflow-workspace-postgres-20260529` and have been pushed to
 `origin`.
 
@@ -37,6 +37,7 @@ on `feature/workflow-workspace-postgres-20260529` and have been pushed to
 | S06 | `caf6a11` | Docker Compose and local PostgreSQL runtime wiring for repository-source metadata |
 | S07 | `c614cb7` | PostgreSQL runtime default, H2 test boundary and documentation |
 | S08 | `55def59` | Contract-first database Settings backend handoff, operator-token facade and repository-source validation owner API |
+| S09 | `740ce40` | React database Settings UI, public API adapter wiring, secret-safe validation form and frontend regression tests |
 
 S3D preflight before S06 detected stale workflow evidence because this report
 still recorded S05 as the next candidate even though commit `b4571bb` already
@@ -47,10 +48,10 @@ The S06 checkpoint `caf6a11` followed that S3_DOC repair and has been pushed to
 
 ## Current Execution Position
 
-- Last completed implementation slice: S08.
+- Last completed implementation slice: S09.
 - Active workflow version after accepted scope update: `2026-05-31`.
-- Next candidate slice: S09 - React Database Settings UI.
-- S09 must rerun S3D before any product or documentation file modification.
+- Next candidate slice: S10 - End-to-End Verification and Release Readiness.
+- S10 must rerun S3D before any product or documentation file modification.
 
 ## Workflow Scope Update
 
@@ -125,6 +126,36 @@ and S10 covering final release readiness.
   `repositorysource.adapter.in.grpc` `81.75%` branch. The remaining PostgreSQL
   adapter coverage gap is outside the S08 file locks and remains a release
   readiness blocker for S10.
+
+## S09 Verification Evidence
+
+- The Settings placeholder now exposes an operator workflow for sanitized
+  repository-source PostgreSQL status and candidate validation through the
+  existing frontend service port and public API adapter boundary.
+- The React UI does not connect to PostgreSQL or repository-source private
+  tables. It calls only
+  `/api/settings/repository-source/database` and
+  `/api/settings/repository-source/database/validation`.
+- Operator token and password inputs are transient browser form values. The
+  password is submitted only as write-only validation input, is cleared after
+  validation attempts, and is covered by tests that assert no credential is
+  rendered, stored in URL state, local storage or session storage.
+- Validation result rendering distinguishes `VALID`, `INVALID`,
+  `UNREACHABLE`, `AUTHENTICATION_FAILED` and `UNSUPPORTED`, and displays
+  `RESTART_REQUIRED` / `hotApplySupported=false` semantics without offering a
+  save or hot-apply action.
+- Callable specialist reviews completed for Senior React Frontend Developer
+  and Senior UX Designer. Their findings were resolved by keeping changes
+  inside S09 locks, tightening port validation, preserving the S08
+  operator-token contract and expanding Settings UI regression coverage.
+- `cd forensic-ui && npm run test` passed on 2026-05-31 with 9 test files and
+  94 tests.
+- `cd forensic-ui && npm run build` passed on 2026-05-31.
+- `./gradlew test --dependency-verification strict --console=plain --stacktrace`
+  passed on 2026-05-31 with 155 actionable tasks.
+- `git diff --check`, `git diff --cached --check` and
+  `python3 -m json.tool docs/workflow/context-pack.json` passed before the S09
+  checkpoint and documentation update.
 
 Docker Compose checks were not part of S05. They remain required for S06 and
 must be rerun after S06 deployment descriptor changes.
