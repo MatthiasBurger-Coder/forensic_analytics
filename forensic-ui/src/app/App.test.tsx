@@ -44,6 +44,23 @@ describe("App routing", () => {
       })
     ).toBeInTheDocument();
   });
+
+  it("routes /settings to the operator Settings page", async () => {
+    window.history.pushState({}, "", "/settings");
+
+    render(<App services={services()} />);
+
+    expect(
+      await screen.findByRole("heading", {
+        name: "Settings"
+      })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", {
+        name: "Database status"
+      })
+    ).toBeInTheDocument();
+  });
 });
 
 const services = (): ApplicationServices => ({
@@ -63,6 +80,10 @@ const services = (): ApplicationServices => ({
   },
   diagnostics: {
     collectDiagnostics: vi.fn()
+  },
+  settings: {
+    getRepositorySourceDatabaseSettings: vi.fn(),
+    validateRepositorySourceDatabaseSettings: vi.fn()
   }
 });
 

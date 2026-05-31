@@ -1,12 +1,17 @@
 import type { ApplicationPorts } from "@/application/createApplicationServices";
 import { ApplicationError } from "@/application/errors";
 import type { RepositoryAnalysisPort } from "@/application/ports/repositoryAnalysisPort";
+import type { SettingsPort } from "@/application/ports/settingsPort";
 import type { WorkspacePort } from "@/application/ports/workspacePort";
 import type { DiagnosticsPort } from "@/application/ports/diagnosticsPort";
 import type {
   RepositoryAnalysis,
   StartRepositoryAnalysisCommand
 } from "@/domain/repositoryAnalysis";
+import type {
+  GetDatabaseSettingsCommand,
+  ValidateDatabaseSettingsCommand
+} from "@/domain/settings";
 import type {
   CreateWorkspaceCommand,
   DeleteWorkspaceCommand,
@@ -18,6 +23,9 @@ import type {
 import { resolveApiConfig, type ApiConfig } from "./config";
 import type {
   BranchRefreshResponseDto,
+  DatabaseSettingsStatusDto,
+  DatabaseSettingsValidationRequestDto,
+  DatabaseSettingsValidationResponseDto,
   RepositoryAnalysisDto,
   WorkspaceCleanupResponseDto,
   WorkspaceDto,
@@ -28,6 +36,8 @@ import { HttpClient, type Delay, type Fetcher } from "./httpClient";
 import {
   mapAnalysisJobDto,
   mapBranchRefreshDto,
+  mapDatabaseSettingsStatusDto,
+  mapDatabaseSettingsValidationResponseDto,
   mapRepositoryAnalysisDto,
   mapRepositoryAnalysisListDto,
   mapWorkspaceCleanupDto,
@@ -201,10 +211,40 @@ export const createApiClient = (
     }
   };
 
+  const settings: SettingsPort = {
+    async getRepositorySourceDatabaseSettings(command, signal) {
+      validateSettingsToken(command);
+      const response = await http.requestJson<DatabaseSettingsStatusDto>(
+        "/settings/repository-source/database",
+        {
+          headers: settingsHeaders(command.operatorToken, "settings-current"),
+          signal
+        }
+      );
+
+      return mapDatabaseSettingsStatusDto(response);
+    },
+    async validateRepositorySourceDatabaseSettings(command, signal) {
+      validateDatabaseSettingsCommand(command);
+      const response = await http.requestJson<DatabaseSettingsValidationResponseDto>(
+        "/settings/repository-source/database/validation",
+        {
+          method: "POST",
+          headers: settingsHeaders(command.operatorToken, "settings-validation"),
+          body: toDatabaseSettingsValidationRequest(command),
+          signal
+        }
+      );
+
+      return mapDatabaseSettingsValidationResponseDto(response);
+    }
+  };
+
   return {
     repositoryAnalysis,
     workspaces,
-    diagnostics
+    diagnostics,
+    settings
   };
 };
 
@@ -350,6 +390,42 @@ const validateDeleteWorkspaceCommand = (
   validateWorkspaceRouteId(command.workspaceId, "workspaceId");
 };
 
+const validateSettingsToken = (command: GetDatabaseSettingsCommand): void => {
+  validateRequiredText(
+    [["operatorToken", command.operatorToken]],
+    "loading repository-source database settings"
+  );
+
+  if (!isSafeOperatorToken(command.operatorToken)) {
+    throw new ApplicationError(
+      "VALIDATION_ERROR",
+      "Operator token contains unsupported characters."
+    );
+  }
+};
+
+const validateDatabaseSettingsCommand = (
+  command: ValidateDatabaseSettingsCommand
+): void => {
+  validateSettingsToken(command);
+  validateRequiredText(
+    [
+      ["host", command.host],
+      ["databaseName", command.databaseName],
+      ["username", command.username],
+      ["schema", command.schema]
+    ],
+    "validating repository-source database settings"
+  );
+
+  if (!Number.isInteger(command.port) || command.port < 1 || command.port > 65_535) {
+    throw new ApplicationError(
+      "VALIDATION_ERROR",
+      "Database port must be between 1 and 65535."
+    );
+  }
+};
+
 const validateWorkspaceRouteId = (value: string, fieldName: string): void => {
   if (!/^workspace-[A-Za-z0-9_-]+$/.test(value)) {
     throw new ApplicationError(
@@ -382,6 +458,29 @@ const mutationHeaders = (command: {
   "X-Correlation-Id": command.correlationId,
   "Idempotency-Key": command.idempotencyKey
 });
+
+const settingsHeaders = (
+  operatorToken: string,
+  purpose: string
+): Record<string, string> => ({
+  "X-Correlation-Id": createGatewayMetadata(purpose).correlationId,
+  "X-Operator-Token": operatorToken.trim()
+});
+
+const toDatabaseSettingsValidationRequest = (
+  command: ValidateDatabaseSettingsCommand
+): DatabaseSettingsValidationRequestDto => ({
+  host: command.host.trim(),
+  port: command.port,
+  databaseName: command.databaseName.trim(),
+  username: command.username.trim(),
+  password: command.password,
+  schema: command.schema.trim(),
+  sslMode: command.sslMode
+});
+
+const isSafeOperatorToken = (value: string): boolean =>
+  !/[\u0000-\u001f\u007f]/.test(value.trim());
 
 const withSubmittedCommand = (
   analysis: RepositoryAnalysis,

@@ -138,3 +138,41 @@ export interface BranchRefreshResponseDto {
   sourceSnapshotId?: unknown;
   diagnostics?: unknown;
 }
+
+export interface DatabaseSettingsPublicViewDto {
+  engine?: unknown;
+  host?: unknown;
+  port?: unknown;
+  databaseName?: unknown;
+  username?: unknown;
+  authenticationConfigured?: unknown;
+  schema?: unknown;
+  sslMode?: unknown;
+  configurationSource?: unknown;
+  applyMode?: unknown;
+  hotApplySupported?: unknown;
+}
+
+export interface DatabaseSettingsStatusDto {
+  settings?: unknown;
+  status?: unknown;
+  diagnostics?: unknown;
+}
+
+export interface DatabaseSettingsValidationRequestDto {
+  host: string;
+  port: number;
+  databaseName: string;
+  username: string;
+  password: string;
+  schema: string;
+  sslMode: string;
+}
+
+export interface DatabaseSettingsValidationResponseDto {
+  settings?: unknown;
+  validationStatus?: unknown;
+  applyMode?: unknown;
+  hotApplySupported?: unknown;
+  diagnostics?: unknown;
+}

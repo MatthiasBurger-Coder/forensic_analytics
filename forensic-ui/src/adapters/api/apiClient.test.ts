@@ -214,6 +214,112 @@ describe("API client resilience", () => {
     expect(cleanup.status).toBe("CLEANED");
   });
 
+  it("uses operator protected public Settings routes without leaking passwords into URLs", async () => {
+    const fetcher = vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse(databaseSettingsStatusResponse()))
+      .mockResolvedValueOnce(jsonResponse(databaseSettingsValidationResponse()));
+    const client = createApiClient({
+      baseUrl: "https://backend.invalid/api",
+      timeoutMs: 1000,
+      maxGetAttempts: 1,
+      baseRetryDelayMs: 1,
+      fetcher
+    });
+
+    const current = await client.settings.getRepositorySourceDatabaseSettings({
+      operatorToken: "operator-token"
+    });
+    const validation =
+      await client.settings.validateRepositorySourceDatabaseSettings({
+        operatorToken: "operator-token",
+        host: "postgres.example.test",
+        port: 5432,
+        databaseName: "forensic_analytics",
+        username: "forensic",
+        password: "candidate-secret",
+        schema: "repository_source",
+        sslMode: "require"
+      });
+
+    expect(current.settings.host).toBe("postgres.example.test");
+    expect(validation.validationStatus).toBe("UNREACHABLE");
+    expect(fetcher.mock.calls.map(([url]) => url)).toEqual([
+      "https://backend.invalid/api/settings/repository-source/database",
+      "https://backend.invalid/api/settings/repository-source/database/validation"
+    ]);
+    expect(fetcher.mock.calls.map(([url]) => String(url))).not.toEqual(
+      expect.arrayContaining([expect.stringContaining("candidate-secret")])
+    );
+    expect((fetcher.mock.calls[0][1] as RequestInit).headers).toMatchObject({
+      "X-Operator-Token": "operator-token",
+      "X-Correlation-Id": expect.stringMatching(/^ui-settings-current-/)
+    });
+    expect((fetcher.mock.calls[1][1] as RequestInit).headers).toMatchObject({
+      "X-Operator-Token": "operator-token",
+      "X-Correlation-Id": expect.stringMatching(/^ui-settings-validation-/)
+    });
+    expect(JSON.parse(String((fetcher.mock.calls[1][1] as RequestInit).body))).toMatchObject({
+      host: "postgres.example.test",
+      password: "candidate-secret",
+      sslMode: "require"
+    });
+    expect(validation.settings.authenticationConfigured).toBe(true);
+  });
+
+  it.each(["", "operator-token\ninjected", "operator-token\rinjected"])(
+    "rejects unsafe Settings operator token %s before fetch",
+    async (operatorToken) => {
+      const fetcher = vi.fn();
+      const client = createApiClient({
+        baseUrl: "https://backend.invalid/api",
+        timeoutMs: 1000,
+        maxGetAttempts: 1,
+        baseRetryDelayMs: 1,
+        fetcher
+      });
+
+      await expect(
+        client.settings.getRepositorySourceDatabaseSettings({ operatorToken })
+      ).rejects.toMatchObject({
+        category: "VALIDATION_ERROR"
+      });
+
+      expect(fetcher).not.toHaveBeenCalled();
+    }
+  );
+
+  it.each([Number.NaN, 0, 65_536, 5432.5])(
+    "rejects invalid Settings database port %s before fetch",
+    async (port) => {
+      const fetcher = vi.fn();
+      const client = createApiClient({
+        baseUrl: "https://backend.invalid/api",
+        timeoutMs: 1000,
+        maxGetAttempts: 1,
+        baseRetryDelayMs: 1,
+        fetcher
+      });
+
+      await expect(
+        client.settings.validateRepositorySourceDatabaseSettings({
+          operatorToken: "operator-token",
+          host: "postgres.example.test",
+          port,
+          databaseName: "forensic_analytics",
+          username: "forensic",
+          password: "candidate-secret",
+          schema: "repository_source",
+          sslMode: "require"
+        })
+      ).rejects.toMatchObject({
+        category: "VALIDATION_ERROR"
+      });
+
+      expect(fetcher).not.toHaveBeenCalled();
+    }
+  );
+
   it("sends required Gateway correlation metadata for status reads", async () => {
     const fetcher = vi.fn().mockResolvedValue(
       jsonResponse({
@@ -676,6 +782,43 @@ const cleanupResponse = () => ({
   workspaceId: "workspace-1",
   status: "CLEANED",
   diagnostics: []
+});
+
+const databaseSettingsStatusResponse = () => ({
+  settings: databaseSettingsView(),
+  status: "AVAILABLE",
+  diagnostics: []
+});
+
+const databaseSettingsValidationResponse = () => ({
+  settings: databaseSettingsView({ configurationSource: "VALIDATION_REQUEST" }),
+  validationStatus: "UNREACHABLE",
+  applyMode: "RESTART_REQUIRED",
+  hotApplySupported: false,
+  diagnostics: [
+    {
+      severity: "ERROR",
+      code: "DATABASE_SETTINGS_UNREACHABLE",
+      message: "PostgreSQL is not reachable"
+    }
+  ]
+});
+
+const databaseSettingsView = (
+  overrides: Partial<Record<string, unknown>> = {}
+) => ({
+  engine: "POSTGRESQL",
+  host: "postgres.example.test",
+  port: 5432,
+  databaseName: "forensic_analytics",
+  username: "forensic",
+  authenticationConfigured: true,
+  schema: "repository_source",
+  sslMode: "require",
+  configurationSource: "REPOSITORY_SOURCE_RUNTIME",
+  applyMode: "RESTART_REQUIRED",
+  hotApplySupported: false,
+  ...overrides
 });
 
 const workspaceResponse = () => ({
