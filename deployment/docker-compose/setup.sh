@@ -35,11 +35,19 @@ run() {
 }
 
 compose_repository_to_btm() {
-  docker compose -f "${REPO_ROOT}/deployment/docker-compose/repository-to-btm.local.yml" "$@"
+  docker compose --env-file "$(postgres_env_file)" \
+    -f "${REPO_ROOT}/deployment/docker-compose/repository-to-btm.local.yml" \
+    "$@"
+}
+
+compose_postgres() {
+  docker compose --env-file "$(postgres_env_file)" \
+    -f "${REPO_ROOT}/docker/postgres/docker-compose.yml" \
+    "$@"
 }
 
 compose_full() {
-  docker compose \
+  docker compose --env-file "$(postgres_env_file)" \
     -f "${REPO_ROOT}/deployment/docker-compose/services/repository-source-service.compose.yml" \
     -f "${REPO_ROOT}/deployment/docker-compose/services/ingestion-service.compose.yml" \
     -f "${REPO_ROOT}/deployment/docker-compose/services/java-parser-analysis-service.compose.yml" \
@@ -84,11 +92,64 @@ wait_for_url() {
   return 1
 }
 
+wait_for_postgres() {
+  local attempts="${1:-60}"
+  local delay_seconds="${2:-2}"
+
+  printf '\nWaiting for forensic-postgres\n'
+  for ((attempt = 1; attempt <= attempts; attempt++)); do
+    if [[ "$(docker inspect --format '{{.State.Health.Status}}' forensic-postgres 2>/dev/null || true)" == "healthy" ]]; then
+      printf 'OK: forensic-postgres\n'
+      return 0
+    fi
+    sleep "${delay_seconds}"
+  done
+
+  printf 'ERROR: forensic-postgres did not become healthy.\n' >&2
+  return 1
+}
+
+ensure_repository_source_db_role() {
+  printf '\nEnsuring repository-source PostgreSQL role and schema\n'
+  run docker exec forensic-postgres bash /docker-entrypoint-initdb.d/01-repository-source-role.sh
+}
+
+postgres_env_file() {
+  if [[ -f "${REPO_ROOT}/docker/postgres/.env" ]]; then
+    printf '%s\n' "${REPO_ROOT}/docker/postgres/.env"
+    return 0
+  fi
+
+  printf '%s\n' "${REPO_ROOT}/docker/postgres/.env.example"
+}
+
+require_postgres_runtime_env() {
+  local env_file="${REPO_ROOT}/docker/postgres/.env"
+
+  if [[ ! -f "${env_file}" ]]; then
+    printf 'ERROR: docker/postgres/.env is required before starting PostgreSQL runtime containers.\n' >&2
+    printf 'Copy docker/postgres/.env.example to docker/postgres/.env and replace placeholder passwords first.\n' >&2
+    return 1
+  fi
+
+  if ! grep -Eq '^POSTGRES_PASSWORD=.+$' "${env_file}" \
+      || grep -Eq '^POSTGRES_PASSWORD=change-me$' "${env_file}" \
+      || ! grep -Eq '^REPOSITORY_SOURCE_DB_PASSWORD=.+$' "${env_file}" \
+      || grep -Eq '^REPOSITORY_SOURCE_DB_PASSWORD=change-me-repository-source$' "${env_file}"; then
+    printf 'ERROR: docker/postgres/.env must define non-placeholder POSTGRES_PASSWORD and REPOSITORY_SOURCE_DB_PASSWORD values.\n' >&2
+    return 1
+  fi
+}
+
 ensure_network() {
   ensure_docker_available
 
   if ! docker network inspect forensic_analytics >/dev/null 2>&1; then
     run docker network create forensic_analytics
+  fi
+
+  if ! docker network inspect forensic_repository_source_db >/dev/null 2>&1; then
+    run docker network create forensic_repository_source_db
   fi
 }
 
@@ -147,6 +208,7 @@ stop_known_local_stacks_preserving_state() {
   ensure_docker_available
 
   run compose_repository_to_btm down --remove-orphans
+  run compose_postgres down --remove-orphans
   run compose_full -p forensic-analytics-local down --remove-orphans
   run compose_gui_smoke down --remove-orphans
 }
@@ -156,6 +218,7 @@ reset_known_local_stacks() {
 
   printf 'WARNING: full mode resets known local Forensic Analytics Compose projects and removes named volumes.\n' >&2
   run compose_repository_to_btm down -v --remove-orphans
+  run compose_postgres down -v --remove-orphans
   run compose_full -p forensic-analytics-local down -v --remove-orphans
   run compose_gui_smoke down -v --remove-orphans
 }
@@ -197,9 +260,15 @@ build_ui() {
 }
 
 repository_to_btm() {
+  ensure_network
   stop_known_local_stacks
+  require_postgres_runtime_env
   build_repository_to_btm_jars
-  run compose_repository_to_btm config
+  run compose_postgres config --quiet
+  run compose_postgres up -d
+  wait_for_postgres
+  ensure_repository_source_db_role
+  run compose_repository_to_btm config --quiet
   run compose_repository_to_btm build
   run compose_repository_to_btm up -d
   run compose_repository_to_btm ps
@@ -216,9 +285,14 @@ repository_to_btm() {
 full() {
   ensure_network
   reset_known_local_stacks
+  require_postgres_runtime_env
   build_full_jars
   build_ui
-  run compose_full config
+  run compose_postgres config --quiet
+  run compose_postgres up -d
+  wait_for_postgres
+  ensure_repository_source_db_role
+  run compose_full config --quiet
   run compose_full build
   run compose_full -p forensic-analytics-local up -d
   run compose_full -p forensic-analytics-local ps
@@ -230,9 +304,14 @@ full() {
 docker_redeploy() {
   ensure_network
   stop_known_local_stacks_preserving_state
+  require_postgres_runtime_env
   build_full_jars
   build_ui
-  run compose_full config
+  run compose_postgres config --quiet
+  run compose_postgres up -d
+  wait_for_postgres
+  ensure_repository_source_db_role
+  run compose_full config --quiet
   run compose_full build
   run compose_full -p forensic-analytics-local up -d
   run compose_full -p forensic-analytics-local ps

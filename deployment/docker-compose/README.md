@@ -25,7 +25,7 @@ Compose file, and the service fragments use paths relative to
 docker compose \
   -f deployment/docker-compose/services/<service>.compose.yml \
   -f deployment/docker-compose/forensic-analytics.local.yml \
-  config
+  config --quiet
 ```
 
 The root entry point does not claim that any service image has been built,
@@ -74,7 +74,7 @@ docker compose \
   -f deployment/docker-compose/services/query-report-api-service.compose.yml \
   -f deployment/docker-compose/services/forensic-ui.compose.yml \
   -f deployment/docker-compose/forensic-analytics.local.yml \
-  config
+  config --quiet
 ```
 
 Activate optional profiles explicitly:
@@ -83,23 +83,23 @@ Activate optional profiles explicitly:
 docker compose --profile tools \
   -f deployment/docker-compose/services/cli-client.compose.yml \
   -f deployment/docker-compose/forensic-analytics.local.yml \
-  config
+  config --quiet
 
 docker compose --profile diagnostics \
   -f deployment/docker-compose/services/observability-stack.compose.yml \
   -f deployment/docker-compose/forensic-analytics.local.yml \
-  config
+  config --quiet
 
 docker compose --profile testbed \
   -f deployment/docker-compose/services/testbed.compose.yml \
   -f deployment/docker-compose/forensic-analytics.local.yml \
-  config
+  config --quiet
 
 docker compose --profile planned \
   -f deployment/docker-compose/services/graph-replay-service.compose.yml \
   -f deployment/docker-compose/services/report-generation-service.compose.yml \
   -f deployment/docker-compose/forensic-analytics.local.yml \
-  config
+  config --quiet
 ```
 
 `graph-replay-service` and `report-generation-service` remain planned roots.
@@ -109,7 +109,9 @@ runtime.
 
 `repository-to-btm.local.yml` remains the verified transitional local
 descriptor for the repository-to-BTM service path and the FA-MVP-0001
-repository-source owner service. It defines:
+repository-source owner service. The descriptor expects the service-owned
+PostgreSQL database container `forensic-postgres` on the private
+`forensic_repository_source_db` Docker network and defines:
 
 - `forensic-gateway-service`
 - `analysis-store-service`
@@ -120,19 +122,26 @@ repository-source owner service. It defines:
 - `btm-generation-service`
 
 The file uses service-owned Dockerfiles and their Docker profile configuration.
-It does not add external databases, brokers, Graph DB, Vector DB, Jenkins,
-Artifactory or live credentials.
+It does not add brokers, Graph DB, Vector DB, Jenkins, Artifactory or live
+credentials.
 
-`repository-source-service` owns two named Docker volumes:
+`repository-source-service` owns one active Docker volume:
 
 - `repository-source-workspaces` mounted at
   `/var/lib/forensic-analytics/repository-workspaces`
-- `repository-source-data` mounted at
-  `/var/lib/forensic-analytics/repository-source-data`
 
 No other service in this descriptor mounts those repository-source private
-volumes. The H2 state and checkout bytes survive container restart while the
-named volumes exist. `docker compose down -v` removes them.
+workspace bytes. The historical `repository-source-data` H2 volume is not
+mounted by the PostgreSQL runtime path. Existing local H2 state must be
+preserved manually until the H2 retirement slice defines the operator policy.
+
+`forensic-postgres` stores repository-source workspace metadata in the
+`forensic_postgres_data` named volume and binds the PostgreSQL port to
+`127.0.0.1` for local operator access only. The database container is not
+attached to the shared `forensic_analytics` service network.
+`docker compose down -v` removes PostgreSQL metadata and checkout workspace
+volumes for the selected Compose project, so use it only for an intentional
+local reset.
 
 `testbed` may use this descriptor as local test environment evidence.
 The descriptor remains a transitional repository-to-BTM Compose landscape and
@@ -149,16 +158,24 @@ The documented `repository-to-btm` setup can be run through the helper script:
 bash deployment/docker-compose/setup.sh repository-to-btm
 ```
 
+The helper starts `forensic-postgres` first, waits until its Docker healthcheck
+is healthy, reapplies the repository-source application role and schema
+idempotently, and then starts the selected service stack. Runtime startup
+requires a local `docker/postgres/.env` file with non-placeholder
+`POSTGRES_PASSWORD` and `REPOSITORY_SOURCE_DB_PASSWORD` values. Do not commit
+the local `.env` file; use `docker/postgres/.env.example` only for committed
+placeholder values and quiet Compose model checks.
+
 The helper refuses to stop a running Forensic Analytics Docker instance by
-default for modes that preserve local state. This protects local persistence
-state, including service-owned named volumes. When an intentional local restart
-is needed for those modes, set `ALLOW_FORENSIC_ANALYTICS_RESTART=1`; the helper
-still stops known local Compose projects without removing named volumes.
-Alternatively, `bash deployment/docker-compose/setup.sh docker` re-deploys the
-full local Docker stack without removing named volumes. The `full` mode is
-different: `bash deployment/docker-compose/setup.sh full` is an explicit local
-reset and removes named volumes before starting `forensic-analytics-local`, so
-it starts with empty local persistence state.
+default for modes that preserve local state. This protects local PostgreSQL and
+checkout workspace volumes. When an intentional local restart is needed for
+those modes, set `ALLOW_FORENSIC_ANALYTICS_RESTART=1`; the helper still stops
+known local Compose projects without removing named volumes. Alternatively,
+`bash deployment/docker-compose/setup.sh docker` re-deploys the full local
+Docker stack without removing named volumes. The `full` mode is different:
+`bash deployment/docker-compose/setup.sh full` is an explicit local reset and
+removes named volumes before starting `forensic-analytics-local`, so it starts
+with empty local persistence state.
 
 Build service jars first:
 
@@ -166,17 +183,23 @@ Build service jars first:
 ./gradlew --no-daemon --max-workers=1 :forensic-gateway-service:bootJar :analysis-store-service:bootJar :repository-analysis-service:bootJar :repository-source-service:bootJar :java-ast-analysis-service:bootJar :joern-cpg-analysis-service:bootJar :btm-generation-service:bootJar --dependency-verification strict --console=plain --stacktrace
 ```
 
-Validate the Compose model:
+Validate the Compose model without rendering credential-bearing environment
+values:
 
 ```bash
-docker compose -f deployment/docker-compose/repository-to-btm.local.yml config
+docker compose --env-file docker/postgres/.env.example -f docker/postgres/docker-compose.yml config --quiet
+docker compose --env-file docker/postgres/.env.example -f deployment/docker-compose/repository-to-btm.local.yml config --quiet
 ```
 
 Optional runtime check:
 
 ```bash
-docker compose -f deployment/docker-compose/repository-to-btm.local.yml build
-docker compose -f deployment/docker-compose/repository-to-btm.local.yml up -d
+docker network inspect forensic_analytics >/dev/null 2>&1 || docker network create forensic_analytics
+docker network inspect forensic_repository_source_db >/dev/null 2>&1 || docker network create forensic_repository_source_db
+docker compose --env-file docker/postgres/.env -f docker/postgres/docker-compose.yml up -d
+docker compose --env-file docker/postgres/.env -f deployment/docker-compose/repository-to-btm.local.yml build
+docker compose --env-file docker/postgres/.env -f deployment/docker-compose/repository-to-btm.local.yml up -d
+docker inspect --format '{{.State.Health.Status}}' forensic-postgres
 curl -fsS http://127.0.0.1:18080/api/health
 curl -fsS http://127.0.0.1:18082/health
 curl -fsS http://127.0.0.1:18083/health
@@ -184,7 +207,8 @@ curl -fsS http://127.0.0.1:18087/health
 curl -fsS http://127.0.0.1:18084/health
 curl -fsS http://127.0.0.1:18085/health
 curl -fsS http://127.0.0.1:18086/health
-docker compose -f deployment/docker-compose/repository-to-btm.local.yml down -v
+docker compose --env-file docker/postgres/.env -f deployment/docker-compose/repository-to-btm.local.yml down -v
+docker compose --env-file docker/postgres/.env -f docker/postgres/docker-compose.yml down -v
 ```
 
 The optional runtime check may require network access to pull base images,
