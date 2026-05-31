@@ -6,7 +6,7 @@
     "processStrand": "workflow execute",
     "executionProfile": "FULL_PATH",
     "lastS3DocRefresh": "2026-05-31 after S05 checkpoint verification and main merge governance hash refresh",
-    "lastWorkflowUpdate": "2026-05-31 after PostgreSQL runtime, H2 test-boundary and UI Settings clarification"
+    "lastWorkflowUpdate": "2026-05-31 after S08 Settings safety-boundary resolution"
   },
   "affectedAreas": [
     "repository-source-service",
@@ -70,8 +70,9 @@
     ".agents/skills/observability-runtime-diagnostics/SKILL.md": "5bb099304e60494fe52180761490464afdfc684c1f88e4ffda3eaaaaa2602fb1",
     ".agents/skills/frontend-react/SKILL.md": "9120d067985836d8a0045cd4104fdba4c31b6236771b0465fb0de6ac1694baa1",
     ".agents/skills/frontend-ux-guidelines/SKILL.md": "7ec39570c2d7684d8887a9b52c451f020ea70981a1a4ced4175c142513087a9d",
-    "docs/workflow/workflow.md": "7b4a26e89bcb54c202e977bd42f3713604ca78d95ff4a92264fd557e43ee0805",
-    "docs/workflow/workflow.history.md": "dd7123edc4ef905f041b9f5503a1a9b6bba7d0c7268da1060bd887251c313a28",
+    "docs/workflow/workflow.md": "f9689c30524b1509032cc3567c3bad9a60579649adfef5f5f8969e822d60056f",
+    "docs/workflow/workflow.history.md": "7fe1f5fabee460fc1344b3404a3d73a8349ad06efa8fe9b5cf69bc4a8c730368",
+    "docs/workflow/three-amigos-decision-record.md": "ef05c9fd6dbf1ab174da1c9d95925196e1edb2bca3b34e5156178523b5d55013",
     "docs/epics/forensics-platform-runtime-replay-llm-analysis-v0.2.md": "54ff246b4359e1eb92c7e80058db42faa079ff5ffd3db0d71170cfaa3dbb68fe",
     "docs/adr/ADR-0013-data-ownership-per-service.md": "4114bd8f39a60539bba18bcc32de481aff5a91cec34d556ca1149747b04879ab",
     "docs/adr/ADR-0023-h2-for-repository-source-mvp-persistence.md": "57055ae1b371d5c229dd8d64450a23869dc89849808fa68bdff45901a5123a69",

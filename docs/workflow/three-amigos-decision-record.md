@@ -66,6 +66,19 @@ Non-blocking execution-time questions:
 - If changed database settings must apply without restart, S08 must document
   tested reconnect semantics before S09 exposes the behavior in the UI.
 
+S08 execution-time resolution on 2026-05-31:
+
+- Settings operations require an operator token before accepting
+  credential-bearing requests.
+- Password input is write-only and may be used only for validation through the
+  repository-source owner API.
+- S08 does not persist changed database credentials and does not hot-apply
+  repository-source runtime settings.
+- Settings validation and status responses must report `RESTART_REQUIRED` and
+  `hotApplySupported: false` for changed database configuration.
+- Unreachable PostgreSQL must be reported as `UNREACHABLE`, not as successful
+  readiness.
+
 ## Final Gate Result
 
 The requirement is ready for workflow execution under the documented

@@ -79,9 +79,11 @@ query-report-api-service and other consumers
 
 forensic-ui Settings
   -> query-report-api-service public Settings API
-     -> contract-governed repository-source configuration handoff
-        -> validated PostgreSQL connection settings
-        -> sanitized readiness and validation diagnostics
+     -> operator-token protected database Settings operations
+     -> contract-governed repository-source owner API handoff
+        -> write-only PostgreSQL password validation input
+        -> sanitized active configuration and validation diagnostics
+        -> restart-required apply semantics
 ```
 
 Liquibase creates the service-owned schema and tables inside the already
@@ -90,9 +92,12 @@ remain Docker/operator responsibility through `forensic-postgres`.
 
 The Settings path is an operator configuration workflow. It is not forensic
 evidence, not a direct database client, and not a public exposure of
-repository-source private storage. Secret handling, persistence of settings and
-runtime apply/restart semantics must be verified inside the dedicated Settings
-slices before implementation claims production readiness.
+repository-source private storage. S08 resolves the Settings safety boundary:
+Settings operations require an operator token, raw passwords are write-only
+request values, no raw credentials are persisted or returned, repository-source
+remains the owner for validation and status, and database changes are reported
+as `RESTART_REQUIRED`. Hot-apply remains unsupported until a later slice
+implements and tests reconnect semantics.
 
 ## Scope
 
@@ -174,6 +179,12 @@ slices before implementation claims production readiness.
   they cross public API, UI state, logs or diagnostics boundaries.
 - UI Settings must call public application APIs only; it must not talk directly
   to PostgreSQL or repository-source private database tables.
+- Public Settings operations must require an operator token. Missing token
+  configuration returns an unavailable Settings state rather than accepting
+  credential-bearing requests.
+- Database passwords may cross the public Settings request boundary only as
+  write-only values for validation. They must not be included in responses,
+  diagnostics, logs, idempotency fingerprints or persisted settings state.
 
 ## Backend Assessment
 
@@ -189,9 +200,12 @@ The implementation must replace H2-specific persistence semantics:
 - Bootstrap must select PostgreSQL from typed configuration and fail fast on
   missing unsafe or ambiguous settings.
 - Runtime bootstrap must not include an H2 fallback path outside test fixtures.
-- Settings backend work must define ownership, validation, redaction, apply
-  semantics and storage of operator database configuration before it can change
-  runtime behavior.
+- Settings backend work uses repository-source as the owner for database
+  configuration status and validation. S08 does not persist operator database
+  settings and does not change runtime behavior while the service is running.
+  Responses must state `RESTART_REQUIRED` so operators know that accepted
+  settings must be applied through environment or secret configuration followed
+  by repository-source restart.
 
 ## Frontend Assessment
 
@@ -237,6 +251,34 @@ The Settings UI must:
   raw Git output.
 - Settings validation must distinguish invalid configuration, unreachable
   PostgreSQL and unsupported runtime apply semantics.
+
+## S08 Settings Contract Decision
+
+The S08 blocker is resolved with these non-guessing semantics:
+
+- Public REST protocol: `GET /settings/repository-source/database` for
+  sanitized active database Settings status and
+  `POST /settings/repository-source/database/validation` for candidate
+  validation.
+- Public Settings operations require `X-Operator-Token` and
+  `X-Correlation-Id`.
+- Repository-source owner gRPC protocol:
+  `GetRepositorySourceDatabaseSettings` returns sanitized active PostgreSQL
+  configuration status and
+  `ValidateRepositorySourceDatabaseSettings` validates candidate settings.
+- Password input is write-only. It may be present only in validation requests
+  and must never be returned, logged, stored in query-report-api-service state
+  or placed in public diagnostics.
+- `query-report-api-service` is a public facade and must not read
+  repository-source PostgreSQL tables. It delegates Settings status and
+  validation to repository-source through the owner gRPC contract.
+- S08 validates syntax and connectivity through repository-source, but it does
+  not persist changed credentials and does not hot-apply runtime settings.
+  Responses must return `applyMode: RESTART_REQUIRED` and
+  `hotApplySupported: false`.
+- Missing operator token configuration must produce a sanitized unavailable
+  Settings response. Missing or unreachable PostgreSQL must be reported as
+  `UNREACHABLE`, not converted into successful readiness.
 
 ## Ordered Slices
 
@@ -609,9 +651,17 @@ affected_files:
   - contracts/openapi/README.md
   - contracts/grpc/repository-analysis.proto
   - contracts/grpc/README.md
+  - query-report-api-service/src/main/java/de/burger/forensics/analytics/services/queryreportapi/adapter/in/http/QueryReportApiHttpHandler.java
+  - query-report-api-service/src/main/java/de/burger/forensics/analytics/services/queryreportapi/adapter/out/grpc/RepositorySourceSettingsGrpcClient.java
+  - query-report-api-service/src/main/java/de/burger/forensics/analytics/services/queryreportapi/application/QueryReportApiSettingsService.java
+  - query-report-api-service/src/main/java/de/burger/forensics/analytics/services/queryreportapi/application/port/RepositorySourceSettingsOwnerPort.java
+  - query-report-api-service/src/main/java/de/burger/forensics/analytics/services/queryreportapi/domain/QueryReportApiSettings.java
   - query-report-api-service/src/main/java/de/burger/forensics/analytics/services/queryreportapi/**
   - query-report-api-service/src/main/resources/**
   - query-report-api-service/src/test/java/de/burger/forensics/analytics/services/queryreportapi/**
+  - repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/adapter/in/grpc/RepositorySourceGrpcEndpoint.java
+  - repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/adapter/in/grpc/RepositorySourceContractTest.java
+  - repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/adapter/in/grpc/RepositorySourceGrpcEndpointTest.java
   - repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/**
   - repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/**
   - docs/architecture/data-ownership.md
@@ -630,6 +680,8 @@ file_locks:
   - contracts/grpc/**
   - query-report-api-service/src/main/**
   - query-report-api-service/src/test/**
+  - repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/adapter/in/grpc/**
+  - repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/adapter/in/grpc/**
   - repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/**
   - repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/**
   - docs/architecture/data-ownership.md
@@ -652,10 +704,11 @@ documentation:
   adr: checked
 stop_conditions:
   - REST or gRPC Settings fields, methods, status codes or error models would need to be guessed.
-  - Settings ownership or persistence of operator configuration is unclear.
+  - Settings ownership, operator-token protection, write-only password handling or persistence boundaries are unclear.
   - Raw database passwords are returned to the UI, stored in browser state, logged or committed.
   - The UI or query-report-api-service reads repository-source private PostgreSQL tables directly.
-  - Runtime apply or restart semantics for changed database settings are undocumented.
+  - Runtime apply or restart semantics for changed database settings are undocumented or claimed as hot-applied.
+  - Settings validation accepts missing operator authentication or reports unreachable PostgreSQL as valid.
 ```
 
 ### Slice 09 - React Database Settings UI

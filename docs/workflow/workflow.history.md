@@ -29,3 +29,16 @@ This version replaces the previous S07/S08 tail with:
 Previously completed S01-S06 checkpoint commits remain valid historical
 execution evidence. S07 and later slices must rerun S3D against this workflow
 version before modifying files.
+
+## 2026-05-31 S08 Settings Safety Boundary
+
+S08 execution resolved the Settings blocker with these explicit semantics:
+
+- Public Settings operations require an operator token.
+- Database passwords are write-only validation request values.
+- Repository-source remains the owner for database settings status and
+  validation through gRPC.
+- S08 does not persist changed database credentials and does not claim runtime
+  hot-apply.
+- Database setting responses must report `RESTART_REQUIRED` and
+  `hotApplySupported: false`.
