@@ -46,10 +46,10 @@ The S06 checkpoint `caf6a11` followed that S3_DOC repair and has been pushed to
 
 ## Current Execution Position
 
-- Last completed implementation slice: S07.
+- Last completed implementation slice: S08.
 - Active workflow version after accepted scope update: `2026-05-31`.
-- Next candidate slice: S08 - Database Settings Contract and Backend Handoff.
-- S08 must rerun S3D before any product or documentation file modification.
+- Next candidate slice: S09 - React Database Settings UI.
+- S09 must rerun S3D before any product or documentation file modification.
 
 ## Workflow Scope Update
 
@@ -80,6 +80,50 @@ and S10 covering final release readiness.
   passed on 2026-05-31 with 11 actionable tasks.
 - `./gradlew test --dependency-verification strict --console=plain --stacktrace`
   passed on 2026-05-31 with 155 actionable tasks.
+
+## S08 Verification Evidence
+
+- Public Settings contracts now expose sanitized repository-source PostgreSQL
+  status and candidate validation through
+  `GET /api/settings/repository-source/database` and
+  `POST /api/settings/repository-source/database/validation`.
+- Public Settings operations require `X-Operator-Token`; missing public facade
+  token configuration returns `SETTINGS_AUTH_NOT_CONFIGURED`.
+- `query-report-api-service` delegates Settings status and validation to
+  repository-source owner gRPC methods and does not read repository-source
+  PostgreSQL tables.
+- Password input is write-only validation input. Responses use sanitized
+  settings views, no JDBC URL or secret output, and report
+  `RESTART_REQUIRED` / `hotApplySupported=false`.
+- Repository-source validates candidate connectivity through bootstrap
+  infrastructure, keeping JDBC dependencies out of the inbound gRPC adapter.
+  The bootstrap validator now returns a neutral bootstrap validation result;
+  the inbound gRPC adapter maps that result to contract enums at the boundary.
+- Earlier callable subagent attempts for S08 specialist reviews timed out in
+  this runtime, so S08 used local role-file and skill checklist fallback for
+  contract, security and Java backend review duties. A later
+  `quality_archunit_reviewer` subagent reviewed the uncommitted S08 diff and
+  its architecture finding was resolved before checkpoint preparation.
+- `./gradlew :repository-source-service:compileJava :query-report-api-service:compileJava --dependency-verification strict --console=plain --stacktrace`
+  passed on 2026-05-31.
+- `./gradlew :repository-source-service:compileJava :repository-source-service:compileTestJava --dependency-verification strict --console=plain --stacktrace`
+  passed on 2026-05-31 after the subagent architecture finding was repaired.
+- `./gradlew :repository-source-service:test :query-report-api-service:test --tests de.burger.forensics.analytics.services.repositorysource.adapter.in.grpc.RepositorySourceContractTest --tests de.burger.forensics.analytics.services.repositorysource.adapter.in.grpc.RepositorySourceGrpcEndpointTest --tests de.burger.forensics.analytics.services.repositorysource.bootstrap.RepositorySourceDatabaseSettingsInfrastructureTest --tests de.burger.forensics.analytics.services.queryreportapi.adapter.in.http.GatewayOpenApiContractTest --tests de.burger.forensics.analytics.services.queryreportapi.adapter.in.http.QueryReportApiHttpAdapterTest --tests de.burger.forensics.analytics.services.queryreportapi.adapter.out.grpc.RepositorySourceSettingsGrpcClientTest --tests de.burger.forensics.analytics.services.queryreportapi.bootstrap.QueryReportApiServiceApplicationTest --dependency-verification strict --console=plain --stacktrace`
+  passed on 2026-05-31 with 22 actionable tasks.
+- `./gradlew test --dependency-verification strict --console=plain --stacktrace`
+  passed on 2026-05-31 with 155 actionable tasks.
+- `./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace`
+  was run as a full local gate diagnostic and failed at
+  `:checkPackageCoverage`. After S08 coverage repairs and a full test rerun,
+  `./gradlew jacocoTestReport checkPackageCoverage --dependency-verification strict --console=plain --stacktrace`
+  still fails only because
+  `de.burger.forensics.analytics.services.repositorysource.adapter.out.postgres`
+  branch coverage is `55.56%`. The S08-touched repository-source packages are
+  above threshold in the generated package coverage report:
+  `repositorysource.bootstrap` `83.33%` branch and
+  `repositorysource.adapter.in.grpc` `81.75%` branch. The remaining PostgreSQL
+  adapter coverage gap is outside the S08 file locks and remains a release
+  readiness blocker for S10.
 
 Docker Compose checks were not part of S05. They remain required for S06 and
 must be rerun after S06 deployment descriptor changes.

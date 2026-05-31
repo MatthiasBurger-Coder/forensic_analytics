@@ -6,7 +6,7 @@
     "processStrand": "workflow execute",
     "executionProfile": "FULL_PATH",
     "lastS3DocRefresh": "2026-05-31 after S05 checkpoint verification and main merge governance hash refresh",
-    "lastWorkflowUpdate": "2026-05-31 after S08 Settings safety-boundary resolution"
+    "lastWorkflowUpdate": "2026-05-31 after S08 Settings contract/backend handoff verification"
   },
   "affectedAreas": [
     "repository-source-service",
@@ -83,8 +83,8 @@
     "docs/arc42/08-crosscutting-concepts.md": "3ff16ad9deea8c65d3aeb282563d3fecaa60d77e88f7e98e6821397e79502939",
     "docs/arc42/09-architecture-decisions.md": "55459bc3daf15ab72e6f20b7836f4866916b9653c6231fee3610250c9af8a3f5",
     "docs/arc42/11-risks-and-technical-debt.md": "e2a0a47d6a78b863d0dc85fba52f448f7fe7c830c508c38e3adf5e2d9fd4da28",
-    "docs/architecture/data-ownership.md": "3c814b69375b3ff70df736926e18a5688b42744f44f88fe55347376243b1078e",
-    "docs/architecture/service-boundaries.md": "d27af63c11a48de4c7498b677f434545c30facbde1c908647e75a5bad5db7db7"
+    "docs/architecture/data-ownership.md": "d11c735558a9e9428cb36e644d3308c393378c806484da39a09010a297ce6c7e",
+    "docs/architecture/service-boundaries.md": "4284034fd201ac71149a3dd254f138166a9c50ae2ad7aa1204f126d0d45afa80"
   },
   "staleWhen": [
     "a recorded hash changes",

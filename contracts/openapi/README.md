@@ -38,3 +38,10 @@ refresh regression coverage. The legacy
 `forensic-analytics-rest` contract test is
 historical predecessor evidence after S05 source-tree removal; compatibility
 wording remains provenance only, not an active rollback runtime claim.
+
+S08 adds current-verified Settings routes under the `Settings` tag for
+sanitized repository-source PostgreSQL status and candidate validation. These
+routes are operator-token protected, delegate to repository-source owner APIs,
+accept database passwords only as write-only request input and report
+`RESTART_REQUIRED` because S08 does not persist or hot-apply changed database
+settings.

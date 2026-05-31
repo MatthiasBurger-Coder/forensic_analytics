@@ -4,7 +4,10 @@ import de.burger.forensics.analytics.repositoryanalysis.v1.AnalyzeSourceSnapshot
 import de.burger.forensics.analytics.repositoryanalysis.v1.CleanupRepositoryWorkspaceByIdRequest;
 import de.burger.forensics.analytics.repositoryanalysis.v1.CleanupRepositoryWorkspaceRequest;
 import de.burger.forensics.analytics.repositoryanalysis.v1.CreateRepositoryWorkspaceRequest;
+import de.burger.forensics.analytics.repositoryanalysis.v1.DatabaseSettingsValidationStatus;
+import de.burger.forensics.analytics.repositoryanalysis.v1.DiagnosticSeverity;
 import de.burger.forensics.analytics.repositoryanalysis.v1.GetRepositoryPreparationRequest;
+import de.burger.forensics.analytics.repositoryanalysis.v1.GetRepositorySourceDatabaseSettingsRequest;
 import de.burger.forensics.analytics.repositoryanalysis.v1.GetRepositoryWorkspaceRequest;
 import de.burger.forensics.analytics.repositoryanalysis.v1.BuildOutputProducer;
 import de.burger.forensics.analytics.repositoryanalysis.v1.ListRepositoryWorkspacesRequest;
@@ -13,12 +16,14 @@ import de.burger.forensics.analytics.repositoryanalysis.v1.PackageAvailability;
 import de.burger.forensics.analytics.repositoryanalysis.v1.PrepareRepositoryRequest;
 import de.burger.forensics.analytics.repositoryanalysis.v1.PreviewRepositoryWorkspaceMetadataRequest;
 import de.burger.forensics.analytics.repositoryanalysis.v1.RefreshRepositoryWorkspaceBranchRequest;
+import de.burger.forensics.analytics.repositoryanalysis.v1.RepositorySourceDatabaseSettingsCandidate;
 import de.burger.forensics.analytics.repositoryanalysis.v1.RepositoryAnalysisServiceGrpc;
 import de.burger.forensics.analytics.repositoryanalysis.v1.RepositoryReference;
 import de.burger.forensics.analytics.repositoryanalysis.v1.RepositoryWorkspaceBranchSelector;
 import de.burger.forensics.analytics.repositoryanalysis.v1.RepositoryWorkspaceBranchStatus;
 import de.burger.forensics.analytics.repositoryanalysis.v1.RepositoryWorkspaceStatus;
 import de.burger.forensics.analytics.repositoryanalysis.v1.RevisionSelector;
+import de.burger.forensics.analytics.repositoryanalysis.v1.ValidateRepositorySourceDatabaseSettingsRequest;
 import de.burger.forensics.analytics.repositoryanalysis.v1.WorkspacePolicy;
 import de.burger.forensics.analytics.services.repositorysource.adapter.out.memory.InMemoryRepositoryPreparationRepository;
 import de.burger.forensics.analytics.services.repositorysource.adapter.out.memory.InMemoryRepositorySourceIdempotencyRepository;
@@ -43,6 +48,8 @@ import de.burger.forensics.analytics.services.repositorysource.domain.Repository
 import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.WorkspaceBranchId;
 import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.WorkspaceId;
 import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.WorkspaceTitle;
+import de.burger.forensics.analytics.services.repositorysource.bootstrap.RepositorySourceDatabaseSettingsValidationResult;
+import de.burger.forensics.analytics.services.repositorysource.bootstrap.RepositorySourceServiceProperties;
 import io.grpc.ManagedChannel;
 import io.grpc.Server;
 import io.grpc.Status;
@@ -75,6 +82,7 @@ class RepositorySourceGrpcEndpointTest {
     private FakeMetadataPort metadataPort;
     private FixedRepositoryWorkspaceIdGenerator idGenerator;
     private InMemoryRepositoryWorkspaceRepository workspaceRepository;
+    private RepositorySourceDatabaseSettingsValidationResult settingsValidationResult;
 
     @BeforeEach
     void startServer() throws IOException {
@@ -93,6 +101,7 @@ class RepositorySourceGrpcEndpointTest {
         this.checkoutPort = checkoutPort;
         this.metadataPort = new FakeMetadataPort("main", true);
         this.idGenerator = new FixedRepositoryWorkspaceIdGenerator();
+        this.settingsValidationResult = RepositorySourceDatabaseSettingsValidationResult.valid();
         var idempotencyRepository = new InMemoryRepositorySourceIdempotencyRepository();
         var applicationService = new RepositorySourceApplicationService(
             repository,
@@ -112,7 +121,12 @@ class RepositorySourceGrpcEndpointTest {
         );
         server = InProcessServerBuilder.forName(serverName)
             .directExecutor()
-            .addService(new RepositorySourceGrpcEndpoint(applicationService, workspaceApplicationService))
+            .addService(new RepositorySourceGrpcEndpoint(
+                applicationService,
+                workspaceApplicationService,
+                repositorySourceProperties(),
+                postgres -> settingsValidationResult
+            ))
             .build()
             .start();
         channel = InProcessChannelBuilder.forName(serverName).directExecutor().build();
@@ -174,6 +188,100 @@ class RepositorySourceGrpcEndpointTest {
         );
         assertEquals(RepositoryWorkspaceStatus.REPOSITORY_WORKSPACE_STATUS_CLEANED, cleaned.getWorkspaceStatus());
         assertEquals("CLEANED", cleaned.getStatus().getCode());
+    }
+
+    @Test
+    void exposesAndValidatesRepositorySourceDatabaseSettingsWithoutReturningSecrets() {
+        var current = stub.getRepositorySourceDatabaseSettings(GetRepositorySourceDatabaseSettingsRequest.newBuilder()
+            .setRequestId("settings-current")
+            .setCorrelationId("correlation-settings")
+            .build());
+        settingsValidationResult = RepositorySourceDatabaseSettingsValidationResult.unreachable();
+        var validation = stub.validateRepositorySourceDatabaseSettings(ValidateRepositorySourceDatabaseSettingsRequest.newBuilder()
+            .setRequestId("settings-validation")
+            .setCorrelationId("correlation-settings")
+            .setSettings(RepositorySourceDatabaseSettingsCandidate.newBuilder()
+                .setHost("db.example.test")
+                .setPort(5433)
+                .setDatabaseName("forensic_analytics")
+                .setUsername("operator")
+                .setPassword("candidate-secret")
+                .setSchema("repository_source")
+                .setSslMode("require"))
+            .build());
+
+        assertEquals("POSTGRESQL", current.getSettings().getEngine());
+        assertEquals("postgres.example.test", current.getSettings().getHost());
+        assertEquals(5432, current.getSettings().getPort());
+        assertEquals("forensic_analytics", current.getSettings().getDatabaseName());
+        assertEquals("require", current.getSettings().getSslMode());
+        assertEquals("repository_source", current.getSettings().getSchema());
+        assertEquals("REPOSITORY_SOURCE_RUNTIME", current.getSettings().getConfigurationSource());
+        assertEquals("RESTART_REQUIRED", current.getSettings().getApplyMode());
+        assertFalse(current.getSettings().getHotApplySupported());
+        assertEquals("SETTINGS_AVAILABLE", current.getStatus().getCode());
+        assertFalse(current.toString().contains("runtime-secret"));
+        assertEquals(
+            DatabaseSettingsValidationStatus.DATABASE_SETTINGS_VALIDATION_STATUS_UNREACHABLE,
+            validation.getValidationStatus()
+        );
+        assertEquals("db.example.test", validation.getSettings().getHost());
+        assertEquals("VALIDATION_REQUEST", validation.getSettings().getConfigurationSource());
+        assertEquals("RESTART_REQUIRED", validation.getSettings().getApplyMode());
+        assertFalse(validation.getSettings().getHotApplySupported());
+        assertEquals("DATABASE_SETTINGS_UNREACHABLE", validation.getStatus().getCode());
+        assertFalse(validation.toString().contains("candidate-secret"));
+
+        settingsValidationResult = RepositorySourceDatabaseSettingsValidationResult.authenticationFailed();
+        var authenticationFailed = stub.validateRepositorySourceDatabaseSettings(settingsValidationRequest("auth.example.test", ""));
+
+        assertEquals(
+            DatabaseSettingsValidationStatus.DATABASE_SETTINGS_VALIDATION_STATUS_AUTHENTICATION_FAILED,
+            authenticationFailed.getValidationStatus()
+        );
+        assertFalse(authenticationFailed.getSettings().getAuthenticationConfigured());
+        assertEquals("DATABASE_SETTINGS_AUTHENTICATION_FAILED", authenticationFailed.getStatus().getCode());
+
+        settingsValidationResult = RepositorySourceDatabaseSettingsValidationResult.valid();
+        var valid = stub.validateRepositorySourceDatabaseSettings(settingsValidationRequest("valid.example.test", "secret"));
+
+        assertEquals(
+            DatabaseSettingsValidationStatus.DATABASE_SETTINGS_VALIDATION_STATUS_VALID,
+            valid.getValidationStatus()
+        );
+        assertEquals(DiagnosticSeverity.DIAGNOSTIC_SEVERITY_INFO, valid.getDiagnostics(0).getSeverity());
+        assertEquals("DATABASE_SETTINGS_VALID", valid.getStatus().getCode());
+
+        var invalid = assertThrows(
+            StatusRuntimeException.class,
+            () -> stub.validateRepositorySourceDatabaseSettings(settingsValidationRequest(".bad", "secret"))
+        );
+
+        assertEquals(Status.Code.INVALID_ARGUMENT, invalid.getStatus().getCode());
+        assertEquals("Invalid repository source request", invalid.getStatus().getDescription());
+
+        for (var invalidRequest : List.of(
+            settingsValidationRequest("port.example.test", "secret").toBuilder()
+                .setSettings(settingsValidationRequest("port.example.test", "secret").getSettings().toBuilder()
+                    .setPort(0))
+                .build(),
+            settingsValidationRequest("schema.example.test", "secret").toBuilder()
+                .setSettings(settingsValidationRequest("schema.example.test", "secret").getSettings().toBuilder()
+                    .setDatabaseName("bad-name"))
+                .build(),
+            settingsValidationRequest("ssl.example.test", "secret").toBuilder()
+                .setSettings(settingsValidationRequest("ssl.example.test", "secret").getSettings().toBuilder()
+                    .setSslMode("unsupported"))
+                .build()
+        )) {
+            var failure = assertThrows(
+                StatusRuntimeException.class,
+                () -> stub.validateRepositorySourceDatabaseSettings(invalidRequest)
+            );
+
+            assertEquals(Status.Code.INVALID_ARGUMENT, failure.getStatus().getCode());
+            assertEquals("Invalid repository source request", failure.getStatus().getDescription());
+        }
     }
 
     @Test
@@ -677,6 +785,20 @@ class RepositorySourceGrpcEndpointTest {
             .build();
     }
 
+    private static ValidateRepositorySourceDatabaseSettingsRequest settingsValidationRequest(String host, String password) {
+        return ValidateRepositorySourceDatabaseSettingsRequest.newBuilder()
+            .setRequestId("settings-validation")
+            .setCorrelationId("correlation-settings")
+            .setSettings(RepositorySourceDatabaseSettingsCandidate.newBuilder()
+                .setHost(host)
+                .setPort(5432)
+                .setDatabaseName("forensic_analytics")
+                .setUsername("operator")
+                .setPassword(password)
+                .setSchema("repository_source"))
+            .build();
+    }
+
     private static WorkspacePolicy workspacePolicy(long timeoutSeconds) {
         return WorkspacePolicy.newBuilder()
             .setEphemeral(true)
@@ -684,6 +806,24 @@ class RepositorySourceGrpcEndpointTest {
             .setTimeoutSeconds(timeoutSeconds)
             .setMaxWorkspaceBytes(100_000)
             .build();
+    }
+
+    private static RepositorySourceServiceProperties repositorySourceProperties() {
+        return new RepositorySourceServiceProperties(
+            new RepositorySourceServiceProperties.Grpc(false, "127.0.0.1", 0),
+            new RepositorySourceServiceProperties.Health(false, "127.0.0.1", 0),
+            new RepositorySourceServiceProperties.Workspace(Path.of("build/test-repository-source-workspaces")),
+            new RepositorySourceServiceProperties.Persistence(
+                "postgres",
+                new RepositorySourceServiceProperties.Postgres(
+                    "jdbc:postgresql://postgres.example.test:5432/forensic_analytics?sslmode=require",
+                    "forensic_user",
+                    "runtime-secret",
+                    "repository_source",
+                    "classpath:db/changelog/repository-source-workspace.postgresql.yaml"
+                )
+            )
+        );
     }
 
     private void saveInProgressWorkspace(String workspaceId) {

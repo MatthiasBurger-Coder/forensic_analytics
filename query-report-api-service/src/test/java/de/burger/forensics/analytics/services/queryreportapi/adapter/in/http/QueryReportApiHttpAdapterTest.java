@@ -4,16 +4,24 @@ import com.sun.net.httpserver.HttpServer;
 import de.burger.forensics.analytics.services.queryreportapi.application.QueryReportApiIdempotencyConflictException;
 import de.burger.forensics.analytics.services.queryreportapi.application.QueryReportApiRepositoryAnalysisException;
 import de.burger.forensics.analytics.services.queryreportapi.application.QueryReportApiRepositoryAnalysisSubmissionService;
+import de.burger.forensics.analytics.services.queryreportapi.application.QueryReportApiSettingsException;
+import de.burger.forensics.analytics.services.queryreportapi.application.QueryReportApiSettingsService;
 import de.burger.forensics.analytics.services.queryreportapi.application.QueryReportApiStatusService;
 import de.burger.forensics.analytics.services.queryreportapi.application.QueryReportApiWorkspaceException;
 import de.burger.forensics.analytics.services.queryreportapi.application.QueryReportApiWorkspaceService;
 import de.burger.forensics.analytics.services.queryreportapi.application.port.RepositoryAnalysisOwnerPort;
+import de.burger.forensics.analytics.services.queryreportapi.application.port.RepositorySourceSettingsOwnerPort;
 import de.burger.forensics.analytics.services.queryreportapi.application.port.RepositoryWorkspaceOwnerPort;
 import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiRepositoryAnalysis.Diagnostic;
 import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiRepositoryAnalysis.RepositoryToBtmSubmission;
 import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiRepositoryAnalysis.RepositoryToBtmStatus;
 import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiRepositoryAnalysis.StatusRequest;
 import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiRepositoryAnalysis.SubmissionRequest;
+import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiSettings.DatabaseSettingsRequest;
+import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiSettings.DatabaseSettingsStatus;
+import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiSettings.DatabaseSettingsValidationRequest;
+import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiSettings.DatabaseSettingsValidationResponse;
+import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiSettings.DatabaseSettingsView;
 import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.BranchRefreshResponse;
 import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.CleanupWorkspaceRequest;
 import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.CreateWorkspaceRequest;
@@ -711,6 +719,109 @@ class QueryReportApiHttpAdapterTest {
     }
 
     @Test
+    void exposesOperatorProtectedRepositorySourceDatabaseSettingsRoutes() throws Exception {
+        var server = server();
+        try {
+            var port = server.getAddress().getPort();
+            var unauthorized = response(port, "/api/settings/repository-source/database", "GET", "", "correlation-settings", null);
+            var current = response(
+                port,
+                "/api/settings/repository-source/database",
+                "GET",
+                "",
+                "correlation-settings",
+                null,
+                "operator-token"
+            );
+            var validation = response(
+                port,
+                "/api/settings/repository-source/database/validation",
+                "POST",
+                databaseSettingsValidationRequest(),
+                "correlation-settings-validation",
+                null,
+                "operator-token"
+            );
+
+            assertEquals(401, unauthorized.code());
+            assertEquals("correlation-settings", unauthorized.correlationId());
+            assertTrue(unauthorized.body().contains("\"code\":\"UNAUTHORIZED\""));
+            assertEquals(200, current.code());
+            assertEquals("correlation-settings", current.correlationId());
+            assertTrue(current.body().contains("\"engine\":\"POSTGRESQL\""));
+            assertTrue(current.body().contains("\"authenticationConfigured\":true"));
+            assertTrue(current.body().contains("\"applyMode\":\"RESTART_REQUIRED\""));
+            assertTrue(current.body().contains("\"hotApplySupported\":false"));
+            assertTrue(current.body().contains("\"configurationSource\":\"REPOSITORY_SOURCE_RUNTIME\""));
+            assertEquals(200, validation.code());
+            assertEquals("correlation-settings-validation", validation.correlationId());
+            assertTrue(validation.body().contains("\"validationStatus\":\"UNREACHABLE\""));
+            assertTrue(validation.body().contains("\"configurationSource\":\"VALIDATION_REQUEST\""));
+            assertTrue(validation.body().contains("\"applyMode\":\"RESTART_REQUIRED\""));
+            assertFalse(validation.body().contains("candidate-secret"));
+            assertFalse(validation.body().contains("\"password\""));
+            assertSafePublicBody(current.body());
+            assertSafePublicBody(validation.body());
+        } finally {
+            server.stop(0);
+        }
+    }
+
+    @Test
+    void reportsSettingsConfigurationAndBackendFailuresWithoutLeakingSecrets() throws Exception {
+        var notConfigured = server(
+            new FakePreparationPort(),
+            new FakeWorkspacePort(),
+            new FakeSettingsPort(),
+            ""
+        );
+        try {
+            var response = response(
+                notConfigured.getAddress().getPort(),
+                "/api/settings/repository-source/database",
+                "GET",
+                "",
+                "correlation-settings",
+                null,
+                "operator-token"
+            );
+
+            assertEquals(503, response.code());
+            assertEquals("correlation-settings", response.correlationId());
+            assertTrue(response.body().contains("\"code\":\"SETTINGS_AUTH_NOT_CONFIGURED\""));
+            assertSafePublicBody(response.body());
+        } finally {
+            notConfigured.stop(0);
+        }
+
+        var failing = server(
+            new FakePreparationPort(),
+            new FakeWorkspacePort(),
+            new FailingSettingsPort(),
+            "operator-token"
+        );
+        try {
+            var response = response(
+                failing.getAddress().getPort(),
+                "/api/settings/repository-source/database/validation",
+                "POST",
+                databaseSettingsValidationRequest(),
+                "correlation-settings-failure",
+                null,
+                "operator-token"
+            );
+
+            assertEquals(503, response.code());
+            assertEquals("correlation-settings-failure", response.correlationId());
+            assertTrue(response.body().contains("\"code\":\"BACKEND_UNAVAILABLE\""));
+            assertFalse(response.body().contains("candidate-secret"));
+            assertSafePublicBody(response.body());
+        } finally {
+            failing.stop(0);
+        }
+    }
+
+    @Test
     void mapsWorkspaceRouteValidationAndBackendFailures() throws Exception {
         var server = server();
         try {
@@ -830,14 +941,23 @@ class QueryReportApiHttpAdapterTest {
     }
 
     private static HttpServer server() throws IOException {
-        return server(new FakePreparationPort(), new FakeWorkspacePort());
+        return server(new FakePreparationPort(), new FakeWorkspacePort(), new FakeSettingsPort(), "operator-token");
     }
 
     private static HttpServer server(RepositoryAnalysisOwnerPort port) throws IOException {
-        return server(port, new FakeWorkspacePort());
+        return server(port, new FakeWorkspacePort(), new FakeSettingsPort(), "operator-token");
     }
 
     private static HttpServer server(RepositoryAnalysisOwnerPort port, RepositoryWorkspaceOwnerPort workspacePort) throws IOException {
+        return server(port, workspacePort, new FakeSettingsPort(), "operator-token");
+    }
+
+    private static HttpServer server(
+        RepositoryAnalysisOwnerPort port,
+        RepositoryWorkspaceOwnerPort workspacePort,
+        RepositorySourceSettingsOwnerPort settingsPort,
+        String operatorToken
+    ) throws IOException {
         var server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
         server.createContext("/", new QueryReportApiHttpHandler(
             new QueryReportApiStatusService(),
@@ -849,7 +969,9 @@ class QueryReportApiHttpAdapterTest {
                     60,
                     new WorkspacePolicy(false, true, false, false, 60, 1_073_741_824L)
                 )
-            )
+            ),
+            new QueryReportApiSettingsService(settingsPort),
+            operatorToken
         ));
         server.start();
         return server;
@@ -867,6 +989,18 @@ class QueryReportApiHttpAdapterTest {
         String correlationId,
         String idempotencyKey
     ) throws IOException {
+        return response(port, path, method, body, correlationId, idempotencyKey, null);
+    }
+
+    private static Response response(
+        int port,
+        String path,
+        String method,
+        String body,
+        String correlationId,
+        String idempotencyKey,
+        String operatorToken
+    ) throws IOException {
         var connection = (HttpURLConnection) URI.create("http://127.0.0.1:" + port + path).toURL().openConnection();
         connection.setRequestMethod(method);
         if (correlationId != null) {
@@ -874,6 +1008,9 @@ class QueryReportApiHttpAdapterTest {
         }
         if (idempotencyKey != null) {
             connection.setRequestProperty("Idempotency-Key", idempotencyKey);
+        }
+        if (operatorToken != null) {
+            connection.setRequestProperty("X-Operator-Token", operatorToken);
         }
         if (!body.isEmpty()) {
             connection.setDoOutput(true);
@@ -939,6 +1076,20 @@ class QueryReportApiHttpAdapterTest {
                 "timeoutSeconds": 60,
                 "maxWorkspaceBytes": 1073741824
               }
+            }
+            """;
+    }
+
+    private static String databaseSettingsValidationRequest() {
+        return """
+            {
+              "host": "postgres.example.test",
+              "port": 5432,
+              "databaseName": "forensic_analytics",
+              "username": "forensic_user",
+              "password": "candidate-secret",
+              "schema": "repository_source",
+              "sslMode": "require"
             }
             """;
     }
@@ -1245,6 +1396,65 @@ class QueryReportApiHttpAdapterTest {
 
         private static QueryReportApiWorkspaceException unavailable() {
             return new QueryReportApiWorkspaceException(
+                503,
+                "BACKEND_UNAVAILABLE",
+                true,
+                "Repository Source service is unavailable"
+            );
+        }
+    }
+
+    private static class FakeSettingsPort implements RepositorySourceSettingsOwnerPort {
+        @Override
+        public DatabaseSettingsStatus current(DatabaseSettingsRequest request) {
+            return new DatabaseSettingsStatus(
+                settings("REPOSITORY_SOURCE_RUNTIME", true),
+                "AVAILABLE",
+                List.of(Diagnostic.info("SETTINGS_AVAILABLE", "Repository-source database settings available"))
+            );
+        }
+
+        @Override
+        public DatabaseSettingsValidationResponse validate(DatabaseSettingsValidationRequest request) {
+            return new DatabaseSettingsValidationResponse(
+                settings("VALIDATION_REQUEST", true),
+                "UNREACHABLE",
+                "RESTART_REQUIRED",
+                false,
+                List.of(new Diagnostic("ERROR", "DATABASE_SETTINGS_UNREACHABLE", "PostgreSQL is not reachable"))
+            );
+        }
+
+        private static DatabaseSettingsView settings(String configurationSource, boolean authenticationConfigured) {
+            return new DatabaseSettingsView(
+                "POSTGRESQL",
+                "postgres.example.test",
+                5432,
+                "forensic_analytics",
+                "forensic_user",
+                authenticationConfigured,
+                "repository_source",
+                "require",
+                configurationSource,
+                "RESTART_REQUIRED",
+                false
+            );
+        }
+    }
+
+    private static final class FailingSettingsPort extends FakeSettingsPort {
+        @Override
+        public DatabaseSettingsStatus current(DatabaseSettingsRequest request) {
+            throw unavailable();
+        }
+
+        @Override
+        public DatabaseSettingsValidationResponse validate(DatabaseSettingsValidationRequest request) {
+            throw unavailable();
+        }
+
+        private static QueryReportApiSettingsException unavailable() {
+            return new QueryReportApiSettingsException(
                 503,
                 "BACKEND_UNAVAILABLE",
                 true,

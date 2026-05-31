@@ -2,11 +2,14 @@ package de.burger.forensics.analytics.services.queryreportapi.bootstrap;
 
 import de.burger.forensics.analytics.services.queryreportapi.adapter.in.http.QueryReportApiHttpHandler;
 import de.burger.forensics.analytics.services.queryreportapi.adapter.out.grpc.AnalysisOrchestratorRepositoryToBtmGrpcClient;
+import de.burger.forensics.analytics.services.queryreportapi.adapter.out.grpc.RepositorySourceSettingsGrpcClient;
 import de.burger.forensics.analytics.services.queryreportapi.adapter.out.grpc.RepositorySourceWorkspaceGrpcClient;
 import de.burger.forensics.analytics.services.queryreportapi.application.QueryReportApiRepositoryAnalysisSubmissionService;
+import de.burger.forensics.analytics.services.queryreportapi.application.QueryReportApiSettingsService;
 import de.burger.forensics.analytics.services.queryreportapi.application.QueryReportApiStatusService;
 import de.burger.forensics.analytics.services.queryreportapi.application.QueryReportApiWorkspaceService;
 import de.burger.forensics.analytics.services.queryreportapi.application.port.RepositoryAnalysisOwnerPort;
+import de.burger.forensics.analytics.services.queryreportapi.application.port.RepositorySourceSettingsOwnerPort;
 import de.burger.forensics.analytics.services.queryreportapi.application.port.RepositoryWorkspaceOwnerPort;
 import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.WorkspaceFacadeConfiguration;
 import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiWorkspace.WorkspacePolicy;
@@ -66,16 +69,35 @@ public class QueryReportApiServiceConfiguration {
         return new RepositorySourceWorkspaceGrpcClient(grpc.host(), grpc.port(), grpc.deadlineSeconds());
     }
 
+    @Bean(destroyMethod = "close")
+    public RepositorySourceSettingsOwnerPort repositorySourceSettingsOwnerPort(
+        QueryReportApiServiceProperties properties
+    ) {
+        var grpc = properties.repositorySource().grpc();
+        return new RepositorySourceSettingsGrpcClient(grpc.host(), grpc.port(), grpc.deadlineSeconds());
+    }
+
+    @Bean
+    public QueryReportApiSettingsService queryReportApiSettingsService(
+        RepositorySourceSettingsOwnerPort repositorySourceSettingsOwnerPort
+    ) {
+        return new QueryReportApiSettingsService(repositorySourceSettingsOwnerPort);
+    }
+
     @Bean
     public QueryReportApiHttpHandler queryReportApiHttpHandler(
         QueryReportApiStatusService queryReportApiStatusService,
         QueryReportApiRepositoryAnalysisSubmissionService repositoryAnalysisSubmissionService,
-        QueryReportApiWorkspaceService queryReportApiWorkspaceService
+        QueryReportApiWorkspaceService queryReportApiWorkspaceService,
+        QueryReportApiSettingsService queryReportApiSettingsService,
+        QueryReportApiServiceProperties properties
     ) {
         return new QueryReportApiHttpHandler(
             queryReportApiStatusService,
             repositoryAnalysisSubmissionService,
-            queryReportApiWorkspaceService
+            queryReportApiWorkspaceService,
+            queryReportApiSettingsService,
+            properties.settingsFacade().operatorToken()
         );
     }
 

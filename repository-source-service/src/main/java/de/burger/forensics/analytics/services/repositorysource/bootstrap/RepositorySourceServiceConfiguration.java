@@ -152,9 +152,15 @@ public class RepositorySourceServiceConfiguration {
     @Bean
     public RepositorySourceGrpcEndpoint repositorySourceGrpcEndpoint(
         RepositorySourceApplicationService applicationService,
-        RepositoryWorkspaceApplicationService workspaceApplicationService
+        RepositoryWorkspaceApplicationService workspaceApplicationService,
+        RepositorySourceServiceProperties properties
     ) {
-        return new RepositorySourceGrpcEndpoint(applicationService, workspaceApplicationService);
+        return new RepositorySourceGrpcEndpoint(
+            applicationService,
+            workspaceApplicationService,
+            properties,
+            RepositorySourceDatabaseSettingsConnectionValidator::validate
+        );
     }
 
     @Bean

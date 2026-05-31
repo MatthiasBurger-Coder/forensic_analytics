@@ -49,6 +49,12 @@ service RepositoryAnalysisService {
 
   rpc RefreshRepositoryWorkspaceBranch(RefreshRepositoryWorkspaceBranchRequest)
       returns (RefreshRepositoryWorkspaceBranchResponse);
+
+  rpc GetRepositorySourceDatabaseSettings(GetRepositorySourceDatabaseSettingsRequest)
+      returns (RepositorySourceDatabaseSettingsStatus);
+
+  rpc ValidateRepositorySourceDatabaseSettings(ValidateRepositorySourceDatabaseSettingsRequest)
+      returns (RepositorySourceDatabaseSettingsValidationResponse);
 }
 
 message PrepareRepositoryRequest {
@@ -281,6 +287,61 @@ message RefreshRepositoryWorkspaceBranchResponse {
   OperationStatus status = 4;
   repeated Diagnostic diagnostics = 5;
   map<string, string> safe_attributes = 6;
+}
+
+message GetRepositorySourceDatabaseSettingsRequest {
+  // Required, non-blank.
+  string request_id = 1;
+  // Required, non-blank.
+  string correlation_id = 2;
+}
+
+message ValidateRepositorySourceDatabaseSettingsRequest {
+  // Required, non-blank.
+  string request_id = 1;
+  // Required, non-blank.
+  string correlation_id = 2;
+  // Required. Password is write-only validation input and must not be returned
+  // by implementations.
+  RepositorySourceDatabaseSettingsCandidate settings = 3;
+}
+
+message RepositorySourceDatabaseSettingsCandidate {
+  string host = 1;
+  int32 port = 2;
+  string database_name = 3;
+  string username = 4;
+  // Write-only validation input. Do not log, persist or return this value.
+  string password = 5;
+  string schema = 6;
+  string ssl_mode = 7;
+}
+
+message RepositorySourceDatabaseSettingsPublicView {
+  string engine = 1;
+  string host = 2;
+  int32 port = 3;
+  string database_name = 4;
+  string username = 5;
+  bool authentication_configured = 6;
+  string schema = 7;
+  string ssl_mode = 8;
+  string configuration_source = 9;
+  string apply_mode = 10;
+  bool hot_apply_supported = 11;
+}
+
+message RepositorySourceDatabaseSettingsStatus {
+  RepositorySourceDatabaseSettingsPublicView settings = 1;
+  OperationStatus status = 2;
+  repeated Diagnostic diagnostics = 3;
+}
+
+message RepositorySourceDatabaseSettingsValidationResponse {
+  RepositorySourceDatabaseSettingsPublicView settings = 1;
+  DatabaseSettingsValidationStatus validation_status = 2;
+  OperationStatus status = 3;
+  repeated Diagnostic diagnostics = 4;
 }
 
 message RepositoryIdentity {
@@ -534,6 +595,15 @@ enum BuildOutputProducerStatus {
   BUILD_OUTPUT_PRODUCER_STATUS_MISSING = 3;
   BUILD_OUTPUT_PRODUCER_STATUS_FALLBACK_PLANNED = 4;
   BUILD_OUTPUT_PRODUCER_STATUS_TERMINAL_INTEGRITY_FAILURE = 5;
+}
+
+enum DatabaseSettingsValidationStatus {
+  DATABASE_SETTINGS_VALIDATION_STATUS_UNSPECIFIED = 0;
+  DATABASE_SETTINGS_VALIDATION_STATUS_VALID = 1;
+  DATABASE_SETTINGS_VALIDATION_STATUS_INVALID = 2;
+  DATABASE_SETTINGS_VALIDATION_STATUS_UNREACHABLE = 3;
+  DATABASE_SETTINGS_VALIDATION_STATUS_AUTHENTICATION_FAILED = 4;
+  DATABASE_SETTINGS_VALIDATION_STATUS_UNSUPPORTED = 5;
 }
 
 enum DiagnosticSeverity {
