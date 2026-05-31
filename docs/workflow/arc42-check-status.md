@@ -19,12 +19,24 @@
   only, not for all canonical analytics persistence.
 - The repository checkout workspace concept is separate from deferred platform
   workspace administration.
+- The accepted 2026-05-31 clarification changes the target from H2 retirement
+  to a PostgreSQL runtime default with H2 retained only for tests and fixtures.
+- The same clarification adds a public Settings/API/UI concern, so contract,
+  frontend, UX, security and service-boundary reviews are required before the
+  Settings slices execute.
 
 ## Required Updates During Execution
 
-S01 must add a PostgreSQL ADR and update arc42/architecture docs before
-implementation slices modify source or runtime files.
+S01 added the PostgreSQL ADR and arc42/architecture updates before
+implementation slices modified source or runtime files.
+
+S07 must update ADR-0023 and data ownership docs to state the H2 test-only
+boundary. S08 must check service-boundary and data-ownership docs for the
+Settings contract and handoff model before backend or UI implementation claims
+runtime readiness.
 
 ## Status
 
-Checked for workflow creation. Updates are required in S01 before code changes.
+Checked for workflow update. Existing S01 architecture updates remain valid
+for repository-source PostgreSQL metadata ownership. S07 and S08 carry the
+next required documentation synchronization points.

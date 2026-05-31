@@ -31,7 +31,9 @@ git diff --check
 | S05 | `./gradlew :repository-source-service:test --dependency-verification strict --console=plain --stacktrace`; minimum repository test gate |
 | S06 | Docker Compose `config` checks for PostgreSQL and repository-source descriptors; `git diff --check` |
 | S07 | `./gradlew :repository-source-service:test --dependency-verification strict --console=plain --stacktrace`; minimum repository test gate |
-| S08 | targeted repository-source test, Compose `config` checks, minimum gate, full local gate, `git diff --check` |
+| S08 | `./gradlew :query-report-api-service:test --dependency-verification strict --console=plain --stacktrace`; `./gradlew :repository-source-service:test --dependency-verification strict --console=plain --stacktrace`; minimum repository test gate |
+| S09 | `cd forensic-ui && npm run test`; `cd forensic-ui && npm run build`; minimum repository test gate |
+| S10 | targeted repository-source and query-report API tests, frontend test/build, Compose `config` checks, minimum gate, full local gate, `git diff --check` |
 
 ## Leakage Gates
 
@@ -41,11 +43,14 @@ Execution must stop if any slice:
   diagnostics;
 - exposes private repository checkout paths;
 - exposes H2 file paths as public contract data;
+- exposes database credentials, JDBC URLs with credentials or secret values in
+  UI state, browser storage, logs, diagnostics or public API responses;
 - logs raw Git stdout, stderr, repository credentials or local source content;
 - allows a non-owner service to mount `repository-source-workspaces` or query
   repository-source PostgreSQL tables directly;
 - stores checkout bytes or source package bytes in PostgreSQL;
 - represents database connectivity failure as successful workspace state.
+- hides missing or unreachable PostgreSQL behind H2 fallback outside tests.
 
 ## Optional Runtime Evidence
 

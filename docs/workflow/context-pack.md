@@ -3,12 +3,12 @@
 ## Identity
 
 - Workflow: Move Repository Workspace Metadata to PostgreSQL
-- Version: 2026-05-29
+- Version: 2026-05-31
 - Branch: `feature/workflow-workspace-postgres-20260529`
 - Process strand: `workflow execute`
 - Execution profile: `FULL_PATH`
-- Last S3_DOC refresh: 2026-05-31 after S05 checkpoint verification and
-  `main` merge governance hash refresh.
+- Last workflow update: 2026-05-31 after PostgreSQL runtime, H2 test-boundary
+  and UI Settings clarification.
 
 ## Affected Areas
 
@@ -17,6 +17,8 @@
 - Repository-source Spring bootstrap wiring
 - Liquibase changelog resources
 - Local Docker Compose runtime with `forensic-postgres`
+- Query-report public Settings API and repository-source configuration handoff
+- React Settings UI under `forensic-ui`
 - ADR, arc42 and architecture ownership documentation
 
 ## Forbidden Areas
@@ -27,6 +29,8 @@
 - Checkout byte storage in PostgreSQL
 - Graph, vector, replay, report or LLM persistence decisions
 - Hidden H2 compatibility fallback
+- Direct database access from UI code
+- Committed, logged, browser-persisted or public-response database credentials
 
 ## Required Roles
 
@@ -34,6 +38,7 @@
 - Senior System Architect
 - Senior Java Backend Developer
 - Senior React Frontend Developer
+- Senior UX Designer
 - Senior Tester
 
 ## Conditional Roles
@@ -43,6 +48,7 @@
 - Senior DevOps Engineer
 - Security And Threat Modeling
 - Observability And Runtime Diagnostics
+- Contract-First API Steward
 - ADR Steward
 - Quality Gate Orchestrator
 
@@ -55,6 +61,7 @@ git diff --check
 ```
 
 Docker Compose model checks are required for slices that change Compose files.
+`forensic-ui` test and build commands are required for Settings UI slices.
 
 ## Governing File Hashes
 
@@ -66,7 +73,16 @@ Docker Compose model checks are required for slices that change Compose files.
 | `.agents/orchestrator/swarm-orchestrator.md` | `860d2ad867b08838d8155ffaa580bec50f708b40eacef91920e65e76040eded8` |
 | `.agents/skills/workflow-authoring/SKILL.md` | `d87950d6d9ca831a4201b660c6bef373cb85be829f21694a323dbb9b8544d801` |
 | `.agents/skills/three-amigos-requirement-gatekeeper/SKILL.md` | `95c04f47127f5149bb39a7e1b82b2690803cc765cad5d18274a82d415931e9ad` |
+| `.agents/skills/requirement-engineering/SKILL.md` | `b0b9dc247219b1987b729d0b44818cf1b3b5e95f51c8ddbd83c14be7b0958b9f` |
 | `.agents/skills/execution-profile-router/SKILL.md` | `dfd2fc367bb9ab856e9482d3088690795ee1805b7c84ad462281b2350ca2f62b` |
+| `.agents/skills/data-ownership-persistence-steward/SKILL.md` | `a2d4461f773ab7d0d4a66e63cef4ccb171b048e678a889db29f4ae5f5904d942` |
+| `.agents/skills/contract-governance-expert/SKILL.md` | `94918e9b72bbb20848b1e894382e0318a96645fff18ca742d732b53c0118e19c` |
+| `.agents/skills/security-threat-modeling/SKILL.md` | `45a9a79a39899a1329556baefd0fbef1cec13cc2f1fbf40471c790ceff962b0c` |
+| `.agents/skills/observability-runtime-diagnostics/SKILL.md` | `5bb099304e60494fe52180761490464afdfc684c1f88e4ffda3eaaaaa2602fb1` |
+| `.agents/skills/frontend-react/SKILL.md` | `9120d067985836d8a0045cd4104fdba4c31b6236771b0465fb0de6ac1694baa1` |
+| `.agents/skills/frontend-ux-guidelines/SKILL.md` | `7ec39570c2d7684d8887a9b52c451f020ea70981a1a4ced4175c142513087a9d` |
+| `docs/workflow/workflow.md` | `7b4a26e89bcb54c202e977bd42f3713604ca78d95ff4a92264fd557e43ee0805` |
+| `docs/workflow/workflow.history.md` | `dd7123edc4ef905f041b9f5503a1a9b6bba7d0c7268da1060bd887251c313a28` |
 | `docs/epics/forensics-platform-runtime-replay-llm-analysis-v0.2.md` | `54ff246b4359e1eb92c7e80058db42faa079ff5ffd3db0d71170cfaa3dbb68fe` |
 | `docs/adr/ADR-0013-data-ownership-per-service.md` | `4114bd8f39a60539bba18bcc32de481aff5a91cec34d556ca1149747b04879ab` |
 | `docs/adr/ADR-0023-h2-for-repository-source-mvp-persistence.md` | `57055ae1b371d5c229dd8d64450a23869dc89849808fa68bdff45901a5123a69` |

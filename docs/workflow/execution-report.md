@@ -46,8 +46,31 @@ The S06 checkpoint `caf6a11` followed that S3_DOC repair and has been pushed to
 ## Current Execution Position
 
 - Last completed implementation slice: S06.
-- Next candidate slice: S07 - H2 MVP Retirement and Migration Policy.
+- Active workflow version after accepted scope update: `2026-05-31`.
+- Next candidate slice: S07 - PostgreSQL Runtime Default and H2 Test Boundary.
 - S07 must rerun S3D before any product or documentation file modification.
+
+## Workflow Scope Update
+
+On 2026-05-31, S07 read-only preflight found that the earlier S07 file locks
+covered the H2 adapter, H2 persistence test and documentation, but not the
+verified runtime H2 selection in repository-source bootstrap and resource
+configuration. Continuing would either leave H2 active as a runtime fallback or
+silently expand S07 beyond its approved locks.
+
+The accepted requirement clarification changes the remaining workflow scope:
+
+- H2 may remain for tests and deterministic fixtures.
+- PostgreSQL is the runtime and production persistence path.
+- Missing or unreachable PostgreSQL must be reported by startup failure or
+  storage health/readiness `DOWN`, not hidden by fallback.
+- Database configuration must be available through operator Settings in the
+  existing UI.
+
+The workflow was updated to version `2026-05-31` with S07 covering the
+PostgreSQL runtime default and H2 test boundary, S08 covering the
+contract-first Settings API/backend handoff, S09 covering the React Settings UI
+and S10 covering final release readiness.
 
 ## S05 Verification Evidence
 
