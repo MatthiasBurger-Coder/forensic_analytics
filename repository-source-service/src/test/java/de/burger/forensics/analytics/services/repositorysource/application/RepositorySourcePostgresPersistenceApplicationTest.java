@@ -16,6 +16,7 @@ import de.burger.forensics.analytics.services.repositorysource.domain.Repository
 import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.Diagnostic;
 import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.PackageAvailability;
 import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.RepositoryIdentity;
+import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.RepositoryKey;
 import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.RepositoryPreparation;
 import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.RepositoryReference;
 import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.RepositoryWorkspace;
@@ -50,6 +51,7 @@ import java.util.function.Predicate;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -183,7 +185,117 @@ class RepositorySourcePostgresPersistenceApplicationTest {
     }
 
     @Test
+    void returnsEmptyResultsAndReportsMissingWorkspaceUpdates() {
+        var recording = new RecordingConnection("");
+        var adapter = new PostgresRepositorySourcePersistenceAdapter("repository_source", recording::connection);
+        var missingWorkspaceId = new WorkspaceId("workspace-missing");
+
+        assertTrue(adapter.findByRunAndSnapshot(new AnalysisRunId("run-missing"), new SourceSnapshotId("source-snapshot-missing")).isEmpty());
+        assertTrue(adapter.findByRunAndWorkspace(new AnalysisRunId("run-missing"), missingWorkspaceId).isEmpty());
+        assertTrue(adapter.findById(missingWorkspaceId).isEmpty());
+        assertTrue(adapter.findByRepositoryKey(new RepositoryKey("example.com/acme/missing")).isEmpty());
+        assertTrue(adapter.findBranch(missingWorkspaceId, new WorkspaceBranchId("workspace-branch-missing")).isEmpty());
+        assertTrue(adapter.find("CREATE_WORKSPACE", "missing-key").isEmpty());
+
+        var error = assertThrows(IllegalStateException.class, () -> adapter.updateWorkspaceStatus(
+            missingWorkspaceId,
+            RepositoryWorkspaceStatus.CLEANED,
+            NOW.plusSeconds(120),
+            List.of()
+        ));
+
+        assertEquals("repository workspace was not found", error.getMessage());
+    }
+
+    @Test
+    void preservesPostgresOptionalBranchAndIdempotencyFields() {
+        var recording = new RecordingConnection("");
+        var adapter = new PostgresRepositorySourcePersistenceAdapter("repository_source", recording::connection);
+        var workspaceId = new WorkspaceId("workspace-optionals");
+        var branch = new RepositoryWorkspaceBranch(
+            new WorkspaceBranchId("workspace-branch-optionals"),
+            workspaceId,
+            "main",
+            "",
+            "",
+            null,
+            RepositoryWorkspaceBranchStatus.CHECKING_OUT,
+            List.of(),
+            null,
+            NOW,
+            List.of()
+        );
+        adapter.save(workspace(workspaceId, "optionals", RepositoryWorkspaceStatus.READY, List.of(branch)));
+        adapter.save(new RepositorySourceIdempotencyRecord(
+            "key-expiring",
+            "CREATE_WORKSPACE",
+            "fingerprint-expiring",
+            "REPOSITORY_WORKSPACE",
+            workspaceId.value(),
+            "payload-expiring",
+            "COMPLETED",
+            NOW,
+            NOW.plusSeconds(3600)
+        ));
+
+        var loadedBranch = adapter.findBranch(workspaceId, branch.workspaceBranchId()).orElseThrow();
+        var expiringRecord = adapter.find("CREATE_WORKSPACE", "key-expiring").orElseThrow();
+        recording.idempotencyRecords.getFirst().put("expires_at", "");
+        var blankExpiryRecord = adapter.find("CREATE_WORKSPACE", "key-expiring").orElseThrow();
+
+        assertNull(loadedBranch.sourceSnapshotId());
+        assertNull(loadedBranch.lastCheckedAt());
+        assertEquals(List.of(), loadedBranch.sourceRoots());
+        assertEquals(NOW.plusSeconds(3600), expiringRecord.expiresAt());
+        assertNull(blankExpiryRecord.expiresAt());
+    }
+
+    @Test
+    void preservesPostgresSnapshotPackageArtifactsAndBuildDiagnostics() {
+        var recording = new RecordingConnection("");
+        var adapter = new PostgresRepositorySourcePersistenceAdapter("repository_source", recording::connection);
+        var sourceSnapshotId = new SourceSnapshotId("source-snapshot-postgres-artifacts");
+        var preparation = new RepositoryPreparation(
+            new AnalysisRunId("run-postgres-artifacts"),
+            sourceSnapshotId,
+            new WorkspaceId("workspace-postgres-artifacts"),
+            repository(),
+            revision(),
+            checkoutResult(),
+            sourceSnapshotWithPackageArtifacts(sourceSnapshotId),
+            RepositoryWorkspaceStatus.CHECKED_OUT,
+            NOW,
+            NOW,
+            List.of(),
+            Map.of()
+        );
+
+        adapter.save(preparation);
+        var loaded = adapter.findByRunAndSnapshot(preparation.analysisRunId(), sourceSnapshotId).orElseThrow();
+
+        assertEquals("snapshots/source-snapshot-postgres-artifacts/source.zip", loaded.sourceSnapshot().sourcePackage().packageArtifact().reference());
+        assertEquals("snapshots/source-snapshot-postgres-artifacts/build.zip", loaded.sourceSnapshot().buildOutputPackage().packageArtifact().reference());
+        assertEquals("snapshots/source-snapshot-postgres-artifacts/build-manifest.json", loaded.sourceSnapshot().buildOutputPackage().manifestArtifact().reference());
+        assertEquals(
+            List.of("BUILD_ARTIFACT_WORKER_SELECTED"),
+            loaded.sourceSnapshot().buildOutputPackage().resolution().diagnostics().stream().map(Diagnostic::code).toList()
+        );
+    }
+
+    @Test
     void rejectsUnsafeSchemaAndSurfacesSqlFailures() {
+        assertThrows(IllegalArgumentException.class, () -> new PostgresRepositorySourcePersistenceAdapter(
+            null,
+            () -> {
+                throw new AssertionError("schema validation should fail before opening a connection");
+            }
+        ));
+        assertThrows(IllegalArgumentException.class, () -> new PostgresRepositorySourcePersistenceAdapter(
+            " ",
+            () -> {
+                throw new AssertionError("schema validation should fail before opening a connection");
+            }
+        ));
         assertThrows(IllegalArgumentException.class, () -> new PostgresRepositorySourcePersistenceAdapter(
             "repository-source",
             () -> {
@@ -256,6 +368,80 @@ class RepositorySourcePostgresPersistenceApplicationTest {
             List.of(),
             sourcePackage(sourceSnapshotId, manifest),
             buildOutputPackage(sourceSnapshotId)
+        );
+    }
+
+    private static SourceSnapshot sourceSnapshotWithPackageArtifacts(SourceSnapshotId sourceSnapshotId) {
+        var manifest = manifest(sourceSnapshotId);
+        var sourcePackageArtifact = new ArtifactReference(
+            "snapshots/" + sourceSnapshotId.value() + "/source.zip",
+            "application/zip",
+            SHA,
+            500
+        );
+        var buildManifest = new ArtifactReference(
+            "snapshots/" + sourceSnapshotId.value() + "/build-manifest.json",
+            "application/json",
+            SHA,
+            120
+        );
+        var buildPackageArtifact = new ArtifactReference(
+            "snapshots/" + sourceSnapshotId.value() + "/build.zip",
+            "application/zip",
+            SHA,
+            900
+        );
+        return new SourceSnapshot(
+            sourceSnapshotId,
+            SourceSnapshotCompleteness.COMPLETE,
+            sourceRoots(),
+            manifest,
+            List.of("artifact fixture limitation"),
+            new SourcePackageDescriptor(
+                PackageAvailability.AVAILABLE,
+                manifest,
+                sourcePackageArtifact,
+                "source-package-descriptor-v1",
+                "repository-source-service",
+                new ArtifactByteAccess(
+                    "repository-source-service",
+                    "repository-source.v1.SourcePackage",
+                    "source-snapshot/" + sourceSnapshotId.value(),
+                    ArtifactByteCustody.PRODUCER_RETAINED
+                ),
+                SourceSnapshotCompleteness.COMPLETE
+            ),
+            new BuildOutputPackageDescriptor(
+                PackageAvailability.AVAILABLE,
+                buildManifest,
+                buildPackageArtifact,
+                "build-output-package-descriptor-v1",
+                "build-artifact-worker-service",
+                new ArtifactByteAccess(
+                    "build-artifact-worker-service",
+                    "build-artifact-worker.v1.BuildOutputPackage",
+                    "source-snapshot/" + sourceSnapshotId.value(),
+                    ArtifactByteCustody.PRODUCER_RETAINED
+                ),
+                SourceSnapshotCompleteness.COMPLETE,
+                new BuildOutputResolution(
+                    List.of(
+                        new BuildOutputProducerCandidate(BuildOutputProducer.ARTIFACT_STORE, BuildOutputProducerStatus.NOT_CONFIGURED, "", List.of()),
+                        new BuildOutputProducerCandidate(BuildOutputProducer.ARTIFACTORY, BuildOutputProducerStatus.NOT_CONFIGURED, "", List.of()),
+                        new BuildOutputProducerCandidate(BuildOutputProducer.JENKINS, BuildOutputProducerStatus.NOT_CONFIGURED, "", List.of()),
+                        new BuildOutputProducerCandidate(
+                            BuildOutputProducer.BUILD_ARTIFACT_WORKER,
+                            BuildOutputProducerStatus.AVAILABLE,
+                            "source-snapshot/" + sourceSnapshotId.value(),
+                            List.of(Diagnostic.info("BUILD_ARTIFACT_WORKER_AVAILABLE", "Build artifact worker artifact is available"))
+                        )
+                    ),
+                    BuildOutputProducer.BUILD_ARTIFACT_WORKER,
+                    false,
+                    List.of(Diagnostic.info("BUILD_ARTIFACT_WORKER_SELECTED", "Build artifact worker output selected"))
+                ),
+                "gradle"
+            )
         );
     }
 
