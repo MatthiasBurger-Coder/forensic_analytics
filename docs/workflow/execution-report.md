@@ -36,6 +36,7 @@ on `feature/workflow-workspace-postgres-20260529` and have been pushed to
 | S05 | `b4571bb` | Repository-source PostgreSQL bootstrap selection, Liquibase execution and storage readiness health wiring |
 | S06 | `caf6a11` | Docker Compose and local PostgreSQL runtime wiring for repository-source metadata |
 | S07 | `c614cb7` | PostgreSQL runtime default, H2 test boundary and documentation |
+| S08 | `55def59` | Contract-first database Settings backend handoff, operator-token facade and repository-source validation owner API |
 
 S3D preflight before S06 detected stale workflow evidence because this report
 still recorded S05 as the next candidate even though commit `b4571bb` already
