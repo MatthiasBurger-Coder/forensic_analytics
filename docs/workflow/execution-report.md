@@ -23,7 +23,7 @@
 
 ## Implementation Status
 
-Workflow execution has started. Checkpoint commits S01 through S09 are present
+Workflow execution has started. Checkpoint commits S01 through S10 are present
 on `feature/workflow-workspace-postgres-20260529` and have been pushed to
 `origin`.
 
@@ -38,6 +38,7 @@ on `feature/workflow-workspace-postgres-20260529` and have been pushed to
 | S07 | `c614cb7` | PostgreSQL runtime default, H2 test boundary and documentation |
 | S08 | `55def59` | Contract-first database Settings backend handoff, operator-token facade and repository-source validation owner API |
 | S09 | `740ce40` | React database Settings UI, public API adapter wiring, secret-safe validation form and frontend regression tests |
+| S10 | `97e5fd0` | PostgreSQL adapter branch coverage repair and full release-readiness quality gate |
 
 S3D preflight before S06 detected stale workflow evidence because this report
 still recorded S05 as the next candidate even though commit `b4571bb` already
@@ -48,10 +49,11 @@ The S06 checkpoint `caf6a11` followed that S3_DOC repair and has been pushed to
 
 ## Current Execution Position
 
-- Last completed implementation slice: S09.
+- Last completed implementation slice: S10.
 - Active workflow version after accepted scope update: `2026-05-31`.
-- Next candidate slice: S10 - End-to-End Verification and Release Readiness.
-- S10 must rerun S3D before any product or documentation file modification.
+- Next candidate slice: none.
+- Workflow execution is release-ready with the caveat that live Docker startup
+  and HTTP health checks were not executed.
 
 ## Workflow Scope Update
 
@@ -155,6 +157,41 @@ and S10 covering final release readiness.
   passed on 2026-05-31 with 155 actionable tasks.
 - `git diff --check`, `git diff --cached --check` and
   `python3 -m json.tool docs/workflow/context-pack.json` passed before the S09
+  checkpoint and documentation update.
+
+## S10 Verification Evidence
+
+- The S10 quality blocker was
+  `de.burger.forensics.analytics.services.repositorysource.adapter.out.postgres`
+  branch coverage at `55.56%`.
+- A Senior Tester subagent completed a read-only coverage review and identified
+  the missing PostgreSQL adapter branches: empty lookup arms, missing workspace
+  update, optional branch metadata, idempotency expiry variants, schema
+  validation variants and snapshot package artifact/diagnostic mappings.
+- `RepositorySourcePostgresPersistenceApplicationTest` now covers those
+  deterministic PostgreSQL persistence paths through the existing
+  `RecordingConnection` fixture, without requiring a live database and without
+  weakening coverage thresholds.
+- `./gradlew :repository-source-service:test --tests de.burger.forensics.analytics.services.repositorysource.application.RepositorySourcePostgresPersistenceApplicationTest --dependency-verification strict --console=plain --stacktrace`
+  passed on 2026-05-31 with 11 actionable tasks.
+- `./gradlew jacocoTestReport checkPackageCoverage --dependency-verification strict --console=plain --stacktrace`
+  passed on 2026-05-31 with 172 actionable tasks. The PostgreSQL adapter
+  package now reports `93.11%` line coverage and `87.50%` branch coverage.
+- `./gradlew :query-report-api-service:test --dependency-verification strict --console=plain --stacktrace`
+  passed on 2026-05-31.
+- `cd forensic-ui && npm run test` passed on 2026-05-31 with 9 test files and
+  94 tests.
+- `cd forensic-ui && npm run build` passed on 2026-05-31.
+- `docker compose --env-file docker/postgres/.env.example -f docker/postgres/docker-compose.yml config`
+  passed on 2026-05-31.
+- `docker compose -f deployment/docker-compose/repository-to-btm.local.yml config`
+  passed on 2026-05-31.
+- `./gradlew test --dependency-verification strict --console=plain --stacktrace`
+  passed on 2026-05-31 with 155 actionable tasks.
+- `./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace`
+  passed on 2026-05-31 with 207 actionable tasks in 27m 21s.
+- `git diff --check`, `git diff --cached --check` and
+  `python3 -m json.tool docs/workflow/context-pack.json` passed before the S10
   checkpoint and documentation update.
 
 Docker Compose checks were not part of S05. They remain required for S06 and

@@ -35,6 +35,21 @@ git diff --check
 | S09 | `cd forensic-ui && npm run test`; `cd forensic-ui && npm run build`; minimum repository test gate |
 | S10 | targeted repository-source and query-report API tests, frontend test/build, Compose `config` checks, minimum gate, full local gate, `git diff --check` |
 
+## S10 Quality Result
+
+S10 resolved the PostgreSQL adapter package coverage blocker without lowering
+coverage thresholds. The full local quality gate passed on 2026-05-31:
+
+```bash
+./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace
+```
+
+The generated package coverage report records:
+
+```text
+de.burger.forensics.analytics.services.repositorysource.adapter.out.postgres line 93.11% branch 87.50%
+```
+
 ## Leakage Gates
 
 Execution must stop if any slice:
