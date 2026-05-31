@@ -35,6 +35,7 @@ on `feature/workflow-workspace-postgres-20260529` and have been pushed to
 | S04 | `d32a314` | Repository-source PostgreSQL outbound persistence adapter, application persistence regression test and architecture rules |
 | S05 | `b4571bb` | Repository-source PostgreSQL bootstrap selection, Liquibase execution and storage readiness health wiring |
 | S06 | `caf6a11` | Docker Compose and local PostgreSQL runtime wiring for repository-source metadata |
+| S07 | `c614cb7` | PostgreSQL runtime default, H2 test boundary and documentation |
 
 S3D preflight before S06 detected stale workflow evidence because this report
 still recorded S05 as the next candidate even though commit `b4571bb` already
@@ -45,10 +46,10 @@ The S06 checkpoint `caf6a11` followed that S3_DOC repair and has been pushed to
 
 ## Current Execution Position
 
-- Last completed implementation slice: S06.
+- Last completed implementation slice: S07.
 - Active workflow version after accepted scope update: `2026-05-31`.
-- Next candidate slice: S07 - PostgreSQL Runtime Default and H2 Test Boundary.
-- S07 must rerun S3D before any product or documentation file modification.
+- Next candidate slice: S08 - Database Settings Contract and Backend Handoff.
+- S08 must rerun S3D before any product or documentation file modification.
 
 ## Workflow Scope Update
 
@@ -106,3 +107,30 @@ must be rerun after S06 deployment descriptor changes.
 Live Docker startup and HTTP health checks were not executed. S06 required
 Compose model validation only; live runtime verification remains optional until
 explicitly run and recorded.
+
+## S07 Verification Evidence
+
+- Runtime and Docker repository-source persistence defaults now select
+  PostgreSQL, not H2.
+- Test profile uses in-memory persistence for default Spring startup tests.
+- `RepositorySourceServiceProperties` rejects `h2` as an active runtime
+  persistence type.
+- Repository-source bootstrap no longer wires the H2 persistence adapter from
+  runtime configuration.
+- Missing or unreachable PostgreSQL remains reported as sanitized startup
+  failure or storage readiness `DOWN`; no H2 fallback is selected.
+- H2 remains documented and covered only as deterministic adapter test or
+  fixture infrastructure.
+- Existing local H2 state is documented as historical MVP state. Preservation
+  requires a later explicit one-off migration slice.
+- Callable subagent attempts were unavailable or timed out in this runtime, so
+  S07 used local role-file and skill checklist fallback for Data Ownership,
+  Java backend, observability, testing and documentation review duties.
+- `rg -n "persistence.type=h2|persistence\\.h2|useH2\\(|RepositorySourceServiceProperties\\.H2|Docker H2|local H2 JDBC|repository-source-data|H2 JDBC|H2 file|H2 files|runtime fallback|fallback to H2|H2 remains" repository-source-service/src/main repository-source-service/src/test repository-source-service/README.md docs/adr/ADR-0023-h2-for-repository-source-mvp-persistence.md docs/architecture/data-ownership.md`
+  returned only expected H2 test, fixture and historical-documentation
+  references.
+- `./gradlew :repository-source-service:test --dependency-verification strict --console=plain --stacktrace`
+  passed on 2026-05-31 with 11 actionable tasks.
+- `./gradlew test --dependency-verification strict --console=plain --stacktrace`
+  passed on 2026-05-31 with 155 actionable tasks.
+- `git diff --check` passed before checkpoint.
