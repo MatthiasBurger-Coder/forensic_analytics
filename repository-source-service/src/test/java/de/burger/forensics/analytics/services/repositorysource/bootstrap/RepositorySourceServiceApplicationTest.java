@@ -11,7 +11,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -64,29 +63,13 @@ class RepositorySourceServiceApplicationTest {
     }
 
     @Test
-    void startsGrpcAndHealthEndpointsWithH2Persistence() throws Exception {
-        var storageId = "context-" + UUID.randomUUID();
+    void rejectsH2AsRuntimePersistenceType() {
+        var error = assertThrows(
+            IllegalArgumentException.class,
+            () -> new RepositorySourceServiceProperties.Persistence("h2", postgres())
+        );
 
-        try (var context = new SpringApplicationBuilder(RepositorySourceServiceApplication.class)
-            .web(WebApplicationType.NONE)
-            .run(
-                "--spring.main.banner-mode=off",
-                "--forensics.repository-source.service.grpc.port=0",
-                "--forensics.repository-source.service.health.port=0",
-                "--forensics.repository-source.service.workspace.root=build/repository-source-test-workspaces/" + storageId,
-                "--forensics.repository-source.service.persistence.type=h2",
-                "--forensics.repository-source.service.persistence.h2.jdbc-url=jdbc:h2:file:./build/repository-source-test-data/" + storageId + "/repository-source;AUTO_SERVER=FALSE;DB_CLOSE_DELAY=-1"
-            )) {
-
-            var grpc = context.getBean(GrpcServerLifecycle.class);
-            var health = context.getBean(HealthHttpServerLifecycle.class);
-
-            assertTrue(grpc.isRunning());
-            assertTrue(grpc.port() > 0);
-            assertTrue(health.isRunning());
-            assertTrue(health.port() > 0);
-            assertEquals(200, healthResponseCode(health.port()));
-        }
+        assertEquals("persistence type must be memory or postgres", error.getMessage());
     }
 
     @Test
@@ -151,24 +134,9 @@ class RepositorySourceServiceApplicationTest {
         assertThrows(IllegalArgumentException.class, () -> new RepositorySourceServiceProperties.Health(true, "127.0.0.1", 65_536));
         assertThrows(IllegalArgumentException.class, () -> new RepositorySourceServiceProperties.Health(true, null, 0));
         assertThrows(NullPointerException.class, () -> new RepositorySourceServiceProperties.Workspace(null));
-        assertThrows(IllegalArgumentException.class, () -> new RepositorySourceServiceProperties.Persistence("oracle", h2(), postgres()));
-        assertThrows(NullPointerException.class, () -> new RepositorySourceServiceProperties.Persistence("memory", h2(), null));
-        assertThrows(IllegalArgumentException.class, () -> new RepositorySourceServiceProperties.H2(" ", "sa", ""));
-        assertThrows(IllegalArgumentException.class, () -> new RepositorySourceServiceProperties.H2(
-            "jdbc:h2:tcp://127.0.0.1/~/repository-source",
-            "sa",
-            ""
-        ));
-        assertThrows(IllegalArgumentException.class, () -> new RepositorySourceServiceProperties.H2(
-            "jdbc:h2:file:../repository-source;AUTO_SERVER=FALSE",
-            "sa",
-            ""
-        ));
-        assertThrows(IllegalArgumentException.class, () -> new RepositorySourceServiceProperties.H2(
-            "jdbc:h2:file:build/repository-source-data/repository-source;INIT=RUNSCRIPT FROM 'classpath:init.sql'",
-            "sa",
-            ""
-        ));
+        assertThrows(IllegalArgumentException.class, () -> new RepositorySourceServiceProperties.Persistence("oracle", postgres()));
+        assertThrows(IllegalArgumentException.class, () -> new RepositorySourceServiceProperties.Persistence("h2", postgres()));
+        assertThrows(NullPointerException.class, () -> new RepositorySourceServiceProperties.Persistence("memory", null));
         assertThrows(IllegalArgumentException.class, () -> new RepositorySourceServiceProperties.Postgres(
             "jdbc:h2:file:./build/repository-source-data/repository-source",
             "forensic",
@@ -223,38 +191,19 @@ class RepositorySourceServiceApplicationTest {
     }
 
     @Test
-    void selectsH2PersistenceAndNormalizesSafeH2Defaults() {
-        var h2 = new RepositorySourceServiceProperties.H2(
-            "jdbc:h2:file:./build/repository-source-test-data/repository-source;AUTO_SERVER=FALSE;DB_CLOSE_DELAY=-1",
-            null,
-            null
-        );
+    void selectsMemoryPersistenceForTestsWithoutDatabaseRuntimeFallback() {
         var properties = new RepositorySourceServiceProperties(
             new RepositorySourceServiceProperties.Grpc(false, "127.0.0.1", 0),
             new RepositorySourceServiceProperties.Health(false, "127.0.0.1", 0),
             new RepositorySourceServiceProperties.Workspace(Path.of("build/test-workspaces")),
-            new RepositorySourceServiceProperties.Persistence("H2", h2, postgres())
+            new RepositorySourceServiceProperties.Persistence("memory", postgres())
         );
 
         var components = new RepositorySourceServiceConfiguration().repositorySourcePersistenceComponents(properties);
 
-        assertTrue(properties.persistence().useH2());
-        assertEquals("", properties.persistence().h2().username());
-        assertEquals("", properties.persistence().h2().password());
         assertNotNull(components.preparationRepository());
         assertNotNull(components.workspaceRepository());
         assertNotNull(components.idempotencyRepository());
-        assertDoesNotThrowH2Path("jdbc:h2:file:/var/lib/forensic-analytics/repository-source-data/repository-source");
-        assertThrows(IllegalArgumentException.class, () -> new RepositorySourceServiceProperties.H2(
-            "jdbc:h2:file:~/repository-source",
-            "sa",
-            ""
-        ));
-        assertThrows(IllegalArgumentException.class, () -> new RepositorySourceServiceProperties.H2(
-            "jdbc:h2:file:/tmp/repository-source",
-            "sa",
-            ""
-        ));
     }
 
     @Test
@@ -271,13 +220,12 @@ class RepositorySourceServiceApplicationTest {
             new RepositorySourceServiceProperties.Grpc(false, "127.0.0.1", 0),
             new RepositorySourceServiceProperties.Health(false, "127.0.0.1", 0),
             new RepositorySourceServiceProperties.Workspace(Path.of("build/test-workspaces")),
-            new RepositorySourceServiceProperties.Persistence("Postgres", h2(), postgres())
+            new RepositorySourceServiceProperties.Persistence("Postgres", postgres())
         );
 
         var components = configuration.repositorySourcePersistenceComponents(properties);
 
         assertTrue(properties.persistence().usePostgres());
-        assertFalse(properties.persistence().useH2());
         assertEquals(List.of("migrate", "components"), events);
         assertNotNull(components.preparationRepository());
         assertNotNull(components.workspaceRepository());
@@ -301,7 +249,7 @@ class RepositorySourceServiceApplicationTest {
             new RepositorySourceServiceProperties.Grpc(false, "127.0.0.1", 0),
             new RepositorySourceServiceProperties.Health(false, "127.0.0.1", 0),
             new RepositorySourceServiceProperties.Workspace(Path.of("build/test-workspaces")),
-            new RepositorySourceServiceProperties.Persistence("postgres", h2(), postgres())
+            new RepositorySourceServiceProperties.Persistence("postgres", postgres())
         );
 
         var error = assertThrows(
@@ -363,7 +311,6 @@ class RepositorySourceServiceApplicationTest {
         var properties = new RepositorySourceServicePropertiesConfiguration()
             .repositorySourceServiceProperties(environment);
 
-        assertFalse(properties.persistence().useH2());
         assertTrue(properties.persistence().usePostgres());
         assertEquals("jdbc:postgresql://127.0.0.1:5432/forensic_analytics", properties.persistence().postgres().jdbcUrl());
         assertEquals("forensic", properties.persistence().postgres().username());
@@ -373,6 +320,18 @@ class RepositorySourceServiceApplicationTest {
             "classpath:db/changelog/repository-source-workspace.postgresql.yaml",
             properties.persistence().postgres().changeLog()
         );
+    }
+
+    @Test
+    void defaultsToPostgreSQLRuntimeConfigurationWithoutConnectingToDatabase() {
+        var properties = new RepositorySourceServicePropertiesConfiguration()
+            .repositorySourceServiceProperties(new MockEnvironment());
+
+        assertTrue(properties.persistence().usePostgres());
+        assertEquals("jdbc:postgresql://127.0.0.1:5432/forensic_analytics", properties.persistence().postgres().jdbcUrl());
+        assertEquals("forensic", properties.persistence().postgres().username());
+        assertEquals("", properties.persistence().postgres().password());
+        assertEquals("repository_source", properties.persistence().postgres().schema());
     }
 
     @Test
@@ -409,12 +368,8 @@ class RepositorySourceServiceApplicationTest {
         assertFalse(text.contains("/var/lib"));
     }
 
-    private static void assertDoesNotThrowH2Path(String jdbcUrl) {
-        new RepositorySourceServiceProperties.H2(jdbcUrl, "sa", "");
-    }
-
     private static RepositorySourceServiceProperties.Persistence memoryPersistence() {
-        return new RepositorySourceServiceProperties.Persistence("memory", h2(), postgres());
+        return new RepositorySourceServiceProperties.Persistence("memory", postgres());
     }
 
     private static RepositorySourceServiceConfiguration.RepositorySourcePersistenceComponents memoryComponents() {
@@ -426,14 +381,6 @@ class RepositorySourceServiceApplicationTest {
             memoryPersistence()
         );
         return configuration.repositorySourcePersistenceComponents(properties);
-    }
-
-    private static RepositorySourceServiceProperties.H2 h2() {
-        return new RepositorySourceServiceProperties.H2(
-            "jdbc:h2:file:./build/repository-source-test-data/repository-source",
-            "sa",
-            ""
-        );
     }
 
     private static RepositorySourceServiceProperties.Postgres postgres() {

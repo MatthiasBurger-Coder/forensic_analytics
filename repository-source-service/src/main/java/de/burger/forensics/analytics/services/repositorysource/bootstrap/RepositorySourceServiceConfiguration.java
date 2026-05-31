@@ -6,7 +6,6 @@ import de.burger.forensics.analytics.services.repositorysource.adapter.out.git.G
 import de.burger.forensics.analytics.services.repositorysource.adapter.out.git.GitRepositoryMetadataAdapter;
 import de.burger.forensics.analytics.services.repositorysource.adapter.out.git.SafeGitCommandRunner;
 import de.burger.forensics.analytics.services.repositorysource.adapter.out.git.SourceRootDetector;
-import de.burger.forensics.analytics.services.repositorysource.adapter.out.h2.H2RepositorySourcePersistenceAdapter;
 import de.burger.forensics.analytics.services.repositorysource.adapter.out.id.UuidRepositoryWorkspaceIdGenerator;
 import de.burger.forensics.analytics.services.repositorysource.adapter.out.memory.InMemoryRepositoryPreparationRepository;
 import de.burger.forensics.analytics.services.repositorysource.adapter.out.memory.InMemoryRepositorySourceIdempotencyRepository;
@@ -58,14 +57,6 @@ public class RepositorySourceServiceConfiguration {
     public RepositorySourcePersistenceComponents repositorySourcePersistenceComponents(
         RepositorySourceServiceProperties properties
     ) {
-        if (properties.persistence().useH2()) {
-            var adapter = new H2RepositorySourcePersistenceAdapter(
-                properties.persistence().h2().jdbcUrl(),
-                properties.persistence().h2().username(),
-                properties.persistence().h2().password()
-            );
-            return new RepositorySourcePersistenceComponents(adapter, adapter, adapter);
-        }
         if (properties.persistence().usePostgres()) {
             return migratedPostgresPersistenceComponents(properties.persistence().postgres());
         }

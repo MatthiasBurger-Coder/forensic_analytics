@@ -126,9 +126,12 @@ cross-service persistence, not canonical analytics persistence and not a
 production relational database selection for the broader platform.
 
 Repository checkout bytes and source package bytes remain outside PostgreSQL in
-repository-source-owned storage. Existing H2 files remain historical MVP
-evidence until the H2 retirement slice removes active runtime fallback or
-records an explicit migration policy.
+repository-source-owned storage. Existing H2 files are historical MVP state
+only; H2 may remain as deterministic adapter test or fixture coverage, but it
+is not a runtime or Docker fallback. If preservation of existing H2 state is
+required, workflow execution must stop and create an explicit one-off migration
+slice with verified input files, acceptance criteria, rollback strategy and
+quality gates.
 
 ## Artifact Byte Custody Rules
 

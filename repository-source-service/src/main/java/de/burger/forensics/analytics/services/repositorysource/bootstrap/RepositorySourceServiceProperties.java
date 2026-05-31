@@ -36,27 +36,14 @@ public record RepositorySourceServiceProperties(
         }
     }
 
-    public record Persistence(String type, H2 h2, Postgres postgres) {
+    public record Persistence(String type, Postgres postgres) {
         public Persistence {
             type = requirePersistenceType(type);
-            Objects.requireNonNull(h2, "h2 persistence must not be null");
             Objects.requireNonNull(postgres, "postgres persistence must not be null");
-        }
-
-        public boolean useH2() {
-            return "h2".equals(type);
         }
 
         public boolean usePostgres() {
             return "postgres".equals(type);
-        }
-    }
-
-    public record H2(String jdbcUrl, String username, String password) {
-        public H2 {
-            jdbcUrl = requireSafeH2JdbcUrl(jdbcUrl);
-            username = username == null ? "" : username;
-            password = password == null ? "" : password;
         }
     }
 
@@ -87,8 +74,8 @@ public record RepositorySourceServiceProperties(
             throw new IllegalArgumentException("persistence type must not be blank");
         }
         var normalized = type.trim().toLowerCase(java.util.Locale.ROOT);
-        if (!"memory".equals(normalized) && !"h2".equals(normalized) && !"postgres".equals(normalized)) {
-            throw new IllegalArgumentException("persistence type must be memory, h2 or postgres");
+        if (!"memory".equals(normalized) && !"postgres".equals(normalized)) {
+            throw new IllegalArgumentException("persistence type must be memory or postgres");
         }
         return normalized;
     }
@@ -98,34 +85,6 @@ public record RepositorySourceServiceProperties(
             throw new IllegalArgumentException(name + " must not be blank");
         }
         return text.trim();
-    }
-
-    private static String requireSafeH2JdbcUrl(String jdbcUrl) {
-        if (jdbcUrl == null || jdbcUrl.isBlank()) {
-            throw new IllegalArgumentException("H2 JDBC URL must not be blank");
-        }
-        var trimmed = jdbcUrl.trim();
-        var lower = trimmed.toLowerCase(java.util.Locale.ROOT);
-        if (!lower.startsWith("jdbc:h2:file:")) {
-            throw new IllegalArgumentException("H2 JDBC URL must use file mode");
-        }
-        var settingsStart = trimmed.indexOf(';');
-        var databasePath = settingsStart < 0 ? trimmed.substring("jdbc:h2:file:".length()) : trimmed.substring("jdbc:h2:file:".length(), settingsStart);
-        if (!isServiceOwnedH2Path(databasePath)) {
-            throw new IllegalArgumentException("H2 JDBC URL must stay under repository-source data storage");
-        }
-        if (settingsStart >= 0) {
-            for (String setting : trimmed.substring(settingsStart + 1).split(";")) {
-                var normalizedSetting = setting.trim().toLowerCase(java.util.Locale.ROOT);
-                if (normalizedSetting.startsWith("init=")
-                    || normalizedSetting.contains("runscript")
-                    || normalizedSetting.startsWith("auto_server=true")
-                    || normalizedSetting.startsWith("auto_server_port=")) {
-                    throw new IllegalArgumentException("H2 JDBC URL contains an unsafe option");
-                }
-            }
-        }
-        return trimmed;
     }
 
     private static String requirePostgresJdbcUrl(String jdbcUrl) {
@@ -159,22 +118,4 @@ public record RepositorySourceServiceProperties(
         return trimmed;
     }
 
-    private static boolean isServiceOwnedH2Path(String databasePath) {
-        if (databasePath == null || databasePath.isBlank() || databasePath.startsWith("~")) {
-            return false;
-        }
-        var normalized = databasePath.replace('\\', '/');
-        if (java.util.Arrays.stream(normalized.split("/")).anyMatch(".."::equals)) {
-            return false;
-        }
-        return isPathOrChild(normalized, "build/repository-source-data")
-            || isPathOrChild(normalized, "./build/repository-source-data")
-            || isPathOrChild(normalized, "build/repository-source-test-data")
-            || isPathOrChild(normalized, "./build/repository-source-test-data")
-            || isPathOrChild(normalized, "/var/lib/forensic-analytics/repository-source-data");
-    }
-
-    private static boolean isPathOrChild(String path, String root) {
-        return path.equals(root) || path.startsWith(root + "/");
-    }
 }
