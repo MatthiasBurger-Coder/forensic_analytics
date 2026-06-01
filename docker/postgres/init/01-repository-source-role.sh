@@ -25,6 +25,7 @@ WHERE NOT EXISTS (
 SELECT format('ALTER ROLE %I WITH LOGIN PASSWORD %L', :'repo_user', :'repo_password')\gexec
 
 GRANT CONNECT ON DATABASE :"db_name" TO :"repo_user";
+GRANT CREATE ON DATABASE :"db_name" TO :"repo_user";
 CREATE SCHEMA IF NOT EXISTS :"repo_schema" AUTHORIZATION :"repo_user";
 ALTER SCHEMA :"repo_schema" OWNER TO :"repo_user";
 GRANT USAGE, CREATE ON SCHEMA :"repo_schema" TO :"repo_user";

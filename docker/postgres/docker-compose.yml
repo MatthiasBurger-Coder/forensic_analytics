@@ -29,9 +29,32 @@ services:
       timeout: 5s
       retries: 10
 
+  forensic-pgadmin:
+    image: dpage/pgadmin4:9
+    container_name: forensic-pgadmin
+    restart: unless-stopped
+    depends_on:
+      forensic-postgres:
+        condition: service_healthy
+
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-admin@example.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-change-me-pgadmin}
+
+    ports:
+      - "127.0.0.1:${PGADMIN_PORT:-15432}:80"
+
+    volumes:
+      - forensic_pgadmin_data:/var/lib/pgadmin
+
+    networks:
+      - repository_source_db
+
 volumes:
   forensic_postgres_data:
     name: forensic_postgres_data
+  forensic_pgadmin_data:
+    name: forensic_pgadmin_data
 
 networks:
   repository_source_db:
