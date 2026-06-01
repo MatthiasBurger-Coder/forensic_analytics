@@ -64,6 +64,7 @@ export interface WorkspaceMetadataResponseDto {
   repositoryName?: unknown;
   workspaceTitle?: unknown;
   defaultBranch?: unknown;
+  repositoryBranches?: unknown;
   diagnostics?: unknown;
 }
 

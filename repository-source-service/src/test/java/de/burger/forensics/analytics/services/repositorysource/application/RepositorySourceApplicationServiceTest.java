@@ -558,6 +558,7 @@ class RepositorySourceApplicationServiceTest {
 
         assertEquals("example.com/acme/demo", preview.repository().repositoryKey().value());
         assertEquals("main", preview.repository().defaultBranch());
+        assertEquals(List.of("main"), preview.repositoryBranches());
         assertEquals("demo", preview.workspaceTitle().value());
         assertEquals(1, metadataPort.calls);
         assertEquals(0, workspacePort.branchCheckouts);
@@ -838,6 +839,45 @@ class RepositorySourceApplicationServiceTest {
         assertEquals("c".repeat(40), updated.branch().resolvedCommit());
         assertNotEquals(checkedOut.sourceSnapshotId(), updated.branch().sourceSnapshotId());
         assertEquals(3, checkoutPort.calls);
+    }
+
+    @Test
+    void marksRefreshFailedWithoutFetchingWhenRemoteBranchNoLongerExists() {
+        var idGenerator = new FixedRepositoryWorkspaceIdGenerator();
+        var workspacePort = new FakeWorkspacePort();
+        var checkoutPort = new SequencedCheckoutPort("b".repeat(40), "c".repeat(40));
+        var workspaceService = workspaceService(
+            idGenerator,
+            workspacePort,
+            checkoutPort,
+            new FakeMetadataPort("main", true, List.of("main"))
+        );
+        var workspace = workspaceService.createOrReuseRepositoryWorkspaceWithCheckout(
+            "checkout-key",
+            "schema-v1",
+            "correlation-1",
+            repository(),
+            new RepositoryWorkspaceBranchSelector("release/1.0", ""),
+            policy(),
+            Map.of()
+        );
+        var checkedOut = workspace.branches().getFirst();
+
+        var result = workspaceService.refreshRepositoryWorkspaceBranch(
+            "refresh-missing-remote",
+            "schema-v1",
+            "correlation-1",
+            workspace.workspaceId(),
+            checkedOut.workspaceBranchId(),
+            policy(),
+            Map.of()
+        );
+
+        assertFalse(result.changed());
+        assertEquals(RepositoryWorkspaceBranchStatus.FAILED, result.branch().status());
+        assertEquals("REMOTE_BRANCH_NOT_FOUND", result.diagnostics().getFirst().code());
+        assertEquals(1, checkoutPort.calls);
+        assertEquals(1, workspacePort.branchCheckouts);
     }
 
     @Test
@@ -1359,11 +1399,17 @@ class RepositorySourceApplicationServiceTest {
     private static final class FakeMetadataPort implements RepositoryMetadataPort {
         private final String defaultBranch;
         private final boolean resolved;
+        private final List<String> repositoryBranches;
         private int calls;
 
         private FakeMetadataPort(String defaultBranch, boolean resolved) {
+            this(defaultBranch, resolved, resolved ? List.of(defaultBranch) : List.of());
+        }
+
+        private FakeMetadataPort(String defaultBranch, boolean resolved, List<String> repositoryBranches) {
             this.defaultBranch = defaultBranch;
             this.resolved = resolved;
+            this.repositoryBranches = repositoryBranches;
         }
 
         @Override
@@ -1375,6 +1421,7 @@ class RepositorySourceApplicationServiceTest {
             return new RepositoryMetadataResolution(
                 RepositoryIdentity.from(repository, defaultBranch),
                 resolved,
+                repositoryBranches,
                 List.of(Diagnostic.info("DEFAULT_BRANCH_RESOLVED", "Repository default branch resolved"))
             );
         }

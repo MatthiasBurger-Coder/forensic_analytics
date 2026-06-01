@@ -169,7 +169,9 @@ export const CreateWorkspacePage = () => {
 
         setMetadata(result);
         setSelectedBranch((current) =>
-          current.trim() ? current : result.defaultBranch ?? ""
+          current.trim()
+            ? current
+            : result.defaultBranch ?? result.repositoryBranches[0] ?? ""
         );
         setPhase("ready-to-save");
         return result;
@@ -373,8 +375,10 @@ export const CreateWorkspacePage = () => {
               />
             </label>
             <label>
-              Selected branch
-              <input
+              Branches
+              <select
+                aria-label="Branches"
+                disabled={metadata === null}
                 value={selectedBranch}
                 onChange={(event) => {
                   setSelectedBranch(event.target.value);
@@ -382,8 +386,14 @@ export const CreateWorkspacePage = () => {
                   setRefreshResult(null);
                   setPhase(metadata ? "ready-to-save" : "idle");
                 }}
-                placeholder={metadata?.defaultBranch ?? "Optional branch"}
-              />
+              >
+                <option value="">Default branch</option>
+                {(metadata?.repositoryBranches ?? []).map((branch) => (
+                  <option key={branch} value={branch}>
+                    {branch}
+                  </option>
+                ))}
+              </select>
             </label>
           </div>
           <div className="button-row">
@@ -549,6 +559,9 @@ const BranchPanel = ({
         <dd>{branch.sourceSnapshotId ?? "Unavailable"}</dd>
       </div>
     </dl>
+    <p className="muted-text">
+      TBD: mark analysis data as stale when this branch changes.
+    </p>
     {branch.sourceRoots.length > 0 ? (
       <ul className="source-root-list">
         {branch.sourceRoots.map((sourceRoot) => (

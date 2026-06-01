@@ -106,6 +106,7 @@ describe("API DTO mapping", () => {
       repositoryName: "wildfly",
       workspaceTitle: "wildfly",
       defaultBranch: "main",
+      repositoryBranches: ["main", "release/1.0"],
       diagnostics: []
     });
 
@@ -115,8 +116,10 @@ describe("API DTO mapping", () => {
       repositoryOwner: "wildfly",
       repositoryName: "wildfly",
       workspaceTitle: "wildfly",
-      defaultBranch: "main"
+      defaultBranch: "main",
+      repositoryBranches: ["main", "release/1.0"]
     });
+    expect(metadata.repositoryBranches).toEqual(["main", "release/1.0"]);
   });
 
   it("maps repository checkout workspaces and sanitizes branch diagnostics", () => {

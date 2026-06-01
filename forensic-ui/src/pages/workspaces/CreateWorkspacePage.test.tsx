@@ -32,7 +32,7 @@ describe("CreateWorkspacePage", () => {
     await user.click(screen.getByRole("button", { name: /preview/i }));
 
     await waitFor(() => expect(title).toHaveValue("wildfly"));
-    expect(screen.getByLabelText("Selected branch")).toHaveValue("main");
+    expect(screen.getByLabelText("Branches")).toHaveValue("main");
     expect(screen.getByText("github.com/wildfly/wildfly")).toBeInTheDocument();
 
     const [command] = vi.mocked(services.workspaces.previewMetadata).mock
@@ -52,6 +52,7 @@ describe("CreateWorkspacePage", () => {
       repositoryName: "wildfly",
       workspaceTitle: "server-title",
       defaultBranch: null,
+      repositoryBranches: [],
       diagnostics: []
     });
 
@@ -63,7 +64,7 @@ describe("CreateWorkspacePage", () => {
     await waitFor(() =>
       expect(screen.getByLabelText("Workspace title")).toHaveValue("server-title")
     );
-    expect(screen.getByLabelText("Selected branch")).toHaveValue("");
+    expect(screen.getByLabelText("Branches")).toHaveValue("");
 
     await user.click(screen.getByRole("button", { name: /^save$/i }));
 
@@ -89,7 +90,7 @@ describe("CreateWorkspacePage", () => {
     await user.type(screen.getByLabelText("Repository URL"), WILDFLY_REPOSITORY_URL);
     await user.click(screen.getByRole("button", { name: /preview/i }));
     await screen.findByDisplayValue("wildfly");
-    expect(screen.getByLabelText("Selected branch")).toHaveValue("main");
+    expect(screen.getByLabelText("Branches")).toHaveValue("main");
 
     await user.clear(screen.getByLabelText("Repository URL"));
     await user.type(
@@ -97,7 +98,7 @@ describe("CreateWorkspacePage", () => {
       "https://github.com/example/project.git"
     );
 
-    expect(screen.getByLabelText("Selected branch")).toHaveValue("");
+    expect(screen.getByLabelText("Branches")).toHaveValue("");
   });
 
   it("ignores stale metadata responses after the repository URL changes", async () => {
@@ -125,6 +126,7 @@ describe("CreateWorkspacePage", () => {
       repositoryName: "wildfly",
       workspaceTitle: "wildfly",
       defaultBranch: "main",
+      repositoryBranches: ["main", "release/1.0"],
       diagnostics: []
     });
 
@@ -132,7 +134,7 @@ describe("CreateWorkspacePage", () => {
       expect(screen.getByRole("button", { name: /preview/i })).toBeEnabled()
     );
     expect(screen.getByLabelText("Workspace title")).toHaveValue("");
-    expect(screen.getByLabelText("Selected branch")).toHaveValue("");
+    expect(screen.getByLabelText("Branches")).toHaveValue("");
     expect(screen.queryByText("github.com/wildfly/wildfly")).not.toBeInTheDocument();
   });
 
@@ -189,8 +191,7 @@ describe("CreateWorkspacePage", () => {
     await user.click(screen.getByRole("button", { name: /^save$/i }));
     await screen.findByRole("heading", { name: "Workspace ready" });
 
-    await user.clear(screen.getByLabelText("Selected branch"));
-    await user.type(screen.getByLabelText("Selected branch"), "release/1.0");
+    await user.selectOptions(screen.getByLabelText("Branches"), "release/1.0");
     await user.click(screen.getByRole("button", { name: /^save$/i }));
 
     const first = vi.mocked(services.workspaces.createWorkspace).mock
@@ -316,6 +317,7 @@ describe("CreateWorkspacePage", () => {
       repositoryName: "wildfly",
       workspaceTitle: "wildfly",
       defaultBranch: "main",
+      repositoryBranches: ["main", "release/1.0"],
       diagnostics: [
         {
           id: "unsafe-diagnostic",
@@ -365,6 +367,7 @@ const servicesForWorkspaceFlow = (): ApplicationServices => ({
       repositoryName: "wildfly",
       workspaceTitle: "wildfly",
       defaultBranch: "main",
+      repositoryBranches: ["main", "release/1.0"],
       diagnostics: []
     }),
     createWorkspace: vi.fn().mockResolvedValue(workspace()),

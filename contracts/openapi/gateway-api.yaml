@@ -676,6 +676,11 @@ components:
           pattern: '^(?!(?i:.*(?:file:|https?://|/tmp|/mnt/|/home/|/users/|/var/lib/forensic-analytics|token|password|secret|credential|authorization))).*\S.*$'
         defaultBranch:
           type: [string, 'null']
+        repositoryBranches:
+          type: array
+          items:
+            type: string
+            pattern: '.*\S.*'
         diagnostics:
           type: array
           items:
