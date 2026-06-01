@@ -1,930 +1,533 @@
-# Workflow: Move Repository Workspace Metadata to PostgreSQL
+# Workflow: Repository Workspace Branch Selection And Refresh
 
 ## Executive Summary
 
-This workflow plans the migration of `repository-source-service` repository
-checkout workspace metadata from the Docker-local H2 MVP adapter to the
-existing `forensic-postgres` PostgreSQL database. The repository checkout bytes
-remain in the service-owned Docker volume. PostgreSQL owns only the
-repository-source metadata tables and idempotency records through
-`repository-source-service` as the single writer.
-
-The clarified runtime target is PostgreSQL for local runtime and production
-operation. H2 remains allowed only for tests and deterministic fixtures. A
-missing or unreachable PostgreSQL database must be reported by startup failure
-or storage health/readiness `DOWN`; it must not silently fall back to H2.
-
-The workflow now also plans an operator Settings path in the existing React UI
-and public API layer for repository-source PostgreSQL configuration. That path
-must be contract-first, must not expose or persist raw credentials without a
-verified secrets boundary, and must not let the UI connect directly to the
-database or repository-source private tables.
+This workflow plans repository workspace branch discovery, selection and refresh
+behavior across the repository-source backend, public contracts and React UI.
+The target is a workspace view where all verified remote branches are displayed
+in a `Branches` combobox, the selected branch is persisted as
+`workspace_branch`, and branch refresh is an explicit operator action.
 
 The workflow does not implement product code. It defines executable slices for
 `workflow execute`.
 
 ## Verified Baseline
 
-- Active branch: `feature/workflow-workspace-postgres-20260529`
-- Workflow version: `2026-05-31`
+- Active branch: `feature/workflow-workspace-branch-selection-20260601`
+- Workflow version: `2026-06-01`
 - Process strand: `workflow create`
 - Execution profile: `FULL_PATH`
 - Repository root: `/mnt/d/Projects/forensic_analytics`
-- Current owner service: `repository-source-service`
-- Current pre-cutover runtime persistence: H2 file adapter
-  `H2RepositorySourcePersistenceAdapter`
-- Current checkout byte storage:
-  `/var/lib/forensic-analytics/repository-workspaces`
-- Existing PostgreSQL container material:
-  `docker/postgres/docker-compose.yml`, service name `forensic-postgres`
+- Owner service: `repository-source-service`
 - Existing frontend module: `forensic-ui`
-- Existing settings route placeholder:
-  `forensic-ui/src/pages/settings/SettingsPage.tsx`
-- Existing public API gateway service: `query-report-api-service`
+- Existing repository workspace contract: `contracts/grpc/repository-analysis.proto`
 - Existing public REST contract: `contracts/openapi/gateway-api.yaml`
+- Existing persistence decision: ADR-0024 PostgreSQL for repository-source workspace metadata
 - Quality source: `QUALITY.md`
 
 ## Interpreted Intent
 
 The request is interpreted as:
 
-- Move repository checkout workspace metadata to PostgreSQL.
-- Use Liquibase to create and evolve the repository-source workspace schema.
-- Keep the checked-out repository files on the existing service-owned Docker
-  volume.
-- Keep H2 available for tests and deterministic fixtures only.
-- Make PostgreSQL the runtime and production persistence path.
-- Report missing or unreachable PostgreSQL explicitly through startup failure
-  or storage health/readiness instead of falling back to H2.
-- Add a contract-first operator Settings path for database configuration in
-  the existing UI and public API surface.
-- Work out the remaining changes autonomously from verified repository state.
+- Read all remote repository branches during workspace metadata resolution.
+- Show those branches in the GUI combobox named `Branches`.
+- Persist the selected branch as the active `workspace_branch`.
+- Treat the selected branch as the branch used by subsequent analysis.
+- Do not update branch content from the remote merely because a branch was
+  selected.
+- A selection may only update metadata/status, for example a red
+  not-up-to-date indicator; it must not fetch, checkout or replace local branch
+  content.
+- Mark selected branches that are not up to date with a red status indicator.
+- Refresh a branch only through an explicit `Update Branch` action.
+- Before refresh, verify that the remote branch still exists.
+- If the remote branch no longer exists, warn the operator before destructive
+  cleanup of referenced branch data.
+- Add a visible TBD note for the future stale-analysis-data requirement.
+- Treat workspace deletion as logical deletion first so accidental deletion can
+  be recovered through a future trash/final-delete workflow.
 
-`workspace` means the repository checkout workspace aggregate owned by
-`repository-source-service`, not the broader deferred platform workspace,
-membership, project, asset, audit or retention domain.
+## Requirement Clarification Gate
+
+Decision: `PROCEED_WITH_ACCEPTED_ASSUMPTIONS`
+
+Confidence: 86 percent.
+
+Accepted assumptions:
+
+- `repository-source-service` remains the owner of workspace branch metadata.
+- The public UI should use existing workspace API routes rather than direct Git
+  or database access.
+- The active analysis branch is represented by the selected persisted
+  `workspace_branch`.
+- A red not-up-to-date indicator can be represented by an explicit backend
+  branch status and frontend status styling.
+- Destructive branch cleanup after a missing remote branch requires an explicit
+  confirmation API and is a separate slice from safe detection.
+- Workspace trash/final-delete requires contract and persistence semantics and
+  must not be hidden inside the existing cleanup endpoint.
+
+Non-blocking open questions for `workflow execute`:
+
+- Exact wording of the destructive confirmation warning.
+- Whether final delete is operator-only or available to all UI users.
+- Which analysis stores must be cleaned once stale-analysis tracking exists.
+
+## Scope
+
+- Repository-source metadata resolution for remote branch lists.
+- gRPC and OpenAPI contract updates for branch lists and refresh/delete
+  semantics.
+- Repository-source application behavior for branch selection, status and
+  explicit refresh.
+- Repository-source persistence changes only when required by status, trash or
+  confirmation state.
+- React UI combobox, selected-branch state, branch list and actions.
+- Tests for backend, contracts, frontend mapping and UI behavior.
+- Documentation of deferred stale-analysis-data handling.
+
+## Non-Goals
+
+- No automatic analysis execution.
+- No guessing runtime execution facts from branch selection.
+- No direct UI access to Git remotes, PostgreSQL or repository-source private
+  tables.
+- No hidden fallback branch if the selected branch cannot be verified.
+- No deletion of analysis artifacts before the owning analysis store contract is
+  verified.
+- No automatic remote update during branch selection.
+- No `docker compose down -v` or destructive local volume reset.
 
 ## Target Picture
 
 ```text
-query-report-api-service and other consumers
-  -> repository-source-service owner API
-     -> forensic-postgres / repository_source schema
-        -> workspace metadata
-        -> workspace branch metadata
-        -> repository preparation records
-        -> repository-source idempotency records
-     -> repository-source-workspaces volume
-        -> checkout bytes and source packages
-
-forensic-ui Settings
-  -> query-report-api-service public Settings API
-     -> operator-token protected database Settings operations
-     -> contract-governed repository-source owner API handoff
-        -> write-only PostgreSQL password validation input
-        -> sanitized active configuration and validation diagnostics
-        -> restart-required apply semantics
+forensic-ui
+  -> public workspace API
+     -> repository-source-service owner API
+        -> Git metadata adapter: ls remote branches
+        -> repository workspace application
+        -> workspace_branch metadata
+        -> explicit branch refresh
+        -> logical workspace delete / trash state
 ```
 
-Liquibase creates the service-owned schema and tables inside the already
-available PostgreSQL database. The PostgreSQL server and database bootstrap
-remain Docker/operator responsibility through `forensic-postgres`.
-
-The Settings path is an operator configuration workflow. It is not forensic
-evidence, not a direct database client, and not a public exposure of
-repository-source private storage. S08 resolves the Settings safety boundary:
-Settings operations require an operator token, raw passwords are write-only
-request values, no raw credentials are persisted or returned, repository-source
-remains the owner for validation and status, and database changes are reported
-as `RESTART_REQUIRED`. Hot-apply remains unsupported until a later slice
-implements and tests reconnect semantics.
-
-## Scope
-
-- ADR and arc42 updates for the bounded PostgreSQL decision.
-- Repository-source Gradle dependencies and dependency verification metadata.
-- Repository-source typed persistence configuration.
-- Liquibase changelog for repository-source workspace metadata.
-- PostgreSQL JDBC adapter behind existing repository-source ports.
-- Bootstrap wiring from `persistence.type=postgres`.
-- Docker Compose integration with `forensic-postgres`.
-- Runtime default and Docker profile cutover to PostgreSQL.
-- H2 retention only for tests and deterministic fixtures.
-- Contract-governed Settings API for database configuration.
-- React Settings page wiring through the existing frontend adapter layer.
-- Regression tests for repository-source persistence behavior.
-- Documentation updates for runtime and local operator flow.
-
-## Non-Goals
-
-- No platform workspace, membership, project, asset, audit or retention
-  implementation.
-- No public REST, gRPC or UI contract change outside the explicit
-  contract-governed Settings slices.
-- No cross-service database access.
-- No storage of checkout bytes in PostgreSQL.
-- No Graph DB, Vector DB, replay, report or LLM storage decision.
-- No hidden H2 runtime compatibility mode after the PostgreSQL cutover.
-- No direct database access from the UI.
-- No committed, logged, browser-persisted or public-response database
-  credentials.
-- No automatic import of local H2 files unless a later slice verifies and
-  documents a one-off operator migration requirement.
-
-## Requirement Classification
-
-| Requirement | Classification | Trace |
-|---|---|---|
-| Store workspace metadata in PostgreSQL | Functional, architecture, persistence | User request, ADR-0013 |
-| Create schema through Liquibase | Functional, build/runtime, quality | User request |
-| Keep checkout bytes on a volume | Functional, security, data ownership | User request, service-boundary docs |
-| Preserve repository-source as owner and single writer | Architecture constraint | ADR-0013, data ownership docs |
-| Keep H2 only for tests and fixtures | Functional, quality constraint | User clarification, S07 preflight |
-| Report missing PostgreSQL explicitly | Resilience, observability | User clarification, S05/S07 health behavior |
-| Configure database through UI Settings | Functional, UX, security, contract | User clarification, existing `forensic-ui` Settings placeholder |
-| Govern external API shape through contracts | Contract constraint | Contract-first governance |
-| Preserve deterministic repository workspace behavior | Quality/evidence requirement | `QUALITY.md`, existing tests |
-
-## Assumptions
-
-- `forensic-postgres` is the PostgreSQL instance named by the request.
-- Liquibase creates schema objects inside `forensic_analytics`; it does not
-  create the PostgreSQL server or container.
-- PostgreSQL schema name should be service-owned, for example
-  `repository_source`.
-- Existing local H2 metadata does not need automatic migration unless the user
-  explicitly asks for state preservation before `workflow execute`.
-- Checkout byte retention is provided by the existing
-  `repository-source-workspaces` volume.
-- H2-backed tests may remain in the repository when they are explicitly scoped
-  as tests or fixtures and do not participate in runtime bootstrap selection.
-- The Settings UI uses the existing `forensic-ui` route and API adapter style.
-- Public Settings changes use `query-report-api-service` and
-  `contracts/openapi/gateway-api.yaml` unless a slice verifies a different
-  public contract owner before implementation.
+Remote branch names are data only. They must never be used directly as local
+paths or evidence of runtime execution.
 
 ## Architecture Constraints
 
-- `repository-source-service` remains the only writer for repository checkout
-  workspace metadata.
-- Other services may read workspace state only through repository-source owner
-  APIs and public facade APIs.
-- Domain and application packages remain framework-free and database-free.
-- JDBC, Liquibase and PostgreSQL code stays in bootstrap or outbound adapter
-  packages.
-- Private database table names, workspace paths, raw Git output and credentials
-  must not appear in public DTOs, diagnostics or UI responses.
-- H2 remains test and fixture infrastructure only after the cutover.
-- Operator-provided database settings must be validated and redacted before
-  they cross public API, UI state, logs or diagnostics boundaries.
-- UI Settings must call public application APIs only; it must not talk directly
-  to PostgreSQL or repository-source private database tables.
-- Public Settings operations must require an operator token. Missing token
-  configuration returns an unavailable Settings state rather than accepting
-  credential-bearing requests.
-- Database passwords may cross the public Settings request boundary only as
-  write-only values for validation. They must not be included in responses,
-  diagnostics, logs, idempotency fingerprints or persisted settings state.
+- Domain and application code remain independent from Git, PostgreSQL, REST,
+  gRPC and React implementation details.
+- Git operations stay in outbound adapters.
+- Public DTOs expose sanitized branch names and opaque workspace IDs only.
+- Branch selection must not fetch, checkout or mutate workspace bytes.
+- Branch status checks may contact the remote for metadata only when the
+  implementation can prove that no local checkout or workspace bytes are
+  updated as a side effect.
+- Branch refresh through `Update Branch` may fetch only after the target remote
+  branch is verified.
+- Missing remote branches must be represented explicitly; they must not be
+  silently mapped to a similarly named branch.
+- Workspace deletion must preserve recoverability until final-delete semantics
+  are explicitly executed.
 
 ## Backend Assessment
 
-The implementation must replace H2-specific persistence semantics:
+Backend work is centered on `repository-source-service`.
 
-- H2 `MERGE INTO ... KEY` must become PostgreSQL `INSERT ... ON CONFLICT`.
-- H2 CLOB columns must become PostgreSQL-compatible `TEXT` or explicitly typed
-  timestamp columns where the mapping is tested.
-- Schema creation must move out of adapter startup and into Liquibase.
-- Existing ports can remain stable:
-  `RepositoryWorkspaceRepository`, `RepositoryPreparationRepository`,
-  `RepositorySourceIdempotencyRepository`.
-- Bootstrap must select PostgreSQL from typed configuration and fail fast on
-  missing unsafe or ambiguous settings.
-- Runtime bootstrap must not include an H2 fallback path outside test fixtures.
-- Settings backend work uses repository-source as the owner for database
-  configuration status and validation. S08 does not persist operator database
-  settings and does not change runtime behavior while the service is running.
-  Responses must state `RESTART_REQUIRED` so operators know that accepted
-  settings must be applied through environment or secret configuration followed
-  by repository-source restart.
+Expected changes:
+
+- Extend metadata resolution with a deterministic list of remote branches.
+- Persist selected branch as a `RepositoryWorkspaceBranch`.
+- Add or verify branch statuses for selected, stale, missing-remote and updated
+  states.
+- Keep branch selection separate from checkout/refresh.
+- Add a remote-existence check before refresh.
+- Add an explicit confirmation path before deleting branch references after a
+  missing remote branch.
+- Extend cleanup semantics to logical deletion/trash before final deletion.
 
 ## Frontend Assessment
 
-Frontend implementation is now planned for database Settings. The existing
-`forensic-ui/src/pages/settings/SettingsPage.tsx` is a placeholder and the
-existing frontend uses application ports plus API adapters under
-`forensic-ui/src/application` and `forensic-ui/src/adapters/api`.
+Frontend work is centered on `forensic-ui`.
 
-The Settings UI must:
+Expected changes:
 
-- use the existing public API base path, not direct database connectivity;
-- keep secrets out of local storage, URL parameters, diagnostics and rendered
-  read-back values;
-- show PostgreSQL validation status without displaying raw JDBC URLs with
-  credentials;
-- preserve accessible form controls and deterministic validation messages;
-- remain separate from forensic evidence review and workspace data.
+- Map branch-list metadata from the public API.
+- Render `Branches` as a combobox.
+- Store the selected branch in local UI state until workspace save.
+- Show persisted branches below the view in a list.
+- Add `Update Branch` action for each persisted branch.
+- Show a red status indicator for not-up-to-date or missing-remote states.
+- Add the TBD note for future stale-analysis-data warnings.
+- Add workspace trash/final-delete affordances only after backend contract
+  support exists.
 
 ## Test Strategy
 
-- Preserve existing application-service tests against in-memory ports.
-- Add or replace persistence contract tests for PostgreSQL behavior.
-- Keep default Gradle tests independent from a live external database unless a
-  documented opt-in integration profile is introduced.
-- Verify Liquibase changelog content and adapter mapping deterministically.
-- Run repository-source targeted tests before the full local gate.
-- Run query-report-api contract and service tests for public Settings API
-  changes.
-- Run frontend unit/build checks for Settings UI changes.
-- Run Docker Compose `config` checks for changed deployment descriptors.
+- Backend unit tests for metadata branch-list parsing and sanitization.
+- Backend application tests for branch selection without remote update.
+- Backend application tests for missing-remote refresh warning and confirmation
+  behavior.
+- Persistence tests for any new status or logical-delete fields.
+- gRPC contract tests for field numbers and compatibility.
+- REST/OpenAPI DTO mapping tests.
+- React component tests for combobox, branch list, red status and action
+  enablement.
+- End-to-end or smoke checks only after targeted unit/component checks pass.
 
-## Resilience Requirements
+## Quality Gates
 
-- PostgreSQL startup or connectivity failures must fail fast or report DOWN
-  through a tested health/readiness path.
-- H2 runtime fallback must not mask missing PostgreSQL outside test fixtures.
-- Storage writes must stay transactional where workspace aggregate plus branch
-  rows are updated together.
-- Retried workspace operations must remain protected by existing idempotency
-  records.
-- Diagnostics must be sanitized and must not expose database URLs with
-  credentials, table names as user-facing evidence, private workspace paths or
-  raw Git output.
-- Settings validation must distinguish invalid configuration, unreachable
-  PostgreSQL and unsupported runtime apply semantics.
-
-## S08 Settings Contract Decision
-
-The S08 blocker is resolved with these non-guessing semantics:
-
-- Public REST protocol: `GET /settings/repository-source/database` for
-  sanitized active database Settings status and
-  `POST /settings/repository-source/database/validation` for candidate
-  validation.
-- Public Settings operations require `X-Operator-Token` and
-  `X-Correlation-Id`.
-- Repository-source owner gRPC protocol:
-  `GetRepositorySourceDatabaseSettings` returns sanitized active PostgreSQL
-  configuration status and
-  `ValidateRepositorySourceDatabaseSettings` validates candidate settings.
-- Password input is write-only. It may be present only in validation requests
-  and must never be returned, logged, stored in query-report-api-service state
-  or placed in public diagnostics.
-- `query-report-api-service` is a public facade and must not read
-  repository-source PostgreSQL tables. It delegates Settings status and
-  validation to repository-source through the owner gRPC contract.
-- S08 validates syntax and connectivity through repository-source, but it does
-  not persist changed credentials and does not hot-apply runtime settings.
-  Responses must return `applyMode: RESTART_REQUIRED` and
-  `hotApplySupported: false`.
-- Missing operator token configuration must produce a sanitized unavailable
-  Settings response. Missing or unreachable PostgreSQL must be reported as
-  `UNREACHABLE`, not converted into successful readiness.
-
-## Ordered Slices
-
-### Slice 01 - Governance Decision and Architecture Documents
-
-Purpose: record PostgreSQL as the bounded repository-source workspace metadata
-store and align architecture documentation before implementation.
-
-```yaml
-slice_id: S01
-profile: FULL_PATH
-owner: Senior System Architect
-secondary_reviewers:
-  - Senior Requirement Engineer
-  - Data Ownership And Persistence Steward
-  - ADR Steward
-affected_files:
-  - docs/adr/ADR-0024-postgres-for-repository-source-workspace-metadata.md
-  - docs/arc42/05-building-block-view.md
-  - docs/arc42/07-deployment-view.md
-  - docs/arc42/08-crosscutting-concepts.md
-  - docs/arc42/09-architecture-decisions.md
-  - docs/arc42/11-risks-and-technical-debt.md
-  - docs/architecture/data-ownership.md
-  - docs/architecture/service-boundaries.md
-affected_modules: []
-affected_contracts: []
-dependencies: []
-parallel_group: P1
-file_locks:
-  - docs/adr/**
-  - docs/arc42/**
-  - docs/architecture/**
-contract_locks: []
-architecture_locks:
-  - repository-source-data-ownership
-  - relational-store-decision
-quality_gates:
-  targeted:
-    - git diff --check
-  required:
-    - git diff --check
-documentation:
-  arc42: required
-  adr: required
-stop_conditions:
-  - PostgreSQL ownership conflicts with ADR-0013.
-  - The decision tries to turn PostgreSQL into shared cross-service storage.
-  - The broader platform workspace domain is confused with repository checkout workspace metadata.
-```
-
-### Slice 02 - Gradle Dependencies and Typed PostgreSQL Configuration
-
-Purpose: add verified PostgreSQL and Liquibase dependencies, dependency
-verification metadata and typed repository-source configuration.
-
-```yaml
-slice_id: S02
-profile: FULL_PATH
-owner: Senior Java Backend Developer
-secondary_reviewers:
-  - Senior DevOps Engineer
-  - Senior Tester
-affected_files:
-  - gradle/libs.versions.toml
-  - gradle/verification-metadata.xml
-  - repository-source-service/build.gradle.kts
-  - repository-source-service/src/main/resources/application.properties
-  - repository-source-service/src/main/resources/application-docker.properties
-  - repository-source-service/src/main/resources/application-test.properties
-  - repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/RepositorySourceServiceProperties.java
-  - repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/RepositorySourceServicePropertiesConfiguration.java
-  - repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/RepositorySourceServiceApplicationTest.java
-affected_modules:
-  - repository-source-service
-affected_contracts: []
-dependencies:
-  - S01
-parallel_group: P2
-file_locks:
-  - gradle/libs.versions.toml
-  - gradle/verification-metadata.xml
-  - repository-source-service/build.gradle.kts
-  - repository-source-service/src/main/resources/**
-  - repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/**
-  - repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/**
-contract_locks: []
-architecture_locks:
-  - repository-source-bootstrap-boundary
-quality_gates:
-  targeted:
-    - ./gradlew :repository-source-service:test --dependency-verification strict --console=plain --stacktrace
-  required:
-    - ./gradlew test --dependency-verification strict --console=plain --stacktrace
-documentation:
-  arc42: checked
-  adr: checked
-stop_conditions:
-  - Dependency verification metadata cannot be updated for new artifacts.
-  - PostgreSQL credentials are committed as secrets instead of configuration.
-  - Domain or application code receives Spring, JDBC, Liquibase or PostgreSQL dependencies.
-```
-
-### Slice 03 - Liquibase Repository-Source Schema
-
-Purpose: create the repository-source-owned PostgreSQL schema and metadata
-tables through Liquibase changelogs.
-
-```yaml
-slice_id: S03
-profile: FULL_PATH
-owner: Senior Java Backend Developer
-secondary_reviewers:
-  - Senior Analysis Storage Architect
-  - Senior Tester
-affected_files:
-  - repository-source-service/src/main/resources/db/changelog/repository-source-workspace.postgresql.yaml
-  - repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/adapter/out/postgres/PostgresRepositorySourceLiquibaseTest.java
-affected_modules:
-  - repository-source-service
-affected_contracts: []
-dependencies:
-  - S01
-  - S02
-parallel_group: P3
-file_locks:
-  - repository-source-service/src/main/resources/db/changelog/**
-  - repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/adapter/out/postgres/**
-contract_locks: []
-architecture_locks:
-  - repository-source-postgres-schema
-quality_gates:
-  targeted:
-    - ./gradlew :repository-source-service:test --dependency-verification strict --console=plain --stacktrace
-  required:
-    - ./gradlew test --dependency-verification strict --console=plain --stacktrace
-documentation:
-  arc42: checked
-  adr: checked
-stop_conditions:
-  - Liquibase changelog invents data not present in the existing repository-source domain model.
-  - Schema fields cannot be traced to existing H2 columns or verified domain records.
-  - Checkout bytes or source package bytes are moved into PostgreSQL.
-```
-
-### Slice 04 - PostgreSQL Persistence Adapter
-
-Purpose: implement a PostgreSQL outbound adapter for existing repository-source
-ports while preserving deterministic save/load semantics.
-
-```yaml
-slice_id: S04
-profile: FULL_PATH
-owner: Senior Java Backend Developer
-secondary_reviewers:
-  - Senior Analysis Storage Architect
-  - Senior System Architect
-  - Senior Tester
-affected_files:
-  - repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/adapter/out/postgres/**
-  - repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/application/RepositorySourcePostgresPersistenceApplicationTest.java
-  - repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/quality/RepositorySourceServiceArchitectureTest.java
-affected_modules:
-  - repository-source-service
-affected_contracts: []
-dependencies:
-  - S03
-parallel_group: P4
-file_locks:
-  - repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/adapter/out/postgres/**
-  - repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/application/**
-  - repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/quality/**
-contract_locks: []
-architecture_locks:
-  - hexagonal-outbound-adapter-boundary
-  - repository-source-persistence-ports
-quality_gates:
-  targeted:
-    - ./gradlew :repository-source-service:test --dependency-verification strict --console=plain --stacktrace
-  required:
-    - ./gradlew test --dependency-verification strict --console=plain --stacktrace
-documentation:
-  arc42: checked
-  adr: checked
-stop_conditions:
-  - Adapter exposes PostgreSQL classes outside adapter/bootstrap packages.
-  - SQL upsert semantics cannot preserve existing H2-tested behavior.
-  - Persistence failures are hidden as empty or successful results.
-```
-
-### Slice 05 - Bootstrap, Liquibase Execution and Health Wiring
-
-Purpose: wire PostgreSQL as the active repository-source persistence option,
-run Liquibase before repository creation and make storage readiness observable.
-
-```yaml
-slice_id: S05
-profile: FULL_PATH
-owner: Senior Java Backend Developer
-secondary_reviewers:
-  - Senior DevOps Engineer
-  - Observability And Runtime Diagnostics
-  - Senior Tester
-affected_files:
-  - repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/RepositorySourceServiceConfiguration.java
-  - repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/HealthHttpServerLifecycle.java
-  - repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/**
-  - repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/RepositorySourceServiceApplicationTest.java
-affected_modules:
-  - repository-source-service
-affected_contracts: []
-dependencies:
-  - S04
-parallel_group: P5
-file_locks:
-  - repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/**
-  - repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/**
-contract_locks: []
-architecture_locks:
-  - repository-source-bootstrap-boundary
-  - storage-readiness
-quality_gates:
-  targeted:
-    - ./gradlew :repository-source-service:test --dependency-verification strict --console=plain --stacktrace
-  required:
-    - ./gradlew test --dependency-verification strict --console=plain --stacktrace
-documentation:
-  arc42: checked
-  adr: checked
-stop_conditions:
-  - Liquibase can run after application use cases start accepting requests.
-  - Health reports UP when mandatory PostgreSQL persistence is unreachable.
-  - Database exception details leak credentials or private SQL diagnostics to public responses.
-```
-
-### Slice 06 - Docker Compose and Local PostgreSQL Runtime
-
-Purpose: connect repository-source Docker runtime to `forensic-postgres` while
-preserving the checkout workspace volume.
-
-```yaml
-slice_id: S06
-profile: FULL_PATH
-owner: Senior DevOps Engineer
-secondary_reviewers:
-  - Senior Java Backend Developer
-  - Security And Threat Modeling
-  - Senior Tester
-affected_files:
-  - docker/postgres/docker-compose.yml
-  - docker/postgres/.env.example
-  - deployment/docker-compose/services/repository-source-service.compose.yml
-  - deployment/docker-compose/repository-to-btm.local.yml
-  - deployment/docker-compose/setup.sh
-  - deployment/docker-compose/README.md
-affected_modules:
-  - repository-source-service
-affected_contracts: []
-dependencies:
-  - S05
-parallel_group: P6
-file_locks:
-  - docker/postgres/**
-  - deployment/docker-compose/**
-contract_locks: []
-architecture_locks:
-  - local-docker-network
-  - repository-source-private-volume
-quality_gates:
-  targeted:
-    - docker compose --env-file docker/postgres/.env.example -f docker/postgres/docker-compose.yml config
-    - docker compose -f deployment/docker-compose/services/repository-source-service.compose.yml -f deployment/docker-compose/forensic-analytics.local.yml config
-    - docker compose -f deployment/docker-compose/repository-to-btm.local.yml config
-  required:
-    - git diff --check
-documentation:
-  arc42: checked
-  adr: checked
-stop_conditions:
-  - The repository-source checkout volume is removed or mounted into another service.
-  - Repository-source reads PostgreSQL through a host-only path when container DNS is required.
-  - Secrets are added to committed Compose files.
-```
-
-### Slice 07 - PostgreSQL Runtime Default and H2 Test Boundary
-
-Purpose: make PostgreSQL the repository-source runtime and production
-persistence path, keep H2 only as test or fixture infrastructure, and document
-the operator policy for existing local H2 state.
-
-```yaml
-slice_id: S07
-profile: FULL_PATH
-owner: Data Ownership And Persistence Steward
-secondary_reviewers:
-  - Senior Java Backend Developer
-  - Observability And Runtime Diagnostics
-  - Senior Tester
-  - Senior Documentation Engineer
-affected_files:
-  - repository-source-service/src/main/resources/application.properties
-  - repository-source-service/src/main/resources/application-docker.properties
-  - repository-source-service/src/main/resources/application-test.properties
-  - repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/RepositorySourceServiceConfiguration.java
-  - repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/RepositorySourceServiceProperties.java
-  - repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/RepositorySourceServicePropertiesConfiguration.java
-  - repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/HealthHttpServerLifecycle.java
-  - repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/adapter/out/h2/H2RepositorySourcePersistenceAdapter.java
-  - repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/application/RepositorySourceH2PersistenceApplicationTest.java
-  - repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/RepositorySourceServiceApplicationTest.java
-  - repository-source-service/README.md
-  - docs/adr/ADR-0023-h2-for-repository-source-mvp-persistence.md
-  - docs/architecture/data-ownership.md
-affected_modules:
-  - repository-source-service
-affected_contracts: []
-dependencies:
-  - S06
-parallel_group: P7
-file_locks:
-  - repository-source-service/src/main/resources/**
-  - repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/**
-  - repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/adapter/out/h2/**
-  - repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/application/**
-  - repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/**
-  - repository-source-service/README.md
-  - docs/adr/ADR-0023-h2-for-repository-source-mvp-persistence.md
-  - docs/architecture/data-ownership.md
-contract_locks: []
-architecture_locks:
-  - h2-mvp-retirement
-  - repository-source-postgres-runtime-default
-  - storage-readiness
-quality_gates:
-  targeted:
-    - ./gradlew :repository-source-service:test --dependency-verification strict --console=plain --stacktrace
-  required:
-    - ./gradlew test --dependency-verification strict --console=plain --stacktrace
-documentation:
-  arc42: checked
-  adr: required
-stop_conditions:
-  - H2 remains selectable as an active runtime or Docker fallback.
-  - H2 tests are removed without PostgreSQL-independent test coverage for default gates.
-  - Missing or unreachable PostgreSQL is reported as successful readiness.
-  - Existing H2 data preservation is required but no explicit migration source and acceptance criteria are provided.
-  - Runtime properties default to H2 outside test scope.
-```
-
-### Slice 08 - Database Settings Contract and Backend Handoff
-
-Purpose: add the contract-first public Settings API and backend handoff for
-operator-managed repository-source PostgreSQL configuration without exposing
-secrets or bypassing service ownership.
-
-```yaml
-slice_id: S08
-profile: FULL_PATH
-owner: Contract-First API Steward
-secondary_reviewers:
-  - Senior Requirement Engineer
-  - Senior System Architect
-  - Senior Java Backend Developer
-  - Data Ownership And Persistence Steward
-  - Security And Threat Modeling
-  - Observability And Runtime Diagnostics
-  - Senior Tester
-affected_files:
-  - contracts/openapi/gateway-api.yaml
-  - contracts/openapi/README.md
-  - contracts/grpc/repository-analysis.proto
-  - contracts/grpc/README.md
-  - query-report-api-service/src/main/java/de/burger/forensics/analytics/services/queryreportapi/adapter/in/http/QueryReportApiHttpHandler.java
-  - query-report-api-service/src/main/java/de/burger/forensics/analytics/services/queryreportapi/adapter/out/grpc/RepositorySourceSettingsGrpcClient.java
-  - query-report-api-service/src/main/java/de/burger/forensics/analytics/services/queryreportapi/application/QueryReportApiSettingsService.java
-  - query-report-api-service/src/main/java/de/burger/forensics/analytics/services/queryreportapi/application/port/RepositorySourceSettingsOwnerPort.java
-  - query-report-api-service/src/main/java/de/burger/forensics/analytics/services/queryreportapi/domain/QueryReportApiSettings.java
-  - query-report-api-service/src/main/java/de/burger/forensics/analytics/services/queryreportapi/**
-  - query-report-api-service/src/main/resources/**
-  - query-report-api-service/src/test/java/de/burger/forensics/analytics/services/queryreportapi/**
-  - repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/adapter/in/grpc/RepositorySourceGrpcEndpoint.java
-  - repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/adapter/in/grpc/RepositorySourceContractTest.java
-  - repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/adapter/in/grpc/RepositorySourceGrpcEndpointTest.java
-  - repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/**
-  - repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/**
-  - docs/architecture/data-ownership.md
-  - docs/architecture/service-boundaries.md
-affected_modules:
-  - query-report-api-service
-  - repository-source-service
-affected_contracts:
-  - contracts/openapi/gateway-api.yaml
-  - contracts/grpc/repository-analysis.proto
-dependencies:
-  - S07
-parallel_group: P8
-file_locks:
-  - contracts/openapi/**
-  - contracts/grpc/**
-  - query-report-api-service/src/main/**
-  - query-report-api-service/src/test/**
-  - repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/adapter/in/grpc/**
-  - repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/adapter/in/grpc/**
-  - repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/**
-  - repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/**
-  - docs/architecture/data-ownership.md
-  - docs/architecture/service-boundaries.md
-contract_locks:
-  - public-settings-api
-  - repository-source-settings-handoff
-architecture_locks:
-  - settings-ownership
-  - secret-redaction
-  - repository-source-configuration-boundary
-quality_gates:
-  targeted:
-    - ./gradlew :query-report-api-service:test --dependency-verification strict --console=plain --stacktrace
-    - ./gradlew :repository-source-service:test --dependency-verification strict --console=plain --stacktrace
-  required:
-    - ./gradlew test --dependency-verification strict --console=plain --stacktrace
-documentation:
-  arc42: checked
-  adr: checked
-stop_conditions:
-  - REST or gRPC Settings fields, methods, status codes or error models would need to be guessed.
-  - Settings ownership, operator-token protection, write-only password handling or persistence boundaries are unclear.
-  - Raw database passwords are returned to the UI, stored in browser state, logged or committed.
-  - The UI or query-report-api-service reads repository-source private PostgreSQL tables directly.
-  - Runtime apply or restart semantics for changed database settings are undocumented or claimed as hot-applied.
-  - Settings validation accepts missing operator authentication or reports unreachable PostgreSQL as valid.
-```
-
-### Slice 09 - React Database Settings UI
-
-Purpose: replace the Settings placeholder with an operator workflow for
-viewing sanitized PostgreSQL configuration status, validating new database
-settings and submitting them through the public Settings API.
-
-```yaml
-slice_id: S09
-profile: FULL_PATH
-owner: Senior React Frontend Developer
-secondary_reviewers:
-  - Senior UX Designer
-  - Security And Threat Modeling
-  - Senior Tester
-affected_files:
-  - forensic-ui/src/pages/settings/SettingsPage.tsx
-  - forensic-ui/src/adapters/api/**
-  - forensic-ui/src/application/**
-  - forensic-ui/src/domain/**
-  - forensic-ui/src/app/App.test.tsx
-  - forensic-ui/src/styles.css
-affected_modules:
-  - forensic-ui
-affected_contracts:
-  - contracts/openapi/gateway-api.yaml
-dependencies:
-  - S08
-parallel_group: P9
-file_locks:
-  - forensic-ui/src/pages/settings/**
-  - forensic-ui/src/adapters/api/**
-  - forensic-ui/src/application/**
-  - forensic-ui/src/domain/**
-  - forensic-ui/src/app/**
-  - forensic-ui/src/styles.css
-contract_locks:
-  - public-settings-api
-architecture_locks:
-  - frontend-api-adapter-boundary
-  - secret-redaction
-quality_gates:
-  targeted:
-    - cd forensic-ui && npm run test
-    - cd forensic-ui && npm run build
-  required:
-    - ./gradlew test --dependency-verification strict --console=plain --stacktrace
-documentation:
-  arc42: checked
-  adr: checked
-stop_conditions:
-  - Database credentials are written to local storage, URL parameters, diagnostics or rendered read-back fields.
-  - The UI calls PostgreSQL or repository-source private endpoints directly.
-  - Settings validation cannot distinguish invalid input, unreachable PostgreSQL and unsupported apply semantics.
-  - Existing workspace and analysis UI flows regress without test coverage.
-```
-
-### Slice 10 - End-to-End Verification and Release Readiness
-
-Purpose: run the targeted and repository quality gates, inspect diffs and
-record final workflow execution evidence.
-
-```yaml
-slice_id: S10
-profile: FULL_PATH
-owner: Senior Tester
-secondary_reviewers:
-  - Quality Gate Orchestrator
-  - Senior DevOps Engineer
-  - Senior System Architect
-  - Senior React Frontend Developer
-affected_files:
-  - docs/workflow/execution-report.md
-  - docs/workflow/quality-and-leakage-gates.md
-affected_modules:
-  - repository-source-service
-  - query-report-api-service
-  - forensic-ui
-affected_contracts: []
-dependencies:
-  - S09
-parallel_group: P10
-file_locks:
-  - docs/workflow/execution-report.md
-  - docs/workflow/quality-and-leakage-gates.md
-contract_locks: []
-architecture_locks:
-  - release-readiness
-quality_gates:
-  targeted:
-    - ./gradlew :repository-source-service:test --dependency-verification strict --console=plain --stacktrace
-    - ./gradlew :query-report-api-service:test --dependency-verification strict --console=plain --stacktrace
-    - cd forensic-ui && npm run test
-    - cd forensic-ui && npm run build
-    - docker compose --env-file docker/postgres/.env.example -f docker/postgres/docker-compose.yml config
-    - docker compose -f deployment/docker-compose/repository-to-btm.local.yml config
-  required:
-    - ./gradlew test --dependency-verification strict --console=plain --stacktrace
-    - ./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace
-    - git diff --check
-documentation:
-  arc42: checked
-  adr: checked
-stop_conditions:
-  - Any required quality gate fails.
-  - Diff inspection finds unrelated or unowned changes.
-  - PostgreSQL runtime is claimed without executed runtime evidence.
-  - Settings UI or API readiness is claimed without contract and frontend verification.
-```
-
-## Dependency Summary
-
-```text
-S01
-  -> S02
-    -> S03
-      -> S04
-        -> S05
-          -> S06
-            -> S07
-              -> S08
-                -> S09
-                  -> S10
-```
-
-No slices are safely parallelizable because the persistence decision, build
-configuration, schema, adapter, runtime wiring, H2 test-boundary cutover,
-Settings contract, Settings UI and release evidence form a single ordered
-cutover.
-
-## Role Ownership Map
-
-| Role | Ownership |
-|---|---|
-| Senior Requirement Engineer | Requirement interpretation, EPIC drift and assumption tracking |
-| Senior System Architect | ADR, arc42, hexagonal and service-boundary validation |
-| Senior Java Backend Developer | Repository-source configuration, Liquibase, JDBC adapter and tests |
-| Senior React Frontend Developer | Settings UI implementation, API adapter wiring and frontend tests |
-| Senior UX Designer | Settings interaction design, accessibility and operator workflow clarity |
-| Senior Tester | Regression strategy, quality gate selection and final verification |
-| Data Ownership And Persistence Steward | One-writer persistence model and H2 retirement policy |
-| Senior Analysis Storage Architect | Schema responsibility, metadata/provenance storage checks |
-| Senior DevOps Engineer | Docker Compose, local runtime, dependency verification and operator commands |
-| Security And Threat Modeling | Credentials, network, diagnostics and private path leakage review |
-| Observability And Runtime Diagnostics | Health/readiness and sanitized failure reporting |
-| Contract-First API Steward | Public Settings API and repository-source handoff governance |
-
-No callable subagents were used while authoring this workflow; the matching
-skills and role files were applied as local review checklists.
-
-## Quality Gate Expectations
-
-Minimum repository quality command:
+Minimum required command:
 
 ```bash
 ./gradlew test --dependency-verification strict --console=plain --stacktrace
 ```
 
-Full local quality gate:
+Targeted frontend commands:
+
+```bash
+npm test -- --run src/pages/workspaces/CreateWorkspacePage.test.tsx src/pages/workspaces/WorkspaceListPage.test.tsx src/adapters/api/mappers.test.ts
+npm run build
+```
+
+Targeted backend command:
+
+```bash
+./gradlew :repository-source-service:test --dependency-verification strict --console=plain --stacktrace
+```
+
+Full local quality gate before publication when practical:
 
 ```bash
 ./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace
 ```
 
-Slice-specific Docker model checks are required when Compose files change.
-Frontend Settings slices must run the verified `forensic-ui` test and build
-commands.
-Live PostgreSQL startup checks are optional unless the executing slice records
-Docker availability and intentionally runs the runtime scenario.
+## Ordered Slices
 
-## Documentation Synchronization Points
+### Slice 01 - Branch Metadata Contract
 
-- S01 updates ADR and arc42 before implementation.
-- S06 updates Docker runtime documentation.
-- S07 updates H2 test-boundary and PostgreSQL runtime-default policy.
-- S08 updates contract and service-boundary documentation for Settings.
-- S09 updates frontend Settings behavior and UI-facing documentation when
-  needed.
-- S10 updates workflow execution evidence after verification.
+Purpose: expose verified remote branch names through owner and public contracts.
+
+```yaml
+slice_id: S01_BRANCH_METADATA_CONTRACT
+profile: FULL_PATH
+owner: Senior Java Backend Developer
+secondary_reviewers:
+  - Contract-First API Steward
+  - Senior Tester
+affected_files:
+  - contracts/grpc/repository-analysis.proto
+  - contracts/openapi/gateway-api.yaml
+  - repository-source-service/src/main/java/**
+  - repository-source-service/src/test/java/**
+affected_modules:
+  - repository-source-service
+affected_contracts:
+  - repository-analysis.proto
+  - gateway-api.yaml
+dependencies: []
+parallel_group: P1
+file_locks:
+  - contracts/grpc/repository-analysis.proto
+  - contracts/openapi/gateway-api.yaml
+contract_locks:
+  - repository workspace metadata response
+architecture_locks:
+  - repository-source owner API
+quality_gates:
+  targeted:
+    - ./gradlew :repository-source-service:test --dependency-verification strict --console=plain --stacktrace
+  required:
+    - ./gradlew test --dependency-verification strict --console=plain --stacktrace
+documentation:
+  arc42: check
+  adr: not-required
+stop_conditions:
+  - remote branch contract cannot be added compatibly
+  - branch names cannot be sanitized as data-only values
+```
+
+Done criteria:
+
+- Metadata responses contain deterministic remote branch lists.
+- Contract tests pin new field numbers.
+- Missing branch-list metadata is represented as an empty list, not guessed.
+
+### Slice 02 - Branch Selection And Status Semantics
+
+Purpose: persist the selected branch as `workspace_branch` without remote
+refresh and mark stale/not-up-to-date state explicitly.
+
+```yaml
+slice_id: S02_BRANCH_SELECTION_STATUS
+profile: FULL_PATH
+owner: Senior Java Backend Developer
+secondary_reviewers:
+  - Senior System Architect
+  - Senior Tester
+affected_files:
+  - repository-source-service/src/main/java/**
+  - repository-source-service/src/test/java/**
+  - repository-source-service/src/main/resources/db/**
+affected_modules:
+  - repository-source-service
+affected_contracts:
+  - repository workspace branch status
+dependencies:
+  - S01_BRANCH_METADATA_CONTRACT
+parallel_group: P2
+file_locks:
+  - repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/**
+  - repository-source-service/src/main/resources/db/**
+contract_locks:
+  - workspace_branch state semantics
+architecture_locks:
+  - hexagonal repository-source boundary
+quality_gates:
+  targeted:
+    - ./gradlew :repository-source-service:test --dependency-verification strict --console=plain --stacktrace
+  required:
+    - ./gradlew test --dependency-verification strict --console=plain --stacktrace
+documentation:
+  arc42: check
+  adr: check-if-persistence-status-added
+stop_conditions:
+  - selecting a branch would fetch remote content
+  - active analysis branch cannot be traced to workspace_branch
+```
+
+Done criteria:
+
+- Selecting a branch creates or selects a `workspace_branch`.
+- No remote fetch happens during selection.
+- The active branch for later analysis is unambiguous.
+- Not-up-to-date state is explicit and visible to the frontend.
+
+### Slice 03 - Frontend Branch Combobox And Branch List
+
+Purpose: show all branches in `Branches`, persist selection, render branch list
+and add `Update Branch` actions plus TBD stale-analysis note.
+
+```yaml
+slice_id: S03_FRONTEND_BRANCH_UI
+profile: FULL_PATH
+owner: Senior React Frontend Developer
+secondary_reviewers:
+  - Senior UX Designer
+  - Senior Tester
+affected_files:
+  - forensic-ui/src/domain/workspace.ts
+  - forensic-ui/src/adapters/api/**
+  - forensic-ui/src/pages/workspaces/**
+  - forensic-ui/src/styles.css
+affected_modules:
+  - forensic-ui
+affected_contracts:
+  - gateway-api.yaml
+dependencies:
+  - S01_BRANCH_METADATA_CONTRACT
+  - S02_BRANCH_SELECTION_STATUS
+parallel_group: P3
+file_locks:
+  - forensic-ui/src/domain/workspace.ts
+  - forensic-ui/src/adapters/api/**
+  - forensic-ui/src/pages/workspaces/**
+contract_locks:
+  - workspace metadata REST DTO
+architecture_locks:
+  - frontend adapter boundary
+quality_gates:
+  targeted:
+    - npm test -- --run src/pages/workspaces/CreateWorkspacePage.test.tsx src/pages/workspaces/WorkspaceListPage.test.tsx src/adapters/api/mappers.test.ts
+    - npm run build
+  required:
+    - ./gradlew test --dependency-verification strict --console=plain --stacktrace
+documentation:
+  arc42: not-required
+  adr: not-required
+stop_conditions:
+  - frontend derives branch names locally
+  - UI text claims analysis data is stale before backend evidence exists
+```
+
+Done criteria:
+
+- `Branches` combobox is populated from API metadata.
+- Selected branch is passed unchanged to workspace creation.
+- Branch list renders persisted branches below the workspace view.
+- `Update Branch` action is available only when backend state permits it.
+- TBD stale-analysis note is visible and clearly non-final behavior.
+
+### Slice 04 - Explicit Branch Update And Missing Remote Warning
+
+Purpose: make branch refresh explicit and protect missing-remote destructive
+cleanup behind a warning and confirmation contract.
+
+```yaml
+slice_id: S04_BRANCH_UPDATE_WARNING
+profile: FULL_PATH
+owner: Senior Java Backend Developer
+secondary_reviewers:
+  - Contract-First API Steward
+  - Senior React Frontend Developer
+  - Senior Tester
+affected_files:
+  - contracts/grpc/repository-analysis.proto
+  - contracts/openapi/gateway-api.yaml
+  - repository-source-service/src/main/java/**
+  - repository-source-service/src/test/java/**
+  - forensic-ui/src/pages/workspaces/**
+affected_modules:
+  - repository-source-service
+  - forensic-ui
+affected_contracts:
+  - branch refresh
+  - destructive cleanup confirmation
+dependencies:
+  - S02_BRANCH_SELECTION_STATUS
+  - S03_FRONTEND_BRANCH_UI
+parallel_group: P4
+file_locks:
+  - contracts/grpc/repository-analysis.proto
+  - contracts/openapi/gateway-api.yaml
+  - repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/**
+  - forensic-ui/src/pages/workspaces/**
+contract_locks:
+  - branch refresh warning and confirmation
+architecture_locks:
+  - no fabricated evidence
+quality_gates:
+  targeted:
+    - ./gradlew :repository-source-service:test --dependency-verification strict --console=plain --stacktrace
+    - npm test -- --run src/pages/workspaces/WorkspaceListPage.test.tsx
+  required:
+    - ./gradlew test --dependency-verification strict --console=plain --stacktrace
+documentation:
+  arc42: check
+  adr: check-if-destructive-confirmation-contract-added
+stop_conditions:
+  - missing remote branch is silently ignored
+  - referenced data is deleted without explicit confirmation
+  - analysis results are deleted without verified owner contract
+```
+
+Done criteria:
+
+- `Update Branch` is the only action that loads remote branch content.
+- Refresh checks remote branch existence before fetching.
+- Missing remote branch returns a warning state.
+- Destructive cleanup requires explicit confirmation.
+- Existing branch data is preserved when confirmation is absent.
+
+### Slice 05 - Workspace Trash And Final Delete Planning
+
+Purpose: introduce recoverable workspace deletion and separate final deletion
+from the current cleanup behavior.
+
+```yaml
+slice_id: S05_WORKSPACE_TRASH_DELETE
+profile: FULL_PATH
+owner: Senior Java Backend Developer
+secondary_reviewers:
+  - Data Ownership & Persistence Steward
+  - Senior React Frontend Developer
+  - Senior Tester
+affected_files:
+  - contracts/grpc/repository-analysis.proto
+  - contracts/openapi/gateway-api.yaml
+  - repository-source-service/src/main/java/**
+  - repository-source-service/src/main/resources/db/**
+  - repository-source-service/src/test/java/**
+  - forensic-ui/src/pages/workspaces/**
+affected_modules:
+  - repository-source-service
+  - forensic-ui
+affected_contracts:
+  - workspace cleanup
+  - workspace trash
+  - final delete
+dependencies:
+  - S04_BRANCH_UPDATE_WARNING
+parallel_group: P5
+file_locks:
+  - repository-source-service/src/main/resources/db/**
+  - repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/**
+  - forensic-ui/src/pages/workspaces/**
+contract_locks:
+  - workspace deletion lifecycle
+architecture_locks:
+  - data ownership and analysis-result cleanup ownership
+quality_gates:
+  targeted:
+    - ./gradlew :repository-source-service:test --dependency-verification strict --console=plain --stacktrace
+    - npm test -- --run src/pages/workspaces/WorkspaceListPage.test.tsx
+  required:
+    - ./gradlew test --dependency-verification strict --console=plain --stacktrace
+documentation:
+  arc42: update
+  adr: required-if-persistence-lifecycle-changes
+stop_conditions:
+  - analysis result ownership cannot be verified
+  - final delete would remove data outside repository-source ownership
+  - restore semantics are unclear
+```
+
+Done criteria:
+
+- Workspace deletion first marks a recoverable deleted/trash state.
+- Final delete is a separate explicit operation.
+- Analysis-result cleanup is deferred until each owner store contract is
+  verified.
+- UI distinguishes delete, restore and final delete.
+
+## Dependency Summary
+
+```text
+S01_BRANCH_METADATA_CONTRACT
+  -> S02_BRANCH_SELECTION_STATUS
+      -> S03_FRONTEND_BRANCH_UI
+          -> S04_BRANCH_UPDATE_WARNING
+              -> S05_WORKSPACE_TRASH_DELETE
+```
+
+No slice is safely parallelizable because the contract and state semantics are
+shared across backend and frontend.
+
+## Role Ownership
+
+- Senior Requirement Engineer: requirement traceability and open-question
+  control.
+- Senior System Architect: hexagonal boundaries and service ownership.
+- Senior Java Backend Developer: repository-source implementation.
+- Senior React Frontend Developer: UI state and API adapter integration.
+- Senior UX Designer: branch status and warning flow.
+- Senior Tester: regression and quality gate strategy.
+- Contract-First API Steward: gRPC/OpenAPI changes.
+- Data Ownership & Persistence Steward: trash/final-delete and analysis-result
+  ownership.
 
 ## Stop Conditions
 
-Stop workflow execution when:
+- Required contract, class, field, table or status cannot be verified.
+- Any implementation would infer runtime execution from branch selection.
+- Any cleanup would delete analysis data without verified owner contract.
+- Remote branch existence cannot be checked deterministically.
+- UI would hide missing remote or stale status.
+- Quality commands from `QUALITY.md` fail.
 
-- PostgreSQL ownership is unclear or becomes cross-service shared storage.
-- Liquibase table names or columns would need to be guessed.
-- The repository checkout volume is removed or mounted by a non-owner service.
-- Public API shape changes without contract governance.
-- Domain/application code depends on JDBC, Liquibase, PostgreSQL or Spring.
-- Credentials, private paths or raw Git output would leak into public
-  diagnostics.
-- Existing H2 state must be preserved but migration inputs are not explicitly
-  verified.
-- Settings ownership, security model or runtime apply semantics are unclear.
-- UI Settings would expose or persist database credentials.
-- Required Gradle, dependency verification or Compose checks fail.
+## Definition Of Done
 
-## Handoff to Workflow Execute
+- All five slices complete or intentionally deferred with documented blockers.
+- Targeted backend and frontend tests pass.
+- Repository minimum quality gate passes.
+- Contracts and tests agree on field numbers and DTO shapes.
+- Branch selection, refresh and delete semantics are documented.
+- No direct database, Git or workspace-path leakage reaches the UI.
 
-This workflow is ready for `workflow execute` under the documented assumptions.
-Implementation must execute slices in order and must not change production code
-before the owning role review for each slice is complete.
+## Handoff To Workflow Execute
 
-## Definition of Done
-
-- PostgreSQL decision is documented and bounded to repository-source workspace
-  metadata.
-- Liquibase creates the service-owned repository-source schema.
-- Repository-source persistence uses PostgreSQL for workspace metadata,
-  branch metadata, repository preparation and idempotency records.
-- Checkout bytes remain on the repository-source workspace volume.
-- H2 is no longer an active hidden runtime fallback.
-- H2 remains available only for tests and deterministic fixtures.
-- Missing or unreachable PostgreSQL is reported through startup failure or
-  storage health/readiness instead of fallback.
-- Public Settings API and React Settings UI are implemented through
-  contract-governed slices without exposing database credentials.
-- Required quality gates pass and are recorded.
+Run `workflow execute` only after reviewing this workflow and confirming the
+accepted assumptions remain valid. `workflow execute` must execute slices in
+dependency order and stop on any missing contract, unverified owner, or failed
+quality gate.

@@ -1,36 +1,27 @@
 # Workflow Context Pack
 
-## Identity
+## Workflow
 
-- Workflow: Move Repository Workspace Metadata to PostgreSQL
-- Version: 2026-05-31
-- Branch: `feature/workflow-workspace-postgres-20260529`
-- Process strand: `workflow execute`
+- Name: Repository Workspace Branch Selection And Refresh
+- Version: `2026-06-01`
+- Branch: `feature/workflow-workspace-branch-selection-20260601`
+- Process strand: `workflow create`
 - Execution profile: `FULL_PATH`
-- Last workflow update: 2026-05-31 after S08 Settings safety-boundary
-  resolution.
 
 ## Affected Areas
 
 - `repository-source-service`
-- Repository-source persistence ports and outbound adapters
-- Repository-source Spring bootstrap wiring
-- Liquibase changelog resources
-- Local Docker Compose runtime with `forensic-postgres`
-- Query-report public Settings API and repository-source configuration handoff
-- React Settings UI under `forensic-ui`
-- ADR, arc42 and architecture ownership documentation
+- `forensic-ui`
+- `contracts/grpc/repository-analysis.proto`
+- `contracts/openapi/gateway-api.yaml`
+- repository workspace metadata and branch refresh semantics
 
 ## Forbidden Areas
 
-- Platform workspace membership, project, asset, audit or retention features
-- Public REST/gRPC contract changes without contract governance
-- Cross-service database access
-- Checkout byte storage in PostgreSQL
-- Graph, vector, replay, report or LLM persistence decisions
-- Hidden H2 compatibility fallback
-- Direct database access from UI code
-- Committed, logged, browser-persisted or public-response database credentials
+- Runtime replay, graph, LLM and report evidence semantics.
+- Direct UI database or Git access.
+- Deleting analysis results without verified owner contracts.
+- Docker volume deletion outside explicit final-delete requirements.
 
 ## Required Roles
 
@@ -38,32 +29,18 @@
 - Senior System Architect
 - Senior Java Backend Developer
 - Senior React Frontend Developer
-- Senior UX Designer
 - Senior Tester
-
-## Conditional Roles
-
-- Data Ownership And Persistence Steward
-- Senior Analysis Storage Architect
-- Senior DevOps Engineer
-- Security And Threat Modeling
-- Observability And Runtime Diagnostics
 - Contract-First API Steward
-- ADR Steward
-- Quality Gate Orchestrator
+- Data Ownership & Persistence Steward
 
 ## Required Quality Commands
 
-```bash
-./gradlew test --dependency-verification strict --console=plain --stacktrace
-./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace
-git diff --check
-```
+- `./gradlew test --dependency-verification strict --console=plain --stacktrace`
+- `./gradlew :repository-source-service:test --dependency-verification strict --console=plain --stacktrace`
+- `npm test -- --run src/pages/workspaces/CreateWorkspacePage.test.tsx src/pages/workspaces/WorkspaceListPage.test.tsx src/adapters/api/mappers.test.ts`
+- `npm run build`
 
-Docker Compose model checks are required for slices that change Compose files.
-`forensic-ui` test and build commands are required for Settings UI slices.
-
-## Governing File Hashes
+## Source Hashes
 
 | File | SHA-256 |
 |---|---|
@@ -73,29 +50,7 @@ Docker Compose model checks are required for slices that change Compose files.
 | `.agents/orchestrator/swarm-orchestrator.md` | `860d2ad867b08838d8155ffaa580bec50f708b40eacef91920e65e76040eded8` |
 | `.agents/skills/workflow-authoring/SKILL.md` | `d87950d6d9ca831a4201b660c6bef373cb85be829f21694a323dbb9b8544d801` |
 | `.agents/skills/three-amigos-requirement-gatekeeper/SKILL.md` | `95c04f47127f5149bb39a7e1b82b2690803cc765cad5d18274a82d415931e9ad` |
-| `.agents/skills/requirement-engineering/SKILL.md` | `b0b9dc247219b1987b729d0b44818cf1b3b5e95f51c8ddbd83c14be7b0958b9f` |
-| `.agents/skills/execution-profile-router/SKILL.md` | `dfd2fc367bb9ab856e9482d3088690795ee1805b7c84ad462281b2350ca2f62b` |
-| `.agents/skills/data-ownership-persistence-steward/SKILL.md` | `a2d4461f773ab7d0d4a66e63cef4ccb171b048e678a889db29f4ae5f5904d942` |
-| `.agents/skills/contract-governance-expert/SKILL.md` | `94918e9b72bbb20848b1e894382e0318a96645fff18ca742d732b53c0118e19c` |
-| `.agents/skills/security-threat-modeling/SKILL.md` | `45a9a79a39899a1329556baefd0fbef1cec13cc2f1fbf40471c790ceff962b0c` |
-| `.agents/skills/observability-runtime-diagnostics/SKILL.md` | `5bb099304e60494fe52180761490464afdfc684c1f88e4ffda3eaaaaa2602fb1` |
-| `.agents/skills/frontend-react/SKILL.md` | `9120d067985836d8a0045cd4104fdba4c31b6236771b0465fb0de6ac1694baa1` |
-| `.agents/skills/frontend-ux-guidelines/SKILL.md` | `7ec39570c2d7684d8887a9b52c451f020ea70981a1a4ced4175c142513087a9d` |
-| `docs/workflow/workflow.md` | `f9689c30524b1509032cc3567c3bad9a60579649adfef5f5f8969e822d60056f` |
-| `docs/workflow/workflow.history.md` | `7fe1f5fabee460fc1344b3404a3d73a8349ad06efa8fe9b5cf69bc4a8c730368` |
-| `docs/workflow/three-amigos-decision-record.md` | `ef05c9fd6dbf1ab174da1c9d95925196e1edb2bca3b34e5156178523b5d55013` |
-| `docs/epics/forensics-platform-runtime-replay-llm-analysis-v0.2.md` | `54ff246b4359e1eb92c7e80058db42faa079ff5ffd3db0d71170cfaa3dbb68fe` |
-| `docs/adr/ADR-0013-data-ownership-per-service.md` | `4114bd8f39a60539bba18bcc32de481aff5a91cec34d556ca1149747b04879ab` |
-| `docs/adr/ADR-0023-h2-for-repository-source-mvp-persistence.md` | `57055ae1b371d5c229dd8d64450a23869dc89849808fa68bdff45901a5123a69` |
 | `docs/adr/ADR-0024-postgres-for-repository-source-workspace-metadata.md` | `bd155271d13945677d998468a7c41df4f98e71ebb7e9913d2c7d08f931f4b472` |
-| `docs/adr/README.md` | `92fb221b584b6128e3fa0fa272213c850041c975747dc29d9c2a2151c7802575` |
 | `docs/arc42/05-building-block-view.md` | `4a61879a69c7979c871b5e0b6b97ff4de4ceeef11adde77f8c9bf3dad7795e4d` |
-| `docs/arc42/07-deployment-view.md` | `90ee12b31a438fec32ec65bd91d8988ee199c9de39cc40b46909a79dfa90f56b` |
-| `docs/arc42/08-crosscutting-concepts.md` | `3ff16ad9deea8c65d3aeb282563d3fecaa60d77e88f7e98e6821397e79502939` |
-| `docs/arc42/09-architecture-decisions.md` | `55459bc3daf15ab72e6f20b7836f4866916b9653c6231fee3610250c9af8a3f5` |
-| `docs/arc42/11-risks-and-technical-debt.md` | `e2a0a47d6a78b863d0dc85fba52f448f7fe7c830c508c38e3adf5e2d9fd4da28` |
-| `docs/architecture/data-ownership.md` | `3c814b69375b3ff70df736926e18a5688b42744f44f88fe55347376243b1078e` |
-| `docs/architecture/service-boundaries.md` | `d27af63c11a48de4c7498b677f434545c30facbde1c908647e75a5bad5db7db7` |
-
-The context pack is stale when any recorded hash changes before workflow
-execution.
+| `contracts/grpc/repository-analysis.proto` | `8f34e24f8a1c0c5c24dcda882f72ce225c8218b123b9629f35bbf99a2c7d8727` |
+| `contracts/openapi/gateway-api.yaml` | `eeccf2c8ab7085f9144d8908b92d90cc9f20917df7d80121f1102d5f14ee1967` |

@@ -1,86 +1,77 @@
 # Three Amigos Decision Record
 
-## Requirement Summary
+## Workflow
 
-Move repository checkout workspace metadata from H2 to PostgreSQL using
-Liquibase while keeping repository checkout bytes on the existing
-repository-source workspace volume.
-
-Clarification accepted on 2026-05-31:
-
-- H2 may remain for tests and deterministic fixtures.
-- PostgreSQL is the runtime and production persistence path.
-- Missing or unreachable PostgreSQL must be reported by startup failure or
-  storage health/readiness `DOWN`; it must not silently fall back to H2.
-- Database configuration must be available through the operator Settings UI.
+Repository Workspace Branch Selection And Refresh
 
 ## Decision
 
-`READY_FOR_WORKFLOW`
+`PROCEED_WITH_ACCEPTED_ASSUMPTIONS`
 
-Confidence: 90 percent.
+## Normalized Requirement Summary
 
-## Five-Role Review
+Add backend and GUI support for remote branch discovery, branch selection,
+explicit branch refresh, missing-remote warning behavior, branch list display
+and future stale-analysis indicators. Plan logical workspace deletion and
+future final deletion as a separate lifecycle instead of silently deleting
+all referenced data.
 
-| Role | Finding |
-|---|---|
-| Senior Requirement Engineer | The request is traceable to repository-source workspace metadata. It extends the current FA-MVP-0001 H2 MVP state and does not create the broader platform workspace domain. |
-| Senior System Architect | PostgreSQL is acceptable only as service-owned repository-source storage. ADR and arc42 updates must precede code. Cross-service database access remains forbidden. |
-| Senior Java Backend Developer | Existing ports allow a small adapter replacement. H2-specific `MERGE` and schema initialization must be replaced by PostgreSQL `ON CONFLICT` plus Liquibase. Runtime bootstrap must not keep H2 as a fallback outside tests. |
-| Senior React Frontend Developer | UI implementation is now in scope through the existing `forensic-ui` Settings route. Settings must use public API adapters and must not connect to PostgreSQL directly. |
-| Senior Tester | Existing repository-source tests define persistence behavior. PostgreSQL coverage must be deterministic and default quality gates must not require a live external DB unless explicitly documented. Settings slices require query-report API and frontend tests. |
+## Five-Role Findings
 
-## Requirement Classification
+### Senior Requirement Engineer
 
-- Functional requirement: PostgreSQL workspace metadata persistence.
-- Architecture constraint: repository-source remains owner and single writer.
-- Persistence requirement: Liquibase-managed schema.
-- Deployment requirement: Docker-local `forensic-postgres` integration.
-- Security requirement: no credential, private path or raw Git output leakage.
-- UX requirement: operator Settings screen for database configuration.
-- Contract requirement: public Settings API and repository-source handoff must
-  be contract-first.
-- Resilience requirement: missing PostgreSQL is visible as startup failure or
-  health/readiness `DOWN`, never hidden by fallback.
-- Quality requirement: repository-source, query-report API, frontend tests and
-  full local gate.
-- Assumption: existing H2 state does not require automatic migration.
+- The core branch-selection requirement is testable.
+- Destructive cleanup and trash/final-delete are larger lifecycle requirements
+  and must be sliced separately.
+- Stale-analysis-data warning is explicitly TBD and must not be presented as
+  implemented evidence.
 
-## Dependency and Deadlock Validation
+### Senior System Architect
 
-The workflow remains linear. No safe parallel groups exist because later slices
-need the prior decision, dependency, schema, adapter, runtime cutover, Settings
-contract and UI results.
+- `repository-source-service` remains the owner of branch metadata.
+- UI must use public APIs and must not access Git or PostgreSQL directly.
+- Analysis result deletion requires owner-store verification and cannot be
+  implemented speculatively.
+
+### Senior Java Backend Developer
+
+- Backend impact includes metadata resolution, branch status semantics,
+  refresh checks, contracts and possibly persistence state.
+- Branch selection must not fetch remote content.
+- Missing remote branch must be represented explicitly.
+
+### Senior React Frontend Developer
+
+- Frontend impact includes workspace domain types, API mapping, Create
+  Workspace and Workspace List views.
+- The combobox must render API-provided branches and preserve selected values.
+- The branch list must show action state and diagnostics without inventing
+  analysis freshness.
+
+### Senior Tester
+
+- Regression tests are required for contracts, mapping, UI state, no-refresh
+  branch selection, missing remote branch refresh and delete lifecycle.
+- `QUALITY.md` minimum Gradle test command is required before publication.
+
+## Architecture And Evidence Validation
+
+- Branch selection is repository metadata, not runtime execution evidence.
+- Remote branch existence is a Git metadata fact.
+- Stale analysis state is not implemented evidence until a later owner store
+  can compare analysis artifacts with branch snapshots.
 
 ## Open Questions
 
-No blocking questions remain for workflow creation.
+- Exact UI copy for destructive branch cleanup warning.
+- Whether final delete is operator-only.
+- Which downstream stores own analysis results that must be deleted later.
 
-Non-blocking execution-time questions:
+## Blockers
 
-- If existing local H2 metadata must be preserved, S07 must stop and convert
-  that requirement into an explicit one-off migration slice with verified input
-  files and acceptance criteria.
-- If runtime database Settings require persistence of raw credentials, S08 must
-  stop until a verified secrets-storage boundary exists.
-- If changed database settings must apply without restart, S08 must document
-  tested reconnect semantics before S09 exposes the behavior in the UI.
+None for workflow creation.
 
-S08 execution-time resolution on 2026-05-31:
+## Final Decision
 
-- Settings operations require an operator token before accepting
-  credential-bearing requests.
-- Password input is write-only and may be used only for validation through the
-  repository-source owner API.
-- S08 does not persist changed database credentials and does not hot-apply
-  repository-source runtime settings.
-- Settings validation and status responses must report `RESTART_REQUIRED` and
-  `hotApplySupported: false` for changed database configuration.
-- Unreachable PostgreSQL must be reported as `UNREACHABLE`, not as successful
-  readiness.
-
-## Final Gate Result
-
-The requirement is ready for workflow execution under the documented
-assumptions. Implementation must not begin before `workflow execute` routes
-each slice through its owner review.
+Proceed with accepted assumptions. `workflow execute` must stop before final
+delete or analysis-result cleanup if owner contracts are still unverified.
