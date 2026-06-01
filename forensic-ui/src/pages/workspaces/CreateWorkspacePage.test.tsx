@@ -265,6 +265,9 @@ describe("CreateWorkspacePage", () => {
     await screen.findByDisplayValue("wildfly");
     await user.click(screen.getByRole("button", { name: /^save$/i }));
     await screen.findByRole("heading", { name: "Workspace ready" });
+    expect(
+      screen.getByText("TBD: mark analysis data as stale when this branch changes.")
+    ).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: /update branch/i }));
     await screen.findByRole("heading", { name: "Branch up to date" });

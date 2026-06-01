@@ -98,6 +98,7 @@ class QueryReportApiWorkspaceTest {
             "demo",
             "demo",
             " ",
+            List.of("main", "release/1.0"),
             null
         );
         var refresh = new BranchRefreshResponse(
@@ -211,6 +212,7 @@ class QueryReportApiWorkspaceTest {
             "demo",
             "demo",
             "main",
+            List.of("main"),
             List.of()
         ));
         assertThrows(IllegalArgumentException.class, () -> new RepositoryIdentity(
@@ -325,7 +327,7 @@ class QueryReportApiWorkspaceTest {
             "example.com/acme\\demo"
         ).forEach(repositoryKey -> assertThrows(
             IllegalArgumentException.class,
-            () -> new WorkspaceMetadataResponse(repositoryKey, "example.com", "acme", "demo", "demo", "main", List.of())
+            () -> new WorkspaceMetadataResponse(repositoryKey, "example.com", "acme", "demo", "demo", "main", List.of("main"), List.of())
         ));
 
         List.of(
@@ -359,6 +361,7 @@ class QueryReportApiWorkspaceTest {
                 "demo",
                 leakingValue,
                 "main",
+                List.of("main"),
                 List.of()
             ),
             () -> "Public workspace value should be rejected: " + leakingValue

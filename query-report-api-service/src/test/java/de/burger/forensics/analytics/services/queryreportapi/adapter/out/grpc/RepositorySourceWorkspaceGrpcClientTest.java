@@ -53,6 +53,7 @@ class RepositorySourceWorkspaceGrpcClientTest {
             var cleaned = client.cleanup(cleanupRequest());
 
             assertEquals("demo", metadata.workspaceTitle());
+            assertEquals(List.of("main", "release/1.0"), metadata.repositoryBranches());
             assertEquals("workspace-0001", created.workspaceId());
             assertEquals("workspace-0001", loaded.workspaceId());
             assertEquals("workspace-0001", listed.items().get(0).workspaceId());
@@ -334,6 +335,7 @@ class RepositorySourceWorkspaceGrpcClientTest {
             responseObserver.onNext(PreviewRepositoryWorkspaceMetadataResponse.newBuilder()
                 .setRepository(repository())
                 .setWorkspaceTitle("demo")
+                .addAllRepositoryBranches(List.of("main", "release/1.0"))
                 .build());
             responseObserver.onCompleted();
         }

@@ -314,6 +314,7 @@ class QueryReportApiServiceApplicationTest {
                 "demo",
                 "demo",
                 "main",
+                List.of("main"),
                 List.of(Diagnostic.info("OK", "loaded"))
             );
         }

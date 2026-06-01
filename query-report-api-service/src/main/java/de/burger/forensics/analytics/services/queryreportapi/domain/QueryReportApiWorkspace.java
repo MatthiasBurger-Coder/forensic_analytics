@@ -176,6 +176,7 @@ public final class QueryReportApiWorkspace {
         String repositoryName,
         String workspaceTitle,
         String defaultBranch,
+        List<String> repositoryBranches,
         List<Diagnostic> diagnostics
     ) {
         public WorkspaceMetadataResponse {
@@ -185,6 +186,10 @@ public final class QueryReportApiWorkspace {
             repositoryName = requirePublicText(repositoryName, "repository name");
             workspaceTitle = requirePublicText(workspaceTitle, "workspace title");
             defaultBranch = optionalNullablePublicText(defaultBranch, "default branch");
+            repositoryBranches = List.copyOf(Objects.requireNonNullElse(repositoryBranches, List.<String>of()).stream()
+                .map(branch -> requireBranch(branch, "repository branch"))
+                .distinct()
+                .toList());
             diagnostics = List.copyOf(Objects.requireNonNullElse(diagnostics, List.of()));
         }
     }

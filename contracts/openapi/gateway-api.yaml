@@ -658,6 +658,7 @@ components:
         - repositoryHost
         - repositoryName
         - workspaceTitle
+        - repositoryBranches
         - diagnostics
       properties:
         repositoryKey:
@@ -680,7 +681,7 @@ components:
           type: array
           items:
             type: string
-            pattern: '.*\S.*'
+            pattern: '^(?!-)(?!.*\.\.)(?!.*[\\\r\n])(?=\S).*\S$'
         diagnostics:
           type: array
           items:

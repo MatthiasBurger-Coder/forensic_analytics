@@ -170,6 +170,7 @@ class QueryReportApiWorkspaceServiceTest {
                 "demo",
                 "demo",
                 "main",
+                List.of("main", "release/1.0"),
                 List.of(Diagnostic.info("METADATA_READY", "Repository metadata loaded"))
             );
         }

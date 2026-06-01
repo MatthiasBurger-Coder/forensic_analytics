@@ -369,6 +369,7 @@ class QueryReportApiHttpAdapterTest {
             assertEquals("correlation-workspace-1", metadata.correlationId());
             assertTrue(metadata.body().contains("\"repositoryKey\":\"example.com/acme/demo\""));
             assertTrue(metadata.body().contains("\"workspaceTitle\":\"demo\""));
+            assertTrue(metadata.body().contains("\"repositoryBranches\":[\"main\",\"release/1.0\"]"));
             assertFalse(metadata.body().contains("\"workspaceId\""));
             assertSafePublicBody(metadata.body());
 
@@ -1167,6 +1168,7 @@ class QueryReportApiHttpAdapterTest {
                 "demo",
                 "demo",
                 "main",
+                List.of("main", "release/1.0"),
                 List.of(Diagnostic.info("METADATA_READY", "Repository metadata loaded"))
             );
         }
@@ -1261,6 +1263,7 @@ class QueryReportApiHttpAdapterTest {
                 "demo",
                 "demo",
                 "main",
+                List.of("main"),
                 List.of(leakingDiagnostic())
             );
         }

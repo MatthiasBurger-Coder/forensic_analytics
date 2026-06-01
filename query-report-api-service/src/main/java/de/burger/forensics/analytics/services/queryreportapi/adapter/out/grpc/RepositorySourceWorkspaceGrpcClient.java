@@ -83,6 +83,7 @@ public final class RepositorySourceWorkspaceGrpcClient implements RepositoryWork
                 repository.getRepositoryName(),
                 response.getWorkspaceTitle(),
                 nullable(repository.getDefaultBranch()),
+                response.getRepositoryBranchesList(),
                 diagnostics(response.getDiagnosticsList())
             );
         } catch (StatusRuntimeException error) {
