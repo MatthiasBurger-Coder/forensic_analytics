@@ -181,6 +181,9 @@ message PreviewRepositoryWorkspaceMetadataResponse {
   OperationStatus status = 3;
   repeated Diagnostic diagnostics = 4;
   map<string, string> safe_attributes = 5;
+  // Remote branch names resolved from refs/heads. These names are data only and
+  // must never be used directly as local paths.
+  repeated string repository_branches = 6;
 }
 
 message CreateRepositoryWorkspaceRequest {

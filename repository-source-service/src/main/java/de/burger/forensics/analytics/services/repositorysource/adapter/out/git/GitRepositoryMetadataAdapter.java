@@ -47,11 +47,13 @@ public final class GitRepositoryMetadataAdapter implements RepositoryMetadataPor
         var timeout = Duration.ofSeconds(policy.timeoutSeconds());
         var workingDirectory = metadataRoot.resolve("metadata-" + UUID.randomUUID()).toAbsolutePath().normalize();
         try {
+            var branches = resolveBranches(workingDirectory, repository, timeout, remoteHost);
             var defaultBranch = resolveDefaultBranch(workingDirectory, repository, timeout, remoteHost);
             return defaultBranch
                 .map(branch -> new RepositoryMetadataResolution(
                     RepositoryIdentity.from(repository, branch.branch()),
                     true,
+                    repositoryBranches(branches, branch.branch()),
                     List.of(branch.fallback()
                         ? Diagnostic.info("DEFAULT_BRANCH_FALLBACK", "Repository default branch fallback selected")
                         : Diagnostic.info("DEFAULT_BRANCH_RESOLVED", "Repository default branch resolved"))
@@ -59,11 +61,29 @@ public final class GitRepositoryMetadataAdapter implements RepositoryMetadataPor
                 .orElseGet(() -> new RepositoryMetadataResolution(
                     RepositoryIdentity.from(repository, ""),
                     false,
+                    branches,
                     List.of(Diagnostic.error("DEFAULT_BRANCH_UNRESOLVED", "Repository default branch could not be resolved"))
                 ));
         } finally {
             deleteBestEffort(workingDirectory);
         }
+    }
+
+    private List<String> resolveBranches(
+        Path workingDirectory,
+        RepositoryReference repository,
+        Duration timeout,
+        RemoteHostValidator.ValidatedRemoteHost remoteHost
+    ) {
+        var result = runner.run(new GitCommand(
+            workingDirectory,
+            timeout,
+            metadataArguments(remoteHost, "ls-remote", "--heads", "--exit-code", "--", repository.remoteUrl())
+        ));
+        if (result.exitCode() != 0) {
+            return List.of();
+        }
+        return parseBranches(result.output());
     }
 
     private Optional<DefaultBranchCandidate> resolveDefaultBranch(
@@ -116,6 +136,28 @@ public final class GitRepositoryMetadataAdapter implements RepositoryMetadataPor
             .filter(branch -> !branch.isBlank())
             .filter(GitRepositoryMetadataAdapter::isSafeBranch)
             .findFirst();
+    }
+
+    private static List<String> parseBranches(String output) {
+        return output.lines()
+            .map(String::trim)
+            .filter(line -> line.contains("refs/heads/"))
+            .map(line -> line.substring(line.indexOf("refs/heads/") + "refs/heads/".length()).trim())
+            .filter(branch -> !branch.isBlank())
+            .filter(GitRepositoryMetadataAdapter::isSafeBranch)
+            .distinct()
+            .sorted()
+            .toList();
+    }
+
+    private static List<String> repositoryBranches(List<String> branches, String defaultBranch) {
+        if (branches.contains(defaultBranch)) {
+            return branches;
+        }
+        var merged = new ArrayList<String>();
+        merged.add(defaultBranch);
+        merged.addAll(branches);
+        return merged.stream().distinct().sorted().toList();
     }
 
     private static boolean isSafeBranch(String branch) {

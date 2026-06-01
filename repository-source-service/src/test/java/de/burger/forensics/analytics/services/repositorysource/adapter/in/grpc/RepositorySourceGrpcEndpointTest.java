@@ -290,6 +290,7 @@ class RepositorySourceGrpcEndpointTest {
 
         assertEquals("example.com/acme/demo", preview.getRepository().getRepositoryKey());
         assertEquals("demo", preview.getWorkspaceTitle());
+        assertEquals(List.of("main"), preview.getRepositoryBranchesList());
         assertEquals("METADATA_RESOLVED", preview.getStatus().getCode());
         assertEquals("demo", preview.getSafeAttributesOrThrow("tenant"));
         assertEquals(1, metadataPort.calls);
@@ -947,6 +948,7 @@ class RepositorySourceGrpcEndpointTest {
             return new RepositoryMetadataResolution(
                 RepositoryIdentity.from(repository, defaultBranch),
                 resolved,
+                resolved ? List.of(defaultBranch) : List.of(),
                 List.of(Diagnostic.info("DEFAULT_BRANCH_RESOLVED", "Repository default branch resolved"))
             );
         }

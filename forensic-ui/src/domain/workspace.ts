@@ -34,6 +34,7 @@ export interface WorkspaceMetadata {
   repositoryName: string;
   workspaceTitle: string;
   defaultBranch: string | null;
+  repositoryBranches: string[];
   diagnostics: DiagnosticMessage[];
 }
 

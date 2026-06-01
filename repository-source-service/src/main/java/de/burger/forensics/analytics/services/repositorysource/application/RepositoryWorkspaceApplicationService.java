@@ -117,6 +117,7 @@ public final class RepositoryWorkspaceApplicationService {
         return new RepositoryWorkspaceMetadataPreview(
             resolution.repository(),
             WorkspaceTitle.fromRepositoryName(resolution.repository().repositoryName()),
+            resolution.repositoryBranches(),
             resolution.diagnostics(),
             safeAttributes
         );
@@ -269,6 +270,24 @@ public final class RepositoryWorkspaceApplicationService {
             () -> {
                 if (branch.resolvedCommit().isBlank() || branch.sourceSnapshotId() == null) {
                     throw new IllegalArgumentException("repository workspace branch must be checked out before refresh");
+                }
+                var missingRemoteBranch = missingRemoteBranch(workspace, branch, workspacePolicy);
+                if (missingRemoteBranch != null) {
+                    var failed = saveBranch(workspace, branch.failed(clock.instant(), List.of(missingRemoteBranch)));
+                    var result = new RefreshRepositoryWorkspaceBranchResult(
+                        failed,
+                        false,
+                        branch.resolvedCommit(),
+                        branch.sourceSnapshotId(),
+                        failed.diagnostics(),
+                        safeAttributes
+                    );
+                    return new RepositorySourceIdempotency.CompletedResult<>(
+                        RESULT_BRANCH_REFRESH,
+                        refreshReference(result),
+                        RepositorySourceIdempotencyPayloads.refresh(result),
+                        result
+                    );
                 }
                 saveBranch(workspace, branchWithStatus(
                     branch,
@@ -712,6 +731,24 @@ public final class RepositoryWorkspaceApplicationService {
 
     private static RepositoryWorkspaceBranchSelector refreshSelector(RepositoryWorkspaceBranch branch) {
         return new RepositoryWorkspaceBranchSelector(branch.repositoryBranch(), branch.requestedCommit());
+    }
+
+    private Diagnostic missingRemoteBranch(
+        RepositoryWorkspace workspace,
+        RepositoryWorkspaceBranch branch,
+        WorkspacePolicy workspacePolicy
+    ) {
+        var metadata = metadataPort.resolveMetadata(
+            repositoryReference(workspace.repository()),
+            new RepositoryMetadataPreviewPolicy(workspacePolicy.timeoutSeconds())
+        );
+        if (metadata.repositoryBranches().contains(branch.repositoryBranch())) {
+            return null;
+        }
+        return Diagnostic.error(
+            "REMOTE_BRANCH_NOT_FOUND",
+            "Remote branch no longer exists. Refresh was not executed; referenced branch data is kept until explicit cleanup is supported."
+        );
     }
 
     private static RepositoryReference repositoryReference(RepositoryIdentity repository) {

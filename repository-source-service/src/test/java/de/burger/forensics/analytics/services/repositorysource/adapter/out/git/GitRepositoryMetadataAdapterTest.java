@@ -29,14 +29,17 @@ class GitRepositoryMetadataAdapterTest {
     @Test
     void resolvesDefaultBranchFromRemoteHeadWithoutNetwork() throws Exception {
         var runner = new MetadataRunner("ref: refs/heads/main\tHEAD\n");
+        runner.remoteBranches.addAll(List.of("main", "release/1.0"));
         var adapter = adapter(runner);
 
         var metadata = adapter.resolveMetadata(REPOSITORY, new RepositoryMetadataPreviewPolicy(30));
 
         assertTrue(metadata.defaultBranchResolved());
         assertEquals("main", metadata.repository().defaultBranch());
+        assertEquals(List.of("main", "release/1.0"), metadata.repositoryBranches());
         assertEquals("example.com/acme/demo", metadata.repository().repositoryKey().value());
         assertTrue(runner.commands.stream().anyMatch(command -> command.arguments().contains("--symref")));
+        assertTrue(runner.commands.stream().anyMatch(command -> command.arguments().contains("--heads")));
         assertTrue(runner.commands.stream().anyMatch(command ->
             command.arguments().contains("http.curloptResolve=example.com:443:93.184.216.34")
         ));
@@ -49,12 +52,14 @@ class GitRepositoryMetadataAdapterTest {
     void fallsBackOnlyToVerifiedMainOrMasterBranches() throws Exception {
         var runner = new MetadataRunner("");
         runner.existingBranches.add("master");
+        runner.remoteBranches.add("master");
         var adapter = adapter(runner);
 
         var metadata = adapter.resolveMetadata(REPOSITORY, new RepositoryMetadataPreviewPolicy(30));
 
         assertTrue(metadata.defaultBranchResolved());
         assertEquals("master", metadata.repository().defaultBranch());
+        assertEquals(List.of("master"), metadata.repositoryBranches());
         assertEquals("DEFAULT_BRANCH_FALLBACK", metadata.diagnostics().getFirst().code());
         assertTrue(runner.commands.stream().anyMatch(command -> command.arguments().contains("refs/heads/main")));
         assertTrue(runner.commands.stream().anyMatch(command -> command.arguments().contains("refs/heads/master")));
@@ -69,6 +74,7 @@ class GitRepositoryMetadataAdapterTest {
 
         assertFalse(metadata.defaultBranchResolved());
         assertEquals("", metadata.repository().defaultBranch());
+        assertEquals(List.of(), metadata.repositoryBranches());
         assertEquals("DEFAULT_BRANCH_UNRESOLVED", metadata.diagnostics().getFirst().code());
         assertFalse(metadata.diagnostics().getFirst().message().contains("/tmp"));
         assertTrue(Files.list(metadataRoot).findAny().isEmpty());
@@ -85,6 +91,7 @@ class GitRepositoryMetadataAdapterTest {
     private static final class MetadataRunner implements GitCommandRunner {
         private final List<GitCommand> commands = new ArrayList<>();
         private final List<String> existingBranches = new ArrayList<>();
+        private final List<String> remoteBranches = new ArrayList<>();
         private final String headOutput;
 
         private MetadataRunner(String headOutput) {
@@ -94,6 +101,15 @@ class GitRepositoryMetadataAdapterTest {
         @Override
         public GitCommandResult run(GitCommand command) {
             commands.add(command);
+            if (command.arguments().contains("--heads")) {
+                if (remoteBranches.isEmpty()) {
+                    return new GitCommandResult(1, "");
+                }
+                var output = remoteBranches.stream()
+                    .map(branch -> "a".repeat(40) + "\trefs/heads/" + branch)
+                    .reduce("", (left, right) -> left + right + "\n");
+                return new GitCommandResult(0, output);
+            }
             if (command.arguments().contains("--symref")) {
                 return new GitCommandResult(headOutput.isBlank() ? 1 : 0, headOutput);
             }

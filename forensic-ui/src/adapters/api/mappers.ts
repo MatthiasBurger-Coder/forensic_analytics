@@ -172,6 +172,7 @@ export const mapWorkspaceMetadataDto = (
   repositoryName: textOrEmpty(dto.repositoryName),
   workspaceTitle: textOrEmpty(dto.workspaceTitle),
   defaultBranch: textOrNull(dto.defaultBranch),
+  repositoryBranches: stringArray(dto.repositoryBranches),
   diagnostics: diagnostics(dto.diagnostics)
 });
 

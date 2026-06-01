@@ -250,6 +250,7 @@ public final class RepositorySourceGrpcEndpoint extends RepositoryAnalysisServic
                 .setRepository(repositoryIdentity(preview.repository()))
                 .setWorkspaceTitle(preview.workspaceTitle().value())
                 .setStatus(status("METADATA_RESOLVED", "Repository metadata resolved", request.getCorrelationId()))
+                .addAllRepositoryBranches(preview.repositoryBranches())
                 .putAllSafeAttributes(preview.safeAttributes());
             preview.diagnostics().forEach(diagnostic -> builder.addDiagnostics(diagnostic(diagnostic)));
             responseObserver.onNext(builder.build());

@@ -229,6 +229,7 @@ class RepositorySourceContractTest {
         assertFieldNumber(RepositoryIdentity.getDescriptor(), "repository_owner", 4);
         assertFieldNumber(RepositoryIdentity.getDescriptor(), "repository_name", 5);
         assertFieldNumber(RepositoryIdentity.getDescriptor(), "default_branch", 6);
+        assertFieldNumber(PreviewRepositoryWorkspaceMetadataResponse.getDescriptor(), "repository_branches", 6);
         assertFieldNumber(RepositoryWorkspace.getDescriptor(), "workspace_id", 1);
         assertFieldNumber(RepositoryWorkspace.getDescriptor(), "workspace_title", 2);
         assertFieldNumber(RepositoryWorkspace.getDescriptor(), "repository", 3);
