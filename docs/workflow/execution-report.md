@@ -1,133 +1,249 @@
 # Execution Report
 
-## Workflow
+## Workflow Creation
 
-Branch:
+- Date: 2026-05-29
+- Branch: `feature/workflow-workspace-postgres-20260529`
+- Process strand: `workflow create`
+- Result: workflow regenerated for PostgreSQL repository workspace metadata
+  cutover.
 
-```text
-feature/workflow-docker-compose-deployment-20260528
-```
+## Read-Only Verification Performed
 
-Workflow execution created local Docker Compose deployment material for each
-registered root in the user request and preserved planned/non-production/tool
-boundaries where no productive service runtime exists.
+- Verified repository root with `git rev-parse --show-toplevel`.
+- Verified clean working tree before branch creation with `git status --short`.
+- Created and verified workflow branch.
+- Read root `AGENTS.md` and `QUALITY.md`.
+- Read workflow authoring, requirement, storage, quality and Three Amigos
+  skills.
+- Inspected repository-source ports, H2 adapter, bootstrap configuration,
+  application properties and tests.
+- Inspected PostgreSQL Docker material.
+- Inspected ADR-0013, ADR-0023, arc42 and architecture ownership docs.
 
-## Subagent And Role Routing
+## Implementation Status
 
-- S3D workflow validation was run after metadata repair and returned
-  `EXECUTION_PLAN_READY`.
-- Several callable implementation/review subagents did not return within the
-  slice wait window and were closed. For those slices, the matching repository
-  role files and skills were used as explicit review checklists.
-- The limitation is reported here because the workflow required subagent or
-  role review before implementation.
+Workflow execution has started. Checkpoint commits S01 through S10 are present
+on `feature/workflow-workspace-postgres-20260529` and have been pushed to
+`origin`.
 
-## Metadata Repairs
+| Slice | Checkpoint Commit | Recorded Scope |
+|---|---|---|
+| S01 | `19b23f1` | PostgreSQL repository-source metadata ADR, arc42 and architecture ownership documentation |
+| S02 | `31cade1` | Repository-source PostgreSQL/Liquibase Gradle dependencies, dependency verification metadata and typed configuration |
+| S03 | `8dafe44` | Repository-source PostgreSQL Liquibase changelog and offline changelog regression test |
+| S04 | `d32a314` | Repository-source PostgreSQL outbound persistence adapter, application persistence regression test and architecture rules |
+| S05 | `b4571bb` | Repository-source PostgreSQL bootstrap selection, Liquibase execution and storage readiness health wiring |
+| S06 | `caf6a11` | Docker Compose and local PostgreSQL runtime wiring for repository-source metadata |
+| S07 | `c614cb7` | PostgreSQL runtime default, H2 test boundary and documentation |
+| S08 | `55def59` | Contract-first database Settings backend handoff, operator-token facade and repository-source validation owner API |
+| S09 | `740ce40` | React database Settings UI, public API adapter wiring, secret-safe validation form and frontend regression tests |
+| S10 | `97e5fd0` | PostgreSQL adapter branch coverage repair and full release-readiness quality gate |
 
-The active workflow metadata was corrected before or during execution:
+S3D preflight before S06 detected stale workflow evidence because this report
+still recorded S05 as the next candidate even though commit `b4571bb` already
+implemented the S05 bootstrap, Liquibase and health wiring scope. The same
+preflight found stale context-pack hashes after the `main` merge at `75ea941`.
+The S06 checkpoint `caf6a11` followed that S3_DOC repair and has been pushed to
+`origin/feature/workflow-workspace-postgres-20260529`.
 
-- removed shared per-service writes to `deployment/docker-compose/README.md`;
-- fixed S13/S12 parallel sequencing;
-- added missing file locks for S09, S20 and S22;
-- added `.dockerignore` and `:cli-client:installDist` to S08 after verifying
-  that the CLI Dockerfile copies the Gradle install distribution;
-- changed profile-gated Compose validation commands to include the matching
-  profiles.
+## Current Execution Position
 
-## Slice Outcomes
+- Last completed implementation slice: S10.
+- Active workflow version after accepted scope update: `2026-05-31`.
+- Next candidate slice: none.
+- Workflow execution is release-ready with the caveat that live Docker startup
+  and HTTP health checks were not executed.
 
-| Slice | Outcome |
-|---|---|
-| S01 root stack | Added root `forensic-analytics.local.yml`, README updates and Docker build-context allow-listing. |
-| S02-S07 | Added Compose fragments for repository-source, ingestion, JavaParser target, Joern target, orchestrator and query/report API. |
-| S08 | Added CLI Dockerfile and `tools` profile one-shot Compose descriptor. CLI image build passed. |
-| S09 | Added diagnostics-only observability descriptor with `diagnostics` profile. No telemetry backend or evidence source claimed. |
-| S10 | Added non-production testbed descriptor with `testbed` profile. |
-| S11 | Added transitional forensic-ingestion descriptor without aliasing it to target ingestion. |
-| S12-S17 | Added transitional gateway/store/repository-analysis/Java AST/Joern CPG/BTM descriptors with owner-local volumes where applicable. |
-| S18-S19 | Added planned-root marker descriptors for graph replay and report generation. No runnable service implementation invented. |
-| S20 | Added UI Compose descriptor, Vite build argument and nginx same-origin `/api` proxy to `query-report-api-service`. |
-| S21 | Added deployment runbook and arc42 deployment synchronization. |
+## Workflow Scope Update
 
-## Verified Commands
+On 2026-05-31, S07 read-only preflight found that the earlier S07 file locks
+covered the H2 adapter, H2 persistence test and documentation, but not the
+verified runtime H2 selection in repository-source bootstrap and resource
+configuration. Continuing would either leave H2 active as a runtime fallback or
+silently expand S07 beyond its approved locks.
 
-Per-slice targeted checks were executed for changed service fragments:
+The accepted requirement clarification changes the remaining workflow scope:
 
-- service `:test` and `:bootJar` tasks for runnable Java service roots;
-- `:cli-client:test`, `:cli-client:installDist`, `:cli-client:build`;
-- `:observability-stack:test`;
-- `:testbed:test`;
-- `:graph-replay-service:tasks`;
-- `:report-generation-service:tasks`;
-- `docker compose ... config` for every generated fragment;
-- `docker compose --profile tools|diagnostics|testbed|planned ... config`
-  where profile-gated services would otherwise be hidden.
+- H2 may remain for tests and deterministic fixtures.
+- PostgreSQL is the runtime and production persistence path.
+- Missing or unreachable PostgreSQL must be reported by startup failure or
+  storage health/readiness `DOWN`, not hidden by fallback.
+- Database configuration must be available through operator Settings in the
+  existing UI.
 
-Frontend checks executed:
+The workflow was updated to version `2026-05-31` with S07 covering the
+PostgreSQL runtime default and H2 test boundary, S08 covering the
+contract-first Settings API/backend handoff, S09 covering the React Settings UI
+and S10 covering final release readiness.
 
-```bash
-cd forensic-ui
-npm ci
-npm run test
-npm run build
-```
+## S05 Verification Evidence
 
-Docker checks executed:
+- `git diff --check` passed before this S3_DOC repair.
+- `./gradlew :repository-source-service:test --dependency-verification strict --console=plain --stacktrace`
+  passed on 2026-05-31 with 11 actionable tasks.
+- `./gradlew test --dependency-verification strict --console=plain --stacktrace`
+  passed on 2026-05-31 with 155 actionable tasks.
 
-```bash
-docker compose -f deployment/docker-compose/services/cli-client.compose.yml build cli-client
-docker compose -f deployment/docker-compose/services/forensic-ui.compose.yml build forensic-ui
-docker compose -f deployment/docker-compose/services/query-report-api-service.compose.yml build query-report-api-service
-docker run --rm forensic-analytics/forensic-ui:local nginx -t
-```
+## S08 Verification Evidence
 
-Combined model validation executed:
+- Public Settings contracts now expose sanitized repository-source PostgreSQL
+  status and candidate validation through
+  `GET /api/settings/repository-source/database` and
+  `POST /api/settings/repository-source/database/validation`.
+- Public Settings operations require `X-Operator-Token`; missing public facade
+  token configuration returns `SETTINGS_AUTH_NOT_CONFIGURED`.
+- `query-report-api-service` delegates Settings status and validation to
+  repository-source owner gRPC methods and does not read repository-source
+  PostgreSQL tables.
+- Password input is write-only validation input. Responses use sanitized
+  settings views, no JDBC URL or secret output, and report
+  `RESTART_REQUIRED` / `hotApplySupported=false`.
+- Repository-source validates candidate connectivity through bootstrap
+  infrastructure, keeping JDBC dependencies out of the inbound gRPC adapter.
+  The bootstrap validator now returns a neutral bootstrap validation result;
+  the inbound gRPC adapter maps that result to contract enums at the boundary.
+- Earlier callable subagent attempts for S08 specialist reviews timed out in
+  this runtime, so S08 used local role-file and skill checklist fallback for
+  contract, security and Java backend review duties. A later
+  `quality_archunit_reviewer` subagent reviewed the uncommitted S08 diff and
+  its architecture finding was resolved before checkpoint preparation.
+- `./gradlew :repository-source-service:compileJava :query-report-api-service:compileJava --dependency-verification strict --console=plain --stacktrace`
+  passed on 2026-05-31.
+- `./gradlew :repository-source-service:compileJava :repository-source-service:compileTestJava --dependency-verification strict --console=plain --stacktrace`
+  passed on 2026-05-31 after the subagent architecture finding was repaired.
+- `./gradlew :repository-source-service:test :query-report-api-service:test --tests de.burger.forensics.analytics.services.repositorysource.adapter.in.grpc.RepositorySourceContractTest --tests de.burger.forensics.analytics.services.repositorysource.adapter.in.grpc.RepositorySourceGrpcEndpointTest --tests de.burger.forensics.analytics.services.repositorysource.bootstrap.RepositorySourceDatabaseSettingsInfrastructureTest --tests de.burger.forensics.analytics.services.queryreportapi.adapter.in.http.GatewayOpenApiContractTest --tests de.burger.forensics.analytics.services.queryreportapi.adapter.in.http.QueryReportApiHttpAdapterTest --tests de.burger.forensics.analytics.services.queryreportapi.adapter.out.grpc.RepositorySourceSettingsGrpcClientTest --tests de.burger.forensics.analytics.services.queryreportapi.bootstrap.QueryReportApiServiceApplicationTest --dependency-verification strict --console=plain --stacktrace`
+  passed on 2026-05-31 with 22 actionable tasks.
+- `./gradlew test --dependency-verification strict --console=plain --stacktrace`
+  passed on 2026-05-31 with 155 actionable tasks.
+- `./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace`
+  was run as a full local gate diagnostic and failed at
+  `:checkPackageCoverage`. After S08 coverage repairs and a full test rerun,
+  `./gradlew jacocoTestReport checkPackageCoverage --dependency-verification strict --console=plain --stacktrace`
+  still fails only because
+  `de.burger.forensics.analytics.services.repositorysource.adapter.out.postgres`
+  branch coverage is `55.56%`. The S08-touched repository-source packages are
+  above threshold in the generated package coverage report:
+  `repositorysource.bootstrap` `83.33%` branch and
+  `repositorysource.adapter.in.grpc` `81.75%` branch. The remaining PostgreSQL
+  adapter coverage gap is outside the S08 file locks and remains a release
+  readiness blocker for S10.
 
-```bash
-docker compose --profile tools --profile diagnostics --profile testbed --profile planned -f <all-service-fragments> -f deployment/docker-compose/forensic-analytics.local.yml config
-```
+## S09 Verification Evidence
 
-Minimum repository gate executed repeatedly after slices:
+- The Settings placeholder now exposes an operator workflow for sanitized
+  repository-source PostgreSQL status and candidate validation through the
+  existing frontend service port and public API adapter boundary.
+- The React UI does not connect to PostgreSQL or repository-source private
+  tables. It calls only
+  `/api/settings/repository-source/database` and
+  `/api/settings/repository-source/database/validation`.
+- Operator token and password inputs are transient browser form values. The
+  password is submitted only as write-only validation input, is cleared after
+  validation attempts, and is covered by tests that assert no credential is
+  rendered, stored in URL state, local storage or session storage.
+- Validation result rendering distinguishes `VALID`, `INVALID`,
+  `UNREACHABLE`, `AUTHENTICATION_FAILED` and `UNSUPPORTED`, and displays
+  `RESTART_REQUIRED` / `hotApplySupported=false` semantics without offering a
+  save or hot-apply action.
+- Callable specialist reviews completed for Senior React Frontend Developer
+  and Senior UX Designer. Their findings were resolved by keeping changes
+  inside S09 locks, tightening port validation, preserving the S08
+  operator-token contract and expanding Settings UI regression coverage.
+- `cd forensic-ui && npm run test` passed on 2026-05-31 with 9 test files and
+  94 tests.
+- `cd forensic-ui && npm run build` passed on 2026-05-31.
+- `./gradlew test --dependency-verification strict --console=plain --stacktrace`
+  passed on 2026-05-31 with 155 actionable tasks.
+- `git diff --check`, `git diff --cached --check` and
+  `python3 -m json.tool docs/workflow/context-pack.json` passed before the S09
+  checkpoint and documentation update.
 
-```bash
-./gradlew test --dependency-verification strict --console=plain --stacktrace
-```
+## S10 Verification Evidence
 
-## Runtime Smoke Evidence
+- The S10 quality blocker was
+  `de.burger.forensics.analytics.services.repositorysource.adapter.out.postgres`
+  branch coverage at `55.56%`.
+- A Senior Tester subagent completed a read-only coverage review and identified
+  the missing PostgreSQL adapter branches: empty lookup arms, missing workspace
+  update, optional branch metadata, idempotency expiry variants, schema
+  validation variants and snapshot package artifact/diagnostic mappings.
+- `RepositorySourcePostgresPersistenceApplicationTest` now covers those
+  deterministic PostgreSQL persistence paths through the existing
+  `RecordingConnection` fixture, without requiring a live database and without
+  weakening coverage thresholds.
+- `./gradlew :repository-source-service:test --tests de.burger.forensics.analytics.services.repositorysource.application.RepositorySourcePostgresPersistenceApplicationTest --dependency-verification strict --console=plain --stacktrace`
+  passed on 2026-05-31 with 11 actionable tasks.
+- `./gradlew jacocoTestReport checkPackageCoverage --dependency-verification strict --console=plain --stacktrace`
+  passed on 2026-05-31 with 172 actionable tasks. The PostgreSQL adapter
+  package now reports `93.11%` line coverage and `87.50%` branch coverage.
+- `./gradlew :query-report-api-service:test --dependency-verification strict --console=plain --stacktrace`
+  passed on 2026-05-31.
+- `cd forensic-ui && npm run test` passed on 2026-05-31 with 9 test files and
+  94 tests.
+- `cd forensic-ui && npm run build` passed on 2026-05-31.
+- `docker compose --env-file docker/postgres/.env.example -f docker/postgres/docker-compose.yml config`
+  passed on 2026-05-31.
+- `docker compose -f deployment/docker-compose/repository-to-btm.local.yml config`
+  passed on 2026-05-31.
+- `./gradlew test --dependency-verification strict --console=plain --stacktrace`
+  passed on 2026-05-31 with 155 actionable tasks.
+- `./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace`
+  passed on 2026-05-31 with 207 actionable tasks in 27m 21s.
+- `git diff --check`, `git diff --cached --check` and
+  `python3 -m json.tool docs/workflow/context-pack.json` passed before the S10
+  checkpoint and documentation update.
 
-Executed runtime smoke:
+Docker Compose checks were not part of S05. They remain required for S06 and
+must be rerun after S06 deployment descriptor changes.
 
-```bash
-docker network create forensic_analytics
-docker compose -p forensic-analytics-smoke -f deployment/docker-compose/services/query-report-api-service.compose.yml -f deployment/docker-compose/services/forensic-ui.compose.yml -f deployment/docker-compose/forensic-analytics.local.yml up -d query-report-api-service forensic-ui
-curl -fsS http://127.0.0.1:18000/api/health
-docker compose -p forensic-analytics-smoke -f deployment/docker-compose/services/query-report-api-service.compose.yml -f deployment/docker-compose/services/forensic-ui.compose.yml -f deployment/docker-compose/forensic-analytics.local.yml down
-```
+## S06 Verification Evidence
 
-Result:
+- `docker compose --env-file docker/postgres/.env.example -f docker/postgres/docker-compose.yml config`
+  passed on 2026-05-31.
+- `docker compose -f deployment/docker-compose/services/repository-source-service.compose.yml -f deployment/docker-compose/forensic-analytics.local.yml config`
+  passed on 2026-05-31.
+- `docker compose -f deployment/docker-compose/repository-to-btm.local.yml config`
+  passed on 2026-05-31.
+- `bash -n deployment/docker-compose/setup.sh` and
+  `bash -n docker/postgres/init/01-repository-source-role.sh` passed on
+  2026-05-31.
+- Quiet Compose model checks with `docker/postgres/.env.example` passed for
+  PostgreSQL, repository-to-BTM and repository-source fragment stacks.
+- `git diff --check` and `git diff --cached --check` passed before checkpoint.
+- Security review found initial blockers for host exposure, credential reuse
+  and rendered credential output. The final S06 checkpoint binds PostgreSQL to
+  `127.0.0.1`, uses private Docker network `forensic_repository_source_db`,
+  separates bootstrap and repository-source application credentials, and
+  documents quiet Compose validation for credential-bearing descriptors.
 
-```json
-{"status":"UP"}
-```
+Live Docker startup and HTTP health checks were not executed. S06 required
+Compose model validation only; live runtime verification remains optional until
+explicitly run and recorded.
 
-The first attempt returned `404` through the UI proxy because nginx did not
-preserve the full request URI. The proxy was corrected to use `$request_uri`,
-the UI image was rebuilt, and the smoke check then passed.
+## S07 Verification Evidence
 
-## Skipped Or Not Claimed
-
-- Full local startup of every service was not executed.
-- Health checks for every service container were not executed.
-- Browser-driven manual GUI interaction beyond `/api/health` was not executed.
-- Joern CPG runtime smoke was not executed; it may require external image pulls.
-- Graph Replay and Report Generation remain planned marker descriptors.
-
-## Final Gate
-
-Full local quality gate:
-
-```bash
-./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace
-```
-
-Status: passed on May 28, 2026.
+- Runtime and Docker repository-source persistence defaults now select
+  PostgreSQL, not H2.
+- Test profile uses in-memory persistence for default Spring startup tests.
+- `RepositorySourceServiceProperties` rejects `h2` as an active runtime
+  persistence type.
+- Repository-source bootstrap no longer wires the H2 persistence adapter from
+  runtime configuration.
+- Missing or unreachable PostgreSQL remains reported as sanitized startup
+  failure or storage readiness `DOWN`; no H2 fallback is selected.
+- H2 remains documented and covered only as deterministic adapter test or
+  fixture infrastructure.
+- Existing local H2 state is documented as historical MVP state. Preservation
+  requires a later explicit one-off migration slice.
+- Callable subagent attempts were unavailable or timed out in this runtime, so
+  S07 used local role-file and skill checklist fallback for Data Ownership,
+  Java backend, observability, testing and documentation review duties.
+- `rg -n "persistence.type=h2|persistence\\.h2|useH2\\(|RepositorySourceServiceProperties\\.H2|Docker H2|local H2 JDBC|repository-source-data|H2 JDBC|H2 file|H2 files|runtime fallback|fallback to H2|H2 remains" repository-source-service/src/main repository-source-service/src/test repository-source-service/README.md docs/adr/ADR-0023-h2-for-repository-source-mvp-persistence.md docs/architecture/data-ownership.md`
+  returned only expected H2 test, fixture and historical-documentation
+  references.
+- `./gradlew :repository-source-service:test --dependency-verification strict --console=plain --stacktrace`
+  passed on 2026-05-31 with 11 actionable tasks.
+- `./gradlew test --dependency-verification strict --console=plain --stacktrace`
+  passed on 2026-05-31 with 155 actionable tasks.
+- `git diff --check` passed before checkpoint.

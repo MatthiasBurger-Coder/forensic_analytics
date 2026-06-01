@@ -9,6 +9,7 @@ dependencies {
     implementation(libs.grpc.protobuf)
     implementation(libs.grpc.stub)
     implementation(libs.gson)
+    implementation(libs.liquibase.core)
     implementation(libs.protobuf.java)
     implementation(libs.spring.boot) {
         exclude(group = "io.micrometer")
@@ -18,6 +19,7 @@ dependencies {
     }
     compileOnly(libs.javax.annotation.api)
     runtimeOnly(libs.h2)
+    runtimeOnly(libs.postgresql)
 
     testImplementation(libs.grpc.inprocess)
     testImplementation(libs.spring.test)

@@ -9,17 +9,26 @@ services:
     ports:
       - "127.0.0.1:18087:8083"
       - "127.0.0.1:19097:9092"
+    command:
+      - --forensics.repository-source.service.persistence.type=postgres
+    environment:
+      FORENSICS_REPOSITORY_SOURCE_POSTGRES_JDBC_URL: jdbc:postgresql://forensic-postgres:5432/${POSTGRES_DB:-forensic_analytics}
+      FORENSICS_REPOSITORY_SOURCE_POSTGRES_USERNAME: ${REPOSITORY_SOURCE_DB_USER:-repository_source}
+      FORENSICS_REPOSITORY_SOURCE_POSTGRES_PASSWORD: ${REPOSITORY_SOURCE_DB_PASSWORD:-change-me-repository-source}
+      FORENSICS_REPOSITORY_SOURCE_POSTGRES_SCHEMA: ${REPOSITORY_SOURCE_DB_SCHEMA:-repository_source}
     volumes:
       - repository-source-workspaces:/var/lib/forensic-analytics/repository-workspaces
-      - repository-source-data:/var/lib/forensic-analytics/repository-source-data
     networks:
       - forensic_analytics
+      - repository_source_db
 
 volumes:
   repository-source-workspaces:
-  repository-source-data:
 
 networks:
   forensic_analytics:
     name: forensic_analytics
+    external: true
+  repository_source_db:
+    name: forensic_repository_source_db
     external: true

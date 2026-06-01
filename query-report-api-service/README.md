@@ -87,6 +87,21 @@ returns sanitized public workspace state. It does not checkout repositories,
 read repository-source H2 files, read repository-source workspace directories
 or expose raw Git output.
 
+## Repository Source Database Settings
+
+S08 adds operator-protected public Settings routes for repository-source
+PostgreSQL configuration status and validation:
+
+- `GET /api/settings/repository-source/database`
+- `POST /api/settings/repository-source/database/validation`
+
+Both routes require `X-Correlation-Id` and `X-Operator-Token`. If the operator
+token is not configured, the service returns `SETTINGS_AUTH_NOT_CONFIGURED`.
+The validation request accepts a write-only password field, delegates syntax
+and connectivity validation to the repository-source owner gRPC API and returns
+only sanitized settings status. S08 does not persist credentials and does not
+hot-apply changed database settings; responses report `RESTART_REQUIRED`.
+
 Configuration keys:
 
 - `forensics.query-report-api.service.http.enabled`
@@ -106,6 +121,7 @@ Configuration keys:
 - `forensics.query-report-api.service.workspace.refresh.allow-sparse-checkout`
 - `forensics.query-report-api.service.workspace.refresh.timeout-seconds`
 - `forensics.query-report-api.service.workspace.refresh.max-workspace-bytes`
+- `forensics.query-report-api.service.settings.operator-token`
 
 ## Local Runtime
 

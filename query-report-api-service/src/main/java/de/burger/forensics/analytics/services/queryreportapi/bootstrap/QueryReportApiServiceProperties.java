@@ -4,8 +4,18 @@ public record QueryReportApiServiceProperties(
     Http http,
     AnalysisOrchestrator analysisOrchestrator,
     RepositorySource repositorySource,
-    WorkspaceFacade workspaceFacade
+    WorkspaceFacade workspaceFacade,
+    SettingsFacade settingsFacade
 ) {
+    public QueryReportApiServiceProperties(
+        Http http,
+        AnalysisOrchestrator analysisOrchestrator,
+        RepositorySource repositorySource,
+        WorkspaceFacade workspaceFacade
+    ) {
+        this(http, analysisOrchestrator, repositorySource, workspaceFacade, new SettingsFacade(""));
+    }
+
     public QueryReportApiServiceProperties {
         if (http == null) {
             throw new NullPointerException("http must not be null");
@@ -18,6 +28,9 @@ public record QueryReportApiServiceProperties(
         }
         if (workspaceFacade == null) {
             throw new NullPointerException("workspace facade must not be null");
+        }
+        if (settingsFacade == null) {
+            throw new NullPointerException("settings facade must not be null");
         }
     }
 
@@ -61,6 +74,12 @@ public record QueryReportApiServiceProperties(
             if (refreshMaxWorkspaceBytes < 1 || refreshMaxWorkspaceBytes > 107_374_182_400L) {
                 throw new IllegalArgumentException("refresh max workspace bytes must be between 1 and 107374182400");
             }
+        }
+    }
+
+    public record SettingsFacade(String operatorToken) {
+        public SettingsFacade {
+            operatorToken = operatorToken == null ? "" : operatorToken.trim();
         }
     }
 

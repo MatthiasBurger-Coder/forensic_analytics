@@ -239,6 +239,55 @@ class GatewayOpenApiContractTest {
     }
 
     @Test
+    void settingsRoutesExposeOperatorProtectedDatabaseValidationContract() throws IOException {
+        var contract = Files.readString(findGatewayContract());
+        var settingsGet = section(
+            contract,
+            "  /settings/repository-source/database:",
+            "  /settings/repository-source/database/validation:"
+        );
+        var settingsValidation = section(
+            contract,
+            "  /settings/repository-source/database/validation:",
+            "  /health:"
+        );
+        var settingsView = section(
+            contract,
+            "    RepositorySourceDatabaseSettingsPublicView:",
+            "    ArtifactReference:"
+        );
+
+        assertContains(contract, "- name: Settings");
+        assertContains(settingsGet, "operationId: getRepositorySourceDatabaseSettings");
+        assertContains(settingsGet, "x-implementation-status: current-verified");
+        assertContains(settingsGet, "OperatorToken: []");
+        assertContains(settingsGet, "- $ref: '#/components/parameters/RequiredCorrelationId'");
+        assertContains(settingsGet, "- $ref: '#/components/parameters/OperatorToken'");
+        assertContains(settingsValidation, "operationId: validateRepositorySourceDatabaseSettings");
+        assertContains(settingsValidation, "x-implementation-status: current-verified");
+        assertContains(settingsValidation, "password is write-only request input");
+        assertContains(settingsValidation, "does not persist credentials");
+        assertContains(settingsValidation, "does not hot-apply runtime database changes");
+        assertContains(settingsValidation, "- $ref: '#/components/parameters/MutationCorrelationId'");
+        assertContains(settingsValidation, "- $ref: '#/components/parameters/OperatorToken'");
+        assertContains(settingsValidation, "$ref: '#/components/schemas/RepositorySourceDatabaseSettingsValidationRequest'");
+        assertContains(settingsValidation, "$ref: '#/components/schemas/RepositorySourceDatabaseSettingsValidationResponse'");
+        assertContains(contract, "OperatorToken:");
+        assertContains(contract, "name: X-Operator-Token");
+        assertContains(contract, "writeOnly: true");
+        assertContains(contract, "SETTINGS_AUTH_NOT_CONFIGURED");
+        assertContains(contract, "UNAUTHORIZED");
+        assertContains(settingsView, "authenticationConfigured:");
+        assertContains(settingsView, "enum: [RESTART_REQUIRED]");
+        assertContains(settingsView, "hotApplySupported:");
+        assertContains(contract, "UNREACHABLE");
+        assertContains(contract, "AUTHENTICATION_FAILED");
+        assertNotContains(settingsView, "passwordConfigured");
+        assertNotContains(settingsView, "jdbc:");
+        assertNotContains(settingsView, "h2Path");
+    }
+
+    @Test
     void repositoryUrlSchemaRejectsPrivateAndSpecialUseTargets() throws IOException {
         var contract = Files.readString(findGatewayContract());
         var repositoryUrlSchema = section(contract, "    HttpsRepositoryUrl:", "    WorkspaceMetadataRequest:");

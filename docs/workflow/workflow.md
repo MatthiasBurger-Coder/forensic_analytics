@@ -1,1484 +1,930 @@
-# Workflow: FA-DEPLOY-0001 Docker Compose Service Deployment
-
-## Workflow Version
-
-| Field | Value |
-|---|---|
-| Workflow version | `fa-deploy-0001-docker-compose-services-20260528-v1` |
-| Requirement ID | `FA-DEPLOY-0001` |
-| Title | Create local Docker Compose deployment descriptors for service roots |
-| Workflow branch | `feature/workflow-docker-compose-deployment-20260528` |
-| Creation status | Created by `workflow create`; implementation requires `workflow execute`. |
-| Process strand | `workflow create` completed; `workflow execute` pending. |
-| Execution profile | `FULL_PATH` |
-| Deployment network | `forensic_analytics` |
-| Root stack owner | `forensic_analytics` repository deployment boundary |
-| Operator goal | Deploy locally, open the GUI, and find runtime or integration errors. |
+# Workflow: Move Repository Workspace Metadata to PostgreSQL
 
 ## Executive Summary
 
-This workflow creates an executable plan for local Docker Compose deployment
-coverage across the service roots named by the user. Each named root receives
-at least one implementation slice. The workflow also adds a dedicated
-deployment-description slice so operators can build, start, smoke-check, use
-the GUI, and tear down the local stack without treating unverified runtime
-behavior as production readiness.
+This workflow plans the migration of `repository-source-service` repository
+checkout workspace metadata from the Docker-local H2 MVP adapter to the
+existing `forensic-postgres` PostgreSQL database. The repository checkout bytes
+remain in the service-owned Docker volume. PostgreSQL owns only the
+repository-source metadata tables and idempotency records through
+`repository-source-service` as the single writer.
 
-The requested `forensic_analytics` item is verified as the repository/worktree
-name and the required Docker network name, not as a Gradle subproject. It is
-therefore handled by the root stack and network slice.
+The clarified runtime target is PostgreSQL for local runtime and production
+operation. H2 remains allowed only for tests and deterministic fixtures. A
+missing or unreachable PostgreSQL database must be reported by startup failure
+or storage health/readiness `DOWN`; it must not silently fall back to H2.
 
-The current repository contains a mixture of:
+The workflow now also plans an operator Settings path in the existing React UI
+and public API layer for repository-source PostgreSQL configuration. That path
+must be contract-first, must not expose or persist raw credentials without a
+verified secrets boundary, and must not let the UI connect directly to the
+database or repository-source private tables.
 
-- runnable Java application service roots with Dockerfiles;
-- a runnable CLI application without a Dockerfile;
-- non-production or deployment-support roots without service runtime;
-- planned service roots without implementation yet;
-- the separate `forensic-ui` frontend, which is required for the user's GUI
-  goal but was not named as a Gradle module.
+The workflow does not implement product code. It defines executable slices for
+`workflow execute`.
 
-The workflow must preserve those distinctions. A later implementation slice may
-not fabricate service runtime, health endpoints, persistence stores, graph
-relationships, replay data, reports, or observability telemetry simply to make
-a Compose model look complete.
+## Verified Baseline
+
+- Active branch: `feature/workflow-workspace-postgres-20260529`
+- Workflow version: `2026-05-31`
+- Process strand: `workflow create`
+- Execution profile: `FULL_PATH`
+- Repository root: `/mnt/d/Projects/forensic_analytics`
+- Current owner service: `repository-source-service`
+- Current pre-cutover runtime persistence: H2 file adapter
+  `H2RepositorySourcePersistenceAdapter`
+- Current checkout byte storage:
+  `/var/lib/forensic-analytics/repository-workspaces`
+- Existing PostgreSQL container material:
+  `docker/postgres/docker-compose.yml`, service name `forensic-postgres`
+- Existing frontend module: `forensic-ui`
+- Existing settings route placeholder:
+  `forensic-ui/src/pages/settings/SettingsPage.tsx`
+- Existing public API gateway service: `query-report-api-service`
+- Existing public REST contract: `contracts/openapi/gateway-api.yaml`
+- Quality source: `QUALITY.md`
+
+## Interpreted Intent
+
+The request is interpreted as:
+
+- Move repository checkout workspace metadata to PostgreSQL.
+- Use Liquibase to create and evolve the repository-source workspace schema.
+- Keep the checked-out repository files on the existing service-owned Docker
+  volume.
+- Keep H2 available for tests and deterministic fixtures only.
+- Make PostgreSQL the runtime and production persistence path.
+- Report missing or unreachable PostgreSQL explicitly through startup failure
+  or storage health/readiness instead of falling back to H2.
+- Add a contract-first operator Settings path for database configuration in
+  the existing UI and public API surface.
+- Work out the remaining changes autonomously from verified repository state.
+
+`workspace` means the repository checkout workspace aggregate owned by
+`repository-source-service`, not the broader deferred platform workspace,
+membership, project, asset, audit or retention domain.
 
 ## Target Picture
 
 ```text
-Browser
-  -> forensic-ui container
-  -> query-report-api-service public REST API
-  -> analysis-orchestrator-service
-  -> repository-source-service
-  -> ingestion-service
-  -> java-parser-analysis-service
-  -> joern-analysis-service
+query-report-api-service and other consumers
+  -> repository-source-service owner API
+     -> forensic-postgres / repository_source schema
+        -> workspace metadata
+        -> workspace branch metadata
+        -> repository preparation records
+        -> repository-source idempotency records
+     -> repository-source-workspaces volume
+        -> checkout bytes and source packages
 
-Transitional repository-to-BTM path, when explicitly enabled:
-  forensic-gateway-service
-  -> analysis-store-service
-  -> repository-analysis-service
-  -> java-ast-analysis-service
-  -> joern-cpg-analysis-service
-  -> btm-generation-service
-
-All Compose services and fragments:
-  -> Docker network named forensic_analytics
+forensic-ui Settings
+  -> query-report-api-service public Settings API
+     -> operator-token protected database Settings operations
+     -> contract-governed repository-source owner API handoff
+        -> write-only PostgreSQL password validation input
+        -> sanitized active configuration and validation diagnostics
+        -> restart-required apply semantics
 ```
 
-The root deployment must provide:
+Liquibase creates the service-owned schema and tables inside the already
+available PostgreSQL database. The PostgreSQL server and database bootstrap
+remain Docker/operator responsibility through `forensic-postgres`.
 
-- one Compose fragment per named root where a runnable or explicitly
-  documented deployable boundary exists;
-- a root stack or runbook that composes those fragments;
-- stable host-port assignments that avoid collisions between target and
-  transitional services;
-- service-owned volumes only where ownership is verified;
-- health checks only where an endpoint or Dockerfile health check is verified;
-- optional profiles for CLI, testbed, observability, and planned roots that
-  are not always-on backend services;
-- GUI access through `forensic-ui` and public API access through
-  `query-report-api-service`.
-
-## Verified Baseline
-
-Read-only workflow creation verification found:
-
-- Repository root: `/mnt/d/Projects/forensic_analytics`.
-- Active branch after branch-first creation:
-  `feature/workflow-docker-compose-deployment-20260528`.
-- The branch exists as `refs/heads/feature/workflow-docker-compose-deployment-20260528`.
-- Working tree was clean before branch creation.
-- Quality authority is `QUALITY.md`.
-- Minimum quality command:
-  `./gradlew test --dependency-verification strict --console=plain --stacktrace`.
-- Full local quality gate:
-  `./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace`.
-- Registered Gradle subprojects include all named service roots except
-  `forensic_analytics`, which is the repository/deployment network name.
-- Existing local Compose evidence:
-  `deployment/docker-compose/repository-to-btm.local.yml`.
-- Root `.dockerignore` currently excludes `**/build/**` and re-includes only
-  selected service jars. Several target-service Dockerfiles copy boot jars from
-  the root build context, so image-build readiness requires an explicit
-  build-context slice before any target-service image-build claim.
-- Existing frontend root for the GUI goal:
-  `forensic-ui`.
-- `forensic-ui/nginx.conf` currently returns JSON `502 BACKEND_UNAVAILABLE`
-  for `/api`. GUI deployment therefore requires an explicit same-origin
-  reverse-proxy or equivalent verified API-routing slice.
-- Existing Dockerfiles were verified for:
-  `analysis-orchestrator-service`, `analysis-store-service`,
-  `btm-generation-service`, `forensic-gateway-service`,
-  `forensic-ingestion-service`, `ingestion-service`,
-  `java-ast-analysis-service`, `java-parser-analysis-service`,
-  `joern-analysis-service`, `joern-cpg-analysis-service`,
-  `query-report-api-service`, `repository-analysis-service`,
-  `repository-source-service`, and `forensic-ui`.
-- No Dockerfile was found for:
-  `cli-client`, `graph-replay-service`, `observability-stack`,
-  `report-generation-service`, and `testbed`.
-- `graph-replay-service` and `report-generation-service` are documented as
-  planned roots with no implementation yet.
-- `observability-stack` is deployment-oriented policy material, not a shared
-  Java runtime module.
-- `testbed` is non-production integration and system-test infrastructure.
-- ADR-0017 marks several requested names as transitional current-state
-  evidence, not target-service aliases.
-- `docs/arc42/07-deployment-view.md` states that Docker Compose, Swarm, and
-  Kubernetes readiness must not be claimed without service-owned descriptors
-  and validation commands.
-
-## Requirement Clarification Decision
-
-| Field | Decision |
-|---|---|
-| Original request | `workflow create with subagents: erstelle pro service ein docker-compose file ... jedes modul bekommt mindesten einen Slice ... Deployment beschreibung ... docker-netzwerk forensic_analytics ... deployen um mit der gui zu interargieren` |
-| Interpreted intent | Create an executable workflow for per-service local Docker Compose descriptors, a deployment description, a shared Docker network named `forensic_analytics`, and GUI-oriented local smoke verification. |
-| Change type | Deployment and workflow planning with later Docker Compose, documentation, and runtime-smoke implementation slices. |
-| Affected process strand | `workflow create` now; later `workflow execute`. |
-| Affected architecture area | Local deployment, Docker Compose, service runtime readiness, GUI-to-public-API integration, documentation, quality gates. |
-| Explicit requirements | One slice per listed module/root; per-service Compose file; deployment description; network `forensic_analytics`; deploy locally to interact with GUI and find errors. |
-| Implicit requirements | Preserve service ownership; avoid host-port collisions; keep private volumes private; do not invent runtime for planned roots; include frontend deployment even though `forensic-ui` was not in the service list. |
-| Accepted assumptions | `forensic_analytics` means repository stack and Docker network, not a Gradle service module. `forensic-ui` is the GUI target needed for manual interaction. Compose descriptors are local deployment evidence, not production readiness. |
-| Non-goals | No Kubernetes, Docker Swarm, external database, broker, Graph DB, Vector DB, live LLM provider, production secrets, service extraction, shared Java module, or fabricated placeholder runtime. |
-| Risks | Some roots are planned or non-production only; several internal service ports overlap; Joern image builds may require external image pulls; UI API base URL is compile-time Vite configuration; full-stack startup may reveal existing service integration gaps. |
-| Open questions | Exact operator port preferences are not specified. The workflow uses deterministic proposed host ports and requires implementation to document any change. |
-| Blocking questions | None for workflow creation. Later slices must stop when a root has no verified runnable artifact and a Compose service would require inventing runtime. |
-| Confidence | 86 percent. |
-| Decision | `PROCEED_WITH_ACCEPTED_ASSUMPTIONS`. |
+The Settings path is an operator configuration workflow. It is not forensic
+evidence, not a direct database client, and not a public exposure of
+repository-source private storage. S08 resolves the Settings safety boundary:
+Settings operations require an operator token, raw passwords are write-only
+request values, no raw credentials are persisted or returned, repository-source
+remains the owner for validation and status, and database changes are reported
+as `RESTART_REQUIRED`. Hot-apply remains unsupported until a later slice
+implements and tests reconnect semantics.
 
 ## Scope
 
-In scope:
+- ADR and arc42 updates for the bounded PostgreSQL decision.
+- Repository-source Gradle dependencies and dependency verification metadata.
+- Repository-source typed persistence configuration.
+- Liquibase changelog for repository-source workspace metadata.
+- PostgreSQL JDBC adapter behind existing repository-source ports.
+- Bootstrap wiring from `persistence.type=postgres`.
+- Docker Compose integration with `forensic-postgres`.
+- Runtime default and Docker profile cutover to PostgreSQL.
+- H2 retention only for tests and deterministic fixtures.
+- Contract-governed Settings API for database configuration.
+- React Settings page wiring through the existing frontend adapter layer.
+- Regression tests for repository-source persistence behavior.
+- Documentation updates for runtime and local operator flow.
 
-- Create local Docker Compose fragment files for every listed root where a
-  deployable descriptor can be verified.
-- Create a root stack/network Compose entry point for `forensic_analytics`.
-- Fix or verify the Docker build context so every service Dockerfile can copy
-  its service-owned boot jar before image-build readiness is claimed.
-- Add or update deployment documentation for local build, config validation,
-  startup, health checks, GUI use, logs, and cleanup.
-- Add Dockerfiles only for roots with a verified application entry point or an
-  explicitly approved tool/test role.
-- Keep planned roots explicitly marked as non-runnable when no implementation
-  exists.
-- Include `forensic-ui` deployment integration because the user goal requires
-  GUI interaction.
-- Run Compose model validation and relevant Gradle checks per slice.
+## Non-Goals
 
-Out of scope:
+- No platform workspace, membership, project, asset, audit or retention
+  implementation.
+- No public REST, gRPC or UI contract change outside the explicit
+  contract-governed Settings slices.
+- No cross-service database access.
+- No storage of checkout bytes in PostgreSQL.
+- No Graph DB, Vector DB, replay, report or LLM storage decision.
+- No hidden H2 runtime compatibility mode after the PostgreSQL cutover.
+- No direct database access from the UI.
+- No committed, logged, browser-persisted or public-response database
+  credentials.
+- No automatic import of local H2 files unless a later slice verifies and
+  documents a one-off operator migration requirement.
 
-- Implementing missing business behavior for `graph-replay-service` or
-  `report-generation-service`.
-- Promoting `testbed`, `observability-stack`, or `cli-client` into productive
-  backend services.
-- Changing REST, gRPC, Protobuf, event, database, graph, replay, report, or
-  LLM contracts unless a later slice verifies the exact contract impact first.
-- Moving service ownership or sharing Java implementation modules.
-- Claiming production, Docker Swarm, or Kubernetes readiness.
+## Requirement Classification
+
+| Requirement | Classification | Trace |
+|---|---|---|
+| Store workspace metadata in PostgreSQL | Functional, architecture, persistence | User request, ADR-0013 |
+| Create schema through Liquibase | Functional, build/runtime, quality | User request |
+| Keep checkout bytes on a volume | Functional, security, data ownership | User request, service-boundary docs |
+| Preserve repository-source as owner and single writer | Architecture constraint | ADR-0013, data ownership docs |
+| Keep H2 only for tests and fixtures | Functional, quality constraint | User clarification, S07 preflight |
+| Report missing PostgreSQL explicitly | Resilience, observability | User clarification, S05/S07 health behavior |
+| Configure database through UI Settings | Functional, UX, security, contract | User clarification, existing `forensic-ui` Settings placeholder |
+| Govern external API shape through contracts | Contract constraint | Contract-first governance |
+| Preserve deterministic repository workspace behavior | Quality/evidence requirement | `QUALITY.md`, existing tests |
+
+## Assumptions
+
+- `forensic-postgres` is the PostgreSQL instance named by the request.
+- Liquibase creates schema objects inside `forensic_analytics`; it does not
+  create the PostgreSQL server or container.
+- PostgreSQL schema name should be service-owned, for example
+  `repository_source`.
+- Existing local H2 metadata does not need automatic migration unless the user
+  explicitly asks for state preservation before `workflow execute`.
+- Checkout byte retention is provided by the existing
+  `repository-source-workspaces` volume.
+- H2-backed tests may remain in the repository when they are explicitly scoped
+  as tests or fixtures and do not participate in runtime bootstrap selection.
+- The Settings UI uses the existing `forensic-ui` route and API adapter style.
+- Public Settings changes use `query-report-api-service` and
+  `contracts/openapi/gateway-api.yaml` unless a slice verifies a different
+  public contract owner before implementation.
 
 ## Architecture Constraints
 
-- All Compose services must attach to a Docker network named
-  `forensic_analytics`.
-- The root stack must not overwrite
-  `deployment/docker-compose/repository-to-btm.local.yml`; it may reuse verified
-  values or document migration from that descriptor.
-- Target services and transitional services must remain explicitly labeled.
-- Services may communicate only through verified REST/OpenAPI, gRPC/protobuf,
-  approved events, or documented file/artifact contracts.
-- Private owner volumes must be mounted only by the owner service.
-- `repository-source-service` owns repository checkout workspaces and H2
-  repository-source data.
-- JavaParser, Joern, BTM, report, graph, and replay artifacts must retain
-  producer ownership and must not become shared canonical evidence.
-- Operational logs and observability data are diagnostics, not verified
-  forensic evidence.
-- The UI must use public API routes only. It must not call internal worker
-  services directly.
-- Browser-to-API connectivity must use same-origin proxying or another
-  verified browser-safe path. It must not depend on unverified CORS behavior.
-- Planned roots without executable runtime must remain documented as
-  not deployable until a later implementation slice creates verified runtime
-  evidence.
+- `repository-source-service` remains the only writer for repository checkout
+  workspace metadata.
+- Other services may read workspace state only through repository-source owner
+  APIs and public facade APIs.
+- Domain and application packages remain framework-free and database-free.
+- JDBC, Liquibase and PostgreSQL code stays in bootstrap or outbound adapter
+  packages.
+- Private database table names, workspace paths, raw Git output and credentials
+  must not appear in public DTOs, diagnostics or UI responses.
+- H2 remains test and fixture infrastructure only after the cutover.
+- Operator-provided database settings must be validated and redacted before
+  they cross public API, UI state, logs or diagnostics boundaries.
+- UI Settings must call public application APIs only; it must not talk directly
+  to PostgreSQL or repository-source private database tables.
+- Public Settings operations must require an operator token. Missing token
+  configuration returns an unavailable Settings state rather than accepting
+  credential-bearing requests.
+- Database passwords may cross the public Settings request boundary only as
+  write-only values for validation. They must not be included in responses,
+  diagnostics, logs, idempotency fingerprints or persisted settings state.
 
 ## Backend Assessment
 
-Backend implementation is expected for Docker build and runtime configuration
-only. Existing application services with Dockerfiles can receive Compose
-fragments and validation. Services without Dockerfiles need verified runtime
-entry points before adding container images:
+The implementation must replace H2-specific persistence semantics:
 
-- `cli-client` has an application main class and can be containerized as a
-  tool profile if the slice adds a service-owned Dockerfile and tests it.
-- `graph-replay-service` and `report-generation-service` currently use the
-  Gradle `base` plugin and have no implementation. They must not be represented
-  as running services until implementation exists.
-- `observability-stack` is deployment/policy material. It may add verified
-  observability deployment configuration, but not a shared Java runtime module.
-- `testbed` is non-production infrastructure. It may consume the Compose stack
-  for tests, but productive services must not depend on testbed code.
+- H2 `MERGE INTO ... KEY` must become PostgreSQL `INSERT ... ON CONFLICT`.
+- H2 CLOB columns must become PostgreSQL-compatible `TEXT` or explicitly typed
+  timestamp columns where the mapping is tested.
+- Schema creation must move out of adapter startup and into Liquibase.
+- Existing ports can remain stable:
+  `RepositoryWorkspaceRepository`, `RepositoryPreparationRepository`,
+  `RepositorySourceIdempotencyRepository`.
+- Bootstrap must select PostgreSQL from typed configuration and fail fast on
+  missing unsafe or ambiguous settings.
+- Runtime bootstrap must not include an H2 fallback path outside test fixtures.
+- Settings backend work uses repository-source as the owner for database
+  configuration status and validation. S08 does not persist operator database
+  settings and does not change runtime behavior while the service is running.
+  Responses must state `RESTART_REQUIRED` so operators know that accepted
+  settings must be applied through environment or secret configuration followed
+  by repository-source restart.
 
 ## Frontend Assessment
 
-The GUI goal routes through `forensic-ui`. The workflow must include a UI slice
-that verifies:
+Frontend implementation is now planned for database Settings. The existing
+`forensic-ui/src/pages/settings/SettingsPage.tsx` is a placeholder and the
+existing frontend uses application ports plus API adapters under
+`forensic-ui/src/application` and `forensic-ui/src/adapters/api`.
 
-- `forensic-ui/Dockerfile` and `forensic-ui/nginx.conf`;
-- `VITE_API_BASE_URL` handling for the selected public API host;
-- an nginx `/api` reverse proxy to `query-report-api-service` over the Docker
-  network, or an explicitly verified alternative that works from a browser;
-- browser access through a stable local host port;
-- API requests go to `query-report-api-service` public routes, not internal
-  gRPC worker endpoints.
+The Settings UI must:
+
+- use the existing public API base path, not direct database connectivity;
+- keep secrets out of local storage, URL parameters, diagnostics and rendered
+  read-back values;
+- show PostgreSQL validation status without displaying raw JDBC URLs with
+  credentials;
+- preserve accessible form controls and deterministic validation messages;
+- remain separate from forensic evidence review and workspace data.
 
 ## Test Strategy
 
-Targeted checks run before broader gates:
+- Preserve existing application-service tests against in-memory ports.
+- Add or replace persistence contract tests for PostgreSQL behavior.
+- Keep default Gradle tests independent from a live external database unless a
+  documented opt-in integration profile is introduced.
+- Verify Liquibase changelog content and adapter mapping deterministically.
+- Run repository-source targeted tests before the full local gate.
+- Run query-report-api contract and service tests for public Settings API
+  changes.
+- Run frontend unit/build checks for Settings UI changes.
+- Run Docker Compose `config` checks for changed deployment descriptors.
 
-```bash
-./gradlew :<module>:test --dependency-verification strict --console=plain --stacktrace
-./gradlew :<module>:bootJar --dependency-verification strict --console=plain --stacktrace
-docker compose -f <compose-file> config
-git diff --check
+## Resilience Requirements
+
+- PostgreSQL startup or connectivity failures must fail fast or report DOWN
+  through a tested health/readiness path.
+- H2 runtime fallback must not mask missing PostgreSQL outside test fixtures.
+- Storage writes must stay transactional where workspace aggregate plus branch
+  rows are updated together.
+- Retried workspace operations must remain protected by existing idempotency
+  records.
+- Diagnostics must be sanitized and must not expose database URLs with
+  credentials, table names as user-facing evidence, private workspace paths or
+  raw Git output.
+- Settings validation must distinguish invalid configuration, unreachable
+  PostgreSQL and unsupported runtime apply semantics.
+
+## S08 Settings Contract Decision
+
+The S08 blocker is resolved with these non-guessing semantics:
+
+- Public REST protocol: `GET /settings/repository-source/database` for
+  sanitized active database Settings status and
+  `POST /settings/repository-source/database/validation` for candidate
+  validation.
+- Public Settings operations require `X-Operator-Token` and
+  `X-Correlation-Id`.
+- Repository-source owner gRPC protocol:
+  `GetRepositorySourceDatabaseSettings` returns sanitized active PostgreSQL
+  configuration status and
+  `ValidateRepositorySourceDatabaseSettings` validates candidate settings.
+- Password input is write-only. It may be present only in validation requests
+  and must never be returned, logged, stored in query-report-api-service state
+  or placed in public diagnostics.
+- `query-report-api-service` is a public facade and must not read
+  repository-source PostgreSQL tables. It delegates Settings status and
+  validation to repository-source through the owner gRPC contract.
+- S08 validates syntax and connectivity through repository-source, but it does
+  not persist changed credentials and does not hot-apply runtime settings.
+  Responses must return `applyMode: RESTART_REQUIRED` and
+  `hotApplySupported: false`.
+- Missing operator token configuration must produce a sanitized unavailable
+  Settings response. Missing or unreachable PostgreSQL must be reported as
+  `UNREACHABLE`, not converted into successful readiness.
+
+## Ordered Slices
+
+### Slice 01 - Governance Decision and Architecture Documents
+
+Purpose: record PostgreSQL as the bounded repository-source workspace metadata
+store and align architecture documentation before implementation.
+
+```yaml
+slice_id: S01
+profile: FULL_PATH
+owner: Senior System Architect
+secondary_reviewers:
+  - Senior Requirement Engineer
+  - Data Ownership And Persistence Steward
+  - ADR Steward
+affected_files:
+  - docs/adr/ADR-0024-postgres-for-repository-source-workspace-metadata.md
+  - docs/arc42/05-building-block-view.md
+  - docs/arc42/07-deployment-view.md
+  - docs/arc42/08-crosscutting-concepts.md
+  - docs/arc42/09-architecture-decisions.md
+  - docs/arc42/11-risks-and-technical-debt.md
+  - docs/architecture/data-ownership.md
+  - docs/architecture/service-boundaries.md
+affected_modules: []
+affected_contracts: []
+dependencies: []
+parallel_group: P1
+file_locks:
+  - docs/adr/**
+  - docs/arc42/**
+  - docs/architecture/**
+contract_locks: []
+architecture_locks:
+  - repository-source-data-ownership
+  - relational-store-decision
+quality_gates:
+  targeted:
+    - git diff --check
+  required:
+    - git diff --check
+documentation:
+  arc42: required
+  adr: required
+stop_conditions:
+  - PostgreSQL ownership conflicts with ADR-0013.
+  - The decision tries to turn PostgreSQL into shared cross-service storage.
+  - The broader platform workspace domain is confused with repository checkout workspace metadata.
 ```
 
-For `cli-client`:
+### Slice 02 - Gradle Dependencies and Typed PostgreSQL Configuration
 
-```bash
-./gradlew :cli-client:test --dependency-verification strict --console=plain --stacktrace
-./gradlew :cli-client:build --dependency-verification strict --console=plain --stacktrace
+Purpose: add verified PostgreSQL and Liquibase dependencies, dependency
+verification metadata and typed repository-source configuration.
+
+```yaml
+slice_id: S02
+profile: FULL_PATH
+owner: Senior Java Backend Developer
+secondary_reviewers:
+  - Senior DevOps Engineer
+  - Senior Tester
+affected_files:
+  - gradle/libs.versions.toml
+  - gradle/verification-metadata.xml
+  - repository-source-service/build.gradle.kts
+  - repository-source-service/src/main/resources/application.properties
+  - repository-source-service/src/main/resources/application-docker.properties
+  - repository-source-service/src/main/resources/application-test.properties
+  - repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/RepositorySourceServiceProperties.java
+  - repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/RepositorySourceServicePropertiesConfiguration.java
+  - repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/RepositorySourceServiceApplicationTest.java
+affected_modules:
+  - repository-source-service
+affected_contracts: []
+dependencies:
+  - S01
+parallel_group: P2
+file_locks:
+  - gradle/libs.versions.toml
+  - gradle/verification-metadata.xml
+  - repository-source-service/build.gradle.kts
+  - repository-source-service/src/main/resources/**
+  - repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/**
+  - repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/**
+contract_locks: []
+architecture_locks:
+  - repository-source-bootstrap-boundary
+quality_gates:
+  targeted:
+    - ./gradlew :repository-source-service:test --dependency-verification strict --console=plain --stacktrace
+  required:
+    - ./gradlew test --dependency-verification strict --console=plain --stacktrace
+documentation:
+  arc42: checked
+  adr: checked
+stop_conditions:
+  - Dependency verification metadata cannot be updated for new artifacts.
+  - PostgreSQL credentials are committed as secrets instead of configuration.
+  - Domain or application code receives Spring, JDBC, Liquibase or PostgreSQL dependencies.
 ```
 
-For the frontend:
+### Slice 03 - Liquibase Repository-Source Schema
 
-```bash
-cd forensic-ui
-npm ci
-npm run test
-npm run build
-docker build -t forensic-analytics/forensic-ui:local ./forensic-ui
+Purpose: create the repository-source-owned PostgreSQL schema and metadata
+tables through Liquibase changelogs.
+
+```yaml
+slice_id: S03
+profile: FULL_PATH
+owner: Senior Java Backend Developer
+secondary_reviewers:
+  - Senior Analysis Storage Architect
+  - Senior Tester
+affected_files:
+  - repository-source-service/src/main/resources/db/changelog/repository-source-workspace.postgresql.yaml
+  - repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/adapter/out/postgres/PostgresRepositorySourceLiquibaseTest.java
+affected_modules:
+  - repository-source-service
+affected_contracts: []
+dependencies:
+  - S01
+  - S02
+parallel_group: P3
+file_locks:
+  - repository-source-service/src/main/resources/db/changelog/**
+  - repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/adapter/out/postgres/**
+contract_locks: []
+architecture_locks:
+  - repository-source-postgres-schema
+quality_gates:
+  targeted:
+    - ./gradlew :repository-source-service:test --dependency-verification strict --console=plain --stacktrace
+  required:
+    - ./gradlew test --dependency-verification strict --console=plain --stacktrace
+documentation:
+  arc42: checked
+  adr: checked
+stop_conditions:
+  - Liquibase changelog invents data not present in the existing repository-source domain model.
+  - Schema fields cannot be traced to existing H2 columns or verified domain records.
+  - Checkout bytes or source package bytes are moved into PostgreSQL.
 ```
 
-Minimum repository gate:
+### Slice 04 - PostgreSQL Persistence Adapter
+
+Purpose: implement a PostgreSQL outbound adapter for existing repository-source
+ports while preserving deterministic save/load semantics.
+
+```yaml
+slice_id: S04
+profile: FULL_PATH
+owner: Senior Java Backend Developer
+secondary_reviewers:
+  - Senior Analysis Storage Architect
+  - Senior System Architect
+  - Senior Tester
+affected_files:
+  - repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/adapter/out/postgres/**
+  - repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/application/RepositorySourcePostgresPersistenceApplicationTest.java
+  - repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/quality/RepositorySourceServiceArchitectureTest.java
+affected_modules:
+  - repository-source-service
+affected_contracts: []
+dependencies:
+  - S03
+parallel_group: P4
+file_locks:
+  - repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/adapter/out/postgres/**
+  - repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/application/**
+  - repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/quality/**
+contract_locks: []
+architecture_locks:
+  - hexagonal-outbound-adapter-boundary
+  - repository-source-persistence-ports
+quality_gates:
+  targeted:
+    - ./gradlew :repository-source-service:test --dependency-verification strict --console=plain --stacktrace
+  required:
+    - ./gradlew test --dependency-verification strict --console=plain --stacktrace
+documentation:
+  arc42: checked
+  adr: checked
+stop_conditions:
+  - Adapter exposes PostgreSQL classes outside adapter/bootstrap packages.
+  - SQL upsert semantics cannot preserve existing H2-tested behavior.
+  - Persistence failures are hidden as empty or successful results.
+```
+
+### Slice 05 - Bootstrap, Liquibase Execution and Health Wiring
+
+Purpose: wire PostgreSQL as the active repository-source persistence option,
+run Liquibase before repository creation and make storage readiness observable.
+
+```yaml
+slice_id: S05
+profile: FULL_PATH
+owner: Senior Java Backend Developer
+secondary_reviewers:
+  - Senior DevOps Engineer
+  - Observability And Runtime Diagnostics
+  - Senior Tester
+affected_files:
+  - repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/RepositorySourceServiceConfiguration.java
+  - repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/HealthHttpServerLifecycle.java
+  - repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/**
+  - repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/RepositorySourceServiceApplicationTest.java
+affected_modules:
+  - repository-source-service
+affected_contracts: []
+dependencies:
+  - S04
+parallel_group: P5
+file_locks:
+  - repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/**
+  - repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/**
+contract_locks: []
+architecture_locks:
+  - repository-source-bootstrap-boundary
+  - storage-readiness
+quality_gates:
+  targeted:
+    - ./gradlew :repository-source-service:test --dependency-verification strict --console=plain --stacktrace
+  required:
+    - ./gradlew test --dependency-verification strict --console=plain --stacktrace
+documentation:
+  arc42: checked
+  adr: checked
+stop_conditions:
+  - Liquibase can run after application use cases start accepting requests.
+  - Health reports UP when mandatory PostgreSQL persistence is unreachable.
+  - Database exception details leak credentials or private SQL diagnostics to public responses.
+```
+
+### Slice 06 - Docker Compose and Local PostgreSQL Runtime
+
+Purpose: connect repository-source Docker runtime to `forensic-postgres` while
+preserving the checkout workspace volume.
+
+```yaml
+slice_id: S06
+profile: FULL_PATH
+owner: Senior DevOps Engineer
+secondary_reviewers:
+  - Senior Java Backend Developer
+  - Security And Threat Modeling
+  - Senior Tester
+affected_files:
+  - docker/postgres/docker-compose.yml
+  - docker/postgres/.env.example
+  - deployment/docker-compose/services/repository-source-service.compose.yml
+  - deployment/docker-compose/repository-to-btm.local.yml
+  - deployment/docker-compose/setup.sh
+  - deployment/docker-compose/README.md
+affected_modules:
+  - repository-source-service
+affected_contracts: []
+dependencies:
+  - S05
+parallel_group: P6
+file_locks:
+  - docker/postgres/**
+  - deployment/docker-compose/**
+contract_locks: []
+architecture_locks:
+  - local-docker-network
+  - repository-source-private-volume
+quality_gates:
+  targeted:
+    - docker compose --env-file docker/postgres/.env.example -f docker/postgres/docker-compose.yml config
+    - docker compose -f deployment/docker-compose/services/repository-source-service.compose.yml -f deployment/docker-compose/forensic-analytics.local.yml config
+    - docker compose -f deployment/docker-compose/repository-to-btm.local.yml config
+  required:
+    - git diff --check
+documentation:
+  arc42: checked
+  adr: checked
+stop_conditions:
+  - The repository-source checkout volume is removed or mounted into another service.
+  - Repository-source reads PostgreSQL through a host-only path when container DNS is required.
+  - Secrets are added to committed Compose files.
+```
+
+### Slice 07 - PostgreSQL Runtime Default and H2 Test Boundary
+
+Purpose: make PostgreSQL the repository-source runtime and production
+persistence path, keep H2 only as test or fixture infrastructure, and document
+the operator policy for existing local H2 state.
+
+```yaml
+slice_id: S07
+profile: FULL_PATH
+owner: Data Ownership And Persistence Steward
+secondary_reviewers:
+  - Senior Java Backend Developer
+  - Observability And Runtime Diagnostics
+  - Senior Tester
+  - Senior Documentation Engineer
+affected_files:
+  - repository-source-service/src/main/resources/application.properties
+  - repository-source-service/src/main/resources/application-docker.properties
+  - repository-source-service/src/main/resources/application-test.properties
+  - repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/RepositorySourceServiceConfiguration.java
+  - repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/RepositorySourceServiceProperties.java
+  - repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/RepositorySourceServicePropertiesConfiguration.java
+  - repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/HealthHttpServerLifecycle.java
+  - repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/adapter/out/h2/H2RepositorySourcePersistenceAdapter.java
+  - repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/application/RepositorySourceH2PersistenceApplicationTest.java
+  - repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/RepositorySourceServiceApplicationTest.java
+  - repository-source-service/README.md
+  - docs/adr/ADR-0023-h2-for-repository-source-mvp-persistence.md
+  - docs/architecture/data-ownership.md
+affected_modules:
+  - repository-source-service
+affected_contracts: []
+dependencies:
+  - S06
+parallel_group: P7
+file_locks:
+  - repository-source-service/src/main/resources/**
+  - repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/**
+  - repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/adapter/out/h2/**
+  - repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/application/**
+  - repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/**
+  - repository-source-service/README.md
+  - docs/adr/ADR-0023-h2-for-repository-source-mvp-persistence.md
+  - docs/architecture/data-ownership.md
+contract_locks: []
+architecture_locks:
+  - h2-mvp-retirement
+  - repository-source-postgres-runtime-default
+  - storage-readiness
+quality_gates:
+  targeted:
+    - ./gradlew :repository-source-service:test --dependency-verification strict --console=plain --stacktrace
+  required:
+    - ./gradlew test --dependency-verification strict --console=plain --stacktrace
+documentation:
+  arc42: checked
+  adr: required
+stop_conditions:
+  - H2 remains selectable as an active runtime or Docker fallback.
+  - H2 tests are removed without PostgreSQL-independent test coverage for default gates.
+  - Missing or unreachable PostgreSQL is reported as successful readiness.
+  - Existing H2 data preservation is required but no explicit migration source and acceptance criteria are provided.
+  - Runtime properties default to H2 outside test scope.
+```
+
+### Slice 08 - Database Settings Contract and Backend Handoff
+
+Purpose: add the contract-first public Settings API and backend handoff for
+operator-managed repository-source PostgreSQL configuration without exposing
+secrets or bypassing service ownership.
+
+```yaml
+slice_id: S08
+profile: FULL_PATH
+owner: Contract-First API Steward
+secondary_reviewers:
+  - Senior Requirement Engineer
+  - Senior System Architect
+  - Senior Java Backend Developer
+  - Data Ownership And Persistence Steward
+  - Security And Threat Modeling
+  - Observability And Runtime Diagnostics
+  - Senior Tester
+affected_files:
+  - contracts/openapi/gateway-api.yaml
+  - contracts/openapi/README.md
+  - contracts/grpc/repository-analysis.proto
+  - contracts/grpc/README.md
+  - query-report-api-service/src/main/java/de/burger/forensics/analytics/services/queryreportapi/adapter/in/http/QueryReportApiHttpHandler.java
+  - query-report-api-service/src/main/java/de/burger/forensics/analytics/services/queryreportapi/adapter/out/grpc/RepositorySourceSettingsGrpcClient.java
+  - query-report-api-service/src/main/java/de/burger/forensics/analytics/services/queryreportapi/application/QueryReportApiSettingsService.java
+  - query-report-api-service/src/main/java/de/burger/forensics/analytics/services/queryreportapi/application/port/RepositorySourceSettingsOwnerPort.java
+  - query-report-api-service/src/main/java/de/burger/forensics/analytics/services/queryreportapi/domain/QueryReportApiSettings.java
+  - query-report-api-service/src/main/java/de/burger/forensics/analytics/services/queryreportapi/**
+  - query-report-api-service/src/main/resources/**
+  - query-report-api-service/src/test/java/de/burger/forensics/analytics/services/queryreportapi/**
+  - repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/adapter/in/grpc/RepositorySourceGrpcEndpoint.java
+  - repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/adapter/in/grpc/RepositorySourceContractTest.java
+  - repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/adapter/in/grpc/RepositorySourceGrpcEndpointTest.java
+  - repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/**
+  - repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/**
+  - docs/architecture/data-ownership.md
+  - docs/architecture/service-boundaries.md
+affected_modules:
+  - query-report-api-service
+  - repository-source-service
+affected_contracts:
+  - contracts/openapi/gateway-api.yaml
+  - contracts/grpc/repository-analysis.proto
+dependencies:
+  - S07
+parallel_group: P8
+file_locks:
+  - contracts/openapi/**
+  - contracts/grpc/**
+  - query-report-api-service/src/main/**
+  - query-report-api-service/src/test/**
+  - repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/adapter/in/grpc/**
+  - repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/adapter/in/grpc/**
+  - repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/**
+  - repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/**
+  - docs/architecture/data-ownership.md
+  - docs/architecture/service-boundaries.md
+contract_locks:
+  - public-settings-api
+  - repository-source-settings-handoff
+architecture_locks:
+  - settings-ownership
+  - secret-redaction
+  - repository-source-configuration-boundary
+quality_gates:
+  targeted:
+    - ./gradlew :query-report-api-service:test --dependency-verification strict --console=plain --stacktrace
+    - ./gradlew :repository-source-service:test --dependency-verification strict --console=plain --stacktrace
+  required:
+    - ./gradlew test --dependency-verification strict --console=plain --stacktrace
+documentation:
+  arc42: checked
+  adr: checked
+stop_conditions:
+  - REST or gRPC Settings fields, methods, status codes or error models would need to be guessed.
+  - Settings ownership, operator-token protection, write-only password handling or persistence boundaries are unclear.
+  - Raw database passwords are returned to the UI, stored in browser state, logged or committed.
+  - The UI or query-report-api-service reads repository-source private PostgreSQL tables directly.
+  - Runtime apply or restart semantics for changed database settings are undocumented or claimed as hot-applied.
+  - Settings validation accepts missing operator authentication or reports unreachable PostgreSQL as valid.
+```
+
+### Slice 09 - React Database Settings UI
+
+Purpose: replace the Settings placeholder with an operator workflow for
+viewing sanitized PostgreSQL configuration status, validating new database
+settings and submitting them through the public Settings API.
+
+```yaml
+slice_id: S09
+profile: FULL_PATH
+owner: Senior React Frontend Developer
+secondary_reviewers:
+  - Senior UX Designer
+  - Security And Threat Modeling
+  - Senior Tester
+affected_files:
+  - forensic-ui/src/pages/settings/SettingsPage.tsx
+  - forensic-ui/src/adapters/api/**
+  - forensic-ui/src/application/**
+  - forensic-ui/src/domain/**
+  - forensic-ui/src/app/App.test.tsx
+  - forensic-ui/src/styles.css
+affected_modules:
+  - forensic-ui
+affected_contracts:
+  - contracts/openapi/gateway-api.yaml
+dependencies:
+  - S08
+parallel_group: P9
+file_locks:
+  - forensic-ui/src/pages/settings/**
+  - forensic-ui/src/adapters/api/**
+  - forensic-ui/src/application/**
+  - forensic-ui/src/domain/**
+  - forensic-ui/src/app/**
+  - forensic-ui/src/styles.css
+contract_locks:
+  - public-settings-api
+architecture_locks:
+  - frontend-api-adapter-boundary
+  - secret-redaction
+quality_gates:
+  targeted:
+    - cd forensic-ui && npm run test
+    - cd forensic-ui && npm run build
+  required:
+    - ./gradlew test --dependency-verification strict --console=plain --stacktrace
+documentation:
+  arc42: checked
+  adr: checked
+stop_conditions:
+  - Database credentials are written to local storage, URL parameters, diagnostics or rendered read-back fields.
+  - The UI calls PostgreSQL or repository-source private endpoints directly.
+  - Settings validation cannot distinguish invalid input, unreachable PostgreSQL and unsupported apply semantics.
+  - Existing workspace and analysis UI flows regress without test coverage.
+```
+
+### Slice 10 - End-to-End Verification and Release Readiness
+
+Purpose: run the targeted and repository quality gates, inspect diffs and
+record final workflow execution evidence.
+
+```yaml
+slice_id: S10
+profile: FULL_PATH
+owner: Senior Tester
+secondary_reviewers:
+  - Quality Gate Orchestrator
+  - Senior DevOps Engineer
+  - Senior System Architect
+  - Senior React Frontend Developer
+affected_files:
+  - docs/workflow/execution-report.md
+  - docs/workflow/quality-and-leakage-gates.md
+affected_modules:
+  - repository-source-service
+  - query-report-api-service
+  - forensic-ui
+affected_contracts: []
+dependencies:
+  - S09
+parallel_group: P10
+file_locks:
+  - docs/workflow/execution-report.md
+  - docs/workflow/quality-and-leakage-gates.md
+contract_locks: []
+architecture_locks:
+  - release-readiness
+quality_gates:
+  targeted:
+    - ./gradlew :repository-source-service:test --dependency-verification strict --console=plain --stacktrace
+    - ./gradlew :query-report-api-service:test --dependency-verification strict --console=plain --stacktrace
+    - cd forensic-ui && npm run test
+    - cd forensic-ui && npm run build
+    - docker compose --env-file docker/postgres/.env.example -f docker/postgres/docker-compose.yml config
+    - docker compose -f deployment/docker-compose/repository-to-btm.local.yml config
+  required:
+    - ./gradlew test --dependency-verification strict --console=plain --stacktrace
+    - ./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace
+    - git diff --check
+documentation:
+  arc42: checked
+  adr: checked
+stop_conditions:
+  - Any required quality gate fails.
+  - Diff inspection finds unrelated or unowned changes.
+  - PostgreSQL runtime is claimed without executed runtime evidence.
+  - Settings UI or API readiness is claimed without contract and frontend verification.
+```
+
+## Dependency Summary
+
+```text
+S01
+  -> S02
+    -> S03
+      -> S04
+        -> S05
+          -> S06
+            -> S07
+              -> S08
+                -> S09
+                  -> S10
+```
+
+No slices are safely parallelizable because the persistence decision, build
+configuration, schema, adapter, runtime wiring, H2 test-boundary cutover,
+Settings contract, Settings UI and release evidence form a single ordered
+cutover.
+
+## Role Ownership Map
+
+| Role | Ownership |
+|---|---|
+| Senior Requirement Engineer | Requirement interpretation, EPIC drift and assumption tracking |
+| Senior System Architect | ADR, arc42, hexagonal and service-boundary validation |
+| Senior Java Backend Developer | Repository-source configuration, Liquibase, JDBC adapter and tests |
+| Senior React Frontend Developer | Settings UI implementation, API adapter wiring and frontend tests |
+| Senior UX Designer | Settings interaction design, accessibility and operator workflow clarity |
+| Senior Tester | Regression strategy, quality gate selection and final verification |
+| Data Ownership And Persistence Steward | One-writer persistence model and H2 retirement policy |
+| Senior Analysis Storage Architect | Schema responsibility, metadata/provenance storage checks |
+| Senior DevOps Engineer | Docker Compose, local runtime, dependency verification and operator commands |
+| Security And Threat Modeling | Credentials, network, diagnostics and private path leakage review |
+| Observability And Runtime Diagnostics | Health/readiness and sanitized failure reporting |
+| Contract-First API Steward | Public Settings API and repository-source handoff governance |
+
+No callable subagents were used while authoring this workflow; the matching
+skills and role files were applied as local review checklists.
+
+## Quality Gate Expectations
+
+Minimum repository quality command:
 
 ```bash
 ./gradlew test --dependency-verification strict --console=plain --stacktrace
 ```
 
-Full local quality gate before commit readiness:
+Full local quality gate:
 
 ```bash
 ./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace
 ```
 
-Compose runtime smoke checks are required only after the relevant images build
-successfully and Docker is available. The result must state whether runtime
-startup was executed, skipped, or blocked.
-
-## Ordered Slices
-
-### Slice 01 - Root Compose Network, Build Context, And Stack Entry
-
-Purpose: create the root `forensic_analytics` deployment boundary, network
-declaration, file naming convention, root stack assembly strategy, common
-environment conventions, and Docker build-context guard for service boot jars.
-
-```yaml
-slice_id: S01_ROOT_FORENSIC_ANALYTICS_STACK
-profile: FULL_PATH
-owner: senior_devops
-secondary_reviewers:
-  - senior_system_architect
-  - senior_tester
-affected_files:
-  - .dockerignore
-  - deployment/docker-compose/forensic-analytics.local.yml
-  - deployment/docker-compose/README.md
-  - deployment/README.md
-affected_modules: []
-affected_contracts: []
-dependencies: []
-parallel_group: P0
-file_locks:
-  - .dockerignore
-  - deployment/docker-compose/forensic-analytics.local.yml
-  - deployment/docker-compose/README.md
-  - deployment/README.md
-contract_locks: []
-architecture_locks:
-  - docker-network-forensic_analytics
-  - local-deployment-boundary
-quality_gates:
-  targeted:
-    - ./gradlew --no-daemon --max-workers=1 :repository-source-service:bootJar :ingestion-service:bootJar :java-parser-analysis-service:bootJar :joern-analysis-service:bootJar :analysis-orchestrator-service:bootJar :query-report-api-service:bootJar --dependency-verification strict --console=plain --stacktrace
-    - docker compose -f deployment/docker-compose/forensic-analytics.local.yml config
-    - git diff --check
-  required:
-    - ./gradlew test --dependency-verification strict --console=plain --stacktrace
-documentation:
-  arc42: docs/arc42/07-deployment-view.md
-  adr: docs/adr/ADR-0017-target-microservices-service-landscape.md
-stop_conditions:
-  - Docker Compose network naming cannot be represented as forensic_analytics.
-  - Root stack would overwrite existing repository-to-btm Compose evidence.
-  - A target-service Dockerfile cannot copy its verified boot jar from the build context.
-```
-
-Done criteria:
-
-- The root Compose entry defines or references a network named
-  `forensic_analytics`.
-- The network strategy is explicit: either a root-created network or an
-  external shared network with documented `docker network create` and cleanup
-  behavior.
-- `.dockerignore` re-includes every boot jar needed by service Dockerfiles that
-  use the repository root as build context.
-- The deployment README documents how service fragments are combined.
-- `deployment/README.md` no longer contradicts the verified Compose scope.
-- Existing transitional Compose evidence remains intact.
-
-### Slice 02 - Repository Source Service Compose
-
-Purpose: add local Compose deployment for the repository source owner service
-and preserve private workspace/data volume ownership.
-
-```yaml
-slice_id: S02_REPOSITORY_SOURCE_SERVICE_COMPOSE
-profile: FULL_PATH
-owner: senior_devops
-secondary_reviewers:
-  - senior_java_backend
-  - senior_system_architect
-  - senior_tester
-affected_files:
-  - deployment/docker-compose/services/repository-source-service.compose.yml
-affected_modules:
-  - repository-source-service
-affected_contracts:
-  - contracts/grpc/repository-analysis.proto
-dependencies:
-  - S01_ROOT_FORENSIC_ANALYTICS_STACK
-parallel_group: P1
-file_locks:
-  - deployment/docker-compose/services/repository-source-service.compose.yml
-contract_locks:
-  - repository-source-owner-api
-architecture_locks:
-  - repository-source-private-workspace-volume
-  - repository-source-h2-data-volume
-quality_gates:
-  targeted:
-    - ./gradlew :repository-source-service:test --dependency-verification strict --console=plain --stacktrace
-    - ./gradlew :repository-source-service:bootJar --dependency-verification strict --console=plain --stacktrace
-    - docker compose -f deployment/docker-compose/services/repository-source-service.compose.yml config
-  required:
-    - ./gradlew test --dependency-verification strict --console=plain --stacktrace
-documentation:
-  arc42: docs/arc42/07-deployment-view.md
-  adr: docs/adr/ADR-0023-h2-for-repository-source-mvp-persistence.md
-stop_conditions:
-  - Compose mounts repository-source private volumes into another service.
-  - Health or port values cannot be verified from service configuration.
-```
-
-Done criteria:
-
-- Compose uses the existing service-owned Dockerfile.
-- Private workspace and H2 volumes stay owner-only.
-- Health and port mappings are documented with host-port collision avoidance.
-
-### Slice 03 - Ingestion Service Compose
-
-Purpose: add local Compose deployment for the target ingestion service.
-
-```yaml
-slice_id: S03_INGESTION_SERVICE_COMPOSE
-profile: FULL_PATH
-owner: senior_devops
-secondary_reviewers:
-  - senior_java_backend
-  - senior_tester
-affected_files:
-  - deployment/docker-compose/services/ingestion-service.compose.yml
-affected_modules:
-  - ingestion-service
-affected_contracts:
-  - contracts/grpc/forensic-ingestion.proto
-dependencies:
-  - S01_ROOT_FORENSIC_ANALYTICS_STACK
-parallel_group: P1
-file_locks:
-  - deployment/docker-compose/services/ingestion-service.compose.yml
-contract_locks:
-  - ingestion-service-grpc
-architecture_locks:
-  - raw-ingestion-owner
-quality_gates:
-  targeted:
-    - ./gradlew :ingestion-service:test --dependency-verification strict --console=plain --stacktrace
-    - ./gradlew :ingestion-service:bootJar --dependency-verification strict --console=plain --stacktrace
-    - docker compose -f deployment/docker-compose/services/ingestion-service.compose.yml config
-  required:
-    - ./gradlew test --dependency-verification strict --console=plain --stacktrace
-documentation:
-  arc42: docs/arc42/07-deployment-view.md
-  adr: docs/adr/ADR-0017-target-microservices-service-landscape.md
-stop_conditions:
-  - Compose would collide with forensic-ingestion host ports without explicit mapping.
-  - Runtime trace payload ownership becomes ambiguous.
-```
-
-Done criteria:
-
-- Compose attaches the service to `forensic_analytics`.
-- gRPC and health ports are exposed with unique host mappings.
-- Runtime intake evidence semantics remain owned by `ingestion-service`.
-
-### Slice 04 - Java Parser Analysis Service Compose
-
-Purpose: add local Compose deployment for the target JavaParser analysis
-service and its artifact volume.
-
-```yaml
-slice_id: S04_JAVA_PARSER_ANALYSIS_SERVICE_COMPOSE
-profile: FULL_PATH
-owner: senior_devops
-secondary_reviewers:
-  - senior_java_backend
-  - source_analysis_reviewer
-  - senior_tester
-affected_files:
-  - deployment/docker-compose/services/java-parser-analysis-service.compose.yml
-affected_modules:
-  - java-parser-analysis-service
-affected_contracts:
-  - contracts/grpc/java-ast-analysis.proto
-  - contracts/grpc/java-ast-source-facts-v1.schema.json
-dependencies:
-  - S01_ROOT_FORENSIC_ANALYTICS_STACK
-parallel_group: P1
-file_locks:
-  - deployment/docker-compose/services/java-parser-analysis-service.compose.yml
-contract_locks:
-  - java-parser-source-facts
-architecture_locks:
-  - static-source-fact-owner
-quality_gates:
-  targeted:
-    - ./gradlew :java-parser-analysis-service:test --dependency-verification strict --console=plain --stacktrace
-    - ./gradlew :java-parser-analysis-service:bootJar --dependency-verification strict --console=plain --stacktrace
-    - docker compose -f deployment/docker-compose/services/java-parser-analysis-service.compose.yml config
-  required:
-    - ./gradlew test --dependency-verification strict --console=plain --stacktrace
-documentation:
-  arc42: docs/arc42/07-deployment-view.md
-  adr: docs/adr/ADR-0017-target-microservices-service-landscape.md
-stop_conditions:
-  - Static source facts are represented as runtime execution evidence.
-  - Artifact volume ownership is shared with another service.
-```
-
-Done criteria:
-
-- Compose models the service-owned artifact path only.
-- Static analysis output remains separate from runtime trace evidence.
-
-### Slice 05 - Joern Analysis Service Compose
-
-Purpose: add local Compose deployment for the target Joern analysis service
-without mounting repository-source private workspaces into the Joern container.
-
-```yaml
-slice_id: S05_JOERN_ANALYSIS_SERVICE_COMPOSE
-profile: FULL_PATH
-owner: senior_devops
-secondary_reviewers:
-  - senior_joern_cpg_specialist
-  - senior_java_backend
-  - senior_tester
-affected_files:
-  - deployment/docker-compose/services/joern-analysis-service.compose.yml
-affected_modules:
-  - joern-analysis-service
-affected_contracts:
-  - contracts/grpc/joern-cpg-analysis.proto
-dependencies:
-  - S01_ROOT_FORENSIC_ANALYTICS_STACK
-parallel_group: P1
-file_locks:
-  - deployment/docker-compose/services/joern-analysis-service.compose.yml
-contract_locks:
-  - joern-analysis-grpc
-architecture_locks:
-  - joern-owned-workspace-volume
-  - semantic-artifact-owner
-quality_gates:
-  targeted:
-    - ./gradlew :joern-analysis-service:test --dependency-verification strict --console=plain --stacktrace
-    - ./gradlew :joern-analysis-service:bootJar --dependency-verification strict --console=plain --stacktrace
-    - docker compose -f deployment/docker-compose/services/joern-analysis-service.compose.yml config
-  required:
-    - ./gradlew test --dependency-verification strict --console=plain --stacktrace
-documentation:
-  arc42: docs/arc42/07-deployment-view.md
-  adr: docs/adr/ADR-0017-target-microservices-service-landscape.md
-stop_conditions:
-  - Repository-source private workspace volume is mounted into Joern.
-  - Joern image pull or build cannot be verified and runtime readiness would be claimed anyway.
-```
-
-Done criteria:
-
-- Joern runtime image use is documented as an optional external Docker check.
-- Joern artifacts and workspaces are service-owned.
-
-### Slice 06 - Analysis Orchestrator Service Compose
-
-Purpose: add local Compose deployment for the target orchestration service and
-document dependencies on owner APIs.
-
-```yaml
-slice_id: S06_ANALYSIS_ORCHESTRATOR_SERVICE_COMPOSE
-profile: FULL_PATH
-owner: senior_devops
-secondary_reviewers:
-  - senior_java_backend
-  - senior_system_architect
-  - senior_tester
-affected_files:
-  - deployment/docker-compose/services/analysis-orchestrator-service.compose.yml
-affected_modules:
-  - analysis-orchestrator-service
-affected_contracts:
-  - contracts/grpc/analysis-job.proto
-  - contracts/events/analysis-events.md
-dependencies:
-  - S02_REPOSITORY_SOURCE_SERVICE_COMPOSE
-  - S03_INGESTION_SERVICE_COMPOSE
-  - S04_JAVA_PARSER_ANALYSIS_SERVICE_COMPOSE
-  - S05_JOERN_ANALYSIS_SERVICE_COMPOSE
-parallel_group: P2
-file_locks:
-  - deployment/docker-compose/services/analysis-orchestrator-service.compose.yml
-contract_locks:
-  - analysis-job-orchestration
-architecture_locks:
-  - orchestration-state-owner
-quality_gates:
-  targeted:
-    - ./gradlew :analysis-orchestrator-service:test --dependency-verification strict --console=plain --stacktrace
-    - ./gradlew :analysis-orchestrator-service:bootJar --dependency-verification strict --console=plain --stacktrace
-    - docker compose -f deployment/docker-compose/services/analysis-orchestrator-service.compose.yml config
-  required:
-    - ./gradlew test --dependency-verification strict --console=plain --stacktrace
-documentation:
-  arc42: docs/arc42/07-deployment-view.md
-  adr: docs/adr/ADR-0017-target-microservices-service-landscape.md
-stop_conditions:
-  - Compose implies direct database or filesystem access to another service.
-  - Orchestration facts become canonical evidence owned by a worker service.
-```
-
-Done criteria:
-
-- The orchestrator depends on owner APIs, not private data paths.
-- Startup order is health-based where verified.
-
-### Slice 07 - Query Report API Service Compose
-
-Purpose: add local Compose deployment for the public API facade used by the GUI
-and CLI.
-
-```yaml
-slice_id: S07_QUERY_REPORT_API_SERVICE_COMPOSE
-profile: FULL_PATH
-owner: senior_devops
-secondary_reviewers:
-  - senior_java_backend
-  - senior_react_frontend
-  - senior_tester
-affected_files:
-  - deployment/docker-compose/services/query-report-api-service.compose.yml
-affected_modules:
-  - query-report-api-service
-affected_contracts:
-  - contracts/openapi/gateway-api.yaml
-  - contracts/grpc/repository-analysis.proto
-  - contracts/grpc/analysis-job.proto
-dependencies:
-  - S02_REPOSITORY_SOURCE_SERVICE_COMPOSE
-  - S06_ANALYSIS_ORCHESTRATOR_SERVICE_COMPOSE
-parallel_group: P3
-file_locks:
-  - deployment/docker-compose/services/query-report-api-service.compose.yml
-contract_locks:
-  - public-query-report-api
-architecture_locks:
-  - public-api-facade
-quality_gates:
-  targeted:
-    - ./gradlew :query-report-api-service:test --dependency-verification strict --console=plain --stacktrace
-    - ./gradlew :query-report-api-service:bootJar --dependency-verification strict --console=plain --stacktrace
-    - docker compose -f deployment/docker-compose/services/query-report-api-service.compose.yml config
-  required:
-    - ./gradlew test --dependency-verification strict --console=plain --stacktrace
-documentation:
-  arc42: docs/arc42/07-deployment-view.md
-  adr: docs/adr/ADR-0017-target-microservices-service-landscape.md
-stop_conditions:
-  - Public API exposes private repository-source paths or internal diagnostics.
-  - GUI would need to call internal gRPC worker endpoints directly.
-```
-
-Done criteria:
-
-- The public API is exposed on a stable host port.
-- Backend service references use Compose service names and verified ports.
-
-### Slice 08 - CLI Client Compose Tool Profile
-
-Purpose: add a deployment descriptor or documented tool profile for the public
-CLI client without promoting it into an always-on backend service.
-
-```yaml
-slice_id: S08_CLI_CLIENT_COMPOSE_TOOL_PROFILE
-profile: FULL_PATH
-owner: senior_devops
-secondary_reviewers:
-  - senior_java_backend
-  - senior_tester
-affected_files:
-  - .dockerignore
-  - deployment/docker-compose/services/cli-client.compose.yml
-  - cli-client/Dockerfile
-affected_modules:
-  - cli-client
-affected_contracts:
-  - contracts/cli/gateway-cli-contract.md
-  - contracts/openapi/gateway-api.yaml
-dependencies:
-  - S07_QUERY_REPORT_API_SERVICE_COMPOSE
-parallel_group: P4
-file_locks:
-  - .dockerignore
-  - deployment/docker-compose/services/cli-client.compose.yml
-  - cli-client/Dockerfile
-contract_locks:
-  - cli-public-api-client
-architecture_locks:
-  - cli-is-not-backend-service
-quality_gates:
-  targeted:
-    - ./gradlew :cli-client:test --dependency-verification strict --console=plain --stacktrace
-    - ./gradlew :cli-client:installDist --dependency-verification strict --console=plain --stacktrace
-    - ./gradlew :cli-client:build --dependency-verification strict --console=plain --stacktrace
-    - docker compose --profile tools -f deployment/docker-compose/services/cli-client.compose.yml config
-  required:
-    - ./gradlew test --dependency-verification strict --console=plain --stacktrace
-documentation:
-  arc42: docs/arc42/07-deployment-view.md
-  adr: docs/adr/ADR-0017-target-microservices-service-landscape.md
-stop_conditions:
-  - CLI container is modeled as an always-on backend service.
-  - CLI bypasses query-report-api-service and calls private services directly.
-```
-
-Done criteria:
-
-- CLI Compose usage is profile-based or one-shot.
-- The CLI targets the public API only.
-
-### Slice 09 - Observability Stack Compose Boundary
-
-Purpose: add verified local observability deployment material without turning
-observability into a shared Java runtime module or evidence source.
-
-```yaml
-slice_id: S09_OBSERVABILITY_STACK_COMPOSE
-profile: FULL_PATH
-owner: senior_devops
-secondary_reviewers:
-  - observability_runtime_diagnostics
-  - senior_system_architect
-  - senior_tester
-affected_files:
-  - deployment/docker-compose/services/observability-stack.compose.yml
-  - deployment/observability/service-diagnostics-policy.yaml
-affected_modules:
-  - observability-stack
-affected_contracts: []
-dependencies:
-  - S01_ROOT_FORENSIC_ANALYTICS_STACK
-parallel_group: P4
-file_locks:
-  - deployment/docker-compose/services/observability-stack.compose.yml
-  - deployment/observability/service-diagnostics-policy.yaml
-contract_locks: []
-architecture_locks:
-  - observability-is-diagnostics-only
-quality_gates:
-  targeted:
-    - ./gradlew :observability-stack:test --dependency-verification strict --console=plain --stacktrace
-    - docker compose --profile diagnostics -f deployment/docker-compose/services/observability-stack.compose.yml config
-  required:
-    - ./gradlew test --dependency-verification strict --console=plain --stacktrace
-documentation:
-  arc42: docs/arc42/07-deployment-view.md
-  adr: docs/adr/ADR-0005-adapter-logging-observability-boundary.md
-stop_conditions:
-  - Observability logs or traces are treated as verified forensic evidence.
-  - A shared Java logging or telemetry module is introduced.
-```
-
-Done criteria:
-
-- Observability remains optional and profile-gated unless verified otherwise.
-- Diagnostic fields and redaction policy remain documented.
-
-### Slice 10 - Testbed Compose Consumer
-
-Purpose: add testbed Compose consumption or a non-production descriptor without
-promoting testbed into a productive service.
-
-```yaml
-slice_id: S10_TESTBED_COMPOSE_CONSUMER
-profile: FULL_PATH
-owner: senior_tester
-secondary_reviewers:
-  - senior_devops
-  - senior_system_architect
-affected_files:
-  - deployment/docker-compose/services/testbed.compose.yml
-  - testbed/README.md
-affected_modules:
-  - testbed
-affected_contracts: []
-dependencies:
-  - S01_ROOT_FORENSIC_ANALYTICS_STACK
-parallel_group: P4
-file_locks:
-  - deployment/docker-compose/services/testbed.compose.yml
-  - testbed/README.md
-contract_locks: []
-architecture_locks:
-  - testbed-is-non-production
-quality_gates:
-  targeted:
-    - ./gradlew :testbed:test --dependency-verification strict --console=plain --stacktrace
-    - docker compose --profile testbed -f deployment/docker-compose/services/testbed.compose.yml config
-  required:
-    - ./gradlew test --dependency-verification strict --console=plain --stacktrace
-documentation:
-  arc42: docs/arc42/07-deployment-view.md
-  adr: docs/adr/ADR-0017-target-microservices-service-landscape.md
-stop_conditions:
-  - Productive service depends on testbed code or fixtures.
-  - Test-only data is represented as production evidence.
-```
-
-Done criteria:
-
-- Testbed remains non-production.
-- Compose use is documented as integration environment support.
-
-### Slice 11 - Forensic Ingestion Service Compose
-
-Purpose: add local Compose deployment for the transitional forensic ingestion
-service while avoiding target-service aliasing.
-
-```yaml
-slice_id: S11_FORENSIC_INGESTION_SERVICE_COMPOSE
-profile: FULL_PATH
-owner: senior_devops
-secondary_reviewers:
-  - senior_java_backend
-  - ingestion_handoff_reviewer
-  - senior_tester
-affected_files:
-  - deployment/docker-compose/services/forensic-ingestion-service.compose.yml
-affected_modules:
-  - forensic-ingestion-service
-affected_contracts:
-  - contracts/grpc/forensic-ingestion.proto
-dependencies:
-  - S01_ROOT_FORENSIC_ANALYTICS_STACK
-parallel_group: P5
-file_locks:
-  - deployment/docker-compose/services/forensic-ingestion-service.compose.yml
-contract_locks:
-  - forensic-ingestion-transitional-grpc
-architecture_locks:
-  - transitional-service-not-target-alias
-quality_gates:
-  targeted:
-    - ./gradlew :forensic-ingestion-service:test --dependency-verification strict --console=plain --stacktrace
-    - ./gradlew :forensic-ingestion-service:bootJar --dependency-verification strict --console=plain --stacktrace
-    - docker compose -f deployment/docker-compose/services/forensic-ingestion-service.compose.yml config
-  required:
-    - ./gradlew test --dependency-verification strict --console=plain --stacktrace
-documentation:
-  arc42: docs/arc42/07-deployment-view.md
-  adr: docs/adr/ADR-0017-target-microservices-service-landscape.md
-stop_conditions:
-  - Descriptor hides the distinction between forensic-ingestion-service and ingestion-service.
-  - Host ports collide with ingestion-service without explicit resolution.
-```
-
-Done criteria:
-
-- The descriptor labels the service as transitional.
-- Port collisions with `ingestion-service` are resolved.
-
-### Slice 12 - Forensic Gateway Service Compose
-
-Purpose: add local Compose deployment for the transitional gateway facade
-without confusing it with the target `query-report-api-service`.
-
-```yaml
-slice_id: S12_FORENSIC_GATEWAY_SERVICE_COMPOSE
-profile: FULL_PATH
-owner: senior_devops
-secondary_reviewers:
-  - senior_java_backend
-  - senior_system_architect
-  - senior_tester
-affected_files:
-  - deployment/docker-compose/services/forensic-gateway-service.compose.yml
-affected_modules:
-  - forensic-gateway-service
-affected_contracts:
-  - contracts/openapi/gateway-api.yaml
-dependencies:
-  - S13_ANALYSIS_STORE_SERVICE_COMPOSE
-parallel_group: P7
-file_locks:
-  - deployment/docker-compose/services/forensic-gateway-service.compose.yml
-contract_locks:
-  - transitional-gateway-api
-architecture_locks:
-  - transitional-facade-not-target-alias
-quality_gates:
-  targeted:
-    - ./gradlew :forensic-gateway-service:test --dependency-verification strict --console=plain --stacktrace
-    - ./gradlew :forensic-gateway-service:bootJar --dependency-verification strict --console=plain --stacktrace
-    - docker compose -f deployment/docker-compose/services/forensic-gateway-service.compose.yml config
-  required:
-    - ./gradlew test --dependency-verification strict --console=plain --stacktrace
-documentation:
-  arc42: docs/arc42/07-deployment-view.md
-  adr: docs/adr/ADR-0017-target-microservices-service-landscape.md
-stop_conditions:
-  - Gateway is described as the target public API owner.
-  - Public responses expose private worker or store internals.
-```
-
-Done criteria:
-
-- The descriptor preserves gateway as transitional repository-to-BTM facade.
-- Host-port conflicts with `query-report-api-service` are avoided.
-- Standalone Compose validation is not broken by undefined dependencies.
-
-### Slice 13 - Analysis Store Service Compose
-
-Purpose: add local Compose deployment for transitional analysis store
-orchestration and artifact metadata.
-
-```yaml
-slice_id: S13_ANALYSIS_STORE_SERVICE_COMPOSE
-profile: FULL_PATH
-owner: senior_devops
-secondary_reviewers:
-  - senior_java_backend
-  - senior_analysis_storage_architect
-  - senior_tester
-affected_files:
-  - deployment/docker-compose/services/analysis-store-service.compose.yml
-affected_modules:
-  - analysis-store-service
-affected_contracts:
-  - contracts/grpc/analysis-job.proto
-dependencies:
-  - S14_REPOSITORY_ANALYSIS_SERVICE_COMPOSE
-  - S15_JAVA_AST_ANALYSIS_SERVICE_COMPOSE
-  - S16_JOERN_CPG_ANALYSIS_SERVICE_COMPOSE
-  - S17_BTM_GENERATION_SERVICE_COMPOSE
-parallel_group: P6
-file_locks:
-  - deployment/docker-compose/services/analysis-store-service.compose.yml
-contract_locks:
-  - transitional-analysis-store
-architecture_locks:
-  - transitional-store-not-canonical-target-store
-quality_gates:
-  targeted:
-    - ./gradlew :analysis-store-service:test --dependency-verification strict --console=plain --stacktrace
-    - ./gradlew :analysis-store-service:bootJar --dependency-verification strict --console=plain --stacktrace
-    - docker compose -f deployment/docker-compose/services/analysis-store-service.compose.yml config
-  required:
-    - ./gradlew test --dependency-verification strict --console=plain --stacktrace
-documentation:
-  arc42: docs/arc42/07-deployment-view.md
-  adr: docs/adr/ADR-0017-target-microservices-service-landscape.md
-stop_conditions:
-  - Analysis Store is described as canonical FA-MSA-001 persistence owner.
-  - Another service writes its private store directly.
-```
-
-Done criteria:
-
-- The descriptor preserves transitional status and owner API boundaries.
-- Standalone Compose validation is not broken by undefined dependencies;
-  Dockerfile health checks remain available when fragments are combined.
-
-### Slice 14 - Repository Analysis Service Compose
-
-Purpose: add local Compose deployment for the transitional repository analysis
-service.
-
-```yaml
-slice_id: S14_REPOSITORY_ANALYSIS_SERVICE_COMPOSE
-profile: FULL_PATH
-owner: senior_devops
-secondary_reviewers:
-  - senior_java_backend
-  - source_analysis_reviewer
-  - senior_tester
-affected_files:
-  - deployment/docker-compose/services/repository-analysis-service.compose.yml
-affected_modules:
-  - repository-analysis-service
-affected_contracts:
-  - contracts/grpc/repository-analysis.proto
-dependencies:
-  - S01_ROOT_FORENSIC_ANALYTICS_STACK
-parallel_group: P5
-file_locks:
-  - deployment/docker-compose/services/repository-analysis-service.compose.yml
-contract_locks:
-  - transitional-repository-analysis
-architecture_locks:
-  - transitional-repository-analysis-not-repository-source
-quality_gates:
-  targeted:
-    - ./gradlew :repository-analysis-service:test --dependency-verification strict --console=plain --stacktrace
-    - ./gradlew :repository-analysis-service:bootJar --dependency-verification strict --console=plain --stacktrace
-    - docker compose -f deployment/docker-compose/services/repository-analysis-service.compose.yml config
-  required:
-    - ./gradlew test --dependency-verification strict --console=plain --stacktrace
-documentation:
-  arc42: docs/arc42/07-deployment-view.md
-  adr: docs/adr/ADR-0017-target-microservices-service-landscape.md
-stop_conditions:
-  - Descriptor claims target repository-source ownership.
-  - Repository workspaces are shared with non-owner services.
-```
-
-Done criteria:
-
-- Transitional and target repository services remain distinct.
-- Private workspace ownership is explicit.
-
-### Slice 15 - Java AST Analysis Service Compose
-
-Purpose: add local Compose deployment for transitional Java AST analysis.
-
-```yaml
-slice_id: S15_JAVA_AST_ANALYSIS_SERVICE_COMPOSE
-profile: FULL_PATH
-owner: senior_devops
-secondary_reviewers:
-  - senior_java_backend
-  - source_analysis_reviewer
-  - senior_tester
-affected_files:
-  - deployment/docker-compose/services/java-ast-analysis-service.compose.yml
-affected_modules:
-  - java-ast-analysis-service
-affected_contracts:
-  - contracts/grpc/java-ast-analysis.proto
-  - contracts/grpc/java-ast-source-facts-v1.schema.json
-dependencies:
-  - S01_ROOT_FORENSIC_ANALYTICS_STACK
-parallel_group: P5
-file_locks:
-  - deployment/docker-compose/services/java-ast-analysis-service.compose.yml
-contract_locks:
-  - transitional-java-ast-analysis
-architecture_locks:
-  - static-analysis-not-runtime-evidence
-quality_gates:
-  targeted:
-    - ./gradlew :java-ast-analysis-service:test --dependency-verification strict --console=plain --stacktrace
-    - ./gradlew :java-ast-analysis-service:bootJar --dependency-verification strict --console=plain --stacktrace
-    - docker compose -f deployment/docker-compose/services/java-ast-analysis-service.compose.yml config
-  required:
-    - ./gradlew test --dependency-verification strict --console=plain --stacktrace
-documentation:
-  arc42: docs/arc42/07-deployment-view.md
-  adr: docs/adr/ADR-0017-target-microservices-service-landscape.md
-stop_conditions:
-  - Static AST facts are presented as observed runtime flow.
-  - Artifact volume is shared as canonical storage.
-```
-
-Done criteria:
-
-- Compose preserves transitional service name and static evidence semantics.
-- Artifact ownership is documented.
-
-### Slice 16 - Joern CPG Analysis Service Compose
-
-Purpose: add local Compose deployment for transitional Joern CPG analysis.
-
-```yaml
-slice_id: S16_JOERN_CPG_ANALYSIS_SERVICE_COMPOSE
-profile: FULL_PATH
-owner: senior_devops
-secondary_reviewers:
-  - senior_joern_cpg_specialist
-  - senior_java_backend
-  - senior_tester
-affected_files:
-  - deployment/docker-compose/services/joern-cpg-analysis-service.compose.yml
-affected_modules:
-  - joern-cpg-analysis-service
-affected_contracts:
-  - contracts/grpc/joern-cpg-analysis.proto
-dependencies:
-  - S01_ROOT_FORENSIC_ANALYTICS_STACK
-parallel_group: P5
-file_locks:
-  - deployment/docker-compose/services/joern-cpg-analysis-service.compose.yml
-contract_locks:
-  - transitional-joern-cpg-analysis
-architecture_locks:
-  - joern-cpg-owned-workspace-volume
-quality_gates:
-  targeted:
-    - ./gradlew :joern-cpg-analysis-service:test --dependency-verification strict --console=plain --stacktrace
-    - ./gradlew :joern-cpg-analysis-service:bootJar --dependency-verification strict --console=plain --stacktrace
-    - docker compose -f deployment/docker-compose/services/joern-cpg-analysis-service.compose.yml config
-  required:
-    - ./gradlew test --dependency-verification strict --console=plain --stacktrace
-documentation:
-  arc42: docs/arc42/07-deployment-view.md
-  adr: docs/adr/ADR-0017-target-microservices-service-landscape.md
-stop_conditions:
-  - Repository-source private workspace volume is mounted into Joern CPG.
-  - Semantic artifacts are treated as canonical source evidence.
-```
-
-Done criteria:
-
-- Joern CPG artifacts remain service-owned.
-- External Joern image pull requirements are documented.
-
-### Slice 17 - BTM Generation Service Compose
-
-Purpose: add local Compose deployment for BTM generation artifacts.
-
-```yaml
-slice_id: S17_BTM_GENERATION_SERVICE_COMPOSE
-profile: FULL_PATH
-owner: senior_devops
-secondary_reviewers:
-  - senior_java_backend
-  - senior_tester
-affected_files:
-  - deployment/docker-compose/services/btm-generation-service.compose.yml
-affected_modules:
-  - btm-generation-service
-affected_contracts:
-  - contracts/grpc/btm-generation.proto
-dependencies:
-  - S01_ROOT_FORENSIC_ANALYTICS_STACK
-parallel_group: P5
-file_locks:
-  - deployment/docker-compose/services/btm-generation-service.compose.yml
-contract_locks:
-  - btm-generation-grpc
-architecture_locks:
-  - btm-artifact-owner
-quality_gates:
-  targeted:
-    - ./gradlew :btm-generation-service:test --dependency-verification strict --console=plain --stacktrace
-    - ./gradlew :btm-generation-service:bootJar --dependency-verification strict --console=plain --stacktrace
-    - docker compose -f deployment/docker-compose/services/btm-generation-service.compose.yml config
-  required:
-    - ./gradlew test --dependency-verification strict --console=plain --stacktrace
-documentation:
-  arc42: docs/arc42/07-deployment-view.md
-  adr: docs/adr/ADR-0017-target-microservices-service-landscape.md
-stop_conditions:
-  - Generated BTM artifacts are treated as verified runtime execution evidence.
-  - BTM output path is mounted writable by multiple producers.
-```
-
-Done criteria:
-
-- BTM artifact volume is service-owned.
-- Compose descriptor uses the verified Dockerfile.
-
-### Slice 18 - Graph Replay Service Deployment Readiness
-
-Purpose: satisfy the module slice requirement for `graph-replay-service` while
-preserving the verified fact that no service implementation exists yet.
-
-```yaml
-slice_id: S18_GRAPH_REPLAY_SERVICE_READINESS
-profile: FULL_PATH
-owner: senior_system_architect
-secondary_reviewers:
-  - replay_graph_llm_reviewer
-  - senior_devops
-  - senior_tester
-affected_files:
-  - graph-replay-service/README.md
-  - deployment/docker-compose/services/graph-replay-service.compose.yml
-affected_modules:
-  - graph-replay-service
-affected_contracts: []
-dependencies:
-  - S01_ROOT_FORENSIC_ANALYTICS_STACK
-parallel_group: P4
-file_locks:
-  - graph-replay-service/README.md
-  - deployment/docker-compose/services/graph-replay-service.compose.yml
-contract_locks: []
-architecture_locks:
-  - graph-replay-is-planned-projection
-quality_gates:
-  targeted:
-    - ./gradlew :graph-replay-service:tasks --dependency-verification strict --console=plain --stacktrace
-    - docker compose --profile planned -f deployment/docker-compose/services/graph-replay-service.compose.yml config
-  required:
-    - ./gradlew test --dependency-verification strict --console=plain --stacktrace
-documentation:
-  arc42: docs/arc42/07-deployment-view.md
-  adr: docs/adr/ADR-0017-target-microservices-service-landscape.md
-stop_conditions:
-  - A runnable graph-replay container would require inventing service code.
-  - Graph or replay projections are described as canonical evidence.
-```
-
-Done criteria:
-
-- The slice either adds a verified disabled/profile-gated deployment marker or
-  records a blocking non-runnable state.
-- No fake graph, replay, or health data is created.
-
-### Slice 19 - Report Generation Service Deployment Readiness
-
-Purpose: satisfy the module slice requirement for `report-generation-service`
-while preserving the verified fact that no service implementation exists yet.
-
-```yaml
-slice_id: S19_REPORT_GENERATION_SERVICE_READINESS
-profile: FULL_PATH
-owner: senior_system_architect
-secondary_reviewers:
-  - replay_graph_llm_reviewer
-  - senior_devops
-  - senior_tester
-affected_files:
-  - report-generation-service/README.md
-  - deployment/docker-compose/services/report-generation-service.compose.yml
-affected_modules:
-  - report-generation-service
-affected_contracts: []
-dependencies:
-  - S01_ROOT_FORENSIC_ANALYTICS_STACK
-parallel_group: P4
-file_locks:
-  - report-generation-service/README.md
-  - deployment/docker-compose/services/report-generation-service.compose.yml
-contract_locks: []
-architecture_locks:
-  - report-generation-is-planned
-quality_gates:
-  targeted:
-    - ./gradlew :report-generation-service:tasks --dependency-verification strict --console=plain --stacktrace
-    - docker compose --profile planned -f deployment/docker-compose/services/report-generation-service.compose.yml config
-  required:
-    - ./gradlew test --dependency-verification strict --console=plain --stacktrace
-documentation:
-  arc42: docs/arc42/07-deployment-view.md
-  adr: docs/adr/ADR-0017-target-microservices-service-landscape.md
-stop_conditions:
-  - A runnable report-generation container would require inventing service code.
-  - Reports present hypotheses or generated output as verified evidence.
-```
-
-Done criteria:
-
-- The non-runnable or optional-later status remains explicit.
-- No fake report service health endpoint is created.
-
-### Slice 20 - Forensic UI GUI Deployment Integration
-
-Purpose: add the frontend Compose integration required for local GUI
-interaction.
-
-```yaml
-slice_id: S20_FORENSIC_UI_GUI_DEPLOYMENT
-profile: FULL_PATH
-owner: senior_react_frontend
-secondary_reviewers:
-  - senior_devops
-  - senior_tester
-affected_files:
-  - deployment/docker-compose/services/forensic-ui.compose.yml
-  - forensic-ui/Dockerfile
-  - forensic-ui/nginx.conf
-  - forensic-ui/README.md
-affected_modules:
-  - forensic-ui
-affected_contracts:
-  - contracts/openapi/gateway-api.yaml
-dependencies:
-  - S07_QUERY_REPORT_API_SERVICE_COMPOSE
-parallel_group: P7
-file_locks:
-  - deployment/docker-compose/services/forensic-ui.compose.yml
-  - forensic-ui/Dockerfile
-  - forensic-ui/nginx.conf
-  - forensic-ui/README.md
-contract_locks:
-  - public-query-report-api
-architecture_locks:
-  - ui-public-api-only
-quality_gates:
-  targeted:
-    - cd forensic-ui && npm ci
-    - cd forensic-ui && npm run test
-    - cd forensic-ui && npm run build
-    - docker compose -f deployment/docker-compose/services/forensic-ui.compose.yml config
-  required:
-    - ./gradlew test --dependency-verification strict --console=plain --stacktrace
-documentation:
-  arc42: docs/arc42/07-deployment-view.md
-  adr: docs/adr/ADR-0017-target-microservices-service-landscape.md
-stop_conditions:
-  - UI must call internal worker services or private gRPC endpoints.
-  - VITE_API_BASE_URL cannot be configured for the Compose public API route.
-  - nginx `/api` remains the hardcoded 502 response while documentation claims GUI deployment works.
-  - Browser connectivity relies on unverified CORS or preflight behavior.
-```
-
-Done criteria:
-
-- GUI container serves the app on a documented local host port.
-- Browser API calls target the public `query-report-api-service` route.
-- `/api/health` succeeds from the same origin used by the GUI when runtime
-  smoke checks are executed.
-
-### Slice 21 - Deployment Description And Operator Runbook
-
-Purpose: create the deployment description requested by the user, including
-build, start, health, GUI, logs, error collection, and cleanup steps.
-
-```yaml
-slice_id: S21_DEPLOYMENT_DESCRIPTION_AND_RUNBOOK
-profile: FULL_PATH
-owner: senior_documentation_engineer
-secondary_reviewers:
-  - senior_devops
-  - senior_tester
-  - senior_system_architect
-affected_files:
-  - docs/deployment/forensic-analytics-docker-compose.md
-  - deployment/docker-compose/README.md
-  - docs/arc42/07-deployment-view.md
-affected_modules:
-  - forensic_analytics
-  - forensic-ui
-affected_contracts: []
-dependencies:
-  - S02_REPOSITORY_SOURCE_SERVICE_COMPOSE
-  - S03_INGESTION_SERVICE_COMPOSE
-  - S04_JAVA_PARSER_ANALYSIS_SERVICE_COMPOSE
-  - S05_JOERN_ANALYSIS_SERVICE_COMPOSE
-  - S06_ANALYSIS_ORCHESTRATOR_SERVICE_COMPOSE
-  - S07_QUERY_REPORT_API_SERVICE_COMPOSE
-  - S08_CLI_CLIENT_COMPOSE_TOOL_PROFILE
-  - S09_OBSERVABILITY_STACK_COMPOSE
-  - S10_TESTBED_COMPOSE_CONSUMER
-  - S11_FORENSIC_INGESTION_SERVICE_COMPOSE
-  - S12_FORENSIC_GATEWAY_SERVICE_COMPOSE
-  - S13_ANALYSIS_STORE_SERVICE_COMPOSE
-  - S14_REPOSITORY_ANALYSIS_SERVICE_COMPOSE
-  - S15_JAVA_AST_ANALYSIS_SERVICE_COMPOSE
-  - S16_JOERN_CPG_ANALYSIS_SERVICE_COMPOSE
-  - S17_BTM_GENERATION_SERVICE_COMPOSE
-  - S18_GRAPH_REPLAY_SERVICE_READINESS
-  - S19_REPORT_GENERATION_SERVICE_READINESS
-  - S20_FORENSIC_UI_GUI_DEPLOYMENT
-parallel_group: P8
-file_locks:
-  - docs/deployment/forensic-analytics-docker-compose.md
-  - deployment/docker-compose/README.md
-  - docs/arc42/07-deployment-view.md
-contract_locks: []
-architecture_locks:
-  - deployment-docs-do-not-claim-production-readiness
-quality_gates:
-  targeted:
-    - docker compose -f deployment/docker-compose/forensic-analytics.local.yml config
-    - git diff --check
-  required:
-    - ./gradlew test --dependency-verification strict --console=plain --stacktrace
-documentation:
-  arc42: docs/arc42/07-deployment-view.md
-  adr: docs/adr/ADR-0017-target-microservices-service-landscape.md
-stop_conditions:
-  - Documentation claims a runtime check passed when it was not executed.
-  - Documentation hides non-runnable planned roots.
-```
-
-Done criteria:
-
-- The runbook names exact build, config, startup, health, GUI, log, and cleanup
-  commands.
-- Runtime checks are clearly marked as executed, skipped, or blocked.
-
-### Slice 22 - Final Stack Verification And Handoff
-
-Purpose: validate the combined stack model, inspect diffs, synchronize arc42
-deployment notes, and prepare the workflow-execute checkpoint.
-
-```yaml
-slice_id: S22_FINAL_STACK_VERIFICATION_AND_HANDOFF
-profile: FULL_PATH
-owner: senior_tester
-secondary_reviewers:
-  - senior_devops
-  - senior_system_architect
-  - senior_documentation_engineer
-affected_files:
-  - docs/workflow/execution-report.md
-  - docs/workflow/arc42-check-status.md
-  - deployment/docker-compose/README.md
-  - docs/deployment/forensic-analytics-docker-compose.md
-affected_modules:
-  - forensic_analytics
-affected_contracts: []
-dependencies:
-  - S21_DEPLOYMENT_DESCRIPTION_AND_RUNBOOK
-parallel_group: P9
-file_locks:
-  - docs/workflow/execution-report.md
-  - docs/workflow/arc42-check-status.md
-  - deployment/docker-compose/README.md
-  - docs/deployment/forensic-analytics-docker-compose.md
-contract_locks: []
-architecture_locks:
-  - final-quality-gate
-quality_gates:
-  targeted:
-    - docker compose -f deployment/docker-compose/forensic-analytics.local.yml config
-    - git diff --check
-  required:
-    - ./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace
-documentation:
-  arc42: docs/arc42/07-deployment-view.md
-  adr: docs/adr/ADR-0017-target-microservices-service-landscape.md
-stop_conditions:
-  - Any earlier slice reports unresolved architecture, quality, or deployment blockers.
-  - Full local quality gate fails because of current slice changes.
-```
-
-Done criteria:
-
-- Combined Compose model validates.
-- Required quality gates are recorded.
-- Final report distinguishes verified runtime evidence from planned or skipped
-  checks.
-
-## Slice Dependency Graph
-
-See `docs/workflow/slice-dependency-map.md` for the graph and parallel groups.
-
-## Parallelization Opportunities
-
-- S02 through S05 can start after S01 because their service files are
-  disjoint.
-- S11 and S14 through S17 can start after S01 because they write separate
-  transitional service fragments.
-- S08, S09, S10, S18, and S19 can run in parallel after S01 if their
-  non-runtime or tool-profile status remains explicit.
-- S12 waits for S13 because the transitional gateway must not start before
-  the transitional analysis store descriptor exists.
-- S20 waits for S07 because the GUI must target the public API.
-- S21 waits for all service fragments so the runbook documents the actual
-  generated files.
-- S22 is final and must run last.
-
-## Quality-Gate Expectations
-
-Each implementation slice must run its targeted module checks and
-`docker compose ... config` for the changed descriptor. The minimum repository
-gate is required before merging slice results. The full local quality gate is
-required before final commit readiness or publication.
-
-Optional Docker image build and runtime checks may require external image
-pulls, especially for Joern. If they are not executed, the execution report
-must say so and must not claim runtime readiness.
+Slice-specific Docker model checks are required when Compose files change.
+Frontend Settings slices must run the verified `forensic-ui` test and build
+commands.
+Live PostgreSQL startup checks are optional unless the executing slice records
+Docker availability and intentionally runs the runtime scenario.
 
 ## Documentation Synchronization Points
 
-- Update `deployment/docker-compose/README.md` only in S01, S21, or S22 so
-  shared Compose documentation changes remain serialized.
-- Update `docs/deployment/forensic-analytics-docker-compose.md` in S21.
-- Update `docs/arc42/07-deployment-view.md` only with verified deployment
-  evidence and planned-vs-implemented wording.
-- Preserve ADR-0017 target-vs-transitional service language.
-- Preserve `docs/architecture/service-roots.md` distinctions for target,
-  transitional, optional, non-production, and planned roots.
+- S01 updates ADR and arc42 before implementation.
+- S06 updates Docker runtime documentation.
+- S07 updates H2 test-boundary and PostgreSQL runtime-default policy.
+- S08 updates contract and service-boundary documentation for Settings.
+- S09 updates frontend Settings behavior and UI-facing documentation when
+  needed.
+- S10 updates workflow execution evidence after verification.
 
 ## Stop Conditions
 
-Stop workflow execution if:
+Stop workflow execution when:
 
-- a named root lacks a Dockerfile and no verified executable runtime exists;
-- a Compose descriptor would need a guessed health endpoint, port, artifact
-  path, environment variable, or command;
-- `.dockerignore` prevents a service Dockerfile from copying a verified boot jar
-  while the slice would claim image-build readiness;
-- service-private volumes are mounted into non-owner services;
-- public UI or API paths expose private service data;
-- UI API routing depends on unverified CORS instead of a verified same-origin
-  proxy or explicitly tested browser-safe route;
-- target and transitional service names are collapsed into aliases;
-- a runtime smoke check fails and the failure cannot be classified;
-- Docker is unavailable for a slice that requires Docker runtime evidence;
-- any quality command from `QUALITY.md` cannot be verified or fails because of
-  current changes.
+- PostgreSQL ownership is unclear or becomes cross-service shared storage.
+- Liquibase table names or columns would need to be guessed.
+- The repository checkout volume is removed or mounted by a non-owner service.
+- Public API shape changes without contract governance.
+- Domain/application code depends on JDBC, Liquibase, PostgreSQL or Spring.
+- Credentials, private paths or raw Git output would leak into public
+  diagnostics.
+- Existing H2 state must be preserved but migration inputs are not explicitly
+  verified.
+- Settings ownership, security model or runtime apply semantics are unclear.
+- UI Settings would expose or persist database credentials.
+- Required Gradle, dependency verification or Compose checks fail.
 
-## Handoff To Workflow Execute
+## Handoff to Workflow Execute
 
-`workflow execute` must:
+This workflow is ready for `workflow execute` under the documented assumptions.
+Implementation must execute slices in order and must not change production code
+before the owning role review for each slice is complete.
 
-1. Read this complete workflow and all metadata blocks.
-2. Execute slices in dependency order.
-3. Use callable subagents or role reviews per `role-ownership.md`.
-4. Run targeted verification after each slice.
-5. Inspect `git diff` and `git diff --check` after each slice.
-6. Preserve planned/non-runnable status where implementation is not verified.
-7. Record exact Docker, Gradle, npm, curl, and browser smoke evidence in
-   `docs/workflow/execution-report.md`.
+## Definition of Done
 
-## Definition Of Done
-
-The workflow is done when:
-
-- every listed root has an executed slice outcome;
-- runnable roots have per-service Compose descriptors or documented blockers;
-- the root stack uses Docker network `forensic_analytics`;
-- the deployment runbook exists and is aligned with the generated files;
-- the GUI route is documented and smoke-tested when Docker runtime is
-  available;
-- no planned root is misrepresented as implemented;
-- quality gates from `QUALITY.md` are executed and recorded;
-- arc42 deployment status is checked and updated only with verified evidence.
+- PostgreSQL decision is documented and bounded to repository-source workspace
+  metadata.
+- Liquibase creates the service-owned repository-source schema.
+- Repository-source persistence uses PostgreSQL for workspace metadata,
+  branch metadata, repository preparation and idempotency records.
+- Checkout bytes remain on the repository-source workspace volume.
+- H2 is no longer an active hidden runtime fallback.
+- H2 remains available only for tests and deterministic fixtures.
+- Missing or unreachable PostgreSQL is reported through startup failure or
+  storage health/readiness instead of fallback.
+- Public Settings API and React Settings UI are implemented through
+  contract-governed slices without exposing database credentials.
+- Required quality gates pass and are recorded.

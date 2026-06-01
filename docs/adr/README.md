@@ -29,6 +29,7 @@ The decisions are derived from the EPIC baseline and refined during implementati
 - [ADR-0021: Governance Flowchart V2](ADR-0021-governance-flowchart-v2.md)
 - [ADR-0022: Retire legacy modular-monolith source trees](ADR-0022-final-modular-monolith-source-tree-retirement.md)
 - [ADR-0023: Use H2 only for repository-source MVP persistence](ADR-0023-h2-for-repository-source-mvp-persistence.md)
+- [ADR-0024: Use PostgreSQL for repository-source workspace metadata](ADR-0024-postgres-for-repository-source-workspace-metadata.md)
 
 ## Governance Notes
 

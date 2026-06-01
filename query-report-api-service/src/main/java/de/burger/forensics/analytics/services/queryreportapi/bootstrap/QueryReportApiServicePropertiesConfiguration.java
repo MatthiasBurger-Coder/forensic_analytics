@@ -37,6 +37,9 @@ public class QueryReportApiServicePropertiesConfiguration {
                 bool(environment, "forensics.query-report-api.service.workspace.refresh.allow-sparse-checkout", false),
                 longValue(environment, "forensics.query-report-api.service.workspace.refresh.timeout-seconds", 60L),
                 longValue(environment, "forensics.query-report-api.service.workspace.refresh.max-workspace-bytes", 1_073_741_824L)
+            ),
+            new QueryReportApiServiceProperties.SettingsFacade(
+                text(environment, "forensics.query-report-api.service.settings.operator-token", "")
             )
         );
     }

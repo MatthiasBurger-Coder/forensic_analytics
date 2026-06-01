@@ -585,6 +585,10 @@ input[readonly] {
   background: #141917;
 }
 
+select {
+  min-height: 42px;
+}
+
 textarea {
   resize: vertical;
 }
@@ -596,6 +600,44 @@ textarea {
 
 .form-row.two {
   grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.settings-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  gap: 18px;
+}
+
+.settings-status-panel,
+.settings-form,
+.settings-summary {
+  display: grid;
+  gap: 16px;
+  align-content: start;
+}
+
+.settings-empty-state {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  min-height: 88px;
+  color: #aab7b1;
+}
+
+.settings-validation {
+  border-color: #40514c;
+}
+
+.settings-validation-valid {
+  border-color: #3d7e60;
+}
+
+.settings-validation-invalid,
+.settings-validation-unreachable,
+.settings-validation-authentication_failed,
+.settings-validation-unsupported,
+.settings-validation-unknown {
+  border-color: #66551f;
 }
 
 .input-with-button {
@@ -728,6 +770,7 @@ textarea {
   .detail-grid,
   .form-grid,
   .form-row.two,
+  .settings-grid,
   .workspace-layout {
     grid-template-columns: 1fr;
   }

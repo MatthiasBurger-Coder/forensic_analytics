@@ -39,6 +39,13 @@ The list contract hides `CLEANED` workspaces by default, and cleanup retains
 metadata while reporting `CLEANED` status instead of removing repository-source
 records.
 
+S08 adds additive repository-source database Settings owner APIs to
+`repository-analysis.proto`: sanitized active PostgreSQL settings status and
+candidate settings validation. The candidate password is write-only transport
+input, must not be logged, persisted or returned, and changed settings report
+restart-required semantics instead of hot apply. Missing or unreachable
+PostgreSQL is represented as validation failure, not as valid configuration.
+
 Repository-analysis artifact references must be opaque artifact keys or
 source-snapshot-relative paths. Absolute paths, `file:` URIs, workspace roots
 and server-local paths are forbidden in public responses. Fields named

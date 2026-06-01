@@ -2,80 +2,85 @@
 
 ## Requirement Summary
 
-Create a workflow for local Docker Compose deployment coverage across the
-requested service roots. Every named root receives at least one implementation
-slice. The deployment must use a Docker network named `forensic_analytics` and
-must include a deployment description that lets an operator start the stack,
-open the GUI, and collect possible runtime or integration errors.
+Move repository checkout workspace metadata from H2 to PostgreSQL using
+Liquibase while keeping repository checkout bytes on the existing
+repository-source workspace volume.
+
+Clarification accepted on 2026-05-31:
+
+- H2 may remain for tests and deterministic fixtures.
+- PostgreSQL is the runtime and production persistence path.
+- Missing or unreachable PostgreSQL must be reported by startup failure or
+  storage health/readiness `DOWN`; it must not silently fall back to H2.
+- Database configuration must be available through the operator Settings UI.
+
+## Decision
+
+`READY_FOR_WORKFLOW`
+
+Confidence: 90 percent.
 
 ## Five-Role Review
 
 | Role | Finding |
 |---|---|
-| Senior Requirement Engineer | The goal, named roots, required network, slice requirement, and GUI outcome are explicit. The only accepted assumption is that `forensic_analytics` is the repository stack/network name, not a Gradle service module. |
-| Senior System Architect | FULL_PATH is required because deployment, service boundaries, target-vs-transitional roots, and runtime readiness are affected. Planned roots must not be represented as runnable services without implementation evidence. |
-| Senior Java Backend Developer | Most Java application roots already have Dockerfiles and service-local configuration. `cli-client` is an application without Dockerfile. `graph-replay-service` and `report-generation-service` are Gradle `base` roots with no runtime implementation. |
-| Senior React Frontend Developer | The GUI goal requires `forensic-ui` integration even though it was not in the user's service list. The UI must call `query-report-api-service` public REST routes only, preferably through a verified same-origin nginx `/api` proxy. |
-| Senior Tester | Slice checks must combine module tests, `bootJar` or `build`, `.dockerignore` build-context verification, Compose config validation, `git diff --check`, the minimum repository quality gate, and final full local quality gate. Runtime smoke checks must be reported as executed, skipped, or blocked. |
+| Senior Requirement Engineer | The request is traceable to repository-source workspace metadata. It extends the current FA-MVP-0001 H2 MVP state and does not create the broader platform workspace domain. |
+| Senior System Architect | PostgreSQL is acceptable only as service-owned repository-source storage. ADR and arc42 updates must precede code. Cross-service database access remains forbidden. |
+| Senior Java Backend Developer | Existing ports allow a small adapter replacement. H2-specific `MERGE` and schema initialization must be replaced by PostgreSQL `ON CONFLICT` plus Liquibase. Runtime bootstrap must not keep H2 as a fallback outside tests. |
+| Senior React Frontend Developer | UI implementation is now in scope through the existing `forensic-ui` Settings route. Settings must use public API adapters and must not connect to PostgreSQL directly. |
+| Senior Tester | Existing repository-source tests define persistence behavior. PostgreSQL coverage must be deterministic and default quality gates must not require a live external DB unless explicitly documented. Settings slices require query-report API and frontend tests. |
 
 ## Requirement Classification
 
-- Functional requirement: per-service Docker Compose descriptors and local
-  deployment runbook.
-- Non-functional requirement: deterministic local deployment, explicit
-  network, reproducible validation commands, clear startup/cleanup behavior.
-- Architecture constraint: preserve service ownership and target-vs-
-  transitional distinctions.
-- UX requirement: local GUI must be available for manual interaction.
-- Observability requirement: collect logs and health status without treating
-  logs as forensic evidence.
-- Quality-gate requirement: use `QUALITY.md` commands and Compose validation.
+- Functional requirement: PostgreSQL workspace metadata persistence.
+- Architecture constraint: repository-source remains owner and single writer.
+- Persistence requirement: Liquibase-managed schema.
+- Deployment requirement: Docker-local `forensic-postgres` integration.
+- Security requirement: no credential, private path or raw Git output leakage.
+- UX requirement: operator Settings screen for database configuration.
+- Contract requirement: public Settings API and repository-source handoff must
+  be contract-first.
+- Resilience requirement: missing PostgreSQL is visible as startup failure or
+  health/readiness `DOWN`, never hidden by fallback.
+- Quality requirement: repository-source, query-report API, frontend tests and
+  full local gate.
+- Assumption: existing H2 state does not require automatic migration.
 
-## Accepted Assumptions
+## Dependency and Deadlock Validation
 
-- `forensic_analytics` is the root deployment/network boundary, because no
-  Gradle subproject named `forensic_analytics` exists and the repository path
-  itself is `/mnt/d/Projects/forensic_analytics`.
-- `forensic-ui` is included because the user goal depends on GUI interaction.
-- Compose descriptors are local Docker evidence only, not production, Docker
-  Swarm, or Kubernetes readiness.
-- Planned roots may receive a readiness slice and documented non-runnable
-  status rather than fabricated runtime.
-- Browser GUI deployment should use same-origin `/api` proxying unless a later
-  slice verifies a different browser-safe path.
-
-## Non-Goals
-
-- No service extraction.
-- No missing graph, replay, report, or observability runtime implementation.
-- No shared Java implementation modules.
-- No cross-service private database or filesystem access.
-- No Kubernetes, Docker Swarm, brokers, external databases, Graph DB, Vector
-  DB, or live LLM providers.
-
-## Risks
-
-- Several internal ports overlap and need unique host mappings.
-- Joern image builds may require external image pulls.
-- The UI bakes `VITE_API_BASE_URL` during build.
-- Current `forensic-ui/nginx.conf` returns 502 for `/api`.
-- Root `.dockerignore` may block target-service Dockerfiles from copying boot
-  jars unless it is updated.
-- Some service roots are transitional or planned, so full-stack deployment may
-  expose existing gaps rather than complete behavior.
+The workflow remains linear. No safe parallel groups exist because later slices
+need the prior decision, dependency, schema, adapter, runtime cutover, Settings
+contract and UI results.
 
 ## Open Questions
 
-- Operator-preferred host ports were not specified. The workflow requires
-  deterministic defaults and documentation of any change.
+No blocking questions remain for workflow creation.
 
-## Blocking Questions
+Non-blocking execution-time questions:
 
-None for workflow creation. Later implementation must stop when a Compose
-descriptor would require guessed runtime behavior.
+- If existing local H2 metadata must be preserved, S07 must stop and convert
+  that requirement into an explicit one-off migration slice with verified input
+  files and acceptance criteria.
+- If runtime database Settings require persistence of raw credentials, S08 must
+  stop until a verified secrets-storage boundary exists.
+- If changed database settings must apply without restart, S08 must document
+  tested reconnect semantics before S09 exposes the behavior in the UI.
 
-## Decision
+S08 execution-time resolution on 2026-05-31:
 
-`PROCEED_WITH_ACCEPTED_ASSUMPTIONS`
+- Settings operations require an operator token before accepting
+  credential-bearing requests.
+- Password input is write-only and may be used only for validation through the
+  repository-source owner API.
+- S08 does not persist changed database credentials and does not hot-apply
+  repository-source runtime settings.
+- Settings validation and status responses must report `RESTART_REQUIRED` and
+  `hotApplySupported: false` for changed database configuration.
+- Unreachable PostgreSQL must be reported as `UNREACHABLE`, not as successful
+  readiness.
 
-Confidence: 86 percent.
+## Final Gate Result
+
+The requirement is ready for workflow execution under the documented
+assumptions. Implementation must not begin before `workflow execute` routes
+each slice through its owner review.

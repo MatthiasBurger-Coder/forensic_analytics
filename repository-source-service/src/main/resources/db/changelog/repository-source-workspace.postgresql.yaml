@@ -1,0 +1,378 @@
+databaseChangeLog:
+  - changeSet:
+      id: repository-source-workspace-001-create-schema
+      author: forensic-analytics
+      changes:
+        - sql:
+            dbms: postgresql
+            splitStatements: false
+            sql: CREATE SCHEMA IF NOT EXISTS ${repositorySourceSchema}
+
+  - changeSet:
+      id: repository-source-workspace-002-create-workspace
+      author: forensic-analytics
+      changes:
+        - createTable:
+            schemaName: ${repositorySourceSchema}
+            tableName: workspace
+            columns:
+              - column:
+                  name: workspace_id
+                  type: varchar(128)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: workspace_title
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: repository_key
+                  type: varchar(512)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: repository_url
+                  type: varchar(2048)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: repository_host
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: repository_owner
+                  type: varchar(255)
+              - column:
+                  name: repository_name
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: default_branch
+                  type: varchar(512)
+              - column:
+                  name: status
+                  type: varchar(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: diagnostics_json
+                  type: text
+                  constraints:
+                    nullable: false
+              - column:
+                  name: safe_attributes_json
+                  type: text
+                  constraints:
+                    nullable: false
+              # Stores Instant.toString() values to preserve the existing H2 round-trip contract.
+              - column:
+                  name: created_at
+                  type: varchar(64)
+                  constraints:
+                    nullable: false
+              # Stores Instant.toString() values to preserve the existing H2 round-trip contract.
+              - column:
+                  name: updated_at
+                  type: varchar(64)
+                  constraints:
+                    nullable: false
+        - addPrimaryKey:
+            schemaName: ${repositorySourceSchema}
+            tableName: workspace
+            columnNames: workspace_id
+            constraintName: pk_repository_source_workspace
+        - addUniqueConstraint:
+            schemaName: ${repositorySourceSchema}
+            tableName: workspace
+            columnNames: repository_key
+            constraintName: uq_repository_source_workspace_repository_key
+
+  - changeSet:
+      id: repository-source-workspace-003-create-workspace-branch
+      author: forensic-analytics
+      changes:
+        - createTable:
+            schemaName: ${repositorySourceSchema}
+            tableName: workspace_branch
+            columns:
+              - column:
+                  name: workspace_branch_id
+                  type: varchar(128)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: workspace_id
+                  type: varchar(128)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: repository_branch
+                  type: varchar(512)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: requested_commit
+                  type: varchar(128)
+              - column:
+                  name: resolved_commit
+                  type: varchar(128)
+              - column:
+                  name: source_snapshot_id
+                  type: varchar(128)
+              - column:
+                  name: status
+                  type: varchar(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: source_roots_json
+                  type: text
+                  constraints:
+                    nullable: false
+              # Stores Instant.toString() values to preserve the existing H2 round-trip contract.
+              - column:
+                  name: last_checked_at
+                  type: varchar(64)
+              # Stores Instant.toString() values to preserve the existing H2 round-trip contract.
+              - column:
+                  name: last_updated_at
+                  type: varchar(64)
+              - column:
+                  name: diagnostics_json
+                  type: text
+                  constraints:
+                    nullable: false
+        - addPrimaryKey:
+            schemaName: ${repositorySourceSchema}
+            tableName: workspace_branch
+            columnNames: workspace_branch_id
+            constraintName: pk_repository_source_workspace_branch
+        - addForeignKeyConstraint:
+            baseTableSchemaName: ${repositorySourceSchema}
+            baseTableName: workspace_branch
+            baseColumnNames: workspace_id
+            referencedTableSchemaName: ${repositorySourceSchema}
+            referencedTableName: workspace
+            referencedColumnNames: workspace_id
+            constraintName: fk_repository_source_workspace_branch_workspace
+        - addUniqueConstraint:
+            schemaName: ${repositorySourceSchema}
+            tableName: workspace_branch
+            columnNames: workspace_id, repository_branch
+            constraintName: uq_repository_source_workspace_branch_name
+        - createIndex:
+            schemaName: ${repositorySourceSchema}
+            tableName: workspace_branch
+            indexName: ix_repository_source_workspace_branch_workspace
+            columns:
+              - column:
+                  name: workspace_id
+
+  - changeSet:
+      id: repository-source-workspace-004-create-repository-preparation
+      author: forensic-analytics
+      changes:
+        - createTable:
+            schemaName: ${repositorySourceSchema}
+            tableName: repository_preparation
+            columns:
+              - column:
+                  name: analysis_run_id
+                  type: varchar(128)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: source_snapshot_id
+                  type: varchar(128)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: workspace_id
+                  type: varchar(128)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: workspace_branch_id
+                  type: varchar(128)
+              - column:
+                  name: repository_url
+                  type: varchar(2048)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: repository_provider
+                  type: varchar(128)
+              - column:
+                  name: repository_attributes_json
+                  type: text
+                  constraints:
+                    nullable: false
+              - column:
+                  name: requested_branch
+                  type: varchar(512)
+              - column:
+                  name: branch_required
+                  type: boolean
+                  constraints:
+                    nullable: false
+              - column:
+                  name: requested_commit
+                  type: varchar(128)
+              - column:
+                  name: commit_required
+                  type: boolean
+                  constraints:
+                    nullable: false
+              - column:
+                  name: resolved_commit
+                  type: varchar(128)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: checkout_status
+                  type: varchar(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: checkout_diagnostics_json
+                  type: text
+                  constraints:
+                    nullable: false
+              - column:
+                  name: shallow_clone
+                  type: boolean
+                  constraints:
+                    nullable: false
+              - column:
+                  name: checkout_duration_millis
+                  type: bigint
+                  constraints:
+                    nullable: false
+              - column:
+                  name: partial_clone
+                  type: boolean
+                  constraints:
+                    nullable: false
+              - column:
+                  name: sparse_checkout
+                  type: boolean
+                  constraints:
+                    nullable: false
+              - column:
+                  name: workspace_status
+                  type: varchar(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: source_snapshot_completeness
+                  type: varchar(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: source_snapshot_json
+                  type: text
+                  constraints:
+                    nullable: false
+              - column:
+                  name: source_roots_json
+                  type: text
+                  constraints:
+                    nullable: false
+              - column:
+                  name: diagnostics_json
+                  type: text
+                  constraints:
+                    nullable: false
+              - column:
+                  name: safe_attributes_json
+                  type: text
+                  constraints:
+                    nullable: false
+              # Stores Instant.toString() values to preserve the existing H2 round-trip contract.
+              - column:
+                  name: created_at
+                  type: varchar(64)
+                  constraints:
+                    nullable: false
+              # Stores Instant.toString() values to preserve the existing H2 round-trip contract.
+              - column:
+                  name: updated_at
+                  type: varchar(64)
+                  constraints:
+                    nullable: false
+        - addPrimaryKey:
+            schemaName: ${repositorySourceSchema}
+            tableName: repository_preparation
+            columnNames: analysis_run_id, source_snapshot_id
+            constraintName: pk_repository_source_preparation
+        - createIndex:
+            schemaName: ${repositorySourceSchema}
+            tableName: repository_preparation
+            indexName: ix_repository_source_preparation_run_workspace
+            columns:
+              - column:
+                  name: analysis_run_id
+              - column:
+                  name: workspace_id
+
+  - changeSet:
+      id: repository-source-workspace-005-create-idempotency-record
+      author: forensic-analytics
+      changes:
+        - createTable:
+            schemaName: ${repositorySourceSchema}
+            tableName: idempotency_record
+            columns:
+              - column:
+                  name: idempotency_key
+                  type: varchar(256)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: operation
+                  type: varchar(128)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: fingerprint
+                  type: varchar(2048)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: result_type
+                  type: varchar(128)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: result_reference
+                  type: varchar(512)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: result_payload
+                  type: text
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: varchar(64)
+                  constraints:
+                    nullable: false
+              # Stores Instant.toString() values to preserve the existing H2 round-trip contract.
+              - column:
+                  name: created_at
+                  type: varchar(64)
+                  constraints:
+                    nullable: false
+              # Stores Instant.toString() values to preserve the existing H2 round-trip contract.
+              - column:
+                  name: expires_at
+                  type: varchar(64)
+        - addPrimaryKey:
+            schemaName: ${repositorySourceSchema}
+            tableName: idempotency_record
+            columnNames: idempotency_key, operation
+            constraintName: pk_repository_source_idempotency_record

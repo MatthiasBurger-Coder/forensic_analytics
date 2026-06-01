@@ -14,9 +14,11 @@ import de.burger.forensics.analytics.repositoryanalysis.v1.CleanupRepositoryWork
 import de.burger.forensics.analytics.repositoryanalysis.v1.CleanupRepositoryWorkspaceResponse;
 import de.burger.forensics.analytics.repositoryanalysis.v1.CreateRepositoryWorkspaceRequest;
 import de.burger.forensics.analytics.repositoryanalysis.v1.CreateRepositoryWorkspaceResponse;
+import de.burger.forensics.analytics.repositoryanalysis.v1.DatabaseSettingsValidationStatus;
 import de.burger.forensics.analytics.repositoryanalysis.v1.Diagnostic;
 import de.burger.forensics.analytics.repositoryanalysis.v1.DiagnosticSeverity;
 import de.burger.forensics.analytics.repositoryanalysis.v1.GetRepositoryPreparationRequest;
+import de.burger.forensics.analytics.repositoryanalysis.v1.GetRepositorySourceDatabaseSettingsRequest;
 import de.burger.forensics.analytics.repositoryanalysis.v1.GetRepositoryWorkspaceRequest;
 import de.burger.forensics.analytics.repositoryanalysis.v1.ListRepositoryWorkspacesRequest;
 import de.burger.forensics.analytics.repositoryanalysis.v1.ListRepositoryWorkspacesResponse;
@@ -32,6 +34,10 @@ import de.burger.forensics.analytics.repositoryanalysis.v1.RefreshRepositoryWork
 import de.burger.forensics.analytics.repositoryanalysis.v1.RepositoryAnalysisServiceGrpc;
 import de.burger.forensics.analytics.repositoryanalysis.v1.RepositoryIdentity;
 import de.burger.forensics.analytics.repositoryanalysis.v1.RepositoryPreparation;
+import de.burger.forensics.analytics.repositoryanalysis.v1.RepositorySourceDatabaseSettingsCandidate;
+import de.burger.forensics.analytics.repositoryanalysis.v1.RepositorySourceDatabaseSettingsPublicView;
+import de.burger.forensics.analytics.repositoryanalysis.v1.RepositorySourceDatabaseSettingsStatus;
+import de.burger.forensics.analytics.repositoryanalysis.v1.RepositorySourceDatabaseSettingsValidationResponse;
 import de.burger.forensics.analytics.repositoryanalysis.v1.RepositoryReference;
 import de.burger.forensics.analytics.repositoryanalysis.v1.RepositoryWorkspace;
 import de.burger.forensics.analytics.repositoryanalysis.v1.RepositoryWorkspaceBranch;
@@ -43,6 +49,7 @@ import de.burger.forensics.analytics.repositoryanalysis.v1.SourcePackageDescript
 import de.burger.forensics.analytics.repositoryanalysis.v1.SourceRoot;
 import de.burger.forensics.analytics.repositoryanalysis.v1.SourceSnapshot;
 import de.burger.forensics.analytics.repositoryanalysis.v1.SourceSnapshotCompleteness;
+import de.burger.forensics.analytics.repositoryanalysis.v1.ValidateRepositorySourceDatabaseSettingsRequest;
 import de.burger.forensics.analytics.repositoryanalysis.v1.WorkspacePolicy;
 import de.burger.forensics.analytics.services.repositorysource.application.IdempotencyConflictException;
 import de.burger.forensics.analytics.services.repositorysource.application.RepositorySourceApplicationService;
@@ -50,6 +57,8 @@ import de.burger.forensics.analytics.services.repositorysource.application.Repos
 import de.burger.forensics.analytics.services.repositorysource.application.RepositoryWorkspaceApplicationService;
 import de.burger.forensics.analytics.services.repositorysource.application.RepositoryWorkspaceNotFoundException;
 import de.burger.forensics.analytics.services.repositorysource.application.port.RepositoryMetadataPreviewPolicy;
+import de.burger.forensics.analytics.services.repositorysource.bootstrap.RepositorySourceDatabaseSettingsValidationResult;
+import de.burger.forensics.analytics.services.repositorysource.bootstrap.RepositorySourceServiceProperties;
 import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.AnalysisRunId;
 import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.SourceSnapshotId;
 import de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.WorkspaceBranchId;
@@ -57,6 +66,9 @@ import de.burger.forensics.analytics.services.repositorysource.domain.Repository
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 
+import java.net.URI;
+import java.nio.file.Path;
+import java.util.Locale;
 import java.util.Objects;
 
 import static de.burger.forensics.analytics.services.repositorysource.domain.RepositorySourceDomain.requireText;
@@ -64,15 +76,36 @@ import static de.burger.forensics.analytics.services.repositorysource.domain.Rep
 public final class RepositorySourceGrpcEndpoint extends RepositoryAnalysisServiceGrpc.RepositoryAnalysisServiceImplBase {
     private final RepositorySourceApplicationService applicationService;
     private final RepositoryWorkspaceApplicationService workspaceApplicationService;
+    private final RepositorySourceServiceProperties properties;
+    private final DatabaseSettingsConnectionValidator databaseSettingsConnectionValidator;
 
     public RepositorySourceGrpcEndpoint(
         RepositorySourceApplicationService applicationService,
         RepositoryWorkspaceApplicationService workspaceApplicationService
     ) {
+        this(
+            applicationService,
+            workspaceApplicationService,
+            defaultDatabaseSettingsProperties(),
+            postgres -> RepositorySourceDatabaseSettingsValidationResult.unreachable()
+        );
+    }
+
+    public RepositorySourceGrpcEndpoint(
+        RepositorySourceApplicationService applicationService,
+        RepositoryWorkspaceApplicationService workspaceApplicationService,
+        RepositorySourceServiceProperties properties,
+        DatabaseSettingsConnectionValidator databaseSettingsConnectionValidator
+    ) {
         this.applicationService = Objects.requireNonNull(applicationService, "application service must not be null");
         this.workspaceApplicationService = Objects.requireNonNull(
             workspaceApplicationService,
             "workspace application service must not be null"
+        );
+        this.properties = Objects.requireNonNull(properties, "repository-source properties must not be null");
+        this.databaseSettingsConnectionValidator = Objects.requireNonNull(
+            databaseSettingsConnectionValidator,
+            "database settings connection validator must not be null"
         );
     }
 
@@ -96,6 +129,58 @@ public final class RepositorySourceGrpcEndpoint extends RepositoryAnalysisServic
             responseObserver.onNext(PrepareRepositoryResponse.newBuilder()
                 .setPreparation(preparation(preparation))
                 .setStatus(status("PREPARED", "Repository preparation completed", request.getCorrelationId()))
+                .build());
+            responseObserver.onCompleted();
+        } catch (RuntimeException error) {
+            responseObserver.onError(status(error).asRuntimeException());
+        }
+    }
+
+    @Override
+    public void getRepositorySourceDatabaseSettings(
+        GetRepositorySourceDatabaseSettingsRequest request,
+        StreamObserver<RepositorySourceDatabaseSettingsStatus> responseObserver
+    ) {
+        try {
+            requireText(request.getRequestId(), "request id");
+            requireText(request.getCorrelationId(), "correlation id");
+            responseObserver.onNext(RepositorySourceDatabaseSettingsStatus.newBuilder()
+                .setSettings(databaseSettingsView(
+                    properties.persistence().postgres(),
+                    "REPOSITORY_SOURCE_RUNTIME",
+                    isPasswordConfigured(properties.persistence().postgres().password())
+                ))
+                .setStatus(status("SETTINGS_AVAILABLE", "Repository-source database settings available", request.getCorrelationId()))
+                .build());
+            responseObserver.onCompleted();
+        } catch (RuntimeException error) {
+            responseObserver.onError(status(error).asRuntimeException());
+        }
+    }
+
+    @Override
+    public void validateRepositorySourceDatabaseSettings(
+        ValidateRepositorySourceDatabaseSettingsRequest request,
+        StreamObserver<RepositorySourceDatabaseSettingsValidationResponse> responseObserver
+    ) {
+        try {
+            requireText(request.getRequestId(), "request id");
+            requireText(request.getCorrelationId(), "correlation id");
+            var postgres = postgres(request.getSettings());
+            var validation = databaseSettingsConnectionValidator.validate(postgres);
+            responseObserver.onNext(RepositorySourceDatabaseSettingsValidationResponse.newBuilder()
+                .setSettings(databaseSettingsView(
+                    postgres,
+                    "VALIDATION_REQUEST",
+                    isPasswordConfigured(request.getSettings().getPassword())
+                ))
+                .setValidationStatus(validationStatus(validation.status()))
+                .setStatus(status(validation.code(), validation.message(), request.getCorrelationId(), validation.retryable()))
+                .addDiagnostics(Diagnostic.newBuilder()
+                    .setSeverity(diagnosticSeverity(validation.status()))
+                    .setCode(validation.code())
+                    .setMessage(validation.message())
+                    .build())
                 .build());
             responseObserver.onCompleted();
         } catch (RuntimeException error) {
@@ -568,12 +653,157 @@ public final class RepositorySourceGrpcEndpoint extends RepositoryAnalysisServic
     }
 
     private static OperationStatus status(String code, String message, String correlationId) {
+        return status(code, message, correlationId, false);
+    }
+
+    private static OperationStatus status(String code, String message, String correlationId, boolean retryable) {
         return OperationStatus.newBuilder()
             .setCode(code)
             .setMessage(message)
-            .setRetryable(false)
+            .setRetryable(retryable)
             .setCorrelationId(correlationId)
             .build();
+    }
+
+    private static RepositorySourceDatabaseSettingsPublicView databaseSettingsView(
+        RepositorySourceServiceProperties.Postgres postgres,
+        String configurationSource,
+        boolean authenticationConfigured
+    ) {
+        var location = postgresLocation(postgres.jdbcUrl());
+        return RepositorySourceDatabaseSettingsPublicView.newBuilder()
+            .setEngine("POSTGRESQL")
+            .setHost(location.host())
+            .setPort(location.port())
+            .setDatabaseName(location.databaseName())
+            .setUsername(postgres.username())
+            .setAuthenticationConfigured(authenticationConfigured)
+            .setSchema(postgres.schema())
+            .setSslMode(location.sslMode())
+            .setConfigurationSource(configurationSource)
+            .setApplyMode("RESTART_REQUIRED")
+            .setHotApplySupported(false)
+            .build();
+    }
+
+    private static RepositorySourceServiceProperties.Postgres postgres(
+        RepositorySourceDatabaseSettingsCandidate candidate
+    ) {
+        var host = requireDatabaseHost(candidate.getHost());
+        var port = requireDatabasePort(candidate.getPort());
+        var databaseName = requireSqlIdentifier(candidate.getDatabaseName(), "database name");
+        var schema = requireSqlIdentifier(candidate.getSchema(), "PostgreSQL schema");
+        var sslMode = sslMode(candidate.getSslMode());
+        return new RepositorySourceServiceProperties.Postgres(
+            postgresJdbcUrl(host, port, databaseName, sslMode),
+            requireText(candidate.getUsername(), "PostgreSQL username"),
+            candidate.getPassword(),
+            schema,
+            propertiesChangeLog()
+        );
+    }
+
+    private static String postgresJdbcUrl(String host, int port, String databaseName, String sslMode) {
+        var base = "jdbc:postgresql://" + host + ":" + port + "/" + databaseName;
+        return "UNSPECIFIED".equals(sslMode) ? base : base + "?sslmode=" + sslMode;
+    }
+
+    private static DatabaseSettingsLocation postgresLocation(String jdbcUrl) {
+        var uri = URI.create(jdbcUrl.substring("jdbc:".length()));
+        var databaseName = uri.getPath() == null || uri.getPath().length() <= 1 ? "" : uri.getPath().substring(1);
+        var sslMode = "UNSPECIFIED";
+        if (uri.getQuery() != null) {
+            for (var parameter : uri.getQuery().split("&")) {
+                var parts = parameter.split("=", 2);
+                if (parts.length == 2 && "sslmode".equals(parts[0])) {
+                    sslMode = sslMode(parts[1]);
+                }
+            }
+        }
+        return new DatabaseSettingsLocation(
+            uri.getHost(),
+            uri.getPort() < 1 ? 5432 : uri.getPort(),
+            databaseName,
+            sslMode
+        );
+    }
+
+    private static String requireDatabaseHost(String host) {
+        var text = requireText(host, "PostgreSQL host");
+        if (!text.matches("[A-Za-z0-9.-]{1,253}") || text.startsWith(".") || text.endsWith(".")) {
+            throw new IllegalArgumentException("PostgreSQL host must be a DNS name or address label");
+        }
+        return text;
+    }
+
+    private static int requireDatabasePort(int port) {
+        if (port < 1 || port > 65_535) {
+            throw new IllegalArgumentException("PostgreSQL port must be between 1 and 65535");
+        }
+        return port;
+    }
+
+    private static String requireSqlIdentifier(String value, String name) {
+        var text = requireText(value, name);
+        if (!text.matches("[A-Za-z_][A-Za-z0-9_]*")) {
+            throw new IllegalArgumentException(name + " must be a simple SQL identifier");
+        }
+        return text;
+    }
+
+    private static String sslMode(String value) {
+        if (value == null || value.isBlank() || "UNSPECIFIED".equalsIgnoreCase(value)) {
+            return "UNSPECIFIED";
+        }
+        var normalized = value.trim().toLowerCase(Locale.ROOT);
+        return switch (normalized) {
+            case "disable", "allow", "prefer", "require", "verify-ca", "verify-full" -> normalized;
+            default -> throw new IllegalArgumentException("PostgreSQL ssl mode is not supported");
+        };
+    }
+
+    private static DatabaseSettingsValidationStatus validationStatus(
+        RepositorySourceDatabaseSettingsValidationResult.Status status
+    ) {
+        return switch (status) {
+            case VALID -> DatabaseSettingsValidationStatus.DATABASE_SETTINGS_VALIDATION_STATUS_VALID;
+            case UNREACHABLE -> DatabaseSettingsValidationStatus.DATABASE_SETTINGS_VALIDATION_STATUS_UNREACHABLE;
+            case AUTHENTICATION_FAILED ->
+                DatabaseSettingsValidationStatus.DATABASE_SETTINGS_VALIDATION_STATUS_AUTHENTICATION_FAILED;
+        };
+    }
+
+    private static DiagnosticSeverity diagnosticSeverity(RepositorySourceDatabaseSettingsValidationResult.Status status) {
+        return switch (status) {
+            case VALID -> DiagnosticSeverity.DIAGNOSTIC_SEVERITY_INFO;
+            case UNREACHABLE, AUTHENTICATION_FAILED -> DiagnosticSeverity.DIAGNOSTIC_SEVERITY_ERROR;
+        };
+    }
+
+    private static boolean isPasswordConfigured(String password) {
+        return password != null && !password.isBlank();
+    }
+
+    private static String propertiesChangeLog() {
+        return "classpath:db/changelog/repository-source-workspace.postgresql.yaml";
+    }
+
+    private static RepositorySourceServiceProperties defaultDatabaseSettingsProperties() {
+        return new RepositorySourceServiceProperties(
+            new RepositorySourceServiceProperties.Grpc(false, "127.0.0.1", 0),
+            new RepositorySourceServiceProperties.Health(false, "127.0.0.1", 0),
+            new RepositorySourceServiceProperties.Workspace(Path.of("build/repository-source-workspaces")),
+            new RepositorySourceServiceProperties.Persistence(
+                "postgres",
+                new RepositorySourceServiceProperties.Postgres(
+                    "jdbc:postgresql://127.0.0.1:5432/forensic_analytics",
+                    "forensic",
+                    "",
+                    "repository_source",
+                    propertiesChangeLog()
+                )
+            )
+        );
     }
 
     static Status status(RuntimeException error) {
@@ -710,5 +940,18 @@ public final class RepositorySourceGrpcEndpoint extends RepositoryAnalysisServic
             case WARNING -> DiagnosticSeverity.DIAGNOSTIC_SEVERITY_WARNING;
             case ERROR -> DiagnosticSeverity.DIAGNOSTIC_SEVERITY_ERROR;
         };
+    }
+
+    @FunctionalInterface
+    public interface DatabaseSettingsConnectionValidator {
+        RepositorySourceDatabaseSettingsValidationResult validate(RepositorySourceServiceProperties.Postgres postgres);
+    }
+
+    private record DatabaseSettingsLocation(
+        String host,
+        int port,
+        String databaseName,
+        String sslMode
+    ) {
     }
 }

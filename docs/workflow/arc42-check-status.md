@@ -1,40 +1,42 @@
 # arc42 Check Status
 
-## Checked Sections
+## Checked Files
 
+- `docs/arc42/05-building-block-view.md`
 - `docs/arc42/07-deployment-view.md`
-- `docs/architecture/service-roots.md`
-- `docs/architecture/service-communication-matrix.md`
+- `docs/arc42/08-crosscutting-concepts.md`
+- `docs/arc42/09-architecture-decisions.md`
+- `docs/arc42/11-risks-and-technical-debt.md`
 - `docs/architecture/data-ownership.md`
-- `docs/adr/ADR-0017-target-microservices-service-landscape.md`
+- `docs/architecture/service-boundaries.md`
 
-## Result
+## Findings
 
-`docs/arc42/07-deployment-view.md` was synchronized with the executed local
-Docker Compose workflow. The update records:
+- Current architecture docs describe H2 as a repository-source-owned
+  Docker-local MVP adapter.
+- ADR-0023 explicitly leaves the production relational database decision open.
+- The user request selects PostgreSQL for repository-source workspace metadata
+  only, not for all canonical analytics persistence.
+- The repository checkout workspace concept is separate from deferred platform
+  workspace administration.
+- The accepted 2026-05-31 clarification changes the target from H2 retirement
+  to a PostgreSQL runtime default with H2 retained only for tests and fixtures.
+- The same clarification adds a public Settings/API/UI concern, so contract,
+  frontend, UX, security and service-boundary reviews are required before the
+  Settings slices execute.
 
-- root stack path `deployment/docker-compose/forensic-analytics.local.yml`;
-- external Docker network `forensic_analytics`;
-- generated service-specific Compose fragments;
-- GUI entry point `http://127.0.0.1:18000/`;
-- same-origin `/api` proxy from nginx to `query-report-api-service:8080`;
-- executed `/api/health` smoke result;
-- non-readiness notes for planned roots and skipped full-stack runtime checks.
+## Required Updates During Execution
 
-The architecture notes still distinguish:
+S01 added the PostgreSQL ADR and arc42/architecture updates before
+implementation slices modified source or runtime files.
 
-- target services from transitional services;
-- tool and non-production descriptors from productive backend services;
-- operational diagnostics from forensic evidence;
-- local Docker Compose evidence from production, Swarm or Kubernetes readiness.
+S07 must update ADR-0023 and data ownership docs to state the H2 test-only
+boundary. S08 must check service-boundary and data-ownership docs for the
+Settings contract and handoff model before backend or UI implementation claims
+runtime readiness.
 
-## Remaining Limits
+## Status
 
-No arc42 section claims:
-
-- production readiness;
-- Docker Swarm or Kubernetes readiness;
-- full-stack startup success for every service;
-- Joern runtime smoke success;
-- graph replay or report-generation runtime availability;
-- generated reports, graph projections or LLM output as verified evidence.
+Checked for workflow update. Existing S01 architecture updates remain valid
+for repository-source PostgreSQL metadata ownership. S07 and S08 carry the
+next required documentation synchronization points.

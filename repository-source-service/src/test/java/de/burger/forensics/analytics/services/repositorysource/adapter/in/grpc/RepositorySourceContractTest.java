@@ -12,7 +12,9 @@ import de.burger.forensics.analytics.repositoryanalysis.v1.CleanupRepositoryWork
 import de.burger.forensics.analytics.repositoryanalysis.v1.CleanupRepositoryWorkspaceResponse;
 import de.burger.forensics.analytics.repositoryanalysis.v1.CreateRepositoryWorkspaceResponse;
 import de.burger.forensics.analytics.repositoryanalysis.v1.CreateRepositoryWorkspaceRequest;
+import de.burger.forensics.analytics.repositoryanalysis.v1.DatabaseSettingsValidationStatus;
 import de.burger.forensics.analytics.repositoryanalysis.v1.GetRepositoryPreparationRequest;
+import de.burger.forensics.analytics.repositoryanalysis.v1.GetRepositorySourceDatabaseSettingsRequest;
 import de.burger.forensics.analytics.repositoryanalysis.v1.GetRepositoryWorkspaceRequest;
 import de.burger.forensics.analytics.repositoryanalysis.v1.JavaAstHandoffResponse;
 import de.burger.forensics.analytics.repositoryanalysis.v1.ListRepositoryWorkspacesRequest;
@@ -25,6 +27,10 @@ import de.burger.forensics.analytics.repositoryanalysis.v1.PreviewRepositoryWork
 import de.burger.forensics.analytics.repositoryanalysis.v1.RepositoryAnalysisServiceGrpc;
 import de.burger.forensics.analytics.repositoryanalysis.v1.RepositoryIdentity;
 import de.burger.forensics.analytics.repositoryanalysis.v1.RepositoryPreparation;
+import de.burger.forensics.analytics.repositoryanalysis.v1.RepositorySourceDatabaseSettingsCandidate;
+import de.burger.forensics.analytics.repositoryanalysis.v1.RepositorySourceDatabaseSettingsPublicView;
+import de.burger.forensics.analytics.repositoryanalysis.v1.RepositorySourceDatabaseSettingsStatus;
+import de.burger.forensics.analytics.repositoryanalysis.v1.RepositorySourceDatabaseSettingsValidationResponse;
 import de.burger.forensics.analytics.repositoryanalysis.v1.RepositoryWorkspace;
 import de.burger.forensics.analytics.repositoryanalysis.v1.RepositoryWorkspaceBranch;
 import de.burger.forensics.analytics.repositoryanalysis.v1.RepositoryWorkspaceBranchSelector;
@@ -35,6 +41,7 @@ import de.burger.forensics.analytics.repositoryanalysis.v1.SourcePackageDescript
 import de.burger.forensics.analytics.repositoryanalysis.v1.SourceRoot;
 import de.burger.forensics.analytics.repositoryanalysis.v1.SourceSnapshot;
 import de.burger.forensics.analytics.repositoryanalysis.v1.SourceSnapshotHandoffPolicy;
+import de.burger.forensics.analytics.repositoryanalysis.v1.ValidateRepositorySourceDatabaseSettingsRequest;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -311,6 +318,65 @@ class RepositorySourceContractTest {
         assertTrue(contract.contains("public lists hide CLEANED workspaces"));
         assertTrue(contract.contains("deterministic order"));
         assertTrue(contract.contains("Cleanup retains metadata"));
+    }
+
+    @Test
+    void exposesRepositorySourceDatabaseSettingsOwnerApiContract() {
+        var service = RepositoryAnalysisServiceGrpc.getServiceDescriptor();
+
+        assertServiceMethod(service, "GetRepositorySourceDatabaseSettings");
+        assertServiceMethod(service, "ValidateRepositorySourceDatabaseSettings");
+
+        assertFieldNumber(GetRepositorySourceDatabaseSettingsRequest.getDescriptor(), "request_id", 1);
+        assertFieldNumber(GetRepositorySourceDatabaseSettingsRequest.getDescriptor(), "correlation_id", 2);
+        assertFieldNumber(ValidateRepositorySourceDatabaseSettingsRequest.getDescriptor(), "request_id", 1);
+        assertFieldNumber(ValidateRepositorySourceDatabaseSettingsRequest.getDescriptor(), "correlation_id", 2);
+        assertFieldNumber(ValidateRepositorySourceDatabaseSettingsRequest.getDescriptor(), "settings", 3);
+        assertFieldNumber(RepositorySourceDatabaseSettingsCandidate.getDescriptor(), "host", 1);
+        assertFieldNumber(RepositorySourceDatabaseSettingsCandidate.getDescriptor(), "port", 2);
+        assertFieldNumber(RepositorySourceDatabaseSettingsCandidate.getDescriptor(), "database_name", 3);
+        assertFieldNumber(RepositorySourceDatabaseSettingsCandidate.getDescriptor(), "username", 4);
+        assertFieldNumber(RepositorySourceDatabaseSettingsCandidate.getDescriptor(), "password", 5);
+        assertFieldNumber(RepositorySourceDatabaseSettingsCandidate.getDescriptor(), "schema", 6);
+        assertFieldNumber(RepositorySourceDatabaseSettingsCandidate.getDescriptor(), "ssl_mode", 7);
+        assertFieldNumber(RepositorySourceDatabaseSettingsPublicView.getDescriptor(), "engine", 1);
+        assertFieldNumber(RepositorySourceDatabaseSettingsPublicView.getDescriptor(), "host", 2);
+        assertFieldNumber(RepositorySourceDatabaseSettingsPublicView.getDescriptor(), "port", 3);
+        assertFieldNumber(RepositorySourceDatabaseSettingsPublicView.getDescriptor(), "database_name", 4);
+        assertFieldNumber(RepositorySourceDatabaseSettingsPublicView.getDescriptor(), "username", 5);
+        assertFieldNumber(RepositorySourceDatabaseSettingsPublicView.getDescriptor(), "authentication_configured", 6);
+        assertFieldNumber(RepositorySourceDatabaseSettingsPublicView.getDescriptor(), "schema", 7);
+        assertFieldNumber(RepositorySourceDatabaseSettingsPublicView.getDescriptor(), "ssl_mode", 8);
+        assertFieldNumber(RepositorySourceDatabaseSettingsPublicView.getDescriptor(), "configuration_source", 9);
+        assertFieldNumber(RepositorySourceDatabaseSettingsPublicView.getDescriptor(), "apply_mode", 10);
+        assertFieldNumber(RepositorySourceDatabaseSettingsPublicView.getDescriptor(), "hot_apply_supported", 11);
+        assertFieldNumber(RepositorySourceDatabaseSettingsStatus.getDescriptor(), "settings", 1);
+        assertFieldNumber(RepositorySourceDatabaseSettingsStatus.getDescriptor(), "status", 2);
+        assertFieldNumber(RepositorySourceDatabaseSettingsStatus.getDescriptor(), "diagnostics", 3);
+        assertFieldNumber(RepositorySourceDatabaseSettingsValidationResponse.getDescriptor(), "settings", 1);
+        assertFieldNumber(RepositorySourceDatabaseSettingsValidationResponse.getDescriptor(), "validation_status", 2);
+        assertFieldNumber(RepositorySourceDatabaseSettingsValidationResponse.getDescriptor(), "status", 3);
+        assertFieldNumber(RepositorySourceDatabaseSettingsValidationResponse.getDescriptor(), "diagnostics", 4);
+
+        assertEnumNumber(
+            DatabaseSettingsValidationStatus.getDescriptor(),
+            "DATABASE_SETTINGS_VALIDATION_STATUS_UNSPECIFIED",
+            0
+        );
+        assertEnumNumber(DatabaseSettingsValidationStatus.getDescriptor(), "DATABASE_SETTINGS_VALIDATION_STATUS_VALID", 1);
+        assertEnumNumber(DatabaseSettingsValidationStatus.getDescriptor(), "DATABASE_SETTINGS_VALIDATION_STATUS_INVALID", 2);
+        assertEnumNumber(DatabaseSettingsValidationStatus.getDescriptor(), "DATABASE_SETTINGS_VALIDATION_STATUS_UNREACHABLE", 3);
+        assertEnumNumber(
+            DatabaseSettingsValidationStatus.getDescriptor(),
+            "DATABASE_SETTINGS_VALIDATION_STATUS_AUTHENTICATION_FAILED",
+            4
+        );
+        assertEnumNumber(DatabaseSettingsValidationStatus.getDescriptor(), "DATABASE_SETTINGS_VALIDATION_STATUS_UNSUPPORTED", 5);
+
+        assertNoPrivateTransportLeakageFields(RepositorySourceDatabaseSettingsCandidate.getDescriptor());
+        assertNoPrivateTransportLeakageFields(RepositorySourceDatabaseSettingsPublicView.getDescriptor());
+        assertNoPrivateTransportLeakageFields(RepositorySourceDatabaseSettingsStatus.getDescriptor());
+        assertNoPrivateTransportLeakageFields(RepositorySourceDatabaseSettingsValidationResponse.getDescriptor());
     }
 
     private static void assertServiceMethod(

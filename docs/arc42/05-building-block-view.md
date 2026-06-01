@@ -218,13 +218,18 @@ workspace aggregate, branch state, repository identity, source snapshot
 references and durable idempotency. Those concepts are service-owned
 repository-source state only. They do not introduce a `workspace-service`, do
 not assign platform workspace membership or project administration ownership,
-and do not allow other services to read repository-source H2 files or private
-checkout directories.
+and do not allow other services to read repository-source private persistence
+or private checkout directories.
 
-The H2 adapter used by FA-MVP-0001 is a repository-source-owned Docker-local
-MVP persistence adapter for checkout workspace, branch, repository preparation
-and idempotency records. It is not canonical analytics persistence and does
-not close the production database decision.
+ADR-0024 selects PostgreSQL only for repository-source workspace metadata:
+checkout workspace, branch, repository preparation and idempotency records.
+`repository-source-service` owns the PostgreSQL schema and write path.
+Repository checkout bytes and source package bytes remain service-owned
+private storage outside PostgreSQL. The historical H2 adapter from ADR-0023
+remains MVP evidence until the H2 retirement slice removes active fallback or
+records an explicit migration policy. This bounded PostgreSQL decision is not
+canonical Analytics persistence and does not close the broader production
+database decision.
 
 `repository-analysis-service` remains historical predecessor
 evidence and rollback input. It is not a compatibility alias for
@@ -301,8 +306,9 @@ read private service databases.
 
 For FA-MVP-0001, `query-report-api-service` may expose only sanitized public
 workspace REST DTOs and must call the repository-source owner API. It must not
-own Git checkout behavior, repository-source H2 files, private workspace paths,
-raw Git output, source package bytes or repository-source domain state.
+own Git checkout behavior, repository-source PostgreSQL tables, historical H2
+files, private workspace paths, raw Git output, source package bytes or
+repository-source domain state.
 
 Slice S08 adds `query-report-api-service` as target-service
 implementation evidence for the FA-MSA-001 public API facade boundary. It is

@@ -39,6 +39,23 @@ paths directly.
 This current MVP view does not claim JavaParser, Joern, BTM generation, replay,
 report, LLM, production database, Docker Swarm or Kubernetes readiness.
 
+### 7.1.2 Planned Repository-Source PostgreSQL Metadata View
+
+```text
+forensic-ui
+  -> query-report-api-service
+    -> repository-source-service
+       -> forensic-postgres / repository_source schema
+       -> repository-source-workspaces volume
+```
+
+ADR-0024 selects PostgreSQL only for repository-source workspace metadata after
+the workspace metadata cutover. `repository-source-service` remains the only
+writer for repository checkout workspace, branch, repository preparation and
+idempotency records. The repository checkout bytes remain on the
+repository-source workspace volume. Runtime readiness for this view is not
+claimed until the Docker and verification slices execute and record evidence.
+
 ## 7.2 Later Deployment View
 
 ```text
@@ -167,8 +184,9 @@ deployment evidence. The service owns:
 - a service-local gRPC endpoint on port `9092`;
 - the Docker profile workspace root
   `/var/lib/forensic-analytics/repository-workspaces`;
-- the Docker profile H2 data root
-  `/var/lib/forensic-analytics/repository-source-data`.
+- the Docker-local H2 data root
+  `/var/lib/forensic-analytics/repository-source-data` for the historical
+  MVP adapter until the PostgreSQL cutover retires active H2 runtime fallback.
 
 The service can be packaged independently with:
 
@@ -190,6 +208,12 @@ mounts `repository-source-workspaces` only into `repository-source-service` at
 `/var/lib/forensic-analytics/repository-source-data`. Other services do not
 mount those repository-source private volumes and must use owner APIs instead
 of reading checkout or H2 paths directly.
+
+After ADR-0024 execution, repository-source metadata is planned to move to the
+service-owned PostgreSQL schema in `forensic-postgres`, while the checkout
+workspace volume remains service-owned private storage. Other services still
+use owner APIs instead of reading repository-source PostgreSQL tables,
+historical H2 files or private checkout paths.
 
 The S09 Compose descriptor publishes repository-source local health on
 `127.0.0.1:18087` and gRPC on `127.0.0.1:19097` to avoid collisions with the
@@ -413,8 +437,10 @@ health checks and named volumes for repository-source checkout and H2 state
 plus generated Java AST, Joern and BTM artifacts. Gateway remains the public
 HTTP facade for the transitional repository-to-BTM path. Analysis Store remains
 the repository-to-BTM orchestration owner and calls worker owner APIs over
-gRPC. Repository-source owns its private workspace and H2 volumes and exposes
-that state only through owner APIs.
+gRPC. Repository-source owns its private workspace and H2 volumes in the
+current MVP and exposes that state only through owner APIs. After the
+PostgreSQL metadata cutover, repository-source keeps private workspace volume
+ownership and owns the PostgreSQL metadata schema as its private persistence.
 
 The local descriptor does not introduce external databases, Graph DB, Vector
 DB, brokers, Jenkins, Artifactory or live credentials. Docker Swarm and

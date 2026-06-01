@@ -130,6 +130,17 @@ class QueryReportApiServiceApplicationTest {
             ),
             null
         ));
+        assertThrows(NullPointerException.class, () -> new QueryReportApiServiceProperties(
+            new QueryReportApiServiceProperties.Http(true, "127.0.0.1", 0),
+            new QueryReportApiServiceProperties.AnalysisOrchestrator(
+                new QueryReportApiServiceProperties.Grpc("127.0.0.1", 0, 1)
+            ),
+            new QueryReportApiServiceProperties.RepositorySource(
+                new QueryReportApiServiceProperties.Grpc("127.0.0.1", 0, 1)
+            ),
+            workspaceFacade(),
+            null
+        ));
         assertThrows(IllegalArgumentException.class, () -> new QueryReportApiServiceProperties.Http(true, " ", 0));
         assertThrows(IllegalArgumentException.class, () -> new QueryReportApiServiceProperties.Http(true, null, 0));
         assertThrows(IllegalArgumentException.class, () -> new QueryReportApiServiceProperties.Http(true, "127.0.0.1", -1));
@@ -195,7 +206,8 @@ class QueryReportApiServiceApplicationTest {
             .withProperty("forensics.query-report-api.service.workspace.refresh.allow-partial-clone", "false")
             .withProperty("forensics.query-report-api.service.workspace.refresh.allow-sparse-checkout", "false")
             .withProperty("forensics.query-report-api.service.workspace.refresh.timeout-seconds", "46")
-            .withProperty("forensics.query-report-api.service.workspace.refresh.max-workspace-bytes", "123456");
+            .withProperty("forensics.query-report-api.service.workspace.refresh.max-workspace-bytes", "123456")
+            .withProperty("forensics.query-report-api.service.settings.operator-token", "operator-token");
 
         var properties = new QueryReportApiServicePropertiesConfiguration().queryReportApiServiceProperties(environment);
 
@@ -212,6 +224,7 @@ class QueryReportApiServiceApplicationTest {
         assertEquals(45, properties.workspaceFacade().metadataTimeoutSeconds());
         assertEquals(46, properties.workspaceFacade().refreshTimeoutSeconds());
         assertEquals(123456, properties.workspaceFacade().refreshMaxWorkspaceBytes());
+        assertEquals("operator-token", properties.settingsFacade().operatorToken());
     }
 
     @Test

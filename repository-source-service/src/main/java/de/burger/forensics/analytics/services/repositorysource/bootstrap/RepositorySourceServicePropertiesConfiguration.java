@@ -29,15 +29,21 @@ public class RepositorySourceServicePropertiesConfiguration {
                 ))
             ),
             new RepositorySourceServiceProperties.Persistence(
-                text(environment, "forensics.repository-source.service.persistence.type", "h2"),
-                new RepositorySourceServiceProperties.H2(
+                text(environment, "forensics.repository-source.service.persistence.type", "postgres"),
+                new RepositorySourceServiceProperties.Postgres(
                     text(
                         environment,
-                        "forensics.repository-source.service.persistence.h2.jdbc-url",
-                        "jdbc:h2:file:./build/repository-source-data/repository-source;AUTO_SERVER=FALSE;DB_CLOSE_DELAY=-1"
+                        "forensics.repository-source.service.persistence.postgres.jdbc-url",
+                        "jdbc:postgresql://127.0.0.1:5432/forensic_analytics"
                     ),
-                    text(environment, "forensics.repository-source.service.persistence.h2.username", "sa"),
-                    text(environment, "forensics.repository-source.service.persistence.h2.password", "")
+                    text(environment, "forensics.repository-source.service.persistence.postgres.username", "forensic"),
+                    text(environment, "forensics.repository-source.service.persistence.postgres.password", ""),
+                    text(environment, "forensics.repository-source.service.persistence.postgres.schema", "repository_source"),
+                    text(
+                        environment,
+                        "forensics.repository-source.service.persistence.postgres.change-log",
+                        "classpath:db/changelog/repository-source-workspace.postgresql.yaml"
+                    )
                 )
             )
         );

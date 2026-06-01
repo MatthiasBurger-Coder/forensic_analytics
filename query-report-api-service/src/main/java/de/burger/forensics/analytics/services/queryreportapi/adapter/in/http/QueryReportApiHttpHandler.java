@@ -7,9 +7,13 @@ import com.sun.net.httpserver.HttpHandler;
 import de.burger.forensics.analytics.services.queryreportapi.application.QueryReportApiIdempotencyConflictException;
 import de.burger.forensics.analytics.services.queryreportapi.application.QueryReportApiRepositoryAnalysisException;
 import de.burger.forensics.analytics.services.queryreportapi.application.QueryReportApiRepositoryAnalysisSubmissionService;
+import de.burger.forensics.analytics.services.queryreportapi.application.QueryReportApiSettingsException;
+import de.burger.forensics.analytics.services.queryreportapi.application.QueryReportApiSettingsService;
 import de.burger.forensics.analytics.services.queryreportapi.application.QueryReportApiStatusService;
 import de.burger.forensics.analytics.services.queryreportapi.application.QueryReportApiWorkspaceException;
 import de.burger.forensics.analytics.services.queryreportapi.application.QueryReportApiWorkspaceService;
+import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiSettings.DatabaseSettingsRequest;
+import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiSettings.DatabaseSettingsValidationRequest;
 import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiRepositoryAnalysis.BuildContext;
 import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiRepositoryAnalysis.StatusRequest;
 import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportApiRepositoryAnalysis.SubmissionRequest;
@@ -17,6 +21,7 @@ import de.burger.forensics.analytics.services.queryreportapi.domain.QueryReportA
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -32,6 +37,8 @@ public final class QueryReportApiHttpHandler implements HttpHandler {
     private final QueryReportApiStatusService statusService;
     private final QueryReportApiRepositoryAnalysisSubmissionService repositoryAnalysisSubmissionService;
     private final QueryReportApiWorkspaceService workspaceService;
+    private final QueryReportApiSettingsService settingsService;
+    private final String operatorToken;
     private final Gson gson;
 
     public QueryReportApiHttpHandler(
@@ -39,9 +46,21 @@ public final class QueryReportApiHttpHandler implements HttpHandler {
         QueryReportApiRepositoryAnalysisSubmissionService repositoryAnalysisSubmissionService,
         QueryReportApiWorkspaceService workspaceService
     ) {
+        this(statusService, repositoryAnalysisSubmissionService, workspaceService, null, "");
+    }
+
+    public QueryReportApiHttpHandler(
+        QueryReportApiStatusService statusService,
+        QueryReportApiRepositoryAnalysisSubmissionService repositoryAnalysisSubmissionService,
+        QueryReportApiWorkspaceService workspaceService,
+        QueryReportApiSettingsService settingsService,
+        String operatorToken
+    ) {
         this.statusService = statusService;
         this.repositoryAnalysisSubmissionService = repositoryAnalysisSubmissionService;
         this.workspaceService = workspaceService;
+        this.settingsService = settingsService;
+        this.operatorToken = operatorToken == null ? "" : operatorToken.trim();
         this.gson = new Gson();
     }
 
@@ -71,6 +90,7 @@ public final class QueryReportApiHttpHandler implements HttpHandler {
         switch (path) {
             case "/health", "/api/health" -> write(exchange, 200, HEALTH);
             case "/api/status" -> write(exchange, 200, gson.toJson(statusService.currentStatus()));
+            case "/api/settings/repository-source/database" -> handleSettingsDatabaseGet(exchange);
             case "/api/workspaces" -> handleWorkspaceListGet(exchange);
             default -> {
                 if (path.startsWith("/api/workspaces/")) {
@@ -99,6 +119,23 @@ public final class QueryReportApiHttpHandler implements HttpHandler {
             writeError(exchange, error.statusCode(), error.errorCode(), error.retryable(), error.getMessage(), correlationId);
         } catch (IllegalArgumentException | NullPointerException error) {
             writeError(exchange, 400, "VALIDATION_ERROR", false, "Invalid repository workspace request", correlationId);
+        }
+    }
+
+    private void handleSettingsDatabaseGet(HttpExchange exchange) throws IOException {
+        var correlationId = "";
+        try {
+            correlationId = requiredMutationHeader(exchange, "X-Correlation-Id");
+            requireOperatorToken(exchange);
+            var settings = settingsService.current(new DatabaseSettingsRequest(
+                generatedRequestId("settings-get", correlationId, "repository-source"),
+                correlationId
+            ));
+            write(exchange, 200, gson.toJson(settings), correlationId);
+        } catch (QueryReportApiSettingsException error) {
+            writeError(exchange, error.statusCode(), error.errorCode(), error.retryable(), error.getMessage(), correlationId);
+        } catch (IllegalArgumentException | NullPointerException error) {
+            writeError(exchange, 400, "VALIDATION_ERROR", false, "Invalid repository-source database settings request", correlationId);
         }
     }
 
@@ -221,6 +258,10 @@ public final class QueryReportApiHttpHandler implements HttpHandler {
                 handleRepositoryAnalysisPost(exchange);
                 return;
             }
+            case "/api/settings/repository-source/database/validation" -> {
+                handleSettingsDatabaseValidationPost(exchange);
+                return;
+            }
             default -> {
                 if (isWorkspaceRefreshRoute(path)) {
                     handleWorkspaceBranchRefreshPost(exchange, path);
@@ -319,10 +360,59 @@ public final class QueryReportApiHttpHandler implements HttpHandler {
         }
     }
 
+    private void handleSettingsDatabaseValidationPost(HttpExchange exchange) throws IOException {
+        var correlationId = "";
+        try {
+            correlationId = requiredMutationHeader(exchange, "X-Correlation-Id");
+            requireOperatorToken(exchange);
+            var payload = databaseSettingsPayload(readRequestBody(exchange));
+            var settings = settingsService.validate(payload.toCommand(
+                generatedRequestId("settings-validation", correlationId, payload.discriminator()),
+                correlationId
+            ));
+            write(exchange, 200, gson.toJson(settings), correlationId);
+        } catch (QueryReportApiSettingsException error) {
+            writeError(exchange, error.statusCode(), error.errorCode(), error.retryable(), error.getMessage(), correlationId);
+        } catch (IllegalArgumentException | NullPointerException | JsonSyntaxException error) {
+            writeError(exchange, 400, "VALIDATION_ERROR", false, "Invalid repository-source database settings request", correlationId);
+        }
+    }
+
+    private void requireOperatorToken(HttpExchange exchange) {
+        if (settingsService == null || operatorToken.isBlank()) {
+            throw new QueryReportApiSettingsException(
+                503,
+                "SETTINGS_AUTH_NOT_CONFIGURED",
+                false,
+                "Settings operator token is not configured"
+            );
+        }
+        var supplied = firstHeader(exchange, "X-Operator-Token");
+        if (supplied == null || supplied.isBlank()) {
+            throw unauthorized();
+        }
+        var safeValue = supplied.trim();
+        if (!SAFE_MUTATION_HEADER.matcher(safeValue).matches() || !operatorTokenMatches(safeValue)) {
+            throw unauthorized();
+        }
+    }
+
+    private boolean operatorTokenMatches(String supplied) {
+        return MessageDigest.isEqual(
+            operatorToken.getBytes(StandardCharsets.UTF_8),
+            supplied.getBytes(StandardCharsets.UTF_8)
+        );
+    }
+
+    private static QueryReportApiSettingsException unauthorized() {
+        return new QueryReportApiSettingsException(401, "UNAUTHORIZED", false, "Operator token is invalid");
+    }
+
     private static boolean isKnownGetRoute(String path) {
         return "/health".equals(path)
             || "/api/health".equals(path)
             || "/api/status".equals(path)
+            || "/api/settings/repository-source/database".equals(path)
             || "/api/workspace-metadata".equals(path)
             || "/api/workspaces".equals(path)
             || path.startsWith("/api/workspaces/");
@@ -338,6 +428,10 @@ public final class QueryReportApiHttpHandler implements HttpHandler {
 
     private WorkspacePayload workspacePayload(String requestBody) {
         return gson.fromJson(requestBody, WorkspacePayload.class);
+    }
+
+    private DatabaseSettingsPayload databaseSettingsPayload(String requestBody) {
+        return gson.fromJson(requestBody, DatabaseSettingsPayload.class);
     }
 
     private static String readRequestBody(HttpExchange exchange) throws IOException {
@@ -468,6 +562,34 @@ public final class QueryReportApiHttpHandler implements HttpHandler {
         private WorkspacePolicyPayload workspacePolicy;
     }
 
+    private static final class DatabaseSettingsPayload {
+        private String host;
+        private Integer port;
+        private String databaseName;
+        private String username;
+        private String password;
+        private String schema;
+        private String sslMode;
+
+        private DatabaseSettingsValidationRequest toCommand(String requestId, String correlationId) {
+            return new DatabaseSettingsValidationRequest(
+                requestId,
+                correlationId,
+                host,
+                required(port, "database port"),
+                databaseName,
+                username,
+                password,
+                schema,
+                sslMode
+            );
+        }
+
+        private String discriminator() {
+            return host + "|" + port + "|" + databaseName + "|" + username + "|" + schema + "|" + sslMode;
+        }
+    }
+
     private static final class StartRepositoryAnalysisPayload {
         private String requestId;
         private String schemaVersion;
@@ -549,6 +671,13 @@ public final class QueryReportApiHttpHandler implements HttpHandler {
     }
 
     private static long required(Long value, String name) {
+        if (value == null) {
+            throw new IllegalArgumentException(name + " is required");
+        }
+        return value;
+    }
+
+    private static int required(Integer value, String name) {
         if (value == null) {
             throw new IllegalArgumentException(name + " is required");
         }

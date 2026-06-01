@@ -23,6 +23,9 @@ import { sanitizeDiagnosticText } from "@/shared/safeText";
 
 import type {
   BranchRefreshResponseDto,
+  DatabaseSettingsPublicViewDto,
+  DatabaseSettingsStatusDto,
+  DatabaseSettingsValidationResponseDto,
   DiagnosticDto,
   PublicRepositoryIdentityDto,
   RepositoryAnalysisDto,
@@ -34,6 +37,13 @@ import type {
   WorkspaceListDto,
   WorkspaceMetadataResponseDto
 } from "./dtos";
+import type {
+  DatabaseSettingsAvailability,
+  DatabaseSettingsValidationResult,
+  DatabaseSettingsValidationStatus,
+  DatabaseSettingsView,
+  DatabaseSettingsStatus
+} from "@/domain/settings";
 
 const STATUS_MAPPING: Record<string, AnalysisLifecycle> = {
   COMPLETED: "SUCCESS",
@@ -186,6 +196,28 @@ export const mapWorkspaceCleanupDto = (
   diagnostics: publicDiagnostics(dto.diagnostics)
 });
 
+export const mapDatabaseSettingsStatusDto = (
+  dto: DatabaseSettingsStatusDto
+): DatabaseSettingsStatus => ({
+  settings: mapDatabaseSettingsViewDto(
+    isRecord(dto.settings) ? (dto.settings as DatabaseSettingsPublicViewDto) : {}
+  ),
+  status: databaseSettingsAvailability(dto.status),
+  diagnostics: publicDiagnostics(dto.diagnostics)
+});
+
+export const mapDatabaseSettingsValidationResponseDto = (
+  dto: DatabaseSettingsValidationResponseDto
+): DatabaseSettingsValidationResult => ({
+  settings: mapDatabaseSettingsViewDto(
+    isRecord(dto.settings) ? (dto.settings as DatabaseSettingsPublicViewDto) : {}
+  ),
+  validationStatus: databaseSettingsValidationStatus(dto.validationStatus),
+  applyMode: textOrEmpty(dto.applyMode),
+  hotApplySupported: dto.hotApplySupported === true,
+  diagnostics: publicDiagnostics(dto.diagnostics)
+});
+
 export const mapDiagnosticDto = (
   dto: DiagnosticDto,
   index: number
@@ -295,6 +327,22 @@ const mapPublicWorkspaceBranchDto = (dto: WorkspaceBranchDto): WorkspaceBranch =
   diagnostics: publicDiagnostics(dto.diagnostics)
 });
 
+const mapDatabaseSettingsViewDto = (
+  dto: DatabaseSettingsPublicViewDto
+): DatabaseSettingsView => ({
+  engine: textOrEmpty(dto.engine),
+  host: textOrEmpty(dto.host),
+  port: numberOrDefault(dto.port, 0),
+  databaseName: textOrEmpty(dto.databaseName),
+  username: textOrEmpty(dto.username),
+  authenticationConfigured: dto.authenticationConfigured === true,
+  schema: textOrEmpty(dto.schema),
+  sslMode: textOrEmpty(dto.sslMode),
+  configurationSource: textOrEmpty(dto.configurationSource),
+  applyMode: textOrEmpty(dto.applyMode),
+  hotApplySupported: dto.hotApplySupported === true
+});
+
 const severity = (value: unknown): DiagnosticSeverity => {
   const normalized = textOrNull(value)?.toUpperCase();
 
@@ -318,6 +366,9 @@ const textOrEmpty = (value: unknown): string => textOrNull(value) ?? "";
 
 const textOrNull = (value: unknown): string | null =>
   typeof value === "string" && value.trim() ? value.trim() : null;
+
+const numberOrDefault = (value: unknown, fallback: number): number =>
+  typeof value === "number" && Number.isFinite(value) ? value : fallback;
 
 const sanitizedOptionalText = (value: unknown): string | null => {
   const text = textOrNull(value);
@@ -353,6 +404,34 @@ const workspaceStatus = (value: unknown): WorkspaceStatus => {
 
 const cleanupStatus = (value: unknown): WorkspaceStatus =>
   workspaceStatus(value) === "CLEANED" ? "CLEANED" : "UNKNOWN";
+
+const databaseSettingsAvailability = (
+  value: unknown
+): DatabaseSettingsAvailability => {
+  const normalized = textOrNull(value)?.toUpperCase();
+
+  return normalized === "AVAILABLE" || normalized === "UNAVAILABLE"
+    ? normalized
+    : "UNKNOWN";
+};
+
+const databaseSettingsValidationStatus = (
+  value: unknown
+): DatabaseSettingsValidationStatus => {
+  const normalized = textOrNull(value)?.toUpperCase();
+
+  if (
+    normalized === "VALID" ||
+    normalized === "INVALID" ||
+    normalized === "UNREACHABLE" ||
+    normalized === "AUTHENTICATION_FAILED" ||
+    normalized === "UNSUPPORTED"
+  ) {
+    return normalized;
+  }
+
+  return "UNKNOWN";
+};
 
 const branchStatus = (value: unknown): WorkspaceBranchStatus => {
   const normalized = textOrNull(value)?.toUpperCase();

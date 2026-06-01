@@ -29,6 +29,7 @@
 | ADR-0021 | Governance Flowchart V2 | Accepted | Adds S3 STOP paths, Typed Error Router, S3D orchestration, rollback, one-slice-one-commit traceability and two-level flowcharts |
 | ADR-0022 | Retire legacy modular-monolith source trees | Accepted | Closes final source-tree retirement after S05 verified service-only Gradle topology and no active legacy build/source dependencies |
 | ADR-0023 | Use H2 only for repository-source MVP persistence | Accepted | Records H2 as a repository-source-owned Docker-local MVP adapter only and keeps the production database decision open |
+| ADR-0024 | Use PostgreSQL for repository-source workspace metadata | Accepted | Selects PostgreSQL only for repository-source-owned workspace metadata and keeps broader Analytics persistence decisions open |
 
 ## 9.2 FA-MVP-0001 ADR Review
 
@@ -43,11 +44,18 @@ checkout workspace, branch, source snapshot and idempotency state;
 `query-report-api-service` exposes sanitized public workspace REST DTOs
 through owner APIs; no new `workspace-service` is introduced.
 
+ADR-0024 supersedes the H2 runtime target for repository-source workspace
+metadata after the PostgreSQL cutover. The bounded decision covers only
+repository checkout workspace, branch, repository preparation and idempotency
+records owned by `repository-source-service`. It does not authorize direct
+cross-service table access, does not store checkout bytes in PostgreSQL and
+does not select a shared canonical Analytics database.
+
 ## 9.3 Open Decisions
 
 | ID | Open Decision | Notes |
 |---|---|---|
-| OD-001 | Initial relational database | Not selected in EPIC v0.2. FA-MVP-0001 H2 is repository-source Docker-local MVP persistence only and does not close this production database decision. |
+| OD-001 | Initial relational database | Partially decided by ADR-0024 only for repository-source workspace metadata. Broader canonical Analytics persistence remains open. |
 | OD-002 | Initial Graph DB | Not selected in EPIC v0.2 |
 | OD-003 | Initial Vector DB | Not selected in EPIC v0.2 |
 | OD-004 | Runtime ingestion mode | JSONL likely for MVP, HTTP collector later |
