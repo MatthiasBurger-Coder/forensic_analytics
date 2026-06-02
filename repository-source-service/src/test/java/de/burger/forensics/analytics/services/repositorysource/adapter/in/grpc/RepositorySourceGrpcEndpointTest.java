@@ -286,11 +286,12 @@ class RepositorySourceGrpcEndpointTest {
 
     @Test
     void previewsCreatesGetsAndRefreshesRepositoryWorkspaceOwnerApi() {
+        metadataPort.repositoryBranches = List.of("main", "release/1.0", "wildfly-preview");
         var preview = stub.previewRepositoryWorkspaceMetadata(metadataRequest());
 
         assertEquals("example.com/acme/demo", preview.getRepository().getRepositoryKey());
         assertEquals("demo", preview.getWorkspaceTitle());
-        assertEquals(List.of("main"), preview.getRepositoryBranchesList());
+        assertEquals(List.of("main", "release/1.0", "wildfly-preview"), preview.getRepositoryBranchesList());
         assertEquals("METADATA_RESOLVED", preview.getStatus().getCode());
         assertEquals("demo", preview.getSafeAttributesOrThrow("tenant"));
         assertEquals(1, metadataPort.calls);
@@ -932,11 +933,13 @@ class RepositorySourceGrpcEndpointTest {
     private static final class FakeMetadataPort implements RepositoryMetadataPort {
         private final String defaultBranch;
         private final boolean resolved;
+        private List<String> repositoryBranches;
         private int calls;
 
         private FakeMetadataPort(String defaultBranch, boolean resolved) {
             this.defaultBranch = defaultBranch;
             this.resolved = resolved;
+            this.repositoryBranches = resolved ? List.of(defaultBranch) : List.of();
         }
 
         @Override
@@ -948,7 +951,7 @@ class RepositorySourceGrpcEndpointTest {
             return new RepositoryMetadataResolution(
                 RepositoryIdentity.from(repository, defaultBranch),
                 resolved,
-                resolved ? List.of(defaultBranch) : List.of(),
+                repositoryBranches,
                 List.of(Diagnostic.info("DEFAULT_BRANCH_RESOLVED", "Repository default branch resolved"))
             );
         }
