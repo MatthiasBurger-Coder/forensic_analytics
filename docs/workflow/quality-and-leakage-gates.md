@@ -1,22 +1,13 @@
 # Quality And Leakage Gates
 
-## Required Minimum
+## Required Quality Source
+
+`QUALITY.md` is authoritative.
+
+## Minimum Command
 
 ```bash
 ./gradlew test --dependency-verification strict --console=plain --stacktrace
-```
-
-## Targeted Backend
-
-```bash
-./gradlew :repository-source-service:test --dependency-verification strict --console=plain --stacktrace
-```
-
-## Targeted Frontend
-
-```bash
-npm test -- --run src/pages/workspaces/CreateWorkspacePage.test.tsx src/pages/workspaces/WorkspaceListPage.test.tsx src/adapters/api/mappers.test.ts
-npm run build
 ```
 
 ## Full Local Gate
@@ -25,14 +16,9 @@ npm run build
 ./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace
 ```
 
-## Leakage Checks
+## Leakage Rules
 
-- No raw Git output in public diagnostics.
-- No local workspace paths in UI or public DTOs.
-- No credentials or repository URLs with userinfo in diagnostics.
-- No branch name used as filesystem path.
-- No branch selection test may perform a fetch, checkout or workspace-content
-  update.
-- Status-only checks may mark a branch with a red not-up-to-date indicator
-  without loading branch content.
-- No analysis-result deletion without owner contract.
+- Do not expose local workspace paths, JDBC URLs, raw Git output, credentials, tokens, private DNS data or PostgreSQL table names in public DTOs or UI diagnostics.
+- Branch names are public data returned from remote refs, but they must not be interpreted as paths.
+- UI and query-report must not read repository-source persistence directly.
+- Live WildFly smoke checks are optional diagnostics, not mandatory quality gates.

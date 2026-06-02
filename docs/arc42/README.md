@@ -32,6 +32,31 @@ The EPIC remains the product and requirement baseline. The arc42 documentation t
 
 ## Governance Check Status
 
+The Remote Branch Metadata Listing And Persistence workflow was created on
+branch `feature/workflow-remote-branches-gui-persistence-20260602`. The
+workflow targets the verified `/api/workspace-metadata` data path for submitted
+remote repository URLs such as `https://github.com/wildfly/wildfly.git`.
+Repository-source remains the owner of remote metadata resolution and
+repository workspace branch persistence; query-report remains the public
+facade; forensic-ui consumes sanitized public DTOs only.
+
+Checked sections for this workflow:
+
+- Building Block View: checked for repository-source ownership, query-report
+  facade boundaries and UI client-only consumption.
+- Runtime View: checked at workflow level for metadata preview path diagnosis;
+  implementation evidence is deferred to `workflow execute`.
+- Crosscutting Concepts: checked for branch names as data values, no local
+  `git branch -a` evidence substitution and no direct UI or gateway database
+  writes.
+- Architecture Decisions: checked against ADR-0024; no new ADR is required for
+  this workflow creation.
+- Quality Requirements: checked for deterministic branch-list regression tests,
+  no live GitHub dependency in required gates and public diagnostic leakage
+  prevention.
+- Risks and Technical Debt: checked for stale service runtime, gateway
+  forwarding and UI mapper data-path risks.
+
 The Workspace Branch Selection workflow was created on branch
 `feature/workflow-branch-selection-20260525`. The workflow stays inside the
 FA-MVP-0001 repository checkout workspace scope and plans a guarded

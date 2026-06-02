@@ -1,14 +1,11 @@
 # Role Ownership
 
-| Area | Owner | Reviewers |
+| Slice | Owner | Reviewers |
 |---|---|---|
-| Requirement integrity | Senior Requirement Engineer | Senior Tester |
-| Architecture boundaries | Senior System Architect | Data Ownership & Persistence Steward |
-| Repository-source backend | Senior Java Backend Developer | Senior Tester |
-| Public contracts | Contract-First API Steward | Senior Java Backend Developer |
-| React UI | Senior React Frontend Developer | Senior UX Designer, Senior Tester |
-| Trash/final-delete lifecycle | Data Ownership & Persistence Steward | Senior System Architect |
-| Quality gates | Senior Tester | Quality Gate Orchestrator |
+| S01 Metadata Contract And Owner Path Verification | Senior Java Backend Developer | Senior System Architect, Senior Tester |
+| S02 Gateway Forwarding And Public REST Serialization | Senior Java Backend Developer | Contract-First API Steward, Senior Tester |
+| S03 UI Metadata Data Path And Branch Listing | Senior React Frontend Developer | Senior UX Designer, Senior Tester |
+| S04 Selected Branch Persistence Through Repository-Source Metadata | Senior Java Backend Developer | Senior Analysis Storage Architect, Senior Tester |
+| S05 Runtime Smoke Diagnostics And Documentation Closure | Senior DevOps Engineer | Senior Documentation Engineer, Senior Tester |
 
-Callable subagents are optional. If unavailable, use these role files as local
-review checklists during `workflow execute`.
+Repository-source owns repository workspace metadata and branch persistence. Query-report remains a public facade. The UI consumes only public API DTOs.
