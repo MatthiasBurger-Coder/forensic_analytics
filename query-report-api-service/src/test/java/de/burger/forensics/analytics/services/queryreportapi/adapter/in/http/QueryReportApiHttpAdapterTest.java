@@ -304,7 +304,8 @@ class QueryReportApiHttpAdapterTest {
 
     @Test
     void exposesRepositoryWorkspaceFacadeRoutes() throws Exception {
-        var server = server();
+        var workspacePort = new FakeWorkspacePort();
+        var server = server(new FakePreparationPort(), workspacePort);
         try {
             var port = server.getAddress().getPort();
 
@@ -372,6 +373,9 @@ class QueryReportApiHttpAdapterTest {
             assertTrue(metadata.body().contains("\"repositoryBranches\":[\"main\",\"release/1.0\"]"));
             assertFalse(metadata.body().contains("\"workspaceId\""));
             assertSafePublicBody(metadata.body());
+            assertEquals("https://example.com/acme/demo.git", workspacePort.lastMetadataRequest.repositoryUrl());
+            assertEquals("correlation-workspace-1", workspacePort.lastMetadataRequest.correlationId());
+            assertEquals("idem-workspace-metadata-1", workspacePort.lastMetadataRequest.idempotencyKey());
 
             assertEquals(200, listed.code());
             assertEquals("correlation-workspace-list", listed.correlationId());
@@ -1159,8 +1163,11 @@ class QueryReportApiHttpAdapterTest {
     }
 
     private static class FakeWorkspacePort implements RepositoryWorkspaceOwnerPort {
+        private WorkspaceMetadataRequest lastMetadataRequest;
+
         @Override
         public WorkspaceMetadataResponse previewMetadata(WorkspaceMetadataRequest request) {
+            lastMetadataRequest = request;
             return new WorkspaceMetadataResponse(
                 "example.com/acme/demo",
                 "example.com",
