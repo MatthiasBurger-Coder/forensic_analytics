@@ -1,28 +1,21 @@
 # Deployment Description
 
-This workflow affects local runtime only when slices modify
-`repository-source-service` or `forensic-ui` behavior.
+This workflow may require rebuilding and restarting affected local services during `workflow execute` if the observed UI still drops `repositoryBranches` after code-level tests pass.
 
-Expected changed services:
+Affected runtime components:
 
 - `repository-source-service`
+- `query-report-api-service`
 - `forensic-ui`
+- `forensic-postgres` only as repository-source metadata storage governed by ADR-0024
 
-Restart guidance after implementation:
+Operational diagnostic target:
 
-```bash
-./gradlew --no-daemon --max-workers=1 :repository-source-service:bootJar --dependency-verification strict --console=plain --stacktrace
-docker compose --env-file docker/postgres/.env -p forensic-analytics-local \
-  -f deployment/docker-compose/services/repository-source-service.compose.yml \
-  -f deployment/docker-compose/services/forensic-ui.compose.yml \
-  -f deployment/docker-compose/forensic-analytics.local.yml \
-  build repository-source-service forensic-ui
-docker compose --env-file docker/postgres/.env -p forensic-analytics-local \
-  -f deployment/docker-compose/services/repository-source-service.compose.yml \
-  -f deployment/docker-compose/services/forensic-ui.compose.yml \
-  -f deployment/docker-compose/forensic-analytics.local.yml \
-  up -d --no-deps repository-source-service forensic-ui
+```http
+POST /api/workspace-metadata
+Content-Type: application/json
+
+{"repositoryUrl":"https://github.com/wildfly/wildfly.git"}
 ```
 
-Do not remove volumes during this workflow unless a final-delete slice
-explicitly verifies the operator intent and affected data ownership.
+Expected diagnostic condition: response contains a non-empty `repositoryBranches` array when the remote metadata lookup succeeds. The workflow must not assert a fixed branch count from the GitHub UI.

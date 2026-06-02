@@ -1,316 +1,321 @@
-# Workflow: Repository Workspace Branch Selection And Refresh
+# Workflow: Remote Branch Metadata Listing And Persistence
 
 ## Executive Summary
 
-This workflow plans repository workspace branch discovery, selection and refresh
-behavior across the repository-source backend, public contracts and React UI.
-The target is a workspace view where all verified remote branches are displayed
-in a `Branches` combobox, the selected branch is persisted as
-`workspace_branch`, and branch refresh is an explicit operator action.
+This workflow enables the GUI to list remote repository branches resolved by the repository metadata endpoint and to persist the selected branch through the repository-source workspace metadata owner.
 
-The workflow does not implement product code. It defines executable slices for
-`workflow execute`.
+The concrete defect hypothesis from the request is narrow: `git branch -a` in the Forensic Analytics checkout only shows branches of this repository and is not the relevant command for a remote target repository such as `https://github.com/wildfly/wildfly.git`. The relevant product path is `POST /api/workspace-metadata`, which must call repository metadata resolution for the submitted repository URL and return `repositoryBranches` to the UI. If `repositoryBranches` is missing in the UI while the Git metadata adapter returns them, the remaining risk is runtime/service version, gateway forwarding, REST mapping, frontend mapper, or UI state.
+
+This workflow does not implement code. It defines executable slices for `workflow execute`.
 
 ## Verified Baseline
 
-- Active branch: `feature/workflow-workspace-branch-selection-20260601`
-- Workflow version: `2026-06-01`
+- Active branch: `feature/workflow-remote-branches-gui-persistence-20260602`
+- Workflow version: `2026-06-02`
 - Process strand: `workflow create`
 - Execution profile: `FULL_PATH`
 - Repository root: `/mnt/d/Projects/forensic_analytics`
-- Owner service: `repository-source-service`
-- Existing frontend module: `forensic-ui`
-- Existing repository workspace contract: `contracts/grpc/repository-analysis.proto`
-- Existing public REST contract: `contracts/openapi/gateway-api.yaml`
+- Host execution requirement: WSL with `./gradlew`
+- Owner service for repository metadata and persisted workspace branch state: `repository-source-service`
+- Public gateway/API service: `query-report-api-service`
+- Frontend module: `forensic-ui`
+- Existing OpenAPI endpoint: `POST /api/workspace-metadata`
+- Existing gRPC method: `PreviewRepositoryWorkspaceMetadata`
+- Existing response field: `repositoryBranches` / `repository_branches`
 - Existing persistence decision: ADR-0024 PostgreSQL for repository-source workspace metadata
 - Quality source: `QUALITY.md`
 
-## Interpreted Intent
-
-The request is interpreted as:
-
-- Read all remote repository branches during workspace metadata resolution.
-- Show those branches in the GUI combobox named `Branches`.
-- Persist the selected branch as the active `workspace_branch`.
-- Treat the selected branch as the branch used by subsequent analysis.
-- Do not update branch content from the remote merely because a branch was
-  selected.
-- A selection may only update metadata/status, for example a red
-  not-up-to-date indicator; it must not fetch, checkout or replace local branch
-  content.
-- Mark selected branches that are not up to date with a red status indicator.
-- Refresh a branch only through an explicit `Update Branch` action.
-- Before refresh, verify that the remote branch still exists.
-- If the remote branch no longer exists, warn the operator before destructive
-  cleanup of referenced branch data.
-- Add a visible TBD note for the future stale-analysis-data requirement.
-- Treat workspace deletion as logical deletion first so accidental deletion can
-  be recovered through a future trash/final-delete workflow.
-
 ## Requirement Clarification Gate
 
-Decision: `PROCEED_WITH_ACCEPTED_ASSUMPTIONS`
+Decision: `READY_FOR_WORKFLOW`
 
-Confidence: 86 percent.
+Confidence: 92 percent.
+
+Original request:
+
+- Create a workflow so the GUI can list remote branches and store them in the database.
+- Use `/api/workspace-metadata` with `https://github.com/wildfly/wildfly.git` as the relevant runtime path.
+- Treat missing UI display as a data-path or runtime-version problem, not as a local `git branch -a` command problem.
+
+Interpreted intent:
+
+- Ensure the metadata preview endpoint resolves remote branches from the submitted remote repository URL.
+- Ensure `repositoryBranches` survives the repository-source gRPC response, query-report gateway REST response, frontend API mapper, and React UI state.
+- Ensure the selected branch is persisted as repository-source-owned workspace branch metadata when a workspace is created or selected.
+- Add regression tests that can prove a multi-branch repository such as WildFly would be represented without depending on live GitHub in unit tests.
+
+Explicit requirements:
+
+- Remote branch discovery must use remote metadata resolution for the submitted repository URL, not local workspace branch enumeration.
+- `/api/workspace-metadata` must expose `repositoryBranches` in the response.
+- The GUI must show the remote branches returned by `repositoryBranches`.
+- The selected branch must be stored through repository-source persistence.
+- Runtime/gateway/UI version mismatches must be diagnosable.
 
 Accepted assumptions:
 
-- `repository-source-service` remains the owner of workspace branch metadata.
-- The public UI should use existing workspace API routes rather than direct Git
-  or database access.
-- The active analysis branch is represented by the selected persisted
-  `workspace_branch`.
-- A red not-up-to-date indicator can be represented by an explicit backend
-  branch status and frontend status styling.
-- Destructive branch cleanup after a missing remote branch requires an explicit
-  confirmation API and is a separate slice from safe detection.
-- Workspace trash/final-delete requires contract and persistence semantics and
-  must not be hidden inside the existing cleanup endpoint.
+- The database persistence target is repository-source workspace metadata governed by ADR-0024.
+- The selected branch persistence is tied to workspace creation or workspace branch state, not to the preview-only metadata call by itself.
+- Branch names are data values only; they are not filesystem paths and not evidence of runtime execution.
+- Tests must use deterministic fixtures instead of calling live GitHub.
 
-Non-blocking open questions for `workflow execute`:
+Non-goals:
 
-- Exact wording of the destructive confirmation warning.
-- Whether final delete is operator-only or available to all UI users.
-- Which analysis stores must be cleaned once stale-analysis tracking exists.
+- No direct UI access to Git commands, PostgreSQL, H2, or repository-source private tables.
+- No live GitHub dependency in unit tests or required quality gates.
+- No broad service migration or new shared Java DTO module.
+- No automatic checkout, fetch, or analysis run merely because the user previews metadata.
+- No fabricated branch count. If WildFly currently has a different branch count than the GitHub UI, diagnostics must show what the metadata path returned.
 
-## Scope
+Open questions for workflow execution:
 
-- Repository-source metadata resolution for remote branch lists.
-- gRPC and OpenAPI contract updates for branch lists and refresh/delete
-  semantics.
-- Repository-source application behavior for branch selection, status and
-  explicit refresh.
-- Repository-source persistence changes only when required by status, trash or
-  confirmation state.
-- React UI combobox, selected-branch state, branch list and actions.
-- Tests for backend, contracts, frontend mapping and UI behavior.
-- Documentation of deferred stale-analysis-data handling.
+- Whether an optional manual smoke test against `https://github.com/wildfly/wildfly.git` is allowed in the developer environment.
+- Whether existing running containers need a rebuild/restart or image tag change to remove a stale service-version problem.
 
-## Non-Goals
+## Five-Role Three Amigos Review
 
-- No automatic analysis execution.
-- No guessing runtime execution facts from branch selection.
-- No direct UI access to Git remotes, PostgreSQL or repository-source private
-  tables.
-- No hidden fallback branch if the selected branch cannot be verified.
-- No deletion of analysis artifacts before the owning analysis store contract is
-  verified.
-- No automatic remote update during branch selection.
-- No `docker compose down -v` or destructive local volume reset.
+Senior Requirement Engineer:
+
+- Requirement is traceable to the user request and existing workspace metadata capability.
+- EPIC v0.2 supports repository context as provenance, but exact REST/gRPC fields are governed by contracts and workflow slices.
+- No blocking requirement question remains because the requested endpoint, response field, UI behavior and persistence owner are verifiable.
+
+Senior System Architect:
+
+- `repository-source-service` remains the only owner and writer of repository workspace metadata.
+- `query-report-api-service` remains a public facade and must not read repository-source tables directly.
+- `forensic-ui` consumes sanitized public DTOs only.
+- ADR-0024 covers PostgreSQL ownership for repository-source workspace metadata.
+
+Senior Java Backend Developer:
+
+- Backend execution must verify `GitRepositoryMetadataAdapter.resolveBranches`, `RepositoryWorkspaceApplicationService.previewRepositoryWorkspaceMetadata`, gRPC endpoint mapping, query-report gRPC client mapping and HTTP handler serialization.
+- Any missing field or mapping mismatch is a STOP condition, not a reason to invent a parallel endpoint.
+
+Senior React Frontend Developer:
+
+- Frontend execution must verify `WorkspaceMetadata.repositoryBranches`, API DTO mapper behavior, create-workspace branch chooser, and user-visible diagnostics when no branches are returned.
+- UI must not infer remote branches from local workspace branches.
+
+Senior Tester:
+
+- Required tests include deterministic fake metadata with many branches, contract serialization checks, API mapper checks and React UI assertions.
+- Optional manual smoke test can be documented separately and must not be required for CI.
+
+Dependency / Deadlock Validator:
+
+- Slice dependencies are acyclic.
+- Contract/backend slices precede UI integration.
+- Persistence validation depends on repository-source branch metadata behavior.
+- File locks are disjoint where parallel review is possible, but implementation should run one slice at a time under `workflow execute`.
 
 ## Target Picture
 
 ```text
-forensic-ui
-  -> public workspace API
-     -> repository-source-service owner API
-        -> Git metadata adapter: ls remote branches
-        -> repository workspace application
-        -> workspace_branch metadata
-        -> explicit branch refresh
-        -> logical workspace delete / trash state
+forensic-ui Create Workspace page
+  -> POST /api/workspace-metadata { repositoryUrl: "https://github.com/wildfly/wildfly.git" }
+     -> query-report-api-service HTTP handler
+        -> query-report repository-source gRPC client
+           -> repository-source-service PreviewRepositoryWorkspaceMetadata
+              -> GitRepositoryMetadataAdapter: git ls-remote --heads <submitted remote URL>
+              -> RepositoryWorkspaceMetadataPreview.repositoryBranches
+     <- WorkspaceMetadataResponse.repositoryBranches
+  -> branch selector displays remote branches
+  -> create workspace with selectedBranch
+     -> repository-source-service persists repository workspace branch metadata
 ```
 
-Remote branch names are data only. They must never be used directly as local
-paths or evidence of runtime execution.
+Remote branch names are data only. They must never be used directly as local paths or evidence of runtime execution.
 
 ## Architecture Constraints
 
-- Domain and application code remain independent from Git, PostgreSQL, REST,
-  gRPC and React implementation details.
-- Git operations stay in outbound adapters.
-- Public DTOs expose sanitized branch names and opaque workspace IDs only.
-- Branch selection must not fetch, checkout or mutate workspace bytes.
-- Branch status checks may contact the remote for metadata only when the
-  implementation can prove that no local checkout or workspace bytes are
-  updated as a side effect.
-- Branch refresh through `Update Branch` may fetch only after the target remote
-  branch is verified.
-- Missing remote branches must be represented explicitly; they must not be
-  silently mapped to a similarly named branch.
-- Workspace deletion must preserve recoverability until final-delete semantics
-  are explicitly executed.
+- Domain and application code remain independent from Git, REST, gRPC, PostgreSQL and React implementation details.
+- Git remote metadata resolution stays in an outbound adapter.
+- Public REST and gRPC contracts remain sanitized and deterministic.
+- Repository branch names must never be used directly as local paths.
+- Repository-source remains the only writer for workspace metadata and branch records.
+- Query-report and UI must not access repository-source persistence directly.
+- Planned behavior must not be described as implemented until `workflow execute` completes the relevant slice.
 
 ## Backend Assessment
 
-Backend work is centered on `repository-source-service`.
+Verified backend symbols and files:
 
-Expected changes:
-
-- Extend metadata resolution with a deterministic list of remote branches.
-- Persist selected branch as a `RepositoryWorkspaceBranch`.
-- Add or verify branch statuses for selected, stale, missing-remote and updated
-  states.
-- Keep branch selection separate from checkout/refresh.
-- Add a remote-existence check before refresh.
-- Add an explicit confirmation path before deleting branch references after a
-  missing remote branch.
-- Extend cleanup semantics to logical deletion/trash before final deletion.
+- `repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/adapter/out/git/GitRepositoryMetadataAdapter.java`
+- `repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/application/RepositoryWorkspaceApplicationService.java`
+- `repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/application/port/RepositoryMetadataResolution.java`
+- `repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/adapter/in/grpc/RepositorySourceGrpcEndpoint.java`
+- `query-report-api-service/src/main/java/de/burger/forensics/analytics/services/queryreportapi/adapter/out/grpc/RepositorySourceWorkspaceGrpcClient.java`
+- `query-report-api-service/src/main/java/de/burger/forensics/analytics/services/queryreportapi/adapter/in/http/QueryReportApiHttpHandler.java`
+- `contracts/grpc/repository-analysis.proto`
+- `contracts/openapi/gateway-api.yaml`
 
 ## Frontend Assessment
 
-Frontend work is centered on `forensic-ui`.
+Verified frontend symbols and files:
 
-Expected changes:
-
-- Map branch-list metadata from the public API.
-- Render `Branches` as a combobox.
-- Store the selected branch in local UI state until workspace save.
-- Show persisted branches below the view in a list.
-- Add `Update Branch` action for each persisted branch.
-- Show a red status indicator for not-up-to-date or missing-remote states.
-- Add the TBD note for future stale-analysis-data warnings.
-- Add workspace trash/final-delete affordances only after backend contract
-  support exists.
+- `forensic-ui/src/domain/workspace.ts`
+- `forensic-ui/src/adapters/api/dtos.ts`
+- `forensic-ui/src/adapters/api/mappers.ts`
+- `forensic-ui/src/adapters/api/apiClient.ts`
+- `forensic-ui/src/pages/workspaces/CreateWorkspacePage.tsx`
+- Existing tests under `forensic-ui/src/**.test.tsx` and `forensic-ui/src/**.test.ts`
 
 ## Test Strategy
 
-- Backend unit tests for metadata branch-list parsing and sanitization.
-- Backend application tests for branch selection without remote update.
-- Backend application tests for missing-remote refresh warning and confirmation
-  behavior.
-- Persistence tests for any new status or logical-delete fields.
-- gRPC contract tests for field numbers and compatibility.
-- REST/OpenAPI DTO mapping tests.
-- React component tests for combobox, branch list, red status and action
-  enablement.
-- End-to-end or smoke checks only after targeted unit/component checks pass.
+Run narrow tests first, then the full quality gate when implementation changes are complete.
 
-## Quality Gates
+Targeted backend candidates:
 
-Minimum required command:
+```bash
+./gradlew :repository-source-service:test --tests "*GitRepositoryMetadataAdapterTest" --dependency-verification strict --console=plain --stacktrace
+./gradlew :repository-source-service:test --tests "*RepositorySourceGrpcEndpointTest" --dependency-verification strict --console=plain --stacktrace
+./gradlew :query-report-api-service:test --tests "*RepositorySourceWorkspaceGrpcClientTest" --dependency-verification strict --console=plain --stacktrace
+./gradlew :query-report-api-service:test --tests "*QueryReportApiHttpAdapterTest" --dependency-verification strict --console=plain --stacktrace
+```
+
+Targeted frontend candidates:
+
+```bash
+cd forensic-ui && npm test -- --run src/adapters/api/mappers.test.ts src/adapters/api/apiClient.test.ts src/pages/workspaces/CreateWorkspacePage.test.tsx
+```
+
+Minimum repository command:
 
 ```bash
 ./gradlew test --dependency-verification strict --console=plain --stacktrace
 ```
 
-Targeted frontend commands:
-
-```bash
-npm test -- --run src/pages/workspaces/CreateWorkspacePage.test.tsx src/pages/workspaces/WorkspaceListPage.test.tsx src/adapters/api/mappers.test.ts
-npm run build
-```
-
-Targeted backend command:
-
-```bash
-./gradlew :repository-source-service:test --dependency-verification strict --console=plain --stacktrace
-```
-
-Full local quality gate before publication when practical:
+Full local quality gate:
 
 ```bash
 ./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace
 ```
 
+## Resilience And Diagnostics Requirements
+
+- Metadata lookup timeouts must remain bounded by the existing metadata policy.
+- Missing or empty remote branch lists must be represented as diagnostics; the UI must not silently replace them with local branches.
+- Gateway and UI tests must prove `repositoryBranches` is not dropped.
+- Runtime-version diagnosis must include service image/build freshness checks in documentation or execution report when manual smoke testing is performed.
+- Public diagnostics must not leak local paths, raw credentials, private DNS results, JDBC URLs or raw Git output.
+
 ## Ordered Slices
 
-### Slice 01 - Branch Metadata Contract
+### Slice 01 - Metadata Contract And Owner Path Verification
 
-Purpose: expose verified remote branch names through owner and public contracts.
-
-```yaml
-slice_id: S01_BRANCH_METADATA_CONTRACT
-profile: FULL_PATH
-owner: Senior Java Backend Developer
-secondary_reviewers:
-  - Contract-First API Steward
-  - Senior Tester
-affected_files:
-  - contracts/grpc/repository-analysis.proto
-  - contracts/openapi/gateway-api.yaml
-  - repository-source-service/src/main/java/**
-  - repository-source-service/src/test/java/**
-affected_modules:
-  - repository-source-service
-affected_contracts:
-  - repository-analysis.proto
-  - gateway-api.yaml
-dependencies: []
-parallel_group: P1
-file_locks:
-  - contracts/grpc/repository-analysis.proto
-  - contracts/openapi/gateway-api.yaml
-contract_locks:
-  - repository workspace metadata response
-architecture_locks:
-  - repository-source owner API
-quality_gates:
-  targeted:
-    - ./gradlew :repository-source-service:test --dependency-verification strict --console=plain --stacktrace
-  required:
-    - ./gradlew test --dependency-verification strict --console=plain --stacktrace
-documentation:
-  arc42: check
-  adr: not-required
-stop_conditions:
-  - remote branch contract cannot be added compatibly
-  - branch names cannot be sanitized as data-only values
-```
-
-Done criteria:
-
-- Metadata responses contain deterministic remote branch lists.
-- Contract tests pin new field numbers.
-- Missing branch-list metadata is represented as an empty list, not guessed.
-
-### Slice 02 - Branch Selection And Status Semantics
-
-Purpose: persist the selected branch as `workspace_branch` without remote
-refresh and mark stale/not-up-to-date state explicitly.
+Purpose: Prove the existing contracts and repository-source owner path carry remote branch lists end to end inside backend service boundaries.
 
 ```yaml
-slice_id: S02_BRANCH_SELECTION_STATUS
+slice_id: S01
 profile: FULL_PATH
 owner: Senior Java Backend Developer
 secondary_reviewers:
   - Senior System Architect
   - Senior Tester
 affected_files:
-  - repository-source-service/src/main/java/**
-  - repository-source-service/src/test/java/**
-  - repository-source-service/src/main/resources/db/**
+  - contracts/grpc/repository-analysis.proto
+  - contracts/openapi/gateway-api.yaml
+  - repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/adapter/out/git/GitRepositoryMetadataAdapter.java
+  - repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/application/RepositoryWorkspaceApplicationService.java
+  - repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/adapter/in/grpc/RepositorySourceGrpcEndpoint.java
+  - repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/adapter/out/git/GitRepositoryMetadataAdapterTest.java
+  - repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/adapter/in/grpc/RepositorySourceGrpcEndpointTest.java
 affected_modules:
   - repository-source-service
 affected_contracts:
-  - repository workspace branch status
-dependencies:
-  - S01_BRANCH_METADATA_CONTRACT
-parallel_group: P2
+  - contracts/grpc/repository-analysis.proto
+  - contracts/openapi/gateway-api.yaml
+dependencies: []
+parallel_group: G1
 file_locks:
+  - contracts/grpc/repository-analysis.proto
+  - contracts/openapi/gateway-api.yaml
   - repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/**
-  - repository-source-service/src/main/resources/db/**
+  - repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/**
 contract_locks:
-  - workspace_branch state semantics
+  - PreviewRepositoryWorkspaceMetadataResponse.repository_branches
+  - WorkspaceMetadataResponse.repositoryBranches
 architecture_locks:
-  - hexagonal repository-source boundary
+  - repository-source-service owns repository workspace metadata
 quality_gates:
   targeted:
-    - ./gradlew :repository-source-service:test --dependency-verification strict --console=plain --stacktrace
+    - ./gradlew :repository-source-service:test --tests "*GitRepositoryMetadataAdapterTest" --dependency-verification strict --console=plain --stacktrace
+    - ./gradlew :repository-source-service:test --tests "*RepositorySourceGrpcEndpointTest" --dependency-verification strict --console=plain --stacktrace
   required:
     - ./gradlew test --dependency-verification strict --console=plain --stacktrace
 documentation:
-  arc42: check
-  adr: check-if-persistence-status-added
+  arc42: checked
+  adr: ADR-0024 applies
 stop_conditions:
-  - selecting a branch would fetch remote content
-  - active analysis branch cannot be traced to workspace_branch
+  - PreviewRepositoryWorkspaceMetadataResponse.repository_branches cannot be verified
+  - repository-source-service is not the owner of workspace metadata
+  - branch list requires live GitHub for automated tests
 ```
 
 Done criteria:
 
-- Selecting a branch creates or selects a `workspace_branch`.
-- No remote fetch happens during selection.
-- The active branch for later analysis is unambiguous.
-- Not-up-to-date state is explicit and visible to the frontend.
+- Tests prove a deterministic fake remote with many branch names is returned as `repositoryBranches`.
+- Contract tests prove the field is present and sanitized.
+- No local `git branch -a` behavior is used as remote metadata evidence.
 
-### Slice 03 - Frontend Branch Combobox And Branch List
+### Slice 02 - Gateway Forwarding And Public REST Serialization
 
-Purpose: show all branches in `Branches`, persist selection, render branch list
-and add `Update Branch` actions plus TBD stale-analysis note.
+Purpose: Ensure `query-report-api-service` forwards and serializes `repositoryBranches` without dropping or renaming the field.
 
 ```yaml
-slice_id: S03_FRONTEND_BRANCH_UI
+slice_id: S02
+profile: FULL_PATH
+owner: Senior Java Backend Developer
+secondary_reviewers:
+  - Contract-First API Steward
+  - Senior Tester
+affected_files:
+  - query-report-api-service/src/main/java/de/burger/forensics/analytics/services/queryreportapi/domain/QueryReportApiWorkspace.java
+  - query-report-api-service/src/main/java/de/burger/forensics/analytics/services/queryreportapi/adapter/out/grpc/RepositorySourceWorkspaceGrpcClient.java
+  - query-report-api-service/src/main/java/de/burger/forensics/analytics/services/queryreportapi/adapter/in/http/QueryReportApiHttpHandler.java
+  - query-report-api-service/src/test/java/de/burger/forensics/analytics/services/queryreportapi/adapter/out/grpc/RepositorySourceWorkspaceGrpcClientTest.java
+  - query-report-api-service/src/test/java/de/burger/forensics/analytics/services/queryreportapi/adapter/in/http/QueryReportApiHttpAdapterTest.java
+affected_modules:
+  - query-report-api-service
+affected_contracts:
+  - POST /api/workspace-metadata
+dependencies:
+  - S01
+parallel_group: G2
+file_locks:
+  - query-report-api-service/src/main/java/de/burger/forensics/analytics/services/queryreportapi/**
+  - query-report-api-service/src/test/java/de/burger/forensics/analytics/services/queryreportapi/**
+contract_locks:
+  - POST /api/workspace-metadata WorkspaceMetadataResponse.repositoryBranches
+architecture_locks:
+  - query-report-api-service remains public facade only
+quality_gates:
+  targeted:
+    - ./gradlew :query-report-api-service:test --tests "*RepositorySourceWorkspaceGrpcClientTest" --dependency-verification strict --console=plain --stacktrace
+    - ./gradlew :query-report-api-service:test --tests "*QueryReportApiHttpAdapterTest" --dependency-verification strict --console=plain --stacktrace
+  required:
+    - ./gradlew test --dependency-verification strict --console=plain --stacktrace
+documentation:
+  arc42: checked
+  adr: ADR-0024 applies
+stop_conditions:
+  - Gateway cannot verify repositoryBranches in response body
+  - Gateway reads repository-source persistence directly
+  - REST field name differs from OpenAPI without contract update
+```
+
+Done criteria:
+
+- HTTP adapter test proves JSON contains `"repositoryBranches"` with multiple branch values.
+- gRPC client test proves repository-source `repository_branches` maps to public domain `repositoryBranches`.
+
+### Slice 03 - UI Metadata Data Path And Branch Listing
+
+Purpose: Ensure the GUI renders remote branches returned by `/api/workspace-metadata` and does not replace them with local workspace branches.
+
+```yaml
+slice_id: S03
 profile: FULL_PATH
 owner: Senior React Frontend Developer
 secondary_reviewers:
@@ -318,216 +323,218 @@ secondary_reviewers:
   - Senior Tester
 affected_files:
   - forensic-ui/src/domain/workspace.ts
-  - forensic-ui/src/adapters/api/**
-  - forensic-ui/src/pages/workspaces/**
-  - forensic-ui/src/styles.css
+  - forensic-ui/src/adapters/api/dtos.ts
+  - forensic-ui/src/adapters/api/mappers.ts
+  - forensic-ui/src/adapters/api/apiClient.ts
+  - forensic-ui/src/pages/workspaces/CreateWorkspacePage.tsx
+  - forensic-ui/src/adapters/api/mappers.test.ts
+  - forensic-ui/src/adapters/api/apiClient.test.ts
+  - forensic-ui/src/pages/workspaces/CreateWorkspacePage.test.tsx
 affected_modules:
   - forensic-ui
 affected_contracts:
-  - gateway-api.yaml
+  - POST /api/workspace-metadata
 dependencies:
-  - S01_BRANCH_METADATA_CONTRACT
-  - S02_BRANCH_SELECTION_STATUS
-parallel_group: P3
+  - S02
+parallel_group: G3
 file_locks:
   - forensic-ui/src/domain/workspace.ts
   - forensic-ui/src/adapters/api/**
-  - forensic-ui/src/pages/workspaces/**
+  - forensic-ui/src/pages/workspaces/CreateWorkspacePage.tsx
+  - forensic-ui/src/pages/workspaces/CreateWorkspacePage.test.tsx
 contract_locks:
-  - workspace metadata REST DTO
+  - WorkspaceMetadata.repositoryBranches
 architecture_locks:
-  - frontend adapter boundary
+  - frontend consumes public API only
 quality_gates:
   targeted:
-    - npm test -- --run src/pages/workspaces/CreateWorkspacePage.test.tsx src/pages/workspaces/WorkspaceListPage.test.tsx src/adapters/api/mappers.test.ts
-    - npm run build
+    - cd forensic-ui && npm test -- --run src/adapters/api/mappers.test.ts src/adapters/api/apiClient.test.ts src/pages/workspaces/CreateWorkspacePage.test.tsx
   required:
     - ./gradlew test --dependency-verification strict --console=plain --stacktrace
 documentation:
-  arc42: not-required
-  adr: not-required
+  arc42: checked
+  adr: n/a
 stop_conditions:
-  - frontend derives branch names locally
-  - UI text claims analysis data is stale before backend evidence exists
+  - UI mapper drops repositoryBranches
+  - UI infers branches from local workspace records during metadata preview
+  - branch selector cannot be tested deterministically
 ```
 
 Done criteria:
 
-- `Branches` combobox is populated from API metadata.
-- Selected branch is passed unchanged to workspace creation.
-- Branch list renders persisted branches below the workspace view.
-- `Update Branch` action is available only when backend state permits it.
-- TBD stale-analysis note is visible and clearly non-final behavior.
+- UI tests prove multiple `repositoryBranches` from metadata appear in the branch selection control.
+- Empty branch list shows explicit diagnostics or unavailable state instead of a fabricated branch.
 
-### Slice 04 - Explicit Branch Update And Missing Remote Warning
+### Slice 04 - Selected Branch Persistence Through Repository-Source Metadata
 
-Purpose: make branch refresh explicit and protect missing-remote destructive
-cleanup behind a warning and confirmation contract.
+Purpose: Ensure selecting a remote branch results in persisted repository-source workspace branch metadata when the workspace is created or updated through the owner service.
 
 ```yaml
-slice_id: S04_BRANCH_UPDATE_WARNING
+slice_id: S04
 profile: FULL_PATH
 owner: Senior Java Backend Developer
 secondary_reviewers:
-  - Contract-First API Steward
-  - Senior React Frontend Developer
+  - Senior Analysis Storage Architect
   - Senior Tester
 affected_files:
-  - contracts/grpc/repository-analysis.proto
-  - contracts/openapi/gateway-api.yaml
-  - repository-source-service/src/main/java/**
-  - repository-source-service/src/test/java/**
-  - forensic-ui/src/pages/workspaces/**
+  - repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/application/RepositoryWorkspaceApplicationService.java
+  - repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/adapter/out/postgres/PostgresRepositorySourcePersistenceAdapter.java
+  - repository-source-service/src/main/resources/db/changelog/**
+  - repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/application/RepositorySourcePostgresPersistenceApplicationTest.java
+  - repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/adapter/out/postgres/PostgresRepositorySourceLiquibaseTest.java
 affected_modules:
   - repository-source-service
-  - forensic-ui
 affected_contracts:
-  - branch refresh
-  - destructive cleanup confirmation
+  - CreateRepositoryWorkspaceRequest.selected_branch
+  - CreateWorkspaceRequest.selectedBranch
 dependencies:
-  - S02_BRANCH_SELECTION_STATUS
-  - S03_FRONTEND_BRANCH_UI
-parallel_group: P4
+  - S01
+parallel_group: G4
 file_locks:
-  - contracts/grpc/repository-analysis.proto
-  - contracts/openapi/gateway-api.yaml
-  - repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/**
-  - forensic-ui/src/pages/workspaces/**
+  - repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/application/**
+  - repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/adapter/out/postgres/**
+  - repository-source-service/src/main/resources/db/changelog/**
+  - repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/**
 contract_locks:
-  - branch refresh warning and confirmation
+  - repository workspace branch persistence
 architecture_locks:
-  - no fabricated evidence
+  - ADR-0024 repository-source-only write ownership
 quality_gates:
   targeted:
-    - ./gradlew :repository-source-service:test --dependency-verification strict --console=plain --stacktrace
-    - npm test -- --run src/pages/workspaces/WorkspaceListPage.test.tsx
+    - ./gradlew :repository-source-service:test --tests "*RepositorySourcePostgresPersistenceApplicationTest" --dependency-verification strict --console=plain --stacktrace
+    - ./gradlew :repository-source-service:test --tests "*PostgresRepositorySourceLiquibaseTest" --dependency-verification strict --console=plain --stacktrace
   required:
     - ./gradlew test --dependency-verification strict --console=plain --stacktrace
 documentation:
-  arc42: check
-  adr: check-if-destructive-confirmation-contract-added
+  arc42: checked
+  adr: ADR-0024 applies
 stop_conditions:
-  - missing remote branch is silently ignored
-  - referenced data is deleted without explicit confirmation
-  - analysis results are deleted without verified owner contract
+  - selected branch persistence field cannot be verified
+  - persistence requires query-report-api-service or UI to write repository-source tables
+  - schema change is needed but no Liquibase owner path is found
 ```
 
 Done criteria:
 
-- `Update Branch` is the only action that loads remote branch content.
-- Refresh checks remote branch existence before fetching.
-- Missing remote branch returns a warning state.
-- Destructive cleanup requires explicit confirmation.
-- Existing branch data is preserved when confirmation is absent.
+- Persistence tests prove the selected branch is stored and loaded through repository-source persistence.
+- No other service writes repository-source workspace tables.
 
-### Slice 05 - Workspace Trash And Final Delete Planning
+### Slice 05 - Runtime Smoke Diagnostics And Documentation Closure
 
-Purpose: introduce recoverable workspace deletion and separate final deletion
-from the current cleanup behavior.
+Purpose: Add operator-facing verification notes for runtime/service-version, gateway and UI data-path diagnosis without making live GitHub a mandatory quality gate.
 
 ```yaml
-slice_id: S05_WORKSPACE_TRASH_DELETE
+slice_id: S05
 profile: FULL_PATH
-owner: Senior Java Backend Developer
+owner: Senior DevOps Engineer
 secondary_reviewers:
-  - Data Ownership & Persistence Steward
-  - Senior React Frontend Developer
+  - Senior Documentation Engineer
   - Senior Tester
 affected_files:
-  - contracts/grpc/repository-analysis.proto
-  - contracts/openapi/gateway-api.yaml
-  - repository-source-service/src/main/java/**
-  - repository-source-service/src/main/resources/db/**
-  - repository-source-service/src/test/java/**
-  - forensic-ui/src/pages/workspaces/**
+  - docs/workflow/execution-report.md
+  - query-report-api-service/README.md
+  - repository-source-service/README.md
+  - forensic-ui/README.md
+  - deployment/docker-compose/README.md
 affected_modules:
-  - repository-source-service
-  - forensic-ui
-affected_contracts:
-  - workspace cleanup
-  - workspace trash
-  - final delete
+  - documentation
+  - deployment/docker-compose
+affected_contracts: []
 dependencies:
-  - S04_BRANCH_UPDATE_WARNING
-parallel_group: P5
+  - S02
+  - S03
+  - S04
+parallel_group: G5
 file_locks:
-  - repository-source-service/src/main/resources/db/**
-  - repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/**
-  - forensic-ui/src/pages/workspaces/**
-contract_locks:
-  - workspace deletion lifecycle
+  - docs/workflow/execution-report.md
+  - query-report-api-service/README.md
+  - repository-source-service/README.md
+  - forensic-ui/README.md
+  - deployment/docker-compose/README.md
+contract_locks: []
 architecture_locks:
-  - data ownership and analysis-result cleanup ownership
+  - no live external dependency in required quality gate
 quality_gates:
   targeted:
-    - ./gradlew :repository-source-service:test --dependency-verification strict --console=plain --stacktrace
-    - npm test -- --run src/pages/workspaces/WorkspaceListPage.test.tsx
-  required:
     - ./gradlew test --dependency-verification strict --console=plain --stacktrace
+  required:
+    - ./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace
 documentation:
-  arc42: update
-  adr: required-if-persistence-lifecycle-changes
+  arc42: checked
+  adr: ADR-0024 applies
 stop_conditions:
-  - analysis result ownership cannot be verified
-  - final delete would remove data outside repository-source ownership
-  - restore semantics are unclear
+  - documentation claims a live WildFly smoke test passed without execution evidence
+  - documentation requires network access for normal quality gates
+  - runtime diagnosis exposes secrets, private paths or raw infrastructure details
 ```
 
 Done criteria:
 
-- Workspace deletion first marks a recoverable deleted/trash state.
-- Final delete is a separate explicit operation.
-- Analysis-result cleanup is deferred until each owner store contract is
-  verified.
-- UI distinguishes delete, restore and final delete.
+- Documentation explains that `git branch -a` in the Forensic Analytics repo is not the remote target branch source.
+- Optional smoke command documents `POST /api/workspace-metadata` with `https://github.com/wildfly/wildfly.git` and expected `repositoryBranches` presence.
+- Runtime stale-version checks are documented as operational diagnostics.
 
-## Dependency Summary
+## Slice Dependency Graph
 
 ```text
-S01_BRANCH_METADATA_CONTRACT
-  -> S02_BRANCH_SELECTION_STATUS
-      -> S03_FRONTEND_BRANCH_UI
-          -> S04_BRANCH_UPDATE_WARNING
-              -> S05_WORKSPACE_TRASH_DELETE
+S01
+├── S02
+│   └── S03
+├── S04
+└── S05 depends on S02, S03 and S04
 ```
 
-No slice is safely parallelizable because the contract and state semantics are
-shared across backend and frontend.
+## Parallelization Opportunities
 
-## Role Ownership
+- S01 is the prerequisite for backend confidence.
+- S02 and S04 can be reviewed independently after S01 because gateway forwarding and persistence have separate write scopes.
+- S03 must wait for S02 contract/API mapping stability.
+- S05 must wait for implemented behavior evidence from S02, S03 and S04.
 
-- Senior Requirement Engineer: requirement traceability and open-question
-  control.
-- Senior System Architect: hexagonal boundaries and service ownership.
-- Senior Java Backend Developer: repository-source implementation.
-- Senior React Frontend Developer: UI state and API adapter integration.
-- Senior UX Designer: branch status and warning flow.
-- Senior Tester: regression and quality gate strategy.
-- Contract-First API Steward: gRPC/OpenAPI changes.
-- Data Ownership & Persistence Steward: trash/final-delete and analysis-result
-  ownership.
+## Role Ownership Map
+
+| Area | Primary Owner | Reviewers |
+|---|---|---|
+| Requirement traceability | Senior Requirement Engineer | Senior Tester |
+| Architecture and ownership | Senior System Architect | Senior Analysis Storage Architect |
+| Repository-source backend | Senior Java Backend Developer | Senior Tester |
+| Gateway/API forwarding | Senior Java Backend Developer | Contract-First API Steward |
+| React UI | Senior React Frontend Developer | Senior UX Designer, Senior Tester |
+| Persistence | Senior Java Backend Developer | Senior Analysis Storage Architect |
+| Runtime diagnostics docs | Senior DevOps Engineer | Senior Documentation Engineer |
+
+## Documentation Synchronization Points
+
+- Update `docs/workflow/execution-report.md` during workflow execution with actual commands and outcomes.
+- Update service READMEs only when implementation behavior changes.
+- Update arc42 sections only if execution changes accepted architecture behavior, not merely because tests are added.
+- ADR-0024 remains sufficient unless execution changes persistence ownership or database technology.
 
 ## Stop Conditions
 
-- Required contract, class, field, table or status cannot be verified.
-- Any implementation would infer runtime execution from branch selection.
-- Any cleanup would delete analysis data without verified owner contract.
-- Remote branch existence cannot be checked deterministically.
-- UI would hide missing remote or stale status.
-- Quality commands from `QUALITY.md` fail.
+Stop during `workflow execute` if:
+
+- Any named file, method, field or endpoint cannot be found exactly.
+- `repositoryBranches` is absent from a verified contract or DTO path.
+- Implementation would require UI, query-report or another service to write repository-source tables.
+- A live GitHub response is required to pass automated tests.
+- Branch count is asserted from GitHub UI instead of from the actual metadata endpoint response.
+- Runtime smoke evidence is claimed without running the command.
+
+## Commit And Push Plan
+
+- `workflow create` may commit workflow documentation only if explicitly requested later.
+- `workflow execute` may commit per slice only when the active workflow allows it and the slice quality gate passes.
+- No push or PR is authorized by this workflow creation request.
 
 ## Definition Of Done
 
-- All five slices complete or intentionally deferred with documented blockers.
-- Targeted backend and frontend tests pass.
-- Repository minimum quality gate passes.
-- Contracts and tests agree on field numbers and DTO shapes.
-- Branch selection, refresh and delete semantics are documented.
-- No direct database, Git or workspace-path leakage reaches the UI.
+- `docs/workflow/workflow.md` exists and describes executable slices.
+- `docs/workflow/context-pack.md` and `docs/workflow/context-pack.json` record governing context.
+- `docs/workflow/three-amigos-decision-record.md`, `role-ownership.md`, `slice-dependency-map.md`, `quality-and-leakage-gates.md`, `deployment-description.md`, `execution-report.md` and `arc42-check-status.md` exist.
+- arc42 has been checked for owner, gateway, UI and persistence boundaries.
+- Workflow is ready for explicit `workflow execute`.
 
 ## Handoff To Workflow Execute
 
-Run `workflow execute` only after reviewing this workflow and confirming the
-accepted assumptions remain valid. `workflow execute` must execute slices in
-dependency order and stop on any missing contract, unverified owner, or failed
-quality gate.
+Start with S01. Before implementation, re-read this workflow completely, verify branch `feature/workflow-remote-branches-gui-persistence-20260602`, verify `git status --short`, and route the slice through the configured subagent or role-review workflow.

@@ -49,6 +49,28 @@ class GitRepositoryMetadataAdapterTest {
     }
 
     @Test
+    void returnsDeterministicRemoteBranchListFromLsRemoteHeadsOnly() throws Exception {
+        var runner = new MetadataRunner("ref: refs/heads/main\tHEAD\n");
+        runner.remoteBranches.addAll(List.of(
+            "wildfly-34.x",
+            "main",
+            "wildfly-preview",
+            "wildfly-34.x",
+            "../unsafe",
+            "WFLY-branch-test"
+        ));
+        var adapter = adapter(runner);
+
+        var metadata = adapter.resolveMetadata(REPOSITORY, new RepositoryMetadataPreviewPolicy(30));
+
+        assertEquals(List.of("WFLY-branch-test", "main", "wildfly-34.x", "wildfly-preview"), metadata.repositoryBranches());
+        assertTrue(runner.commands.stream().anyMatch(command -> command.arguments().contains("--heads")));
+        assertTrue(runner.commands.stream().noneMatch(command -> command.arguments().contains("branch")));
+        assertTrue(runner.commands.stream().noneMatch(command -> command.arguments().contains("-a")));
+        assertTrue(Files.list(metadataRoot).findAny().isEmpty());
+    }
+
+    @Test
     void fallsBackOnlyToVerifiedMainOrMasterBranches() throws Exception {
         var runner = new MetadataRunner("");
         runner.existingBranches.add("master");

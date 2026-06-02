@@ -1,20 +1,11 @@
 # Slice Dependency Map
 
-```mermaid
-flowchart TD
-  S01["S01 Branch Metadata Contract"]
-  S02["S02 Branch Selection And Status"]
-  S03["S03 Frontend Branch UI"]
-  S04["S04 Branch Update Warning"]
-  S05["S05 Workspace Trash Delete"]
-
-  S01 --> S02
-  S02 --> S03
-  S03 --> S04
-  S04 --> S05
+```text
+S01 Metadata Contract And Owner Path Verification
+├── S02 Gateway Forwarding And Public REST Serialization
+│   └── S03 UI Metadata Data Path And Branch Listing
+├── S04 Selected Branch Persistence Through Repository-Source Metadata
+└── S05 Runtime Smoke Diagnostics And Documentation Closure depends on S02, S03 and S04
 ```
 
-## Parallelization
-
-No slices are parallel by default. Contract, state and UI behavior are coupled
-and must be executed in order.
+S02 and S04 may be reviewed independently after S01 because gateway forwarding and persistence have separate write scopes. S03 waits for S02. S05 closes documentation after implementation evidence exists.

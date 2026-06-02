@@ -1,19 +1,18 @@
 # arc42 Check Status
 
-## Checked Documents
+Checked during workflow creation:
 
+- `docs/arc42/README.md`
+- `docs/arc42/01-introduction-and-goals.md`
 - `docs/arc42/05-building-block-view.md`
 - `docs/adr/ADR-0024-postgres-for-repository-source-workspace-metadata.md`
-- `docs/architecture/data-ownership.md`
-- `docs/architecture/service-boundaries.md`
 
-## Result
+Result:
 
-No immediate arc42 update is required for branch metadata discovery alone.
+- Repository-source remains the owner of repository workspace metadata and selected branch persistence.
+- Query-report remains a public facade and must not access repository-source database tables directly.
+- UI consumes public workspace metadata only.
+- ADR-0024 remains sufficient for the selected-branch metadata persistence scope.
+- No new ADR is required during workflow creation.
 
-An arc42 or ADR update becomes required if `workflow execute` changes:
-
-- persistent workspace deletion lifecycle;
-- final-delete semantics;
-- analysis-result cleanup ownership;
-- service ownership or public API ownership.
+Implementation slices must update arc42 only if accepted architecture behavior changes during execution.
