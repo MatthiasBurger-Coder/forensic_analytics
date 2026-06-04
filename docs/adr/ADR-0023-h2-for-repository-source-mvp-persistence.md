@@ -2,8 +2,7 @@
 
 ## Status
 
-Superseded for runtime by ADR-0024. Retained for tests and deterministic
-fixtures.
+Accepted for tests only. Superseded for runtime by ADR-0024.
 
 ## Date
 
@@ -27,12 +26,14 @@ idempotency records.
 
 ## Decision
 
-Use an H2 file database as a service-local MVP persistence adapter for
-`repository-source-service` only until the PostgreSQL cutover.
+Historically, the first MVP slice used an H2 file database as a service-local
+persistence adapter for `repository-source-service` until the PostgreSQL cutover.
+This runtime usage ended with ADR-0024 and workflow version `2026-05-31`.
 
-After ADR-0024 and workflow version `2026-05-31`, H2 is no longer a runtime or
-Docker fallback. H2 may remain only for deterministic tests and fixtures that
-instantiate the adapter directly.
+After ADR-0024 and the workflow baseline documented in
+`docs/workflow/workflow.md` with version/date `2026-05-31`, H2 is no longer a runtime or
+Docker fallback. H2 tests must not validate runtime fallback behavior, Docker startup behavior,
+production readiness behavior or cross-service persistence behavior.
 
 The H2 adapter may persist:
 
@@ -47,7 +48,8 @@ clients or later analysis services.
 
 This decision does not select H2 as canonical analytics persistence. Runtime
 operation must use PostgreSQL and must report missing or unreachable PostgreSQL
-through startup failure or storage readiness `DOWN`.
+through startup failure or storage readiness `DOWN`. Storage readiness `DOWN` must not be masked by an in-memory, H2 or file-based
+fallback.
 
 ## Consequences
 
