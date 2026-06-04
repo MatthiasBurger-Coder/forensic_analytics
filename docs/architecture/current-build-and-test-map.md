@@ -200,7 +200,7 @@ Earlier FA-MSA-001 service-slice evidence adds a service-local Dockerfile for
 packaging evidence only; Compose, Swarm and Kubernetes readiness for the
 FA-MSA-001 target landscape remains future work until descriptors and
 validation commands exist. FA-MVP-0001 S09 adds Docker-local Compose model
-evidence for repository-source private workspace and H2 data volumes, but does
+evidence for repository-source private workspace volume and PostgreSQL metadata configuration, but does
 not claim image startup, health-check smoke testing, Swarm or Kubernetes
 readiness.
 

@@ -45,7 +45,7 @@ the current state.
 | Bootstrap runtime | Historical `forensic-analytics-bootstrap` predecessor; source tree retired by S05 | No active combined gRPC/REST bootstrap source tree remains |
 | gRPC contracts | `contracts/grpc/**` plus service-local generated code | External contract documentation and service-local consumption only |
 | REST API | `contracts/openapi/**`, `query-report-api-service` | Public API facade evidence for repository-analysis submission/status and FA-MVP-0001 workspace routes, not the deleted monolith REST adapter |
-| Persistence | Service-local stores where implemented; `repository-source-service` uses service-local H2 file persistence for FA-MVP-0001 repository checkout workspace, branch and idempotency state; no shared Java persistence module | Durable production analytics persistence remains future work |
+| Persistence | Service-local stores where implemented; `repository-source-service` uses service-owned PostgreSQL metadata persistence for FA-MVP-0001 repository checkout workspace, branch and idempotency state; H2 remains deterministic adapter test and fixture scope only; no shared Java persistence module | Durable production analytics persistence remains future work |
 | Docker | `docker/boot-app`, `docker/joern`, `forensic-ui/Dockerfile` | Existing container material, not a service ecosystem |
 | Service roots | top-level `*-service/`, `cli-client/`, `observability-stack/`, `testbed/` | Eighteen registered service-root projects; graph-replay/report-generation remain planned roots and the build-artifact worker has no root yet |
 | External contracts root | `contracts/` | Present with gRPC, OpenAPI and event contract documentation |
@@ -78,13 +78,13 @@ Verified modules from `settings.gradle.kts`:
 
 | Capability | Verified Current Evidence | Migration Note |
 |---|---|---|
-| Repository checkout and workspace preparation | `repository-source-service` with FA-MVP-0001 H2 repository checkout workspace state | Target source/workspace ownership evidence; H2 is Docker-local MVP persistence only |
+| Repository checkout and workspace preparation | `repository-source-service` with FA-MVP-0001 PostgreSQL repository checkout workspace metadata state | Target source/workspace ownership evidence; H2 is deterministic adapter test and fixture scope only |
 | Java AST analysis | `java-parser-analysis-service` | Target JavaParser source-fact evidence |
 | Joern / CPG semantic analysis | `joern-analysis-service`, `docker/joern/**` | Target service plus optional Joern Docker infrastructure evidence |
 | BTM / rule generation | `btm-generation-service`, `contracts/grpc/btm-generation.proto`, arc42 notes | Registered service evidence and provisional contract only; production readiness remains unverified |
 | gRPC ingestion | `contracts/grpc/**`, `ingestion-service` | Target intake service consumes external contracts with service-local generated code |
 | REST API | `contracts/openapi/**`, `query-report-api-service` | Public API facade evidence for repository-analysis submission/status and FA-MVP-0001 workspace routes |
-| Persistence | Service-local stores where implemented, including repository-source H2 for repository checkout workspace state | Durable production database ownership remains unverified |
+| Persistence | Service-local stores where implemented, including repository-source PostgreSQL metadata for repository checkout workspace state | Broader durable analytics database ownership remains unverified |
 | Boot runtime | Historical Boot predecessor source tree retired by S05 | No active monolith Boot source tree remains |
 | Manual server runtime | Historical Bootstrap predecessor source tree retired by S05 | No active combined runtime source tree remains |
 | CLI | `cli-client` | Public API client boundary; local predecessor CLI source tree retired by S05 |
@@ -146,7 +146,7 @@ Docker Compose model validation is verified for Joern tooling and the
 Docker-local repository-to-BTM descriptor. Slice S09 verified
 `deployment/docker-compose/repository-to-btm.local.yml` with
 `docker compose ... config` and added repository-source private workspace and
-H2 data volumes. That is Docker-local MVP configuration evidence only; image
+PostgreSQL metadata configuration. That is Docker-local MVP configuration evidence only; image
 builds, startup, health-check smoke tests, production-wide Compose, Swarm
 stacks, Kubernetes manifests and complete service-by-service container
 readiness remain unverified.

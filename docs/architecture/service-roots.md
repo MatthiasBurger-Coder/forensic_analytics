@@ -99,6 +99,6 @@ The existing local repository-to-BTM service landscape is documented in
 `deployment/docker-compose/repository-to-btm.local.yml`. It is current
 Docker-local configuration evidence for transitional repository-to-BTM service
 slices and for the FA-MVP-0001 `repository-source-service` private workspace
-and H2 data volumes. It does not claim image startup, health-check smoke
+volume and PostgreSQL metadata configuration. It does not claim image startup, health-check smoke
 testing, the full FA-MSA-001 target landscape, Docker Swarm or Kubernetes
 deployment readiness.

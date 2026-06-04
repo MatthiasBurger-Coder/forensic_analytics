@@ -1,11 +1,33 @@
 # Role Ownership
 
-| Slice | Owner | Reviewers |
-|---|---|---|
-| S01 Metadata Contract And Owner Path Verification | Senior Java Backend Developer | Senior System Architect, Senior Tester |
-| S02 Gateway Forwarding And Public REST Serialization | Senior Java Backend Developer | Contract-First API Steward, Senior Tester |
-| S03 UI Metadata Data Path And Branch Listing | Senior React Frontend Developer | Senior UX Designer, Senior Tester |
-| S04 Selected Branch Persistence Through Repository-Source Metadata | Senior Java Backend Developer | Senior Analysis Storage Architect, Senior Tester |
-| S05 Runtime Smoke Diagnostics And Documentation Closure | Senior DevOps Engineer | Senior Documentation Engineer, Senior Tester |
+| Slice | Primary Owner | Secondary Reviewers | Scope |
+|---|---|---|---|
+| S01 | Senior Requirement Engineer | Senior System Architect, Senior Documentation Engineer, Senior Tester | Requirement and ADR-aligned documentation |
+| S02 | Senior Java Backend Developer | Senior System Architect, Senior Tester | Repository-source persistence boundary verification |
+| S03 | Senior React Frontend Developer | Senior Java Backend Developer, Senior UX Designer, Senior Tester | Public API and UI DTO boundary verification |
+| S04 | Senior DevOps Engineer | Senior System Architect, Senior Security Sandbox Engineer, Senior Tester | Docker-local PostgreSQL and volume boundary verification |
+| S05 | Senior Tester | Senior Documentation Engineer, Senior System Architect | Quality closure, arc42 check and handoff |
 
-Repository-source owns repository workspace metadata and branch persistence. Query-report remains a public facade. The UI consumes only public API DTOs.
+## Ownership Rules
+
+- `repository-source-service` owns repository checkout workspace metadata,
+  branch metadata, repository preparation records, idempotency records,
+  PostgreSQL schema, workspace directories and storage readiness.
+- `query-report-api-service` owns public REST validation, public DTO mapping,
+  error redaction and owner API calls.
+- `forensic-ui` owns operator workflow rendering and public REST client usage.
+- H2 adapter ownership remains inside repository-source deterministic tests and
+  direct fixtures only.
+
+## Non-Owner Rules
+
+- No non-owner service may read repository-source PostgreSQL tables.
+- No non-owner service may read repository-source H2 files.
+- No non-owner service may read repository-source private checkout directories.
+- Public DTOs must stay sanitized and path-free.
+
+## Subagent Note
+
+Callable subagents were not used in workflow creation because the user did not
+explicitly ask for delegated or parallel agent work. Role files were applied as
+local review checklists.

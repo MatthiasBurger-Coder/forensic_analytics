@@ -114,10 +114,12 @@ FA-MVP-0001 workflow execution reached the S11 documentation closure gate on
 branch `feature/workflow-repository-workspace-checkout-h2-persistence-20260524`.
 The architecture documentation now distinguishes the deferred platform
 workspace administration concept from the repository-source-owned repository
-checkout workspace used by FA-MVP-0001, records H2 as repository-source
-Docker-local MVP persistence only, and keeps JavaParser, Joern, BTM, replay,
-report, LLM, production database, Swarm and Kubernetes readiness outside this
-MVP slice.
+checkout workspace used by FA-MVP-0001. The 2026-06-04 workflow-create
+correction records PostgreSQL under ADR-0024 as repository-source runtime
+metadata persistence and H2 under revised ADR-0023 as deterministic adapter
+test and direct fixture scope only. JavaParser, Joern, BTM, replay, report,
+LLM, broader analytics database, Swarm and Kubernetes readiness stay outside
+this MVP slice.
 
 Checked sections for FA-MVP-0001 S11:
 
@@ -125,16 +127,19 @@ Checked sections for FA-MVP-0001 S11:
   ownership and query-report public facade boundaries.
 - Runtime View: checked for Create Workspace UI flow and public REST owner API
   path.
-- Deployment View: checked for Docker-local repository-source workspace and H2
-  volumes without Swarm or Kubernetes readiness claims.
-- Crosscutting Concepts: checked for no private path, raw Git output, H2 path
-  or credential leakage.
-- Architecture Decisions: checked against ADR-0010, ADR-0013, ADR-0018 and
-  ADR-0023; OD-001 remains open.
-- Quality Requirements: checked for S10 H2 reopen, idempotency conflict,
-  refresh and leakage regression scenarios.
-- Risks and Technical Debt: checked for H2 and Docker-local readiness
-  misunderstanding risks.
+- Deployment View: checked for Docker-local repository-source workspace volume
+  and PostgreSQL metadata persistence without H2 runtime or Swarm/Kubernetes
+  readiness claims.
+- Crosscutting Concepts: checked for no private path, raw Git output, database
+  internal, H2 path or credential leakage.
+- Architecture Decisions: checked against ADR-0010, ADR-0013, ADR-0018,
+  ADR-0023 and ADR-0024; OD-001 remains open for broader analytics
+  persistence.
+- Quality Requirements: checked for PostgreSQL runtime persistence, H2
+  test-only fixture scope, idempotency conflict, refresh and leakage regression
+  scenarios.
+- Risks and Technical Debt: checked for PostgreSQL shared-persistence and
+  Docker-local readiness misunderstanding risks.
 
 The Governance Performance Optimization workflow was checked for workflow
 creation on branch `architecture/workflow-governance-performance-20260521`.

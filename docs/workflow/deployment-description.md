@@ -1,21 +1,48 @@
 # Deployment Description
 
-This workflow may require rebuilding and restarting affected local services during `workflow execute` if the observed UI still drops `repositoryBranches` after code-level tests pass.
+## Corrected Repository-Source Runtime View
 
-Affected runtime components:
-
-- `repository-source-service`
-- `query-report-api-service`
-- `forensic-ui`
-- `forensic-postgres` only as repository-source metadata storage governed by ADR-0024
-
-Operational diagnostic target:
-
-```http
-POST /api/workspace-metadata
-Content-Type: application/json
-
-{"repositoryUrl":"https://github.com/wildfly/wildfly.git"}
+```text
+forensic-ui
+  -> query-report-api-service
+    -> repository-source-service
+       -> forensic-postgres / repository_source schema
+       -> repository-source-workspaces volume
 ```
 
-Expected diagnostic condition: response contains a non-empty `repositoryBranches` array when the remote metadata lookup succeeds. The workflow must not assert a fixed branch count from the GitHub UI.
+## Verified Docker-Local Baseline
+
+The verified Docker-local repository-source descriptors configure:
+
+- `--forensics.repository-source.service.persistence.type=postgres`
+- `FORENSICS_REPOSITORY_SOURCE_POSTGRES_JDBC_URL`
+- `FORENSICS_REPOSITORY_SOURCE_POSTGRES_USERNAME`
+- `FORENSICS_REPOSITORY_SOURCE_POSTGRES_PASSWORD`
+- `FORENSICS_REPOSITORY_SOURCE_POSTGRES_SCHEMA`
+- `repository-source-workspaces:/var/lib/forensic-analytics/repository-workspaces`
+
+No verified Docker-local descriptor mounts repository-source H2 files as active
+runtime persistence.
+
+## H2 Boundary
+
+H2 is allowed only when deterministic tests or direct fixtures instantiate the
+repository-source H2 adapter directly. H2 is not runtime storage, Docker
+persistence, startup fallback, readiness fallback or cross-service persistence.
+
+## Readiness Boundary
+
+Missing or unreachable PostgreSQL must be visible as startup failure or storage
+readiness `DOWN`. Readiness `DOWN` must not be masked by memory, H2 or
+file-based fallback storage.
+
+## Non-Claims
+
+This workflow does not claim:
+
+- Docker image startup success;
+- repository-source health-check smoke success;
+- full production Compose readiness;
+- Docker Swarm readiness;
+- Kubernetes readiness;
+- migration of historical H2 files.
