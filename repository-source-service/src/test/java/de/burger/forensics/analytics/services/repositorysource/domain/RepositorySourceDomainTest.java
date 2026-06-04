@@ -227,6 +227,30 @@ class RepositorySourceDomainTest {
     }
 
     @Test
+    void checkingOutBranchDoesNotCarryPreviousCheckoutEvidenceAsCurrentState() {
+        var checkedOut = branch(
+            new WorkspaceId("workspace-0001"),
+            new WorkspaceBranchId("workspace-branch-0001"),
+            "main"
+        ).checkedOut(
+            SHA,
+            new SourceSnapshotId("source-snapshot-0001"),
+            List.of(SOURCE_ROOT),
+            Instant.parse("2026-05-16T10:15:32Z"),
+            List.of(Diagnostic.info("CHECKED_OUT", "Repository branch checked out"))
+        );
+
+        var checkingOut = checkedOut.checkingOut(Instant.parse("2026-05-16T10:15:33Z"));
+
+        assertEquals(RepositoryWorkspaceBranchStatus.CHECKING_OUT, checkingOut.status());
+        assertEquals("", checkingOut.resolvedCommit());
+        assertEquals(null, checkingOut.sourceSnapshotId());
+        assertEquals(List.of(), checkingOut.sourceRoots());
+        assertEquals(null, checkingOut.lastCheckedAt());
+        assertEquals("REPOSITORY_CHECKOUT_STARTED", checkingOut.diagnostics().getFirst().code());
+    }
+
+    @Test
     void copiesWorkspaceBranchesDiagnosticsAndSafeAttributesDefensively() {
         var branches = new ArrayList<RepositoryWorkspaceBranch>();
         branches.add(branch(new WorkspaceId("workspace-0001"), new WorkspaceBranchId("workspace-branch-0001"), "feature/workspace-ui"));
