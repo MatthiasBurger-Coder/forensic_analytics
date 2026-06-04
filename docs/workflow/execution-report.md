@@ -139,3 +139,69 @@ SHA is reported by the workflow executor after commit creation.
 Rollback reference: parent branch head before S01 report write was `854764e`.
 
 Push result: reported by the workflow executor after the S01 checkpoint push.
+
+### S02 - Repository-Source Persistence Boundary Verification
+
+Responsible owner: Senior Java Backend Developer.
+
+Secondary reviewers applied as local checklists:
+
+- Senior System Architect
+- Senior Tester
+
+Changed files:
+
+- `docs/workflow/execution-report.md`
+
+Verified files:
+
+- `repository-source-service/src/main/resources/application.properties`
+- `repository-source-service/src/main/resources/application-docker.properties`
+- `repository-source-service/src/main/resources/application-test.properties`
+- `repository-source-service/src/main/resources/db/changelog/repository-source-workspace.postgresql.yaml`
+- `repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/RepositorySourceServiceProperties.java`
+- `repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/RepositorySourceServiceConfiguration.java`
+- `repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/RepositorySourceStorageReadiness.java`
+- `repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/HealthHttpServerLifecycle.java`
+- `repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/RepositorySourceServiceApplicationTest.java`
+- `repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/application/RepositorySourcePostgresPersistenceApplicationTest.java`
+- `repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/application/RepositorySourceH2PersistenceApplicationTest.java`
+
+Quality-gate commands:
+
+```bash
+./gradlew :repository-source-service:test --tests "*RepositorySourceServiceApplicationTest" --dependency-verification strict --console=plain --stacktrace
+./gradlew :repository-source-service:test --tests "*RepositorySourcePostgresPersistenceApplicationTest" --dependency-verification strict --console=plain --stacktrace
+./gradlew :repository-source-service:test --tests "*RepositorySourceH2PersistenceApplicationTest" --dependency-verification strict --console=plain --stacktrace
+./gradlew :repository-source-service:test --dependency-verification strict --console=plain --stacktrace
+```
+
+Quality-gate result:
+
+- `RepositorySourceServiceApplicationTest`: passed.
+- `RepositorySourcePostgresPersistenceApplicationTest`: passed.
+- `RepositorySourceH2PersistenceApplicationTest`: passed.
+- `:repository-source-service:test`: passed.
+
+Review result:
+
+- Backend review: passed. Runtime and Docker profiles select PostgreSQL;
+  test profile selects memory; `h2` is rejected as a service persistence type.
+- Architecture review: passed. PostgreSQL wiring remains inside
+  repository-source bootstrap/outbound persistence, and H2 remains direct
+  adapter fixture scope only.
+- Tester review: passed. The required tests cover H2 runtime rejection,
+  PostgreSQL selection after migration, sanitized migration failure, readiness
+  `DOWN`, and deterministic H2 adapter fixture behavior.
+
+arc42 update status: checked through S01/S02 scope; no S02 product or
+architecture-doc edit required.
+
+ADR update status: ADR-0023 and ADR-0024 checked; no ADR edit required.
+
+Checkpoint commit SHA: S02 checkpoint commit created from this record; final
+SHA is reported by the workflow executor after commit creation.
+
+Rollback reference: parent branch head before S02 report write was `b93c704`.
+
+Push result: reported by the workflow executor after the S02 checkpoint push.
