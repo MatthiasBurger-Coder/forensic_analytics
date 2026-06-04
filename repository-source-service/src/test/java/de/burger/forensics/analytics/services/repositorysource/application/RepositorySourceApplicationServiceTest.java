@@ -634,6 +634,54 @@ class RepositorySourceApplicationServiceTest {
     }
 
     @Test
+    void reactivatesCleanedWorkspaceAndRepeatsBranchCheckoutForSameRepository() {
+        var idGenerator = new FixedRepositoryWorkspaceIdGenerator();
+        var workspacePort = new FakeWorkspacePort();
+        var checkoutPort = new SequencedCheckoutPort("b".repeat(40), "c".repeat(40));
+        var workspaceService = workspaceService(idGenerator, workspacePort, checkoutPort, new FakeMetadataPort("main", true));
+
+        var workspace = workspaceService.createOrReuseRepositoryWorkspaceWithCheckout(
+            "checkout-key",
+            "schema-v1",
+            "correlation-1",
+            repository(),
+            new RepositoryWorkspaceBranchSelector("main", ""),
+            policy(),
+            Map.of("tenant", "demo")
+        );
+        workspaceService.cleanupRepositoryWorkspaceById(
+            "cleanup-key",
+            "schema-v1",
+            "correlation-1",
+            workspace.workspaceId(),
+            Map.of("tenant", "demo")
+        );
+
+        var recreated = workspaceService.createOrReuseRepositoryWorkspaceWithCheckout(
+            "checkout-key-after-cleanup",
+            "schema-v1",
+            "correlation-1",
+            repository(),
+            new RepositoryWorkspaceBranchSelector("main", ""),
+            policy(),
+            Map.of("tenant", "demo")
+        );
+
+        assertEquals(workspace.workspaceId(), recreated.workspaceId());
+        assertEquals(RepositoryWorkspaceStatus.READY, recreated.status());
+        assertEquals(RepositoryWorkspaceBranchStatus.CHECKED_OUT, recreated.branches().getFirst().status());
+        assertEquals("c".repeat(40), recreated.branches().getFirst().resolvedCommit());
+        assertEquals(List.of(workspace.workspaceId().value()), workspaceIds(workspaceService
+            .listRepositoryWorkspaces("schema-v1", "correlation-1", false)));
+        assertTrue(recreated.diagnostics().stream()
+            .anyMatch(diagnostic -> "REPOSITORY_WORKSPACE_REACTIVATED".equals(diagnostic.code())));
+        assertEquals(1, idGenerator.workspaceIds);
+        assertEquals(1, idGenerator.branchIds);
+        assertEquals(2, workspacePort.branchCheckouts);
+        assertEquals(2, checkoutPort.calls);
+    }
+
+    @Test
     void rejectsUnresolvedDefaultBranchBeforeWorkspaceMutation() {
         var idGenerator = new FixedRepositoryWorkspaceIdGenerator();
         var workspacePort = new FakeWorkspacePort();

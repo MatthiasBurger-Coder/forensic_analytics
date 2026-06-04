@@ -248,11 +248,11 @@ public final class RepositorySourceDomain {
                 workspaceId,
                 repositoryBranch,
                 requestedCommit,
-                resolvedCommit,
-                sourceSnapshotId,
+                "",
+                null,
                 RepositoryWorkspaceBranchStatus.CHECKING_OUT,
-                sourceRoots,
-                lastCheckedAt,
+                List.of(),
+                null,
                 Objects.requireNonNull(timestamp, "last updated at must not be null"),
                 List.of(Diagnostic.info("REPOSITORY_CHECKOUT_STARTED", "Repository checkout started"))
             );

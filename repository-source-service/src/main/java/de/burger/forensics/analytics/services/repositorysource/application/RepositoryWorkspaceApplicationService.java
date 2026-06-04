@@ -139,6 +139,7 @@ public final class RepositoryWorkspaceApplicationService {
             this::replayWorkspace,
             () -> {
                 var workspace = repository.findByRepositoryKey(repositoryIdentity.repositoryKey())
+                    .map(existing -> reactivateCleanedWorkspace(existing, safeAttributes))
                     .orElseGet(() -> createWorkspace(repositoryIdentity, safeAttributes));
                 return new RepositorySourceIdempotency.CompletedResult<>(
                     RESULT_WORKSPACE,
@@ -210,14 +211,19 @@ public final class RepositoryWorkspaceApplicationService {
             fingerprint,
             this::replayWorkspace,
             () -> {
-                var workspace = repository.findByRepositoryKey(metadata.repository().repositoryKey())
+                var existingWorkspace = repository.findByRepositoryKey(metadata.repository().repositoryKey());
+                var reactivated = existingWorkspace
+                    .map(workspace -> workspace.status() == RepositoryWorkspaceStatus.CLEANED)
+                    .orElse(false);
+                var workspace = existingWorkspace
+                    .map(existing -> reactivateCleanedWorkspace(existing, safeAttributes))
                     .orElseGet(() -> createWorkspace(metadata.repository(), safeAttributes));
                 var existingBranch = workspace.branches().stream()
                     .filter(existing -> existing.repositoryBranch().equals(resolvedSelector.requireBranch()))
                     .findFirst()
                     .map(existing -> sameRequestedCommitOrThrow(existing, resolvedSelector));
                 var branch = existingBranch.orElseGet(() -> createBranch(workspace, resolvedSelector));
-                if (!hasCompletedCheckout(branch)) {
+                if (reactivated || !hasCompletedCheckout(branch)) {
                     scheduleWorkspaceBranchCheckout(
                         workspace.workspaceId(),
                         branch.workspaceBranchId(),
@@ -437,6 +443,26 @@ public final class RepositoryWorkspaceApplicationService {
             now,
             List.of(),
             List.of(Diagnostic.info("REPOSITORY_WORKSPACE_READY", "Repository workspace is ready")),
+            safeAttributes
+        ));
+    }
+
+    private RepositoryWorkspace reactivateCleanedWorkspace(
+        RepositoryWorkspace workspace,
+        Map<String, String> safeAttributes
+    ) {
+        if (workspace.status() != RepositoryWorkspaceStatus.CLEANED) {
+            return workspace;
+        }
+        return repository.save(new RepositoryWorkspace(
+            workspace.workspaceId(),
+            workspace.workspaceTitle(),
+            workspace.repository(),
+            RepositoryWorkspaceStatus.READY,
+            workspace.createdAt(),
+            clock.instant(),
+            workspace.branches(),
+            reactivatedWorkspaceDiagnostics(workspace),
             safeAttributes
         ));
     }
@@ -701,6 +727,19 @@ public final class RepositoryWorkspaceApplicationService {
 
     private static Diagnostic cleanupDiagnostic() {
         return Diagnostic.info("WORKSPACE_CLEANED", "Repository workspace was cleaned");
+    }
+
+    private static List<Diagnostic> reactivatedWorkspaceDiagnostics(RepositoryWorkspace workspace) {
+        var reactivated = Diagnostic.info(
+            "REPOSITORY_WORKSPACE_REACTIVATED",
+            "Repository workspace was reactivated for a new checkout"
+        );
+        if (workspace.diagnostics().stream().anyMatch(diagnostic -> reactivated.code().equals(diagnostic.code()))) {
+            return workspace.diagnostics();
+        }
+        var diagnostics = new ArrayList<>(workspace.diagnostics());
+        diagnostics.add(reactivated);
+        return List.copyOf(diagnostics);
     }
 
     private static String checkoutKey(WorkspaceId workspaceId, WorkspaceBranchId workspaceBranchId) {
