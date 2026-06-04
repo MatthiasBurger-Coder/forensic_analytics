@@ -288,3 +288,66 @@ SHA is reported by the workflow executor after commit creation.
 Rollback reference: parent branch head before S03 report write was `c91127a`.
 
 Push result: reported by the workflow executor after the S03 checkpoint push.
+
+### S04 - Docker-Local PostgreSQL And Volume Boundary Verification
+
+Responsible owner: Senior DevOps Engineer.
+
+Secondary reviewers applied as local checklists:
+
+- Senior System Architect
+- Senior Security Sandbox Engineer
+- Senior Tester
+
+Changed files:
+
+- `docs/workflow/execution-report.md`
+
+Verified files:
+
+- `repository-source-service/Dockerfile`
+- `deployment/docker-compose/services/repository-source-service.compose.yml`
+- `deployment/docker-compose/repository-to-btm.local.yml`
+- `repository-source-service/README.md`
+- `docs/arc42/07-deployment-view.md`
+
+Quality-gate commands:
+
+```bash
+docker compose -f deployment/docker-compose/repository-to-btm.local.yml config
+docker compose -f deployment/docker-compose/services/repository-source-service.compose.yml config
+git diff --check
+```
+
+Quality-gate result:
+
+- Full local repository-to-BTM Compose model validation: passed.
+- Standalone repository-source service Compose model validation: passed.
+- `git diff --check`: passed.
+
+Review result:
+
+- DevOps review: passed. Compose config selects
+  `--forensics.repository-source.service.persistence.type=postgres` and
+  configures PostgreSQL through `FORENSICS_REPOSITORY_SOURCE_POSTGRES_*`.
+- Security review: passed. The active repository-source Docker-local mount is
+  `repository-source-workspaces:/var/lib/forensic-analytics/repository-workspaces`;
+  no active H2 data mount is present.
+- Architecture review: passed. Other services in the checked Compose model do
+  not mount repository-source private workspaces, repository-source PostgreSQL
+  tables or historical H2 files.
+- Tester review: passed. Compose config validation was treated as model
+  evidence only, not container startup, health-check, Swarm or Kubernetes
+  readiness evidence.
+
+arc42 update status: checked; deployment view already distinguishes
+Docker-local model validation from broader runtime readiness claims.
+
+ADR update status: ADR-0024 checked; no ADR edit required.
+
+Checkpoint commit SHA: S04 checkpoint commit created from this record; final
+SHA is reported by the workflow executor after commit creation.
+
+Rollback reference: parent branch head before S04 report write was `10d4a5d`.
+
+Push result: reported by the workflow executor after the S04 checkpoint push.
