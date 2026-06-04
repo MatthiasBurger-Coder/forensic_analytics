@@ -205,3 +205,86 @@ SHA is reported by the workflow executor after commit creation.
 Rollback reference: parent branch head before S02 report write was `b93c704`.
 
 Push result: reported by the workflow executor after the S02 checkpoint push.
+
+### S03 - Public API And Frontend Boundary Verification
+
+Responsible owner: Senior React Frontend Developer.
+
+Secondary reviewers applied as local checklists:
+
+- Senior Java Backend Developer
+- Senior UX Designer
+- Senior Tester
+
+Changed files:
+
+- `docs/workflow/execution-report.md`
+
+Verified files:
+
+- `query-report-api-service/README.md`
+- `query-report-api-service/src/main/java/de/burger/forensics/analytics/services/queryreportapi/application/QueryReportApiWorkspaceService.java`
+- `query-report-api-service/src/main/java/de/burger/forensics/analytics/services/queryreportapi/application/port/RepositoryWorkspaceOwnerPort.java`
+- `query-report-api-service/src/main/java/de/burger/forensics/analytics/services/queryreportapi/domain/QueryReportApiWorkspace.java`
+- `query-report-api-service/src/test/java/de/burger/forensics/analytics/services/queryreportapi/application/QueryReportApiWorkspaceServiceTest.java`
+- `query-report-api-service/src/test/java/de/burger/forensics/analytics/services/queryreportapi/domain/QueryReportApiWorkspaceTest.java`
+- `forensic-ui/README.md`
+- `forensic-ui/package.json`
+- `forensic-ui/src/domain/workspace.ts`
+- `forensic-ui/src/adapters/api/dtos.ts`
+- `forensic-ui/src/adapters/api/mappers.ts`
+- `forensic-ui/src/adapters/api/apiClient.ts`
+- `forensic-ui/src/adapters/api/mappers.test.ts`
+- `forensic-ui/src/adapters/api/apiClient.test.ts`
+- `forensic-ui/src/pages/workspaces/CreateWorkspacePage.test.tsx`
+
+Quality-gate commands:
+
+```bash
+./gradlew :query-report-api-service:test --tests "*QueryReportApiWorkspaceServiceTest" --dependency-verification strict --console=plain --stacktrace
+./gradlew :query-report-api-service:test --tests "*QueryReportApiWorkspaceTest" --dependency-verification strict --console=plain --stacktrace
+./gradlew :query-report-api-service:test --dependency-verification strict --console=plain --stacktrace
+cd forensic-ui && npm run test -- src/adapters/api/mappers.test.ts src/adapters/api/apiClient.test.ts src/pages/workspaces/CreateWorkspacePage.test.tsx
+cd forensic-ui && npm run test
+cd forensic-ui && npm run build
+```
+
+Quality-gate result:
+
+- `QueryReportApiWorkspaceServiceTest`: passed.
+- `QueryReportApiWorkspaceTest`: passed.
+- `:query-report-api-service:test`: passed.
+- Targeted frontend Vitest files: passed, 3 files and 65 tests.
+- Full frontend Vitest suite: passed, 9 files and 94 tests.
+- Frontend production build: passed.
+
+Review result:
+
+- Frontend review: passed. The UI uses the public query-report REST workspace
+  routes and keeps API access behind adapters.
+- Backend/API review: passed. Query-report delegates workspace operations to
+  `RepositoryWorkspaceOwnerPort` and does not read repository-source private
+  persistence directly.
+- UX review: passed. Public workspace metadata is rendered from owner/facade
+  responses, and diagnostics are sanitized before display.
+- Tester review: passed. Tests cover public DTO redaction, public REST route
+  usage and unsafe workspace ID rejection.
+
+Leakage evidence:
+
+- Public DTO/domain validation rejects or sanitizes JDBC URLs, H2 paths,
+  repository-source workspace paths, raw stdout/stderr, credentials, tokens and
+  private path details.
+- UI mapper and page tests verify sanitization before rendering.
+
+arc42 update status: checked through S03 scope; no S03 product or
+architecture-doc edit required.
+
+ADR update status: ADR-0010 and ADR-0024 checked; no ADR edit required.
+
+Checkpoint commit SHA: S03 checkpoint commit created from this record; final
+SHA is reported by the workflow executor after commit creation.
+
+Rollback reference: parent branch head before S03 report write was `c91127a`.
+
+Push result: reported by the workflow executor after the S03 checkpoint push.
