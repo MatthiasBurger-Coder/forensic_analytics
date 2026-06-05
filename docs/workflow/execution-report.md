@@ -637,4 +637,94 @@ ADR update status:
 
 Push result:
 
-- Pending until the S07 checkpoint commit is created and pushed.
+- Pushed to `origin/architecture/workflow-adr-baseline-consolidation-20260605`
+  with checkpoint commit `79d00d8`.
+
+### S08 - Final Quality Review
+
+Status: `PASSED`
+
+Responsible agent:
+
+- Codex workflow executor
+
+Role review:
+
+- Senior Tester checklist: passed with local role-file fallback.
+- Senior Documentation Engineer checklist: passed with local role-file
+  fallback.
+- Senior System Architect checklist: passed with local role-file fallback.
+- Callable subagents attempted:
+  - `senior_tester`: timed out and was shut down.
+  - `senior_documentation_engineer`: timed out and was shut down.
+  - `senior_system_architect`: timed out and was shut down.
+
+Changed files:
+
+- `docs/arc42/09-architecture-decisions/reports/adr-baseline-consolidation-final-report-20260604.md`
+- `docs/workflow/execution-report.md`
+
+Verification commands:
+
+```bash
+sed -n '900,1010p' docs/workflow/workflow.md
+sed -n '1010,1090p' docs/workflow/workflow.md
+git log --oneline -n 12
+git status --short --branch --untracked-files=all
+find docs/arc42 -maxdepth 4 -type f | sort
+for p in docs/workflows/adr-baseline-consolidation-20260604/Workflow.md docs/workflow/workflow.md docs/arc42/09-architecture-decisions/adr/README.md docs/arc42/09-architecture-decisions/inventory/adr-inventory-20260604.md docs/arc42/09-architecture-decisions/conflicts/adr-conflict-analysis-20260604.md docs/arc42/01-introduction-and-goals/requirements/requirement-alignment-20260604.md docs/arc42/08-crosscutting-concepts/documentation-governance/arc42-documentation-layout.md; do test -f "$p" || { echo "MISSING $p"; exit 1; }; done; echo "required docs present"
+git diff --name-only 13df436..HEAD | sort
+git diff --name-only 13df436..HEAD | rg '^(src/|server/|client/|plugin/|services/|docker/|docker-compose.yml|build.gradle|settings.gradle|pom.xml)' && false || true
+sed -n '1,260p' docs/arc42/09-architecture-decisions/reports/adr-baseline-consolidation-final-report-20260604.md
+```
+
+Quality-gate commands:
+
+```bash
+git diff --check
+test -f docs/arc42/09-architecture-decisions/reports/adr-baseline-consolidation-final-report-20260604.md
+test -f docs/workflows/adr-baseline-consolidation-20260604/Workflow.md
+test -f docs/workflow/workflow.md
+test -f docs/arc42/09-architecture-decisions/adr/README.md
+test -f docs/arc42/09-architecture-decisions/inventory/adr-inventory-20260604.md
+test -f docs/arc42/09-architecture-decisions/conflicts/adr-conflict-analysis-20260604.md
+test -f docs/arc42/01-introduction-and-goals/requirements/requirement-alignment-20260604.md
+test -f docs/arc42/08-crosscutting-concepts/documentation-governance/arc42-documentation-layout.md
+git status --short --untracked-files=all | sed 's/^...//' | rg -v '^(docs/workflows/adr-baseline-consolidation-20260604/Workflow.md|docs/workflow/.*|docs/arc42/.*|README.md|QUALITY.md)$' && false || true
+git status --short --untracked-files=all | sed 's/^...//' | rg '^(src/|server/|client/|plugin/|services/|docker/|build.gradle|settings.gradle|pom.xml)' && false || true
+git diff --name-only 13df436..HEAD | rg '^(src/|server/|client/|plugin/|services/|docker/|docker-compose.yml|build.gradle|settings.gradle|pom.xml)' && false || true
+git diff --cached --check
+```
+
+Quality-gate result:
+
+- Required output file check: passed.
+- arc42 placement verification: passed.
+- Production-code verification from workflow start commit `13df436`: passed.
+- `git diff --check`: passed.
+- Target file checks: passed.
+- Placement path check: passed.
+- Product/build path check: passed.
+- Workflow-range product/build path check: passed.
+- `git diff --cached --check`: passed.
+- Gradle quality gates: not executed for S08 because the workflow changed only
+  documentation and no product source, tests, build logic, contracts, runtime,
+  persistence, deployment or analytics behavior.
+
+Rollback reference:
+
+- `79d00d8`
+
+arc42 update status:
+
+- Updated. Final report was created under
+  `docs/arc42/09-architecture-decisions/reports/`.
+
+ADR update status:
+
+- Checked. Final report records the completed ADR baseline status; no numbered
+  ADR file is changed by S08.
+
+Push result:
+
+- Pending until the S08 checkpoint commit is created and pushed.
