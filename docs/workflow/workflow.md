@@ -1,40 +1,36 @@
-# Workflow: FA-MVP-0001 PostgreSQL Repository Workspace Checkout Alignment
+# Workflow: ADR Baseline Consolidation
 
 ## Executive Summary
 
-This workflow corrects FA-MVP-0001 workflow input after the H2 runtime blocker.
-The authoritative runtime persistence target is PostgreSQL under ADR-0024.
-ADR-0023 is retained only for deterministic repository-source adapter tests and
-direct fixtures. H2 must not be used as runtime storage, Docker persistence,
-startup fallback, readiness fallback or cross-service persistence.
+This workflow consolidates the architecture decision baseline into the arc42
+documentation structure. Workflow control artifacts remain outside
+`docs/arc42/`; architecture output does not.
 
-This workflow does not implement product code. It creates the corrected
-workflow documentation, acceptance criteria, service-boundary checks,
-persistence constraints and quality gates needed before any future
-`workflow execute` step.
+The governing principle is:
+
+```text
+Workflow.md = process control
+docs/arc42/ = complete architecture documentation
+```
+
+All architecture, ADR, requirement, conflict-analysis and final-report outputs
+created or updated by this workflow must be placed under `docs/arc42/`.
 
 ## Verified Baseline
 
-- Active branch:
-  `feature/workflow-repository-workspace-checkout-20260604`
-- Workflow version: `2026-06-04`
+- Workflow control file:
+  `docs/workflows/adr-baseline-consolidation-20260604/Workflow.md`
+- Canonical execution entrypoint:
+  `docs/workflow/workflow.md`
+- Active branch: `architecture/workflow-adr-baseline-consolidation-20260605`
 - Process strand: `workflow create`
 - Execution profile: `FULL_PATH`
-- Repository root: `/mnt/d/Projects/forensic_analytics`
-- Host execution requirement: WSL path with Linux-style commands and
-  `./gradlew`
-- Runtime persistence decision: ADR-0024 PostgreSQL for
-  `repository-source-service` workspace metadata
-- H2 decision: ADR-0023 accepted for tests only, superseded for runtime by
-  ADR-0024
-- Owner service for repository checkout workspace metadata:
-  `repository-source-service`
-- Public facade service: `query-report-api-service`
-- Frontend module: `forensic-ui`
-- Current Docker-local repository-source descriptor mounts only
-  `repository-source-workspaces` and configures PostgreSQL through
-  `forensic-postgres`
-- Quality source: `QUALITY.md`
+- Current repository contains flat arc42 chapter files under `docs/arc42/`.
+- Current repository contains historical ADRs under `docs/adr/`.
+- Current repository contains historical architecture documents under
+  `docs/architecture/`.
+- This workflow defines the target placement for the ADR baseline
+  consolidation outputs. It does not move historical documents by itself.
 
 Verified source-of-truth files:
 
@@ -45,615 +41,870 @@ Verified source-of-truth files:
 - `.agents/orchestrator/routing-rules.md`
 - `.agents/orchestrator/swarm-orchestrator.md`
 - `.agents/skills/workflow-authoring/SKILL.md`
-- `.agents/skills/three-amigos-requirement-gatekeeper/SKILL.md`
-- `docs/adr/ADR-0023-h2-for-repository-source-mvp-persistence.md`
-- `docs/adr/ADR-0024-postgres-for-repository-source-workspace-metadata.md`
-- `docs/architecture/data-ownership.md`
-- `docs/architecture/service-boundaries.md`
-- `repository-source-service/README.md`
-- `query-report-api-service/README.md`
-- `repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/RepositorySourceServiceApplicationTest.java`
+- `.agents/skills/arc42-architecture-governance/SKILL.md`
+- `docs/arc42/README.md`
+- `docs/adr/README.md`
 
 ## Requirement Clarification Gate
 
 Decision: `READY_FOR_WORKFLOW`
 
-Confidence: 94 percent.
+Confidence: 92 percent.
 
-Original blocker:
+Original request:
 
-- The pasted FA-MVP-0001 requirement still required H2 runtime and Docker
-  persistence.
-- Current ADRs, README files and tests require PostgreSQL for runtime metadata
-  persistence and reject H2 as runtime storage.
-
-User clarification:
-
-- PostgreSQL under ADR-0024 is authoritative for this workflow.
-- ADRs must not be reopened, superseded or weakened.
-- H2 runtime persistence, H2 Docker persistence and H2 fallback behavior are
-  outdated for FA-MVP-0001.
-- H2 remains allowed only for deterministic repository-source adapter tests and
-  direct fixtures.
+- Keep `docs/workflows/adr-baseline-consolidation-20260604/Workflow.md`
+  as the process file only.
+- Route every other architecture, ADR, requirement, conflict-analysis and
+  final-report document into `docs/arc42/`.
+- Stop creating new authoritative documentation under `docs/architecture/`,
+  `docs/adr/` and `docs/requirements/`.
 
 Interpreted intent:
 
-- Regenerate workflow artifacts so FA-MVP-0001 aligns with ADR-0024 and the
-  revised ADR-0023.
-- Keep repository-source as the only owner and writer for checkout workspace,
-  branch, preparation and idempotency metadata.
-- Keep query-report and UI as consumers of owner APIs and sanitized public DTOs.
-- Preserve visibility of PostgreSQL startup/readiness failures.
-- Do not implement product code during workflow creation.
+- Create a workflow control file that makes `docs/arc42/` the authoritative
+  documentation root for this ADR baseline consolidation.
+- Preserve the workflow file as process control.
+- Prevent future workflow slices from scattering authoritative architecture
+  output across separate documentation roots.
 
 Explicit requirements:
 
-- FA-MVP-0001 no longer requires H2 runtime or Docker persistence.
-- Runtime repository-source metadata persistence uses PostgreSQL.
-- H2 is allowed only for deterministic adapter tests and direct fixtures.
-- Docker-local deployments do not mount H2 files as active runtime storage.
-- No service except `repository-source-service` may access repository-source
-  persistence directly.
-- Other services may consume only owner APIs and sanitized public DTOs.
-- PostgreSQL startup or readiness failure is visible and must not be hidden by
-  fallback storage.
-- Existing H2 files are historical MVP data and require an explicit migration
-  slice if preservation is needed.
-- The workflow references ADR-0023, ADR-0024, data ownership documentation,
-  service-boundary documentation and relevant README/test expectations.
-- `git status --short` must remain clean except intended workflow and
-  documentation artifacts.
+- Only this workflow control file may remain outside `docs/arc42/`.
+- New authoritative architecture documents must be created under
+  `docs/arc42/`.
+- ADRs must be placed under
+  `docs/arc42/09-architecture-decisions/adr/`.
+- ADR inventory must be placed under
+  `docs/arc42/09-architecture-decisions/inventory/`.
+- ADR conflict analysis must be placed under
+  `docs/arc42/09-architecture-decisions/conflicts/`.
+- The final report must be placed under
+  `docs/arc42/09-architecture-decisions/reports/`.
+- Requirement alignment output must be placed under
+  `docs/arc42/01-introduction-and-goals/requirements/`.
+- Persistence concepts must be documented under
+  `docs/arc42/08-crosscutting-concepts/persistence/`.
+- Service boundaries must be documented under
+  `docs/arc42/05-building-block-view/`.
+- Plugin/server context must be documented under
+  `docs/arc42/03-system-scope-and-context/`.
 
 Accepted assumptions:
 
-- The branch created for the stopped workflow remains the active workflow branch.
-- The current ADR-0023 update on this branch is the accepted clarification of
-  H2 scope.
-- Existing implementation evidence may be cited as baseline only after exact
-  file paths are verified. It is not changed by this workflow-create run.
-- If preservation of existing H2 files is required, that is a separate
-  migration workflow or slice, not part of this workflow.
+- Existing `docs/adr/` and `docs/architecture/` files are historical repository
+  inputs until an approved slice moves, mirrors or replaces their authoritative
+  content.
+- Compatibility pointer stubs are allowed only when a repository compatibility
+  rule is verified.
+- Compatibility pointer stubs must not duplicate architecture content.
 
 Non-goals:
 
-- No product source, test, build, OpenAPI, gRPC, Dockerfile or frontend code
-  changes in `workflow create`.
-- No new `workspace-service`.
-- No H2 runtime fallback, Docker fallback or readiness fallback.
-- No direct query-report, UI, CLI, worker or analysis-service access to
-  repository-source PostgreSQL tables, H2 files or checkout directories.
-- No JavaParser, Joern, BTM, replay, report, LLM, Neo4j, vector database,
-  Kafka/RabbitMQ, Swarm or Kubernetes implementation.
-- No migration of historical H2 files unless a later explicit migration slice
-  is approved.
+- No product source changes.
+- No backend, frontend, Docker/runtime, gRPC, REST, persistence, analysis
+  engine, Joern, JavaParser, BTM generator or analytics behavior changes.
+- No runtime migration strategy.
+- No invented implementation, runtime, deployment or migration flow.
+- No automatic rewrite of historical ADR intent.
+- No broad cleanup outside this workflow scope.
 
 Open questions:
 
-- None blocking for workflow creation.
+- None blocking for creating this workflow control file.
 
-## Five-Role Three Amigos Review
+## Role Review
 
 Senior Requirement Engineer:
 
-- Requirement drift is resolved by treating ADR-0024 as authoritative and
-  revised ADR-0023 as test-only H2 scope.
-- FA-MVP-0001 remains repository checkout workspace scope, not broader platform
-  workspace administration.
-- Acceptance criteria are testable and trace to ADRs, README files, service
-  boundaries and quality gates.
+- The workflow has a documentation and architecture-governance scope.
+- The requirement is traceable to the user request and does not authorize
+  product implementation.
+- Requirements, ADR inventory and final reports are routed into arc42 chapters.
 
 Senior System Architect:
 
-- `repository-source-service` remains the only owner and writer for
-  repository checkout workspace metadata.
-- PostgreSQL is service-owned repository-source metadata storage only, not
-  shared canonical analytics persistence.
-- H2 is historical/test fixture scope only.
-- Query-report and UI remain facade/client layers and must not read private
-  storage.
+- The workflow changes documentation placement governance only.
+- The target arc42 structure separates constraints, context, strategy,
+  building blocks, runtime, deployment, crosscutting concepts, decisions,
+  quality requirements, risks and glossary.
+- Existing architecture facts must not be invented while reorganizing
+  documentation.
 
 Senior Java Backend Developer:
 
-- Backend verification must prove runtime persistence selection is PostgreSQL
-  or memory only where explicitly test-profile scoped.
-- H2 adapter tests remain allowed when they instantiate the H2 adapter directly.
-- PostgreSQL readiness failure must surface as startup failure or storage
-  readiness `DOWN`.
+- No Java backend implementation is in scope.
+- Backend, persistence and service-boundary references in future outputs must
+  be verified from repository source, ADRs, arc42, build files and tests before
+  they are documented as implemented behavior.
 
 Senior React Frontend Developer:
 
-- Frontend consumes only public workspace DTOs from `query-report-api-service`.
-- UI must never infer, display or depend on repository-source private database
-  names, JDBC URLs, H2 paths, checkout paths, raw Git output or credentials.
+- No frontend implementation is in scope.
+- Any future UI-related architecture statements must distinguish planned UI
+  flows from implemented UI behavior.
 
 Senior Tester:
 
-- Tests must cover H2 rejection as runtime, PostgreSQL selection, storage
-  readiness `DOWN`, public DTO redaction and deterministic H2 adapter fixture
-  behavior.
-- Docker-local checks must prove active runtime storage is PostgreSQL plus the
-  private checkout workspace volume, not H2 files.
+- Documentation-only closure requires `git diff --check` and arc42 placement
+  inspection.
+- Product quality gates become required only if a future slice changes product
+  source, tests, build logic, contracts or runtime behavior.
 
-Dependency / Deadlock Validator:
+## Mandatory arc42 Documentation Structure
 
-- Slice dependencies are acyclic.
-- Documentation alignment precedes verification slices.
-- Backend persistence verification precedes API/UI and Docker closure checks.
-- No slice writes product code. Any product mismatch stops and requires a new
-  workflow or an explicitly approved implementation slice.
+This workflow treats `docs/arc42/` as the authoritative documentation root for
+all architecture, ADR, requirement, conflict-analysis and final-report
+documents.
 
-## Target Picture
+The workflow control documents that may remain outside `docs/arc42/` for this
+workflow are:
 
 ```text
-forensic-ui
-  -> query-report-api-service public REST DTOs
-    -> repository-source-service owner API
-       -> repository_source PostgreSQL schema
-       -> repository-source-workspaces private checkout volume
+docs/workflows/adr-baseline-consolidation-20260604/Workflow.md
+docs/workflow/workflow.md
+docs/workflow/context-pack.md
+docs/workflow/context-pack.json
 ```
 
-H2 exists only as direct adapter test and fixture storage:
+All other documents created or updated by this workflow must be placed under:
 
 ```text
-repository-source-service tests
-  -> H2RepositorySourcePersistenceAdapter fixture
+docs/arc42/
 ```
 
-Runtime and Docker-local behavior must not use that H2 fixture path.
+Do not create new authoritative documentation under:
 
-## Architecture Constraints
-
-- Domain and application code remain independent from JDBC, PostgreSQL,
-  Liquibase, H2, REST, gRPC and React implementation details.
-- PostgreSQL tables are private repository-source persistence.
-- Repository checkout bytes and source package bytes remain outside PostgreSQL
-  in repository-source-owned storage.
-- Other services access repository-source state only through owner APIs,
-  public facade APIs, explicit contracts or owner-issued artifact references.
-- Public DTOs may expose opaque workspace IDs, branch IDs, source snapshot IDs,
-  relative source roots and sanitized diagnostics only.
-- Public DTOs must not expose JDBC URLs, table names, H2 paths, checkout paths,
-  raw stdout, raw stderr, credentials, tokens or private network details.
-- Missing or unreachable PostgreSQL must not be masked by in-memory, H2 or
-  file-based fallback storage.
-- Historical H2 files are not active runtime state. Preserving them requires
-  an explicit migration slice with verified input files, acceptance criteria,
-  rollback strategy and quality gates.
-
-## Backend Assessment
-
-Verified backend areas:
-
-- `repository-source-service/src/main/resources/application.properties`
-- `repository-source-service/src/main/resources/application-docker.properties`
-- `repository-source-service/src/main/resources/application-test.properties`
-- `repository-source-service/src/main/resources/db/changelog/repository-source-workspace.postgresql.yaml`
-- `repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/RepositorySourceServiceProperties.java`
-- `repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/RepositorySourceServiceConfiguration.java`
-- `repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/RepositorySourceStorageReadiness.java`
-- `repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/HealthHttpServerLifecycle.java`
-- `repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/adapter/out/postgres`
-- `repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/adapter/out/h2`
-- `repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/RepositorySourceServiceApplicationTest.java`
-- `repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/application/RepositorySourcePostgresPersistenceApplicationTest.java`
-- `repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/application/RepositorySourceH2PersistenceApplicationTest.java`
-
-Backend STOP conditions:
-
-- H2 is selected as runtime or Docker persistence.
-- Missing PostgreSQL is converted to an in-memory, H2 or file fallback.
-- H2 tests assert runtime fallback, Docker startup behavior or production
-  readiness behavior.
-- JDBC, Liquibase, PostgreSQL or H2 types leak into domain or application
-  boundaries.
-
-## Public API And Frontend Assessment
-
-Verified public API and UI areas:
-
-- `query-report-api-service/README.md`
-- `query-report-api-service/src/main/java/de/burger/forensics/analytics/services/queryreportapi/application/QueryReportApiWorkspaceService.java`
-- `query-report-api-service/src/main/java/de/burger/forensics/analytics/services/queryreportapi/application/port/RepositoryWorkspaceOwnerPort.java`
-- `query-report-api-service/src/main/java/de/burger/forensics/analytics/services/queryreportapi/adapter/out/grpc`
-- `query-report-api-service/src/main/java/de/burger/forensics/analytics/services/queryreportapi/adapter/in/http`
-- `forensic-ui/README.md`
-- `forensic-ui/src/domain/workspace.ts`
-- `forensic-ui/src/adapters/api/dtos.ts`
-- `forensic-ui/src/adapters/api/mappers.ts`
-- `forensic-ui/src/adapters/api/apiClient.ts`
-- `forensic-ui/src/pages/workspaces/CreateWorkspacePage.tsx`
-
-Public API and frontend STOP conditions:
-
-- A public DTO exposes repository-source PostgreSQL table names, JDBC URLs,
-  H2 paths, checkout paths, raw Git output, credentials or tokens.
-- `query-report-api-service` reads repository-source PostgreSQL tables, H2
-  files or private checkout directories directly.
-- The UI calls repository-source-service, Git remotes, gRPC, WebSocket,
-  SSE or gRPC-Web directly for this flow.
-
-## Deployment Assessment
-
-Verified deployment areas:
-
-- `repository-source-service/Dockerfile`
-- `deployment/docker-compose/services/repository-source-service.compose.yml`
-- `deployment/docker-compose/repository-to-btm.local.yml`
-- `repository-source-service/README.md`
-
-Current Docker-local repository-source evidence:
-
-- `repository-source-service` is configured with
-  `--forensics.repository-source.service.persistence.type=postgres`.
-- PostgreSQL connection settings are provided through
-  `FORENSICS_REPOSITORY_SOURCE_POSTGRES_*`.
-- The active service mount is
-  `repository-source-workspaces:/var/lib/forensic-analytics/repository-workspaces`.
-- No active H2 data volume is mounted into `repository-source-service` in the
-  verified Compose descriptors.
-
-Deployment STOP conditions:
-
-- Docker-local config mounts repository-source H2 files as active runtime
-  persistence.
-- Docker-local config masks PostgreSQL failure with H2, memory or file fallback.
-- Another service mounts repository-source workspaces, PostgreSQL data, H2
-  files or private repository-source paths.
-- Docker Compose model validation is treated as proof of image startup,
-  health-check smoke tests, Swarm readiness or Kubernetes readiness.
-
-## Test Strategy
-
-Run narrow checks first, then broader quality gates when product code or tests
-change in a future workflow execution.
-
-Targeted documentation checks:
-
-```bash
-git diff --check
-rg -n "Docker-local MVP H2|H2 data volume|H2 data volumes|H2 volumes|repository-source-data H2|service-local H2 file persistence|H2 is Docker-local" docs/architecture docs/arc42 repository-source-service/README.md query-report-api-service/README.md
+```text
+docs/architecture/
+docs/adr/
+docs/requirements/
 ```
 
-Targeted backend checks:
+unless the repository already requires temporary compatibility stubs. If
+compatibility stubs are needed, they must contain only a short pointer to the
+authoritative arc42 location and must not contain duplicate architecture
+content.
 
-```bash
-./gradlew :repository-source-service:test --tests "*RepositorySourceServiceApplicationTest" --dependency-verification strict --console=plain --stacktrace
-./gradlew :repository-source-service:test --tests "*RepositorySourcePostgresPersistenceApplicationTest" --dependency-verification strict --console=plain --stacktrace
-./gradlew :repository-source-service:test --tests "*RepositorySourceH2PersistenceApplicationTest" --dependency-verification strict --console=plain --stacktrace
+## arc42 Chapter Mapping
+
+### 01 - Introduction and Goals
+
+Use for requirement baseline and business or functional goals.
+
+```text
+docs/arc42/01-introduction-and-goals/
+docs/arc42/01-introduction-and-goals/requirements/
 ```
 
-Targeted public API checks:
+Allowed documents:
 
-```bash
-./gradlew :query-report-api-service:test --tests "*QueryReportApiWorkspaceServiceTest" --dependency-verification strict --console=plain --stacktrace
-./gradlew :query-report-api-service:test --tests "*QueryReportApiWorkspaceTest" --dependency-verification strict --console=plain --stacktrace
+```text
+docs/arc42/01-introduction-and-goals/requirements/requirement-alignment-20260604.md
+docs/arc42/01-introduction-and-goals/requirements/fa-mvp-0001-alignment.md
 ```
 
-Targeted frontend checks:
+### 02 - Architecture Constraints
 
-```bash
-cd forensic-ui && npm run test -- src/adapters/api/mappers.test.ts src/adapters/api/apiClient.test.ts src/pages/workspaces/CreateWorkspacePage.test.tsx
-cd forensic-ui && npm run build
+Use for hard boundaries and non-negotiable architecture constraints.
+
+```text
+docs/arc42/02-architecture-constraints/
 ```
 
-Minimum repository quality command:
+Allowed documents:
 
-```bash
-./gradlew test --dependency-verification strict --console=plain --stacktrace
+```text
+docs/arc42/02-architecture-constraints/persistence-constraints.md
+docs/arc42/02-architecture-constraints/service-boundary-constraints.md
+docs/arc42/02-architecture-constraints/workflow-governance-constraints.md
 ```
 
-Full local quality gate:
+### 03 - System Scope and Context
 
-```bash
-./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace
+Use for plugin/server boundaries, external systems and communication context.
+
+```text
+docs/arc42/03-system-scope-and-context/
 ```
 
-Docker-local model checks when deployment documentation or Compose files change:
+Allowed documents:
 
-```bash
-docker compose -f deployment/docker-compose/repository-to-btm.local.yml config
-docker compose -f deployment/docker-compose/services/repository-source-service.compose.yml config
+```text
+docs/arc42/03-system-scope-and-context/plugin-server-boundary.md
+docs/arc42/03-system-scope-and-context/grpc-ingestion-context.md
 ```
 
-## Resilience And Readiness Requirements
+### 04 - Solution Strategy
 
-- PostgreSQL startup failure must be visible as startup failure or storage
-  readiness `DOWN`.
-- Storage readiness `DOWN` must not be hidden by in-memory, H2 or file fallback.
-- Public diagnostics must be sanitized before leaving repository-source or
-  query-report boundaries.
-- Repository metadata and checkout operations must remain idempotent where the
-  existing public contracts require idempotency keys.
-- Docker-local Compose checks do not prove container startup, health, Swarm or
-  Kubernetes readiness unless those commands are executed and recorded.
+Use for the clean target architecture strategy.
+
+```text
+docs/arc42/04-solution-strategy/
+```
+
+Allowed documents:
+
+```text
+docs/arc42/04-solution-strategy/clean-target-architecture.md
+docs/arc42/04-solution-strategy/no-runtime-migration-strategy.md
+```
+
+Important:
+
+The solution strategy must explicitly state that this baseline is not a runtime
+migration strategy.
+
+### 05 - Building Block View
+
+Use for service/module boundaries and the target service decomposition.
+
+```text
+docs/arc42/05-building-block-view/
+```
+
+Allowed documents:
+
+```text
+docs/arc42/05-building-block-view/service-boundaries.md
+docs/arc42/05-building-block-view/workspace-repository-branch-analysis-model.md
+```
+
+### 06 - Runtime View
+
+Use only if runtime flows are documented.
+
+```text
+docs/arc42/06-runtime-view/
+```
+
+Allowed documents:
+
+```text
+docs/arc42/06-runtime-view/plugin-submit-analysis-flow.md
+docs/arc42/06-runtime-view/workspace-analysis-trigger-flow.md
+```
+
+No implementation flow may be invented if it does not exist yet.
+
+### 07 - Deployment View
+
+Use only if deployment-related documentation must be aligned.
+
+```text
+docs/arc42/07-deployment-view/
+```
+
+Allowed documents:
+
+```text
+docs/arc42/07-deployment-view/postgresql-runtime-deployment-baseline.md
+```
+
+Do not modify Docker or runtime configuration in this workflow.
+
+### 08 - Crosscutting Concepts
+
+Use for persistence, schema migration, service contracts and documentation
+governance.
+
+```text
+docs/arc42/08-crosscutting-concepts/
+docs/arc42/08-crosscutting-concepts/persistence/
+docs/arc42/08-crosscutting-concepts/service-contracts/
+docs/arc42/08-crosscutting-concepts/documentation-governance/
+```
+
+Allowed documents:
+
+```text
+docs/arc42/08-crosscutting-concepts/persistence/postgresql-liquibase-baseline.md
+docs/arc42/08-crosscutting-concepts/persistence/h2-test-fixture-only.md
+docs/arc42/08-crosscutting-concepts/service-contracts/grpc-contract-boundary.md
+docs/arc42/08-crosscutting-concepts/documentation-governance/arc42-documentation-layout.md
+```
+
+### 09 - Architecture Decisions
+
+Use for ADRs, ADR inventory, ADR conflict analysis and ADR reports.
+
+```text
+docs/arc42/09-architecture-decisions/
+docs/arc42/09-architecture-decisions/adr/
+docs/arc42/09-architecture-decisions/inventory/
+docs/arc42/09-architecture-decisions/conflicts/
+docs/arc42/09-architecture-decisions/reports/
+```
+
+Required workflow outputs:
+
+```text
+docs/arc42/09-architecture-decisions/inventory/adr-inventory-20260604.md
+docs/arc42/09-architecture-decisions/conflicts/adr-conflict-analysis-20260604.md
+docs/arc42/09-architecture-decisions/adr/ADR-00XX-consolidated-architecture-baseline-without-migration.md
+docs/arc42/09-architecture-decisions/reports/adr-baseline-consolidation-final-report-20260604.md
+```
+
+ADR files must no longer be created directly under:
+
+```text
+docs/adr/
+```
+
+unless an existing repository compatibility rule requires a pointer file.
+
+### 10 - Quality Requirements
+
+Use for quality gates and architecture quality requirements.
+
+```text
+docs/arc42/10-quality-requirements/
+```
+
+Allowed documents:
+
+```text
+docs/arc42/10-quality-requirements/architecture-quality-gates.md
+docs/arc42/10-quality-requirements/documentation-quality-gates.md
+```
+
+### 11 - Risks and Technical Debt
+
+Use for remaining contradictions, unresolved decisions and risks.
+
+```text
+docs/arc42/11-risks-and-technical-debt/
+```
+
+Allowed documents:
+
+```text
+docs/arc42/11-risks-and-technical-debt/open-adr-risks.md
+docs/arc42/11-risks-and-technical-debt/outdated-documentation-debt.md
+```
+
+### 12 - Glossary
+
+Use for shared terminology.
+
+```text
+docs/arc42/12-glossary/
+```
+
+Allowed documents:
+
+```text
+docs/arc42/12-glossary/architecture-terms.md
+```
+
+## Updated Allowed File Areas
+
+Allowed file areas for this workflow:
+
+```text
+docs/workflows/adr-baseline-consolidation-20260604/Workflow.md
+docs/workflow/
+docs/arc42/
+README.md
+QUALITY.md
+```
+
+`README.md` and `QUALITY.md` may only be changed if they contain directly
+conflicting architecture, persistence, ADR or documentation-governance
+statements.
+
+Not allowed:
+
+```text
+src/
+server/
+client/
+plugin/
+services/
+docker/
+docker-compose.yml
+build.gradle
+settings.gradle
+pom.xml
+```
+
+unless the change is documentation-only and does not alter executable behavior.
+
+## Updated Target Output Paths
+
+### ADR Inventory
+
+Old path:
+
+```text
+docs/architecture/adr-inventory-20260604.md
+```
+
+New path:
+
+```text
+docs/arc42/09-architecture-decisions/inventory/adr-inventory-20260604.md
+```
+
+### ADR Conflict Analysis
+
+Old path:
+
+```text
+docs/architecture/adr-conflict-analysis-20260604.md
+```
+
+New path:
+
+```text
+docs/arc42/09-architecture-decisions/conflicts/adr-conflict-analysis-20260604.md
+```
+
+### Consolidated ADR
+
+Old path:
+
+```text
+docs/adr/ADR-00XX-consolidated-architecture-baseline-without-migration.md
+```
+
+New path:
+
+```text
+docs/arc42/09-architecture-decisions/adr/ADR-00XX-consolidated-architecture-baseline-without-migration.md
+```
+
+### Requirement Alignment
+
+Use:
+
+```text
+docs/arc42/01-introduction-and-goals/requirements/requirement-alignment-20260604.md
+```
+
+If FA-MVP-0001 is updated or analyzed separately, use:
+
+```text
+docs/arc42/01-introduction-and-goals/requirements/fa-mvp-0001-alignment.md
+```
+
+### Persistence Baseline
+
+Use:
+
+```text
+docs/arc42/08-crosscutting-concepts/persistence/postgresql-liquibase-baseline.md
+docs/arc42/08-crosscutting-concepts/persistence/h2-test-fixture-only.md
+```
+
+### Service Boundary Baseline
+
+Use:
+
+```text
+docs/arc42/05-building-block-view/service-boundaries.md
+```
+
+### Plugin / Server Boundary
+
+Use:
+
+```text
+docs/arc42/03-system-scope-and-context/plugin-server-boundary.md
+```
+
+### Final Report
+
+Old path:
+
+```text
+docs/workflows/adr-baseline-consolidation-20260604/final-report.md
+```
+
+New path:
+
+```text
+docs/arc42/09-architecture-decisions/reports/adr-baseline-consolidation-final-report-20260604.md
+```
+
+The final report is documentation output and therefore belongs under arc42.
+Only the workflow control file itself remains under `docs/workflows/`.
 
 ## Ordered Slices
 
-### Slice 01 - Requirement And ADR Alignment Documentation
+### Slice 01 - Branch and Workflow Isolation
 
-Purpose: Correct FA-MVP-0001 workflow documentation so PostgreSQL is the only
-runtime metadata persistence target and H2 is test/fixture scope only.
+Purpose: Ensure the workflow control file exists on a dedicated workflow
+branch and no active product workflow is modified.
 
 ```yaml
 slice_id: S01
 profile: FULL_PATH
-owner: Senior Requirement Engineer
+owner: Senior Workflow Architect
 secondary_reviewers:
-  - Senior System Architect
   - Senior Documentation Engineer
   - Senior Tester
 affected_files:
+  - docs/workflows/adr-baseline-consolidation-20260604/Workflow.md
   - docs/workflow/**
-  - docs/architecture/data-ownership.md
-  - docs/architecture/service-boundaries.md
-  - docs/arc42/**
 affected_modules: []
 affected_contracts: []
 dependencies: []
 parallel_group: G1
 file_locks:
+  - docs/workflows/adr-baseline-consolidation-20260604/Workflow.md
   - docs/workflow/**
-  - docs/architecture/data-ownership.md
-  - docs/architecture/service-boundaries.md
-  - docs/arc42/**
 contract_locks: []
 architecture_locks:
-  - ADR-0023 test-only H2 scope
-  - ADR-0024 repository-source PostgreSQL metadata ownership
+  - arc42 documentation placement governance
 quality_gates:
   targeted:
     - git diff --check
   required:
     - git diff --check
 documentation:
-  arc42: checked/update stale H2 runtime wording
-  adr: ADR-0023 and ADR-0024 referenced
+  arc42: placement governance defined
+  adr: no ADR history rewrite in this slice
 stop_conditions:
-  - workflow requires H2 runtime or Docker persistence
-  - workflow weakens ADR-0023 or ADR-0024
-  - service ownership becomes ambiguous
+  - active branch is main, master, develop or another shared branch
+  - unrelated local changes appear
+  - docs/workflow/workflow.md is not the ADR baseline execution entrypoint
 ```
 
-Done criteria:
+Allowed output:
 
-- Workflow artifacts say PostgreSQL is the runtime and Docker persistence
-  target for repository-source metadata.
-- H2 is allowed only for deterministic adapter tests and direct fixtures.
-- Acceptance criteria include the ten user-confirmed PostgreSQL/H2 boundary
-  checks.
+```text
+docs/workflows/adr-baseline-consolidation-20260604/Workflow.md
+docs/workflow/**
+```
 
-### Slice 02 - Repository-Source Persistence Boundary Verification
+These are workflow-control artifacts. Architecture outputs still belong under
+`docs/arc42/`.
 
-Purpose: Verify repository-source runtime persistence, storage readiness and
-test-only H2 boundaries without product code edits.
+### Slice 02 - ADR Inventory
+
+Purpose: Inventory existing ADRs and record their active, superseded,
+historical or conflicting status without rewriting ADR history.
 
 ```yaml
 slice_id: S02
 profile: FULL_PATH
-owner: Senior Java Backend Developer
+owner: ADR Steward
 secondary_reviewers:
   - Senior System Architect
-  - Senior Tester
+  - Senior Documentation Engineer
 affected_files:
-  - repository-source-service/src/main/resources/application.properties
-  - repository-source-service/src/main/resources/application-docker.properties
-  - repository-source-service/src/main/resources/application-test.properties
-  - repository-source-service/src/main/resources/db/changelog/repository-source-workspace.postgresql.yaml
-  - repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/**
-  - repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/adapter/out/postgres/**
-  - repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/adapter/out/h2/**
-  - repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/bootstrap/**
-  - repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/application/RepositorySourcePostgresPersistenceApplicationTest.java
-  - repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/application/RepositorySourceH2PersistenceApplicationTest.java
-affected_modules:
-  - repository-source-service
+  - docs/arc42/09-architecture-decisions/inventory/adr-inventory-20260604.md
+affected_modules: []
 affected_contracts: []
 dependencies:
   - S01
 parallel_group: G2
 file_locks:
-  - repository-source-service/src/main/resources/application*.properties
-  - repository-source-service/src/main/resources/db/changelog/repository-source-workspace.postgresql.yaml
-  - repository-source-service/src/main/java/de/burger/forensics/analytics/services/repositorysource/**
-  - repository-source-service/src/test/java/de/burger/forensics/analytics/services/repositorysource/**
+  - docs/arc42/09-architecture-decisions/inventory/
 contract_locks: []
 architecture_locks:
-  - repository-source-service owns repository_source PostgreSQL schema
-  - H2 direct adapter fixtures only
+  - ADR inventory provenance
 quality_gates:
   targeted:
-    - ./gradlew :repository-source-service:test --tests "*RepositorySourceServiceApplicationTest" --dependency-verification strict --console=plain --stacktrace
-    - ./gradlew :repository-source-service:test --tests "*RepositorySourcePostgresPersistenceApplicationTest" --dependency-verification strict --console=plain --stacktrace
-    - ./gradlew :repository-source-service:test --tests "*RepositorySourceH2PersistenceApplicationTest" --dependency-verification strict --console=plain --stacktrace
+    - git diff --check
   required:
-    - ./gradlew :repository-source-service:test --dependency-verification strict --console=plain --stacktrace
+    - git diff --check
 documentation:
-  arc42: persistence and readiness checked
-  adr: ADR-0023 and ADR-0024 apply
+  arc42: ADR inventory
+  adr: read-only source input
 stop_conditions:
-  - H2 is accepted as runtime persistence type
-  - PostgreSQL failure is hidden by fallback storage
-  - H2 tests assert runtime or Docker fallback behavior
-  - PostgreSQL table or JDBC details leak into domain/application code
+  - an ADR file cannot be verified exactly
+  - ADR status would require guessing
 ```
 
-Done criteria:
+Expected output:
 
-- Tests prove H2 is rejected as runtime persistence.
-- Tests prove PostgreSQL selection and storage readiness behavior.
-- H2 adapter tests remain direct fixture tests only.
+```text
+docs/arc42/09-architecture-decisions/inventory/adr-inventory-20260604.md
+```
 
-### Slice 03 - Public API And Frontend Boundary Verification
+### Slice 03 - Conflict Analysis
 
-Purpose: Verify query-report and UI consume only owner APIs and sanitized DTOs.
+Purpose: Analyze contradictions between ADRs, arc42, architecture documents,
+requirements and current repository evidence.
 
 ```yaml
 slice_id: S03
 profile: FULL_PATH
-owner: Senior React Frontend Developer
+owner: Senior System Architect
 secondary_reviewers:
-  - Senior Java Backend Developer
-  - Senior UX Designer
-  - Senior Tester
+  - Senior Requirement Engineer
+  - Senior Documentation Engineer
 affected_files:
-  - query-report-api-service/README.md
-  - query-report-api-service/src/main/java/de/burger/forensics/analytics/services/queryreportapi/**
-  - query-report-api-service/src/test/java/de/burger/forensics/analytics/services/queryreportapi/**
-  - forensic-ui/README.md
-  - forensic-ui/src/domain/workspace.ts
-  - forensic-ui/src/adapters/api/**
-  - forensic-ui/src/pages/workspaces/**
-affected_modules:
-  - query-report-api-service
-  - forensic-ui
-affected_contracts:
-  - contracts/openapi/gateway-api.yaml
-  - contracts/grpc/repository-analysis.proto
-dependencies:
-  - S02
-parallel_group: G3
-file_locks:
-  - query-report-api-service/**
-  - forensic-ui/**
-contract_locks:
-  - workspace public REST DTOs
-  - repository-source owner gRPC workspace API
-architecture_locks:
-  - query-report facade only
-  - UI consumes public REST only
-quality_gates:
-  targeted:
-    - ./gradlew :query-report-api-service:test --tests "*QueryReportApiWorkspaceServiceTest" --dependency-verification strict --console=plain --stacktrace
-    - ./gradlew :query-report-api-service:test --tests "*QueryReportApiWorkspaceTest" --dependency-verification strict --console=plain --stacktrace
-    - cd forensic-ui && npm run test -- src/adapters/api/mappers.test.ts src/adapters/api/apiClient.test.ts src/pages/workspaces/CreateWorkspacePage.test.tsx
-  required:
-    - ./gradlew :query-report-api-service:test --dependency-verification strict --console=plain --stacktrace
-    - cd forensic-ui && npm run test
-documentation:
-  arc42: public facade and UI boundary checked
-  adr: ADR-0010 and ADR-0024 apply
-stop_conditions:
-  - query-report reads repository-source private persistence directly
-  - UI calls repository-source internals directly
-  - public DTO exposes database, H2, filesystem, raw Git or credential details
-```
-
-Done criteria:
-
-- Public API and UI tests prove only sanitized public DTOs cross the boundary.
-- No public API or UI code depends on repository-source private persistence.
-
-### Slice 04 - Docker-Local PostgreSQL And Volume Boundary Verification
-
-Purpose: Verify Docker-local descriptors keep PostgreSQL as active metadata
-storage and do not mount H2 files as active runtime storage.
-
-```yaml
-slice_id: S04
-profile: FULL_PATH
-owner: Senior DevOps Engineer
-secondary_reviewers:
-  - Senior System Architect
-  - Senior Security Sandbox Engineer
-  - Senior Tester
-affected_files:
-  - repository-source-service/Dockerfile
-  - deployment/docker-compose/services/repository-source-service.compose.yml
-  - deployment/docker-compose/repository-to-btm.local.yml
-  - repository-source-service/README.md
-  - docs/arc42/07-deployment-view.md
-affected_modules:
-  - repository-source-service
+  - docs/arc42/09-architecture-decisions/conflicts/adr-conflict-analysis-20260604.md
+affected_modules: []
 affected_contracts: []
 dependencies:
   - S02
 parallel_group: G3
 file_locks:
-  - repository-source-service/Dockerfile
-  - deployment/docker-compose/**
-  - repository-source-service/README.md
-  - docs/arc42/07-deployment-view.md
+  - docs/arc42/09-architecture-decisions/conflicts/
 contract_locks: []
 architecture_locks:
-  - repository-source-workspaces private volume
-  - repository-source PostgreSQL metadata schema
+  - ADR and arc42 consistency
 quality_gates:
   targeted:
-    - docker compose -f deployment/docker-compose/repository-to-btm.local.yml config
-    - docker compose -f deployment/docker-compose/services/repository-source-service.compose.yml config
+    - git diff --check
   required:
     - git diff --check
 documentation:
-  arc42: deployment view checked
-  adr: ADR-0024 applies
+  arc42: conflict analysis
+  adr: read-only source input
 stop_conditions:
-  - repository-source H2 data files are mounted as active runtime storage
-  - another service mounts repository-source private workspaces or persistence
-  - PostgreSQL failure is masked by fallback storage
-  - Compose config is claimed as startup or health readiness without execution evidence
+  - architecture conflict cannot be resolved from verified source
+  - planned behavior would be documented as implemented behavior
 ```
 
-Done criteria:
+Expected output:
 
-- Compose config shows PostgreSQL settings and no active H2 data mount.
-- Documentation distinguishes Compose model validation from runtime startup,
-  health, Swarm and Kubernetes readiness.
+```text
+docs/arc42/09-architecture-decisions/conflicts/adr-conflict-analysis-20260604.md
+```
 
-### Slice 05 - Final Quality, Arc42 And Handoff Closure
+### Slice 04 - Consolidated ADR Creation
 
-Purpose: Close the workflow with checked workflow docs, checked/updated arc42,
-diff inspection and handoff instructions for future `workflow execute`.
+Purpose: Create the consolidated architecture baseline ADR under the arc42 ADR
+chapter without introducing runtime migration language.
+
+```yaml
+slice_id: S04
+profile: FULL_PATH
+owner: ADR Steward
+secondary_reviewers:
+  - Senior System Architect
+  - Senior Requirement Engineer
+  - Senior Tester
+affected_files:
+  - docs/arc42/09-architecture-decisions/adr/ADR-00XX-consolidated-architecture-baseline-without-migration.md
+affected_modules: []
+affected_contracts: []
+dependencies:
+  - S03
+parallel_group: G4
+file_locks:
+  - docs/arc42/09-architecture-decisions/adr/
+contract_locks: []
+architecture_locks:
+  - consolidated architecture baseline
+quality_gates:
+  targeted:
+    - git diff --check
+  required:
+    - git diff --check
+documentation:
+  arc42: consolidated ADR
+  adr: new authoritative ADR location under arc42
+stop_conditions:
+  - next ADR number cannot be verified
+  - baseline text introduces migration, fallback, legacy or sunset mechanics
+```
+
+Expected output:
+
+```text
+docs/arc42/09-architecture-decisions/adr/ADR-00XX-consolidated-architecture-baseline-without-migration.md
+```
+
+### Slice 05 - Supersede or Clarify Existing ADRs
+
+Purpose: Move or mirror authoritative ADR content into the arc42 ADR chapter
+and prevent conflicting authoritative ADR content outside arc42.
 
 ```yaml
 slice_id: S05
+profile: FULL_PATH
+owner: ADR Steward
+secondary_reviewers:
+  - Senior System Architect
+  - Senior Documentation Engineer
+affected_files:
+  - docs/arc42/09-architecture-decisions/adr/
+affected_modules: []
+affected_contracts: []
+dependencies:
+  - S04
+parallel_group: G5
+file_locks:
+  - docs/arc42/09-architecture-decisions/adr/
+contract_locks: []
+architecture_locks:
+  - ADR authoritative location
+quality_gates:
+  targeted:
+    - git diff --check
+  required:
+    - git diff --check
+documentation:
+  arc42: ADR placement
+  adr: authoritative content under arc42
+stop_conditions:
+  - existing ADR intent would be rewritten without explicit decision
+  - compatibility pointer content duplicates architecture content
+```
+
+Expected output:
+
+```text
+docs/arc42/09-architecture-decisions/adr/
+```
+
+If existing ADR files are outside arc42, move or mirror their authoritative
+content into the arc42 ADR chapter. Do not leave conflicting authoritative ADR
+content outside arc42.
+
+### Slice 06 - Requirement Alignment
+
+Purpose: Align requirements with the consolidated architecture baseline and
+place the alignment under the arc42 introduction and goals chapter.
+
+```yaml
+slice_id: S06
+profile: FULL_PATH
+owner: Senior Requirement Engineer
+secondary_reviewers:
+  - Senior System Architect
+  - Senior Tester
+affected_files:
+  - docs/arc42/01-introduction-and-goals/requirements/requirement-alignment-20260604.md
+affected_modules: []
+affected_contracts: []
+dependencies:
+  - S04
+parallel_group: G5
+file_locks:
+  - docs/arc42/01-introduction-and-goals/requirements/
+contract_locks: []
+architecture_locks:
+  - requirement to ADR traceability
+quality_gates:
+  targeted:
+    - git diff --check
+  required:
+    - git diff --check
+documentation:
+  arc42: requirement alignment
+  adr: consolidated baseline referenced
+stop_conditions:
+  - requirement source cannot be verified
+  - assumption would be converted into requirement
+```
+
+Expected output:
+
+```text
+docs/arc42/01-introduction-and-goals/requirements/requirement-alignment-20260604.md
+```
+
+### Slice 07 - Documentation Consistency Pass
+
+Purpose: Align arc42 sections with the consolidated ADR baseline while keeping
+historical or compatibility material clearly non-authoritative.
+
+```yaml
+slice_id: S07
+profile: FULL_PATH
+owner: Senior Documentation Engineer
+secondary_reviewers:
+  - Senior System Architect
+  - Senior Requirement Engineer
+affected_files:
+  - docs/arc42/02-architecture-constraints/
+  - docs/arc42/03-system-scope-and-context/
+  - docs/arc42/04-solution-strategy/
+  - docs/arc42/05-building-block-view/
+  - docs/arc42/08-crosscutting-concepts/
+  - docs/arc42/09-architecture-decisions/
+  - docs/arc42/10-quality-requirements/
+  - docs/arc42/11-risks-and-technical-debt/
+  - docs/arc42/12-glossary/
+affected_modules: []
+affected_contracts: []
+dependencies:
+  - S05
+  - S06
+parallel_group: G6
+file_locks:
+  - docs/arc42/
+contract_locks: []
+architecture_locks:
+  - arc42 consistency
+quality_gates:
+  targeted:
+    - git diff --check
+  required:
+    - git diff --check
+documentation:
+  arc42: consistency pass
+  adr: consolidated baseline referenced
+stop_conditions:
+  - new authoritative document is created outside docs/arc42/
+  - runtime or deployment flow is invented
+```
+
+Expected output may affect:
+
+```text
+docs/arc42/02-architecture-constraints/
+docs/arc42/03-system-scope-and-context/
+docs/arc42/04-solution-strategy/
+docs/arc42/05-building-block-view/
+docs/arc42/08-crosscutting-concepts/
+docs/arc42/09-architecture-decisions/
+docs/arc42/10-quality-requirements/
+docs/arc42/11-risks-and-technical-debt/
+docs/arc42/12-glossary/
+```
+
+Do not create new authoritative documents outside arc42.
+
+### Slice 08 - Final Quality Review
+
+Purpose: Verify arc42 placement, documentation consistency and final workflow
+closure.
+
+```yaml
+slice_id: S08
 profile: FULL_PATH
 owner: Senior Tester
 secondary_reviewers:
   - Senior Documentation Engineer
   - Senior System Architect
 affected_files:
-  - docs/workflow/**
-  - docs/arc42/**
-  - docs/architecture/**
+  - docs/arc42/09-architecture-decisions/reports/adr-baseline-consolidation-final-report-20260604.md
 affected_modules: []
 affected_contracts: []
 dependencies:
-  - S01
-  - S02
-  - S03
-  - S04
-parallel_group: G4
+  - S07
+parallel_group: G7
 file_locks:
-  - docs/workflow/**
-  - docs/arc42/**
-  - docs/architecture/**
+  - docs/arc42/09-architecture-decisions/reports/
 contract_locks: []
 architecture_locks:
-  - FA-MVP-0001 PostgreSQL runtime persistence
-  - H2 test-only fixture scope
+  - arc42 placement verification
 quality_gates:
   targeted:
     - git diff --check
   required:
-    - ./gradlew test --dependency-verification strict --console=plain --stacktrace
-    - ./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace
+    - git diff --check
 documentation:
-  arc42: checked/updated
-  adr: ADR-0023 and ADR-0024 checked
+  arc42: final report
+  adr: final baseline status reported
 stop_conditions:
-  - workflow metadata is missing or invalid
-  - arc42 contradicts ADR-0023 or ADR-0024
-  - quality command cannot be verified from QUALITY.md
-  - final git status includes unrelated changes
+  - arc42 documentation placement cannot be verified safely
+  - production code changed during this workflow
 ```
 
-Done criteria:
+Expected output:
 
-- `docs/workflow/workflow.md` and context-pack artifacts are complete.
-- arc42 and architecture documentation no longer describe H2 as active runtime
-  or Docker persistence.
-- Diff is documentation-only unless a future `workflow execute` explicitly
-  approves product implementation.
+```text
+docs/arc42/09-architecture-decisions/reports/adr-baseline-consolidation-final-report-20260604.md
+```
 
 ## Slice Dependency Summary
 
@@ -661,100 +912,127 @@ Done criteria:
 S01
   -> S02
       -> S03
-      -> S04
-          -> S05
+          -> S04
+              -> S05
+              -> S06
+                  -> S07
+                      -> S08
 ```
 
-S03 and S04 may be reviewed in parallel after S02 because their write scopes are
-disjoint except for documentation closure handled by S05.
+S05 and S06 may be reviewed in parallel after S04 only when their file locks
+remain disjoint.
 
-## Role Ownership Map
+## Additional Quality Gate: arc42 Placement
 
-| Area | Primary Owner | Secondary Review |
-|---|---|---|
-| Requirement correction | Senior Requirement Engineer | Senior System Architect, Senior Tester |
-| Workflow structure | Senior Workflow Architect | Senior Documentation Engineer |
-| Repository-source persistence | Senior Java Backend Developer | Senior System Architect, Senior Tester |
-| Public REST and UI DTOs | Senior React Frontend Developer | Senior Java Backend Developer, Senior UX Designer |
-| Docker-local deployment | Senior DevOps Engineer | Senior Security Sandbox Engineer, Senior Tester |
-| Quality closure | Senior Tester | Senior Documentation Engineer |
+Every slice must verify:
 
-Callable subagents were not used during workflow creation because the user did
-not explicitly request delegated or parallel agent work. The role files were
-applied as local review checklists.
+```text
+All newly created or updated architecture documents are located under docs/arc42/.
+Only workflow-control artifacts are allowed outside docs/arc42/.
+No new authoritative ADR, requirement, architecture, conflict-analysis or report document exists outside docs/arc42/.
+```
 
-## Acceptance Criteria
+If this cannot be guaranteed:
 
-1. FA-MVP-0001 no longer requires H2 runtime or Docker persistence.
-2. Runtime repository-source metadata persistence uses PostgreSQL.
-3. H2 is allowed only for deterministic adapter tests and direct fixtures.
-4. Docker-local deployments do not mount H2 files as active runtime storage.
-5. No service except `repository-source-service` may access repository-source
-   persistence directly.
-6. Other services may consume only owner APIs and sanitized public DTOs.
-7. PostgreSQL startup/readiness failure is visible and must not be hidden by
-   fallback storage.
-8. Existing H2 files are treated as historical MVP data and require an explicit
-   migration slice if preservation is needed.
-9. The workflow references ADR-0023, ADR-0024, data ownership documentation,
-   service-boundary documentation and the relevant README/test expectations.
-10. `git status --short` remains clean except intended workflow and
-    documentation artifacts.
+```text
+STOP: arc42 documentation placement cannot be verified safely.
+```
 
-## Documentation Synchronization Points
+## Test Strategy
 
-- `docs/workflow/**` is regenerated for the corrected workflow.
-- `docs/arc42/**` is checked and stale H2 runtime wording is corrected where
-  required.
-- `docs/architecture/data-ownership.md` is checked as already aligned with
-  ADR-0024.
-- `docs/architecture/service-boundaries.md` is checked and stale H2 runtime
-  wording is corrected where required.
-- ADR-0023 and ADR-0024 remain unchanged by this workflow-create run unless a
-  separate architecture decision request is made.
+Documentation-only targeted checks:
 
-## Commit And Push Plan
+```bash
+git diff --check
+test -f docs/workflows/adr-baseline-consolidation-20260604/Workflow.md
+test -f docs/workflow/workflow.md
+git diff --name-only | sort
+```
 
-This `workflow create` turn may leave documentation changes unstaged for user
-review. It must not commit, push, create a PR or run `push auto` unless the user
-explicitly requests that publication action.
+Slice-specific placement checks during workflow execution:
 
-If later requested, commit preparation must stage only the intended workflow and
-documentation artifacts and run `git diff --cached --check` before commit.
+```bash
+git diff --name-only | rg -v '^(docs/workflows/adr-baseline-consolidation-20260604/Workflow.md|docs/workflow/.*|docs/arc42/.*|README.md|QUALITY.md)$' && false || true
+git diff --name-only | rg '^(src/|server/|client/|plugin/|services/|docker/|build.gradle|settings.gradle|pom.xml)' && false || true
+```
+
+The minimum repository quality command from `QUALITY.md` remains:
+
+```bash
+./gradlew test --dependency-verification strict --console=plain --stacktrace
+```
+
+The full local quality gate from `QUALITY.md` remains:
+
+```bash
+./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace
+```
+
+Do not run or claim product quality gates for documentation-only slices unless
+the slice changes product source, tests, build logic, contracts, runtime,
+persistence, deployment or quality policy.
 
 ## Stop Conditions
 
 Stop and report if:
 
-- the active branch is not
-  `feature/workflow-repository-workspace-checkout-20260604`;
+- the active branch is `main`, `master`, `develop` or another shared branch;
 - unrelated local changes appear;
-- workflow artifacts require H2 runtime, Docker persistence or fallback;
-- ADR-0023 or ADR-0024 would need to be weakened;
-- product source changes are needed to satisfy documentation acceptance;
-- a Gradle, npm or Docker command cannot be verified;
-- a public DTO or documentation path would expose private storage details;
-- preserving historical H2 files becomes a requirement without a migration
-  slice.
+- the workflow control file is created outside
+  `docs/workflows/adr-baseline-consolidation-20260604/Workflow.md`;
+- `docs/workflow/workflow.md` does not mirror this ADR baseline workflow for
+  executor discovery;
+- a new authoritative architecture, ADR, requirement, conflict-analysis or
+  final-report document is created outside `docs/arc42/`;
+- existing ADR history would be rewritten without an explicit architecture
+  decision;
+- a runtime, deployment, migration, fallback, legacy, sunset or compatibility
+  mechanic would need to be invented;
+- production source, tests, build logic, contracts, Docker/runtime or analytics
+  implementation changes become necessary;
+- PostgreSQL, Liquibase or H2 semantics cannot be verified from repository
+  ADRs, arc42, source, tests or documentation;
+- compatibility stubs duplicate architecture content instead of pointing to
+  the authoritative arc42 location.
 
 ## Definition Of Done
 
-- Corrected workflow artifacts exist under `docs/workflow`.
-- Workflow context pack records branch, process strand, execution profile,
-  affected areas, forbidden areas, roles, quality commands and governing file
-  hashes.
-- PostgreSQL is documented as the runtime and Docker metadata persistence target
-  for repository-source workspace metadata.
-- H2 is documented as deterministic adapter test/direct fixture scope only.
-- Service ownership and direct access constraints are explicit.
-- Quality gates are traceable to `QUALITY.md`, Gradle modules and the frontend
-  `package.json`.
-- arc42 and architecture documentation have been checked or updated for the H2
-  to PostgreSQL correction.
+This workflow is done only when:
+
+- the workflow control file exists under
+  `docs/workflows/adr-baseline-consolidation-20260604/Workflow.md`;
+- the canonical execution entrypoint exists under `docs/workflow/workflow.md`;
+- every other generated or updated architecture document is under
+  `docs/arc42/`;
+- ADRs are placed under `docs/arc42/09-architecture-decisions/adr/`;
+- ADR inventory is placed under
+  `docs/arc42/09-architecture-decisions/inventory/`;
+- ADR conflict analysis is placed under
+  `docs/arc42/09-architecture-decisions/conflicts/`;
+- the final report is placed under
+  `docs/arc42/09-architecture-decisions/reports/`;
+- requirements are aligned under
+  `docs/arc42/01-introduction-and-goals/requirements/`;
+- persistence concepts are documented under
+  `docs/arc42/08-crosscutting-concepts/persistence/`;
+- service boundaries are documented under
+  `docs/arc42/05-building-block-view/`;
+- plugin/server context is documented under
+  `docs/arc42/03-system-scope-and-context/`;
+- no authoritative architecture document outside arc42 contradicts the
+  consolidated baseline;
+- no active workflow was touched;
+- no production code was changed;
+- PostgreSQL is runtime persistence;
+- Liquibase is the schema evolution mechanism;
+- H2 is test/local-fixture only;
+- no migration language remains authoritative;
+- no SCA, Legacy, New, Fallback or Sunset mechanics are authoritative in this
+  baseline.
 
 ## Handoff To Workflow Execute
 
-`workflow execute` may execute the slices above only after reading this complete
-workflow and verifying slice metadata. Execution must not implement product
-code unless the workflow is explicitly amended through `workflow create` or the
-user approves a new implementation workflow.
+`workflow execute` may execute this workflow only after reading this complete
+file and verifying all slice metadata. Execution must preserve the arc42
+placement gate for every slice and must stop before any product implementation
+or unverifiable architecture claim.

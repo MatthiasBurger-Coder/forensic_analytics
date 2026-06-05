@@ -3,8 +3,8 @@
 ## Executive Summary
 
 This workflow consolidates the architecture decision baseline into the arc42
-documentation structure. The workflow control file is the only authoritative
-workflow document outside `docs/arc42/`.
+documentation structure. Workflow control artifacts remain outside
+`docs/arc42/`; architecture output does not.
 
 The governing principle is:
 
@@ -20,6 +20,9 @@ created or updated by this workflow must be placed under `docs/arc42/`.
 
 - Workflow control file:
   `docs/workflows/adr-baseline-consolidation-20260604/Workflow.md`
+- Canonical execution entrypoint:
+  `docs/workflow/workflow.md`
+- Active branch: `architecture/workflow-adr-baseline-consolidation-20260605`
 - Process strand: `workflow create`
 - Execution profile: `FULL_PATH`
 - Current repository contains flat arc42 chapter files under `docs/arc42/`.
@@ -154,10 +157,14 @@ This workflow treats `docs/arc42/` as the authoritative documentation root for
 all architecture, ADR, requirement, conflict-analysis and final-report
 documents.
 
-The only document that may remain outside `docs/arc42/` for this workflow is:
+The workflow control documents that may remain outside `docs/arc42/` for this
+workflow are:
 
 ```text
 docs/workflows/adr-baseline-consolidation-20260604/Workflow.md
+docs/workflow/workflow.md
+docs/workflow/context-pack.md
+docs/workflow/context-pack.json
 ```
 
 All other documents created or updated by this workflow must be placed under:
@@ -396,6 +403,7 @@ Allowed file areas for this workflow:
 
 ```text
 docs/workflows/adr-baseline-consolidation-20260604/Workflow.md
+docs/workflow/
 docs/arc42/
 README.md
 QUALITY.md
@@ -538,12 +546,14 @@ secondary_reviewers:
   - Senior Tester
 affected_files:
   - docs/workflows/adr-baseline-consolidation-20260604/Workflow.md
+  - docs/workflow/**
 affected_modules: []
 affected_contracts: []
 dependencies: []
 parallel_group: G1
 file_locks:
   - docs/workflows/adr-baseline-consolidation-20260604/Workflow.md
+  - docs/workflow/**
 contract_locks: []
 architecture_locks:
   - arc42 documentation placement governance
@@ -558,16 +568,18 @@ documentation:
 stop_conditions:
   - active branch is main, master, develop or another shared branch
   - unrelated local changes appear
-  - docs/workflow/workflow.md is modified by this workflow
+  - docs/workflow/workflow.md is not the ADR baseline execution entrypoint
 ```
 
 Allowed output:
 
 ```text
 docs/workflows/adr-baseline-consolidation-20260604/Workflow.md
+docs/workflow/**
 ```
 
-This is the only non-arc42 document allowed in the workflow.
+These are workflow-control artifacts. Architecture outputs still belong under
+`docs/arc42/`.
 
 ### Slice 02 - ADR Inventory
 
@@ -916,7 +928,7 @@ Every slice must verify:
 
 ```text
 All newly created or updated architecture documents are located under docs/arc42/.
-Only docs/workflows/adr-baseline-consolidation-20260604/Workflow.md is allowed outside docs/arc42/.
+Only workflow-control artifacts are allowed outside docs/arc42/.
 No new authoritative ADR, requirement, architecture, conflict-analysis or report document exists outside docs/arc42/.
 ```
 
@@ -933,13 +945,14 @@ Documentation-only targeted checks:
 ```bash
 git diff --check
 test -f docs/workflows/adr-baseline-consolidation-20260604/Workflow.md
+test -f docs/workflow/workflow.md
 git diff --name-only | sort
 ```
 
 Slice-specific placement checks during workflow execution:
 
 ```bash
-git diff --name-only | rg '^(docs/workflows/adr-baseline-consolidation-20260604/Workflow.md|docs/arc42/|README.md|QUALITY.md)'
+git diff --name-only | rg -v '^(docs/workflows/adr-baseline-consolidation-20260604/Workflow.md|docs/workflow/.*|docs/arc42/.*|README.md|QUALITY.md)$' && false || true
 git diff --name-only | rg '^(src/|server/|client/|plugin/|services/|docker/|build.gradle|settings.gradle|pom.xml)' && false || true
 ```
 
@@ -967,6 +980,8 @@ Stop and report if:
 - unrelated local changes appear;
 - the workflow control file is created outside
   `docs/workflows/adr-baseline-consolidation-20260604/Workflow.md`;
+- `docs/workflow/workflow.md` does not mirror this ADR baseline workflow for
+  executor discovery;
 - a new authoritative architecture, ADR, requirement, conflict-analysis or
   final-report document is created outside `docs/arc42/`;
 - existing ADR history would be rewritten without an explicit architecture
@@ -986,6 +1001,7 @@ This workflow is done only when:
 
 - the workflow control file exists under
   `docs/workflows/adr-baseline-consolidation-20260604/Workflow.md`;
+- the canonical execution entrypoint exists under `docs/workflow/workflow.md`;
 - every other generated or updated architecture document is under
   `docs/arc42/`;
 - ADRs are placed under `docs/arc42/09-architecture-decisions/adr/`;
