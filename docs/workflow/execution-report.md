@@ -99,4 +99,90 @@ ADR update status:
 
 Push result:
 
-- Pending until the S01 checkpoint commit is created and pushed.
+- Pushed to `origin/architecture/workflow-adr-baseline-consolidation-20260605`
+  with checkpoint commit `864960e`.
+
+### S02 - ADR Inventory
+
+Status: `PASSED`
+
+Responsible agent:
+
+- Codex workflow executor
+
+Role review:
+
+- ADR Steward checklist: passed.
+- Senior System Architect checklist: passed.
+- Senior Documentation Engineer checklist: passed.
+- Callable subagents attempted:
+  - `senior_system_architect`: timed out and was shut down.
+  - `senior_documentation_engineer`: timed out and was shut down.
+
+Changed files:
+
+- `docs/arc42/09-architecture-decisions/inventory/adr-inventory-20260604.md`
+- `docs/workflow/execution-report.md`
+
+Verification commands:
+
+```bash
+find docs/adr -maxdepth 1 -type f -name 'ADR-*.md' | sort
+python3 - <<'PY'
+from pathlib import Path
+import re
+for path in sorted(Path('docs/adr').glob('ADR-*.md')):
+    text = path.read_text()
+    title = next((line.strip('# ').strip() for line in text.splitlines() if line.startswith('# ')), path.stem)
+    statuses = []
+    for pattern in [r'(?im)^status\s*[:|-]\s*(.+)$', r'(?im)^-\s*status\s*[:|-]\s*(.+)$', r'(?im)^##\s*Status\s*\n+([^\n#]+)']:
+        statuses += [match.strip() for match in re.findall(pattern, text)]
+    print(path, title, statuses[:1] or ['<none>'])
+PY
+sed -n '1,140p' docs/adr/ADR-0005-adapter-logging-observability-boundary.md
+sed -n '1,140p' docs/adr/ADR-0017-target-microservices-service-landscape.md
+sed -n '1,140p' docs/adr/ADR-0022-final-modular-monolith-source-tree-retirement.md
+sed -n '1,140p' docs/adr/ADR-0023-h2-for-repository-source-mvp-persistence.md
+sed -n '1,120p' docs/adr/ADR-0024-postgres-for-repository-source-workspace-metadata.md
+```
+
+Quality-gate commands:
+
+```bash
+git diff --check
+test -f docs/arc42/09-architecture-decisions/inventory/adr-inventory-20260604.md
+git diff --name-only | rg -v '^(docs/workflows/adr-baseline-consolidation-20260604/Workflow.md|docs/workflow/.*|docs/arc42/.*|README.md|QUALITY.md)$' && false || true
+git diff --name-only | rg '^(src/|server/|client/|plugin/|services/|docker/|build.gradle|settings.gradle|pom.xml)' && false || true
+```
+
+Quality-gate result:
+
+- ADR file listing: passed; ADR-0001 through ADR-0024 were present.
+- ADR status extraction: passed; explicit `## Status` values were used where
+  present.
+- Targeted ADR detail reads: passed for historical/source-tree and H2/PostgreSQL
+  boundary ADRs.
+- `git diff --check`: passed.
+- Inventory target path check: passed.
+- Placement path check: passed.
+- Product/build path check: passed.
+- Gradle quality gates: not executed for S02 because the slice changes only
+  documentation inventory and no product source, build logic, contracts,
+  runtime, persistence, deployment or analytics behavior.
+
+Rollback reference:
+
+- `864960e`
+
+arc42 update status:
+
+- Updated. ADR inventory was created under
+  `docs/arc42/09-architecture-decisions/inventory/`.
+
+ADR update status:
+
+- Checked. Existing ADR files were read as source input and not modified.
+
+Push result:
+
+- Pending until the S02 checkpoint commit is created and pushed.
