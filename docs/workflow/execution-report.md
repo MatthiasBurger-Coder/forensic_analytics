@@ -552,4 +552,89 @@ ADR update status:
 
 Push result:
 
-- Pending until the S06 checkpoint commit is created and pushed.
+- Pushed to `origin/architecture/workflow-adr-baseline-consolidation-20260605`
+  with checkpoint commit `10daeae`.
+
+### S07 - Documentation Consistency Pass
+
+Status: `PASSED`
+
+Responsible agent:
+
+- Codex workflow executor
+
+Role review:
+
+- Senior Documentation Engineer checklist: passed with local role-file
+  fallback.
+- Senior System Architect checklist: passed with local role-file fallback.
+- Senior Requirement Engineer checklist: passed with local role-file fallback.
+- Callable subagents attempted:
+  - `senior_documentation_engineer`: timed out and was shut down.
+  - `senior_system_architect`: timed out and was shut down.
+
+Changed files:
+
+- `docs/arc42/08-crosscutting-concepts/documentation-governance/arc42-documentation-layout.md`
+- `docs/arc42/09-architecture-decisions.md`
+- `docs/arc42/README.md`
+- `docs/workflow/execution-report.md`
+
+Verification commands:
+
+```bash
+sed -n '820,940p' docs/workflow/workflow.md
+find docs/arc42 -maxdepth 3 -type f | sort
+sed -n '1,220p' docs/arc42/02-architecture-constraints.md
+sed -n '1,220p' docs/arc42/03-system-scope-and-context.md
+sed -n '1,220p' docs/arc42/04-solution-strategy.md
+sed -n '1,260p' docs/arc42/08-crosscutting-concepts.md
+sed -n '1,220p' docs/arc42/09-architecture-decisions.md
+sed -n '1,220p' docs/arc42/12-glossary.md
+sed -n '1,180p' docs/arc42/08-crosscutting-concepts/documentation-governance/arc42-documentation-layout.md
+```
+
+Quality-gate commands:
+
+```bash
+git diff --check
+test -f docs/arc42/08-crosscutting-concepts/documentation-governance/arc42-documentation-layout.md
+rg -n "ADR-0025|ADR Baseline Consolidation|AD-\\*" docs/arc42/09-architecture-decisions.md docs/arc42/README.md docs/arc42/08-crosscutting-concepts/documentation-governance/arc42-documentation-layout.md
+rg -n "(?i)(runtime-ready|production-ready|Swarm readiness|Kubernetes readiness|runtime flow|deployment flow)" docs/arc42/08-crosscutting-concepts/documentation-governance/arc42-documentation-layout.md && false || true
+git status --short --untracked-files=all | sed 's/^...//' | rg -v '^(docs/workflows/adr-baseline-consolidation-20260604/Workflow.md|docs/workflow/.*|docs/arc42/.*|README.md|QUALITY.md)$' && false || true
+git status --short --untracked-files=all | sed 's/^...//' | rg '^(src/|server/|client/|plugin/|services/|docker/|build.gradle|settings.gradle|pom.xml)' && false || true
+git diff --cached --check
+```
+
+Quality-gate result:
+
+- arc42 consistency read: passed. Existing flat chapter files remain entry
+  points; S07 adds navigation and layout governance without orphaning them.
+- ADR-0025 index and README navigation check: passed.
+- Runtime/deployment-flow guard: passed. S07 does not introduce runtime or
+  deployment flows.
+- `git diff --check`: passed.
+- Target file check: passed.
+- Placement path check: passed.
+- Product/build path check: passed.
+- `git diff --cached --check`: passed.
+- Gradle quality gates: not executed for S07 because the slice changes only
+  arc42 documentation navigation/governance and no product source, build logic,
+  contracts, runtime, persistence, deployment or analytics behavior.
+
+Rollback reference:
+
+- `10daeae`
+
+arc42 update status:
+
+- Updated. arc42 README, architecture decision index and documentation layout
+  governance now reference the consolidated baseline outputs.
+
+ADR update status:
+
+- Checked. ADR-0025 is referenced; no numbered ADR file is changed by S07.
+
+Push result:
+
+- Pending until the S07 checkpoint commit is created and pushed.

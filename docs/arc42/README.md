@@ -30,6 +30,21 @@ This documentation is based on the EPIC:
 
 The EPIC remains the product and requirement baseline. The arc42 documentation transforms this baseline into an architectural structure.
 
+## ADR Baseline Consolidation
+
+The ADR Baseline Consolidation workflow stores authoritative architecture
+outputs under arc42 while keeping workflow-control files under `docs/workflow/`
+and `docs/workflows/`.
+
+Current consolidation outputs:
+
+- [Requirement alignment](01-introduction-and-goals/requirements/requirement-alignment-20260604.md)
+- [arc42 ADR chapter](09-architecture-decisions/adr/README.md)
+- [ADR inventory](09-architecture-decisions/inventory/adr-inventory-20260604.md)
+- [ADR conflict analysis](09-architecture-decisions/conflicts/adr-conflict-analysis-20260604.md)
+- [Consolidated ADR baseline](09-architecture-decisions/adr/ADR-0025-consolidated-architecture-baseline-without-migration.md)
+- [arc42 documentation layout](08-crosscutting-concepts/documentation-governance/arc42-documentation-layout.md)
+
 ## Governance Check Status
 
 The Remote Branch Metadata Listing And Persistence workflow was created on
