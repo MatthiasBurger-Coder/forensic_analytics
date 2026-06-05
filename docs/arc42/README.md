@@ -44,6 +44,7 @@ Current consolidation outputs:
 - [ADR conflict analysis](09-architecture-decisions/conflicts/adr-conflict-analysis-20260604.md)
 - [Consolidated ADR baseline](09-architecture-decisions/adr/ADR-0025-consolidated-architecture-baseline-without-migration.md)
 - [arc42 documentation layout](08-crosscutting-concepts/documentation-governance/arc42-documentation-layout.md)
+- [Documentation root classification](08-crosscutting-concepts/documentation-governance/documentation-root-classification-20260605.md)
 
 ## Governance Check Status
 

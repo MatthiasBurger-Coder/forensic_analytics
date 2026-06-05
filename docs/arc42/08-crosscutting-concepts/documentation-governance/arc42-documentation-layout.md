@@ -43,6 +43,9 @@ approved slice changes those locations.
 They must not be silently treated as newer authoritative outputs when a
 workflow output exists under `docs/arc42/`.
 
+The broader documentation-root classification is recorded in
+`docs/arc42/08-crosscutting-concepts/documentation-governance/documentation-root-classification-20260605.md`.
+
 ## Constraints
 
 - Do not renumber ADRs.
