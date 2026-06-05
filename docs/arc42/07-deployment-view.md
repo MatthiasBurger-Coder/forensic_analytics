@@ -27,34 +27,31 @@ It is not the verified FA-MVP-0001 runtime.
 forensic-ui
   -> query-report-api-service
     -> repository-source-service
-       -> repository-source-workspaces volume
-       -> repository-source-data H2 volume
-```
-
-FA-MVP-0001 verifies Docker-local configuration for the repository-source
-workspace checkout foundation. `repository-source-service` owns the checkout
-volume and H2 data volume. No other service mounts or reads those private
-paths directly.
-
-This current MVP view does not claim JavaParser, Joern, BTM generation, replay,
-report, LLM, production database, Docker Swarm or Kubernetes readiness.
-
-### 7.1.2 Planned Repository-Source PostgreSQL Metadata View
-
-```text
-forensic-ui
-  -> query-report-api-service
-    -> repository-source-service
        -> forensic-postgres / repository_source schema
        -> repository-source-workspaces volume
 ```
 
-ADR-0024 selects PostgreSQL only for repository-source workspace metadata after
-the workspace metadata cutover. `repository-source-service` remains the only
-writer for repository checkout workspace, branch, repository preparation and
-idempotency records. The repository checkout bytes remain on the
-repository-source workspace volume. Runtime readiness for this view is not
-claimed until the Docker and verification slices execute and record evidence.
+FA-MVP-0001 verifies Docker-local configuration for the repository-source
+workspace checkout foundation. `repository-source-service` owns the checkout
+volume and PostgreSQL metadata schema. No other service mounts or reads those
+private paths or tables directly. H2 is not active Docker-local runtime
+persistence.
+
+This current MVP view does not claim JavaParser, Joern, BTM generation, replay,
+report, LLM, shared analytics database, Docker Swarm or Kubernetes readiness.
+
+### 7.1.2 Historical H2 Test Fixture Boundary
+
+```text
+repository-source-service tests
+  -> direct H2 adapter fixture
+```
+
+ADR-0023 is accepted for tests only and superseded for runtime by ADR-0024. H2
+must not be used as runtime storage, Docker persistence, startup fallback or
+readiness fallback. Existing H2 files are historical MVP data; preserving them
+requires an explicit migration slice with verified inputs, acceptance criteria,
+rollback strategy and quality gates.
 
 ## 7.2 Later Deployment View
 
@@ -184,9 +181,9 @@ deployment evidence. The service owns:
 - a service-local gRPC endpoint on port `9092`;
 - the Docker profile workspace root
   `/var/lib/forensic-analytics/repository-workspaces`;
-- the Docker-local H2 data root
-  `/var/lib/forensic-analytics/repository-source-data` for the historical
-  MVP adapter until the PostgreSQL cutover retires active H2 runtime fallback.
+- service-owned PostgreSQL metadata persistence for repository checkout
+  workspace, branch, repository preparation and idempotency records;
+- historical H2 adapter tests and direct fixtures only.
 
 The service can be packaged independently with:
 
@@ -200,20 +197,13 @@ It can be started locally with:
 ./gradlew :repository-source-service:bootRun --dependency-verification strict --console=plain --stacktrace
 ```
 
-Slice S09 adds Docker-local Compose evidence for the repository-source
-workspace checkout MVP. `deployment/docker-compose/repository-to-btm.local.yml`
-mounts `repository-source-workspaces` only into `repository-source-service` at
-`/var/lib/forensic-analytics/repository-workspaces` and
-`repository-source-data` only into `repository-source-service` at
-`/var/lib/forensic-analytics/repository-source-data`. Other services do not
-mount those repository-source private volumes and must use owner APIs instead
-of reading checkout or H2 paths directly.
-
-After ADR-0024 execution, repository-source metadata is planned to move to the
-service-owned PostgreSQL schema in `forensic-postgres`, while the checkout
-workspace volume remains service-owned private storage. Other services still
-use owner APIs instead of reading repository-source PostgreSQL tables,
-historical H2 files or private checkout paths.
+Current Docker-local Compose evidence for the repository-source workspace
+checkout MVP mounts `repository-source-workspaces` only into
+`repository-source-service` at
+`/var/lib/forensic-analytics/repository-workspaces` and configures PostgreSQL
+through `forensic-postgres`. Other services do not mount repository-source
+private volumes and must use owner APIs instead of reading checkout paths,
+PostgreSQL tables or historical H2 files directly.
 
 The S09 Compose descriptor publishes repository-source local health on
 `127.0.0.1:18087` and gRPC on `127.0.0.1:19097` to avoid collisions with the
@@ -433,14 +423,13 @@ btm-generation-service
 ```
 
 It uses service-owned Dockerfiles, Docker profile configuration, service-local
-health checks and named volumes for repository-source checkout and H2 state
-plus generated Java AST, Joern and BTM artifacts. Gateway remains the public
+health checks, a private repository-source checkout volume and PostgreSQL
+metadata persistence plus generated Java AST, Joern and BTM artifacts. Gateway remains the public
 HTTP facade for the transitional repository-to-BTM path. Analysis Store remains
 the repository-to-BTM orchestration owner and calls worker owner APIs over
-gRPC. Repository-source owns its private workspace and H2 volumes in the
-current MVP and exposes that state only through owner APIs. After the
-PostgreSQL metadata cutover, repository-source keeps private workspace volume
-ownership and owns the PostgreSQL metadata schema as its private persistence.
+gRPC. Repository-source owns its private workspace volume and PostgreSQL
+metadata schema in the current MVP and exposes that state only through owner
+APIs. H2 is not active runtime or Docker persistence.
 
 The local descriptor does not introduce external databases, Graph DB, Vector
 DB, brokers, Jenkins, Artifactory or live credentials. Docker Swarm and

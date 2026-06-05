@@ -56,7 +56,7 @@ Owns:
 - branch and commit resolution;
 - repository checkout workspace aggregate state;
 - repository checkout branch state;
-- repository-source PostgreSQL metadata schema after ADR-0024 execution;
+- repository-source PostgreSQL metadata schema under ADR-0024;
 - checkout, clone and fetch;
 - workspace leases and cleanup;
 - service-local durable idempotency for repository-source operations;
@@ -65,9 +65,8 @@ Owns:
 - source snapshot references;
 - accepted source snapshot metadata;
 - checkout diagnostics;
-- historical Docker-local MVP H2 persistence evidence for repository checkout
-  workspace, branch and idempotency state until the H2 retirement slice removes
-  active runtime fallback or records explicit migration handling.
+- historical H2 adapter evidence for repository checkout workspace, branch and
+  idempotency state in deterministic tests and direct fixtures only.
 
 Non-scope:
 
@@ -109,12 +108,10 @@ Repository Source service implementation state:
 - local gRPC port `9092` and health port `8083`;
 - Docker profile workspace root
   `/var/lib/forensic-analytics/repository-workspaces`;
-- Docker profile H2 data root
-  `/var/lib/forensic-analytics/repository-source-data` for the historical
-  Docker-local MVP adapter;
-- planned service-owned PostgreSQL metadata store for repository checkout
-  workspace, branch, repository preparation and idempotency records after
-  ADR-0024 execution;
+- service-owned PostgreSQL metadata store for repository checkout workspace,
+  branch, repository preparation and idempotency records under ADR-0024;
+- historical H2 adapter tests and direct fixtures only; H2 is not runtime
+  storage, Docker persistence, startup fallback or readiness fallback;
 - transitional use of the predecessor `repository-analysis.proto` filename and
   wire service name as an external contract only.
 

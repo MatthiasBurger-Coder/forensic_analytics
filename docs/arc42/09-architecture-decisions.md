@@ -28,16 +28,17 @@
 | ADR-0020 | Agent Governance Process Strands | Accepted | Defines `skills-agents`, `workflow create`, `workflow execute`, slice checkpoint push, `push` and `push auto` publication separation |
 | ADR-0021 | Governance Flowchart V2 | Accepted | Adds S3 STOP paths, Typed Error Router, S3D orchestration, rollback, one-slice-one-commit traceability and two-level flowcharts |
 | ADR-0022 | Retire legacy modular-monolith source trees | Accepted | Closes final source-tree retirement after S05 verified service-only Gradle topology and no active legacy build/source dependencies |
-| ADR-0023 | Use H2 only for repository-source MVP persistence | Accepted | Records H2 as a repository-source-owned Docker-local MVP adapter only and keeps the production database decision open |
+| ADR-0023 | Use H2 only for repository-source MVP persistence | Accepted for tests only | Records H2 as deterministic repository-source adapter test and direct fixture scope only; superseded for runtime by ADR-0024 |
 | ADR-0024 | Use PostgreSQL for repository-source workspace metadata | Accepted | Selects PostgreSQL only for repository-source-owned workspace metadata and keeps broader Analytics persistence decisions open |
 
 ## 9.2 FA-MVP-0001 ADR Review
 
 S11 reviewed the repository checkout workspace MVP against the active ADR set.
-ADR-0023 records the H2 adapter scope because the workflow introduced durable
-service-local persistence for repository-source MVP state. ADR-0023 does not
-select a production relational database, does not create shared analytics
-persistence and does not close OD-001.
+ADR-0023 records the historical H2 adapter scope because the workflow
+introduced durable service-local persistence for repository-source MVP state.
+The revised ADR-0023 keeps H2 only for deterministic repository-source adapter
+tests and direct fixtures. It does not authorize runtime storage, Docker
+persistence, startup fallback or readiness fallback.
 
 The architecture consequence is: `repository-source-service` owns repository
 checkout workspace, branch, source snapshot and idempotency state;
@@ -45,11 +46,11 @@ checkout workspace, branch, source snapshot and idempotency state;
 through owner APIs; no new `workspace-service` is introduced.
 
 ADR-0024 supersedes the H2 runtime target for repository-source workspace
-metadata after the PostgreSQL cutover. The bounded decision covers only
-repository checkout workspace, branch, repository preparation and idempotency
-records owned by `repository-source-service`. It does not authorize direct
-cross-service table access, does not store checkout bytes in PostgreSQL and
-does not select a shared canonical Analytics database.
+metadata. The bounded decision covers only repository checkout workspace,
+branch, repository preparation and idempotency records owned by
+`repository-source-service`. It does not authorize direct cross-service table
+access, does not store checkout bytes in PostgreSQL and does not select a
+shared canonical Analytics database.
 
 ## 9.3 Open Decisions
 

@@ -40,11 +40,13 @@ The broader product MVP focuses on read-only analysis:
 
 FA-MVP-0001 is the first foundation slice for that broader strategy. It
 implements repository metadata preview, idempotent repository checkout
-workspace and branch creation, repository-source H2 MVP persistence, branch
-refresh, sanitized public REST DTOs and a Create Workspace UI flow. It does
-not implement JavaParser execution, Joern execution, BTM generation, replay,
-reports, graph projections, vector storage, LLM context generation or
-production database selection.
+workspace and branch creation, repository-source PostgreSQL metadata
+persistence under ADR-0024, branch refresh, sanitized public REST DTOs and a
+Create Workspace UI flow. H2 is retained only for deterministic
+repository-source adapter tests and direct fixtures. The MVP does not implement
+JavaParser execution, Joern execution, BTM generation, replay, reports, graph
+projections, vector storage, LLM context generation or broader analytics
+database selection.
 
 ## 4.4 Non-MVP Scope
 

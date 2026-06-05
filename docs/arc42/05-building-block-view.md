@@ -226,10 +226,10 @@ checkout workspace, branch, repository preparation and idempotency records.
 `repository-source-service` owns the PostgreSQL schema and write path.
 Repository checkout bytes and source package bytes remain service-owned
 private storage outside PostgreSQL. The historical H2 adapter from ADR-0023
-remains MVP evidence until the H2 retirement slice removes active fallback or
-records an explicit migration policy. This bounded PostgreSQL decision is not
-canonical Analytics persistence and does not close the broader production
-database decision.
+remains deterministic test and direct fixture evidence only; it is not runtime
+storage, Docker persistence, startup fallback or readiness fallback. This
+bounded PostgreSQL decision is not canonical Analytics persistence and does not
+close the broader production database decision.
 
 `repository-analysis-service` remains historical predecessor
 evidence and rollback input. It is not a compatibility alias for
