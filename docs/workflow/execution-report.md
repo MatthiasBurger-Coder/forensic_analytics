@@ -364,4 +364,107 @@ ADR update status:
 
 Push result:
 
-- Pending until the S04 checkpoint commit is created and pushed.
+- Pushed to `origin/architecture/workflow-adr-baseline-consolidation-20260605`
+  with checkpoint commit `bb476cb`.
+
+### S05 - Supersede or Clarify Existing ADRs
+
+Status: `PASSED`
+
+Responsible agent:
+
+- Codex workflow executor
+
+Role review:
+
+- ADR Steward checklist: passed.
+- Senior System Architect checklist: passed with local role-file fallback.
+- Senior Documentation Engineer checklist: passed with local role-file
+  fallback.
+- Callable subagents attempted:
+  - `senior_documentation_engineer`: timed out and was shut down.
+  - `senior_system_architect`: timed out and was shut down.
+
+Changed files:
+
+- `docs/arc42/09-architecture-decisions/adr/ADR-0001-plugins-are-producers.md`
+- `docs/arc42/09-architecture-decisions/adr/ADR-0002-canonical-analysis-model.md`
+- `docs/arc42/09-architecture-decisions/adr/ADR-0003-runtime-events-are-sensitive.md`
+- `docs/arc42/09-architecture-decisions/adr/ADR-0004-graph-and-vector-db-as-projections.md`
+- `docs/arc42/09-architecture-decisions/adr/ADR-0005-adapter-logging-observability-boundary.md`
+- `docs/arc42/09-architecture-decisions/adr/ADR-0006-spring-boot-server-boundary.md`
+- `docs/arc42/09-architecture-decisions/adr/ADR-0007-rest-api-spring-strategy.md`
+- `docs/arc42/09-architecture-decisions/adr/ADR-0008-cross-cutting-logging-module.md`
+- `docs/arc42/09-architecture-decisions/adr/ADR-0009-no-shared-common-modules.md`
+- `docs/arc42/09-architecture-decisions/adr/ADR-0010-contract-first-rest-and-grpc.md`
+- `docs/arc42/09-architecture-decisions/adr/ADR-0011-three-amigos-before-workflow.md`
+- `docs/arc42/09-architecture-decisions/adr/ADR-0012-quality-gates-before-commit.md`
+- `docs/arc42/09-architecture-decisions/adr/ADR-0013-data-ownership-per-service.md`
+- `docs/arc42/09-architecture-decisions/adr/ADR-0014-agent-handoff-protocol.md`
+- `docs/arc42/09-architecture-decisions/adr/ADR-0015-skill-registry-conflict-auditing.md`
+- `docs/arc42/09-architecture-decisions/adr/ADR-0016-branch-first-workflow-creation.md`
+- `docs/arc42/09-architecture-decisions/adr/ADR-0017-target-microservices-service-landscape.md`
+- `docs/arc42/09-architecture-decisions/adr/ADR-0018-initial-logical-contracts.md`
+- `docs/arc42/09-architecture-decisions/adr/ADR-0019-spring-boot-service-bootstrap-boundary.md`
+- `docs/arc42/09-architecture-decisions/adr/ADR-0020-agent-governance-process-strands.md`
+- `docs/arc42/09-architecture-decisions/adr/ADR-0021-governance-flowchart-v2.md`
+- `docs/arc42/09-architecture-decisions/adr/ADR-0022-final-modular-monolith-source-tree-retirement.md`
+- `docs/arc42/09-architecture-decisions/adr/ADR-0023-h2-for-repository-source-mvp-persistence.md`
+- `docs/arc42/09-architecture-decisions/adr/ADR-0024-postgres-for-repository-source-workspace-metadata.md`
+- `docs/arc42/09-architecture-decisions/adr/README.md`
+- `docs/workflow/execution-report.md`
+
+Verification commands:
+
+```bash
+git status --short --branch --untracked-files=all
+find docs/adr -maxdepth 1 -type f -name 'ADR-*.md' | sort
+find docs/arc42/09-architecture-decisions/adr -maxdepth 1 -type f | sort
+sha256sum docs/adr/ADR-*.md | sort
+for f in docs/adr/ADR-*.md; do b=$(basename "$f"); cmp -s "$f" "docs/arc42/09-architecture-decisions/adr/$b" || { echo "DIFF $b"; exit 1; }; done; echo "all mirrored ADR files are byte-identical"
+find docs/adr -maxdepth 1 -type f -name 'ADR-*.md' | wc -l
+find docs/arc42/09-architecture-decisions/adr -maxdepth 1 -type f -name 'ADR-*.md' | wc -l
+```
+
+Quality-gate commands:
+
+```bash
+git diff --check
+for f in docs/adr/ADR-*.md; do b=$(basename "$f"); cmp -s "$f" "docs/arc42/09-architecture-decisions/adr/$b" || { echo "DIFF $b"; exit 1; }; done
+test -f docs/arc42/09-architecture-decisions/adr/README.md
+git status --short --untracked-files=all | sed 's/^...//' | rg -v '^(docs/workflows/adr-baseline-consolidation-20260604/Workflow.md|docs/workflow/.*|docs/arc42/.*|README.md|QUALITY.md)$' && false || true
+git status --short --untracked-files=all | sed 's/^...//' | rg '^(src/|server/|client/|plugin/|services/|docker/|build.gradle|settings.gradle|pom.xml)' && false || true
+git diff --cached --check
+```
+
+Quality-gate result:
+
+- Mirror verification: passed. ADR-0001 through ADR-0024 in arc42 are
+  byte-identical to the existing `docs/adr/**` source files.
+- ADR count check: passed. `docs/adr/` contains 24 numbered ADR files; the
+  arc42 ADR chapter contains 25 numbered ADR files after S04 and S05.
+- `git diff --check`: passed.
+- README target path check: passed.
+- Placement path check: passed.
+- Product/build path check: passed.
+- `git diff --cached --check`: passed.
+- Gradle quality gates: not executed for S05 because the slice changes only
+  ADR documentation placement and no product source, build logic, contracts,
+  runtime, persistence, deployment or analytics behavior.
+
+Rollback reference:
+
+- `bb476cb`
+
+arc42 update status:
+
+- Updated. Numbered ADR-0001 through ADR-0024 were mirrored into the arc42 ADR
+  chapter, and the chapter received an authority/history README.
+
+ADR update status:
+
+- Updated under arc42. Existing `docs/adr/**` source ADRs were not modified.
+
+Push result:
+
+- Pending until the S05 checkpoint commit is created and pushed.
