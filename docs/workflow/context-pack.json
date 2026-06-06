@@ -1,22 +1,21 @@
 {
   "workflow": {
-    "name": "ADR Baseline Consolidation",
-    "version": "2026-06-04",
-    "branch": "architecture/workflow-adr-baseline-consolidation-20260605",
+    "name": "Architecture Progress Assessment Distribution",
+    "version": "2026-06-06",
+    "branch": "docs/workflow-architecture-assessment-20260606",
     "processStrand": "workflow create",
     "executionProfile": "FULL_PATH",
-    "processControlSource": "docs/workflows/adr-baseline-consolidation-20260604/Workflow.md",
     "canonicalExecutionEntrypoint": "docs/workflow/workflow.md"
   },
   "affectedAreas": [
-    "ADR baseline consolidation workflow documentation",
-    "arc42 documentation placement governance",
-    "ADR inventory placement",
-    "ADR conflict analysis placement",
-    "consolidated ADR placement",
-    "final report placement",
-    "requirement alignment placement",
-    "workflow execution discovery metadata"
+    "architecture progress assessment source documentation",
+    "arc42 solution strategy",
+    "arc42 building block view",
+    "arc42 crosscutting concepts",
+    "arc42 architecture decisions",
+    "arc42 risks and technical debt",
+    "architecture documentation root classification",
+    "workflow execution metadata"
   ],
   "forbiddenAreas": [
     "product source implementation",
@@ -32,30 +31,68 @@
     "build logic mutation",
     "runtime migration strategy",
     "ADR history rewrite without explicit architecture decision",
-    "authoritative architecture output outside docs/arc42"
+    "authoritative arc42 output under docs/architecture/arc42",
+    "complete assessment duplication inside one arc42 chapter"
   ],
   "requiredRoles": [
     "Senior Workflow Architect",
     "Senior Requirement Engineer",
     "Senior System Architect",
-    "ADR Steward",
-    "Senior Documentation Engineer",
-    "Senior Tester"
-  ],
-  "conditionalRoles": [
     "Senior Java Backend Developer",
     "Senior React Frontend Developer",
-    "Senior DevOps Engineer"
+    "Senior Tester",
+    "ADR Steward",
+    "Senior Documentation Engineer"
+  ],
+  "conditionalRoles": [
+    "Microservice Senior Expert",
+    "Contract Governance Expert",
+    "Data Ownership and Persistence Steward",
+    "Senior gRPC/Protobuf Specialist",
+    "Quality Gate Governance"
+  ],
+  "plannedFiles": {
+    "assessmentSource": [
+      "docs/architecture/assessments/2026-06-architecture-progress-assessment.md"
+    ],
+    "arc42Extracts": [
+      "docs/arc42/04-solution-strategy.md",
+      "docs/arc42/05-building-block-view.md",
+      "docs/arc42/08-crosscutting-concepts.md",
+      "docs/arc42/09-architecture-decisions.md",
+      "docs/arc42/11-risks-and-technical-debt.md"
+    ],
+    "workflowControl": [
+      "docs/workflow/workflow.md",
+      "docs/workflow/context-pack.md",
+      "docs/workflow/context-pack.json",
+      "docs/workflow/execution-report.md"
+    ]
+  },
+  "governingDecisions": [
+    "ADR-0010",
+    "ADR-0013",
+    "ADR-0017",
+    "ADR-0020",
+    "ADR-0023",
+    "ADR-0024",
+    "ADR-0025"
   ],
   "qualityCommands": {
     "documentation": [
-      "git diff --check",
-      "test -f docs/workflows/adr-baseline-consolidation-20260604/Workflow.md",
+      "python3 -m json.tool docs/workflow/context-pack.json",
       "test -f docs/workflow/workflow.md",
-      "git diff --name-only | sort"
+      "test -f docs/workflow/context-pack.md",
+      "test -f docs/workflow/context-pack.json",
+      "test -f docs/workflow/execution-report.md",
+      "git diff --check",
+      "git diff --name-only"
     ],
-    "placementGate": [
-      "git diff --name-only | rg -v '^(docs/workflows/adr-baseline-consolidation-20260604/Workflow.md|docs/workflow/.*|docs/arc42/.*|README.md|QUALITY.md)$' && false || true"
+    "workflowExecutionAssessmentPath": [
+      "test -f docs/architecture/assessments/2026-06-architecture-progress-assessment.md"
+    ],
+    "workflowExecutionForbiddenArc42Root": [
+      "test ! -e docs/architecture/arc42"
     ],
     "minimumRepository": [
       "./gradlew test --dependency-verification strict --console=plain --stacktrace"
@@ -64,6 +101,14 @@
       "./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace"
     ]
   },
+  "stopConditions": [
+    "full assessment source is missing",
+    "workflow execution would create docs/architecture/arc42",
+    "SCA acronym cannot be verified",
+    "service readiness would be claimed without verified build/start/health/container/deployment evidence",
+    "new architecture decision would be introduced without ADR review",
+    "product source, tests, build logic, contracts, runtime or deployment files would be changed"
+  ],
   "governingHashes": {
     "AGENTS.md": "a1bd05f38d8602a5c67dcfbf3628c811a4c0de33004fdf553afadf4b5c614f5d",
     "QUALITY.md": "95f9aa2ba5dd7f67057864d52321e5716acb46b166bc74c12b154ec271bb3596",
@@ -71,18 +116,37 @@
     ".codex/workflow/workflow-execution-rules.md": "6d2ea74943f8ff4187a371d6e263fcf7f179d7250868086f4ba294e6f5fa122a",
     ".agents/orchestrator/routing-rules.md": "64d7b815bb9f5d1da72b42822a3e532fa79d08c8391cf2fbb7da3de390a8d740",
     ".agents/orchestrator/swarm-orchestrator.md": "860d2ad867b08838d8155ffaa580bec50f708b40eacef91920e65e76040eded8",
+    ".agents/skills/execution-profile-router/SKILL.md": "dfd2fc367bb9ab856e9482d3088690795ee1805b7c84ad462281b2350ca2f62b",
     ".agents/skills/workflow-authoring/SKILL.md": "d87950d6d9ca831a4201b660c6bef373cb85be829f21694a323dbb9b8544d801",
-    ".agents/skills/workflow-executor/SKILL.md": "5f34fb5585dc2d266e2d24cc6278130b4273f2082b77905caee5f5c3cfd66888",
     ".agents/skills/arc42-architecture-governance/SKILL.md": "abd6939fce486ef7d80caf2f40206a5a59541c3c0b8306682142b8492091b3fc",
-    "docs/workflows/adr-baseline-consolidation-20260604/Workflow.md": "ef61427d01be6807bacd94677f13dc112b0119b4f9a865aa940de729b313bdb0",
-    "docs/workflow/workflow.md": "ef61427d01be6807bacd94677f13dc112b0119b4f9a865aa940de729b313bdb0",
-    "docs/arc42/README.md": "f4855e8a7c580be7532450dd5cc2ccfb9b5d851db7772cae4228d285084f7b4d",
-    "docs/adr/README.md": "92fb221b584b6128e3fa0fa272213c850041c975747dc29d9c2a2151c7802575"
+    ".agents/skills/adr-steward/SKILL.md": "391759b235fa56753582bd73cc33de9ae47f3fa7ff2a7b923b9ae24deba2f82b",
+    ".agents/skills/documentation-sync/SKILL.md": "1a66037a3a2108a1ddc44a58251b16562eb6ebef27e4651353db35ea1bc0ebab",
+    ".agents/skills/three-amigos-requirement-gatekeeper/SKILL.md": "95c04f47127f5149bb39a7e1b82b2690803cc765cad5d18274a82d415931e9ad",
+    "docs/epics/forensics-platform-runtime-replay-llm-analysis-v0.2.md": "54ff246b4359e1eb92c7e80058db42faa079ff5ffd3db0d71170cfaa3dbb68fe",
+    "docs/architecture/README.md": "a146c5c4c023fa80461ab085d67c268ef33a690a3d540f3bdb8e2007aa255491",
+    "docs/architecture/current-state.md": "a5dc69c1b9ebd78dcd19d93be4e890837dd7468d49e8e8b693446d414312ddf0",
+    "docs/architecture/target-microservices-architecture.md": "cef124cb9cc655c6dbf63e18672fa19944d243e470162bde93a4a95e5df32c73",
+    "docs/architecture/service-boundaries.md": "df4467d8075f9712f3cae29a817af1f42c60cb27a8b1d72cb3c832a08f0c0d15",
+    "docs/architecture/data-ownership.md": "d11c735558a9e9428cb36e644d3308c393378c806484da39a09010a297ce6c7e",
+    "docs/arc42/README.md": "45868a984d30dc40de5a4e3a343b637afc36ba1fd648f03a6f0fc99408c29445",
+    "docs/arc42/04-solution-strategy.md": "4e0036cd9c0a1c39d1ce39d4278368c13ad92114dbbc388cad88bb3b29ef1246",
+    "docs/arc42/05-building-block-view.md": "e2aeff134f596529013db9182da24e5b7697581ce269a57ce9a656deeecacbfb",
+    "docs/arc42/08-crosscutting-concepts.md": "4ce39b6b46bbecb69bbeea4fdb10b59e6730bfc61b155360ab69c586b14a5836",
+    "docs/arc42/09-architecture-decisions.md": "781e0412e93dbe86a0d6757c1c17d6399e56a07f1ac0be31e5988db9f66e7849",
+    "docs/arc42/11-risks-and-technical-debt.md": "e2a0a47d6a78b863d0dc85fba52f448f7fe7c830c508c38e3adf5e2d9fd4da28",
+    "docs/arc42/09-architecture-decisions/adr/ADR-0010-contract-first-rest-and-grpc.md": "9d75a1b758095b6fc40fe013d7a8af8db85441de0b5ff0401b8cc23dcf71976f",
+    "docs/arc42/09-architecture-decisions/adr/ADR-0013-data-ownership-per-service.md": "4114bd8f39a60539bba18bcc32de481aff5a91cec34d556ca1149747b04879ab",
+    "docs/arc42/09-architecture-decisions/adr/ADR-0017-target-microservices-service-landscape.md": "1c6be5f82ea08e38d669d335c3594eeb8fc4484d119e70c4eb8a443c47437b4b",
+    "docs/arc42/09-architecture-decisions/adr/ADR-0023-h2-for-repository-source-mvp-persistence.md": "45f80d99219c4b8fc225b59b318d999c552f2d5807d7070546cae88023c49179",
+    "docs/arc42/09-architecture-decisions/adr/ADR-0024-postgres-for-repository-source-workspace-metadata.md": "bd155271d13945677d998468a7c41df4f98e71ebb7e9913d2c7d08f931f4b472",
+    "docs/arc42/09-architecture-decisions/adr/ADR-0025-consolidated-architecture-baseline-without-migration.md": "4718489de57dad95ca16148246a09b95e0ef05ca8f0bdd8be9905898e8ffdcb5",
+    "settings.gradle.kts": "b588d616561e9dd902961ec9f53b15f519ec1f0f6f189cba60e5396691840fcb"
   },
   "staleWhen": [
     "any governing hash changes",
     "workflow branch changes",
     "workflow source changes",
+    "assessment source changes",
     "ADR placement changes",
     "arc42 placement changes",
     "documentation-governance conflict is detected"
