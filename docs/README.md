@@ -6,7 +6,7 @@ This directory contains the architecture and product documentation for the Foren
 
 - [arc42/](arc42/) - Architecture documentation based on the arc42 template
 - [epics/](epics/) - Versioned product and requirement epics
-- [adr/](adr/) - Historical ADR source input and compatibility evidence
+- [adr/](adr/) - Compatibility pointer to the authoritative arc42 ADR chapter
 - [architecture/](architecture/) - Architecture source maps and historical/current state evidence
 - [governance/](governance/) - Reusable engineering governance flow for EPIC, arc42, workflows, skills and roles
 - [process/](process/) - Command and publication governance for `skills update`, `workflow create`, `workflow execute`, slice checkpoint push, `push` and guarded `push auto` for skills, agents, process governance and governance-only workflow documentation

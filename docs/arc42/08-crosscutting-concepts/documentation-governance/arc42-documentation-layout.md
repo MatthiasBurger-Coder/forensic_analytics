@@ -34,11 +34,18 @@ docs/workflows/adr-baseline-consolidation-20260604/
 The numbered ADR range is represented by `ADR-0001` through `ADR-0025` in the
 arc42 ADR chapter.
 
+## Retired Duplicate ADR Source
+
+The former numbered ADR files under `docs/adr/` were removed on 2026-06-06
+after byte-identical authoritative copies were verified under
+`docs/arc42/09-architecture-decisions/adr/`. `docs/adr/README.md` remains as a
+compatibility pointer and must not duplicate ADR content.
+
 ## Historical Source Inputs
 
-Existing documents under `docs/adr/` and `docs/architecture/` may remain
-repository history, compatibility input or source evidence until a separate
-approved slice changes those locations.
+Existing documents under `docs/architecture/` may remain repository history,
+compatibility input or source evidence until a separate approved slice changes
+that location.
 
 They must not be silently treated as newer authoritative outputs when a
 workflow output exists under `docs/arc42/`.

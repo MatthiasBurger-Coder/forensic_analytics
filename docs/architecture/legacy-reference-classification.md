@@ -93,8 +93,9 @@ is active:
   compatibility surface.
 - `contracts/openapi/README.md`: legacy REST contract-test note when rewritten
   as historical rollback provenance only.
-- `docs/adr/**`: historical ADR context for Boot, REST, logging,
-  observability and target service decisions.
+- `docs/arc42/09-architecture-decisions/adr/**`: authoritative ADR context for
+  Boot, REST, logging, observability and target service decisions. The former
+  `docs/adr/` root now keeps only a compatibility pointer.
 
 Contract wording must not be removed or reinterpreted without contract
 governance. Compatibility terms such as `gateway-submit`, `--gateway`,
