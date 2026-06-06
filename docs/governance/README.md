@@ -22,6 +22,14 @@ Process command semantics are documented in [../process/](../process/). Agent ow
 The canonical Governance Flowchart V2 diagram package is documented in
 [workflow/](workflow/).
 
+## Root Classification
+
+`docs/governance/` is a process-governance root. It owns governance flow,
+contract-governance and workflow-diagram documentation for repository process
+control. Product-architecture consequences may be summarized under arc42, but
+the process rules and governance diagrams remain here unless a dedicated
+governance workflow changes that ownership.
+
 ## Documentation Governance
 
 `DOCROOT` is the global documentation-governance check. It verifies process

@@ -6,11 +6,18 @@ This directory contains the architecture and product documentation for the Foren
 
 - [arc42/](arc42/) - Architecture documentation based on the arc42 template
 - [epics/](epics/) - Versioned product and requirement epics
-- [adr/](adr/) - Architecture Decision Records, if present
+- [adr/](adr/) - Historical ADR source input and compatibility evidence
+- [architecture/](architecture/) - Architecture source maps and historical/current state evidence
 - [governance/](governance/) - Reusable engineering governance flow for EPIC, arc42, workflows, skills and roles
 - [process/](process/) - Command and publication governance for `skills update`, `workflow create`, `workflow execute`, slice checkpoint push, `push` and guarded `push auto` for skills, agents, process governance and governance-only workflow documentation
 - [agents/](agents/) - Agent organigramm, [agent governance](agents/agent-governance.md) and skill registry for process-strand ownership
+- [skill-audit/](skill-audit/) - Process-governance audit evidence and registry cache material
 - [workflow/](workflow/) - Active governed workflow and execution slices for the engineering governance system
+
+The current documentation-root classification is recorded in
+[arc42/08-crosscutting-concepts/documentation-governance/documentation-root-classification-20260605.md](arc42/08-crosscutting-concepts/documentation-governance/documentation-root-classification-20260605.md).
+Contract artifacts remain under root `contracts/`; deployment artifacts remain
+under root `deployment/`.
 
 ## Future Microservice Boundary Direction
 

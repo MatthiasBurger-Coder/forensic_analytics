@@ -46,6 +46,19 @@ Current consolidation outputs:
 - [arc42 documentation layout](08-crosscutting-concepts/documentation-governance/arc42-documentation-layout.md)
 - [Documentation root classification](08-crosscutting-concepts/documentation-governance/documentation-root-classification-20260605.md)
 
+## Documentation Root Restructuring
+
+The follow-up documentation-root restructuring moved architecture companion
+documents from loose documentation roots into their owning arc42 sections:
+
+- [Contract test plan](08-crosscutting-concepts/service-contracts/contract-test-plan.md)
+- [Docker Compose deployment note](07-deployment-view/forensic-analytics-docker-compose.md)
+- [WildFly hardening runbook](10-quality-requirements/testing/wildfly-hardening.md)
+
+Process-governance roots, requirement sources, historical ADR sources,
+contract artifacts and deployment artifacts remain outside arc42 with explicit
+README classification notes.
+
 ## Governance Check Status
 
 The Remote Branch Metadata Listing And Persistence workflow was created on

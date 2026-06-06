@@ -483,6 +483,7 @@ inside the Docker network. The workflow executed a local smoke check for
 May 28, 2026.
 
 The runbook for build, config validation, startup, logs, GUI smoke and cleanup
-is `docs/deployment/forensic-analytics-docker-compose.md`. Full-stack startup
+is
+`docs/arc42/07-deployment-view/forensic-analytics-docker-compose.md`. Full-stack startup
 and health checks for every container remain separate runtime evidence and are
 not claimed unless those commands are executed and recorded.

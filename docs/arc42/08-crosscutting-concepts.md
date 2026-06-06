@@ -149,6 +149,10 @@ artifact byte references are immutable: repeating a write for identical bytes is
 idempotent, while different bytes for an existing reference are rejected instead
 of replacing prior evidence.
 
+Architecture-level contract test planning is documented in
+[`08-crosscutting-concepts/service-contracts/contract-test-plan.md`](08-crosscutting-concepts/service-contracts/contract-test-plan.md).
+Contract artifacts remain under root `contracts/`.
+
 ## 8.8 Replay Uncertainty
 
 The replay must explicitly show missing, incomplete or uncertain event chains.

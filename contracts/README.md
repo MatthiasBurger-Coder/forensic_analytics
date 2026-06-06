@@ -10,6 +10,14 @@ implementation code, generated Java classes, shared DTOs, shared domain
 models, mappers, Spring configuration, fixtures, jars or shared runtime
 libraries.
 
+## Root Classification
+
+`contracts/` is the contract artifact root. It is intentionally outside
+`docs/arc42/` because these files define API, event, gRPC, OpenAPI and schema
+surfaces. arc42 may summarize contract-first architecture consequences, but
+contract artifacts remain here and require contract governance and
+compatibility review before behavior-relevant changes.
+
 CLI-facing contract notes live under `cli/`. They describe command-to-contract
 mapping only and do not authorize shared Java DTOs or public API implementation
 dependencies in the CLI.

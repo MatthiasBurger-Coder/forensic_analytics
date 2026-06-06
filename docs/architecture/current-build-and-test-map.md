@@ -125,7 +125,8 @@ WildFly large-repository hardening is available as an opt-in service-root
 testbed scenario through `WildFlyRepositoryHardeningTest`. It is skipped by
 default unless
 `FORENSIC_ANALYTICS_WILDFLY_HARDENING=true` and an explicit WildFly branch or
-commit is provided. The runbook is `docs/testing/wildfly-hardening.md`.
+commit is provided. The runbook is
+`docs/arc42/10-quality-requirements/testing/wildfly-hardening.md`.
 
 Slice 13 verifies the same testbed coverage under `testbed` in package
 `de.burger.forensics.analytics.services.testbed`, including the default-skipped

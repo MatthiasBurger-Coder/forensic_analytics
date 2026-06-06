@@ -4,6 +4,16 @@ This directory contains architecture decisions for the Forensics Platform.
 
 The decisions are derived from the EPIC baseline and refined during implementation.
 
+## Authority Note
+
+This directory remains a historical ADR source and compatibility input. The
+arc42 ADR chapter under
+[`../arc42/09-architecture-decisions/adr/`](../arc42/09-architecture-decisions/adr/)
+is the authoritative architecture output location after the ADR Baseline
+Consolidation workflow. Existing process and ADR-steward rules still read this
+directory as source evidence, so it must not be deleted or replaced by pointer
+stubs without a dedicated ADR/governance workflow.
+
 ## Records
 
 - [ADR-0001: Plugins trigger server-side analysis, not the platform](ADR-0001-plugins-are-producers.md)

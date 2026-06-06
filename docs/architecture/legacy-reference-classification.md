@@ -41,9 +41,9 @@ removed or retargeted before S05 source-tree deletion was accepted:
   under the legacy Boot app; the active repository no longer contains this file.
 - `docker/boot-app/README.md`: legacy Boot app `bootJar`, image and run
   commands.
-- `docs/testing/wildfly-hardening.md`: legacy `forensic-analytics-testbed`
+- `docs/arc42/10-quality-requirements/testing/wildfly-hardening.md`: legacy `forensic-analytics-testbed`
   test path and `:forensic-analytics-testbed:test` commands.
-- `docs/contracts/contract-test-plan.md`: legacy
+- `docs/arc42/08-crosscutting-concepts/service-contracts/contract-test-plan.md`: legacy
   `:forensic-analytics-rest:test` command.
 
 S02 and S04 completed the runtime, Docker and contract-documentation cleanup
@@ -135,8 +135,8 @@ S02 cleaned stale executable/runtime references in:
 - historical `docker/boot-app/Dockerfile` path when present
 - `docker/boot-app/README.md`
 - `docs/README.md`
-- `docs/testing/wildfly-hardening.md`
-- `docs/contracts/contract-test-plan.md`
+- `docs/arc42/10-quality-requirements/testing/wildfly-hardening.md`
+- `docs/arc42/08-crosscutting-concepts/service-contracts/contract-test-plan.md`
 
 Contract compatibility vocabulary remains protected unless a
 contract-governance review approves a behavior-neutral wording change.
