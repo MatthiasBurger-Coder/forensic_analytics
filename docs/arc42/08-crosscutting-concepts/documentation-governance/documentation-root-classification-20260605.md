@@ -11,7 +11,9 @@ is an authoritative architecture output, a source input, a process-governance
 root, a contract artifact root, a deployment artifact root or historical
 evidence. The restructuring moved only documentation companion files; it did
 not change contracts, deployment descriptors, tests, runtime behavior or ADR
-history.
+history. The later duplicate ADR cleanup on 2026-06-06 removed only numbered
+ADR files that had byte-identical authoritative counterparts in the arc42 ADR
+chapter.
 
 ## Classification Terms
 
@@ -31,7 +33,7 @@ history.
 | Path | Classification | Current authority | Handling rule |
 |---|---|---|---|
 | `docs/arc42/` | Authoritative architecture output | Authoritative for architecture documentation, ADR consolidation outputs, requirement alignment, conflict analysis and final reports created by the ADR Baseline Consolidation workflow. | Keep architecture outputs here. Do not move contract or deployment artifacts here. |
-| `docs/adr/` | Historical evidence and source input | Historical ADR source for ADR-0001 through ADR-0024. Mirrored byte-for-byte into `docs/arc42/09-architecture-decisions/adr/` during S05. | Do not rewrite or delete without a dedicated ADR/governance slice. New authoritative ADR output belongs under arc42. |
+| `docs/adr/` | Compatibility pointer and retired duplicate ADR root | Former historical ADR source for ADR-0001 through ADR-0024. Mirrored byte-for-byte into `docs/arc42/09-architecture-decisions/adr/` during S05; duplicate numbered files were removed on 2026-06-06. | Keep only the pointer README unless a later approved ADR or governance slice changes this location. New authoritative ADR output belongs under arc42. |
 | `docs/agents/` | Process-governance root | Documents agent governance, organigramm and skill registry views. | Keep here unless a `skills-agents` governance workflow changes process documentation. |
 | `docs/arc42/08-crosscutting-concepts/service-contracts/` | Authoritative architecture output | Holds architecture-level service-contract companion documentation such as the contract test plan. | Keep architecture summaries here. Do not place contract artifacts here. |
 | `docs/contracts/` | Retired loose documentation root | Removed after `contract-test-plan.md` moved to `docs/arc42/08-crosscutting-concepts/service-contracts/`. | Do not recreate as a parallel companion root unless a workflow establishes a new documented owner. |
@@ -53,9 +55,9 @@ history.
 
 ### ADRs
 
-`docs/adr/` remains historical source input. The arc42 ADR chapter under
-`docs/arc42/09-architecture-decisions/adr/` is the authoritative architecture
-output location for the ADR Baseline Consolidation workflow.
+`docs/adr/` remains only as a compatibility pointer. The arc42 ADR chapter
+under `docs/arc42/09-architecture-decisions/adr/` is the authoritative
+architecture output location for the ADR Baseline Consolidation workflow.
 
 New numbered ADR output should be created under arc42 unless a future
 repository governance decision explicitly changes this rule. Existing ADR
@@ -109,8 +111,8 @@ test execution, large-repository readiness or runtime behavior.
 ## Move And Pointer Rules
 
 - Do not move directories automatically based on naming alone.
-- Do not delete historical source inputs without an approved slice and
-  rollback notes.
+- Do not delete historical source inputs without an approved slice, verified
+  authoritative copies and rollback notes.
 - Do not create pointer stubs that duplicate architecture content.
 - Do not place contract artifacts or deployment descriptors under arc42.
 - Do not treat process-governance roots as product architecture outputs.
@@ -120,8 +122,10 @@ test execution, large-repository readiness or runtime behavior.
 ## Current Decision
 
 Loose companion documentation roots for contracts, deployment and testing were
-removed by moving their content into the owning arc42 sections. The remaining
-listed roots are intentionally retained in place. Their authority is classified
-by this document so future workflow slices can decide whether to update arc42,
-update a process-governance root, change a contract artifact, change a
-deployment artifact, or read a historical source input.
+removed by moving their content into the owning arc42 sections. The duplicate
+numbered ADR files under `docs/adr/` were later removed after byte-identical
+arc42 ADR copies were verified. The remaining listed roots are intentionally
+retained in place. Their authority is classified by this document so future
+workflow slices can decide whether to update arc42, update a process-governance
+root, change a contract artifact, change a deployment artifact, or read
+historical provenance.

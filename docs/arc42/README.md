@@ -55,9 +55,11 @@ documents from loose documentation roots into their owning arc42 sections:
 - [Docker Compose deployment note](07-deployment-view/forensic-analytics-docker-compose.md)
 - [WildFly hardening runbook](10-quality-requirements/testing/wildfly-hardening.md)
 
-Process-governance roots, requirement sources, historical ADR sources,
-contract artifacts and deployment artifacts remain outside arc42 with explicit
-README classification notes.
+Process-governance roots, requirement sources, contract artifacts and
+deployment artifacts remain outside arc42 with explicit README classification
+notes. The former `docs/adr/` root now contains only a compatibility pointer
+because its numbered ADR files were byte-identical to the authoritative arc42
+ADR chapter.
 
 ## Governance Check Status
 
