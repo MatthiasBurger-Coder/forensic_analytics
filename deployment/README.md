@@ -4,6 +4,14 @@
 
 Deployment root for the target microservices ecosystem.
 
+## Root Classification
+
+`deployment/` is the deployment artifact root. It is intentionally outside
+`docs/arc42/` because it contains Docker Compose, Swarm, Kubernetes and
+observability descriptors or descriptor documentation. arc42 may summarize
+deployment views and readiness constraints, but deployment artifacts remain
+here and require DevOps/runtime verification before readiness is claimed.
+
 `docker-compose/forensic-analytics.local.yml` is the root local Compose entry
 point for the deployment workflow. It owns the shared external Docker network
 named `forensic_analytics` and is combined with service-specific Compose

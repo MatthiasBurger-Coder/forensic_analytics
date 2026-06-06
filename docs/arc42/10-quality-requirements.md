@@ -63,6 +63,11 @@ Quality
 | Public workspace metadata, get or refresh response includes unsafe downstream diagnostics | `query-report-api-service` returns sanitized diagnostics without local paths, database internals, H2 paths, raw stdout, raw stderr, credentials or tokens |
 | Branch refresh sees the same or changed remote commit | Public responses distinguish `UP_TO_DATE` from `UPDATED` without duplicating the workspace branch |
 
+Architecture-level testing and hardening companion material is documented in
+[`10-quality-requirements/testing/`](10-quality-requirements/testing/). The
+WildFly large-repository hardening runbook lives at
+[`10-quality-requirements/testing/wildfly-hardening.md`](10-quality-requirements/testing/wildfly-hardening.md).
+
 ## 10.3 Agent Governance Quality Scenarios
 
 | Scenario | Quality Goal | Expected Response |

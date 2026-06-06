@@ -22,6 +22,14 @@ The audit keeps the producer/consumer boundary explicit:
 - The plugin may receive server-generated BTM files and bind them through the runtime agent when debugging requires instrumentation.
 - Workspace creation and Git checkout are planned before parser implementation.
 
+## Root Classification
+
+`docs/skill-audit/` is process-governance audit evidence. It records skill,
+role, prompt, routing and governance-review state for repository automation.
+It remains outside arc42 because it audits agent and workflow ownership rather
+than product architecture. Architecture summaries may reference audit outcomes,
+but this root remains process-governance material.
+
 ## Inspected Areas
 
 - `.agents/`

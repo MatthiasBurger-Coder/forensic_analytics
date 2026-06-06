@@ -4,6 +4,13 @@ This directory documents repository process governance for automated agents.
 
 Root `AGENTS.md` remains authoritative for mandatory agent behavior. `QUALITY.md` remains authoritative for verification commands and quality-gate expectations.
 
+## Root Classification
+
+`docs/process/` is the repository process-governance root. It owns command,
+branch, workflow and publication rules for automated work. These files are not
+arc42 product architecture chapters and must not be moved into arc42 unless a
+dedicated process-governance workflow changes process ownership.
+
 ## Process Strands
 
 Repository agent work is organized into three process strands:

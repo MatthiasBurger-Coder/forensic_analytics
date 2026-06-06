@@ -43,6 +43,22 @@ approved slice changes those locations.
 They must not be silently treated as newer authoritative outputs when a
 workflow output exists under `docs/arc42/`.
 
+The broader documentation-root classification is recorded in
+`docs/arc42/08-crosscutting-concepts/documentation-governance/documentation-root-classification-20260605.md`.
+
+## Supporting Architecture Companion Outputs
+
+Documentation companion files that summarize architecture-relevant contract,
+deployment or quality guidance may live in their owning arc42 sections. The
+current moved companion outputs are:
+
+- `docs/arc42/08-crosscutting-concepts/service-contracts/contract-test-plan.md`
+- `docs/arc42/07-deployment-view/forensic-analytics-docker-compose.md`
+- `docs/arc42/10-quality-requirements/testing/wildfly-hardening.md`
+
+This rule does not move contract artifacts from `contracts/` or deployment
+artifacts from `deployment/` into arc42.
+
 ## Constraints
 
 - Do not renumber ADRs.
