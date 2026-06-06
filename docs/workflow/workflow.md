@@ -1,43 +1,79 @@
-# Workflow: Architecture Progress Assessment Distribution
+# Workflow: Architecture Entry arc42 Placement
 
 ## Executive Summary
 
-This workflow plans the documentation-only distribution of a project progress
-and architecture assessment.
+This workflow plans a documentation-only classification and synchronization of
+architecture entries into the existing arc42 documentation.
 
-The full assessment must be stored as a source assessment document:
+The key correction is that a complete project progress assessment is not
+required to determine where architecture entries belong. The official arc42
+template and section guidance provide the placement rules. Existing repository
+architecture entries can therefore be classified first, and the full assessment
+source can be stored later only when its complete text is available.
 
-```text
-docs/architecture/assessments/2026-06-architecture-progress-assessment.md
-```
+The workflow must not invent missing assessment content. It must classify
+verified architecture entries and explicitly mark unresolved terms, missing
+source text or unverified readiness claims.
 
-The assessment must not be copied wholesale into one arc42 chapter. Verified
-architecture findings must be extracted into the existing authoritative arc42
-structure under:
+Authoritative arc42 output belongs under:
 
 ```text
 docs/arc42/
 ```
 
-The user-provided path `docs/architecture/arc42/**` was checked against the
-repository and is not the current authoritative arc42 root. The repository
-README classifies `docs/architecture/` as a historical and current
-architecture source-map root, while authoritative arc42 architecture output
-belongs under `docs/arc42/**`.
+The architecture source-map and assessment root remains:
+
+```text
+docs/architecture/
+```
+
+Do not create:
+
+```text
+docs/architecture/arc42/
+```
+
+## arc42 Placement Rule Source
+
+The placement rules are based on the official arc42 template/documentation:
+
+- Template download requested by the user:
+  `https://github.com/arc42/arc42-template/raw/master/dist/arc42-template-EN-plain-markdownMP.zip`
+- Section 4: `https://docs.arc42.org/section-4/`
+- Section 5: `https://docs.arc42.org/section-5/`
+- Section 8: `https://docs.arc42.org/section-8/`
+- Section 9: `https://docs.arc42.org/section-9/`
+- Section 11: `https://docs.arc42.org/section-11/`
+
+Use these rules during execution:
+
+| Entry type | arc42 target | Rule |
+|---|---|---|
+| Fundamental solution approach, target architecture strategy, top-level decomposition, quality-goal approach, organizational strategy | `docs/arc42/04-solution-strategy.md` | Keep it short and link to detailed sections. |
+| Static structure, modules, components, source-code mapping, current modules versus target services | `docs/arc42/05-building-block-view.md` | Describe building blocks, responsibilities, interfaces and code locations where relevant. |
+| Runtime scenario, interaction flow, important behavior, error or exception flow | `docs/arc42/06-runtime-view.md` | Use when the entry describes behavior over time rather than static structure. |
+| Infrastructure, deployment topology, environments, containers, runtime platform readiness | `docs/arc42/07-deployment-view.md` | Use only for verified deployment topology or explicitly planned deployment material. |
+| Crosscutting rule, concept, pattern, governance model, quality gate, data ownership concept, persistence concept, security, observability, evidence integrity | `docs/arc42/08-crosscutting-concepts.md` | Use for concepts that affect multiple building blocks. |
+| Important decision, selected alternative, risky or expensive architecture choice, ADR reference | `docs/arc42/09-architecture-decisions.md` or numbered ADR | Avoid duplication; reference existing ADRs before creating new ones. |
+| Known problem, unresolved gap, maturity concern, technical debt, risk and mitigation | `docs/arc42/11-risks-and-technical-debt.md` | Primary location for maturity/risk/debt entries. |
+| Domain or technical term that needs consistent language | `docs/arc42/12-glossary.md` | Use when the entry is terminology rather than strategy, structure, concept, decision or risk. |
 
 ## Target Picture
 
 The completed workflow will produce:
 
-- one complete architecture assessment source document under
-  `docs/architecture/assessments/`;
+- a placement assessment matrix under
+  `docs/architecture/assessments/2026-06-arc42-placement-assessment.md`;
+- optional full assessment source storage under
+  `docs/architecture/assessments/2026-06-architecture-progress-assessment.md`
+  only when the complete source text is available;
 - extracted strategy findings in `docs/arc42/04-solution-strategy.md`;
 - current-module versus target-service decomposition notes in
   `docs/arc42/05-building-block-view.md`;
 - governance, quality-gate, documentation-gate and migration concepts in
   `docs/arc42/08-crosscutting-concepts.md`;
 - ADR-state references in `docs/arc42/09-architecture-decisions.md`;
-- the primary maturity, risk and technical-debt assessment in
+- primary maturity, risk and technical-debt findings in
   `docs/arc42/11-risks-and-technical-debt.md`.
 
 ## Verified Baseline
@@ -85,72 +121,65 @@ Verified source-of-truth files:
 
 ## Requirement Clarification Gate
 
-Decision: `PROCEED_WITH_ACCEPTED_ASSUMPTIONS`
+Decision: `READY_FOR_WORKFLOW`
 
-Confidence: 86 percent.
+Confidence: 92 percent.
 
 Original request:
 
-- Create a workflow for storing a project progress and architecture
-  assessment as an assessment document.
-- Do not copy the complete assessment into one arc42 chapter.
-- Extract architecture findings into arc42 chapters 4, 5, 8, 9 and 11.
-- Treat chapter 11 as the main location for maturity, architecture risk and
-  technical debt.
+- Revise the active workflow to incorporate the insight that arc42 itself
+  contains the placement knowledge for deciding where architecture entries
+  belong.
 
 Interpreted intent:
 
-- Create an executable documentation workflow that preserves the full
-  assessment as source evidence and distributes only the relevant
-  architecture findings into the verified arc42 structure.
+- Change the workflow from assessment-source-first extraction to
+  arc42-rule-first classification of existing architecture entries.
+- Keep full assessment storage as optional source capture, not as the blocking
+  prerequisite for placement classification.
 
 Change type:
 
-- Documentation and architecture-governance workflow.
+- Documentation and architecture-governance workflow revision.
 
 Affected process strand:
 
 - `workflow create` now.
-- `workflow execute` later for the planned documentation slices.
+- `workflow execute` later for the revised documentation slices.
 
 Affected architecture areas:
 
+- arc42 documentation structure;
+- architecture source-map classification;
 - microservice target strategy;
 - service decomposition and current-module mapping;
 - gRPC ingestion and contract-first communication;
-- worker and migration concepts;
 - workflow governance, skills, agents and quality gates;
 - PostgreSQL and H2 persistence decisions;
 - architecture risk and technical debt.
 
 Explicit requirements:
 
-- Store the complete assessment as
-  `docs/architecture/assessments/2026-06-architecture-progress-assessment.md`.
-- Extract findings to `docs/arc42/04-solution-strategy.md`.
-- Extract findings to `docs/arc42/05-building-block-view.md`.
-- Extract findings to `docs/arc42/08-crosscutting-concepts.md`.
-- Extract findings to `docs/arc42/09-architecture-decisions.md`.
-- Extract findings primarily to
-  `docs/arc42/11-risks-and-technical-debt.md`.
-- Keep the assessment and the arc42 extracts separate.
+- Use official arc42 template knowledge to classify architecture entries.
+- Determine placement per architecture entry.
+- Preserve `docs/arc42/**` as the authoritative arc42 root.
+- Preserve `docs/architecture/**` as architecture source-map and assessment
+  input.
+- Do not block classification just because the full assessment source text is
+  missing.
+- Do not invent missing assessment content.
 
 Accepted assumptions:
 
-- The text supplied in the request is a placement and extraction instruction,
-  not the full project progress assessment.
-- During `workflow execute`, Slice 01 must verify that the full assessment text
-  is available from user input or a repository file before creating the
-  assessment document.
-- The acronym `SCA` must be expanded from the assessment source or existing
-  repository context before it is documented in arc42. The workflow must not
-  guess whether it means source-code analysis, software composition analysis or
-  another concept.
-- `docs/architecture/assessments/` is acceptable as a source-assessment
-  location because `docs/architecture/README.md` classifies
-  `docs/architecture/` as a source-map root, not as authoritative arc42 output.
-- arc42 extracts must use `docs/arc42/**`, not
-  `docs/architecture/arc42/**`.
+- Existing architecture entries are available in `docs/architecture/**`,
+  `docs/arc42/**`, ADRs, EPIC files and workflow files.
+- The user-provided assessment-placement instruction is a classification input
+  but not the full assessment source.
+- If the complete progress assessment text becomes available, it can be stored
+  as source evidence without changing the placement rules.
+- `SCA` remains unresolved until a verified source expands it. The placement
+  matrix may record it as an unresolved term and candidate concept, but arc42
+  extracts must not define its meaning by guess.
 
 Non-goals:
 
@@ -169,12 +198,14 @@ Non-goals:
 
 Open questions:
 
-- None blocking for workflow authoring.
+- None blocking for the revised workflow.
 
 Execution prerequisites:
 
-- Slice 01 must stop if the full assessment source text is unavailable.
-- Slices that mention `SCA` must stop until the acronym is verified.
+- Official arc42 placement rules must be available from this workflow, the
+  official documentation URLs, or the downloaded official template.
+- Existing architecture entries must be read from verified repository files
+  before classification.
 
 ## Execution Profile
 
@@ -185,7 +216,7 @@ requiredFullReviews=Senior Workflow Architect, Senior Requirement Engineer, Seni
 roleReviewBudget=full workflow-create review
 allowedImpactChecks=Senior React Frontend Developer may report N/A impact for implementation, but must review that no UI behavior or UX claim is introduced.
 requiredQualityChecks=documentation-only checks from QUALITY.md plus git diff inspection
-stopConditions=missing assessment source, wrong arc42 root, unclear SCA meaning, unverifiable service readiness claim, unverified ADR decision, product-scope change
+stopConditions=wrong arc42 root, unclear SCA meaning for authoritative extracts, unverifiable service readiness claim, unverified ADR decision, product-scope change
 ```
 
 ## Role Review
@@ -193,17 +224,19 @@ stopConditions=missing assessment source, wrong arc42 root, unclear SCA meaning,
 Senior Workflow Architect:
 
 - Branch-first workflow creation was completed before mutating workflow files.
-- The workflow is split into five documentation slices with concrete
-  dependencies and non-overlapping write scopes where possible.
-- The workflow regenerates `docs/workflow` and records context-pack metadata.
+- The workflow now starts with an arc42 placement assessment matrix instead of
+  requiring complete assessment source text.
+- The workflow has five documentation slices with concrete dependencies and
+  write scopes.
 
 Senior Requirement Engineer:
 
-- The request is documentation and architecture-governance scope.
-- The full assessment remains source evidence; extracted arc42 content remains
-  architecture interpretation.
-- The workflow preserves EPIC v0.2 as the product requirement baseline and
-  records the missing full assessment source as an execution prerequisite.
+- The revised workflow stays inside documentation and architecture-governance
+  scope.
+- Requirement traceability is improved because placement is based on official
+  arc42 rules and verified repository entries.
+- Missing full assessment source is now documented as optional source capture,
+  not as a blocker for classification.
 
 Senior System Architect:
 
@@ -224,8 +257,8 @@ Senior Java Backend Developer:
 Senior React Frontend Developer:
 
 - No frontend implementation is in scope.
-- UI or client behavior must not be added to the assessment extracts unless it
-  is verified from `forensic-ui`, `cli-client`, public API documentation or
+- UI or client behavior must not be added to the extracts unless it is
+  verified from `forensic-ui`, `cli-client`, public API documentation or
   existing architecture docs.
 
 Senior Tester:
@@ -239,22 +272,22 @@ Senior Tester:
 ADR Steward:
 
 - The workflow may reference accepted ADRs and the consolidated ADR state.
-- If an extract introduces a new architecture decision or contradicts an
-  accepted ADR, execution must stop for ADR review instead of editing ADR
-  history silently.
+- If a classification or extract introduces a new architecture decision or
+  contradicts an accepted ADR, execution must stop for ADR review instead of
+  editing ADR history silently.
 
 Senior Documentation Engineer:
 
 - Documentation must be English.
 - Planned behavior, target architecture, current implementation evidence,
   source assessment claims and unresolved risks must remain distinguishable.
-- The workflow must not duplicate the complete assessment inside arc42.
+- The placement assessment must not duplicate complete arc42 chapters.
 
 ## Architecture Constraints
 
 - Use `docs/arc42/**` for authoritative arc42 output.
-- Use `docs/architecture/assessments/**` only for the full source
-  assessment.
+- Use `docs/architecture/assessments/**` for placement assessments and
+  optional full assessment source text.
 - Do not create `docs/architecture/arc42/**`.
 - Do not treat `docs/architecture/**` source-map files as newer authoritative
   arc42 output where checked arc42 files already exist.
@@ -274,8 +307,9 @@ Senior Documentation Engineer:
 In scope:
 
 - `docs/workflow/**` workflow-control files.
+- `docs/architecture/assessments/2026-06-arc42-placement-assessment.md`.
 - `docs/architecture/assessments/2026-06-architecture-progress-assessment.md`
-  during workflow execution.
+  only when complete source text exists.
 - `docs/arc42/04-solution-strategy.md`.
 - `docs/arc42/05-building-block-view.md`.
 - `docs/arc42/08-crosscutting-concepts.md`.
@@ -319,15 +353,15 @@ testbed
 
 Existing architecture documents classify some modules as target service
 evidence, some as predecessor evidence and some as optional or planned roots.
-The workflow must preserve those distinctions instead of flattening them into
-one service-readiness claim.
+The placement matrix must preserve those distinctions instead of flattening
+them into one service-readiness claim.
 
 ## Frontend Assessment
 
 The verified frontend root is `forensic-ui`, and `cli-client` is the public
 API client boundary. The requested workflow does not change frontend behavior.
-Frontend-related statements in the assessment extracts must stay limited to
-verified client-facing architecture or explicitly planned behavior.
+Frontend-related statements in the placement matrix or extracts must stay
+limited to verified client-facing architecture or explicitly planned behavior.
 
 ## Test Strategy
 
@@ -372,23 +406,26 @@ Slice 01
 ```
 
 Slice 02, Slice 03 and Slice 04 may be reviewed independently after Slice 01
-verifies the full assessment source. They should be applied sequentially during
-workflow execution to keep arc42 diff review simple.
+creates the placement assessment matrix. They should be applied sequentially
+during workflow execution to keep arc42 diff review simple.
 
 ## Ordered Slices
 
-### Slice 01 - Store Full Architecture Assessment Source
+### Slice 01 - Create arc42 Placement Assessment Matrix
 
 Purpose:
 
-- Create the full architecture progress assessment source document without
-  copying it into arc42.
+- Classify existing architecture entries with official arc42 placement rules.
+- Create the placement matrix that later slices use as their source for arc42
+  updates.
+- Optionally store the complete architecture progress assessment source if it
+  is available, without blocking classification when it is not.
 
 Prerequisites:
 
 - Active branch must be `docs/workflow-architecture-assessment-20260606`.
-- Full assessment source text must be available from user input or a verified
-  repository file.
+- Official arc42 placement rules must be available from this workflow or the
+  official arc42 sources listed above.
 
 ```yaml
 slice_id: S01
@@ -398,37 +435,42 @@ secondary_reviewers:
   - Senior Requirement Engineer
   - Senior System Architect
 affected_files:
+  - docs/architecture/assessments/2026-06-arc42-placement-assessment.md
   - docs/architecture/assessments/2026-06-architecture-progress-assessment.md
 affected_modules: []
 affected_contracts: []
 dependencies: []
 parallel_group: P1
 file_locks:
+  - docs/architecture/assessments/2026-06-arc42-placement-assessment.md
   - docs/architecture/assessments/2026-06-architecture-progress-assessment.md
 contract_locks: []
 architecture_locks:
+  - architecture-entry-placement
   - architecture-source-assessment
 quality_gates:
   targeted:
-    - test -f docs/architecture/assessments/2026-06-architecture-progress-assessment.md
+    - test -f docs/architecture/assessments/2026-06-arc42-placement-assessment.md
     - git diff --check
   required:
     - git diff --check
 documentation:
-  arc42: source assessment only; no arc42 chapter update in this slice
+  arc42: placement assessment only; no authoritative arc42 chapter update in this slice
   adr: no ADR change expected
 stop_conditions:
-  - full assessment source text is unavailable
+  - official arc42 placement rules cannot be verified from workflow or official sources
   - the slice would invent missing assessment content
   - the slice would store authoritative arc42 output under docs/architecture/arc42
-  - the assessment text is not clearly separated from extracted arc42 findings
+  - a placement decision would require guessing implementation facts
 ```
 
 Done criteria:
 
-- The complete assessment source exists at the requested assessment path.
-- The document clearly labels itself as an assessment source, not as an arc42
-  chapter or ADR.
+- The placement assessment matrix exists.
+- The matrix lists architecture entries, source evidence, target arc42 section,
+  placement rationale and unresolved gaps.
+- The optional full assessment source is stored only when complete source text
+  is available; otherwise the matrix records it as unavailable.
 - No arc42 chapter receives the complete assessment text.
 
 ### Slice 02 - Add Primary Risk And Technical Debt Findings
@@ -440,7 +482,7 @@ Purpose:
 
 Prerequisites:
 
-- Slice 01 completed or verified assessment source is available.
+- Slice 01 completed and placement matrix exists.
 
 ```yaml
 slice_id: S02
@@ -473,15 +515,16 @@ documentation:
   arc42: docs/arc42/11-risks-and-technical-debt.md
   adr: reference ADR-0010, ADR-0013, ADR-0017, ADR-0023, ADR-0024 and ADR-0025 when relevant
 stop_conditions:
-  - a risk claim cannot be traced to the assessment, arc42, ADR, architecture source-map docs or current repository files
+  - a risk claim cannot be traced to the placement matrix, arc42, ADR, architecture source-map docs or current repository files
   - current shared domain/application modules are claimed without source-tree verification
   - target service readiness is claimed without verified readiness evidence
-  - monolithic module debt is described as active implementation when the verified files classify it as predecessor or historical evidence
+  - monolithic module debt is described as active implementation when verified files classify it as predecessor or historical evidence
 ```
 
 Required extraction topics:
 
-- current architecture maturity;
+- current architecture maturity where verified by repository evidence or
+  explicitly marked as assessment classification;
 - distributed monolith risk;
 - target architecture being ahead of verified current module/runtime
   readiness;
@@ -508,8 +551,7 @@ Purpose:
 
 Prerequisites:
 
-- Slice 01 completed or verified assessment source is available.
-- The meaning of `SCA` is verified before documenting it.
+- Slice 01 completed and placement matrix exists.
 
 ```yaml
 slice_id: S03
@@ -543,7 +585,7 @@ documentation:
   arc42: docs/arc42/04-solution-strategy.md and docs/arc42/05-building-block-view.md
   adr: reference ADR-0017 and ADR-0025 when relevant
 stop_conditions:
-  - SCA meaning is ambiguous
+  - SCA meaning is required for an authoritative statement but remains ambiguous
   - current modules are treated as completed production microservices without readiness evidence
   - worker model, gRPC ingestion or service decomposition statements cannot be verified
   - a new service boundary is introduced without ADR or workflow scope
@@ -555,7 +597,8 @@ Required extraction topics:
 - gRPC ingestion as target communication/ingestion strategy;
 - worker model and migration strategy, limited to verified or explicitly
   planned behavior;
-- SCA migration strategy after acronym verification;
+- SCA-related placement only after acronym verification, otherwise unresolved
+  in the matrix;
 - current Gradle modules versus FA-MSA-001 target services;
 - predecessor/current/optional/planned service roots, preserving existing
   documentation distinctions.
@@ -576,7 +619,7 @@ Purpose:
 
 Prerequisites:
 
-- Slice 01 completed or verified assessment source is available.
+- Slice 01 completed and placement matrix exists.
 - ADR references are verified from current numbered ADR files under the arc42
   ADR chapter.
 
@@ -625,7 +668,7 @@ Required extraction topics:
 - `workflow create` and `workflow execute` governance;
 - Skill/Agent model;
 - quality gates and documentation gates;
-- SCA as a crosscutting migration concept after acronym verification;
+- SCA as a crosscutting migration concept only after acronym verification;
 - consolidated ADR state;
 - PostgreSQL runtime persistence bounded to repository-source workspace
   metadata;
@@ -689,7 +732,7 @@ documentation:
   adr: verify no ADR history rewrite
 stop_conditions:
   - documentation contradicts EPIC, ADR or verified repository state
-  - assessment source and arc42 extracts collapse into duplicated chapter content
+  - placement matrix and arc42 extracts collapse into duplicated chapter content
   - JSON context-pack validation fails
   - diff contains product source, build, contract, runtime or deployment changes
 ```
@@ -706,14 +749,14 @@ Done criteria:
 - Slice 02, Slice 03 and Slice 04 have distinct arc42 write scopes and may be
   reviewed independently after Slice 01, but execution should apply them
   sequentially for clearer architecture review.
-- No slice may run before Slice 01 verifies the full assessment source.
+- Slice 01 is the dependency gate for all arc42 extraction slices.
 
 ## Role Ownership Map
 
 | Area | Owner | Reviewers |
 |---|---|---|
 | Workflow structure | Senior Workflow Architect | Senior Requirement Engineer, Senior Tester |
-| Assessment source document | Senior Documentation Engineer | Senior Requirement Engineer, Senior System Architect |
+| Placement assessment matrix | Senior Documentation Engineer | Senior Requirement Engineer, Senior System Architect |
 | Risk and debt chapter | Senior System Architect | Senior Documentation Engineer, Senior Tester |
 | Strategy and building blocks | Senior System Architect | Senior Java Backend Developer, Senior Documentation Engineer |
 | Crosscutting concepts and ADR references | ADR Steward | Senior System Architect, Senior Documentation Engineer |
@@ -741,23 +784,26 @@ gate from `QUALITY.md`.
 
 ## Documentation Synchronization Points
 
-- Keep the full assessment source under `docs/architecture/assessments/`.
+- Keep placement and optional assessment-source material under
+  `docs/architecture/assessments/`.
 - Keep authoritative arc42 extracts under `docs/arc42/**`.
 - Keep numbered ADR references under
   `docs/arc42/09-architecture-decisions/adr/`.
 - Keep EPIC source references under `docs/epics/**`.
 - Keep process-control workflow files under `docs/workflow/**`.
+- Keep official arc42 rule references in the placement matrix so future
+  readers can see why each entry belongs in a chapter.
 
 ## Stop Conditions
 
 Stop workflow execution if:
 
-- the full assessment source is missing;
 - the workflow would create `docs/architecture/arc42/**`;
 - an arc42 extract would require guessing implementation, service readiness,
   persistence schema, contract shape, endpoint, table, graph label, runtime
   behavior or evidence fact;
-- the `SCA` acronym cannot be verified;
+- the `SCA` acronym is required for an authoritative statement but cannot be
+  verified;
 - assessment claims conflict with ADR-0022, ADR-0023, ADR-0024 or ADR-0025 and
   the intended source of truth is unclear;
 - a slice introduces a new architecture decision without ADR review;
@@ -766,9 +812,10 @@ Stop workflow execution if:
 
 ## Uncertainty Escalation Rules
 
-- Missing full assessment text stops Slice 01 and asks for the assessment
-  source.
-- Ambiguous `SCA` meaning stops the slice that would document it.
+- Missing full assessment text is recorded in the placement matrix and does
+  not block classification.
+- Ambiguous `SCA` meaning is recorded as unresolved and stops only the
+  authoritative statement that would need its expansion.
 - ADR conflict routes to ADR Steward and Senior System Architect.
 - Service-boundary ambiguity routes to Senior System Architect and
   Microservice Senior Expert.
@@ -779,7 +826,7 @@ Stop workflow execution if:
 
 ## Commit And Push Plan
 
-No commit or push is authorized by this workflow creation request.
+No commit or push is authorized by this workflow revision request.
 
 During later `workflow execute`, commit and push are allowed only when the
 checked workflow explicitly authorizes a slice checkpoint. Slice checkpoint
@@ -797,8 +844,8 @@ The workflow is done when:
 - the active branch is still
   `docs/workflow-architecture-assessment-20260606`;
 - `git diff --check` passes;
-- the workflow clearly distinguishes full assessment storage from arc42
-  extraction.
+- the workflow clearly distinguishes placement classification, optional full
+  assessment source storage and authoritative arc42 extraction.
 
 ## Handoff To Workflow Execute
 
@@ -808,13 +855,13 @@ Run the next phase with:
 workflow execute
 ```
 
-Before editing the assessment or arc42 chapters, workflow execution must read
-this complete workflow, verify Slice 01 source availability and execute the
+Before editing arc42 chapters, workflow execution must read this complete
+workflow, create the placement assessment matrix in Slice 01 and execute the
 slices in dependency order.
 
 ## arc42 Check Status
 
-Checked during workflow creation:
+Checked during workflow revision:
 
 - `docs/arc42/04-solution-strategy.md`
 - `docs/arc42/05-building-block-view.md`
@@ -824,7 +871,8 @@ Checked during workflow creation:
 
 Required during workflow execution:
 
-- update chapters 4, 5, 8, 9 and 11 according to the slice plan;
+- create the placement matrix first;
+- update chapters 4, 5, 8, 9 and 11 according to the placement matrix;
 - keep chapter 11 as the primary risk and technical-debt chapter;
-- keep the assessment document outside arc42;
+- keep placement and optional assessment source documents outside arc42;
 - do not create `docs/architecture/arc42/**`.

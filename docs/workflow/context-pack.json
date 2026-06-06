@@ -1,14 +1,16 @@
 {
   "workflow": {
-    "name": "Architecture Progress Assessment Distribution",
-    "version": "2026-06-06",
+    "name": "Architecture Entry arc42 Placement",
+    "version": "2026-06-06-rev2",
     "branch": "docs/workflow-architecture-assessment-20260606",
     "processStrand": "workflow create",
     "executionProfile": "FULL_PATH",
     "canonicalExecutionEntrypoint": "docs/workflow/workflow.md"
   },
   "affectedAreas": [
-    "architecture progress assessment source documentation",
+    "architecture entry placement assessment",
+    "official arc42 placement rule mapping",
+    "optional architecture progress assessment source documentation",
     "arc42 solution strategy",
     "arc42 building block view",
     "arc42 crosscutting concepts",
@@ -32,7 +34,8 @@
     "runtime migration strategy",
     "ADR history rewrite without explicit architecture decision",
     "authoritative arc42 output under docs/architecture/arc42",
-    "complete assessment duplication inside one arc42 chapter"
+    "complete assessment duplication inside one arc42 chapter",
+    "invented assessment content"
   ],
   "requiredRoles": [
     "Senior Workflow Architect",
@@ -51,8 +54,19 @@
     "Senior gRPC/Protobuf Specialist",
     "Quality Gate Governance"
   ],
+  "officialArc42PlacementSources": [
+    "https://github.com/arc42/arc42-template/raw/master/dist/arc42-template-EN-plain-markdownMP.zip",
+    "https://docs.arc42.org/section-4/",
+    "https://docs.arc42.org/section-5/",
+    "https://docs.arc42.org/section-8/",
+    "https://docs.arc42.org/section-9/",
+    "https://docs.arc42.org/section-11/"
+  ],
   "plannedFiles": {
-    "assessmentSource": [
+    "placementAssessment": [
+      "docs/architecture/assessments/2026-06-arc42-placement-assessment.md"
+    ],
+    "optionalAssessmentSource": [
       "docs/architecture/assessments/2026-06-architecture-progress-assessment.md"
     ],
     "arc42Extracts": [
@@ -88,8 +102,8 @@
       "git diff --check",
       "git diff --name-only"
     ],
-    "workflowExecutionAssessmentPath": [
-      "test -f docs/architecture/assessments/2026-06-architecture-progress-assessment.md"
+    "workflowExecutionPlacementMatrix": [
+      "test -f docs/architecture/assessments/2026-06-arc42-placement-assessment.md"
     ],
     "workflowExecutionForbiddenArc42Root": [
       "test ! -e docs/architecture/arc42"
@@ -102,11 +116,11 @@
     ]
   },
   "stopConditions": [
-    "full assessment source is missing",
     "workflow execution would create docs/architecture/arc42",
-    "SCA acronym cannot be verified",
+    "SCA acronym is required for an authoritative statement but cannot be verified",
     "service readiness would be claimed without verified build/start/health/container/deployment evidence",
     "new architecture decision would be introduced without ADR review",
+    "assessment content would be invented",
     "product source, tests, build logic, contracts, runtime or deployment files would be changed"
   ],
   "governingHashes": {
@@ -146,6 +160,7 @@
     "any governing hash changes",
     "workflow branch changes",
     "workflow source changes",
+    "placement matrix changes",
     "assessment source changes",
     "ADR placement changes",
     "arc42 placement changes",

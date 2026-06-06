@@ -2,8 +2,8 @@
 
 ## Identity
 
-- Workflow: Architecture Progress Assessment Distribution
-- Version: `2026-06-06`
+- Workflow: Architecture Entry arc42 Placement
+- Version: `2026-06-06-rev2`
 - Branch: `docs/workflow-architecture-assessment-20260606`
 - Process strand: `workflow create`
 - Execution profile: `FULL_PATH`
@@ -11,7 +11,9 @@
 
 ## Affected Areas
 
-- Architecture progress assessment source documentation
+- Architecture entry placement assessment
+- Official arc42 placement rule mapping
+- Optional architecture progress assessment source documentation
 - arc42 solution strategy
 - arc42 building block view
 - arc42 crosscutting concepts
@@ -37,6 +39,7 @@
 - ADR history rewrite without explicit architecture decision
 - Authoritative arc42 output under `docs/architecture/arc42/**`
 - Complete assessment duplication inside one arc42 chapter
+- Invented assessment content
 
 ## Required Roles
 
@@ -68,6 +71,15 @@
 - ADR-0025: Consolidated architecture baseline without runtime migration
   strategy
 
+## Official arc42 Placement Sources
+
+- `https://github.com/arc42/arc42-template/raw/master/dist/arc42-template-EN-plain-markdownMP.zip`
+- `https://docs.arc42.org/section-4/`
+- `https://docs.arc42.org/section-5/`
+- `https://docs.arc42.org/section-8/`
+- `https://docs.arc42.org/section-9/`
+- `https://docs.arc42.org/section-11/`
+
 ## Quality Commands
 
 Documentation-only targeted checks:
@@ -82,10 +94,10 @@ git diff --check
 git diff --name-only
 ```
 
-Assessment-path check for workflow execution:
+Placement-matrix check for workflow execution:
 
 ```bash
-test -f docs/architecture/assessments/2026-06-architecture-progress-assessment.md
+test -f docs/architecture/assessments/2026-06-arc42-placement-assessment.md
 ```
 
 Forbidden arc42-root check for workflow execution:
@@ -151,5 +163,6 @@ ADRs, arc42, routing rules, workflow files and skill files remain
 authoritative.
 
 The context pack is stale when any recorded hash changes, when the branch
-changes, when the workflow source changes, when the assessment source changes,
-or when an ADR/arc42 placement conflict is detected.
+changes, when the workflow source changes, when the placement matrix changes,
+when assessment source changes, or when an ADR/arc42 placement conflict is
+detected.
