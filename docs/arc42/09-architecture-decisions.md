@@ -30,6 +30,7 @@
 | ADR-0022 | Retire legacy modular-monolith source trees | Accepted | Closes final source-tree retirement after S05 verified service-only Gradle topology and no active legacy build/source dependencies |
 | ADR-0023 | Use H2 only for repository-source MVP persistence | Accepted for tests only | Records H2 as deterministic repository-source adapter test and direct fixture scope only; superseded for runtime by ADR-0024 |
 | ADR-0024 | Use PostgreSQL for repository-source workspace metadata | Accepted | Selects PostgreSQL only for repository-source-owned workspace metadata and keeps broader Analytics persistence decisions open |
+| ADR-0025 | Consolidated architecture baseline without runtime migration strategy | Accepted | Consolidates the verified active ADR-0001 through ADR-0024 consequences under the arc42 ADR chapter without claiming runtime migration or readiness evidence |
 
 ## 9.2 FA-MVP-0001 ADR Review
 
@@ -64,3 +65,17 @@ shared canonical Analytics database.
 | OD-006 | Initial LLM provider | Must remain replaceable |
 | OD-007 | Source-code loading and versioning in UI | Needs later design |
 | OD-008 | Multi-repo and multi-service trace model | Needs later design |
+
+## 9.4 ADR Baseline Consolidation Outputs
+
+The ADR Baseline Consolidation workflow places its authoritative architecture
+decision outputs under the arc42 architecture-decision chapter:
+
+- [arc42 ADR chapter](09-architecture-decisions/adr/README.md)
+- [ADR inventory](09-architecture-decisions/inventory/adr-inventory-20260604.md)
+- [ADR conflict analysis](09-architecture-decisions/conflicts/adr-conflict-analysis-20260604.md)
+- [ADR-0025 consolidated baseline](09-architecture-decisions/adr/ADR-0025-consolidated-architecture-baseline-without-migration.md)
+
+The `AD-*` rows in this file are arc42 decision-index entries. They are not
+numbered ADR files and must not be converted into `ADR-*` files without an
+explicit ADR decision.
