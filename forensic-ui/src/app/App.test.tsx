@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
 import type { ApplicationServices } from "@/application/createApplicationServices";
@@ -21,12 +22,15 @@ describe("App routing", () => {
 
       expect(
         await screen.findByRole("heading", {
-          name: "Repository checkout workspaces"
+          name: "Workspaces"
         })
       ).toBeInTheDocument();
+      expect(screen.queryByText("REST API")).not.toBeInTheDocument();
+      expect(screen.queryByText("Transport")).not.toBeInTheDocument();
+      expect(screen.queryByText("HTTP")).not.toBeInTheDocument();
       expect(
-        screen.getByRole("link", { name: /^workspaces$/i })
-      ).toBeInTheDocument();
+        screen.getByRole("button", { name: /^workspace$/i })
+      ).toHaveAttribute("aria-expanded", "true");
       expect(
         screen.queryByRole("link", { name: /register session/i })
       ).not.toBeInTheDocument();
@@ -43,6 +47,43 @@ describe("App routing", () => {
         name: "Create repository workspace"
       })
     ).toBeInTheDocument();
+  });
+
+  it("renders workspace actions as a submenu below the Workspace navigation item", async () => {
+    const user = userEvent.setup();
+    window.history.pushState({}, "", "/workspaces");
+
+    render(<App services={services()} />);
+
+    const workspaceSubmenu = await screen.findByLabelText("Workspace submenu");
+    const workspaceToggle = screen.getByRole("button", { name: /^workspace$/i });
+    expect(workspaceToggle).toHaveAttribute("aria-expanded", "true");
+    expect(
+      screen.queryByLabelText("Workspace navigation")
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /new workspace/i })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /^list$/i })
+    ).toBeInTheDocument();
+    expect(workspaceSubmenu).toHaveTextContent("Select a workspace from the list");
+    expect(workspaceSubmenu).not.toHaveTextContent("WildFly Investigation");
+    expect(workspaceSubmenu).not.toHaveTextContent("WS-1001");
+
+    await user.click(screen.getByRole("checkbox", { name: "Show workspace WS-1001 in sidebar" }));
+    expect(workspaceSubmenu).not.toHaveTextContent("Select a workspace from the list");
+    expect(workspaceSubmenu).toHaveTextContent("WildFly Investigation");
+    expect(workspaceSubmenu).not.toHaveTextContent("WS-1001");
+
+    await user.click(screen.getByRole("button", { name: /new workspace/i }));
+    expect(
+      await screen.findByRole("heading", { name: "Create workspace" })
+    ).toBeInTheDocument();
+
+    await user.click(workspaceToggle);
+    expect(screen.queryByLabelText("Workspace submenu")).not.toBeInTheDocument();
+    expect(workspaceToggle).toHaveAttribute("aria-expanded", "false");
   });
 
   it("routes /settings to the operator Settings page", async () => {
