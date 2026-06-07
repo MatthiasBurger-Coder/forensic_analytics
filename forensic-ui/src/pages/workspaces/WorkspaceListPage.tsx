@@ -1,309 +1,352 @@
-import { useRef, useState } from "react";
+import { FormEvent } from "react";
 import {
   CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
+  Edit3,
   Plus,
-  RefreshCcw,
-  Trash2
+  Save,
+  Trash2,
+  X
 } from "lucide-react";
-import { Link } from "react-router-dom";
 
-import { useWorkspaces } from "@/application/hooks/useWorkspaces";
-import { useApplicationServices } from "@/application/ApplicationServicesContext";
-import { toUserMessage } from "@/application/errors";
-import type { Workspace, WorkspaceBranch } from "@/domain/workspace";
 import {
-  EmptyPanel,
-  ErrorPanel,
-  LoadingPanel,
-  StaleNotice
-} from "@/widgets/StatePanels";
+  type WorkspaceDraft,
+  type WorkspaceDetailTab,
+  type WorkspaceDummyRecord,
+  useWorkspaceUi
+} from "@/pages/workspaces/WorkspaceUiContext";
 
 export const WorkspaceListPage = () => {
-  const services = useApplicationServices();
-  const workspaces = useWorkspaces();
-  const refreshInFlight = useRef<Promise<void> | null>(null);
-  const deleteInFlight = useRef<Promise<void> | null>(null);
-  const [refreshingBranchId, setRefreshingBranchId] = useState<string | null>(
-    null
-  );
-  const [deletingWorkspaceId, setDeletingWorkspaceId] = useState<string | null>(
-    null
-  );
-  const [selectedBranchIds, setSelectedBranchIds] = useState<
-    Record<string, string>
-  >({});
-  const [actionMessage, setActionMessage] = useState<string | null>(null);
-  const [actionError, setActionError] = useState<unknown>(null);
-  const data = workspaces.data ?? [];
-  const actionBusy = refreshingBranchId !== null || deletingWorkspaceId !== null;
-
-  const refreshBranch = async (workspace: Workspace, branch: WorkspaceBranch) => {
-    if (refreshInFlight.current) {
-      await refreshInFlight.current;
-      return;
-    }
-
-    setRefreshingBranchId(branch.workspaceBranchId);
-    setActionMessage(null);
-    setActionError(null);
-
-    refreshInFlight.current = services.workspaces
-      .refreshBranch({
-        workspaceId: workspace.workspaceId,
-        workspaceBranchId: branch.workspaceBranchId,
-        correlationId: createPublicId("ui-list-branch-refresh-correlation"),
-        idempotencyKey: createPublicId("ui-list-branch-refresh")
-      })
-      .then((result) => {
-        setActionMessage(
-          result.changed
-            ? `Branch ${result.repositoryBranch} updated.`
-            : `Branch ${result.repositoryBranch} is up to date.`
-        );
-        workspaces.reload();
-      })
-      .catch((caught) => {
-        setActionError(caught);
-      })
-      .finally(() => {
-        refreshInFlight.current = null;
-        setRefreshingBranchId(null);
-      });
-
-    await refreshInFlight.current;
-  };
-
-  const deleteWorkspace = async (workspace: Workspace) => {
-    if (deleteInFlight.current) {
-      await deleteInFlight.current;
-      return;
-    }
-
-    setDeletingWorkspaceId(workspace.workspaceId);
-    setActionMessage(null);
-    setActionError(null);
-
-    deleteInFlight.current = services.workspaces
-      .deleteWorkspace({
-        workspaceId: workspace.workspaceId,
-        correlationId: createPublicId("ui-workspace-delete-correlation"),
-        idempotencyKey: createPublicId("ui-workspace-delete")
-      })
-      .then((result) => {
-        setActionMessage(`Workspace ${result.workspaceId} cleaned.`);
-        workspaces.reload();
-      })
-      .catch((caught) => {
-        setActionError(caught);
-      })
-      .finally(() => {
-        deleteInFlight.current = null;
-        setDeletingWorkspaceId(null);
-      });
-
-    await deleteInFlight.current;
-  };
+  const workspaceUi = useWorkspaceUi();
+  const pageTitle = workspaceUi.selectedWorkspace &&
+    (workspaceUi.view === "detail" || workspaceUi.view === "edit")
+    ? workspaceUi.selectedWorkspace.title
+    : "Workspaces";
 
   return (
     <section className="page">
       <header className="page-header">
         <div>
-          <span className="eyebrow">Workspaces</span>
-          <h1>Repository checkout workspaces</h1>
+          <h1>{pageTitle}</h1>
         </div>
-        <Link className="button primary" to="/workspaces/new">
-          <Plus size={16} aria-hidden="true" />
-          Create workspace
-        </Link>
       </header>
 
-      {workspaces.stale ? <StaleNotice onRetry={workspaces.reload} /> : null}
-      {actionMessage ? (
+      {workspaceUi.actionMessage ? (
         <div className="notice" role="status">
           <CheckCircle2 size={18} aria-hidden="true" />
-          {actionMessage}
-        </div>
-      ) : null}
-      {actionError ? (
-        <div className="notice danger" role="alert">
-          {toUserMessage(actionError)}
+          {workspaceUi.actionMessage}
         </div>
       ) : null}
 
-      {workspaces.loading ? (
-        <LoadingPanel label="Loading repository checkout workspace views." />
-      ) : workspaces.error && !workspaces.data ? (
-        <ErrorPanel error={workspaces.error} onRetry={workspaces.reload} />
-      ) : workspaces.empty ? (
-        <EmptyPanel
-          title="No workspaces yet"
-          body="Create a repository checkout workspace to make it available in this list."
+      {workspaceUi.view === "create" || workspaceUi.view === "edit" ? (
+        <WorkspaceForm
+          draft={workspaceUi.draft}
+          mode={workspaceUi.view}
+          onCancel={workspaceUi.selectedWorkspace ? () => workspaceUi.showDetail(workspaceUi.selectedWorkspace as WorkspaceDummyRecord) : workspaceUi.showList}
+          onChange={workspaceUi.setDraft}
+          onSubmit={workspaceUi.saveWorkspace}
+          titleError={workspaceUi.titleError}
         />
-      ) : (
-        <div className="panel table-wrap">
+      ) : null}
+
+      {workspaceUi.view === "detail" && workspaceUi.selectedWorkspace ? (
+        <WorkspaceDetail
+          onDelete={() => workspaceUi.deleteWorkspace(workspaceUi.selectedWorkspace!.workspaceId)}
+          onEdit={() => workspaceUi.showEdit(workspaceUi.selectedWorkspace!)}
+          onTabChange={workspaceUi.setSelectedWorkspaceTab}
+          selectedTab={workspaceUi.selectedWorkspaceTab}
+          workspace={workspaceUi.selectedWorkspace}
+        />
+      ) : null}
+
+      {workspaceUi.view === "list" ? (
+        <section className="panel table-wrap">
+          <div className="workspace-list-toolbar">
+            <div className="workspace-list-actions">
+              <button className="button primary" onClick={workspaceUi.showCreate} type="button">
+                <Plus size={16} aria-hidden="true" />
+                Create Workspace
+              </button>
+            </div>
+          </div>
+
           <table className="workspace-table">
             <thead>
               <tr>
-                <th>Workspace_ID</th>
-                <th>Workspace</th>
-                <th>Selected Branch</th>
-                <th>Status</th>
-                <th>Repository</th>
+                <th className="select-column">Show</th>
+                <th>ID</th>
+                <th>Description</th>
+                <th>Created</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {data.map((workspace) => {
-                const selectedBranch = selectedBranchFor(
-                  workspace,
-                  selectedBranchIds[workspace.workspaceId]
-                );
-
-                return (
-                  <tr key={workspace.workspaceId}>
-                    <td className="mono-cell">{workspace.workspaceId}</td>
-                    <td>
-                      <strong>{workspace.workspaceTitle || "Unavailable"}</strong>
-                    </td>
-                    <td>
-                      <div className="workspace-branch-cell">
-                        {selectedBranch ? (
-                          <>
-                            <select
-                              aria-label={`Select branch for workspace ${workspace.workspaceId}`}
-                              className="workspace-branch-select"
-                              onChange={(event) => {
-                                setSelectedBranchIds((current) => ({
-                                  ...current,
-                                  [workspace.workspaceId]: event.target.value
-                                }));
-                              }}
-                              value={selectedBranch.workspaceBranchId}
-                            >
-                              {workspace.branches.map((branch) => (
-                                <option
-                                  key={branch.workspaceBranchId}
-                                  value={branch.workspaceBranchId}
-                                >
-                                  {branch.repositoryBranch}
-                                </option>
-                              ))}
-                            </select>
-                            <div className="workspace-branch-meta">
-                              <small>
-                                Branch ID {selectedBranch.workspaceBranchId}
-                              </small>
-                              <small>
-                                Commit{" "}
-                                {selectedBranch.resolvedCommit ?? "Unavailable"}
-                              </small>
-                              <small>
-                                Snapshot{" "}
-                                {selectedBranch.sourceSnapshotId ??
-                                  "Unavailable"}
-                              </small>
-                            </div>
-                          </>
-                        ) : (
-                          <span className="muted-text">Unavailable</span>
-                        )}
-                      </div>
-                    </td>
-                    <td>
-                      <div className="status-stack">
-                        <StatusBadge label={workspace.status} />
-                        {selectedBranch ? (
-                          <StatusBadge label={selectedBranch.status} />
-                        ) : null}
-                      </div>
-                    </td>
-                    <td className="truncate">
-                      {workspace.repository.repositoryKey || "Unavailable"}
-                    </td>
-                    <td>
-                      <div className="table-actions">
-                        <button
-                          aria-label={
-                            selectedBranch
-                              ? `Update branch ${selectedBranch.repositoryBranch} for workspace ${workspace.workspaceId}`
-                              : `Update branch for workspace ${workspace.workspaceId}`
-                          }
-                          className="icon-button"
-                          disabled={
-                            actionBusy ||
-                            !selectedBranch ||
-                            !canRefreshBranch(selectedBranch)
-                          }
-                          onClick={() => {
-                            if (selectedBranch) {
-                              void refreshBranch(workspace, selectedBranch);
-                            }
-                          }}
-                          title="Update branch"
-                          type="button"
-                        >
-                          <RefreshCcw
-                            size={16}
-                            aria-hidden="true"
-                            className={
-                              refreshingBranchId ===
-                              selectedBranch?.workspaceBranchId
-                                ? "spin-icon"
-                                : undefined
-                            }
-                          />
-                        </button>
-                        <button
-                          aria-label={`Delete workspace ${workspace.workspaceId}`}
-                          className="icon-button danger-action"
-                          disabled={actionBusy || workspace.status === "CLEANED"}
-                          onClick={() => {
-                            void deleteWorkspace(workspace);
-                          }}
-                          title="Delete workspace"
-                          type="button"
-                        >
-                          <Trash2 size={16} aria-hidden="true" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
+              {workspaceUi.pagedWorkspaces.map((workspace) => (
+                <tr key={workspace.workspaceId}>
+                  <td className="select-column">
+                    <input
+                      aria-label={`Show workspace ${workspace.workspaceId} in sidebar`}
+                      checked={workspaceUi.isWorkspaceInSidebar(workspace.workspaceId)}
+                      onChange={() => workspaceUi.toggleWorkspaceInSidebar(workspace.workspaceId)}
+                      type="checkbox"
+                    />
+                  </td>
+                  <td>
+                    <button
+                      className="link-button mono-cell"
+                      onClick={() => workspaceUi.showDetail(workspace)}
+                      type="button"
+                    >
+                      {workspace.workspaceId}
+                    </button>
+                  </td>
+                  <td>{workspace.description || <span className="muted-text">Optional</span>}</td>
+                  <td>{workspace.createdAt}</td>
+                  <td>
+                    <div className="table-actions">
+                      <button
+                        aria-label={`Edit workspace ${workspace.workspaceId}`}
+                        className="icon-button"
+                        onClick={() => workspaceUi.showEdit(workspace)}
+                        title="Edit workspace"
+                        type="button"
+                      >
+                        <Edit3 size={16} aria-hidden="true" />
+                      </button>
+                      <button
+                        aria-label={`Delete workspace ${workspace.workspaceId} cascade`}
+                        className="icon-button danger-action"
+                        onClick={() => workspaceUi.deleteWorkspace(workspace.workspaceId)}
+                        title="Delete workspace cascade"
+                        type="button"
+                      >
+                        <Trash2 size={16} aria-hidden="true" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
-        </div>
-      )}
+          <div className="pagination" aria-label="Workspace paging">
+            <button
+              className="button secondary compact"
+              disabled={workspaceUi.currentPage === 1}
+              onClick={() => workspaceUi.setPage((page) => Math.max(1, page - 1))}
+              type="button"
+            >
+              <ChevronLeft size={16} aria-hidden="true" />
+              Previous
+            </button>
+            {Array.from({ length: workspaceUi.pageCount }, (_, index) => index + 1).map((page) => (
+              <button
+                aria-current={page === workspaceUi.currentPage ? "page" : undefined}
+                className={page === workspaceUi.currentPage ? "button primary compact" : "button secondary compact"}
+                key={page}
+                onClick={() => workspaceUi.setPage(page)}
+                type="button"
+              >
+                {page}
+              </button>
+            ))}
+            <button
+              className="button secondary compact"
+              disabled={workspaceUi.currentPage === workspaceUi.pageCount}
+              onClick={() => workspaceUi.setPage((page) => Math.min(workspaceUi.pageCount, page + 1))}
+              type="button"
+            >
+              Next
+              <ChevronRight size={16} aria-hidden="true" />
+            </button>
+          </div>
+        </section>
+      ) : null}
     </section>
   );
 };
 
-const selectedBranchFor = (
-  workspace: Workspace,
-  selectedBranchId: string | undefined
-): WorkspaceBranch | null =>
-  workspace.branches.find(
-    (branch) => branch.workspaceBranchId === selectedBranchId
-  ) ??
-  workspace.branches[0] ??
-  null;
-
-const StatusBadge = ({ label }: { label: string }) => (
-  <span className={`status-badge status-${label.toLowerCase()}`}>
-    <span aria-hidden="true" />
-    {label}
-  </span>
+const WorkspaceForm = ({
+  draft,
+  mode,
+  onCancel,
+  onChange,
+  onSubmit,
+  titleError
+}: {
+  draft: WorkspaceDraft;
+  mode: "create" | "edit";
+  onCancel: () => void;
+  onChange: (draft: WorkspaceDraft) => void;
+  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  titleError: string | null;
+}) => (
+  <section className="panel form-section workspace-edit-form">
+    <form aria-labelledby="workspace-form-title" onSubmit={onSubmit}>
+      <div className="panel-header">
+        <div>
+          <h2 id="workspace-form-title">
+            {mode === "edit" ? "Edit workspace" : "Create workspace"}
+          </h2>
+        </div>
+        <button
+          aria-label="Close workspace form"
+          className="icon-button"
+          onClick={onCancel}
+          type="button"
+        >
+          <X size={16} aria-hidden="true" />
+        </button>
+      </div>
+      <div className="form-row two">
+        <label>
+          Workspace_ID
+          <input readOnly value={draft.workspaceId} />
+        </label>
+        <label>
+          Title
+          <input
+            aria-invalid={titleError ? "true" : "false"}
+            required
+            value={draft.title}
+            onChange={(event) => onChange({ ...draft, title: event.target.value })}
+            placeholder="Workspace title"
+          />
+        </label>
+      </div>
+      <label>
+        Description
+        <textarea
+          rows={4}
+          value={draft.description}
+          onChange={(event) => onChange({ ...draft, description: event.target.value })}
+          placeholder="Optional workspace description"
+        />
+      </label>
+      <p className="muted-text">
+        Delete uses cascade semantics in this click dummy. No backend data is
+        changed by this local UI interaction.
+      </p>
+      <div className="button-row">
+        <button className="button primary" disabled={Boolean(titleError)} type="submit">
+          <Save size={16} aria-hidden="true" />
+          {mode === "edit" ? "Update" : "Create"}
+        </button>
+        <button className="button secondary" onClick={onCancel} type="button">
+          <X size={16} aria-hidden="true" />
+          Cancel
+        </button>
+      </div>
+    </form>
+  </section>
 );
 
-const canRefreshBranch = (branch: WorkspaceBranch): boolean =>
-  branch.status === "CHECKED_OUT" ||
-  branch.status === "UP_TO_DATE" ||
-  branch.status === "UPDATED";
+const WorkspaceDetail = ({
+  onDelete,
+  onEdit,
+  onTabChange,
+  selectedTab,
+  workspace
+}: {
+  onDelete: () => void;
+  onEdit: () => void;
+  onTabChange: (tab: WorkspaceDetailTab) => void;
+  selectedTab: WorkspaceDetailTab;
+  workspace: WorkspaceDummyRecord;
+}) => (
+  <section className="workspace-detail-view">
+    <div className="workspace-detail-tabs" role="tablist" aria-label="Workspace sections">
+      <button
+        aria-selected={selectedTab === "overview"}
+        className={selectedTab === "overview" ? "workspace-tab active" : "workspace-tab"}
+        onClick={() => onTabChange("overview")}
+        role="tab"
+        type="button"
+      >
+        Overview
+      </button>
+      <button
+        aria-selected={selectedTab === "repositories"}
+        className={selectedTab === "repositories" ? "workspace-tab active" : "workspace-tab"}
+        onClick={() => onTabChange("repositories")}
+        role="tab"
+        type="button"
+      >
+        Repositories
+      </button>
+    </div>
 
-const createPublicId = (prefix: string): string => {
-  if (globalThis.crypto?.randomUUID) {
-    return `${prefix}-${globalThis.crypto.randomUUID()}`;
-  }
+    {selectedTab === "overview" ? (
+      <WorkspaceOverview onDelete={onDelete} onEdit={onEdit} workspace={workspace} />
+    ) : (
+      <WorkspaceRepositories workspace={workspace} />
+    )}
+  </section>
+);
 
-  return `${prefix}-${Date.now().toString(36)}`;
-};
+const WorkspaceOverview = ({
+  onDelete,
+  onEdit,
+  workspace
+}: {
+  onDelete: () => void;
+  onEdit: () => void;
+  workspace: WorkspaceDummyRecord;
+}) => (
+  <section className="panel workspace-detail" role="tabpanel">
+      <div className="panel-header">
+        <div />
+        <div className="table-actions">
+          <button className="button secondary" onClick={onEdit} type="button">
+            <Edit3 size={16} aria-hidden="true" />
+            Edit
+          </button>
+          <button className="button secondary danger-action" onClick={onDelete} type="button">
+            <Trash2 size={16} aria-hidden="true" />
+            Delete
+          </button>
+        </div>
+      </div>
+      <dl className="detail-grid">
+        <div>
+          <dt>Workspace_ID</dt>
+          <dd>{workspace.workspaceId}</dd>
+        </div>
+        <div>
+          <dt>Created</dt>
+          <dd>{workspace.createdAt}</dd>
+        </div>
+        <div>
+          <dt>Description</dt>
+          <dd>{workspace.description || "Optional"}</dd>
+        </div>
+      </dl>
+    </section>
+);
+
+const WorkspaceRepositories = ({ workspace }: { workspace: WorkspaceDummyRecord }) => (
+  <section className="panel workspace-detail" role="tabpanel">
+    <div className="panel-header">
+      <div>
+        <h3>Repositories</h3>
+        <p className="muted-text">
+          Click dummy for repositories assigned to {workspace.title}.
+        </p>
+      </div>
+      <button className="button primary" type="button">
+        <Plus size={16} aria-hidden="true" />
+        Add repository
+      </button>
+    </div>
+    <div className="repository-ribbon-list">
+      <article className="repository-card">
+        <strong>source-analysis-service</strong>
+        <span>Checkout ready</span>
+      </article>
+      <article className="repository-card">
+        <strong>runtime-evidence-importer</strong>
+        <span>Pending configuration</span>
+      </article>
+    </div>
+  </section>
+);

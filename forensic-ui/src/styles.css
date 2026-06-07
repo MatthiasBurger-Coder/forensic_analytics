@@ -83,6 +83,18 @@ a:hover {
   color: #aab7b1;
 }
 
+.nav-toggle {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+}
+
+.nav-toggle-icon {
+  margin-left: auto;
+}
+
 .nav-link:hover,
 .nav-link.active {
   background: #1b2522;
@@ -95,31 +107,6 @@ a:hover {
 
 .main-column {
   min-width: 0;
-}
-
-.topbar {
-  position: sticky;
-  top: 0;
-  z-index: 5;
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
-  border-bottom: 1px solid #27322f;
-  background: rgba(18, 23, 22, 0.94);
-  padding: 14px 24px;
-  backdrop-filter: blur(10px);
-}
-
-.topbar-status {
-  display: inline-flex;
-  gap: 9px;
-  align-items: center;
-  color: #c5d0ca;
-  font-size: 0.9rem;
-}
-
-.topbar-status strong {
-  color: #f0f5f2;
 }
 
 .muted {
@@ -147,6 +134,7 @@ a:hover {
 
 .page-header h1,
 .panel-header h2,
+.panel-header h3,
 .state-panel h2 {
   margin: 2px 0 0;
   letter-spacing: 0;
@@ -157,6 +145,7 @@ a:hover {
 }
 
 .panel-header h2,
+.panel-header h3,
 .state-panel h2 {
   font-size: 1.12rem;
 }
@@ -336,6 +325,11 @@ th {
   text-transform: uppercase;
 }
 
+.select-column {
+  width: 58px;
+  text-align: center;
+}
+
 td {
   color: #d9e2dd;
 }
@@ -454,6 +448,64 @@ td {
 
 .spin-icon {
   animation: spin 900ms linear infinite;
+}
+
+.workspace-detail-view {
+  display: grid;
+  gap: 12px;
+}
+
+.workspace-detail-heading {
+  margin: 0;
+  color: var(--text);
+  font-size: 1.05rem;
+  letter-spacing: -0.01em;
+}
+
+.workspace-detail-tabs {
+  display: inline-flex;
+  width: fit-content;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid #26312e;
+  border-radius: 999px;
+  background: #101816;
+}
+
+.workspace-tab {
+  border: 0;
+  border-radius: 999px;
+  padding: 8px 14px;
+  background: transparent;
+  color: #8aa39b;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+}
+
+.workspace-tab.active {
+  background: #d6f2df;
+  color: #101816;
+}
+
+.repository-ribbon-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.repository-card {
+  display: grid;
+  gap: 7px;
+  padding: 14px;
+  border: 1px solid #26312e;
+  border-radius: 14px;
+  background: #111c19;
+}
+
+.repository-card span {
+  color: #8aa39b;
+  font-size: 0.85rem;
 }
 
 .detail-grid {
@@ -788,7 +840,6 @@ textarea {
 
   .page-header,
   .panel-header,
-  .topbar,
   .notice {
     align-items: flex-start;
     flex-direction: column;
@@ -798,4 +849,106 @@ textarea {
   .toggle-grid {
     grid-template-columns: 1fr;
   }
+}
+
+.workspace-list-toolbar {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.nav-group,
+.nav-submenu,
+.nav-subworkspace-list {
+  display: grid;
+  gap: 6px;
+}
+
+.nav-submenu {
+  margin: 4px 0 10px 28px;
+  border-left: 1px solid #2a3633;
+  padding-left: 10px;
+}
+
+.nav-subworkspace-list {
+  margin-top: 4px;
+  border-top: 1px solid #2a3633;
+  padding-top: 8px;
+}
+
+.nav-subhint {
+  color: #8aa39b;
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.nav-subitem,
+.nav-workspace,
+.link-button {
+  border: 0;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.nav-subitem,
+.nav-workspace {
+  width: 100%;
+  border-radius: 7px;
+  padding: 8px 10px;
+  color: #c9d6d0;
+  background: transparent;
+}
+
+.nav-subitem {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.nav-subitem:hover,
+.nav-subitem.active,
+.nav-workspace:hover,
+.nav-workspace.active {
+  background: #202a27;
+}
+
+.nav-subitem.active,
+.nav-workspace.active {
+  box-shadow: inset 3px 0 0 #5fd0b6;
+}
+
+.workspace-list-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+  align-items: center;
+}
+
+.link-button {
+  padding: 0;
+  color: #e5ece8;
+  background: transparent;
+  font-weight: 700;
+}
+
+.link-button:hover {
+  color: #8fd7c7;
+}
+
+.pagination {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.pagination [aria-current="page"] {
+  cursor: default;
+}
+
+.workspace-edit-form form {
+  display: grid;
+  gap: 14px;
 }
