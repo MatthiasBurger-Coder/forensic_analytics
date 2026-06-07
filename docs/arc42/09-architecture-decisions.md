@@ -79,3 +79,30 @@ decision outputs under the arc42 architecture-decision chapter:
 The `AD-*` rows in this file are arc42 decision-index entries. They are not
 numbered ADR files and must not be converted into `ADR-*` files without an
 explicit ADR decision.
+
+## 9.5 Architecture Entry Placement ADR Alignment
+
+The architecture entry placement workflow does not create a new architecture
+decision. It classifies existing architecture material into arc42 sections and
+references the accepted ADR baseline.
+
+The relevant ADR alignment is:
+
+| Topic | ADR alignment |
+|---|---|
+| No shared Java implementation between services | ADR-0009 |
+| Contract-first REST and gRPC communication | ADR-0010 and ADR-0018 |
+| Per-service data ownership and one-writer persistence | ADR-0013 |
+| FA-MSA-001 target microservices service landscape | ADR-0017 |
+| Final modular-monolith source-tree retirement | ADR-0022 |
+| H2 retained only for repository-source test/direct-fixture scope | ADR-0023 |
+| PostgreSQL selected only for repository-source workspace metadata | ADR-0024 |
+| Consolidated baseline without runtime migration or readiness claim | ADR-0025 |
+
+Future changes that alter service boundaries, contract semantics, persistence
+ownership, runtime readiness, deployment readiness or target-service scope must
+route through ADR Steward review and update or add a numbered ADR before
+implementation. This placement workflow may document where existing findings
+belong, but it must not infer endpoint fields, database ownership, runtime
+flows, graph labels, service readiness or `SCA` terminology without verified
+source evidence.
