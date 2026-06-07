@@ -83,6 +83,7 @@ Must not change:
 | Flowchart Integrity Auditor | `workflow create`, `workflow execute`, governance docs | Senior Documentation Engineer / `flowchart-integrity-auditor` | audit Level 1 and Level 2 governance diagrams for STOP paths, terminals, self-loops, fallback paths and forbidden backward jumps |
 | Workflow Executor Resolution | `workflow execute` | Workflow Executor / Skill Registry Conflict Auditor | treat `.agents/skills/workflow-executor/SKILL.md` as active Forensic Analytics executor and `.codex/skills/workflow-executor/SKILL.md` as reusable base |
 | Process Performance Profiler | `workflow execute` | Senior Performance Engineer / Workflow Executor | record process-performance diagnostics under `docs/workflow/metrics/**` without replacing gates or reviews |
+| Source Code Responsibility | `workflow create`, `workflow execute` | Senior Java Backend / Senior System Architect | enforce one-class-one-responsibility, one-method-one-responsibility, one-variable-one-meaning, declarative-before-imperative design, Strategy Pattern use for varying behavior, small-file review triggers and IF-less source-code rework guidance alongside technical owner roles |
 
 ## Governance Flowchart V2 Capability Linkage
 
@@ -102,6 +103,7 @@ Must not change:
 | Branch Strategy Matrix | `docs/process/branch-governance.md`, `AGENTS.md`, `git-branch-strategy`, `release-branch-governance`, `git-commit-preparation` | VERIFIED |
 | Workflow Executor Resolution | `.agents/skills/workflow-executor/SKILL.md`, `.codex/skills/workflow-executor/SKILL.md`, `.codex/AGENTS.md`, `.codex/workflow/workflow-execution-rules.md`, `docs/process/workflow-execute.md` | VERIFIED |
 | Process Performance Profiling | `skills/process-performance-profiler/SKILL.md`, `docs/workflow/metrics/README.md`, Workflow Executor | VERIFIED |
+| Source Code Responsibility | `skills/source-code-responsibility/SKILL.md`, routing rules, Swarm Orchestrator | VERIFIED |
 
 Detailed evidence is recorded in
 [`../skill-audit/governance-flowchart-v2-linkage.md`](../skill-audit/governance-flowchart-v2-linkage.md).

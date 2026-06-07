@@ -22,6 +22,7 @@ preflight, Typed Error Router ownership, branch rules, or required quality
 gates. Unclear impact defaults to `FULL_PATH`.
 
 - Backend domain, application, persistence, static analysis, runtime ingestion, gRPC or Protobuf work routes to `roles/senior-java-backend.md`.
+- Source-code creation, large-class rework, method extraction, mapper extraction, persistence-adapter decomposition, endpoint decomposition, declarative-before-imperative redesign, Strategy Pattern introduction or IF-less responsibility cleanup also routes to `skills/source-code-responsibility/SKILL.md` alongside the owning technical role.
 - React, frontend state, API client integration or UI component work routes to `roles/senior-react-frontend.md`.
 - Information architecture, accessibility, visualization UX or user-flow work routes to `roles/senior-ux-designer.md`.
 - Cross-module design, package boundaries, architecture tests, or module restructuring routes to `roles/senior-system-architect.md`.

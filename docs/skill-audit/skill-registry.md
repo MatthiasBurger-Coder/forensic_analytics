@@ -22,7 +22,7 @@ behavior and quality commands.
 
 | Asset set | Count | Source path |
 |---|---:|---|
-| Project skills | 75 | `.agents/skills/*/SKILL.md` |
+| Project skills | 77 | `.agents/skills/*/SKILL.md` |
 | Project roles | 18 | `.agents/roles/*.md` and `.agents/roles/*/SKILL.md` |
 | Reusable Codex skills | 6 | `.codex/skills/*/SKILL.md` |
 | Callable Codex agents | 34 | `.codex/agents/*.toml` |
@@ -66,6 +66,7 @@ decision is explicit.
 | S3D execution orchestrator | `.agents/skills/s3d-execution-orchestrator/SKILL.md` | Senior Execution Orchestrator | dependency graph, topological groups and locks | hash must match |
 | Flowchart integrity auditor | `.agents/skills/flowchart-integrity-auditor/SKILL.md` | Senior Documentation Engineer / Senior System Architect | governance diagram integrity audit | hash must match |
 | Process performance profiler | `.agents/skills/process-performance-profiler/SKILL.md` | Senior Performance Engineer / Workflow Executor | process diagnostics under `docs/workflow/metrics/**` | hash must match |
+| Source code responsibility | `.agents/skills/source-code-responsibility/SKILL.md` | Senior Java Backend / Senior System Architect | one-class, one-method, one-variable responsibility review, declarative-before-imperative design and Strategy Pattern guidance | hash must match |
 | Skill registry conflict auditor | `.agents/skills/skill-registry-conflict-auditor/SKILL.md` | Senior System Architect | ownership and compatibility review | hash must match |
 | Routing rules | `.agents/orchestrator/routing-rules.md` | Agent Workflow Orchestrator | specialist and typed-error routing | hash must match |
 | Swarm orchestrator | `.agents/orchestrator/swarm-orchestrator.md` | Senior Swarm Orchestrator | handoff and coordination rules | hash must match |

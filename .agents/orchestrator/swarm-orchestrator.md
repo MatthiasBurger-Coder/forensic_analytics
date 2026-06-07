@@ -23,10 +23,11 @@ Coordinate small implementation slices across roles while preserving architectur
 5. Apply the Senior Requirement Engineer role and engineering governance when EPIC, arc42, requirements, resilience, quality expectations or workflows may drift.
 6. For `workflow execute`, run S3D orchestration: extract slice metadata, build the dependency graph, run topological sort and verify file, contract, module and architecture-boundary locks.
 7. Select the smallest set of roles needed for the slice.
-8. Assign non-overlapping file ownership when multiple workers are explicitly requested.
-9. Keep implementation slices small enough to test and review independently.
-10. Run targeted checks first, then the applicable quality gate from `QUALITY.md`.
-11. Record blockers instead of guessing missing symbols, commands, contracts or evidence.
+8. Apply `skills/source-code-responsibility/SKILL.md` when a slice creates source code, adds behavior to a large class, decomposes endpoints or persistence adapters, introduces Strategy Pattern, converts imperative flow to declarative design, or performs IF-less responsibility cleanup.
+9. Assign non-overlapping file ownership when multiple workers are explicitly requested.
+10. Keep implementation slices small enough to test and review independently.
+11. Run targeted checks first, then the applicable quality gate from `QUALITY.md`.
+12. Record blockers instead of guessing missing symbols, commands, contracts or evidence.
 
 ## Process Strand Routing
 

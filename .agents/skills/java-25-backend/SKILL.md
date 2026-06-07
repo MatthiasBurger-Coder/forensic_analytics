@@ -13,6 +13,9 @@ Guide backend implementation using the repository Java baseline without changing
 
 - Use the configured Java toolchain from the Gradle build.
 - Prefer immutable value objects and explicit records where they fit existing style.
+- Prefer declarative programming before imperative programming when behavior is naturally expressed as mapping, filtering, grouping, validation, composition or policy selection.
+- Use Strategy Pattern for behavior that varies by worker kind, artifact type, storage backend, parser, provider, transport, status or output format.
+- Prefer explicit strategy registries, enum-backed policy methods or named mapper components over nested conditional dispatch.
 - Keep exceptions descriptive and preserve original causes.
 - Avoid static mutable state and hidden side effects.
 - Keep comments and JavaDoc in English.
