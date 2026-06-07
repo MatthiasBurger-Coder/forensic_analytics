@@ -90,3 +90,37 @@ The strategy separates:
 This separation ensures that requirements are clarified before implementation, workflow artifacts are checked before execution and every implementation slice is validated, documented, committed and pushed as a recoverable checkpoint.
 
 The Senior System Architect owns the top-level governance boundary. Documentation Governance is mandatory in every strand but does not create a separate fourth strand.
+
+## 4.7 Target Service Placement Strategy
+
+Architecture entries are placed by arc42 responsibility, not by source-document
+order. `docs/architecture/**` remains source-map evidence, while
+`docs/arc42/**` holds the authoritative arc42 extracts.
+
+The FA-MSA-001 service landscape is the target microservice direction for
+repository source, ingestion, JavaParser analysis, Joern analysis,
+orchestration, query/report API, CLI, observability and testbed boundaries.
+Those target names are migration and architecture evidence, not production
+readiness evidence. Production readiness still requires verified independent
+build, start, configuration, health, container and deployment evidence per
+service.
+
+The migration strategy is strangler-first: preserve predecessor and historical
+source-tree evidence as provenance, move behavior into service-owned domain,
+application, adapter and bootstrap boundaries, and route integration through
+contract-first REST/OpenAPI, gRPC/protobuf, approved messaging or documented
+file contracts. Shared Java implementation modules, shared domain modules,
+shared DTO modules and direct cross-service persistence coupling remain
+forbidden.
+
+The ingestion strategy uses a service-local gRPC/API intake boundary. Worker
+and job coordination belong to orchestration-owned lifecycle, lease, attempt,
+retry, timeout, failure, dead-letter and status concepts where these concepts
+are verified by the service-boundary documentation. Concrete contract fields,
+endpoint names and compatibility semantics remain contract-governance topics
+and must not be inferred from this strategy section.
+
+`SCA` is not recorded as a strategy here because the term has no verified
+repository expansion in the placement assessment. If a verified source later
+defines it as a migration concept, place the concept under chapter 8 and add a
+glossary definition if the term remains project terminology.

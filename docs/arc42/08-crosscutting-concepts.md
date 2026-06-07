@@ -312,3 +312,39 @@ workflow execute
 No strand may automatically switch into another strand. Cross-strand blockers stop and report the owning strand and recommended next command.
 
 Governance-only changes may use `GOVERNANCE_FAST_PATH` when product, runtime, contract, persistence, quality, branch and publication impacts are ruled out. Unclear impact remains `FULL_PATH`.
+
+## 8.15 Architecture Entry Placement Governance
+
+Architecture assessments are source documents. They must not be copied as a
+single block into one arc42 chapter. Complete assessment texts belong under
+`docs/architecture/assessments/`; authoritative arc42 extracts belong under
+`docs/arc42/**`.
+
+Placement follows arc42 section responsibility:
+
+- strategy and migration direction belong to chapter 4;
+- static modules, services and building blocks belong to chapter 5;
+- verified runtime scenarios belong to chapter 6;
+- verified deployment topology belongs to chapter 7;
+- crosscutting rules, contracts, data ownership, evidence integrity,
+  observability, documentation governance and quality-gate concepts belong to
+  chapter 8;
+- accepted decisions and ADR references belong to chapter 9;
+- risks, maturity gaps, unresolved readiness and technical debt belong to
+  chapter 11;
+- stable terminology belongs to chapter 12 only after the term is verified.
+
+The assessment placement matrix is allowed to classify entries from
+`docs/architecture/**`, EPIC v0.2, ADRs and existing arc42 chapters. It must
+keep planned architecture, implemented runtime behavior, migration evidence,
+historical predecessor evidence and unresolved gaps separate.
+
+`workflow create` may prepare or revise the placement matrix. `workflow
+execute` may extract approved documentation slices from that matrix, update the
+execution report and run documentation quality checks. Neither strand may
+invent missing assessment text, schema fields, endpoint names, graph labels,
+runtime facts, maturity scores or service-readiness evidence.
+
+If `SCA` is used in a future source, the term must be expanded by verified
+source evidence before it becomes an authoritative crosscutting concept or
+glossary entry.

@@ -339,7 +339,30 @@ Contracts marked as planned are design artifacts only; they do not prove that
 an endpoint, RPC, event publisher or event consumer is implemented. Generated
 transport classes must remain service-local implementation details.
 
-## 5.10 Agent Governance Building Blocks
+## 5.10 Current-To-Target Placement Summary
+
+The current source-map documents and arc42 placement assessment classify
+building-block evidence as follows:
+
+| Evidence category | Building-block interpretation |
+|---|---|
+| `docs/architecture/**` source-map documents | Input evidence for arc42 extraction; not authoritative arc42 output. |
+| Mandatory FA-MSA-001 service names | Target building blocks and migration direction. They do not prove production readiness by name alone. |
+| Current target service directories | Transitional implementation evidence. Each service still needs verified build, start, configuration, health, container and deployment evidence before readiness is claimed. |
+| Historical predecessor and retired source trees | Provenance, rollback and migration evidence. They are not compatibility aliases for current target services. |
+| `ingestion-service` | Service-local gRPC/API intake boundary. Generated transport classes remain inside the service build and must not become shared DTO or domain modules. |
+| `analysis-orchestrator-service` | Job lifecycle, worker lease, attempt, retry, timeout, failure, dead-letter and status coordination boundary. It must not own checkout, parser, Joern, report rendering, artifact byte custody or another service's private persistence. |
+| `repository-source-service` | Repository checkout workspace, branch, source snapshot, idempotency and repository-source PostgreSQL metadata owner. Its private paths, tables and checkout bytes are not shared building blocks. |
+| `query-report-api-service` and `cli-client` | Public facade and client boundaries. They consume owner APIs and must not own evidence production, analysis execution or private service storage. |
+| `observability-stack` | Deployment and configuration building block for operational observability. It is not a shared Java runtime module and logs remain diagnostics, not forensic evidence. |
+| `testbed` | Non-production integration and system-test boundary. It is not a production dependency or shared service implementation module. |
+| Optional later candidates such as `btm-generation-service`, `graph-replay-service` and `incident-analysis-service` | Candidate building blocks outside mandatory FA-MSA-001 closure unless a later verified requirement makes them mandatory. |
+
+This summary does not replace the detailed service-boundary source map. It
+records how current, predecessor, target and optional building blocks should be
+read when architecture assessment findings are extracted into arc42.
+
+## 5.11 Agent Governance Building Blocks
 
 ADR-0021 accepts Governance Flowchart V2 as the active repository governance
 model. The canonical Governance Flowchart V2 diagrams are maintained in
