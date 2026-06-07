@@ -57,9 +57,9 @@ documents from loose documentation roots into their owning arc42 sections:
 
 Process-governance roots, requirement sources, contract artifacts and
 deployment artifacts remain outside arc42 with explicit README classification
-notes. The former `docs/adr/` root now contains only a compatibility pointer
-because its numbered ADR files were byte-identical to the authoritative arc42
-ADR chapter.
+notes. The former `docs/adr/` root was removed after its numbered ADR files were
+byte-identical to the authoritative arc42 ADR chapter. New numbered ADR output
+belongs under `docs/arc42/09-architecture-decisions/adr/`.
 
 ## Governance Check Status
 

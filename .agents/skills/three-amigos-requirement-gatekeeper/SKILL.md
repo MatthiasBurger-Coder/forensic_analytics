@@ -46,7 +46,7 @@ Inspect the relevant subset of:
 - root `QUALITY.md`
 - `docs/epics`
 - `docs/arc42`
-- `docs/adr`
+- `docs/arc42/09-architecture-decisions/adr`
 - existing `docs/workflow`
 - `.agents/orchestrator`
 - `.agents/roles`

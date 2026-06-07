@@ -38,8 +38,9 @@ arc42 ADR chapter.
 
 The former numbered ADR files under `docs/adr/` were removed on 2026-06-06
 after byte-identical authoritative copies were verified under
-`docs/arc42/09-architecture-decisions/adr/`. `docs/adr/README.md` remains as a
-compatibility pointer and must not duplicate ADR content.
+`docs/arc42/09-architecture-decisions/adr/`. The remaining compatibility
+pointer was later removed after arc42 became the sole authoritative ADR
+location.
 
 ## Historical Source Inputs
 

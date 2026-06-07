@@ -20,7 +20,7 @@ Inspect the relevant subset of:
 - `QUALITY.md`
 - `docs/epics`
 - `docs/arc42`
-- `docs/adr`
+- `docs/arc42/09-architecture-decisions/adr`
 - `docs/workflow`
 - `.agents/skills`
 - `.agents/roles`

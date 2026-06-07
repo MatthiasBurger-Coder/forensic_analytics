@@ -62,7 +62,6 @@ The current `skills-agents` flow stops and reports on review failures. If an aut
 - `docs/governance/**`
 - `docs/skill-audit/**`
 - `docs/arc42/**` only for governance consequences
-- `docs/adr/**` only for governance consequences
 
 ## Persistent Skill Registry
 

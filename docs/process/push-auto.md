@@ -94,7 +94,6 @@ blind `git reset --hard`.
 - `docs/workflow/**`
 - `docs/skill-audit/**`
 - `docs/arc42/**`
-- `docs/adr/**`
 
 ## Blocked Review Scope
 

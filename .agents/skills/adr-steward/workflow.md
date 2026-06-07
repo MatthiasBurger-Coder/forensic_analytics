@@ -16,7 +16,7 @@ Require ADR review when a slice changes:
 
 ## Phase 2 - Inspect Existing Decisions
 
-Read `docs/adr/README.md` and relevant ADRs. Verify next available number from existing files.
+Read `docs/arc42/09-architecture-decisions/adr/README.md` and relevant ADRs. Verify next available number from existing files.
 
 Do not infer supersession. If an existing ADR appears inconsistent, report the conflict and route to Senior System Architect.
 
@@ -40,6 +40,6 @@ ADR review requires:
 
 ## Phase 5 - Synchronize
 
-Update `docs/adr/README.md` only after an ADR file is created and reviewed.
+Update `docs/arc42/09-architecture-decisions/adr/README.md` only after an ADR file is created and reviewed.
 
 Route active architecture consequences to arc42 governance when applicable.

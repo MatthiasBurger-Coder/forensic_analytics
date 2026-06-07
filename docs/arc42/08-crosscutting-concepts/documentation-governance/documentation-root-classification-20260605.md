@@ -33,7 +33,7 @@ chapter.
 | Path | Classification | Current authority | Handling rule |
 |---|---|---|---|
 | `docs/arc42/` | Authoritative architecture output | Authoritative for architecture documentation, ADR consolidation outputs, requirement alignment, conflict analysis and final reports created by the ADR Baseline Consolidation workflow. | Keep architecture outputs here. Do not move contract or deployment artifacts here. |
-| `docs/adr/` | Compatibility pointer and retired duplicate ADR root | Former historical ADR source for ADR-0001 through ADR-0024. Mirrored byte-for-byte into `docs/arc42/09-architecture-decisions/adr/` during S05; duplicate numbered files were removed on 2026-06-06. | Keep only the pointer README unless a later approved ADR or governance slice changes this location. New authoritative ADR output belongs under arc42. |
+| `docs/adr/` | Removed retired duplicate ADR root | Former historical ADR source for ADR-0001 through ADR-0024. Mirrored byte-for-byte into `docs/arc42/09-architecture-decisions/adr/` during S05; duplicate numbered files were removed on 2026-06-06, and the remaining compatibility pointer was removed after arc42 became authoritative. | Do not recreate this root unless a later approved ADR or governance slice changes the location. New authoritative ADR output belongs under arc42. |
 | `docs/agents/` | Process-governance root | Documents agent governance, organigramm and skill registry views. | Keep here unless a `skills-agents` governance workflow changes process documentation. |
 | `docs/arc42/08-crosscutting-concepts/service-contracts/` | Authoritative architecture output | Holds architecture-level service-contract companion documentation such as the contract test plan. | Keep architecture summaries here. Do not place contract artifacts here. |
 | `docs/contracts/` | Retired loose documentation root | Removed after `contract-test-plan.md` moved to `docs/arc42/08-crosscutting-concepts/service-contracts/`. | Do not recreate as a parallel companion root unless a workflow establishes a new documented owner. |
@@ -55,7 +55,7 @@ chapter.
 
 ### ADRs
 
-`docs/adr/` remains only as a compatibility pointer. The arc42 ADR chapter
+The former `docs/adr/` root has been removed. The arc42 ADR chapter
 under `docs/arc42/09-architecture-decisions/adr/` is the authoritative
 architecture output location for the ADR Baseline Consolidation workflow.
 

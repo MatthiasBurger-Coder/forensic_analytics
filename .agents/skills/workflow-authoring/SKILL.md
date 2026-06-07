@@ -100,7 +100,7 @@ Read before authoring or regenerating a workflow:
 3. Root `QUALITY.md`.
 4. Existing `docs/workflow` if present.
 5. Relevant EPIC files under `docs/epics`.
-6. Relevant `docs/arc42` and `docs/adr` files.
+6. Relevant `docs/arc42` files, including `docs/arc42/09-architecture-decisions/adr`.
 7. Relevant `.agents/skills` and `.agents/roles` files.
 8. Build or CI files only when quality-gate behavior is affected.
 

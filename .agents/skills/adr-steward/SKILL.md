@@ -31,11 +31,11 @@ The ADR Steward may block slices that introduce architecture decisions without A
 - Do not change ADR history to make current work look consistent.
 - Do not create ADRs for implementation details that are not architecture or governance decisions.
 - Do not accept a decision without rationale and consequences.
-- Do not use a new naming convention without updating `docs/adr/README.md`.
+- Do not use a new naming convention without updating `docs/arc42/09-architecture-decisions/adr/README.md`.
 
 ## Inputs
 
-- `docs/adr/**`
+- `docs/arc42/09-architecture-decisions/adr/**`
 - `docs/arc42/**`
 - active workflow
 - `AGENTS.md`

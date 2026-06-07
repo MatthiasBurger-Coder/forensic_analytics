@@ -20,8 +20,7 @@ architecture baseline for the verified ADR set.
 - The duplicate `docs/adr/ADR-0001` through `ADR-0024` files were removed on
   2026-06-06 after verification confirmed byte-identical counterparts in this
   directory.
-- `docs/adr/README.md` remains as a compatibility pointer to this authoritative
-  arc42 ADR chapter.
+- The former `docs/adr/README.md` compatibility pointer was removed after this
+  arc42 chapter became the sole authoritative ADR location.
 - Do not recreate numbered ADR duplicates under `docs/adr/` without a separate
   approved ADR or governance slice.
-- Pointer stubs must not duplicate architecture content.

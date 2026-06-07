@@ -38,7 +38,6 @@ May change:
 - governance-limited `docs/workflow/**`
 - `docs/skill-audit/**`
 - governance-limited `docs/arc42/**`
-- governance-limited `docs/adr/**`
 
 Must not change:
 

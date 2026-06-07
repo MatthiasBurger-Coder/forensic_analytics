@@ -26,7 +26,6 @@ Allowed files:
 - `docs/governance/**`
 - `docs/skill-audit/**`
 - `docs/arc42/**` only for governance consequences
-- `docs/adr/**` only for governance consequences
 
 Forbidden files:
 
