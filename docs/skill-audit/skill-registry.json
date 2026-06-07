@@ -17,7 +17,7 @@
     "docs/skill-audit/**"
   ],
   "inventoryCounts": {
-    "projectSkills": 75,
+    "projectSkills": 77,
     "projectRoles": 18,
     "reusableCodexSkills": 6,
     "callableCodexAgents": 34
@@ -57,20 +57,24 @@
     ".codex/AGENTS.md": "d43bc1ea9ca10deb8a6553c7c21208e8020d751f674a8cb824959b666bd01aec",
     ".codex/skills/workflow-executor/SKILL.md": "e1c13cf8f13a271d875b11d6d23702358e90650a03958127ba84fc9297267166",
     ".codex/workflow/workflow-execution-rules.md": "6d2ea74943f8ff4187a371d6e263fcf7f179d7250868086f4ba294e6f5fa122a",
-    ".agents/orchestrator/routing-rules.md": "30cd2a044746ab97f798425dd8f8125a98c6ed50d2d70a1b0778dca353c325bf",
-    ".agents/orchestrator/swarm-orchestrator.md": "402117e9b9f05b77505e25c861f86f8fddd0113735af2378f9b5052ba8e4d463",
-    "docs/agents/skill-registry.md": "a2f0860d99c0a94877aac4c75580ae6fb4eb7f28c14de676497b1408fb542961",
+    ".agents/orchestrator/routing-rules.md": "0523f69229304f30d5a13d86b848cac3f52903a15e281ffe7591ec3b46b9fc67",
+    ".agents/orchestrator/swarm-orchestrator.md": "8a65ead48c3afd2219586d45f97eb546dbb6ec4aa0c7d4f1d0450c013253047a",
+    "docs/agents/skill-registry.md": "e566e5de0129093a5c2280301f9c8c7150fc8c405a72ccafd3430e45f5a18f8b",
     "docs/process/skills-update.md": "627db53915479fcf4d3d77475fd158784d40d18db2d59f513b8399465168797b",
     "docs/process/workflow-execute.md": "4e07e3a90095147ed26d1b5d1a14b1e8b07c28eb88826b95131fd1806cd24feb",
     "docs/workflow/workflow.md": "4874a0e64468f6673f795a9e946733c58ad3fb2119630788202f98671f72ca88",
     "docs/workflow/execution-report.md": "d736052be5c97827b9dfea073012c8476295ee3ac1ad7d8d43cb086e343b4452",
     "docs/skill-audit/README.md": "cd50e21b3497bde2fa3514dcca85534a0043bfb869541c5d949c15e716395919",
-    "docs/skill-audit/skill-registry.md": "27aa82eebdc6bec11af28558fa951243535257bb8b6b0fd0f37dc431fc5bcc7a",
+    "docs/skill-audit/skill-registry.md": "0373bdabf0018033bf032a2e564fdd54c5d85a6fd61376925b100d4fb34988ca",
     "docs/skill-audit/skill-inventory.md": "2eca34a5644610eeef8c5ae18e64191b3be1e2408eb05c2cdceffc4bdf678401",
     ".agents/roles/senior-requirement-engineer/SKILL.md": "9c6aeacf81de8d2ebc36230fd6a0e695722efa7de4c78887537b84f9fbdf054f",
     ".agents/skills/engineering-governance/SKILL.md": "23682db68243e359f1e8f18f5388e11134c216f8c76b92573e4c15eb5213ed43",
     "docs/process/workflow-create.md": "4760e3d75f6a675d323c5f6153920b7536e0d8df24ef3b2d692a75fcbbd2a869",
-    "docs/arc42/08-crosscutting-concepts.md": "592de8c684aca0defd582b69a6eb6026c886bbab195b0e1e2f90cb73690c018a"
+    "docs/arc42/08-crosscutting-concepts.md": "592de8c684aca0defd582b69a6eb6026c886bbab195b0e1e2f90cb73690c018a",
+    ".agents/skills/source-code-responsibility/SKILL.md": "750eca1702c0e38928176565effdc00b4ad2103378e4d3d2ac88ac13a185cd07",
+    "docs/agents/organigramm.md": "ced5cd5260a1e72311bdb6a7787825e8b35bfe11bb2bbf1bada7b194366b0aae",
+    ".agents/skills/java-25-backend/SKILL.md": "23fb2bc3350d08c583bfa7097733a28951542f6fc6e185afef8e7e74c7abb0a0",
+    ".agents/skills/architecture-hexagonal/SKILL.md": "4fe209dacb8e72b05bb3904ae0c80d31011f11c40f90110dae1d4aa3e1ed0a57"
   },
   "skills": [
     {
@@ -133,6 +137,14 @@
       "owner": "senior-performance-engineer",
       "strand": "workflow execute",
       "scope": "process-performance diagnostics",
+      "status": "ACTIVE"
+    },
+    {
+      "name": "source-code-responsibility",
+      "path": ".agents/skills/source-code-responsibility/SKILL.md",
+      "owner": "senior-java-backend / senior-system-architect",
+      "strand": "workflow create, workflow execute",
+      "scope": "source-code responsibility sizing, declarative-before-imperative design, Strategy Pattern use, method and variable focus, and IF-less rework guidance",
       "status": "ACTIVE"
     },
     {

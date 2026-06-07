@@ -122,6 +122,7 @@ flowchart TD
   Backend["Backend Strand"]
   Frontend["Frontend Strand"]
   Runtime["Docker / Runtime Strand"]
+  Responsibility["Source Code Responsibility Review"]
   Docs["S3_DOC: Documentation path inside workflow execute"]
   Gate["D8: Blocking Slice Quality Gate"]
   QG_STOP["QG_STOP: Stop execution"]
@@ -162,10 +163,12 @@ flowchart TD
   Swarm --> Backend
   Swarm --> Frontend
   Swarm --> Runtime
+  Swarm --> Responsibility
   Swarm --> Docs
   Backend --> Gate
   Frontend --> Gate
   Runtime --> Gate
+  Responsibility --> Gate
   Docs --> Gate
   Gate -->|passed| CP_RECORD --> CP_COMMIT --> CP_PUSH
   CP_PUSH -->|success| CP_FINAL
