@@ -61,6 +61,24 @@ notes. The former `docs/adr/` root was removed after its numbered ADR files were
 byte-identical to the authoritative arc42 ADR chapter. New numbered ADR output
 belongs under `docs/arc42/09-architecture-decisions/adr/`.
 
+## Architecture Source-Map Consolidation
+
+The former loose `docs/architecture/` root has been dissolved. Its source-map
+documents now live under
+[`08-crosscutting-concepts/architecture-source-maps/`](08-crosscutting-concepts/architecture-source-maps/).
+
+These files preserve historical and current evidence for service boundaries,
+current-state maps, migration maps, coupling maps, data ownership, contract
+versioning, monorepo build strategy and placement assessments. They remain
+source evidence for arc42 governance and workflow review. They are not newer
+authoritative arc42 chapters when an equivalent checked document exists in the
+main arc42 section files.
+
+This consolidation did not change runtime behavior, service readiness,
+contracts, deployment descriptors, ADR history or implementation ownership.
+It only moved the source-map root into the arc42 documentation tree and updated
+references to the new location.
+
 ## Governance Check Status
 
 The Remote Branch Metadata Listing And Persistence workflow was created on

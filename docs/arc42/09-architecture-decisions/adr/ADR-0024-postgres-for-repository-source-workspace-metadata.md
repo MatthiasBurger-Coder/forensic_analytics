@@ -68,8 +68,8 @@ explicit contracts only.
 
 - `docs/workflow/workflow.md`
 - `docs/workflow/three-amigos-decision-record.md`
-- `docs/architecture/data-ownership.md`
-- `docs/architecture/service-boundaries.md`
+- `docs/arc42/08-crosscutting-concepts/architecture-source-maps/data-ownership.md`
+- `docs/arc42/08-crosscutting-concepts/architecture-source-maps/service-boundaries.md`
 - `docs/arc42/05-building-block-view.md`
 - `docs/arc42/07-deployment-view.md`
 - `docs/arc42/08-crosscutting-concepts.md`

@@ -346,7 +346,7 @@ building-block evidence as follows:
 
 | Evidence category | Building-block interpretation |
 |---|---|
-| `docs/architecture/**` source-map documents | Input evidence for arc42 extraction; not authoritative arc42 output. |
+| `docs/arc42/08-crosscutting-concepts/architecture-source-maps/**` source-map documents | Input evidence for arc42 extraction; not authoritative arc42 output. |
 | Mandatory FA-MSA-001 service names | Target building blocks and migration direction. They do not prove production readiness by name alone. |
 | Current target service directories | Transitional implementation evidence. Each service still needs verified build, start, configuration, health, container and deployment evidence before readiness is claimed. |
 | Historical predecessor and retired source trees | Provenance, rollback and migration evidence. They are not compatibility aliases for current target services. |

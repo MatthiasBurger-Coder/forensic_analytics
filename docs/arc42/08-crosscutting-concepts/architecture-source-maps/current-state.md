@@ -21,7 +21,7 @@ Verified from:
 - `QUALITY.md`
 - `docs/workflow/workflow.md`
 - `docs/workflow/execution-report.md`
-- `docs/architecture/microservice-governance.md`
+- `docs/arc42/08-crosscutting-concepts/architecture-source-maps/microservice-governance.md`
 - `docs/arc42/**`
 - `docs/adr/**`
 - service source and test trees under top-level service roots (`*-service/**`, `cli-client/**`, `observability-stack/**`, `testbed/**`)

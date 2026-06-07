@@ -93,7 +93,7 @@ build, test or deployment rollback units.
 
 - `docs/workflow/workflow.md`
 - `docs/workflow/execution-report.md`
-- `docs/architecture/service-migration-map.md`
-- `docs/architecture/service-boundaries.md`
+- `docs/arc42/08-crosscutting-concepts/architecture-source-maps/service-migration-map.md`
+- `docs/arc42/08-crosscutting-concepts/architecture-source-maps/service-boundaries.md`
 - `docs/arc42/05-building-block-view.md`
 - `docs/arc42/09-architecture-decisions.md`

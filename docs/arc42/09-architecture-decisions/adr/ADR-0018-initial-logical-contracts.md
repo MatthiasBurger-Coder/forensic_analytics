@@ -43,7 +43,7 @@ communication semantics again.
 Planned contracts may evolve through the compatibility rules before production
 traffic depends on them. Once an operation, RPC or event is implemented and
 tested, later changes must follow the versioning and compatibility rules in
-`docs/architecture/contract-versioning.md`.
+`docs/arc42/08-crosscutting-concepts/architecture-source-maps/contract-versioning.md`.
 
 The initial contracts are not proof that Gateway, worker, report, replay,
 health or event runtime behavior exists.

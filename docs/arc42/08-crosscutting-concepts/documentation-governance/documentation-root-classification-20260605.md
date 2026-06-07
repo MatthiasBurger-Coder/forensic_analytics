@@ -49,9 +49,17 @@ chapter.
 | `docs/testing/` | Retired loose documentation root | Removed after `wildfly-hardening.md` moved to `docs/arc42/10-quality-requirements/testing/`. | Do not recreate as a parallel companion root unless a workflow establishes a new documented owner. |
 | `docs/workflow/` | Workflow-control root | Holds the active executor entrypoint and execution reports. | Keep workflow-control artifacts here. Do not treat this as architecture output. |
 | `docs/workflows/` | Workflow-control archive/root | Holds named workflow control files. | Keep workflow control here. Architecture outputs from workflows belong under arc42 when the workflow says so. |
-| `docs/architecture/` | Historical architecture source input | Contains pre-consolidation architecture material and service-boundary source evidence. | Treat as historical/source input until a dedicated approved slice moves, mirrors or replaces content under arc42. |
+| `docs/arc42/08-crosscutting-concepts/architecture-source-maps/` | Architecture source-map input under arc42 | Contains the dissolved former `docs/architecture/` material: service-boundary maps, migration maps, current-state records, placement assessments and historical source evidence. | Treat as source evidence for arc42 governance. Do not treat these source maps as newer authoritative section output when an equivalent checked arc42 chapter exists. |
 
 ## Directory-Specific Notes
+
+### Architecture Source Maps
+
+The former loose `docs/architecture/` root has been dissolved into
+`docs/arc42/08-crosscutting-concepts/architecture-source-maps/`. The move
+preserves source evidence and removes the parallel documentation root. It does
+not create implementation, contract, deployment, persistence, service-readiness
+or ADR-history changes.
 
 ### ADRs
 

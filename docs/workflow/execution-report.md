@@ -13,7 +13,7 @@ official arc42 placement rules before extracting architecture findings into the
 verified arc42 structure.
 
 The workflow creation verified that authoritative arc42 output belongs under
-`docs/arc42/**`, not `docs/architecture/arc42/**`.
+`docs/arc42/**`, not `docs/arc42/**`.
 
 The revision records that the full architecture progress assessment source is
 optional for placement classification. Missing source text must be documented
@@ -37,7 +37,7 @@ contracts, build logic, runtime code or deployment files.
 
 | Slice | Status | Notes |
 |---|---|---|
-| S01 | Completed | Created `docs/architecture/assessments/2026-06-arc42-placement-assessment.md`; complete assessment source remains unavailable and was not invented. |
+| S01 | Completed | Created `docs/arc42/08-crosscutting-concepts/architecture-source-maps/assessments/2026-06-arc42-placement-assessment.md`; complete assessment source remains unavailable and was not invented. |
 | S02 | Completed | Added architecture placement assessment risks to `docs/arc42/11-risks-and-technical-debt.md`. |
 | S03 | Completed | Added target service placement strategy and current-to-target building-block summary to chapters 4 and 5. |
 | S04 | Completed | Added placement governance to chapter 8 and ADR alignment to chapter 9. |
@@ -85,7 +85,7 @@ Result:
 
 - `docs/workflow/context-pack.json` parsed successfully.
 - Required workflow-control files exist.
-- `docs/architecture/arc42` does not exist.
+- `docs/arc42` does not exist.
 - `git diff --check` passed.
 - Changed files are limited to `docs/workflow/**`.
 - Active branch is `docs/workflow-architecture-assessment-20260606`.
@@ -97,7 +97,7 @@ Result:
 Commands:
 
 ```bash
-test -f docs/architecture/assessments/2026-06-arc42-placement-assessment.md
+test -f docs/arc42/08-crosscutting-concepts/architecture-source-maps/assessments/2026-06-arc42-placement-assessment.md
 git diff --check
 git status --short
 ```
@@ -106,7 +106,7 @@ Result:
 
 - S01 placement matrix exists.
 - `git diff --check` passed.
-- `git status --short` shows the new `docs/architecture/assessments/`
+- `git status --short` shows the new `docs/arc42/08-crosscutting-concepts/architecture-source-maps/assessments/`
   source-assessment directory.
 - No product source, tests, build logic, contracts, runtime or deployment
   files changed.
@@ -194,8 +194,8 @@ test -f docs/workflow/workflow.md
 test -f docs/workflow/context-pack.md
 test -f docs/workflow/context-pack.json
 test -f docs/workflow/execution-report.md
-test -f docs/architecture/assessments/2026-06-arc42-placement-assessment.md
-test ! -e docs/architecture/arc42
+test -f docs/arc42/08-crosscutting-concepts/architecture-source-maps/assessments/2026-06-arc42-placement-assessment.md
+test ! -e docs/arc42
 git diff --check
 git status --short
 git diff --name-only
@@ -206,14 +206,14 @@ Result:
 
 - `docs/workflow/context-pack.json` parsed successfully.
 - Required workflow-control files exist.
-- `docs/architecture/assessments/2026-06-arc42-placement-assessment.md`
+- `docs/arc42/08-crosscutting-concepts/architecture-source-maps/assessments/2026-06-arc42-placement-assessment.md`
   exists.
-- `docs/architecture/arc42` does not exist.
+- `docs/arc42` does not exist.
 - `git diff --check` passed.
 - Modified tracked files are limited to arc42 chapters 4, 5, 8, 9, 11 and the
   workflow execution report.
 - The only untracked path is the new placement assessment document under
-  `docs/architecture/assessments/`.
+  `docs/arc42/08-crosscutting-concepts/architecture-source-maps/assessments/`.
 - The workflow remains documentation-only; no Gradle quality gate was run.
 - No commit, push or pull request was performed because the active workflow did
   not authorize publication in this execution.

@@ -11,8 +11,8 @@ workflow slices.
 
 - `docs/arc42/09-architecture-decisions.md`
 - `docs/arc42/05-building-block-view.md`
-- `docs/architecture/service-boundaries.md`
-- `docs/architecture/target-microservices-architecture.md`
+- `docs/arc42/08-crosscutting-concepts/architecture-source-maps/service-boundaries.md`
+- `docs/arc42/08-crosscutting-concepts/architecture-source-maps/target-microservices-architecture.md`
 - `docs/arc42/09-architecture-decisions/inventory/adr-inventory-20260604.md`
 - `docs/adr/ADR-0005-adapter-logging-observability-boundary.md`
 - `docs/adr/ADR-0017-target-microservices-service-landscape.md`
@@ -25,7 +25,7 @@ workflow slices.
 | ID | Area | Verified conflict or risk | Required handling |
 |---|---|---|---|
 | C-001 | Decision index shape | `docs/arc42/09-architecture-decisions.md` mixes older `AD-*` rows with `ADR-*` rows. The older `AD-*` entries are not represented as files in `docs/adr/` and are not part of the verified ADR-0001 through ADR-0024 sequence. | Later consolidation must either classify `AD-*` entries as arc42 summary decisions, backlog/open decisions or historical notes. It must not renumber them into ADRs without an explicit ADR decision. |
-| C-002 | Documentation roots | The workflow target makes `docs/arc42/` authoritative for architecture, ADR, requirement, conflict-analysis and report outputs. The repository still contains historical or authoritative-looking architecture documents under `docs/architecture/` and ADR files under `docs/adr/`. | Later slices must move, mirror or replace authoritative content under arc42 and leave only verified pointer stubs when compatibility requires them. |
+| C-002 | Documentation roots | The workflow target makes `docs/arc42/` authoritative for architecture, ADR, requirement, conflict-analysis and report outputs. The repository still contains historical or authoritative-looking architecture documents under `docs/arc42/08-crosscutting-concepts/architecture-source-maps/` and ADR files under `docs/adr/`. | Later slices must move, mirror or replace authoritative content under arc42 and leave only verified pointer stubs when compatibility requires them. |
 | C-003 | Flat arc42 chapters versus target subdirectories | Current arc42 navigation uses flat files such as `docs/arc42/05-building-block-view.md` and `docs/arc42/09-architecture-decisions.md`. The workflow target uses chapter subdirectories such as `docs/arc42/09-architecture-decisions/adr/`. | Later slices must preserve current flat files until a verified layout transition exists. They may add chapter subdirectories for workflow outputs but must not silently orphan existing flat chapter content. |
 | C-004 | Historical predecessor names | ADR-0017 and architecture documents preserve predecessor/current-state names while ADR-0022 retires legacy modular-monolith source trees as active implementation source. | Later consolidation must label predecessor names as historical, current-state, migration or rollback evidence. It must not treat them as active target aliases. |
 | C-005 | Runtime persistence baseline | ADR-0023 is accepted for tests only and superseded for runtime by ADR-0024. Some related documents still mention historical H2 context and repository-source persistence boundaries. | Later consolidation must keep H2 as deterministic adapter test/direct fixture scope only and PostgreSQL as repository-source runtime metadata persistence. |
@@ -58,16 +58,16 @@ live under `docs/arc42/`. The repository still has:
 
 ```text
 docs/adr/
-docs/architecture/
+docs/arc42/08-crosscutting-concepts/architecture-source-maps/
 ```
 
-`docs/adr/` contains the verified ADR source records. `docs/architecture/`
+`docs/adr/` contains the verified ADR source records. `docs/arc42/08-crosscutting-concepts/architecture-source-maps/`
 contains service-boundary and target architecture material that reads as active
 architecture guidance.
 
 Required later action:
 
-- treat existing `docs/adr/**` and `docs/architecture/**` as verified source
+- treat existing `docs/adr/**` and `docs/arc42/08-crosscutting-concepts/architecture-source-maps/**` as verified source
   inputs during consolidation;
 - move or mirror authoritative content into arc42 only in approved slices;
 - leave compatibility stubs only when a verified repository rule requires
@@ -136,7 +136,7 @@ Required later action:
 
 ### C-006 - Target Architecture Versus Runtime Readiness
 
-`docs/architecture/target-microservices-architecture.md` states that the
+`docs/arc42/08-crosscutting-concepts/architecture-source-maps/target-microservices-architecture.md` states that the
 target service landscape is not a production-readiness claim. Service-boundary
 documentation similarly distinguishes implementation evidence and migration
 inputs from completed independent deployability.

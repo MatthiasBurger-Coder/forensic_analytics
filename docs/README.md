@@ -6,8 +6,8 @@ This directory contains the architecture and product documentation for the Foren
 
 - [arc42/](arc42/) - Architecture documentation based on the arc42 template
 - [epics/](epics/) - Versioned product and requirement epics
-- [adr/](adr/) - Compatibility pointer to the authoritative arc42 ADR chapter
-- [architecture/](architecture/) - Architecture source maps and historical/current state evidence
+- [arc42/09-architecture-decisions/adr/](arc42/09-architecture-decisions/adr/) - Authoritative arc42 ADR chapter
+- [arc42/08-crosscutting-concepts/architecture-source-maps/](arc42/08-crosscutting-concepts/architecture-source-maps/) - Architecture source maps and historical/current state evidence from the dissolved former `docs/architecture/` root
 - [governance/](governance/) - Reusable engineering governance flow for EPIC, arc42, workflows, skills and roles
 - [process/](process/) - Command and publication governance for `skills update`, `workflow create`, `workflow execute`, slice checkpoint push, `push` and guarded `push auto` for skills, agents, process governance and governance-only workflow documentation
 - [agents/](agents/) - Agent organigramm, [agent governance](agents/agent-governance.md) and skill registry for process-strand ownership
@@ -25,12 +25,12 @@ Future service-split work follows strict microservice autonomy. Services must no
 
 Contracts may be centrally documented under `contracts/`, but they must not become shared Java implementation modules. Each future service must be independently buildable, runnable, testable, configurable, observable, health-checkable and container-ready before it is called a microservice.
 
-Microservice governance is documented in [architecture/microservice-governance.md](architecture/microservice-governance.md). Contract-first service communication governance is documented in [governance/contract-governance.md](governance/contract-governance.md). Docker, Docker Swarm and Kubernetes readiness must be verified from repository tooling before deployment commands or manifests are documented.
+Microservice governance is documented in [arc42/08-crosscutting-concepts/architecture-source-maps/microservice-governance.md](arc42/08-crosscutting-concepts/architecture-source-maps/microservice-governance.md). Contract-first service communication governance is documented in [governance/contract-governance.md](governance/contract-governance.md). Docker, Docker Swarm and Kubernetes readiness must be verified from repository tooling before deployment commands or manifests are documented.
 
 ## Current Implementation Baseline
 
 The active Gradle build is service-root based. Current backend and operational
-boundaries live as top-level service projects; see [architecture/service-roots.md](architecture/service-roots.md)
+boundaries live as top-level service projects; see [arc42/08-crosscutting-concepts/architecture-source-maps/service-roots.md](arc42/08-crosscutting-concepts/architecture-source-maps/service-roots.md)
 for the verified service directory map and the difference between transitional
 service slices, target service evidence and optional later services.
 

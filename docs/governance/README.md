@@ -154,7 +154,7 @@ The governance system requires:
 Stop and report when ownership, architecture conflicts or requirement intent cannot be verified.
 
 Microservice migration governance is documented in
-[`docs/architecture/microservice-governance.md`](../architecture/microservice-governance.md).
+[`docs/arc42/08-crosscutting-concepts/architecture-source-maps/microservice-governance.md`](../arc42/08-crosscutting-concepts/architecture-source-maps/microservice-governance.md).
 Contract-first service communication governance is documented in
 [`contract-governance.md`](contract-governance.md).
 

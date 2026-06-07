@@ -28,7 +28,7 @@ created or updated by this workflow must be placed under `docs/arc42/`.
 - Current repository contains flat arc42 chapter files under `docs/arc42/`.
 - Current repository contains historical ADRs under `docs/adr/`.
 - Current repository contains historical architecture documents under
-  `docs/architecture/`.
+  `docs/arc42/08-crosscutting-concepts/architecture-source-maps/`.
 - This workflow defines the target placement for the ADR baseline
   consolidation outputs. It does not move historical documents by itself.
 
@@ -57,7 +57,7 @@ Original request:
   as the process file only.
 - Route every other architecture, ADR, requirement, conflict-analysis and
   final-report document into `docs/arc42/`.
-- Stop creating new authoritative documentation under `docs/architecture/`,
+- Stop creating new authoritative documentation under `docs/arc42/08-crosscutting-concepts/architecture-source-maps/`,
   `docs/adr/` and `docs/requirements/`.
 
 Interpreted intent:
@@ -92,7 +92,7 @@ Explicit requirements:
 
 Accepted assumptions:
 
-- Existing `docs/adr/` and `docs/architecture/` files are historical repository
+- Existing `docs/adr/` and `docs/arc42/08-crosscutting-concepts/architecture-source-maps/` files are historical repository
   inputs until an approved slice moves, mirrors or replaces their authoritative
   content.
 - Compatibility pointer stubs are allowed only when a repository compatibility
@@ -176,7 +176,7 @@ docs/arc42/
 Do not create new authoritative documentation under:
 
 ```text
-docs/architecture/
+docs/arc42/08-crosscutting-concepts/architecture-source-maps/
 docs/adr/
 docs/requirements/
 ```
@@ -437,7 +437,7 @@ unless the change is documentation-only and does not alter executable behavior.
 Old path:
 
 ```text
-docs/architecture/adr-inventory-20260604.md
+docs/arc42/08-crosscutting-concepts/architecture-source-maps/adr-inventory-20260604.md
 ```
 
 New path:
@@ -451,7 +451,7 @@ docs/arc42/09-architecture-decisions/inventory/adr-inventory-20260604.md
 Old path:
 
 ```text
-docs/architecture/adr-conflict-analysis-20260604.md
+docs/arc42/08-crosscutting-concepts/architecture-source-maps/adr-conflict-analysis-20260604.md
 ```
 
 New path:

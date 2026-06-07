@@ -90,8 +90,8 @@ evidence until migrated. They are not target aliases:
 
 ## Related Documents
 
-- `docs/architecture/target-microservices-architecture.md`
-- `docs/architecture/service-boundaries.md`
-- `docs/architecture/service-communication-matrix.md`
-- `docs/architecture/data-ownership.md`
+- `docs/arc42/08-crosscutting-concepts/architecture-source-maps/target-microservices-architecture.md`
+- `docs/arc42/08-crosscutting-concepts/architecture-source-maps/service-boundaries.md`
+- `docs/arc42/08-crosscutting-concepts/architecture-source-maps/service-communication-matrix.md`
+- `docs/arc42/08-crosscutting-concepts/architecture-source-maps/data-ownership.md`
 - `docs/workflow/workflow.md`

@@ -70,7 +70,7 @@ fallback.
 
 - `docs/workflow/workflow.md`
 - `docs/workflow/execution-report.md`
-- `docs/architecture/data-ownership.md`
-- `docs/architecture/service-boundaries.md`
+- `docs/arc42/08-crosscutting-concepts/architecture-source-maps/data-ownership.md`
+- `docs/arc42/08-crosscutting-concepts/architecture-source-maps/service-boundaries.md`
 - `docs/arc42/09-architecture-decisions.md`
 - `docs/arc42/11-risks-and-technical-debt.md`

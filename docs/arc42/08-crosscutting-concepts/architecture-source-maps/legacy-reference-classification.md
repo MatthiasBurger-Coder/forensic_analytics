@@ -56,16 +56,16 @@ These references are architecture history, predecessor evidence or stale
 state-of-record material. They may remain only when rewritten as dated,
 superseded or historical evidence:
 
-- `docs/architecture/current-state.md`
-- `docs/architecture/current-build-and-test-map.md`
-- `docs/architecture/current-coupling-map.md`
-- `docs/architecture/monolith-caller-retirement-plan.md`
-- `docs/architecture/monolith-runtime-isolation.md`
-- `docs/architecture/service-boundaries.md`
-- `docs/architecture/service-migration-map.md`
-- `docs/architecture/target-microservices-architecture.md`
-- `docs/architecture/data-ownership.md`
-- `docs/architecture/monorepo-service-build-strategy.md`
+- `docs/arc42/08-crosscutting-concepts/architecture-source-maps/current-state.md`
+- `docs/arc42/08-crosscutting-concepts/architecture-source-maps/current-build-and-test-map.md`
+- `docs/arc42/08-crosscutting-concepts/architecture-source-maps/current-coupling-map.md`
+- `docs/arc42/08-crosscutting-concepts/architecture-source-maps/monolith-caller-retirement-plan.md`
+- `docs/arc42/08-crosscutting-concepts/architecture-source-maps/monolith-runtime-isolation.md`
+- `docs/arc42/08-crosscutting-concepts/architecture-source-maps/service-boundaries.md`
+- `docs/arc42/08-crosscutting-concepts/architecture-source-maps/service-migration-map.md`
+- `docs/arc42/08-crosscutting-concepts/architecture-source-maps/target-microservices-architecture.md`
+- `docs/arc42/08-crosscutting-concepts/architecture-source-maps/data-ownership.md`
+- `docs/arc42/08-crosscutting-concepts/architecture-source-maps/monorepo-service-build-strategy.md`
 - `docs/arc42/03-system-scope-and-context.md`
 - `docs/arc42/05-building-block-view.md`
 - `docs/arc42/07-deployment-view.md`

@@ -137,7 +137,7 @@ or unavailable state.
   a hidden monolith, artifact byte owner, producer catalog owner or canonical
   fact store.
 - Canonical analysis facts and artifact metadata ownership follow the S04
-  service-local ownership matrix in `docs/architecture/data-ownership.md`.
+  service-local ownership matrix in `docs/arc42/08-crosscutting-concepts/architecture-source-maps/data-ownership.md`.
 - Graph and replay outputs are projections, and report outputs are generated
   artifacts. They are not primary evidence stores without a later approved
   requirement and ADR.

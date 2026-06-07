@@ -33,7 +33,7 @@
     "build logic mutation",
     "runtime migration strategy",
     "ADR history rewrite without explicit architecture decision",
-    "authoritative arc42 output under docs/architecture/arc42",
+    "authoritative arc42 output under docs/arc42",
     "complete assessment duplication inside one arc42 chapter",
     "invented assessment content"
   ],
@@ -64,10 +64,10 @@
   ],
   "plannedFiles": {
     "placementAssessment": [
-      "docs/architecture/assessments/2026-06-arc42-placement-assessment.md"
+      "docs/arc42/08-crosscutting-concepts/architecture-source-maps/assessments/2026-06-arc42-placement-assessment.md"
     ],
     "optionalAssessmentSource": [
-      "docs/architecture/assessments/2026-06-architecture-progress-assessment.md"
+      "docs/arc42/08-crosscutting-concepts/architecture-source-maps/assessments/2026-06-architecture-progress-assessment.md"
     ],
     "arc42Extracts": [
       "docs/arc42/04-solution-strategy.md",
@@ -103,10 +103,10 @@
       "git diff --name-only"
     ],
     "workflowExecutionPlacementMatrix": [
-      "test -f docs/architecture/assessments/2026-06-arc42-placement-assessment.md"
+      "test -f docs/arc42/08-crosscutting-concepts/architecture-source-maps/assessments/2026-06-arc42-placement-assessment.md"
     ],
     "workflowExecutionForbiddenArc42Root": [
-      "test ! -e docs/architecture/arc42"
+      "test ! -e docs/arc42"
     ],
     "minimumRepository": [
       "./gradlew test --dependency-verification strict --console=plain --stacktrace"
@@ -116,7 +116,7 @@
     ]
   },
   "stopConditions": [
-    "workflow execution would create docs/architecture/arc42",
+    "workflow execution would create docs/arc42",
     "SCA acronym is required for an authoritative statement but cannot be verified",
     "service readiness would be claimed without verified build/start/health/container/deployment evidence",
     "new architecture decision would be introduced without ADR review",
@@ -137,11 +137,11 @@
     ".agents/skills/documentation-sync/SKILL.md": "1a66037a3a2108a1ddc44a58251b16562eb6ebef27e4651353db35ea1bc0ebab",
     ".agents/skills/three-amigos-requirement-gatekeeper/SKILL.md": "95c04f47127f5149bb39a7e1b82b2690803cc765cad5d18274a82d415931e9ad",
     "docs/epics/forensics-platform-runtime-replay-llm-analysis-v0.2.md": "54ff246b4359e1eb92c7e80058db42faa079ff5ffd3db0d71170cfaa3dbb68fe",
-    "docs/architecture/README.md": "a146c5c4c023fa80461ab085d67c268ef33a690a3d540f3bdb8e2007aa255491",
-    "docs/architecture/current-state.md": "a5dc69c1b9ebd78dcd19d93be4e890837dd7468d49e8e8b693446d414312ddf0",
-    "docs/architecture/target-microservices-architecture.md": "cef124cb9cc655c6dbf63e18672fa19944d243e470162bde93a4a95e5df32c73",
-    "docs/architecture/service-boundaries.md": "df4467d8075f9712f3cae29a817af1f42c60cb27a8b1d72cb3c832a08f0c0d15",
-    "docs/architecture/data-ownership.md": "d11c735558a9e9428cb36e644d3308c393378c806484da39a09010a297ce6c7e",
+    "docs/arc42/08-crosscutting-concepts/architecture-source-maps/README.md": "a146c5c4c023fa80461ab085d67c268ef33a690a3d540f3bdb8e2007aa255491",
+    "docs/arc42/08-crosscutting-concepts/architecture-source-maps/current-state.md": "a5dc69c1b9ebd78dcd19d93be4e890837dd7468d49e8e8b693446d414312ddf0",
+    "docs/arc42/08-crosscutting-concepts/architecture-source-maps/target-microservices-architecture.md": "cef124cb9cc655c6dbf63e18672fa19944d243e470162bde93a4a95e5df32c73",
+    "docs/arc42/08-crosscutting-concepts/architecture-source-maps/service-boundaries.md": "df4467d8075f9712f3cae29a817af1f42c60cb27a8b1d72cb3c832a08f0c0d15",
+    "docs/arc42/08-crosscutting-concepts/architecture-source-maps/data-ownership.md": "d11c735558a9e9428cb36e644d3308c393378c806484da39a09010a297ce6c7e",
     "docs/arc42/README.md": "45868a984d30dc40de5a4e3a343b637afc36ba1fd648f03a6f0fc99408c29445",
     "docs/arc42/04-solution-strategy.md": "4e0036cd9c0a1c39d1ce39d4278368c13ad92114dbbc388cad88bb3b29ef1246",
     "docs/arc42/05-building-block-view.md": "e2aeff134f596529013db9182da24e5b7697581ce269a57ce9a656deeecacbfb",

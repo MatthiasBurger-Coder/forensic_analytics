@@ -42,11 +42,12 @@ after byte-identical authoritative copies were verified under
 pointer was later removed after arc42 became the sole authoritative ADR
 location.
 
-## Historical Source Inputs
+## Architecture Source Maps
 
-Existing documents under `docs/architecture/` may remain repository history,
-compatibility input or source evidence until a separate approved slice changes
-that location.
+The former loose `docs/architecture/` root has been dissolved into
+`docs/arc42/08-crosscutting-concepts/architecture-source-maps/`. The files in
+that directory remain repository history, compatibility input and source
+evidence for arc42 extraction.
 
 They must not be silently treated as newer authoritative outputs when a
 workflow output exists under `docs/arc42/`.

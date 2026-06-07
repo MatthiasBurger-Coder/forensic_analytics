@@ -140,7 +140,7 @@ not contain the wrong path.
 
 | Risk | Status |
 |---|---|
-| Historical architecture documents still exist under `docs/architecture/` | Non-blocking source history until a separate approved slice changes that location. |
+| Historical architecture documents still exist under `docs/arc42/08-crosscutting-concepts/architecture-source-maps/` | Non-blocking source history until a separate approved slice changes that location. |
 | Historical ADR source files under `docs/adr/` | Resolved by the later duplicate ADR cleanup on 2026-06-06; authoritative workflow output remains under arc42 and `docs/adr/README.md` is the compatibility pointer. |
 | Broader Analytics persistence remains open | Non-blocking; ADR-0025 explicitly keeps this open outside repository-source workspace metadata. |
 | Runtime and deployment readiness are not proven | Non-blocking; the workflow does not claim readiness. |

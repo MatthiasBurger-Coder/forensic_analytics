@@ -24,13 +24,13 @@ docs/arc42/
 The architecture source-map and assessment root remains:
 
 ```text
-docs/architecture/
+docs/arc42/08-crosscutting-concepts/architecture-source-maps/
 ```
 
 Do not create:
 
 ```text
-docs/architecture/arc42/
+docs/arc42/
 ```
 
 ## arc42 Placement Rule Source
@@ -63,9 +63,9 @@ Use these rules during execution:
 The completed workflow will produce:
 
 - a placement assessment matrix under
-  `docs/architecture/assessments/2026-06-arc42-placement-assessment.md`;
+  `docs/arc42/08-crosscutting-concepts/architecture-source-maps/assessments/2026-06-arc42-placement-assessment.md`;
 - optional full assessment source storage under
-  `docs/architecture/assessments/2026-06-architecture-progress-assessment.md`
+  `docs/arc42/08-crosscutting-concepts/architecture-source-maps/assessments/2026-06-architecture-progress-assessment.md`
   only when the complete source text is available;
 - extracted strategy findings in `docs/arc42/04-solution-strategy.md`;
 - current-module versus target-service decomposition notes in
@@ -84,7 +84,7 @@ The completed workflow will produce:
 - Process strand: `workflow create`
 - Execution profile: `FULL_PATH`
 - Current repository arc42 root: `docs/arc42/`
-- Current architecture source-map root: `docs/architecture/`
+- Current architecture source-map root: `docs/arc42/08-crosscutting-concepts/architecture-source-maps/`
 - Current EPIC source root: `docs/epics/`
 - Current ADR root for numbered ADRs:
   `docs/arc42/09-architecture-decisions/adr/`
@@ -105,11 +105,11 @@ Verified source-of-truth files:
 - `.agents/skills/documentation-sync/SKILL.md`
 - `.agents/skills/three-amigos-requirement-gatekeeper/SKILL.md`
 - `docs/epics/forensics-platform-runtime-replay-llm-analysis-v0.2.md`
-- `docs/architecture/README.md`
-- `docs/architecture/current-state.md`
-- `docs/architecture/target-microservices-architecture.md`
-- `docs/architecture/service-boundaries.md`
-- `docs/architecture/data-ownership.md`
+- `docs/arc42/08-crosscutting-concepts/architecture-source-maps/README.md`
+- `docs/arc42/08-crosscutting-concepts/architecture-source-maps/current-state.md`
+- `docs/arc42/08-crosscutting-concepts/architecture-source-maps/target-microservices-architecture.md`
+- `docs/arc42/08-crosscutting-concepts/architecture-source-maps/service-boundaries.md`
+- `docs/arc42/08-crosscutting-concepts/architecture-source-maps/data-ownership.md`
 - `docs/arc42/README.md`
 - `docs/arc42/04-solution-strategy.md`
 - `docs/arc42/05-building-block-view.md`
@@ -163,7 +163,7 @@ Explicit requirements:
 - Use official arc42 template knowledge to classify architecture entries.
 - Determine placement per architecture entry.
 - Preserve `docs/arc42/**` as the authoritative arc42 root.
-- Preserve `docs/architecture/**` as architecture source-map and assessment
+- Preserve `docs/arc42/08-crosscutting-concepts/architecture-source-maps/**` as architecture source-map and assessment
   input.
 - Do not block classification just because the full assessment source text is
   missing.
@@ -171,7 +171,7 @@ Explicit requirements:
 
 Accepted assumptions:
 
-- Existing architecture entries are available in `docs/architecture/**`,
+- Existing architecture entries are available in `docs/arc42/08-crosscutting-concepts/architecture-source-maps/**`,
   `docs/arc42/**`, ADRs, EPIC files and workflow files.
 - The user-provided assessment-placement instruction is a classification input
   but not the full assessment source.
@@ -286,10 +286,10 @@ Senior Documentation Engineer:
 ## Architecture Constraints
 
 - Use `docs/arc42/**` for authoritative arc42 output.
-- Use `docs/architecture/assessments/**` for placement assessments and
+- Use `docs/arc42/08-crosscutting-concepts/architecture-source-maps/assessments/**` for placement assessments and
   optional full assessment source text.
-- Do not create `docs/architecture/arc42/**`.
-- Do not treat `docs/architecture/**` source-map files as newer authoritative
+- Do not create `docs/arc42/**`.
+- Do not treat `docs/arc42/08-crosscutting-concepts/architecture-source-maps/**` source-map files as newer authoritative
   arc42 output where checked arc42 files already exist.
 - Do not describe current service roots as production-ready microservices
   without verified independent build, start, test, configuration, healthcheck,
@@ -307,8 +307,8 @@ Senior Documentation Engineer:
 In scope:
 
 - `docs/workflow/**` workflow-control files.
-- `docs/architecture/assessments/2026-06-arc42-placement-assessment.md`.
-- `docs/architecture/assessments/2026-06-architecture-progress-assessment.md`
+- `docs/arc42/08-crosscutting-concepts/architecture-source-maps/assessments/2026-06-arc42-placement-assessment.md`.
+- `docs/arc42/08-crosscutting-concepts/architecture-source-maps/assessments/2026-06-architecture-progress-assessment.md`
   only when complete source text exists.
 - `docs/arc42/04-solution-strategy.md`.
 - `docs/arc42/05-building-block-view.md`.
@@ -435,22 +435,22 @@ secondary_reviewers:
   - Senior Requirement Engineer
   - Senior System Architect
 affected_files:
-  - docs/architecture/assessments/2026-06-arc42-placement-assessment.md
-  - docs/architecture/assessments/2026-06-architecture-progress-assessment.md
+  - docs/arc42/08-crosscutting-concepts/architecture-source-maps/assessments/2026-06-arc42-placement-assessment.md
+  - docs/arc42/08-crosscutting-concepts/architecture-source-maps/assessments/2026-06-architecture-progress-assessment.md
 affected_modules: []
 affected_contracts: []
 dependencies: []
 parallel_group: P1
 file_locks:
-  - docs/architecture/assessments/2026-06-arc42-placement-assessment.md
-  - docs/architecture/assessments/2026-06-architecture-progress-assessment.md
+  - docs/arc42/08-crosscutting-concepts/architecture-source-maps/assessments/2026-06-arc42-placement-assessment.md
+  - docs/arc42/08-crosscutting-concepts/architecture-source-maps/assessments/2026-06-architecture-progress-assessment.md
 contract_locks: []
 architecture_locks:
   - architecture-entry-placement
   - architecture-source-assessment
 quality_gates:
   targeted:
-    - test -f docs/architecture/assessments/2026-06-arc42-placement-assessment.md
+    - test -f docs/arc42/08-crosscutting-concepts/architecture-source-maps/assessments/2026-06-arc42-placement-assessment.md
     - git diff --check
   required:
     - git diff --check
@@ -460,7 +460,7 @@ documentation:
 stop_conditions:
   - official arc42 placement rules cannot be verified from workflow or official sources
   - the slice would invent missing assessment content
-  - the slice would store authoritative arc42 output under docs/architecture/arc42
+  - the slice would store authoritative arc42 output under docs/arc42
   - a placement decision would require guessing implementation facts
 ```
 
@@ -785,7 +785,7 @@ gate from `QUALITY.md`.
 ## Documentation Synchronization Points
 
 - Keep placement and optional assessment-source material under
-  `docs/architecture/assessments/`.
+  `docs/arc42/08-crosscutting-concepts/architecture-source-maps/assessments/`.
 - Keep authoritative arc42 extracts under `docs/arc42/**`.
 - Keep numbered ADR references under
   `docs/arc42/09-architecture-decisions/adr/`.
@@ -798,7 +798,7 @@ gate from `QUALITY.md`.
 
 Stop workflow execution if:
 
-- the workflow would create `docs/architecture/arc42/**`;
+- the workflow would create `docs/arc42/**`;
 - an arc42 extract would require guessing implementation, service readiness,
   persistence schema, contract shape, endpoint, table, graph label, runtime
   behavior or evidence fact;
@@ -875,4 +875,4 @@ Required during workflow execution:
 - update chapters 4, 5, 8, 9 and 11 according to the placement matrix;
 - keep chapter 11 as the primary risk and technical-debt chapter;
 - keep placement and optional assessment source documents outside arc42;
-- do not create `docs/architecture/arc42/**`.
+- do not create `docs/arc42/**`.

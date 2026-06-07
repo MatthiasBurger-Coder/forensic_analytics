@@ -94,7 +94,7 @@ The Senior System Architect owns the top-level governance boundary. Documentatio
 ## 4.7 Target Service Placement Strategy
 
 Architecture entries are placed by arc42 responsibility, not by source-document
-order. `docs/architecture/**` remains source-map evidence, while
+order. `docs/arc42/08-crosscutting-concepts/architecture-source-maps/**` remains source-map evidence, while
 `docs/arc42/**` holds the authoritative arc42 extracts.
 
 The FA-MSA-001 service landscape is the target microservice direction for

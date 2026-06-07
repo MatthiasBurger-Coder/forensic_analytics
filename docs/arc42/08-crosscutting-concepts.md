@@ -317,7 +317,7 @@ Governance-only changes may use `GOVERNANCE_FAST_PATH` when product, runtime, co
 
 Architecture assessments are source documents. They must not be copied as a
 single block into one arc42 chapter. Complete assessment texts belong under
-`docs/architecture/assessments/`; authoritative arc42 extracts belong under
+`docs/arc42/08-crosscutting-concepts/architecture-source-maps/assessments/`; authoritative arc42 extracts belong under
 `docs/arc42/**`.
 
 Placement follows arc42 section responsibility:
@@ -335,7 +335,7 @@ Placement follows arc42 section responsibility:
 - stable terminology belongs to chapter 12 only after the term is verified.
 
 The assessment placement matrix is allowed to classify entries from
-`docs/architecture/**`, EPIC v0.2, ADRs and existing arc42 chapters. It must
+`docs/arc42/08-crosscutting-concepts/architecture-source-maps/**`, EPIC v0.2, ADRs and existing arc42 chapters. It must
 keep planned architecture, implemented runtime behavior, migration evidence,
 historical predecessor evidence and unresolved gaps separate.
 
