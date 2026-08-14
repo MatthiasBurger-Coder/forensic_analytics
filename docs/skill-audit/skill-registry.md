@@ -31,6 +31,19 @@ The existing exhaustive narrative inventory remains in
 `docs/skill-audit/skill-inventory.md`. This matrix records the cache and reuse
 decision for the governance-critical routing set.
 
+## `.codex` Agent Portability
+
+GOV-05 audited all 34 callable `.codex/agents/*.toml` definitions from their
+actual content. Five definitions are reusable, 29 are project-specific, and
+none requires unresolved manual review. The reusable set is
+`implementation_worker`, `quality_reviewer`, `replay_graph_llm_reviewer`,
+`repository_explorer` and `source_analysis_reviewer`.
+
+Project-specific definitions contain explicit Forensic Analytics references,
+`.agents` skill paths, or repository-specific workflow, module, contract or
+deployment boundaries. They must remain repository-local unless generalized
+and re-audited. The JSON registry records the machine-readable classification.
+
 ## Reuse Rule
 
 Previous registry evidence may be reused for routing only when all conditions

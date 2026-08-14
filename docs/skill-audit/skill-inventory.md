@@ -43,6 +43,25 @@ The directory-style roles are `senior-requirement-engineer` and
 `senior-workflow-architect`. The persistent JSON registry records the exact
 path and `entryPointType` for every role; it does not replace repository files.
 
+## `.codex` Agent Portability Audit
+
+GOV-05 audited every callable agent definition under `.codex/agents/*.toml`
+against its actual description and developer instructions. A definition is
+reusable only when it avoids project names, project-specific paths, and
+repository-specific boundaries. Definitions with verified Forensic Analytics
+or `.agents` bindings remain project-specific.
+
+| Classification | Count | Definitions |
+|---|---:|---|
+| Reusable | 5 | `implementation_worker`, `quality_reviewer`, `replay_graph_llm_reviewer`, `repository_explorer`, `source_analysis_reviewer` |
+| Project-specific | 29 | All remaining `.codex/agents/*.toml` definitions |
+| Manual review | 0 | No unresolved mixed-reference definition |
+
+Only the five reusable definitions may be copied into a portable `.codex`
+template. The 29 project-specific definitions remain local until their
+references and governance assumptions are generalized and this audit is
+repeated. No TOML definition was silently rewritten by GOV-05.
+
 ## Skill Definition Schema Audit
 
 The authoritative `.agents/AGENTS.md` compatibility rule requires every
