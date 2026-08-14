@@ -1,17 +1,22 @@
 # Workflow Context Pack
 
-- Workflow: GOV-01–GOV-05 Governance Registry and Agent Definition Reconciliation
-- Version: 1
-- Branch: `feature/workflow-gov-skill-governance-20260814`
+- Workflow: GOV-02 and GOV-04 Role Inventory Validation and Skill Schema Standardization
+- Workflow ID: `gov-02-04-role-inventory-skill-schema`
+- Version: `gov-02-04-role-inventory-skill-schema-v1`
+- Branch: `feature/workflow-gov-02-04-20260814`
 - Process strand: `workflow execute`
 - Execution profile: `FULL_PATH`
-- Affected: `.agents`, `.codex`, governance docs, skill audit, workflow docs and checked arc42 notes
-- Forbidden: product code, build/runtime/contracts/persistence and `push auto`
+- Affected: `.agents/skills/**`, `.agents/roles/**`, `docs/agents/**`, `docs/skill-audit/**`, `docs/workflow/**` and checked governance-risk notes only
+- Forbidden: product implementation, service contracts, persistence, runtime, Docker, frontend behavior, build logic and `push auto`
 - Required roles: Senior Requirement Engineer, Senior System Architect, Senior Java Backend Developer, Senior React Frontend Developer, Senior Tester
-- Conditional roles: Senior Workflow Architect, Senior Documentation Engineer, Skill Registry Conflict Auditor, Flowchart Integrity Auditor
-- Quality: strict Gradle test command, targeted deterministic governance checks and `git diff --check`
-- Baseline at workflow creation: 77 skills, 19 role files, 6 reusable Codex skills, 34 Codex agents
-- Current governance counts after the authorized follow-up: 77 skills, 20 roles, 6 reusable Codex skills and 34 Codex agents
-- Hashes are in `context-pack.json`; the pack is stale if governing files or the workflow change.
-- Root Architect escalation status: `VERIFIED` through the dedicated `.agents/roles/root-architect.md` role.
-- Execution status: S01–S06 completed; see `execution-report.md` for commit and gate evidence.
+- Conditional roles: Senior Workflow Architect, Senior Documentation Engineer, Skill Registry Conflict Auditor
+- Quality: targeted deterministic governance checks, strict Gradle test command per slice, full local gate in S05 and `git diff --check`
+- Completed slices: none; execution is ready to start with S01
+- Registry status: derived cache; S04 refreshes registry and audit evidence from verified sources
+- Arc42 status: checked; update only when execution verifies a governance-risk transition
+- ADR references: ADR-0015 and ADR-0021
+
+Hashes and machine-readable provenance are recorded in
+[`context-pack.json`](context-pack.json). This pack is a navigation aid and
+becomes stale when a recorded governing file, workflow scope or governance
+rule changes.

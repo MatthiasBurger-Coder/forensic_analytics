@@ -1,28 +1,75 @@
 {
   "schemaVersion": 1,
-  "workflowId": "gov-01-05-registry-agent-reconciliation",
-  "workflowVersion": 1,
-  "branch": "feature/workflow-gov-skill-governance-20260814",
+  "workflowId": "gov-02-04-role-inventory-skill-schema",
+  "workflowVersion": "gov-02-04-role-inventory-skill-schema-v1",
+  "branch": "feature/workflow-gov-02-04-20260814",
   "processStrand": "workflow execute",
   "executionProfile": "FULL_PATH",
-  "requiredRoles": ["Senior Requirement Engineer", "Senior System Architect", "Senior Java Backend Developer", "Senior React Frontend Developer", "Senior Tester"],
-  "conditionalRoles": ["Senior Workflow Architect", "Senior Documentation Engineer", "Skill Registry Conflict Auditor", "Flowchart Integrity Auditor"],
-  "affectedAreas": [".agents", ".codex", "docs/agents", "docs/process", "docs/governance", "docs/skill-audit", "docs/workflow", "docs/arc42 governance notes"],
-  "forbiddenAreas": ["product implementation", "build logic", "runtime", "contracts", "persistence", "push auto"],
-  "qualityCommands": ["./gradlew test --dependency-verification strict --console=plain --stacktrace", "git diff --check"],
-  "baselineCounts": {"projectSkills": 77, "projectRoleFiles": 19, "reusableCodexSkills": 6, "callableCodexAgents": 34},
-  "currentGovernanceCounts": {"projectSkills": 77, "projectRoleFiles": 20, "reusableCodexSkills": 6, "callableCodexAgents": 34},
+  "requiredRoles": [
+    "Senior Requirement Engineer",
+    "Senior System Architect",
+    "Senior Java Backend Developer",
+    "Senior React Frontend Developer",
+    "Senior Tester"
+  ],
+  "conditionalRoles": [
+    "Senior Workflow Architect",
+    "Senior Documentation Engineer",
+    "Skill Registry Conflict Auditor"
+  ],
+  "affectedAreas": [
+    ".agents/skills/**",
+    ".agents/roles/**",
+    "docs/agents/**",
+    "docs/skill-audit/**",
+    "docs/workflow/**",
+    "checked governance-risk notes"
+  ],
+  "forbiddenAreas": [
+    "product implementation",
+    "service contracts",
+    "persistence",
+    "runtime",
+    "Docker",
+    "frontend behavior",
+    "build logic",
+    "push auto"
+  ],
+  "qualityCommands": [
+    "./gradlew test --dependency-verification strict --console=plain --stacktrace",
+    "./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace",
+    "git diff --check"
+  ],
+  "baselineCounts": {
+    "projectSkills": 77,
+    "projectRoleFiles": 20,
+    "reusableCodexSkills": 6,
+    "callableCodexAgents": 34
+  },
+  "currentGovernanceCounts": {
+    "projectSkills": 77,
+    "projectRoleFiles": 20,
+    "reusableCodexSkills": 6,
+    "callableCodexAgents": 34
+  },
   "rootArchitectStatus": "VERIFIED",
   "governingFileHashes": {
     "AGENTS.md": "a1bd05f38d8602a5c67dcfbf3628c811a4c0de33004fdf553afadf4b5c614f5d",
     "QUALITY.md": "95f9aa2ba5dd7f67057864d52321e5716acb46b166bc74c12b154ec271bb3596",
     ".codex/AGENTS.md": "d43bc1ea9ca10deb8a6553c7c21208e8020d751f674a8cb824959b666bd01aec",
-    ".agents/orchestrator/routing-rules.md": "0523f69229304f30d5a13d86b848cac3f52903a15e281ffe7591ec3b46b9fc67",
+    ".agents/orchestrator/routing-rules.md": "5ec1695843088366febe7c82552e3e0e0c90849cfda77ec722e602b1b2348db9",
     ".agents/skills/execution-profile-router/SKILL.md": "dfd2fc367bb9ab856e9482d3088690795ee1805b7c84ad462281b2350ca2f62b",
     ".agents/skills/workflow-authoring/SKILL.md": "86b8774f6836e1672d083013760801520f6f5adb547b2b1d877925a6c937c4c6",
     ".agents/skills/three-amigos-requirement-gatekeeper/SKILL.md": "33856a6d937cdc8b0941e9a90382e45df137e437b9b9ec099f1953df7391ab1e",
-    ".agents/skills/skill-registry-conflict-auditor/SKILL.md": "d6f2b361236bc7ec6bf371d07b74350cdf5424ce3f9a2f5a432f0a5d2399faa3"
+    ".agents/skills/skill-registry-conflict-auditor/SKILL.md": "d6f2b361236bc7ec6bf371d07b74350cdf5424ce3f9a2f5a432f0a5d2399faa3",
+    "docs/process/workflow-create.md": "4760e3d75f6a675d323c5f6153920b7536e0d8df24ef3b2d692a75fcbbd2a869",
+    "docs/process/workflow-execute.md": "4e07e3a90095147ed26d1b5d1a14b1e8b07c28eb88826b95131fd1806cd24feb",
+    "docs/arc42/README.md": "9d7766cb985f5e4b643c96b08195574f1867d3a3a642e765f3e390be8a328d8e",
+    "docs/arc42/11-risks-and-technical-debt.md": "bb45cca3c5606ba0de07a13dc44ec0e5f567ea4752eb79fcdfb7858010e4b457",
+    "docs/arc42/09-architecture-decisions/adr/ADR-0015-skill-registry-conflict-auditing.md": "56a2cd3b1822e5e06f3e30ba964bf5d5dfd8ee0b8d9e343dba80cf8589d3b46a",
+    "docs/arc42/09-architecture-decisions/adr/ADR-0021-governance-flowchart-v2.md": "10c36d1776b9d40a58bd9e1844d2e17cc6c3d21253dc41cf49b180c6361f484f",
+    "docs/workflow/workflow.md": "7054a8ba354f0ac2bd2107335093fd21249fe4b9460e2bbf39e86276ddc86bdf"
   },
   "status": "EXECUTION_HANDOFF_READY",
-  "completedSlices": ["S01", "S02", "S03", "S04", "S05", "S06"]
+  "completedSlices": []
 }
