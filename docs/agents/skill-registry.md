@@ -47,11 +47,20 @@ Must not change:
 - Docker/runtime
 - build logic
 
+## Role Entry-Point Classification
+
+Project roles are discovered under `.agents/roles` and classified by their
+actual entry point. Eighteen roles use flat `.md` documents and two roles use
+directory-style `SKILL.md` files: `senior-requirement-engineer` and
+`senior-workflow-architect`. The reconciled project-role count is 20. Callable
+`.codex/agents/*.toml` definitions remain a separate inventory category.
+
 ## Process Governance Entries
 
 | Entry | Strand | Owner | Responsibility |
 |---|---|---|---|
 | Senior System Architect | all strands | Senior System Architect | architecture and governance authority |
+| Root Architect | all strands | Root Architect | final escalation decisions for unresolved authority, scope, architecture, quality and process-strand blockers |
 | Senior Requirement Engineer | `workflow create`, `workflow execute` | Senior Requirement Engineer | requirement integrity, EPIC consistency, traceability, scope control and requirement-drift escalation |
 | `DOCROOT` | all strands | Senior Documentation Engineer | global docs consistency for process docs, role model, organigramm, arc42 structure, governance rules, workflow conventions and hard boundaries |
 | `S1_DOC` | `skills-agents` | Senior Documentation Engineer | update concrete skills, agents, roles, prompts, routing, organigramm, skill registry and process docs |
@@ -89,7 +98,7 @@ Must not change:
 
 | Capability | Owner or source | Status |
 |---|---|---|
-| Root Architect Escalation | Senior System Architect via Root Architect decision path | MAPPED_WITH_GAP: no dedicated `.agents/roles/root-architect.md` exists |
+| Root Architect Escalation | `.agents/roles/root-architect.md`, routing rules and Governance Flowchart V2 | VERIFIED |
 | Typed Error Routing | Workflow Executor, Quality Gate Orchestrator, routing rules | VERIFIED |
 | Execution Orchestration | Senior Execution Orchestrator, S3D, Senior Swarm Orchestrator coordination | VERIFIED |
 | Conflict Locking | Senior Execution Orchestrator, S3D, Workflow Executor, Senior Swarm Orchestrator coordination | VERIFIED |

@@ -53,9 +53,9 @@ gates. Unclear impact defaults to `FULL_PATH`.
 - Performance budgets, large repository metrics, timeouts, quotas, or scalability testing route to `roles/senior-performance-engineer.md`.
 - Analysis-session storage, raw ingestion storage, artifact storage, or projection boundaries route to `roles/senior-analysis-storage-architect.md`.
 - Joern, Code Property Graph, semantic artifact handling, or CPG large-project planning route to `roles/senior-joern-cpg-specialist.md`.
-- Root Architect escalation routes through the documented Root Architect
-  decision path and `roles/senior-system-architect.md` until a dedicated
-  Root Architect role file exists.
+- Root Architect escalation routes to `roles/root-architect.md`. Senior System
+  Architect remains the architecture-governance specialist and collaborates on
+  architecture-sensitive escalation decisions.
 - Rollback governance routes to `skills/release-branch-governance/SKILL.md`,
   `skills/git-commit-preparation/SKILL.md` and `roles/senior-devops.md`.
 - Quality gate classification routes to

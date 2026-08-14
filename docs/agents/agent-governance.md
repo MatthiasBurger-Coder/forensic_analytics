@@ -45,18 +45,20 @@ Slice checkpoint push is not `push auto`.
 ## Overall Governance
 
 ```text
-Senior System Architect
-|-- skills-agents
-|-- workflow create
-|-- workflow execute
-`-- DOCROOT global documentation governance
-    |-- S1_DOC inside skills-agents
-    |-- S2_DOC inside workflow create
-    `-- S3_DOC inside workflow execute
+Root Architect
+`-- Senior System Architect
+    |-- skills-agents
+    |-- workflow create
+    |-- workflow execute
+    `-- DOCROOT global documentation governance
+        |-- S1_DOC inside skills-agents
+        |-- S2_DOC inside workflow create
+        `-- S3_DOC inside workflow execute
 ```
 
 ```mermaid
 flowchart TD
+  Root["Root Architect"]
   Architect["Senior System Architect"]
   Skills["Strand 1: skills-agents"]
   Create["Strand 2: workflow create"]
@@ -66,6 +68,7 @@ flowchart TD
   Org["Organigramm Maintainer"]
   Process["Process Governance Maintainer"]
 
+  Root --> Architect
   Architect --> Skills
   Architect --> Create
   Architect --> Execute

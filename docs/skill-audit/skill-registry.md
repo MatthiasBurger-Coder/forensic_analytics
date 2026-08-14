@@ -13,8 +13,8 @@ behavior and quality commands.
 | Field | Value |
 |---|---|
 | Registry version | `skill-registry-v1` |
-| Workflow version | `governance-performance-20260521-v1` |
-| Last verified | `2026-05-30` |
+| Workflow version | `gov-01-05-registry-agent-reconciliation-v1` |
+| Last verified | `2026-08-14` |
 | Reuse status | `MANUAL_REVIEW_REQUIRED` |
 | Registry scope | Governance-routing-critical matrix with counts for full repositories of skills, roles and callable agent definitions |
 
@@ -23,13 +23,26 @@ behavior and quality commands.
 | Asset set | Count | Source path |
 |---|---:|---|
 | Project skills | 77 | `.agents/skills/*/SKILL.md` |
-| Project roles | 18 | `.agents/roles/*.md` and `.agents/roles/*/SKILL.md` |
+| Project roles | 19 | `.agents/roles/*.md` and `.agents/roles/*/SKILL.md` |
 | Reusable Codex skills | 6 | `.codex/skills/*/SKILL.md` |
 | Callable Codex agents | 34 | `.codex/agents/*.toml` |
 
 The existing exhaustive narrative inventory remains in
 `docs/skill-audit/skill-inventory.md`. This matrix records the cache and reuse
 decision for the governance-critical routing set.
+
+## `.codex` Agent Portability
+
+GOV-05 audited all 34 callable `.codex/agents/*.toml` definitions from their
+actual content. Five definitions are reusable, 29 are project-specific, and
+none requires unresolved manual review. The reusable set is
+`implementation_worker`, `quality_reviewer`, `replay_graph_llm_reviewer`,
+`repository_explorer` and `source_analysis_reviewer`.
+
+Project-specific definitions contain explicit Forensic Analytics references,
+`.agents` skill paths, or repository-specific workflow, module, contract or
+deployment boundaries. They must remain repository-local unless generalized
+and re-audited. The JSON registry records the machine-readable classification.
 
 ## Reuse Rule
 

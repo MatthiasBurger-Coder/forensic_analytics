@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "registryId": "skill-registry-v1",
   "repository": "forensic_analytics",
-  "workflowVersion": "governance-performance-20260521-v1",
-  "lastVerified": "2026-05-30",
+  "workflowVersion": "gov-01-05-registry-agent-reconciliation-v1",
+  "lastVerified": "2026-08-14",
   "status": "MANUAL_REVIEW_REQUIRED",
   "sourceOfTruth": [
     "AGENTS.md",
@@ -18,7 +18,7 @@
   ],
   "inventoryCounts": {
     "projectSkills": 77,
-    "projectRoles": 18,
+    "projectRoles": 20,
     "reusableCodexSkills": 6,
     "callableCodexAgents": 34
   },
@@ -44,9 +44,43 @@
     ],
     "registryIsSourceOfTruth": false
   },
+  "skillDefinitionSchema": {
+    "version": 1,
+    "entryPoint": "directory/SKILL.md",
+    "requiredFrontmatter": ["name", "description"],
+    "projectSkillCountAudited": 77,
+    "validRequiredFrontmatterCount": 77,
+    "missingRequiredFrontmatter": [],
+    "duplicateSkillNames": [],
+    "bodySchema": "skill-specific sections remain responsibility-specific and are not mechanically normalized"
+  },
+  "codexAgentPortability": {
+    "version": 1,
+    "entryPoint": ".codex/agents/*.toml",
+    "auditedAgentCount": 34,
+    "classificationCounts": {
+      "reusable": 5,
+      "projectSpecific": 29,
+      "manualReview": 0
+    },
+    "reusable": [
+      "implementation_worker",
+      "quality_reviewer",
+      "replay_graph_llm_reviewer",
+      "repository_explorer",
+      "source_analysis_reviewer"
+    ],
+    "projectSpecificEvidence": [
+      "explicit Forensic Analytics references",
+      "project-specific .agents skill references",
+      "repository-specific workflow, module, contract or deployment boundaries"
+    ],
+    "manualReview": [],
+    "copyPolicy": "Only reusable definitions may enter a portable .codex template; project-specific definitions remain repository-local until generalized and re-audited."
+  },
   "sourceHashes": {
     "AGENTS.md": "a1bd05f38d8602a5c67dcfbf3628c811a4c0de33004fdf553afadf4b5c614f5d",
-    "QUALITY.md": "9df68c96dbdd9bf36e139cfdb2cc91c341a5c08c928f03d8fe24392281fcb848",
+    "QUALITY.md": "95f9aa2ba5dd7f67057864d52321e5716acb46b166bc74c12b154ec271bb3596",
     ".agents/skills/skill-registry-conflict-auditor/SKILL.md": "d6f2b361236bc7ec6bf371d07b74350cdf5424ce3f9a2f5a432f0a5d2399faa3",
     ".agents/skills/execution-profile-router/SKILL.md": "dfd2fc367bb9ab856e9482d3088690795ee1805b7c84ad462281b2350ca2f62b",
     ".agents/skills/quality-impact-classifier/SKILL.md": "8eb85b0a24d5798e15d9e1ba826fc8d6d64074060f2f8650258c0e1cd353dbab",
@@ -57,22 +91,30 @@
     ".codex/AGENTS.md": "d43bc1ea9ca10deb8a6553c7c21208e8020d751f674a8cb824959b666bd01aec",
     ".codex/skills/workflow-executor/SKILL.md": "e1c13cf8f13a271d875b11d6d23702358e90650a03958127ba84fc9297267166",
     ".codex/workflow/workflow-execution-rules.md": "6d2ea74943f8ff4187a371d6e263fcf7f179d7250868086f4ba294e6f5fa122a",
-    ".agents/orchestrator/routing-rules.md": "0523f69229304f30d5a13d86b848cac3f52903a15e281ffe7591ec3b46b9fc67",
+    ".agents/orchestrator/routing-rules.md": "5ec1695843088366febe7c82552e3e0e0c90849cfda77ec722e602b1b2348db9",
+    ".agents/roles/root-architect.md": "f8fdf0854bfb99dc73ffcb5cc57297ad501c33415fc03dd987d3f8fc6d98997c",
     ".agents/orchestrator/swarm-orchestrator.md": "8a65ead48c3afd2219586d45f97eb546dbb6ec4aa0c7d4f1d0450c013253047a",
-    "docs/agents/skill-registry.md": "e566e5de0129093a5c2280301f9c8c7150fc8c405a72ccafd3430e45f5a18f8b",
-    "docs/process/skills-update.md": "627db53915479fcf4d3d77475fd158784d40d18db2d59f513b8399465168797b",
+    "docs/agents/skill-registry.md": "d2b02362110dc78420d700d8eda8a0b898dd35dcdef82827f2d9bfa05a1bc512",
+    "docs/agents/agent-governance.md": "34d738e87923c25722a5f3ab7b2b73e97559a95366975d4ac498267747eb7b9c",
+    "docs/agents/README.md": "1ccfc268f8b82fce72500b4ae58038af45b432397db628b1a0b3a3c16e02e734",
+    "docs/process/skills-update.md": "9b3d946d0326bca5c7ee4dd66d40f6cae184785bb83f46071bfa05500646ca3f",
     "docs/process/workflow-execute.md": "4e07e3a90095147ed26d1b5d1a14b1e8b07c28eb88826b95131fd1806cd24feb",
-    "docs/workflow/workflow.md": "4874a0e64468f6673f795a9e946733c58ad3fb2119630788202f98671f72ca88",
-    "docs/workflow/execution-report.md": "d736052be5c97827b9dfea073012c8476295ee3ac1ad7d8d43cb086e343b4452",
-    "docs/skill-audit/README.md": "cd50e21b3497bde2fa3514dcca85534a0043bfb869541c5d949c15e716395919",
-    "docs/skill-audit/skill-registry.md": "0373bdabf0018033bf032a2e564fdd54c5d85a6fd61376925b100d4fb34988ca",
-    "docs/skill-audit/skill-inventory.md": "2eca34a5644610eeef8c5ae18e64191b3be1e2408eb05c2cdceffc4bdf678401",
+    "docs/workflow/workflow.md": "b5a078f5cbbe79c2e0274ed2f2c87f6d3e7fd474febe6eeaaa26d77eb57ca88e",
+    "docs/workflow/context-pack.md": "67eb28286217941612b93427bfc94daf712afda49fc18e3b0bc1632b374faae3",
+    "docs/workflow/context-pack.json": "d7f56c8aeff86093d48dc122c9d08a6caec26c71a9887ff043b785352d506242",
+    "docs/workflow/execution-report.md": "23dc9fad1d666263216272755f4caee09b65e85220ea6b5870cbabef47bdefd3",
+    "docs/skill-audit/README.md": "54edf47712f0597a9196b91a5b235ea7deed22fecbbb84c966f21c86d5a328b9",
+    "docs/skill-audit/skill-inventory.md": "971805ef1e5bb73757a4ac047ecc684d034455427319f31e9bea725a65ac13ac",
+    "docs/skill-audit/governance-flowchart-v2-linkage.md": "3e393d8e4a4c972038c38f6889838db73825f57279fe54001f1f4e2185f32b6e",
+    "docs/skill-audit/manual-review-required.md": "73750570dfb4512fda61a3e396c2135e5b797d3bccd122fd8f52db0b56544b65",
     ".agents/roles/senior-requirement-engineer/SKILL.md": "9c6aeacf81de8d2ebc36230fd6a0e695722efa7de4c78887537b84f9fbdf054f",
-    ".agents/skills/engineering-governance/SKILL.md": "23682db68243e359f1e8f18f5388e11134c216f8c76b92573e4c15eb5213ed43",
+    ".agents/skills/engineering-governance/SKILL.md": "a6ae5b56d636096f9e3829eaba0a29070d5288f8a0a13927d4d4135bc2e45293",
     "docs/process/workflow-create.md": "4760e3d75f6a675d323c5f6153920b7536e0d8df24ef3b2d692a75fcbbd2a869",
-    "docs/arc42/08-crosscutting-concepts.md": "592de8c684aca0defd582b69a6eb6026c886bbab195b0e1e2f90cb73690c018a",
+    "docs/arc42/08-crosscutting-concepts.md": "dafa3dfce81557c7877fd506df97d20d5c8791fd3b238a7e9307c66e3b7cdf3b",
+    "docs/arc42/09-architecture-decisions/adr/ADR-0021-governance-flowchart-v2.md": "10c36d1776b9d40a58bd9e1844d2e17cc6c3d21253dc41cf49b180c6361f484f",
+    "docs/arc42/11-risks-and-technical-debt.md": "bb45cca3c5606ba0de07a13dc44ec0e5f567ea4752eb79fcdfb7858010e4b457",
     ".agents/skills/source-code-responsibility/SKILL.md": "750eca1702c0e38928176565effdc00b4ad2103378e4d3d2ac88ac13a185cd07",
-    "docs/agents/organigramm.md": "ced5cd5260a1e72311bdb6a7787825e8b35bfe11bb2bbf1bada7b194366b0aae",
+    "docs/agents/organigramm.md": "daf019123f649b72de055417b0fcb4221e77e0175f230747fe2ecd0372267640",
     ".agents/skills/java-25-backend/SKILL.md": "23fb2bc3350d08c583bfa7097733a28951542f6fc6e185afef8e7e74c7abb0a0",
     ".agents/skills/architecture-hexagonal/SKILL.md": "4fe209dacb8e72b05bb3904ae0c80d31011f11c40f90110dae1d4aa3e1ed0a57"
   },
@@ -163,6 +205,7 @@
       "ownerOf": [
         "s3d-execution-orchestrator"
       ],
+      "entryPointType": "flat-role-document",
       "status": "ACTIVE"
     },
     {
@@ -172,6 +215,16 @@
         "skill-registry-conflict-auditor",
         "execution-profile-router"
       ],
+      "entryPointType": "flat-role-document",
+      "status": "ACTIVE"
+    },
+    {
+      "name": "root-architect",
+      "path": ".agents/roles/root-architect.md",
+      "ownerOf": [
+        "root-architect-escalation"
+      ],
+      "entryPointType": "flat-role-document",
       "status": "ACTIVE"
     },
     {
@@ -180,6 +233,7 @@
       "ownerOf": [
         "quality-impact-classifier"
       ],
+      "entryPointType": "flat-role-document",
       "status": "ACTIVE"
     },
     {
@@ -190,6 +244,7 @@
         "docs/process/**",
         "docs/agents/**"
       ],
+      "entryPointType": "flat-role-document",
       "status": "ACTIVE"
     },
     {
@@ -200,6 +255,105 @@
         "three-amigos-requirement-gatekeeper",
         "workflow-authoring"
       ],
+      "entryPointType": "directory-skill-entrypoint",
+      "status": "ACTIVE"
+    },
+    {
+      "name": "microservice-senior-expert",
+      "path": ".agents/roles/microservice-senior-expert.md",
+      "ownerOf": [],
+      "entryPointType": "flat-role-document",
+      "status": "ACTIVE"
+    },
+    {
+      "name": "senior-analysis-storage-architect",
+      "path": ".agents/roles/senior-analysis-storage-architect.md",
+      "ownerOf": [],
+      "entryPointType": "flat-role-document",
+      "status": "ACTIVE"
+    },
+    {
+      "name": "senior-devops",
+      "path": ".agents/roles/senior-devops.md",
+      "ownerOf": [],
+      "entryPointType": "flat-role-document",
+      "status": "ACTIVE"
+    },
+    {
+      "name": "senior-git-workspace-specialist",
+      "path": ".agents/roles/senior-git-workspace-specialist.md",
+      "ownerOf": [],
+      "entryPointType": "flat-role-document",
+      "status": "ACTIVE"
+    },
+    {
+      "name": "senior-grpc-proto-specialist",
+      "path": ".agents/roles/senior-grpc-proto-specialist.md",
+      "ownerOf": [],
+      "entryPointType": "flat-role-document",
+      "status": "ACTIVE"
+    },
+    {
+      "name": "senior-java-backend",
+      "path": ".agents/roles/senior-java-backend.md",
+      "ownerOf": [],
+      "entryPointType": "flat-role-document",
+      "status": "ACTIVE"
+    },
+    {
+      "name": "senior-joern-cpg-specialist",
+      "path": ".agents/roles/senior-joern-cpg-specialist.md",
+      "ownerOf": [],
+      "entryPointType": "flat-role-document",
+      "status": "ACTIVE"
+    },
+    {
+      "name": "senior-performance-engineer",
+      "path": ".agents/roles/senior-performance-engineer.md",
+      "ownerOf": [],
+      "entryPointType": "flat-role-document",
+      "status": "ACTIVE"
+    },
+    {
+      "name": "senior-plugin-integration-developer",
+      "path": ".agents/roles/senior-plugin-integration-developer.md",
+      "ownerOf": [],
+      "entryPointType": "flat-role-document",
+      "status": "ACTIVE"
+    },
+    {
+      "name": "senior-react-frontend",
+      "path": ".agents/roles/senior-react-frontend.md",
+      "ownerOf": [],
+      "entryPointType": "flat-role-document",
+      "status": "ACTIVE"
+    },
+    {
+      "name": "senior-security-sandbox-engineer",
+      "path": ".agents/roles/senior-security-sandbox-engineer.md",
+      "ownerOf": [],
+      "entryPointType": "flat-role-document",
+      "status": "ACTIVE"
+    },
+    {
+      "name": "senior-swarm-orchestrator",
+      "path": ".agents/roles/senior-swarm-orchestrator.md",
+      "ownerOf": [],
+      "entryPointType": "flat-role-document",
+      "status": "ACTIVE"
+    },
+    {
+      "name": "senior-ux-designer",
+      "path": ".agents/roles/senior-ux-designer.md",
+      "ownerOf": [],
+      "entryPointType": "flat-role-document",
+      "status": "ACTIVE"
+    },
+    {
+      "name": "senior-workflow-architect",
+      "path": ".agents/roles/senior-workflow-architect/SKILL.md",
+      "ownerOf": [],
+      "entryPointType": "directory-skill-entrypoint",
       "status": "ACTIVE"
     }
   ],

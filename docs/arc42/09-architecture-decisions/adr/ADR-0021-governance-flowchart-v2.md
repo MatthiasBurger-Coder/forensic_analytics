@@ -102,9 +102,12 @@ visible without forcing all process detail into one large diagram.
   with this decision.
 - arc42 documents Governance Flowchart V2 as architecture governance, not as
   product runtime behavior.
-- Missing dedicated Root Architect and Flowchart Integrity Audit artifacts are
-  documented governance gaps with bootstrap owners until a future
-  `skills-agents` slice creates them.
+- At the time of this decision, missing dedicated Root Architect and Flowchart
+  Integrity Audit artifacts were documented with bootstrap owners.
+- Current status: Root Architect escalation and Flowchart Integrity Audit have
+  dedicated governance artifacts with explicit specialist collaboration and
+  escalation ownership. This status update does not change the decision
+  history or intent.
 - Workflow execution may stop more often, but every stop has an owner,
   rationale and recovery path.
 - Rollback must remain a decision node and must not be represented as blind

@@ -1,219 +1,69 @@
 # Workflow Execution Report
 
-Workflow: Architecture Entry arc42 Placement
+## Scope
 
-Branch: `docs/workflow-architecture-assessment-20260606`
+Workflow: GOV-01–GOV-05 Governance Registry and Agent Definition Reconciliation
 
-Status: `COMPLETED_NOT_COMMITTED`
+Branch: `feature/workflow-gov-skill-governance-20260814`
 
-## Creation Summary
+Execution date: 2026-08-14
 
-The workflow was revised to classify existing architecture entries with
-official arc42 placement rules before extracting architecture findings into the
-verified arc42 structure.
+Process strand: `workflow execute`
 
-The workflow creation verified that authoritative arc42 output belongs under
-`docs/arc42/**`, not `docs/arc42/**`.
+All six slices completed serially. No product implementation, runtime,
+contract, persistence, build-logic or `push auto` scope was introduced.
 
-The revision records that the full architecture progress assessment source is
-optional for placement classification. Missing source text must be documented
-as unavailable; it must not be invented.
+## Slice Results
 
-## Execution Status
-
-Workflow execution started with subagent authorization.
-
-Subagents spawned for S01 read-only review:
-
-- Senior Documentation Engineer
-- Senior System Architect
-- Senior Requirement Engineer
-
-All three read-only reviews completed. Their findings were reconciled in the
-placement assessment and extraction notes without changing product source,
-contracts, build logic, runtime code or deployment files.
-
-## Planned Slice Status
-
-| Slice | Status | Notes |
+| Slice | Result | Commit |
 |---|---|---|
-| S01 | Completed | Created `docs/arc42/08-crosscutting-concepts/architecture-source-maps/assessments/2026-06-arc42-placement-assessment.md`; complete assessment source remains unavailable and was not invented. |
-| S02 | Completed | Added architecture placement assessment risks to `docs/arc42/11-risks-and-technical-debt.md`. |
-| S03 | Completed | Added target service placement strategy and current-to-target building-block summary to chapters 4 and 5. |
-| S04 | Completed | Added placement governance to chapter 8 and ADR alignment to chapter 9. |
-| S05 | Completed | Final documentation checks passed; no commit or push was performed. |
+| S01 | Registry hashes and governance cache refreshed | `85cdab1` |
+| S02 | 19 roles and flat/directory entry points reconciled | `6e29dc6` |
+| S03 | Flowchart audit verified; Root Architect bootstrap gap recorded for follow-up | `afcfdc2` |
+| S04 | 77 project skill definitions verified against frontmatter schema | `f0fe0c6` |
+| S05 | 34 Codex agents classified: 5 reusable, 29 project-specific, 0 manual review | `68d01fe` |
+| S06 | Workflow/context handoff and Arc42 evidence synchronized | this checkpoint |
 
-## Creation Verification
+The missing `RepositoryAnalysisSubmissionPort` and stale test documentation
+path discovered by the required quality gate were repaired in the isolated
+prerequisite commit `2f334c2`, which is included on this workflow branch.
 
-Workflow creation checks executed on 2026-06-06:
+## Verification Evidence
 
-```bash
-python3 -m json.tool docs/workflow/context-pack.json
-test -f docs/workflow/workflow.md
-test -f docs/workflow/context-pack.md
-test -f docs/workflow/context-pack.json
-test -f docs/workflow/execution-report.md
-git diff --check
-git diff --name-only
-git branch --show-current
-git status --short
-```
-
-Result:
-
-- `docs/workflow/context-pack.json` parsed successfully.
-- Required workflow-control files exist.
+- S01–S05 targeted deterministic checks passed.
+- Every `.codex/agents/*.toml` definition parsed successfully: 34/34.
+- Registry JSON classification and counts passed validation.
+- Registry source hashes were recomputed and matched all recorded files.
 - `git diff --check` passed.
-- Changed files are limited to `docs/workflow/**`.
-- Active branch is `docs/workflow-architecture-assessment-20260606`.
+- Full gate passed:
+  `./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace`
+- Result: `BUILD SUCCESSFUL`.
 
-Workflow revision checks executed on 2026-06-06:
+## Arc42 and ADR Check
 
-```bash
-python3 -m json.tool docs/workflow/context-pack.json
-test -f docs/workflow/workflow.md
-test -f docs/workflow/context-pack.md
-test -f docs/workflow/context-pack.json
-test -f docs/workflow/execution-report.md
-git diff --check
-git diff --name-only
-git branch --show-current
-git status --short
-```
+The checked Arc42 baseline was reviewed in:
 
-Result:
+- `docs/arc42/README.md`
+- `docs/arc42/08-crosscutting-concepts.md`
+- `docs/arc42/11-risks-and-technical-debt.md`
+- ADR-0015, Skill Registry and Conflict Auditing
+- ADR-0021, Governance Flowchart V2
 
-- `docs/workflow/context-pack.json` parsed successfully.
-- Required workflow-control files exist.
-- `docs/arc42` does not exist.
-- `git diff --check` passed.
-- Changed files are limited to `docs/workflow/**`.
-- Active branch is `docs/workflow-architecture-assessment-20260606`.
+No architecture, runtime or product behavior changed during S01–S06, so no
+Arc42 artifact was modified in that execution. The Root Architect
+bootstrap-only status was an explicit follow-up risk at that time and was not
+represented as a completed dedicated role.
 
-## Execution Verification
+## Post-Execution Governance Follow-Up
 
-### S01 Verification
+A subsequent authorized `skills-agents` change created
+`.agents/roles/root-architect.md`, routed Root Architect escalation to the
+dedicated role, reconciled the project-role inventory to 20 and synchronized
+the GOV-03 linkage, organigramm, registry and arc42 governance notes. The
+current Root Architect capability status is `VERIFIED`.
 
-Commands:
+## Handoff
 
-```bash
-test -f docs/arc42/08-crosscutting-concepts/architecture-source-maps/assessments/2026-06-arc42-placement-assessment.md
-git diff --check
-git status --short
-```
-
-Result:
-
-- S01 placement matrix exists.
-- `git diff --check` passed.
-- `git status --short` shows the new `docs/arc42/08-crosscutting-concepts/architecture-source-maps/assessments/`
-  source-assessment directory.
-- No product source, tests, build logic, contracts, runtime or deployment
-  files changed.
-
-### S02 Verification
-
-Commands:
-
-```bash
-git diff --check
-git diff -- docs/arc42/11-risks-and-technical-debt.md
-git status --short
-```
-
-Result:
-
-- `git diff --check` passed.
-- Chapter 11 now includes architecture placement assessment risks covering
-  runtime-readiness maturity, distributed monolith risk, wrong service cuts,
-  gRPC contract stabilization, PostgreSQL/H2 scope, legacy predecessor
-  wording, optional service overclaiming and unresolved `SCA` terminology.
-- No product source, tests, build logic, contracts, runtime or deployment
-  files changed.
-
-### S03 Verification
-
-Commands:
-
-```bash
-git diff --check
-git diff -- docs/arc42/04-solution-strategy.md
-git diff -- docs/arc42/05-building-block-view.md
-git status --short
-```
-
-Result:
-
-- `git diff --check` passed.
-- Chapter 4 now records the target service placement strategy, strangler-first
-  migration, gRPC/API ingestion boundary, orchestration worker/job concepts and
-  unresolved `SCA` handling.
-- Chapter 5 now separates source-map input, target service names, current
-  service directories, predecessor source trees, service-local ingestion,
-  orchestration, repository-source, public facade, observability, testbed and
-  optional later candidates.
-- Target service names remain documented as architecture direction and
-  migration evidence, not production-readiness evidence.
-- No product source, tests, build logic, contracts, runtime or deployment
-  files changed.
-
-### S04 Verification
-
-Commands:
-
-```bash
-git diff --check
-git diff -- docs/arc42/08-crosscutting-concepts.md
-git diff -- docs/arc42/09-architecture-decisions.md
-git status --short
-```
-
-Result:
-
-- `git diff --check` passed.
-- Chapter 8 now documents architecture entry placement governance, arc42
-  section responsibilities, source-assessment handling and forbidden invented
-  claims.
-- Chapter 9 now records ADR alignment for the placement workflow without
-  creating a new architecture decision.
-- ADR-0018 and CI workflow evidence were added to the placement matrix because
-  subagent review verified them as relevant sources.
-- A CI source-map mismatch remains explicitly documented as an unresolved gap:
-  `current-build-and-test-map.md` says no `.github/workflows` directory was
-  verified, while `.github/workflows/sonar_check.yml` exists in this revision.
-- No product source, tests, build logic, contracts, runtime or deployment
-  files changed.
-
-### S05 Verification
-
-Commands:
-
-```bash
-python3 -m json.tool docs/workflow/context-pack.json >/dev/null
-test -f docs/workflow/workflow.md
-test -f docs/workflow/context-pack.md
-test -f docs/workflow/context-pack.json
-test -f docs/workflow/execution-report.md
-test -f docs/arc42/08-crosscutting-concepts/architecture-source-maps/assessments/2026-06-arc42-placement-assessment.md
-test ! -e docs/arc42
-git diff --check
-git status --short
-git diff --name-only
-git ls-files --others --exclude-standard
-```
-
-Result:
-
-- `docs/workflow/context-pack.json` parsed successfully.
-- Required workflow-control files exist.
-- `docs/arc42/08-crosscutting-concepts/architecture-source-maps/assessments/2026-06-arc42-placement-assessment.md`
-  exists.
-- `docs/arc42` does not exist.
-- `git diff --check` passed.
-- Modified tracked files are limited to arc42 chapters 4, 5, 8, 9, 11 and the
-  workflow execution report.
-- The only untracked path is the new placement assessment document under
-  `docs/arc42/08-crosscutting-concepts/architecture-source-maps/assessments/`.
-- The workflow remains documentation-only; no Gradle quality gate was run.
-- No commit, push or pull request was performed because the active workflow did
-  not authorize publication in this execution.
+The active branch is clean and tracks
+`origin/feature/workflow-gov-skill-governance-20260814`. The governance work is
+ready for review or the next explicitly authorized workflow action.

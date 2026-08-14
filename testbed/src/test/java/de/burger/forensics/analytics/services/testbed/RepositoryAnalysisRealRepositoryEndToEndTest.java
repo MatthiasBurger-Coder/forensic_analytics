@@ -14,7 +14,9 @@ class RepositoryAnalysisRealRepositoryEndToEndTest {
     @Test
     void realRepositoryFixtureBehaviorIsRetainedOnlyAsLegacyRollbackEvidence() throws IOException {
         var testbedReadme = read("testbed/README.md");
-        var monolithIsolation = read("docs/architecture/monolith-runtime-isolation.md");
+        var monolithIsolation = read(
+            "docs/arc42/08-crosscutting-concepts/architecture-source-maps/monolith-runtime-isolation.md"
+        );
 
         assertContainsAll(
             testbedReadme,

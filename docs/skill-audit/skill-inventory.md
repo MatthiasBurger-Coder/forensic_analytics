@@ -27,6 +27,62 @@
 | Workflow Executor Resolution | `workflow execute` | Workflow Executor / Skill Registry Conflict Auditor | added |
 | Process Performance Profiler | `workflow execute` | Senior Performance Engineer / Workflow Executor | added |
 
+## Project Role Inventory and Entry Points
+
+The project role inventory is source-derived from `.agents/roles`. Flat role
+documents and directory-style `SKILL.md` role entry points are counted as
+roles; reusable `.codex/agents/*.toml` definitions are tracked separately.
+
+| Role entry-point form | Count | Classification |
+|---|---:|---|
+| `.agents/roles/*.md` | 18 | flat project-role document |
+| `.agents/roles/*/SKILL.md` | 2 | directory-style project-role entry point |
+| Total project roles | 20 | reconciled source inventory |
+
+The directory-style roles are `senior-requirement-engineer` and
+`senior-workflow-architect`. The flat role set now includes the dedicated
+`root-architect.md` escalation role. The persistent JSON registry records the
+exact path and `entryPointType` for every role; it does not replace repository
+files.
+
+## `.codex` Agent Portability Audit
+
+GOV-05 audited every callable agent definition under `.codex/agents/*.toml`
+against its actual description and developer instructions. A definition is
+reusable only when it avoids project names, project-specific paths, and
+repository-specific boundaries. Definitions with verified Forensic Analytics
+or `.agents` bindings remain project-specific.
+
+| Classification | Count | Definitions |
+|---|---:|---|
+| Reusable | 5 | `implementation_worker`, `quality_reviewer`, `replay_graph_llm_reviewer`, `repository_explorer`, `source_analysis_reviewer` |
+| Project-specific | 29 | All remaining `.codex/agents/*.toml` definitions |
+| Manual review | 0 | No unresolved mixed-reference definition |
+
+Only the five reusable definitions may be copied into a portable `.codex`
+template. The 29 project-specific definitions remain local until their
+references and governance assumptions are generalized and this audit is
+repeated. No TOML definition was silently rewritten by GOV-05.
+
+## Skill Definition Schema Audit
+
+The authoritative `.agents/AGENTS.md` compatibility rule requires every
+project skill entry point to be a directory containing `SKILL.md` with YAML
+frontmatter fields `name` and `description`. The GOV-04 audit verified all 77
+project skills against that contract:
+
+| Check | Result |
+|---|---:|
+| Valid `SKILL.md` entry points | 77/77 |
+| Required `name` field present | 77/77 |
+| Required `description` field present | 77/77 |
+| Duplicate skill names | 0 |
+| Missing required fields | 0 |
+
+Body sections remain skill-specific because they encode responsibility-specific
+inputs, outputs, collaboration and STOP rules. No mechanical body rewrite is
+authorized by GOV-04.
+
 | Skill name                            | File path                                                       | Purpose | Architecture zone | Slices/workflows | Possible overlaps | Status |
 |---------------------------------------|-----------------------------------------------------------------|---|---|---|---|---|
 | agent-swarm-coordination-specialist   | `.agents/skills/agent-swarm-coordination-specialist/SKILL.md`   | Dependency graph planning and multi-agent coordination. | Orchestration | Subagent planning, review pipeline, merge coordination | swarm-coordination, swarm-orchestration | added |
@@ -102,7 +158,7 @@ Detailed capability evidence is recorded in
 
 | Capability | Status |
 |---|---|
-| Root Architect Escalation | MAPPED_WITH_GAP |
+| Root Architect Escalation | VERIFIED |
 | Typed Error Routing | VERIFIED |
 | Execution Orchestration | VERIFIED |
 | Conflict Locking | VERIFIED |

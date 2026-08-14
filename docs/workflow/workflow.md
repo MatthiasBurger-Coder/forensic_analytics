@@ -1,878 +1,369 @@
-# Workflow: Architecture Entry arc42 Placement
+# Workflow: GOV-01–GOV-05 Governance Registry and Agent Definition Reconciliation
 
 ## Executive Summary
 
-This workflow plans a documentation-only classification and synchronization of
-architecture entries into the existing arc42 documentation.
+This governance-only workflow covers:
 
-The key correction is that a complete project progress assessment is not
-required to determine where architecture entries belong. The official arc42
-template and section guidance provide the placement rules. Existing repository
-architecture entries can therefore be classified first, and the full assessment
-source can be stored later only when its complete text is available.
+- #115 / GOV-01: refresh Skill Registry hashes and synchronize the governance cache;
+- #116 / GOV-02: reconcile role inventory count and entry-point classification;
+- #117 / GOV-03: resolve Root Architect and flowchart-integrity mapping gaps;
+- #118 / GOV-04: standardize skill-definition schema across `.agents`;
+- #119 / GOV-05: classify and document portability of `.codex` agent definitions.
 
-The workflow must not invent missing assessment content. It must classify
-verified architecture entries and explicitly mark unresolved terms, missing
-source text or unverified readiness claims.
+No product code, runtime behavior, contracts, persistence, build logic or
+analytics behavior is in scope.
 
-Authoritative arc42 output belongs under:
+## Requirement Clarification and Profile
 
-```text
-docs/arc42/
-```
+Original request: create a workflow for GOV-01 through GOV-05.
 
-The architecture source-map and assessment root remains:
+Interpreted intent: produce a branch-isolated, executable governance workflow
+that verifies repository facts before changing registry, role, skill,
+flowchart or portability documentation.
 
-```text
-docs/arc42/08-crosscutting-concepts/architecture-source-maps/
-```
+Change type: governance documentation and agent-definition governance.
+Process strand at creation: `workflow create`; execution is recorded below
+under the separate `workflow execute` strand.
+Execution profile: `FULL_PATH`, because governance authority, registry state,
+role/skill ownership, workflow documentation and `.codex` portability are
+affected.
 
-Do not create:
+Decision: `PROCEED_WITH_ACCEPTED_ASSUMPTIONS` at 82 percent confidence. No
+issue-specific EPIC file or complete acceptance criteria for #115–#119 was
+found under `docs/epics`; the five titles are therefore treated as the scope
+input. Each execution slice must derive exact acceptance evidence from
+repository files and STOP if a behavior or ownership decision is unverifiable.
 
-```text
-docs/arc42/
-```
+Assumptions:
 
-## arc42 Placement Rule Source
-
-The placement rules are based on the official arc42 template/documentation:
-
-- Template download requested by the user:
-  `https://github.com/arc42/arc42-template/raw/master/dist/arc42-template-EN-plain-markdownMP.zip`
-- Section 4: `https://docs.arc42.org/section-4/`
-- Section 5: `https://docs.arc42.org/section-5/`
-- Section 8: `https://docs.arc42.org/section-8/`
-- Section 9: `https://docs.arc42.org/section-9/`
-- Section 11: `https://docs.arc42.org/section-11/`
-
-Use these rules during execution:
-
-| Entry type | arc42 target | Rule |
-|---|---|---|
-| Fundamental solution approach, target architecture strategy, top-level decomposition, quality-goal approach, organizational strategy | `docs/arc42/04-solution-strategy.md` | Keep it short and link to detailed sections. |
-| Static structure, modules, components, source-code mapping, current modules versus target services | `docs/arc42/05-building-block-view.md` | Describe building blocks, responsibilities, interfaces and code locations where relevant. |
-| Runtime scenario, interaction flow, important behavior, error or exception flow | `docs/arc42/06-runtime-view.md` | Use when the entry describes behavior over time rather than static structure. |
-| Infrastructure, deployment topology, environments, containers, runtime platform readiness | `docs/arc42/07-deployment-view.md` | Use only for verified deployment topology or explicitly planned deployment material. |
-| Crosscutting rule, concept, pattern, governance model, quality gate, data ownership concept, persistence concept, security, observability, evidence integrity | `docs/arc42/08-crosscutting-concepts.md` | Use for concepts that affect multiple building blocks. |
-| Important decision, selected alternative, risky or expensive architecture choice, ADR reference | `docs/arc42/09-architecture-decisions.md` or numbered ADR | Avoid duplication; reference existing ADRs before creating new ones. |
-| Known problem, unresolved gap, maturity concern, technical debt, risk and mitigation | `docs/arc42/11-risks-and-technical-debt.md` | Primary location for maturity/risk/debt entries. |
-| Domain or technical term that needs consistent language | `docs/arc42/12-glossary.md` | Use when the entry is terminology rather than strategy, structure, concept, decision or risk. |
-
-## Target Picture
-
-The completed workflow will produce:
-
-- a placement assessment matrix under
-  `docs/arc42/08-crosscutting-concepts/architecture-source-maps/assessments/2026-06-arc42-placement-assessment.md`;
-- optional full assessment source storage under
-  `docs/arc42/08-crosscutting-concepts/architecture-source-maps/assessments/2026-06-architecture-progress-assessment.md`
-  only when the complete source text is available;
-- extracted strategy findings in `docs/arc42/04-solution-strategy.md`;
-- current-module versus target-service decomposition notes in
-  `docs/arc42/05-building-block-view.md`;
-- governance, quality-gate, documentation-gate and migration concepts in
-  `docs/arc42/08-crosscutting-concepts.md`;
-- ADR-state references in `docs/arc42/09-architecture-decisions.md`;
-- primary maturity, risk and technical-debt findings in
-  `docs/arc42/11-risks-and-technical-debt.md`.
-
-## Verified Baseline
-
-- Repository root: `/mnt/d/Projects/forensic_analytics`
-- Active workflow branch:
-  `docs/workflow-architecture-assessment-20260606`
-- Process strand: `workflow create`
-- Execution profile: `FULL_PATH`
-- Current repository arc42 root: `docs/arc42/`
-- Current architecture source-map root: `docs/arc42/08-crosscutting-concepts/architecture-source-maps/`
-- Current EPIC source root: `docs/epics/`
-- Current ADR root for numbered ADRs:
-  `docs/arc42/09-architecture-decisions/adr/`
-- Current Gradle modules were verified from `settings.gradle.kts`.
-
-Verified source-of-truth files:
-
-- `AGENTS.md`
-- `QUALITY.md`
-- `.codex/AGENTS.md`
-- `.codex/workflow/workflow-execution-rules.md`
-- `.agents/orchestrator/routing-rules.md`
-- `.agents/orchestrator/swarm-orchestrator.md`
-- `.agents/skills/execution-profile-router/SKILL.md`
-- `.agents/skills/workflow-authoring/SKILL.md`
-- `.agents/skills/arc42-architecture-governance/SKILL.md`
-- `.agents/skills/adr-steward/SKILL.md`
-- `.agents/skills/documentation-sync/SKILL.md`
-- `.agents/skills/three-amigos-requirement-gatekeeper/SKILL.md`
-- `docs/epics/forensics-platform-runtime-replay-llm-analysis-v0.2.md`
-- `docs/arc42/08-crosscutting-concepts/architecture-source-maps/README.md`
-- `docs/arc42/08-crosscutting-concepts/architecture-source-maps/current-state.md`
-- `docs/arc42/08-crosscutting-concepts/architecture-source-maps/target-microservices-architecture.md`
-- `docs/arc42/08-crosscutting-concepts/architecture-source-maps/service-boundaries.md`
-- `docs/arc42/08-crosscutting-concepts/architecture-source-maps/data-ownership.md`
-- `docs/arc42/README.md`
-- `docs/arc42/04-solution-strategy.md`
-- `docs/arc42/05-building-block-view.md`
-- `docs/arc42/08-crosscutting-concepts.md`
-- `docs/arc42/09-architecture-decisions.md`
-- `docs/arc42/11-risks-and-technical-debt.md`
-- ADR-0010, ADR-0013, ADR-0017, ADR-0023, ADR-0024 and ADR-0025 under
-  `docs/arc42/09-architecture-decisions/adr/`
-
-## Requirement Clarification Gate
-
-Decision: `READY_FOR_WORKFLOW`
-
-Confidence: 92 percent.
-
-Original request:
-
-- Revise the active workflow to incorporate the insight that arc42 itself
-  contains the placement knowledge for deciding where architecture entries
-  belong.
-
-Interpreted intent:
-
-- Change the workflow from assessment-source-first extraction to
-  arc42-rule-first classification of existing architecture entries.
-- Keep full assessment storage as optional source capture, not as the blocking
-  prerequisite for placement classification.
-
-Change type:
-
-- Documentation and architecture-governance workflow revision.
-
-Affected process strand:
-
-- `workflow create` now.
-- `workflow execute` later for the revised documentation slices.
-
-Affected architecture areas:
-
-- arc42 documentation structure;
-- architecture source-map classification;
-- microservice target strategy;
-- service decomposition and current-module mapping;
-- gRPC ingestion and contract-first communication;
-- workflow governance, skills, agents and quality gates;
-- PostgreSQL and H2 persistence decisions;
-- architecture risk and technical debt.
-
-Explicit requirements:
-
-- Use official arc42 template knowledge to classify architecture entries.
-- Determine placement per architecture entry.
-- Preserve `docs/arc42/**` as the authoritative arc42 root.
-- Preserve `docs/arc42/08-crosscutting-concepts/architecture-source-maps/**` as architecture source-map and assessment
-  input.
-- Do not block classification just because the full assessment source text is
-  missing.
-- Do not invent missing assessment content.
-
-Accepted assumptions:
-
-- Existing architecture entries are available in `docs/arc42/08-crosscutting-concepts/architecture-source-maps/**`,
-  `docs/arc42/**`, ADRs, EPIC files and workflow files.
-- The user-provided assessment-placement instruction is a classification input
-  but not the full assessment source.
-- If the complete progress assessment text becomes available, it can be stored
-  as source evidence without changing the placement rules.
-- `SCA` remains unresolved until a verified source expands it. The placement
-  matrix may record it as an unresolved term and candidate concept, but arc42
-  extracts must not define its meaning by guess.
+- Governance-only files may be changed under `.agents/**`, `.codex/**`,
+  `docs/agents/**`, `docs/process/**`, `docs/governance/**`,
+  `docs/skill-audit/**`, `docs/workflow/**` and checked `docs/arc42/**` notes.
+- A dedicated Root Architect role or new flowchart skill is not created unless
+  execution verifies that the issue explicitly authorizes it; bootstrap
+  ownership remains with Senior System Architect.
+- No compatibility aliases, generated behavior or publication are required.
 
 Non-goals:
 
-- No backend implementation.
-- No frontend implementation.
-- No Docker, runtime, gRPC, REST, persistence, analysis-engine, Joern,
-  JavaParser, BTM generator or analytics behavior changes.
-- No new service extraction.
-- No contract mutation.
-- No build logic mutation.
-- No claim that target services are production-ready without verified start,
-  health, container and deployment evidence.
-- No rewrite or renumbering of ADR history.
-- No invented maturity score, module status, service status, table name,
-  endpoint, graph label, runtime behavior or evidence fact.
+- Do not activate the `skills-agents` strand or run `push auto`.
+- Do not change product implementation, Java/React/build/runtime/contracts.
+- Do not invent a role, skill, agent, schema field or acceptance criterion.
 
-Open questions:
+## Verified Baseline
 
-- None blocking for the revised workflow.
+- Repository root: `/home/matthias/projects/forensic_analytics`.
+- Workflow branch: `feature/workflow-gov-skill-governance-20260814`.
+- The working tree was clean on `main` before branch creation.
+- Actual inventory: 77 `.agents/skills/**/SKILL.md`, 19 `.agents/roles`
+  role files (including directory-style roles), 6 reusable `.codex` skills,
+  and 34 `.codex/agents/*.toml` definitions.
+- The existing registry JSON records 18 project roles and is
+  `MANUAL_REVIEW_REQUIRED`; the discrepancy is GOV-02 scope.
+- No matching EPIC file was found under `docs/epics`.
+- Relevant governance sources include ADR-0015, ADR-0021, the Governance
+  Flowchart V2 package, and the documented Root Architect bootstrap mapping.
 
-Execution prerequisites:
+## Target Picture
 
-- Official arc42 placement rules must be available from this workflow, the
-  official documentation URLs, or the downloaded official template.
-- Existing architecture entries must be read from verified repository files
-  before classification.
+At handoff to `workflow execute`, the repository has a deterministic,
+source-derived registry cache; reconciled counts; explicit entry-point
+classification; owner-backed Root Architect and flowchart mapping; one
+verified `.agents` skill schema; and a portability classification for every
+`.codex/agents/*.toml`. Unresolved gaps remain explicit and traceable.
 
-## Execution Profile
+## Architecture, Evidence and Resilience Constraints
 
-```text
-executionProfile=FULL_PATH
-reason=The workflow plans architecture documentation, ADR references, service-boundary risks, persistence decisions and workflow structure updates.
-requiredFullReviews=Senior Workflow Architect, Senior Requirement Engineer, Senior System Architect, Senior Java Backend Developer, Senior React Frontend Developer, Senior Tester, ADR Steward, Senior Documentation Engineer
-roleReviewBudget=full workflow-create review
-allowedImpactChecks=Senior React Frontend Developer may report N/A impact for implementation, but must review that no UI behavior or UX claim is introduced.
-requiredQualityChecks=documentation-only checks from QUALITY.md plus git diff inspection
-stopConditions=wrong arc42 root, unclear SCA meaning for authoritative extracts, unverifiable service readiness claim, unverified ADR decision, product-scope change
-```
-
-## Role Review
-
-Senior Workflow Architect:
-
-- Branch-first workflow creation was completed before mutating workflow files.
-- The workflow now starts with an arc42 placement assessment matrix instead of
-  requiring complete assessment source text.
-- The workflow has five documentation slices with concrete dependencies and
-  write scopes.
-
-Senior Requirement Engineer:
-
-- The revised workflow stays inside documentation and architecture-governance
-  scope.
-- Requirement traceability is improved because placement is based on official
-  arc42 rules and verified repository entries.
-- Missing full assessment source is now documented as optional source capture,
-  not as a blocker for classification.
-
-Senior System Architect:
-
-- The verified authoritative arc42 root is `docs/arc42/**`.
-- The target microservice landscape, service-boundary rules and data-ownership
-  rules must be taken from existing arc42, ADR and architecture source-map
-  documents before new statements are added.
-- Current modules must be described as current or transitional evidence, not
-  as completed production microservices.
-
-Senior Java Backend Developer:
-
-- No Java backend implementation is in scope.
-- Backend-facing statements about gRPC ingestion, services, worker behavior,
-  persistence or contracts must be verified from ADRs, contracts, service
-  READMEs, build files or source before they are described as implemented.
-
-Senior React Frontend Developer:
-
-- No frontend implementation is in scope.
-- UI or client behavior must not be added to the extracts unless it is
-  verified from `forensic-ui`, `cli-client`, public API documentation or
-  existing architecture docs.
-
-Senior Tester:
-
-- Documentation-only execution requires path checks, JSON syntax validation,
-  `git diff --check` and diff inspection.
-- The repository Gradle quality gate is not required for documentation-only
-  slices unless execution changes product source, tests, build logic,
-  contracts, runtime, deployment or quality policy.
-
-ADR Steward:
-
-- The workflow may reference accepted ADRs and the consolidated ADR state.
-- If a classification or extract introduces a new architecture decision or
-  contradicts an accepted ADR, execution must stop for ADR review instead of
-  editing ADR history silently.
-
-Senior Documentation Engineer:
-
-- Documentation must be English.
-- Planned behavior, target architecture, current implementation evidence,
-  source assessment claims and unresolved risks must remain distinguishable.
-- The placement assessment must not duplicate complete arc42 chapters.
-
-## Architecture Constraints
-
-- Use `docs/arc42/**` for authoritative arc42 output.
-- Use `docs/arc42/08-crosscutting-concepts/architecture-source-maps/assessments/**` for placement assessments and
-  optional full assessment source text.
-- Do not create `docs/arc42/**`.
-- Do not treat `docs/arc42/08-crosscutting-concepts/architecture-source-maps/**` source-map files as newer authoritative
-  arc42 output where checked arc42 files already exist.
-- Do not describe current service roots as production-ready microservices
-  without verified independent build, start, test, configuration, healthcheck,
-  container and deployment evidence.
-- Do not claim shared domain or application modules are active implementation
-  unless execution verifies that from the current source tree.
-- Keep PostgreSQL bounded to `repository-source-service` workspace metadata
-  under ADR-0024.
-- Keep H2 limited to deterministic tests and direct fixtures under ADR-0023.
-- Keep gRPC and REST changes contract-first under ADR-0010.
-- Keep per-service data ownership under ADR-0013.
-
-## Scope
-
-In scope:
-
-- `docs/workflow/**` workflow-control files.
-- `docs/arc42/08-crosscutting-concepts/architecture-source-maps/assessments/2026-06-arc42-placement-assessment.md`.
-- `docs/arc42/08-crosscutting-concepts/architecture-source-maps/assessments/2026-06-architecture-progress-assessment.md`
-  only when complete source text exists.
-- `docs/arc42/04-solution-strategy.md`.
-- `docs/arc42/05-building-block-view.md`.
-- `docs/arc42/08-crosscutting-concepts.md`.
-- `docs/arc42/09-architecture-decisions.md`.
-- `docs/arc42/11-risks-and-technical-debt.md`.
-
-Out of scope:
-
-- Product source code.
-- Tests, unless a future implementation slice changes product behavior.
-- Build scripts.
-- Runtime configuration.
-- Contract files under `contracts/**`.
-- Deployment descriptors.
-- ADR renumbering or history rewrite.
+- Repository files are the source of truth; registries are derived caches and
+  must be invalidated when governing files change.
+- Keep project-specific `.agents` governance separate from reusable `.codex`.
+- Do not mark ownership or portability verified by naming symmetry alone.
+- Preserve the three strands and `maxRetries = 3` escalation cap.
+- Every inventory, hash and classification must be deterministic for the same
+  repository tree.
+- Missing exact paths, conflicting authority or ambiguous ownership is STOP;
+  route through the documented Root Architect / Senior System Architect path.
 
 ## Backend Assessment
 
-The current Gradle build registers these modules:
-
-```text
-analysis-orchestrator-service
-analysis-store-service
-btm-generation-service
-cli-client
-forensic-gateway-service
-forensic-ingestion-service
-graph-replay-service
-ingestion-service
-java-ast-analysis-service
-java-parser-analysis-service
-joern-analysis-service
-joern-cpg-analysis-service
-observability-stack
-query-report-api-service
-report-generation-service
-repository-analysis-service
-repository-source-service
-testbed
-```
-
-Existing architecture documents classify some modules as target service
-evidence, some as predecessor evidence and some as optional or planned roots.
-The placement matrix must preserve those distinctions instead of flattening
-them into one service-readiness claim.
+No Java backend, application, domain, adapter, persistence, runtime or build
+surface is affected. Senior Java Backend Developer performs the required N/A
+impact review and must STOP if execution discovers a product-code dependency.
 
 ## Frontend Assessment
 
-The verified frontend root is `forensic-ui`, and `cli-client` is the public
-API client boundary. The requested workflow does not change frontend behavior.
-Frontend-related statements in the placement matrix or extracts must stay
-limited to verified client-facing architecture or explicitly planned behavior.
+No React module, UI state, API adapter, reporting view or UX surface is affected.
+Senior React Frontend Developer performs the required N/A impact review and must
+STOP if execution discovers a frontend dependency.
 
 ## Test Strategy
 
-For this documentation-only workflow:
-
-- run `python3 -m json.tool docs/workflow/context-pack.json`;
-- run path checks for every workflow-control file;
-- run `git diff --check`;
-- inspect changed files with `git diff --name-only`;
-- inspect the diff before completion.
-
-Do not run or claim the Gradle gate for documentation-only slices unless a
-later slice changes product source, tests, build logic, contracts, runtime,
-deployment or quality policy.
-
-The repository minimum quality command remains:
-
-```bash
-./gradlew test --dependency-verification strict --console=plain --stacktrace
-```
-
-The full local quality gate remains:
-
-```bash
-./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace
-```
+The slices use deterministic repository checks: exact path existence, SHA-256
+recomputation, role/skill/agent counts, frontmatter parsing, TOML/JSON parsing,
+reference validation, flowchart integrity and dependency/lock validation. The
+repository minimum Gradle test command remains required by the workflow; no
+synthetic forensic evidence is created.
 
 ## Resilience Requirements
 
-This workflow does not change runtime resilience behavior. Documentation must
-preserve the existing architecture distinction between target resilience,
-verified runtime behavior and open readiness gaps.
+Inventory generation must be repeatable and bounded to the checked repository
+tree. Hash/cache mismatches cause manual refresh rather than stale reuse. A
+missing owner, malformed definition or unresolved flowchart path is represented
+as an explicit gap. Automatic clarification/correction is capped at three
+attempts and then escalates; no silent fallback or cross-strand retry is allowed.
 
-## Slice Dependency Graph
+## Required Reviews and Ownership
 
-```text
-Slice 01
-  -> Slice 02
-  -> Slice 03
-  -> Slice 04
-  -> Slice 05
-```
+The workflow-create gate includes all five mandatory perspectives:
 
-Slice 02, Slice 03 and Slice 04 may be reviewed independently after Slice 01
-creates the placement assessment matrix. They should be applied sequentially
-during workflow execution to keep arc42 diff review simple.
+| Role | Responsibility |
+|---|---|
+| Senior Requirement Engineer | scope, traceability, assumptions and issue alignment |
+| Senior System Architect | governance authority, Root Architect and arc42 alignment |
+| Senior Java Backend Developer | N/A impact check; no Java/product boundary crossed |
+| Senior React Frontend Developer | N/A impact check; no frontend surface crossed |
+| Senior Tester | deterministic checks and quality-gate selection |
+
+Additional governance reviews: Senior Workflow Architect, Senior Documentation
+Engineer, Skill Registry Conflict Auditor and `flowchart-integrity-auditor`.
+Callable subagents are not used because the request authorizes workflow
+creation, not delegated execution; role files and skills are review checklists.
 
 ## Ordered Slices
 
-### Slice 01 - Create arc42 Placement Assessment Matrix
-
-Purpose:
-
-- Classify existing architecture entries with official arc42 placement rules.
-- Create the placement matrix that later slices use as their source for arc42
-  updates.
-- Optionally store the complete architecture progress assessment source if it
-  is available, without blocking classification when it is not.
-
-Prerequisites:
-
-- Active branch must be `docs/workflow-architecture-assessment-20260606`.
-- Official arc42 placement rules must be available from this workflow or the
-  official arc42 sources listed above.
+### Slice 01 — GOV-01: Registry Hash and Cache Refresh
 
 ```yaml
 slice_id: S01
 profile: FULL_PATH
-owner: Senior Documentation Engineer
-secondary_reviewers:
-  - Senior Requirement Engineer
-  - Senior System Architect
-affected_files:
-  - docs/arc42/08-crosscutting-concepts/architecture-source-maps/assessments/2026-06-arc42-placement-assessment.md
-  - docs/arc42/08-crosscutting-concepts/architecture-source-maps/assessments/2026-06-architecture-progress-assessment.md
+owner: Senior System Architect / Skill Registry Conflict Auditor
+secondary_reviewers: [Senior Requirement Engineer, Senior Tester]
+affected_files: [docs/skill-audit/skill-registry.md, docs/skill-audit/skill-registry.json]
 affected_modules: []
 affected_contracts: []
 dependencies: []
-parallel_group: P1
-file_locks:
-  - docs/arc42/08-crosscutting-concepts/architecture-source-maps/assessments/2026-06-arc42-placement-assessment.md
-  - docs/arc42/08-crosscutting-concepts/architecture-source-maps/assessments/2026-06-architecture-progress-assessment.md
+parallel_group: G1
+file_locks: [docs/skill-audit/skill-registry.md, docs/skill-audit/skill-registry.json]
 contract_locks: []
-architecture_locks:
-  - architecture-entry-placement
-  - architecture-source-assessment
+architecture_locks: [governance-registry-source-of-truth]
 quality_gates:
-  targeted:
-    - test -f docs/arc42/08-crosscutting-concepts/architecture-source-maps/assessments/2026-06-arc42-placement-assessment.md
-    - git diff --check
-  required:
-    - git diff --check
+  targeted: [path existence, hash recomputation, JSON syntax, git diff --check]
+  required: [./gradlew test --dependency-verification strict --console=plain --stacktrace]
 documentation:
-  arc42: placement assessment only; no authoritative arc42 chapter update in this slice
-  adr: no ADR change expected
-stop_conditions:
-  - official arc42 placement rules cannot be verified from workflow or official sources
-  - the slice would invent missing assessment content
-  - the slice would store authoritative arc42 output under docs/arc42
-  - a placement decision would require guessing implementation facts
+  arc42: checked; update only for verified authority change
+  adr: [ADR-0015, ADR-0021]
+stop_conditions: [unreproducible hash, cache treated as source of truth, missing governing file]
 ```
 
-Done criteria:
+Recompute and reconcile hashes and cache metadata from the verified tree. Do
+not hand-edit a hash without reproducible evidence.
 
-- The placement assessment matrix exists.
-- The matrix lists architecture entries, source evidence, target arc42 section,
-  placement rationale and unresolved gaps.
-- The optional full assessment source is stored only when complete source text
-  is available; otherwise the matrix records it as unavailable.
-- No arc42 chapter receives the complete assessment text.
-
-### Slice 02 - Add Primary Risk And Technical Debt Findings
-
-Purpose:
-
-- Extract maturity, risk and debt findings into arc42 chapter 11 as the main
-  architecture-risk location.
-
-Prerequisites:
-
-- Slice 01 completed and placement matrix exists.
+### Slice 02 — GOV-02: Role Inventory and Entry-Point Classification
 
 ```yaml
 slice_id: S02
 profile: FULL_PATH
-owner: Senior System Architect
-secondary_reviewers:
-  - Senior Requirement Engineer
-  - Senior Documentation Engineer
-  - Senior Tester
-affected_files:
-  - docs/arc42/11-risks-and-technical-debt.md
+owner: Senior Requirement Engineer
+secondary_reviewers: [Senior System Architect, Senior Tester, Skill Registry Conflict Auditor]
+affected_files: [docs/skill-audit/skill-inventory.md, docs/skill-audit/skill-registry.md, docs/skill-audit/skill-registry.json, docs/agents/skill-registry.md, docs/agents/organigramm.md]
 affected_modules: []
 affected_contracts: []
-dependencies:
-  - S01
-parallel_group: P2
-file_locks:
-  - docs/arc42/11-risks-and-technical-debt.md
+dependencies: [S01]
+parallel_group: G2
+file_locks: [docs/skill-audit/skill-inventory.md, docs/skill-audit/skill-registry.md, docs/skill-audit/skill-registry.json, docs/agents/skill-registry.md, docs/agents/organigramm.md]
 contract_locks: []
-architecture_locks:
-  - microservice-risk
-  - service-boundary-risk
-  - data-ownership-risk
+architecture_locks: [role-entry-point-ownership]
 quality_gates:
-  targeted:
-    - git diff --check
-  required:
-    - git diff --check
+  targeted: [role count reconciliation, entry-point path validation, markdown/json syntax, git diff --check]
+  required: [./gradlew test --dependency-verification strict --console=plain --stacktrace]
 documentation:
-  arc42: docs/arc42/11-risks-and-technical-debt.md
-  adr: reference ADR-0010, ADR-0013, ADR-0017, ADR-0023, ADR-0024 and ADR-0025 when relevant
-stop_conditions:
-  - a risk claim cannot be traced to the placement matrix, arc42, ADR, architecture source-map docs or current repository files
-  - current shared domain/application modules are claimed without source-tree verification
-  - target service readiness is claimed without verified readiness evidence
-  - monolithic module debt is described as active implementation when verified files classify it as predecessor or historical evidence
+  arc42: checked; synchronize only verified governance references
+  adr: [ADR-0015, ADR-0021]
+stop_conditions: [unverified role, unexplained count, guessed owner]
 ```
 
-Required extraction topics:
+Reconcile flat and directory-style role artifacts and make the 19-versus-18
+discrepancy explicit or correct it from source-derived evidence.
 
-- current architecture maturity where verified by repository evidence or
-  explicitly marked as assessment classification;
-- distributed monolith risk;
-- target architecture being ahead of verified current module/runtime
-  readiness;
-- shared-domain or shared-application risk, phrased as verified current state
-  only if execution proves active shared modules;
-- unstable or early gRPC contract stabilization risk;
-- wrong service-cut risk;
-- per-service persistence-boundary risk;
-- migration debt from predecessor, placeholder, optional or monolithic
-  remaining modules.
-
-Done criteria:
-
-- Chapter 11 contains the primary risk and technical-debt summary.
-- Risk wording separates verified current state, target architecture and
-  unresolved assessment findings.
-
-### Slice 03 - Synchronize Strategy And Building Blocks
-
-Purpose:
-
-- Add target strategy and current-module versus target-service decomposition
-  findings to arc42 chapters 4 and 5.
-
-Prerequisites:
-
-- Slice 01 completed and placement matrix exists.
+### Slice 03 — GOV-03: Root Architect and Flowchart Integrity Mapping
 
 ```yaml
 slice_id: S03
 profile: FULL_PATH
 owner: Senior System Architect
-secondary_reviewers:
-  - Senior Java Backend Developer
-  - Senior Documentation Engineer
-  - Senior Tester
-affected_files:
-  - docs/arc42/04-solution-strategy.md
-  - docs/arc42/05-building-block-view.md
+secondary_reviewers: [Senior Documentation Engineer, flowchart-integrity-auditor, Senior Requirement Engineer]
+affected_files: [docs/skill-audit/governance-flowchart-v2-linkage.md, docs/skill-audit/manual-review-required.md, docs/governance/workflow/level-1-overview.md, docs/governance/workflow/level-2-subgraphs.md, docs/agents/skill-registry.md, docs/arc42/11-risks-and-technical-debt.md]
 affected_modules: []
 affected_contracts: []
-dependencies:
-  - S01
-parallel_group: P3
-file_locks:
-  - docs/arc42/04-solution-strategy.md
-  - docs/arc42/05-building-block-view.md
+dependencies: [S01, S02]
+parallel_group: G3
+file_locks: [docs/skill-audit/governance-flowchart-v2-linkage.md, docs/skill-audit/manual-review-required.md, docs/governance/workflow/level-1-overview.md, docs/governance/workflow/level-2-subgraphs.md]
 contract_locks: []
-architecture_locks:
-  - target-microservices-strategy
-  - current-to-target-service-decomposition
+architecture_locks: [root-architect-escalation, flowchart-level-consistency]
 quality_gates:
-  targeted:
-    - git diff --check
-  required:
-    - git diff --check
+  targeted: [flowchart integrity audit, source-to-diagram linkage, markdown syntax, git diff --check]
+  required: [./gradlew test --dependency-verification strict --console=plain --stacktrace]
 documentation:
-  arc42: docs/arc42/04-solution-strategy.md and docs/arc42/05-building-block-view.md
-  adr: reference ADR-0017 and ADR-0025 when relevant
-stop_conditions:
-  - SCA meaning is required for an authoritative statement but remains ambiguous
-  - current modules are treated as completed production microservices without readiness evidence
-  - worker model, gRPC ingestion or service decomposition statements cannot be verified
-  - a new service boundary is introduced without ADR or workflow scope
+  arc42: update risks only if mapping status changes
+  adr: [ADR-0021]
+stop_conditions: [unauthorized dedicated owner, ambiguous diagram path, unresolved STOP/terminal/backward path]
 ```
 
-Required extraction topics:
+Resolve or explicitly retain the two documented non-blocking gaps. Do not
+invent a role or skill just to change a status to `VERIFIED`.
 
-- microservice target ecosystem;
-- gRPC ingestion as target communication/ingestion strategy;
-- worker model and migration strategy, limited to verified or explicitly
-  planned behavior;
-- SCA-related placement only after acronym verification, otherwise unresolved
-  in the matrix;
-- current Gradle modules versus FA-MSA-001 target services;
-- predecessor/current/optional/planned service roots, preserving existing
-  documentation distinctions.
-
-Done criteria:
-
-- Chapter 4 summarizes target strategy without claiming unverified runtime
-  readiness.
-- Chapter 5 maps current modules and target services using verified source-map
-  and ADR evidence.
-
-### Slice 04 - Synchronize Crosscutting Governance And Decisions
-
-Purpose:
-
-- Add governance, quality-gate, documentation-gate, migration-concept and ADR
-  reference findings to arc42 chapters 8 and 9.
-
-Prerequisites:
-
-- Slice 01 completed and placement matrix exists.
-- ADR references are verified from current numbered ADR files under the arc42
-  ADR chapter.
+### Slice 04 — GOV-04: Skill Definition Schema Standardization
 
 ```yaml
 slice_id: S04
 profile: FULL_PATH
-owner: ADR Steward
-secondary_reviewers:
-  - Senior System Architect
-  - Senior Documentation Engineer
-  - Senior Tester
-affected_files:
-  - docs/arc42/08-crosscutting-concepts.md
-  - docs/arc42/09-architecture-decisions.md
+owner: Senior Documentation Engineer / Skill Registry Conflict Auditor
+secondary_reviewers: [Senior System Architect, Senior Requirement Engineer, Senior Tester]
+affected_files: [.agents/skills/**/SKILL.md, docs/skill-audit/skill-inventory.md, docs/skill-audit/skill-registry.md, docs/skill-audit/skill-registry.json]
 affected_modules: []
 affected_contracts: []
-dependencies:
-  - S01
-parallel_group: P4
-file_locks:
-  - docs/arc42/08-crosscutting-concepts.md
-  - docs/arc42/09-architecture-decisions.md
-contract_locks: []
-architecture_locks:
-  - agent-governance
-  - adr-reference-state
-  - persistence-decision-state
+dependencies: [S01, S02, S03]
+parallel_group: G4
+file_locks: [.agents/skills/**/SKILL.md, docs/skill-audit/skill-inventory.md, docs/skill-audit/skill-registry.md, docs/skill-audit/skill-registry.json]
+contract_locks: [skill-definition-frontmatter]
+architecture_locks: [skill-schema-ownership]
 quality_gates:
-  targeted:
-    - git diff --check
-  required:
-    - git diff --check
+  targeted: [frontmatter parse for every SKILL.md, required-field report, duplicate-name report, git diff --check]
+  required: [./gradlew test --dependency-verification strict --console=plain --stacktrace]
 documentation:
-  arc42: docs/arc42/08-crosscutting-concepts.md and docs/arc42/09-architecture-decisions.md
-  adr: no new ADR expected unless execution discovers a new decision
-stop_conditions:
-  - an accepted ADR is contradicted
-  - a new architecture decision is introduced without ADR Steward approval
-  - PostgreSQL is described as broader analytics persistence instead of bounded repository-source metadata
-  - H2 is described as runtime fallback
-  - workflow governance wording changes process authority instead of documenting existing rules
+  arc42: checked; no update unless governance architecture changes
+  adr: [ADR-0015]
+stop_conditions: [schema field cannot be derived, normalization erases meaning, duplicate owner unresolved]
 ```
 
-Required extraction topics:
+Define and apply one verified schema across `.agents` while preserving skill
+meaning. Missing fields become explicit findings when they cannot be safely
+populated.
 
-- `workflow create` and `workflow execute` governance;
-- Skill/Agent model;
-- quality gates and documentation gates;
-- SCA as a crosscutting migration concept only after acronym verification;
-- consolidated ADR state;
-- PostgreSQL runtime persistence bounded to repository-source workspace
-  metadata;
-- no H2 runtime fallback;
-- gRPC communication and contract-first governance;
-- independent service deployment as a target requirement, not a verified
-  readiness claim.
-
-Done criteria:
-
-- Chapter 8 captures crosscutting governance and migration concepts.
-- Chapter 9 references current accepted ADR state without rewriting ADR
-  history.
-
-### Slice 05 - Documentation Closure And Handoff
-
-Purpose:
-
-- Verify consistency, update the workflow execution report, and prepare the
-  handoff back to workflow execution or commit preparation.
-
-Prerequisites:
-
-- Slices 01 through 04 completed or explicitly stopped with documented
-  blockers.
+### Slice 05 — GOV-05: `.codex` Agent Portability Classification
 
 ```yaml
 slice_id: S05
 profile: FULL_PATH
-owner: Senior Tester
-secondary_reviewers:
-  - Senior Documentation Engineer
-  - Senior Requirement Engineer
-  - Senior System Architect
-affected_files:
-  - docs/workflow/execution-report.md
+owner: Senior System Architect
+secondary_reviewers: [Senior Documentation Engineer, Skill Registry Conflict Auditor, Senior Tester]
+affected_files: [.codex/agents/*.toml, .codex/AGENTS.md, docs/agents/README.md, docs/skill-audit/skill-inventory.md, docs/skill-audit/skill-registry.md]
 affected_modules: []
 affected_contracts: []
-dependencies:
-  - S02
-  - S03
-  - S04
-parallel_group: P5
-file_locks:
-  - docs/workflow/execution-report.md
-contract_locks: []
-architecture_locks:
-  - documentation-closure
+dependencies: [S02, S04]
+parallel_group: G5
+file_locks: [.codex/agents/*.toml, docs/agents/README.md, docs/skill-audit/skill-inventory.md, docs/skill-audit/skill-registry.md]
+contract_locks: [codex-agent-portability-classification]
+architecture_locks: [portable-codex-boundary]
 quality_gates:
-  targeted:
-    - python3 -m json.tool docs/workflow/context-pack.json
-    - test -f docs/workflow/workflow.md
-    - test -f docs/workflow/context-pack.md
-    - test -f docs/workflow/context-pack.json
-    - git diff --check
-    - git diff --name-only
-  required:
-    - git diff --check
+  targeted: [TOML parse for every agent, classification coverage, project-reference scan, git diff --check]
+  required: [./gradlew test --dependency-verification strict --console=plain --stacktrace]
 documentation:
-  arc42: verify chapters 4, 5, 8, 9 and 11
-  adr: verify no ADR history rewrite
-stop_conditions:
-  - documentation contradicts EPIC, ADR or verified repository state
-  - placement matrix and arc42 extracts collapse into duplicated chapter content
-  - JSON context-pack validation fails
-  - diff contains product source, build, contract, runtime or deployment changes
+  arc42: checked; update only for verified portability-boundary decisions
+  adr: [ADR-0021]
+stop_conditions: [unverified coupling, conflated portable/project scope, invalid TOML]
 ```
 
-Done criteria:
+Classify all 34 definitions as reusable, project-specific or manual-review
+required from verified references. Do not silently rewrite portable files with
+project-specific governance.
 
-- Documentation-only checks pass or blockers are reported.
-- The execution report lists changed files, verification commands and any
-  unresolved gaps.
-- The workflow is ready for commit preparation only after diff inspection.
+### Slice 06 — Final Governance Synchronization and Execute Handoff
 
-## Parallelization Opportunities
+```yaml
+slice_id: S06
+profile: FULL_PATH
+owner: Senior Workflow Architect
+secondary_reviewers: [Senior Requirement Engineer, Senior System Architect, Senior Tester, Senior Documentation Engineer]
+affected_files: [docs/workflow/**, docs/arc42/README.md, docs/arc42/08-crosscutting-concepts.md, docs/arc42/11-risks-and-technical-debt.md]
+affected_modules: []
+affected_contracts: []
+dependencies: [S01, S02, S03, S04, S05]
+parallel_group: G6
+file_locks: [docs/workflow/**, docs/arc42/** governance-only]
+contract_locks: []
+architecture_locks: [workflow-handoff, arc42-governance-synchronization]
+quality_gates:
+  targeted: [metadata validation, dependency acyclicity, context-pack hash check, markdown/json syntax, git diff --check]
+  required: [./gradlew test --dependency-verification strict --console=plain --stacktrace]
+documentation:
+  arc42: checked or updated with exact evidence
+  adr: [ADR-0015, ADR-0021]
+stop_conditions: [missing evidence, lock conflict, stale context pack, ambiguous execute handoff]
+```
 
-- Slice 02, Slice 03 and Slice 04 have distinct arc42 write scopes and may be
-  reviewed independently after Slice 01, but execution should apply them
-  sequentially for clearer architecture review.
-- Slice 01 is the dependency gate for all arc42 extraction slices.
+Aggregate evidence, synchronize checked arc42 status, validate all slice
+contracts, and release the workflow for a later explicit `workflow execute`.
 
-## Role Ownership Map
+## Dependency Graph and Parallelization
 
-| Area | Owner | Reviewers |
-|---|---|---|
-| Workflow structure | Senior Workflow Architect | Senior Requirement Engineer, Senior Tester |
-| Placement assessment matrix | Senior Documentation Engineer | Senior Requirement Engineer, Senior System Architect |
-| Risk and debt chapter | Senior System Architect | Senior Documentation Engineer, Senior Tester |
-| Strategy and building blocks | Senior System Architect | Senior Java Backend Developer, Senior Documentation Engineer |
-| Crosscutting concepts and ADR references | ADR Steward | Senior System Architect, Senior Documentation Engineer |
-| Quality closure | Senior Tester | Senior Documentation Engineer, Senior Requirement Engineer |
+```text
+S01 -> S02 -> S03 -> S04 -> S05 -> S06
+```
 
-Callable subagents were not used during this workflow creation turn. The role
-files listed in the verified baseline were used as local review checklists.
+The slices are intentionally sequential because later slices consume registry,
+ownership or schema decisions. No write-capable parallel execution is allowed.
 
-## Quality-Gate Expectations
+## Quality and Documentation Plan
 
-Documentation-only workflow execution must run:
+The required minimum is:
 
 ```bash
-python3 -m json.tool docs/workflow/context-pack.json
-test -f docs/workflow/workflow.md
-test -f docs/workflow/context-pack.md
-test -f docs/workflow/context-pack.json
-git diff --check
-git diff --name-only
+./gradlew test --dependency-verification strict --console=plain --stacktrace
 ```
 
-If execution changes product source, tests, build logic, contracts, runtime,
-deployment or quality policy, the slice must stop and reclassify the quality
-gate from `QUALITY.md`.
+The full gate is the exact `QUALITY.md` command including clean test, JaCoCo,
+`checkPackageCoverage`, strict dependency verification and `git diff --check`.
+`validatePlugins` is not applicable unless plugin metadata or implementation
+changes. Each slice also runs its targeted deterministic governance checks.
 
-## Documentation Synchronization Points
+Arc42 status: `CHECKED`. ADR-0015, ADR-0021, the Governance Flowchart V2
+package, `docs/arc42/08-crosscutting-concepts.md` and
+`docs/arc42/11-risks-and-technical-debt.md` were inspected. Slice 06 owns any
+verified synchronization; no arc42 file is changed merely to close a gap.
 
-- Keep placement and optional assessment-source material under
-  `docs/arc42/08-crosscutting-concepts/architecture-source-maps/assessments/`.
-- Keep authoritative arc42 extracts under `docs/arc42/**`.
-- Keep numbered ADR references under
-  `docs/arc42/09-architecture-decisions/adr/`.
-- Keep EPIC source references under `docs/epics/**`.
-- Keep process-control workflow files under `docs/workflow/**`.
-- Keep official arc42 rule references in the placement matrix so future
-  readers can see why each entry belongs in a chapter.
+## Commit and Push Plan
+
+No commit or push is requested by the user. This workflow-creation turn does
+not run checkpoint push, `push`, `push auto`, PR creation, merge or cleanup.
+If a later `workflow execute` request authorizes checkpoint pushes, each slice
+may commit only its own verified files after its quality gate and may push only
+the active workflow branch; publication and branch cleanup remain separate
+authorizations.
 
 ## Stop Conditions
 
-Stop workflow execution if:
+STOP on missing exact paths, unverifiable counts, unresolved owner conflicts,
+invalid frontmatter/TOML/JSON, stale hashes, flowchart integrity failures,
+cross-strand scope or any need to guess. Automatic clarification or local
+correction is capped at `maxRetries = 3`, then escalates through the documented
+Root Architect path without switching strands.
 
-- the workflow would create `docs/arc42/**`;
-- an arc42 extract would require guessing implementation, service readiness,
-  persistence schema, contract shape, endpoint, table, graph label, runtime
-  behavior or evidence fact;
-- the `SCA` acronym is required for an authoritative statement but cannot be
-  verified;
-- assessment claims conflict with ADR-0022, ADR-0023, ADR-0024 or ADR-0025 and
-  the intended source of truth is unclear;
-- a slice introduces a new architecture decision without ADR review;
-- a slice modifies product source, tests, build logic, contracts, runtime or
-  deployment files outside the workflow scope.
+## Definition of Done
 
-## Uncertainty Escalation Rules
+Done means every issue has one traceable slice; metadata, owners, locks,
+dependencies and checks are complete; registry/count/ownership/schema/
+portability claims are source-derived; `.agents` and `.codex` boundaries stay
+explicit; arc42 status and context hashes are checked; and handoff is ready
+for a later `workflow execute` command.
 
-- Missing full assessment text is recorded in the placement matrix and does
-  not block classification.
-- Ambiguous `SCA` meaning is recorded as unresolved and stops only the
-  authoritative statement that would need its expansion.
-- ADR conflict routes to ADR Steward and Senior System Architect.
-- Service-boundary ambiguity routes to Senior System Architect and
-  Microservice Senior Expert.
-- Persistence-ownership ambiguity routes to Data Ownership and Persistence
-  Steward.
-- Contract ambiguity routes to Contract Governance and gRPC/Protobuf review.
-- Quality-gate ambiguity routes to Senior Tester and quality-gate governance.
+## Handoff to Workflow Execute
 
-## Commit And Push Plan
+Execute only after explicit user request on
+`feature/workflow-gov-skill-governance-20260814`. Read this file completely,
+process S01–S06 in order, verify the branch before each write, run the gates
+after every slice, inspect the diff, and stop on any unverifiable fact.
 
-No commit or push is authorized by this workflow revision request.
+## Arc42 Check Status
 
-During later `workflow execute`, commit and push are allowed only when the
-checked workflow explicitly authorizes a slice checkpoint. Slice checkpoint
-push is not `push auto` and must not create or merge a pull request.
+Checked against the existing arc42 governance baseline and ADR-0015 / ADR-0021.
+No arc42 artifact was modified during workflow creation; Slice 06 owns any
+verified synchronization required after execution.
 
-## Definition Of Done
+## Execution Status
 
-The workflow is done when:
-
-- `docs/workflow/workflow.md` is complete and checked;
-- `docs/workflow/context-pack.md` exists;
-- `docs/workflow/context-pack.json` is valid JSON;
-- `docs/workflow/execution-report.md` exists as the execution reporting
-  target;
-- the active branch is still
-  `docs/workflow-architecture-assessment-20260606`;
-- `git diff --check` passes;
-- the workflow clearly distinguishes placement classification, optional full
-  assessment source storage and authoritative arc42 extraction.
-
-## Handoff To Workflow Execute
-
-Run the next phase with:
-
-```text
-workflow execute
-```
-
-Before editing arc42 chapters, workflow execution must read this complete
-workflow, create the placement assessment matrix in Slice 01 and execute the
-slices in dependency order.
-
-## arc42 Check Status
-
-Checked during workflow revision:
-
-- `docs/arc42/04-solution-strategy.md`
-- `docs/arc42/05-building-block-view.md`
-- `docs/arc42/08-crosscutting-concepts.md`
-- `docs/arc42/09-architecture-decisions.md`
-- `docs/arc42/11-risks-and-technical-debt.md`
-
-Required during workflow execution:
-
-- create the placement matrix first;
-- update chapters 4, 5, 8, 9 and 11 according to the placement matrix;
-- keep chapter 11 as the primary risk and technical-debt chapter;
-- keep placement and optional assessment source documents outside arc42;
-- do not create `docs/arc42/**`.
+S01 through S06 completed on `feature/workflow-gov-skill-governance-20260814`.
+The per-slice commits, deterministic checks, quality-gate results, blocker
+resolution and Arc42 evidence are recorded in
+[`execution-report.md`](execution-report.md). The workflow is ready for the
+requested governance handoff; no product implementation scope was introduced.
