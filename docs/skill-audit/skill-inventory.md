@@ -27,6 +27,22 @@
 | Workflow Executor Resolution | `workflow execute` | Workflow Executor / Skill Registry Conflict Auditor | added |
 | Process Performance Profiler | `workflow execute` | Senior Performance Engineer / Workflow Executor | added |
 
+## Project Role Inventory and Entry Points
+
+The project role inventory is source-derived from `.agents/roles`. Flat role
+documents and directory-style `SKILL.md` role entry points are counted as
+roles; reusable `.codex/agents/*.toml` definitions are tracked separately.
+
+| Role entry-point form | Count | Classification |
+|---|---:|---|
+| `.agents/roles/*.md` | 17 | flat project-role document |
+| `.agents/roles/*/SKILL.md` | 2 | directory-style project-role entry point |
+| Total project roles | 19 | reconciled source inventory |
+
+The directory-style roles are `senior-requirement-engineer` and
+`senior-workflow-architect`. The persistent JSON registry records the exact
+path and `entryPointType` for every role; it does not replace repository files.
+
 | Skill name                            | File path                                                       | Purpose | Architecture zone | Slices/workflows | Possible overlaps | Status |
 |---------------------------------------|-----------------------------------------------------------------|---|---|---|---|---|
 | agent-swarm-coordination-specialist   | `.agents/skills/agent-swarm-coordination-specialist/SKILL.md`   | Dependency graph planning and multi-agent coordination. | Orchestration | Subagent planning, review pipeline, merge coordination | swarm-coordination, swarm-orchestration | added |

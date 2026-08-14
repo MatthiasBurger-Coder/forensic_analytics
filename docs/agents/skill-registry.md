@@ -47,6 +47,14 @@ Must not change:
 - Docker/runtime
 - build logic
 
+## Role Entry-Point Classification
+
+Project roles are discovered under `.agents/roles` and classified by their
+actual entry point. Seventeen roles use flat `.md` documents and two roles use
+directory-style `SKILL.md` files: `senior-requirement-engineer` and
+`senior-workflow-architect`. The reconciled project-role count is 19. Callable
+`.codex/agents/*.toml` definitions remain a separate inventory category.
+
 ## Process Governance Entries
 
 | Entry | Strand | Owner | Responsibility |

@@ -23,7 +23,7 @@ behavior and quality commands.
 | Asset set | Count | Source path |
 |---|---:|---|
 | Project skills | 77 | `.agents/skills/*/SKILL.md` |
-| Project roles | 18 | `.agents/roles/*.md` and `.agents/roles/*/SKILL.md` |
+| Project roles | 19 | `.agents/roles/*.md` and `.agents/roles/*/SKILL.md` |
 | Reusable Codex skills | 6 | `.codex/skills/*/SKILL.md` |
 | Callable Codex agents | 34 | `.codex/agents/*.toml` |
 

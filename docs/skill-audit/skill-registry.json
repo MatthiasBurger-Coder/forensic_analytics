@@ -18,7 +18,7 @@
   ],
   "inventoryCounts": {
     "projectSkills": 77,
-    "projectRoles": 18,
+    "projectRoles": 19,
     "reusableCodexSkills": 6,
     "callableCodexAgents": 34
   },
@@ -66,7 +66,6 @@
     "docs/workflow/context-pack.md": "954ac71f08af8c146a524ff497931abefa3ec1fc4aad2c4d7030e3335eddf94c",
     "docs/workflow/context-pack.json": "ae3f4d8255fadd41f1e18d07bbfb2e50ea57dc1ed9f5b2e7360eca5c9f01887f",
     "docs/skill-audit/README.md": "54edf47712f0597a9196b91a5b235ea7deed22fecbbb84c966f21c86d5a328b9",
-    "docs/skill-audit/skill-registry.md": "0373bdabf0018033bf032a2e564fdd54c5d85a6fd61376925b100d4fb34988ca",
     "docs/skill-audit/skill-inventory.md": "2eca34a5644610eeef8c5ae18e64191b3be1e2408eb05c2cdceffc4bdf678401",
     ".agents/roles/senior-requirement-engineer/SKILL.md": "9c6aeacf81de8d2ebc36230fd6a0e695722efa7de4c78887537b84f9fbdf054f",
     ".agents/skills/engineering-governance/SKILL.md": "a6ae5b56d636096f9e3829eaba0a29070d5288f8a0a13927d4d4135bc2e45293",
@@ -164,6 +163,7 @@
       "ownerOf": [
         "s3d-execution-orchestrator"
       ],
+      "entryPointType": "flat-role-document",
       "status": "ACTIVE"
     },
     {
@@ -173,6 +173,7 @@
         "skill-registry-conflict-auditor",
         "execution-profile-router"
       ],
+      "entryPointType": "flat-role-document",
       "status": "ACTIVE"
     },
     {
@@ -181,6 +182,7 @@
       "ownerOf": [
         "quality-impact-classifier"
       ],
+      "entryPointType": "flat-role-document",
       "status": "ACTIVE"
     },
     {
@@ -191,6 +193,7 @@
         "docs/process/**",
         "docs/agents/**"
       ],
+      "entryPointType": "flat-role-document",
       "status": "ACTIVE"
     },
     {
@@ -201,6 +204,105 @@
         "three-amigos-requirement-gatekeeper",
         "workflow-authoring"
       ],
+      "entryPointType": "directory-skill-entrypoint",
+      "status": "ACTIVE"
+    },
+    {
+      "name": "microservice-senior-expert",
+      "path": ".agents/roles/microservice-senior-expert.md",
+      "ownerOf": [],
+      "entryPointType": "flat-role-document",
+      "status": "ACTIVE"
+    },
+    {
+      "name": "senior-analysis-storage-architect",
+      "path": ".agents/roles/senior-analysis-storage-architect.md",
+      "ownerOf": [],
+      "entryPointType": "flat-role-document",
+      "status": "ACTIVE"
+    },
+    {
+      "name": "senior-devops",
+      "path": ".agents/roles/senior-devops.md",
+      "ownerOf": [],
+      "entryPointType": "flat-role-document",
+      "status": "ACTIVE"
+    },
+    {
+      "name": "senior-git-workspace-specialist",
+      "path": ".agents/roles/senior-git-workspace-specialist.md",
+      "ownerOf": [],
+      "entryPointType": "flat-role-document",
+      "status": "ACTIVE"
+    },
+    {
+      "name": "senior-grpc-proto-specialist",
+      "path": ".agents/roles/senior-grpc-proto-specialist.md",
+      "ownerOf": [],
+      "entryPointType": "flat-role-document",
+      "status": "ACTIVE"
+    },
+    {
+      "name": "senior-java-backend",
+      "path": ".agents/roles/senior-java-backend.md",
+      "ownerOf": [],
+      "entryPointType": "flat-role-document",
+      "status": "ACTIVE"
+    },
+    {
+      "name": "senior-joern-cpg-specialist",
+      "path": ".agents/roles/senior-joern-cpg-specialist.md",
+      "ownerOf": [],
+      "entryPointType": "flat-role-document",
+      "status": "ACTIVE"
+    },
+    {
+      "name": "senior-performance-engineer",
+      "path": ".agents/roles/senior-performance-engineer.md",
+      "ownerOf": [],
+      "entryPointType": "flat-role-document",
+      "status": "ACTIVE"
+    },
+    {
+      "name": "senior-plugin-integration-developer",
+      "path": ".agents/roles/senior-plugin-integration-developer.md",
+      "ownerOf": [],
+      "entryPointType": "flat-role-document",
+      "status": "ACTIVE"
+    },
+    {
+      "name": "senior-react-frontend",
+      "path": ".agents/roles/senior-react-frontend.md",
+      "ownerOf": [],
+      "entryPointType": "flat-role-document",
+      "status": "ACTIVE"
+    },
+    {
+      "name": "senior-security-sandbox-engineer",
+      "path": ".agents/roles/senior-security-sandbox-engineer.md",
+      "ownerOf": [],
+      "entryPointType": "flat-role-document",
+      "status": "ACTIVE"
+    },
+    {
+      "name": "senior-swarm-orchestrator",
+      "path": ".agents/roles/senior-swarm-orchestrator.md",
+      "ownerOf": [],
+      "entryPointType": "flat-role-document",
+      "status": "ACTIVE"
+    },
+    {
+      "name": "senior-ux-designer",
+      "path": ".agents/roles/senior-ux-designer.md",
+      "ownerOf": [],
+      "entryPointType": "flat-role-document",
+      "status": "ACTIVE"
+    },
+    {
+      "name": "senior-workflow-architect",
+      "path": ".agents/roles/senior-workflow-architect/SKILL.md",
+      "ownerOf": [],
+      "entryPointType": "directory-skill-entrypoint",
       "status": "ACTIVE"
     }
   ],
