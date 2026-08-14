@@ -1,69 +1,65 @@
 # Workflow Execution Report
 
-## Scope
-
-Workflow: GOV-01–GOV-05 Governance Registry and Agent Definition Reconciliation
-
-Branch: `feature/workflow-gov-skill-governance-20260814`
-
-Execution date: 2026-08-14
-
-Process strand: `workflow execute`
-
-All six slices completed serially. No product implementation, runtime,
-contract, persistence, build-logic or `push auto` scope was introduced.
-
-## Slice Results
-
-| Slice | Result | Commit |
-|---|---|---|
-| S01 | Registry hashes and governance cache refreshed | `85cdab1` |
-| S02 | 19 roles and flat/directory entry points reconciled | `6e29dc6` |
-| S03 | Flowchart audit verified; Root Architect bootstrap gap recorded for follow-up | `afcfdc2` |
-| S04 | 77 project skill definitions verified against frontmatter schema | `f0fe0c6` |
-| S05 | 34 Codex agents classified: 5 reusable, 29 project-specific, 0 manual review | `68d01fe` |
-| S06 | Workflow/context handoff and Arc42 evidence synchronized | this checkpoint |
-
-The missing `RepositoryAnalysisSubmissionPort` and stale test documentation
-path discovered by the required quality gate were repaired in the isolated
-prerequisite commit `2f334c2`, which is included on this workflow branch.
-
-## Verification Evidence
-
-- S01–S05 targeted deterministic checks passed.
-- Every `.codex/agents/*.toml` definition parsed successfully: 34/34.
-- Registry JSON classification and counts passed validation.
-- Registry source hashes were recomputed and matched all recorded files.
-- `git diff --check` passed.
-- Full gate passed:
-  `./gradlew clean test jacocoTestReport jacocoTestCoverageVerification checkPackageCoverage --dependency-verification strict --console=plain --stacktrace`
-- Result: `BUILD SUCCESSFUL`.
-
-## Arc42 and ADR Check
-
-The checked Arc42 baseline was reviewed in:
-
-- `docs/arc42/README.md`
-- `docs/arc42/08-crosscutting-concepts.md`
-- `docs/arc42/11-risks-and-technical-debt.md`
-- ADR-0015, Skill Registry and Conflict Auditing
-- ADR-0021, Governance Flowchart V2
-
-No architecture, runtime or product behavior changed during S01–S06, so no
-Arc42 artifact was modified in that execution. The Root Architect
-bootstrap-only status was an explicit follow-up risk at that time and was not
-represented as a completed dedicated role.
-
-## Post-Execution Governance Follow-Up
-
-A subsequent authorized `skills-agents` change created
-`.agents/roles/root-architect.md`, routed Root Architect escalation to the
-dedicated role, reconciled the project-role inventory to 20 and synchronized
-the GOV-03 linkage, organigramm, registry and arc42 governance notes. The
-current Root Architect capability status is `VERIFIED`.
-
 ## Handoff
 
-The active branch is clean and tracks
-`origin/feature/workflow-gov-skill-governance-20260814`. The governance work is
-ready for review or the next explicitly authorized workflow action.
+- Workflow: GOV-02 and GOV-04 Role Inventory Validation and Skill Schema Standardization
+- Workflow ID: `gov-02-04-role-inventory-skill-schema`
+- Workflow version: `gov-02-04-role-inventory-skill-schema-v1`
+- Branch: `feature/workflow-gov-02-04-20260814`
+- Process strand: `workflow execute`
+- Execution status: `IN_PROGRESS`
+
+S01 and S02 have completed and their checkpoints are recorded below. S03 is
+the next eligible slice; no issue-closure evidence is claimed here.
+
+The report will be updated after each successful slice checkpoint with the
+required `CP_RECORD` fields from `workflow.history.md`. The registry and audit
+cache remain derived evidence and are refreshed by S04 from verified sources.
+
+## S01 Checkpoint
+
+### CP_RECORD
+
+- workflowVersion: `gov-02-04-role-inventory-skill-schema-v1`
+- sliceId: `S01`
+- sliceTitle: `GOV-02 Role Inventory Contract and Validator`
+- responsibleAgent: `implementation worker`, reviewed by `Senior Requirement Engineer`
+- changedFiles:
+  - `docs/skill-audit/validate-role-inventory.sh`
+  - `docs/skill-audit/skill-inventory.md`
+  - `docs/agents/skill-registry.md`
+- qualityGateCommands:
+  - `bash -n docs/skill-audit/validate-role-inventory.sh`
+  - deterministic baseline and controlled-invalid-fixture validator checks
+  - `git diff --cached --check`
+  - `./gradlew test --dependency-verification strict --console=plain --stacktrace`
+- qualityGateResult: `PASS`
+- commitHash: `abd5849e46a1f44885dc6653c799291790125039`
+- rollbackReference: revert commit `abd5849e46a1f44885dc6653c799291790125039`
+- arc42Updated: `false` — checked; no architecture-risk transition
+- adrUpdated: `false` — ADR-0015 remains applicable; no new decision
+- pushResult: `PASS` — pushed to `origin/feature/workflow-gov-02-04-20260814`
+
+## S02 Checkpoint
+
+### CP_RECORD
+
+- workflowVersion: `gov-02-04-role-inventory-skill-schema-v1`
+- sliceId: `S02`
+- sliceTitle: `GOV-04 Canonical Skill Definition Schema`
+- responsibleAgent: `Senior Documentation Engineer`, independently reviewed by `Skill Registry Conflict Auditor`
+- changedFiles:
+  - `docs/skill-audit/skill-definition-schema.md`
+  - `docs/skill-audit/skill-inventory.md`
+  - `docs/skill-audit/skill-registry.md`
+- qualityGateCommands:
+  - `./gradlew test --dependency-verification strict --console=plain --stacktrace`
+  - heading-level 1–6 source scan with `77/77/66/13/33/47/43/18/52` and one duplicate heading
+  - `git diff --check`
+  - `git diff --cached --check`
+- qualityGateResult: `PASS`
+- commitHash: `082c7919e0c6105a856f8565cc4e0c7d8e93d8eb`
+- rollbackReference: revert commit `082c7919e0c6105a856f8565cc4e0c7d8e93d8eb`
+- arc42Updated: `false` — checked, no architecture-risk transition
+- adrUpdated: `false` — ADR-0015 remains applicable, no new decision
+- pushResult: `PASS` — pushed HEAD to `origin/feature/workflow-gov-02-04-20260814`

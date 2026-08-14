@@ -13,23 +13,27 @@ behavior and quality commands.
 | Field | Value |
 |---|---|
 | Registry version | `skill-registry-v1` |
-| Workflow version | `gov-01-05-registry-agent-reconciliation-v1` |
+| Registry snapshot workflow | `gov-01-05-registry-agent-reconciliation-v1` |
+| Active S02 workflow | `gov-02-04-role-inventory-skill-schema-v1` |
 | Last verified | `2026-08-14` |
 | Reuse status | `MANUAL_REVIEW_REQUIRED` |
 | Registry scope | Governance-routing-critical matrix with counts for full repositories of skills, roles and callable agent definitions |
+| Skill schema status | `S02_REVIEW_PENDING`; frontmatter is implemented, body migration is planned |
 
 ## Inventory Counts
 
 | Asset set | Count | Source path |
 |---|---:|---|
 | Project skills | 77 | `.agents/skills/*/SKILL.md` |
-| Project roles | 19 | `.agents/roles/*.md` and `.agents/roles/*/SKILL.md` |
+| Project roles | 20 | `.agents/roles/*.md` and `.agents/roles/*/SKILL.md` |
 | Reusable Codex skills | 6 | `.codex/skills/*/SKILL.md` |
 | Callable Codex agents | 34 | `.codex/agents/*.toml` |
 
-The existing exhaustive narrative inventory remains in
-`docs/skill-audit/skill-inventory.md`. This matrix records the cache and reuse
-decision for the governance-critical routing set.
+The curated narrative detail in `docs/skill-audit/skill-inventory.md` covers
+65 of the 77 source skills and is not exhaustive. Aggregate counts are
+source-derived from repository entry points, not from that narrative subset.
+This matrix records the cache and reuse decision for the governance-critical
+routing set.
 
 ## `.codex` Agent Portability
 
@@ -73,6 +77,7 @@ decision is explicit.
 | Project workflow executor | `.agents/skills/workflow-executor/SKILL.md` | Workflow Executor | active Forensic Analytics execution protocol | hash must match |
 | Reusable workflow executor | `.codex/skills/workflow-executor/SKILL.md` | Reusable Codex workflow base | portable base protocol | conflict status must be checked |
 | Execution profile router | `.agents/skills/execution-profile-router/SKILL.md` | Senior System Architect / Workflow Executor | `FAST_PATH`, `GOVERNANCE_FAST_PATH`, `NORMAL_PATH`, `FULL_PATH` routing | hash must match |
+| Skill definition schema | `docs/skill-audit/skill-definition-schema.md` | Senior Documentation Engineer (primary) | canonical structural contract for `.agents/skills/**/SKILL.md`; independent review by Skill Registry Conflict Auditor | exact file authority; ADR-0015 and S02 |
 
 | Local blocker resolution | `AGENTS.md`, `docs/process/workflow-create.md`, `docs/process/workflow-execute.md`, `.agents/orchestrator/swarm-orchestrator.md` | Active strand owner / Root Architect escalation | bounded local blocker resolution without automatic strand switching | hash must match |
 | Quality impact classifier | `.agents/skills/quality-impact-classifier/SKILL.md` | Senior Tester / Quality Gate Orchestrator | quality command impact decision | hash must match |
@@ -94,6 +99,8 @@ decision is explicit.
 |---|---|---|
 | Duplicate front-matter name `workflow-executor` in `.agents/skills/workflow-executor/SKILL.md` and `.codex/skills/workflow-executor/SKILL.md` | `RESOLVED_BY_S09` | Front-matter names remain unchanged. `.agents/skills/workflow-executor/SKILL.md` is the active Forensic Analytics executor and `.codex/skills/workflow-executor/SKILL.md` is the reusable base protocol. |
 | Senior Requirement Engineer role uses directory-style role path | `RESOLVED_BY_ROUTING_RULE` | `.agents/orchestrator/routing-rules.md` routes requirement governance to `.agents/roles/senior-requirement-engineer/SKILL.md`. The role inventory must include both `.agents/roles/*.md` and `.agents/roles/*/SKILL.md`. |
+| Legacy skill body sections do not yet share one semantic shape | `S02_TYPED_FOR_S03` | The canonical schema accepts only verified aliases; missing concepts remain typed `LEGACY_MISSING_SECTION` or `NOT_APPLICABLE` records. S03 owns per-file validation and migration. |
+| Duplicate `Required Skills` heading in `.agents/skills/microservice-senior-expert/SKILL.md` | `S02_TYPED_FOR_S03` | Record `DUPLICATE_SECTION`; do not merge or reinterpret the sections automatically. |
 
 Any route that depends on executor identity must use the project-specific
 executor during Forensic Analytics `workflow execute` and may read the `.codex`
@@ -108,3 +115,8 @@ The persistent matrix must never allow:
 - missing owners or missing STOP rules to be bypassed;
 - the JSON registry to override repository files;
 - `QUALITY.md` gates to be weakened by cache reuse.
+
+The JSON companion was intentionally not changed in S02. JSON registry/cache
+refresh is deferred to S03 for validator and migration evidence and S04 for
+source-derived registry synchronization. It remains derived cache evidence
+and is not a source of truth.

@@ -29,21 +29,62 @@
 
 ## Project Role Inventory and Entry Points
 
-The project role inventory is source-derived from `.agents/roles`. Flat role
-documents and directory-style `SKILL.md` role entry points are counted as
-roles; reusable `.codex/agents/*.toml` definitions are tracked separately.
+The project role inventory is derived from `.agents/roles`, which is the sole
+source of truth for this classification. The validator
+[`docs/skill-audit/validate-role-inventory.sh`](validate-role-inventory.sh)
+discovers only direct flat `.md` files and direct directories containing a
+regular `SKILL.md` file. A flat logical role name is the filename stem without
+`.md`; a directory-style logical role name is the directory basename. The
+document heading and the `SKILL.md` filename of a directory-style role are
+never used as logical names. Reusable `.codex/agents/*.toml` definitions remain
+a separate inventory category.
 
 | Role entry-point form | Count | Classification |
 |---|---:|---|
 | `.agents/roles/*.md` | 18 | flat project-role document |
 | `.agents/roles/*/SKILL.md` | 2 | directory-style project-role entry point |
-| Total project roles | 20 | reconciled source inventory |
+| Total project roles | 20 | source-derived inventory |
 
-The directory-style roles are `senior-requirement-engineer` and
-`senior-workflow-architect`. The flat role set now includes the dedicated
-`root-architect.md` escalation role. The persistent JSON registry records the
-exact path and `entryPointType` for every role; it does not replace repository
-files.
+Exact source-derived entry points:
+
+Flat role documents (18):
+
+- `.agents/roles/microservice-senior-expert.md`
+- `.agents/roles/root-architect.md`
+- `.agents/roles/senior-analysis-storage-architect.md`
+- `.agents/roles/senior-devops.md`
+- `.agents/roles/senior-documentation-engineer.md`
+- `.agents/roles/senior-execution-orchestrator.md`
+- `.agents/roles/senior-git-workspace-specialist.md`
+- `.agents/roles/senior-grpc-proto-specialist.md`
+- `.agents/roles/senior-java-backend.md`
+- `.agents/roles/senior-joern-cpg-specialist.md`
+- `.agents/roles/senior-performance-engineer.md`
+- `.agents/roles/senior-plugin-integration-developer.md`
+- `.agents/roles/senior-react-frontend.md`
+- `.agents/roles/senior-security-sandbox-engineer.md`
+- `.agents/roles/senior-swarm-orchestrator.md`
+- `.agents/roles/senior-system-architect.md`
+- `.agents/roles/senior-tester.md`
+- `.agents/roles/senior-ux-designer.md`
+
+Directory-style role entry points (2):
+
+- `.agents/roles/senior-requirement-engineer/SKILL.md`
+- `.agents/roles/senior-workflow-architect/SKILL.md`
+
+The current source-derived validation result is:
+
+| Finding | Result |
+|---|---:|
+| Unexpected direct entries | 0 |
+| Missing entry points | 0 |
+| Duplicate logical names | 0 |
+| Actionable failures | 0 |
+
+The persistent JSON registry is derived secondary evidence only. It does not
+replace `.agents/roles`; S03 supplies validator/migration evidence and S04
+owns the deferred registry/cache refresh.
 
 ## `.codex` Agent Portability Audit
 
@@ -66,22 +107,76 @@ repeated. No TOML definition was silently rewritten by GOV-05.
 
 ## Skill Definition Schema Audit
 
-The authoritative `.agents/AGENTS.md` compatibility rule requires every
-project skill entry point to be a directory containing `SKILL.md` with YAML
-frontmatter fields `name` and `description`. The GOV-04 audit verified all 77
-project skills against that contract:
+The draft canonical structural schema is
+[`skill-definition-schema.md`](skill-definition-schema.md). Root `AGENTS.md`,
+`QUALITY.md`, `.agents/AGENTS.md`, ADR-0015 and each individual `SKILL.md`
+remain higher or semantic authorities as described by that schema. S02
+documents the contract for review; S03 owns body validation and migration.
+The GOV-04 source audit verified all 77 project skills against the implemented
+discovery and frontmatter contract. These frontmatter checks are
+machine-checkable; body heading counts below are scan evidence only and still
+require semantic human review:
 
 | Check | Result |
 |---|---:|
 | Valid `SKILL.md` entry points | 77/77 |
 | Required `name` field present | 77/77 |
 | Required `description` field present | 77/77 |
+| Directory/name matches | 77/77 |
+| Frontmatter keys restricted to `name` and `description` | 77/77 |
 | Duplicate skill names | 0 |
-| Missing required fields | 0 |
+| Missing required frontmatter fields | 0 |
 
-Body sections remain skill-specific because they encode responsibility-specific
-inputs, outputs, collaboration and STOP rules. No mechanical body rewrite is
-authorized by GOV-04.
+The canonical body contract requires all eight concepts—mission,
+responsibilities, authority, forbidden scope, inputs, outputs, collaboration
+rules and STOP rules—for every new or migrated skill. An existing legacy skill
+may use an explicit typed `NOT_APPLICABLE` exception only when semantic review
+proves that the concept is not applicable; otherwise migration or another
+typed exception is required. No concept may be silently omitted. The accepted
+legacy aliases, typed exception format and exact ownership rules are in
+[`skill-definition-schema.md`](skill-definition-schema.md).
+
+Coverage counts use exact canonical headings and accepted aliases at Markdown
+heading levels 1 through 6, matched by `^#{1,6}[[:space:]]+...$`; therefore
+the `Forbidden scope` count is reproducibly 33/77, while a level-2-only scan
+produces 32.
+
+| Recognized body concept | Current coverage | S02 interpretation |
+|---|---:|---|
+| Mission or accepted alias | 77/77 | Present; semantic review remains required. |
+| Responsibilities or accepted alias | 66/77 | 11 explicit migration/exception records required in S03. |
+| Authority | 13/77 | Presence only; required for every new or migrated skill. Legacy gaps require migration or a semantically justified typed exception. |
+| Forbidden scope or accepted alias | 33/77 | 44 explicit migration/exception records required in S03. |
+| Inputs or accepted alias | 47/77 | 30 explicit migration/exception records required in S03. |
+| Outputs or accepted alias | 43/77 | `Verification` is not treated as an output; 34 records required in S03. |
+| Collaboration or accepted alias | 18/77 | Presence only; required for every new or migrated skill. Legacy gaps require migration or a semantically justified typed exception. |
+| STOP rules or accepted alias | 52/77 | 25 explicit migration/exception records required in S03. |
+
+S03 owns any body-shape classification. S02 claims only the verified duplicate
+`Required Skills` finding in `.agents/skills/microservice-senior-expert/SKILL.md`;
+no other body-shape classification is claimed. This finding is not a
+frontmatter failure and is not silently marked as canonical conformance.
+
+### Curated narrative detail (65 of 77 source skills)
+
+The narrative detail table below is a curated 65-of-77 subset of the source
+skills; it is not an exhaustive inventory. Aggregate counts in this document
+are source-derived from the verified repository entry points, not calculated
+from this narrative subset. The 12 source skill names omitted from the detail
+rows are:
+
+- `adr-steward`
+- `agent-handoff-protocol`
+- `contract-first-api-steward`
+- `data-ownership-persistence-steward`
+- `observability-runtime-diagnostics`
+- `quality-gate-orchestrator`
+- `release-branch-governance`
+- `resilience-engineering`
+- `security-threat-modeling`
+- `skill-registry-conflict-auditor`
+- `source-code-responsibility`
+- `workflow-executor`
 
 | Skill name                            | File path                                                       | Purpose | Architecture zone | Slices/workflows | Possible overlaps | Status |
 |---------------------------------------|-----------------------------------------------------------------|---|---|---|---|---|
