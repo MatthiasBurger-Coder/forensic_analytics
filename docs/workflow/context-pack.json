@@ -71,5 +71,6 @@
     "docs/workflow/workflow.md": "0ecf45390053d82800aa253779b8056cf06fc7fb83b966c7be7ac9e5f855db58"
   },
   "status": "IN_PROGRESS",
-  "completedSlices": ["S01"]
+  "completedSlices": ["S01", "S02"],
+  "nextEligibleSlice": "S03"
 }
