@@ -22,8 +22,8 @@ that verifies repository facts before changing registry, role, skill,
 flowchart or portability documentation.
 
 Change type: governance documentation and agent-definition governance.
-Process strand: `workflow create` now; `workflow execute` only when explicitly
-requested later.
+Process strand at creation: `workflow create`; execution is recorded below
+under the separate `workflow execute` strand.
 Execution profile: `FULL_PATH`, because governance authority, registry state,
 role/skill ownership, workflow documentation and `.codex` portability are
 affected.
@@ -359,3 +359,11 @@ after every slice, inspect the diff, and stop on any unverifiable fact.
 Checked against the existing arc42 governance baseline and ADR-0015 / ADR-0021.
 No arc42 artifact was modified during workflow creation; Slice 06 owns any
 verified synchronization required after execution.
+
+## Execution Status
+
+S01 through S06 completed on `feature/workflow-gov-skill-governance-20260814`.
+The per-slice commits, deterministic checks, quality-gate results, blocker
+resolution and Arc42 evidence are recorded in
+[`execution-report.md`](execution-report.md). The workflow is ready for the
+requested governance handoff; no product implementation scope was introduced.

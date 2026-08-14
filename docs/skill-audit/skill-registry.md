@@ -13,8 +13,8 @@ behavior and quality commands.
 | Field | Value |
 |---|---|
 | Registry version | `skill-registry-v1` |
-| Workflow version | `governance-performance-20260521-v1` |
-| Last verified | `2026-05-30` |
+| Workflow version | `gov-01-05-registry-agent-reconciliation-v1` |
+| Last verified | `2026-08-14` |
 | Reuse status | `MANUAL_REVIEW_REQUIRED` |
 | Registry scope | Governance-routing-critical matrix with counts for full repositories of skills, roles and callable agent definitions |
 
