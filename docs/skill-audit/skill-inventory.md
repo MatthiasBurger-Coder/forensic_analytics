@@ -35,13 +35,15 @@ roles; reusable `.codex/agents/*.toml` definitions are tracked separately.
 
 | Role entry-point form | Count | Classification |
 |---|---:|---|
-| `.agents/roles/*.md` | 17 | flat project-role document |
+| `.agents/roles/*.md` | 18 | flat project-role document |
 | `.agents/roles/*/SKILL.md` | 2 | directory-style project-role entry point |
-| Total project roles | 19 | reconciled source inventory |
+| Total project roles | 20 | reconciled source inventory |
 
 The directory-style roles are `senior-requirement-engineer` and
-`senior-workflow-architect`. The persistent JSON registry records the exact
-path and `entryPointType` for every role; it does not replace repository files.
+`senior-workflow-architect`. The flat role set now includes the dedicated
+`root-architect.md` escalation role. The persistent JSON registry records the
+exact path and `entryPointType` for every role; it does not replace repository
+files.
 
 ## `.codex` Agent Portability Audit
 
@@ -156,7 +158,7 @@ Detailed capability evidence is recorded in
 
 | Capability | Status |
 |---|---|
-| Root Architect Escalation | MAPPED_WITH_GAP |
+| Root Architect Escalation | VERIFIED |
 | Typed Error Routing | VERIFIED |
 | Execution Orchestration | VERIFIED |
 | Conflict Locking | VERIFIED |

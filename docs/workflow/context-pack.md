@@ -10,7 +10,8 @@
 - Required roles: Senior Requirement Engineer, Senior System Architect, Senior Java Backend Developer, Senior React Frontend Developer, Senior Tester
 - Conditional roles: Senior Workflow Architect, Senior Documentation Engineer, Skill Registry Conflict Auditor, Flowchart Integrity Auditor
 - Quality: strict Gradle test command, targeted deterministic governance checks and `git diff --check`
-- Baseline: 77 skills, 19 role files, 6 reusable Codex skills, 34 Codex agents
-- Reconciled counts: 77 skills, 19 roles, 6 reusable Codex skills and 34 Codex agents
+- Baseline at workflow creation: 77 skills, 19 role files, 6 reusable Codex skills, 34 Codex agents
+- Current governance counts after the authorized follow-up: 77 skills, 20 roles, 6 reusable Codex skills and 34 Codex agents
 - Hashes are in `context-pack.json`; the pack is stale if governing files or the workflow change.
+- Root Architect escalation status: `VERIFIED` through the dedicated `.agents/roles/root-architect.md` role.
 - Execution status: S01–S06 completed; see `execution-report.md` for commit and gate evidence.

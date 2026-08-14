@@ -19,7 +19,7 @@ contract, persistence, build-logic or `push auto` scope was introduced.
 |---|---|---|
 | S01 | Registry hashes and governance cache refreshed | `85cdab1` |
 | S02 | 19 roles and flat/directory entry points reconciled | `6e29dc6` |
-| S03 | Flowchart audit verified; Root Architect bootstrap gap remains explicit | `afcfdc2` |
+| S03 | Flowchart audit verified; Root Architect bootstrap gap recorded for follow-up | `afcfdc2` |
 | S04 | 77 project skill definitions verified against frontmatter schema | `f0fe0c6` |
 | S05 | 34 Codex agents classified: 5 reusable, 29 project-specific, 0 manual review | `68d01fe` |
 | S06 | Workflow/context handoff and Arc42 evidence synchronized | this checkpoint |
@@ -49,9 +49,18 @@ The checked Arc42 baseline was reviewed in:
 - ADR-0015, Skill Registry and Conflict Auditing
 - ADR-0021, Governance Flowchart V2
 
-No architecture, runtime or product behavior changed, so no Arc42 artifact
-was modified. The Root Architect bootstrap-only status remains an explicit
-governance risk and is not represented as a completed dedicated role.
+No architecture, runtime or product behavior changed during S01–S06, so no
+Arc42 artifact was modified in that execution. The Root Architect
+bootstrap-only status was an explicit follow-up risk at that time and was not
+represented as a completed dedicated role.
+
+## Post-Execution Governance Follow-Up
+
+A subsequent authorized `skills-agents` change created
+`.agents/roles/root-architect.md`, routed Root Architect escalation to the
+dedicated role, reconciled the project-role inventory to 20 and synchronized
+the GOV-03 linkage, organigramm, registry and arc42 governance notes. The
+current Root Architect capability status is `VERIFIED`.
 
 ## Handoff
 

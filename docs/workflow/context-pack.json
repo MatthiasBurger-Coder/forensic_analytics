@@ -11,6 +11,8 @@
   "forbiddenAreas": ["product implementation", "build logic", "runtime", "contracts", "persistence", "push auto"],
   "qualityCommands": ["./gradlew test --dependency-verification strict --console=plain --stacktrace", "git diff --check"],
   "baselineCounts": {"projectSkills": 77, "projectRoleFiles": 19, "reusableCodexSkills": 6, "callableCodexAgents": 34},
+  "currentGovernanceCounts": {"projectSkills": 77, "projectRoleFiles": 20, "reusableCodexSkills": 6, "callableCodexAgents": 34},
+  "rootArchitectStatus": "VERIFIED",
   "governingFileHashes": {
     "AGENTS.md": "a1bd05f38d8602a5c67dcfbf3628c811a4c0de33004fdf553afadf4b5c614f5d",
     "QUALITY.md": "95f9aa2ba5dd7f67057864d52321e5716acb46b166bc74c12b154ec271bb3596",

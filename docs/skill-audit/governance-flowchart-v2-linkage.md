@@ -3,9 +3,8 @@
 ## Purpose
 
 This audit records the GOV-03 linkage check for Governance Flowchart V2
-capabilities. It verifies which existing roles, skills and process documents
-carry the required governance behavior and which dedicated artifact remains a
-documented bootstrap gap.
+capabilities. It verifies which roles, skills and process documents carry the
+required governance behavior.
 
 No product implementation, build logic, contracts, runtime behavior or
 analytics behavior is changed by this audit.
@@ -26,7 +25,7 @@ analytics behavior is changed by this audit.
 
 | Capability | Verified owner or source | Status | Notes |
 |---|---|---|---|
-| Root Architect Escalation | `.agents/roles/senior-system-architect.md`, `.agents/orchestrator/routing-rules.md`, `docs/process/workflow-execute.md` | MAPPED_WITH_BOOTSTRAP_OWNER | Root Architect escalation is represented by Root Architect decision nodes and Senior System Architect governance. No dedicated `.agents/roles/root-architect.md` file exists; the interim owner is explicit. |
+| Root Architect Escalation | `.agents/roles/root-architect.md`, `.agents/roles/senior-system-architect.md`, `.agents/orchestrator/routing-rules.md`, `docs/process/workflow-execute.md` | VERIFIED | Root Architect escalation has a dedicated role and explicit collaboration with the Senior System Architect. |
 | Typed Error Routing | `.agents/orchestrator/routing-rules.md`, `.agents/skills/workflow-executor/SKILL.md`, `.agents/skills/quality-gate-orchestrator/SKILL.md`, `docs/process/workflow-execute.md` | VERIFIED | All required error types are mapped: `ARCH_VIOLATION`, `BUILD_FAILURE`, `TEST_FAILURE`, `DOC_GOVERNANCE_FAILURE`, `LOCK_CONFLICT`, `UNKNOWN_FAILURE`. |
 | Execution Orchestration | `.agents/roles/senior-swarm-orchestrator.md`, `.agents/orchestrator/swarm-orchestrator.md`, `.agents/skills/workflow-executor/SKILL.md`, `.agents/skills/agent-swarm-coordination-specialist/SKILL.md` | VERIFIED | S3D owns dependency graph extraction, topological ordering and execution grouping. |
 | Conflict Locking | `.agents/orchestrator/swarm-orchestrator.md`, `.agents/skills/workflow-executor/SKILL.md`, `.agents/skills/agent-swarm-coordination-specialist/SKILL.md`, `docs/workflow/slice-dependency-map.md` | VERIFIED | File, contract, module and architecture-boundary locks are checked before parallel write-capable work. |
@@ -39,14 +38,10 @@ analytics behavior is changed by this audit.
 
 No blocking skill or role contradiction was found.
 
-One dedicated-artifact gap remains non-blocking because the active workflow
-documents an explicit bootstrap owner and follow-up path:
-
-- Dedicated Root Architect role file: owner is Senior System Architect until a
-  dedicated role is introduced by a future `skills-agents` slice.
-- Flowchart Integrity Audit is resolved by the existing
-  `.agents/skills/flowchart-integrity-auditor/SKILL.md`; no replacement skill
-  or duplicate owner was introduced.
+The Root Architect role is now a dedicated escalation artifact. The Flowchart
+Integrity Audit remains owned by the existing
+`.agents/skills/flowchart-integrity-auditor/SKILL.md`; no replacement skill or
+duplicate owner was introduced.
 
 No existing skill or role was changed to resolve a contradiction because no
 contradiction required a new authority artifact.
@@ -56,5 +51,4 @@ contradiction required a new authority artifact.
 `CONTINUE`
 
 Workflow execution may continue because every required capability has a
-verified owner or an explicit bootstrap owner, and every missing dedicated
-artifact has a documented follow-up path.
+verified owner and the dedicated Root Architect escalation artifact exists.
