@@ -29,21 +29,61 @@
 
 ## Project Role Inventory and Entry Points
 
-The project role inventory is source-derived from `.agents/roles`. Flat role
-documents and directory-style `SKILL.md` role entry points are counted as
-roles; reusable `.codex/agents/*.toml` definitions are tracked separately.
+The project role inventory is derived from `.agents/roles`, which is the sole
+source of truth for this classification. The validator
+[`docs/skill-audit/validate-role-inventory.sh`](validate-role-inventory.sh)
+discovers only direct flat `.md` files and direct directories containing a
+regular `SKILL.md` file. A flat logical role name is the filename stem without
+`.md`; a directory-style logical role name is the directory basename. The
+document heading and the `SKILL.md` filename of a directory-style role are
+never used as logical names. Reusable `.codex/agents/*.toml` definitions remain
+a separate inventory category.
 
 | Role entry-point form | Count | Classification |
 |---|---:|---|
 | `.agents/roles/*.md` | 18 | flat project-role document |
 | `.agents/roles/*/SKILL.md` | 2 | directory-style project-role entry point |
-| Total project roles | 20 | reconciled source inventory |
+| Total project roles | 20 | source-derived inventory |
 
-The directory-style roles are `senior-requirement-engineer` and
-`senior-workflow-architect`. The flat role set now includes the dedicated
-`root-architect.md` escalation role. The persistent JSON registry records the
-exact path and `entryPointType` for every role; it does not replace repository
-files.
+Exact source-derived entry points:
+
+Flat role documents (18):
+
+- `.agents/roles/microservice-senior-expert.md`
+- `.agents/roles/root-architect.md`
+- `.agents/roles/senior-analysis-storage-architect.md`
+- `.agents/roles/senior-devops.md`
+- `.agents/roles/senior-documentation-engineer.md`
+- `.agents/roles/senior-execution-orchestrator.md`
+- `.agents/roles/senior-git-workspace-specialist.md`
+- `.agents/roles/senior-grpc-proto-specialist.md`
+- `.agents/roles/senior-java-backend.md`
+- `.agents/roles/senior-joern-cpg-specialist.md`
+- `.agents/roles/senior-performance-engineer.md`
+- `.agents/roles/senior-plugin-integration-developer.md`
+- `.agents/roles/senior-react-frontend.md`
+- `.agents/roles/senior-security-sandbox-engineer.md`
+- `.agents/roles/senior-swarm-orchestrator.md`
+- `.agents/roles/senior-system-architect.md`
+- `.agents/roles/senior-tester.md`
+- `.agents/roles/senior-ux-designer.md`
+
+Directory-style role entry points (2):
+
+- `.agents/roles/senior-requirement-engineer/SKILL.md`
+- `.agents/roles/senior-workflow-architect/SKILL.md`
+
+The current source-derived validation result is:
+
+| Finding | Result |
+|---|---:|
+| Unexpected direct entries | 0 |
+| Missing entry points | 0 |
+| Duplicate logical names | 0 |
+| Actionable failures | 0 |
+
+The persistent JSON registry is derived secondary evidence only. It does not
+replace `.agents/roles` and its stale cache refresh remains assigned to S04.
 
 ## `.codex` Agent Portability Audit
 

@@ -49,11 +49,25 @@ Must not change:
 
 ## Role Entry-Point Classification
 
-Project roles are discovered under `.agents/roles` and classified by their
-actual entry point. Eighteen roles use flat `.md` documents and two roles use
-directory-style `SKILL.md` files: `senior-requirement-engineer` and
-`senior-workflow-architect`. The reconciled project-role count is 20. Callable
-`.codex/agents/*.toml` definitions remain a separate inventory category.
+Project roles are discovered under `.agents/roles` by
+[`docs/skill-audit/validate-role-inventory.sh`](../skill-audit/validate-role-inventory.sh),
+which treats that source tree as authoritative. Only direct flat `.md` files
+and direct directories containing a regular `SKILL.md` entry point are roles.
+Flat logical names come from the filename stem without `.md`; directory-style
+logical names come from the directory basename. Headings and the `SKILL.md`
+filename of a directory-style role are not logical names. Callable `.codex/agents/*.toml`
+definitions remain a separate inventory category.
+
+| Role entry-point form | Count | Exact source-derived entry points |
+|---|---:|---|
+| `.agents/roles/*.md` | 18 | `.agents/roles/microservice-senior-expert.md`, `.agents/roles/root-architect.md`, `.agents/roles/senior-analysis-storage-architect.md`, `.agents/roles/senior-devops.md`, `.agents/roles/senior-documentation-engineer.md`, `.agents/roles/senior-execution-orchestrator.md`, `.agents/roles/senior-git-workspace-specialist.md`, `.agents/roles/senior-grpc-proto-specialist.md`, `.agents/roles/senior-java-backend.md`, `.agents/roles/senior-joern-cpg-specialist.md`, `.agents/roles/senior-performance-engineer.md`, `.agents/roles/senior-plugin-integration-developer.md`, `.agents/roles/senior-react-frontend.md`, `.agents/roles/senior-security-sandbox-engineer.md`, `.agents/roles/senior-swarm-orchestrator.md`, `.agents/roles/senior-system-architect.md`, `.agents/roles/senior-tester.md`, `.agents/roles/senior-ux-designer.md` |
+| `.agents/roles/*/SKILL.md` | 2 | `.agents/roles/senior-requirement-engineer/SKILL.md`, `.agents/roles/senior-workflow-architect/SKILL.md` |
+| Total project roles | 20 | source-derived inventory |
+
+The baseline validator result is zero unexpected direct entries, zero missing
+entry points, zero duplicate logical names and zero actionable failures. The
+persistent JSON registry remains derived secondary evidence; it is not the
+source of truth and its stale cache refresh remains assigned to S04.
 
 ## Process Governance Entries
 
