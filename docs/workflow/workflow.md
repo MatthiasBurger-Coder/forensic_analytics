@@ -64,8 +64,9 @@ Explicit requirements:
 
 Accepted assumptions:
 
-- No matching EPIC file exists under docs/epics; issue #116 and #118 text is
-  the accepted requirement source for this workflow.
+- No GOV-02/GOV-04-specific EPIC file exists under docs/epics; EPIC v0.2 is the
+  current product requirement baseline, while issue #116 and #118 remain the
+  accepted governance-specific requirement sources for this workflow.
 - The validators may be repository-local governance scripts under
   docs/skill-audit/; no Gradle or product module integration is required
   unless execution verifies a concrete existing integration point.
@@ -446,4 +447,4 @@ governance validation and documentation only.
 
 ## Execution Status
 
-READY_FOR_EXECUTION
+IN_PROGRESS
