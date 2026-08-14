@@ -43,6 +43,25 @@ The directory-style roles are `senior-requirement-engineer` and
 `senior-workflow-architect`. The persistent JSON registry records the exact
 path and `entryPointType` for every role; it does not replace repository files.
 
+## Skill Definition Schema Audit
+
+The authoritative `.agents/AGENTS.md` compatibility rule requires every
+project skill entry point to be a directory containing `SKILL.md` with YAML
+frontmatter fields `name` and `description`. The GOV-04 audit verified all 77
+project skills against that contract:
+
+| Check | Result |
+|---|---:|
+| Valid `SKILL.md` entry points | 77/77 |
+| Required `name` field present | 77/77 |
+| Required `description` field present | 77/77 |
+| Duplicate skill names | 0 |
+| Missing required fields | 0 |
+
+Body sections remain skill-specific because they encode responsibility-specific
+inputs, outputs, collaboration and STOP rules. No mechanical body rewrite is
+authorized by GOV-04.
+
 | Skill name                            | File path                                                       | Purpose | Architecture zone | Slices/workflows | Possible overlaps | Status |
 |---------------------------------------|-----------------------------------------------------------------|---|---|---|---|---|
 | agent-swarm-coordination-specialist   | `.agents/skills/agent-swarm-coordination-specialist/SKILL.md`   | Dependency graph planning and multi-agent coordination. | Orchestration | Subagent planning, review pipeline, merge coordination | swarm-coordination, swarm-orchestration | added |

@@ -44,6 +44,16 @@
     ],
     "registryIsSourceOfTruth": false
   },
+  "skillDefinitionSchema": {
+    "version": 1,
+    "entryPoint": "directory/SKILL.md",
+    "requiredFrontmatter": ["name", "description"],
+    "projectSkillCountAudited": 77,
+    "validRequiredFrontmatterCount": 77,
+    "missingRequiredFrontmatter": [],
+    "duplicateSkillNames": [],
+    "bodySchema": "skill-specific sections remain responsibility-specific and are not mechanically normalized"
+  },
   "sourceHashes": {
     "AGENTS.md": "a1bd05f38d8602a5c67dcfbf3628c811a4c0de33004fdf553afadf4b5c614f5d",
     "QUALITY.md": "95f9aa2ba5dd7f67057864d52321e5716acb46b166bc74c12b154ec271bb3596",
