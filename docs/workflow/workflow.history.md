@@ -12,8 +12,8 @@ It preserves version identity and slice handoff state; it does not replace
 - branch: `feature/workflow-gov-02-04-20260814`
 - processStrand: `workflow execute`
 - executionProfile: `FULL_PATH`
-- status: `READY_FOR_EXECUTION`
-- completedSlices: `[]`
+- status: `IN_PROGRESS`
+- completedSlices: `[S01]`
 - source: [`workflow.md`](workflow.md)
 - contextPack: [`context-pack.json`](context-pack.json)
 

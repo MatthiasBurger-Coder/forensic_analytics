@@ -245,8 +245,8 @@ Done criteria:
 ```yaml
 slice_id: S02
 profile: FULL_PATH
-owner: Senior Documentation Engineer / Skill Registry Conflict Auditor
-secondary_reviewers: [Senior System Architect, Senior Requirement Engineer, Senior Tester]
+owner: Senior Documentation Engineer
+secondary_reviewers: [Senior System Architect, Senior Requirement Engineer, Senior Tester, Skill Registry Conflict Auditor]
 affected_files: [docs/skill-audit/skill-definition-schema.md, docs/skill-audit/skill-inventory.md, docs/skill-audit/skill-registry.md]
 affected_modules: []
 affected_contracts: [skill-definition-schema]

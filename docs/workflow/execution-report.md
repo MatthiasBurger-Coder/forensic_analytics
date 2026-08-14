@@ -7,10 +7,10 @@
 - Workflow version: `gov-02-04-role-inventory-skill-schema-v1`
 - Branch: `feature/workflow-gov-02-04-20260814`
 - Process strand: `workflow execute`
-- Execution status: `READY_FOR_EXECUTION`
+- Execution status: `IN_PROGRESS`
 
-No workflow slice has been executed in this version. No quality-gate result,
-commit hash, push result or issue-closure evidence is claimed here.
+S01 has completed and its checkpoint is recorded below. S02 is the next
+eligible slice; no issue-closure evidence is claimed here.
 
 The report will be updated after each successful slice checkpoint with the
 required `CP_RECORD` fields from `workflow.history.md`. The registry and audit

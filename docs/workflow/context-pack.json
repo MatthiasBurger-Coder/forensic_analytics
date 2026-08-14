@@ -68,8 +68,8 @@
     "docs/arc42/11-risks-and-technical-debt.md": "bb45cca3c5606ba0de07a13dc44ec0e5f567ea4752eb79fcdfb7858010e4b457",
     "docs/arc42/09-architecture-decisions/adr/ADR-0015-skill-registry-conflict-auditing.md": "56a2cd3b1822e5e06f3e30ba964bf5d5dfd8ee0b8d9e343dba80cf8589d3b46a",
     "docs/arc42/09-architecture-decisions/adr/ADR-0021-governance-flowchart-v2.md": "10c36d1776b9d40a58bd9e1844d2e17cc6c3d21253dc41cf49b180c6361f484f",
-    "docs/workflow/workflow.md": "7054a8ba354f0ac2bd2107335093fd21249fe4b9460e2bbf39e86276ddc86bdf"
+    "docs/workflow/workflow.md": "0ecf45390053d82800aa253779b8056cf06fc7fb83b966c7be7ac9e5f855db58"
   },
-  "status": "EXECUTION_HANDOFF_READY",
-  "completedSlices": []
+  "status": "IN_PROGRESS",
+  "completedSlices": ["S01"]
 }
